@@ -52,46 +52,31 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms: ${{ parameters.platforms }}
-          jobParameters:
-            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
-            postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-                  displayName: Build Assets
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: ${{ parameters.testGroup }}
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: checked
-          platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: ${{ parameters.testGroup }}
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms: ${{ parameters.platforms }}
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             testGroup: ${{ parameters.testGroup }}
             ${{ if in(parameters.testGroup, 'jitstress-isas-arm', 'jitstress-isas-avx512', 'jitstress-isas-x86') }}:
               jitIsaStressScenarios: ${{ parameters.isaScenarios[parameters.testGroup] }}
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            # TODO: update these numbers as they were determined long ago
+            ${{ if in(parameters.testGroup, 'innerloop', 'outerloop', 'jit-cfg') }}:
+              timeoutInMinutes: 600
+            ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
+              timeoutInMinutes: 720
+            ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'pgo', 'pgostress', 'jit-experimental') }}:
+              timeoutInMinutes: 840
+            ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
+              timeoutInMinutes: 1260
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                forwardedParameters: [testGroup]
+                parameters:
+                  displayNameArgs: JitOuterloopTests
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters: [testGroup, liveLibrariesBuildConfig]
     - ${{ if in(parameters.testGroup, 'jitstress-isas-arm', 'jitstress-isas-avx512', 'jitstress-isas-x86') }}:
       - template: /eng/pipelines/coreclr/templates/jit-isas-libraries.yml
         parameters:

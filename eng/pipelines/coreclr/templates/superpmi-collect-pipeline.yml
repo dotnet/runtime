@@ -23,7 +23,6 @@ extends:
             buildArgs: -s clr+libs+libs.tests+clr.wasmjit -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -40,10 +39,6 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -65,7 +60,6 @@ extends:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
                   archParameter: -arch x64
                   displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -82,10 +76,6 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -111,7 +101,6 @@ extends:
                   archParameter: -arch x64
                   container: linux_x64
                   displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -128,10 +117,6 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -146,7 +131,6 @@ extends:
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -163,10 +147,6 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       # Release build of System.Private.CoreLib.dll targeting browser/wasm, hosted on
@@ -212,7 +192,6 @@ extends:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
                   archParameter: -arch x64
                   displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -229,10 +208,6 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -258,7 +233,6 @@ extends:
                   archParameter: -arch x64
                   container: linux_x64
                   displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -275,20 +249,120 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+
+      #
+      # Collect SuperPMI data from CoreCLR runtime tests in isolated product jobs.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: superpmi
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - linux_x64
+          jobParameters:
+            nameSuffix: CoreCLRTests
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            buildArgs: -s clr+libs -rc $(_BuildConfig) -c Release
+            timeoutInMinutes: 600
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                forwardedParameters:
+                - testGroup
                 parameters:
-                  testGroup: outerloop
+                  displayNameArgs: SuperPMIRuntimeTests
+                  SuperPmiCollect: true
+              - template: /eng/pipelines/coreclr/templates/finalize-superpmi-runtime-test-collection.yml
+                parameters:
+                  condition: and(always(), eq(variables['_ProductBuildSucceeded'], 'true'), eq(variables['_RuntimeTestsBuilt_SuperPMIRuntimeTests'], 'true'))
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                - testGroup
+                - liveLibrariesBuildConfig
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: superpmi
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          - windows_x86
+          - windows_arm64
+          - osx_arm64
           jobParameters:
+            nameSuffix: CoreCLRTests
             testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            buildArgs: -s clr+libs -rc $(_BuildConfig) -c Release
+            timeoutInMinutes: 600
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.spmi -c $(_BuildConfig)
+                  archParameter: -arch x64
+                  displayName: Build SuperPMI
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                forwardedParameters:
+                - testGroup
+                parameters:
+                  displayNameArgs: SuperPMIRuntimeTests
+                  SuperPmiCollect: true
+              - template: /eng/pipelines/coreclr/templates/finalize-superpmi-runtime-test-collection.yml
+                parameters:
+                  condition: and(always(), eq(variables['_ProductBuildSucceeded'], 'true'), eq(variables['_RuntimeTestsBuilt_SuperPMIRuntimeTests'], 'true'))
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                - testGroup
+                - liveLibrariesBuildConfig
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: superpmi
+          buildConfig: checked
+          platforms:
+          - linux_arm
+          - linux_arm64
+          jobParameters:
+            nameSuffix: CoreCLRTests
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            buildArgs: -s clr+libs -rc $(_BuildConfig) -c Release
+            timeoutInMinutes: 600
+            postBuildSteps:
+              - task: NuGetAuthenticate@1
+                target: linux_x64
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.spmi -c $(_BuildConfig)
+                  archParameter: -arch x64
+                  container: linux_x64
+                  displayName: Build SuperPMI
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                forwardedParameters:
+                - testGroup
+                parameters:
+                  displayNameArgs: SuperPMIRuntimeTests
+                  SuperPmiCollect: true
+              - template: /eng/pipelines/coreclr/templates/finalize-superpmi-runtime-test-collection.yml
+                parameters:
+                  condition: and(always(), eq(variables['_ProductBuildSucceeded'], 'true'), eq(variables['_RuntimeTestsBuilt_SuperPMIRuntimeTests'], 'true'))
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                - testGroup
+                - liveLibrariesBuildConfig
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -433,29 +507,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run_pgo_optrepeat
             collectionName: benchmarks
-
-      #
-      # Collection of coreclr test run
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: superpmi
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            SuperPmiCollect: true
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
