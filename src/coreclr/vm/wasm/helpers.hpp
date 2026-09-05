@@ -11,3 +11,7 @@ class MethodDesc;
 // Look up a pregenerated R2R-to-interpreter thunk for the given MethodDesc.
 // Returns NULL if no thunk is available for the method's signature.
 void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD);
+
+// Look up a pregenerated vtable dispatch thunk for the given MethodDesc.
+// Returns NULL if no thunk is available for the method's signature.
+void* GetVirtualDispatchThunk(MethodDesc *pMD);

@@ -693,8 +693,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
 #ifdef TARGET_WASM
-                // Wasm has no virtual stub dispatch, so all virtual calls (including the array
-                // Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
+                // Wasm virtual calls that cannot use a pregenerated dispatch thunk (including the
+                // array Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
                 // handling below via the `goto DEVIRT`. Add the type-context arg here so the
                 // call_indirect signature matches the callee; omitting it traps at runtime.
                 if (sig->hasTypeArg())

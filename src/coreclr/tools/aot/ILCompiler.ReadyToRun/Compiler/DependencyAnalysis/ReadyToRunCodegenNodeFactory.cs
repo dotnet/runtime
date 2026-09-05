@@ -423,7 +423,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmImportThunks = new NodeCache<WasmImportThunkKey, ISymbolDefinitionNode>(key =>
             {
-                return new WasmImportThunk(this, key.Signature, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
+                return new WasmImportThunk(this, key.Signature, key.Helper, key.UseJumpableStub);
             });
 
             _wasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
@@ -439,6 +439,11 @@ namespace ILCompiler.DependencyAnalysis
             _wasmInterpreterToR2RThunks = new NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode>(key =>
             {
                 return new WasmInterpreterToR2RThunkNode(this, key);
+            });
+
+            _wasmVirtualDispatchThunks = new NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode>(key =>
+            {
+                return new WasmVirtualDispatchThunkNode(this, key.Signature);
             });
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
@@ -893,16 +898,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             public readonly WasmSignature Signature;
             public readonly ReadyToRunHelper Helper;
-            public readonly ImportSectionNode ContainingImportSection;
-            public readonly bool UseVirtualCall;
             public readonly bool UseJumpableStub;
 
-            public WasmImportThunkKey(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+            public WasmImportThunkKey(WasmSignature signature, ReadyToRunHelper helper, bool useJumpableStub)
             {
                 Signature = signature;
                 Helper = helper;
-                ContainingImportSection = containingImportSection;
-                UseVirtualCall = useVirtualCall;
                 UseJumpableStub = useJumpableStub;
             }
 
@@ -910,8 +911,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return Signature.Equals(other.Signature) &&
                     Helper == other.Helper &&
-                    ContainingImportSection == other.ContainingImportSection &&
-                    UseVirtualCall == other.UseVirtualCall &&
                     UseJumpableStub == other.UseJumpableStub;
             }
 
@@ -924,17 +923,15 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return HashCode.Combine(Helper.GetHashCode(),
                     Signature.GetHashCode(),
-                    ContainingImportSection.GetHashCode(),
-                    UseVirtualCall.GetHashCode(),
                     UseJumpableStub.GetHashCode());
             }
         }
 
         private NodeCache<WasmImportThunkKey, ISymbolDefinitionNode> _wasmImportThunks;
 
-        public ISymbolDefinitionNode WasmImportThunk(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public ISymbolDefinitionNode WasmImportThunk(WasmSignature signature, ReadyToRunHelper helper, bool useJumpableStub)
         {
-            WasmImportThunkKey thunkKey = new WasmImportThunkKey(signature, helper, containingImportSection, useVirtualCall, useJumpableStub);
+            WasmImportThunkKey thunkKey = new WasmImportThunkKey(signature, helper, useJumpableStub);
             return _wasmImportThunks.GetOrAdd(thunkKey);
         }
 
@@ -981,6 +978,37 @@ namespace ILCompiler.DependencyAnalysis
         public WasmInterpreterToR2RThunkNode WasmInterpreterToR2RThunk(WasmSignature wasmSignature)
         {
             return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
+        }
+
+        private readonly struct WasmVirtualDispatchThunkKey : IEquatable<WasmVirtualDispatchThunkKey>
+        {
+            public WasmSignature Signature { get; }
+
+            public WasmVirtualDispatchThunkKey(WasmSignature signature)
+            {
+                Signature = signature;
+            }
+
+            public bool Equals(WasmVirtualDispatchThunkKey other)
+            {
+                return Signature.FuncType.Equals(other.Signature.FuncType);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is WasmVirtualDispatchThunkKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return Signature.FuncType.GetHashCode();
+            }
+        }
+
+        private NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode> _wasmVirtualDispatchThunks;
+        public WasmVirtualDispatchThunkNode WasmVirtualDispatchThunk(WasmSignature wasmSignature)
+        {
+            return _wasmVirtualDispatchThunks.GetOrAdd(new WasmVirtualDispatchThunkKey(wasmSignature));
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)
