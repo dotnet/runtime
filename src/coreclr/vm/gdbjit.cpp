@@ -103,7 +103,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
 
                 LPCUTF8 szName = pField->GetName();
                 typeInfo->members[i].m_member_name = new char[strlen(szName) + 1];
-                strcpy(typeInfo->members[i].m_member_name, szName);
+                memcpy(typeInfo->members[i].m_member_name, szName, strlen(szName) + 1);
                 if (!pField->IsStatic())
                 {
                     typeInfo->members[i].m_member_offset = (ULONG)pField->GetOffset();
@@ -177,12 +177,12 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
             info->m_array_type = new ArrayTypeInfo(typeHandle, 1, valTypeInfo);
 
             info->members[0].m_member_name = new char[16];
-            strcpy(info->members[0].m_member_name, "m_NumComponents");
+            memcpy(info->members[0].m_member_name, "m_NumComponents", 16);
             info->members[0].m_member_offset = ArrayBase::GetOffsetOfNumComponents();
             info->members[0].m_member_type = lengthTypeInfo;
 
             info->members[1].m_member_name = new char[7];
-            strcpy(info->members[1].m_member_name, "m_Data");
+            memcpy(info->members[1].m_member_name, "m_Data", 7);
             info->members[1].m_member_offset = ArrayBase::GetDataPtrOffset(pMT);
             info->members[1].m_member_type = info->m_array_type;
 
@@ -191,7 +191,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
                 TypeHandle dwordArray(CoreLibBinder::GetElementType(ELEMENT_TYPE_I4));
                 info->m_array_bounds_type = new ArrayTypeInfo(dwordArray.MakeSZArray(), pMT->GetRank(), lengthTypeInfo);
                 info->members[2].m_member_name = new char[9];
-                strcpy(info->members[2].m_member_name, "m_Bounds");
+                memcpy(info->members[2].m_member_name, "m_Bounds", 9);
                 info->members[2].m_member_offset = ArrayBase::GetBoundsOffset(pMT);
                 info->members[2].m_member_type = info->m_array_bounds_type;
             }
@@ -272,7 +272,7 @@ HRESULT GetArgNameByILIndex(MethodDesc* methodDescPtr, unsigned index, NewArrayH
         LPCSTR name;
         status = mdImport->GetParamDefProps(paramToken, &seq, &attr, &name);
         paramName = new char[strlen(name) + 1];
-        strcpy(paramName, name);
+        memcpy(paramName, name, strlen(name) + 1);
     }
     return status;
 }
@@ -408,8 +408,8 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
             if (th.IsValueType())
                 th = th.MakePointer();
             vars[0].m_var_type = GetTypeInfoFromTypeHandle(th, pTypeMap, method);
-            vars[0].m_var_name = new char[strlen("this") + 1];
-            strcpy(vars[0].m_var_name, "this");
+            vars[0].m_var_name = new char[5];
+            memcpy(vars[0].m_var_name, "this", 5);
             vars[0].m_il_index = 0;
             vars[0].m_native_offset = nativeVar->loc.vlStk.vlsOffset;
             vars[0].m_var_abbrev = 13;
@@ -424,7 +424,7 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
             int ilIndex = i - m_num_args;
             vars[i].m_var_type = GetLocalTypeInfo(md, m_ilHeader, pTypeMap, ilIndex, method);
             vars[i].m_var_name = new char[strlen(locals.localsName[ilIndex]) + 1];
-            strcpy(vars[i].m_var_name, locals.localsName[ilIndex]);
+            memcpy(vars[i].m_var_name, locals.localsName[ilIndex], strlen(locals.localsName[ilIndex]) + 1);
             vars[i].m_il_index = ilIndex;
             vars[i].m_native_offset = nativeVar->loc.vlStk.vlsOffset;
             vars[i].m_var_abbrev = 5;
@@ -697,7 +697,7 @@ private:
     {
         if (ptr != nullptr)
         {
-            strcpy(ptr + offset, str);
+            memcpy(ptr + offset, str, strlen(str) + 1);
         }
         offset += strlen(str) + 1;
     }
@@ -930,7 +930,7 @@ void TypeInfoBase::DumpStrings(char* ptr, int& offset)
 {
     if (ptr != nullptr)
     {
-        strcpy(ptr + offset, m_type_name);
+        memcpy(ptr + offset, m_type_name, strlen(m_type_name) + 1);
         m_type_name_offset = offset;
     }
     offset += strlen(m_type_name) + 1;
@@ -951,13 +951,13 @@ void TypeInfoBase::CalculateName()
     if (typeHandle.IsValueType())
     {
         m_type_name = new char[strlen(utf8) + 1];
-        strcpy(m_type_name, utf8);
+        memcpy(m_type_name, utf8, strlen(utf8) + 1);
     }
     else
     {
         m_type_name = new char[strlen(utf8) + 1 + 2];
-        strcpy(m_type_name, "__");
-        strcpy(m_type_name + 2, utf8);
+        memcpy(m_type_name, "__", 2);
+        memcpy(m_type_name + 2, utf8, strlen(utf8) + 1);
     }
 
     // Fix nested names
@@ -988,7 +988,7 @@ void TypeDefInfo::DumpStrings(char *ptr, int &offset)
 {
     if (ptr != nullptr)
     {
-        strcpy(ptr + offset, m_typedef_name);
+        memcpy(ptr + offset, m_typedef_name, strlen(m_typedef_name) + 1);
         m_typedef_name_offset = offset;
     }
     offset += strlen(m_typedef_name) + 1;
@@ -1052,7 +1052,7 @@ PrimitiveTypeInfo::PrimitiveTypeInfo(TypeHandle typeHandle)
     if (corType == ELEMENT_TYPE_CHAR)
     {
         m_type_name = new char[9];
-        strcpy(m_type_name, "WCHAR");
+        memcpy(m_type_name, "WCHAR", 6);
     }
     else
     {
@@ -1067,7 +1067,7 @@ void PrimitiveTypeInfo::DumpStrings(char* ptr, int& offset)
     {
         const char *typeName = GetCSharpTypeName(this);
         m_typedef_info->m_typedef_name = new char[strlen(typeName) + 1];
-        strcpy(m_typedef_info->m_typedef_name, typeName);
+        memcpy(m_typedef_info->m_typedef_name, typeName, strlen(typeName) + 1);
     }
     m_typedef_info->DumpStrings(ptr, offset);
 }
@@ -1135,7 +1135,7 @@ void TypeMember::DumpStrings(char* ptr, int& offset)
 {
     if (ptr != nullptr)
     {
-        strcpy(ptr + offset, m_member_name);
+        memcpy(ptr + offset, m_member_name, strlen(m_member_name) + 1);
         m_member_name_offset = offset;
     }
     offset += strlen(m_member_name) + 1;
@@ -1749,7 +1749,7 @@ void VarDebugInfo::DumpStrings(char *ptr, int& offset)
 {
     if (ptr != nullptr)
     {
-        strcpy(ptr + offset, m_var_name);
+        memcpy(ptr + offset, m_var_name, strlen(m_var_name) + 1);
         m_var_name_offset = offset;
     }
     offset += strlen(m_var_name) + 1;
@@ -3073,7 +3073,7 @@ public:
 
         for (int i = 0; i < m_dirs_count; ++i)
         {
-            strcpy(ptr, m_dirs[i]);
+            memcpy(ptr, m_dirs[i], strlen(m_dirs[i]) + 1);
             ptr += strlen(m_dirs[i]) + 1;
         }
         // final zero byte for directory table
@@ -3081,7 +3081,7 @@ public:
 
         for (int i = 0; i < m_files_count; ++i)
         {
-            strcpy(ptr, m_files[i].name);
+            memcpy(ptr, m_files[i].name, strlen(m_files[i].name) + 1);
             ptr += strlen(m_files[i].name) + 1;
 
             // Index in directory table
@@ -3416,7 +3416,7 @@ bool NotifyGdb::BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint
     header->m_debug_info_off = 0;
     header->m_debug_info_len = size;
     *reinterpret_cast<uint32_t*>(buf.MemPtr + sizeof(DwarfPubHeader)) = die_offset;
-    strcpy(buf.MemPtr + sizeof(DwarfPubHeader) + sizeof(uint32_t), name);
+    memcpy(buf.MemPtr + sizeof(DwarfPubHeader) + sizeof(uint32_t), name, strlen(name) + 1);
     *reinterpret_cast<uint32_t*>(buf.MemPtr + length - sizeof(uint32_t)) = 0;
 
     return true;
@@ -3489,7 +3489,7 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf, NewArrayHolder<Elf_Symbol> 
     for (int i = 0; i < symbolCount; ++i)
     {
         symbolNames[i].m_off = ptr - buf.MemPtr;
-        strcpy(ptr, symbolNames[i].m_name);
+        memcpy(ptr, symbolNames[i].m_name, strlen(symbolNames[i].m_name) + 1);
         ptr += strlen(symbolNames[i].m_name) + 1;
     }
     buf.MemPtr[buf.MemSize-1] = 0;
