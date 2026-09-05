@@ -592,7 +592,7 @@ namespace System.IO.Ports
         {
             if (disposing)
             {
-                if (IsOpen)
+                if (_internalSerialStream != null && _internalSerialStream.NeedDispose)
                 {
                     _internalSerialStream.DataReceived -= _dataReceivedHandler;
                     _internalSerialStream.PinChanged -= _pinChangedHandler;
