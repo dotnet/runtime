@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography
 {
-    internal sealed class HpkeKemMetadata
+    internal sealed partial class HpkeKemMetadata
     {
         internal HpkeKem Kem { get; }
         internal int Nsk { get; }
@@ -20,7 +20,10 @@ namespace System.Security.Cryptography
             Nenc = nenc;
             Nsecret = nsecret;
             Name = name;
+            Setup();
         }
+
+        partial void Setup();
 
         internal static HpkeKemMetadata? Create(HpkeKem kem)
         {

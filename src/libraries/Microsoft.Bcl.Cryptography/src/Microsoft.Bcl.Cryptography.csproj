@@ -36,6 +36,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Hpke.cs"
+             Link="Common\System\Security\Cryptography\Hpke.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAead.cs"
              Link="Common\System\Security\Cryptography\HpkeAead.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAeadMetadata.cs"

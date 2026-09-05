@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography
 {
-    internal sealed class HpkeAeadMetadata
+    internal sealed partial class HpkeAeadMetadata
     {
         internal HpkeAead Aead { get; }
         internal int Nk { get; }

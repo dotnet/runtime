@@ -404,6 +404,8 @@
              Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
              Link="Common\System\Security\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Hpke.cs"
+             Link="Common\System\Security\Cryptography\Hpke.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAead.cs"
              Link="Common\System\Security\Cryptography\HpkeAead.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAeadMetadata.cs"
@@ -552,6 +554,7 @@
     <Compile Include="System\Security\Cryptography\AsnEncodedDataEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
@@ -629,6 +632,10 @@
     <Compile Include="System\Security\Cryptography\HMACSHA3_384.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA3_512.cs" />
     <Compile Include="System\Security\Cryptography\HMACStatic.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeAeadMetadata.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeKdfMetadata.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeKemMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\ILiteSymmetricCipher.cs" />
@@ -1449,7 +1456,6 @@
     <Compile Include="System\Security\Cryptography\AppleCCCryptor.cs" />
     <Compile Include="System\Security\Cryptography\AppleCCCryptorLite.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
-    <Compile Include="System\Security\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />

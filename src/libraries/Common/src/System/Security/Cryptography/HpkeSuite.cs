@@ -11,9 +11,9 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.HpkeExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class HpkeSuite : IEquatable<HpkeSuite>
     {
-        private readonly HpkeAeadMetadata _aeadMetadata;
-        private readonly HpkeKdfMetadata _kdfMetadata;
-        private readonly HpkeKemMetadata _kemMetadata;
+        internal HpkeAeadMetadata AeadMetadata { get; }
+        internal HpkeKdfMetadata KdfMetadata { get; }
+        internal HpkeKemMetadata KemMetadata { get; }
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="HpkeSuite" /> class with the specified algorithms.
@@ -34,9 +34,9 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeSuite(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
         {
-            _kemMetadata = HpkeKemMetadata.Create(kem) ?? throw new ArgumentOutOfRangeException(nameof(kem));
-            _kdfMetadata = HpkeKdfMetadata.Create(kdf) ?? throw new ArgumentOutOfRangeException(nameof(kdf));
-            _aeadMetadata = HpkeAeadMetadata.Create(aead) ?? throw new ArgumentOutOfRangeException(nameof(aead));
+            KemMetadata = HpkeKemMetadata.Create(kem) ?? throw new ArgumentOutOfRangeException(nameof(kem));
+            KdfMetadata = HpkeKdfMetadata.Create(kdf) ?? throw new ArgumentOutOfRangeException(nameof(kdf));
+            AeadMetadata = HpkeAeadMetadata.Create(aead) ?? throw new ArgumentOutOfRangeException(nameof(aead));
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The authenticated encryption with associated data (AEAD) algorithm for the cipher suite.
         /// </value>
-        public HpkeAead AeadAlgorithm => _aeadMetadata.Aead;
+        public HpkeAead AeadAlgorithm => AeadMetadata.Aead;
 
         /// <summary>
         ///   Gets the key derivation function (KDF) for the cipher suite.
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The key derivation function (KDF) for the cipher suite.
         /// </value>
-        public HpkeKdf KdfAlgorithm => _kdfMetadata.Kdf;
+        public HpkeKdf KdfAlgorithm => KdfMetadata.Kdf;
 
         /// <summary>
         ///   Gets the key encapsulation mechanism (KEM) for the cipher suite.
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The key encapsulation mechanism (KEM) for the cipher suite.
         /// </value>
-        public HpkeKem KemAlgorithm => _kemMetadata.Kem;
+        public HpkeKem KemAlgorithm => KemMetadata.Kem;
 
         /// <summary>
         ///   Gets the size of the authentication tag for the cipher suite, in bytes.
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the authentication tag for the cipher suite, in bytes.
         /// </value>
-        public int AeadTagSizeInBytes => _aeadMetadata.Nt;
+        public int AeadTagSizeInBytes => AeadMetadata.Nt;
 
         /// <summary>
         ///   Gets the size of the decapsulation key for the cipher suite, in bytes.
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   For ML-KEM and hybrid ML-KEM cipher suites, this is the size of the private seed.
         /// </remarks>
-        public int DecapsulationKeySizeInBytes => _kemMetadata.Nsk;
+        public int DecapsulationKeySizeInBytes => KemMetadata.Nsk;
 
         /// <summary>
         ///   Gets the size of an encapsulated secret for the cipher suite, in bytes.
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of an encapsulated secret for the cipher suite, in bytes.
         /// </value>
-        public int EncapsulatedSecretSizeInBytes => _kemMetadata.Nenc;
+        public int EncapsulatedSecretSizeInBytes => KemMetadata.Nenc;
 
         /// <summary>
         ///   Gets the size of the encapsulation key for the cipher suite, in bytes.
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the encapsulation key for the cipher suite, in bytes.
         /// </value>
-        public int EncapsulationKeySizeInBytes => _kemMetadata.Npk;
+        public int EncapsulationKeySizeInBytes => KemMetadata.Npk;
 
         /// <summary>
         ///   Gets the name of the cipher suite.
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   A string containing the KEM, KDF, and AEAD names, separated by spaces.
         /// </value>
-        public string Name => field ??= $"{_kemMetadata.Name} {_kdfMetadata.Name} {_aeadMetadata.Name}";
+        public string Name => field ??= $"{KemMetadata.Name} {KdfMetadata.Name} {AeadMetadata.Name}";
 
         /// <summary>
         ///   Gets the length of the ciphertext produced by encrypting a plaintext of the specified length.
