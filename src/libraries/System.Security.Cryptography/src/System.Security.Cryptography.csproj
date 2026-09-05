@@ -633,9 +633,12 @@
     <Compile Include="System\Security\Cryptography\HMACSHA3_512.cs" />
     <Compile Include="System\Security\Cryptography\HMACStatic.cs" />
     <Compile Include="System\Security\Cryptography\HpkeAeadMetadata.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeECDiffieHellmanKemAdapter.cs" />
     <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeKdfMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeKemMetadata.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManagedKemAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeX25519DiffieHellmanKemAdapter.cs" />
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\ILiteSymmetricCipher.cs" />
