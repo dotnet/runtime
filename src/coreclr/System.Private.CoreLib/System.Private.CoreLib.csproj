@@ -42,7 +42,7 @@
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
-    <Features>$(Features);runtime-async=on</Features>
+    <Features>$(Features);runtime-async=on;updated-memory-safety-rules</Features>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
     <DefineConstants>CORECLR;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
