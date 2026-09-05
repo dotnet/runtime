@@ -125,12 +125,28 @@ public class R2RTestSuites
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+            ReadyToRunMethod addDoubles = Assert.Single(methods, method =>
+                method.SignatureString.Contains("AddDoubles", StringComparison.Ordinal));
+            const int WasmRegTypeShift = 29;
+            const uint F64WasmValueType = 4;
+            List<NativeVarInfo> doubleVariables = addDoubles.RuntimeFunctions
+                .Where(runtimeFunction => runtimeFunction.DebugInfo is not null)
+                .SelectMany(runtimeFunction => runtimeFunction.DebugInfo!.VariablesList)
+                .ToList();
+            Assert.DoesNotContain(doubleVariables,
+                variable => variable.VariableLocation.VarLocType is VarLocType.VLT_REG_FP or VarLocType.VLT_FPSTK);
+            Assert.Contains(doubleVariables, variable =>
+                variable.VariableLocation.VarLocType == VarLocType.VLT_REG &&
+                (uint)variable.VariableLocation.Data1 >> WasmRegTypeShift == F64WasmValueType);
             // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
-            Assert.True(methods.Exists(method =>
-                method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
+            ReadyToRunMethod sumWithFinally = Assert.Single(methods, method =>
+                method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal));
+            Assert.Contains(sumWithFinally.RuntimeFunctions, runtimeFunction =>
+                runtimeFunction.DebugInfo is not null &&
+                runtimeFunction.DebugInfo.VariablesList.Exists(variable => variable.Variable.Type == VariableType.Local));
             // Has a catch clause, so the JIT emits a try_table catch_ref that references the
             // imported restore-context exception tag.
             Assert.True(methods.Exists(method =>
@@ -273,6 +289,19 @@ public class R2RTestSuites
             int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
             Assert.Equal(0, payloadOffset & 0xF);
         }
+    }
+
+    [Theory]
+    [InlineData(2, "ambient SP")]
+    [InlineData(0x20000001, "$1 (i32)")]
+    [InlineData(0x40000002, "$2 (i64)")]
+    [InlineData(0x60000003, "$3 (f32)")]
+    [InlineData(unchecked((int)0x80000004), "$4 (f64)")]
+    [InlineData(unchecked((int)0xA0000005), "$5 (v128)")]
+    [InlineData(unchecked((int)0xC0000006), "$6 (exnref)")]
+    public void WasmDebugRegisterIsDecoded(int register, string expected)
+    {
+        Assert.Equal(expected, DebugInfo.GetPlatformSpecificRegister(WasmMachine.Wasm32, register));
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
