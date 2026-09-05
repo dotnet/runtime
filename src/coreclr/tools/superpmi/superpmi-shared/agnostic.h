@@ -97,6 +97,13 @@ struct DLDL
     DWORDLONG B;
 };
 
+struct Agnostic_CompareTypesForCast
+{
+    DWORDLONG fromClass;
+    DWORDLONG toClass;
+    DWORD     fromClassIsExact;
+};
+
 struct Agnostic_CanInline
 {
     DWORD result;

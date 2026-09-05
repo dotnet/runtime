@@ -335,7 +335,8 @@ bool canCast(
 
 TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
-          CORINFO_CLASS_HANDLE toClass) override;
+          CORINFO_CLASS_HANDLE toClass,
+          bool fromClassIsExact) override;
 
 TypeCompareState compareTypesForEquality(
           CORINFO_CLASS_HANDLE cls1,
