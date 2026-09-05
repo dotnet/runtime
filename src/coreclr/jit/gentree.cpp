@@ -2744,6 +2744,15 @@ AGAIN:
         return false;
     }
 
+#ifdef TARGET_ARM64
+    // The two arms of an opportunistic atomics check hold otherwise identical nodes that must not
+    // be merged back together - the flag is what tells codegen which sequence to emit.
+    if (OperIsAtomicOp(oper) && (((op1->gtFlags ^ op2->gtFlags) & GTF_ATOMIC_LSE) != 0))
+    {
+        return false;
+    }
+#endif // TARGET_ARM64
+
     /* Sensible flags must be equal */
     if (op1->IsUnsigned() != op2->IsUnsigned())
     {

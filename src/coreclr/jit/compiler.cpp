@@ -1977,6 +1977,68 @@ bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool suppor
     return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// compGetAtomicsImpl: Decide how atomic operations are to be expanded in this method.
+//
+// Return Value:
+//    AtomicsImpl::Lse     - the Armv8.1 atomics are known to be available, use them directly.
+//    AtomicsImpl::LlSc    - they are known not to be available, the ldaxr/stlxr retry loops
+//                           have to be used.
+//    AtomicsImpl::Dynamic - they are not part of the baseline instruction set, but they may
+//                           still be available on the machine that ends up running this code.
+//                           The Interlocked APIs are left unexpanded so that the managed
+//                           `if (Lse.IsSupported)` check in their bodies gets inlined instead.
+//
+// Notes:
+//    The result is computed on demand and cached: asking the EE about instruction set support has
+//    side effects (for ReadyToRun it records a hard requirement on the method), so we must not do
+//    it for methods that contain no atomic operations at all.
+//
+//    'Dynamic' is what makes NativeAOT interesting here: its baseline is typically armv8-a, so
+//    compExactlyDependsOn(InstructionSet_Atomics) is false even though the vast majority of the
+//    hardware in the wild does implement LSE. Note that this state cannot occur for the runtime
+//    JIT, where the opportunistic and the exact answer always agree - see JitStressAtomicsLightUp
+//    for a way to force it for testing.
+//
+Compiler::AtomicsImpl Compiler::compGetAtomicsImpl()
+{
+    if (m_atomicsImpl != AtomicsImpl::Uninitialized)
+    {
+        return m_atomicsImpl;
+    }
+
+    AtomicsImpl impl;
+    if (!opts.compSupportsISA.HasInstructionSet(InstructionSet_Atomics))
+    {
+        impl = AtomicsImpl::LlSc;
+    }
+#ifdef DEBUG
+    else if (JitConfig.JitStressAtomicsLightUp() != 0)
+    {
+        // Pretend the atomics are only opportunistically available so that we exercise the
+        // managed light-up path. Note we deliberately do not report the ISA as used to the EE.
+        impl = AtomicsImpl::Dynamic;
+    }
+#endif
+    else if (compExactlyDependsOn(InstructionSet_Atomics))
+    {
+        impl = AtomicsImpl::Lse;
+    }
+    else
+    {
+        impl = AtomicsImpl::Dynamic;
+    }
+
+    JITDUMP("Atomics will be expanded as %s\n", (impl == AtomicsImpl::Lse)    ? "LSE"
+                                                : (impl == AtomicsImpl::LlSc) ? "ldaxr/stlxr loops"
+                                                                              : "managed light-up");
+
+    m_atomicsImpl = impl;
+    return impl;
+}
+#endif // TARGET_ARM64
+
 #ifdef PROFILING_SUPPORTED
 // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
 // These are used when DOTNET_JitEltHookEnabled=1

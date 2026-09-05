@@ -25,6 +25,15 @@ namespace ILCompiler
                 {
                     foreach (MethodDesc method in hardwareIntrinsicType.GetMethods())
                     {
+                        // A generic method has no code of its own to compile - rooting the typical
+                        // definition would queue a method whose signature and body still refer to
+                        // its own type variables. Instantiations that are actually used get rooted
+                        // through the callers that use them.
+                        if (method.HasInstantiation)
+                        {
+                            continue;
+                        }
+
                         rootProvider.AddCompilationRoot(method, rootMinimalDependencies: false, "Supported hardware intrinsic method");
                     }
                 }

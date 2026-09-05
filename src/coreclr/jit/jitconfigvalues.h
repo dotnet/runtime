@@ -870,6 +870,14 @@ RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction",
 // Enable IV optimizations
 RELEASE_CONFIG_INTEGER(JitEnableInductionVariableOpts, "JitEnableInductionVariableOpts", 1)
 
+#if defined(TARGET_ARM64)
+// Stress the opportunistic light-up of the Armv8.1 LSE atomics: pretend they are not part of the
+// baseline instruction set even when they are, so that the managed `if (Lse.IsSupported)` checks in
+// the Interlocked APIs are used. This state occurs naturally for NativeAOT, but never for the
+// runtime JIT, so this is the only way to cover it outside of AOT compilation.
+CONFIG_INTEGER(JitStressAtomicsLightUp, "JitStressAtomicsLightUp", 0)
+#endif // TARGET_ARM64
+
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
 // the specific JIT config variables will not be active.
