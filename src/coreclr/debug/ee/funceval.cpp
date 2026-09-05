@@ -234,6 +234,7 @@ static void ValidateFuncEvalReturnType(DebuggerIPCE_FuncEvalType evalType, Metho
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -477,6 +478,7 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDR
     CONTRACTL
     {
         THROWS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1662,6 +1664,7 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

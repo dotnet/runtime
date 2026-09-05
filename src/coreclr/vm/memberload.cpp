@@ -141,6 +141,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MemberRef) == mdtMemberRef);
         PRECONDITION(ppMD != NULL && *ppMD == NULL);
         PRECONDITION(ppFD != NULL && *ppFD == NULL);
@@ -452,6 +453,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(ModuleBase * pModul
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MemberRef) == mdtMemberRef);
     }
     CONTRACTL_END;
@@ -522,6 +524,7 @@ FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(ModuleBase * pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MemberRef) == mdtMemberRef);
     }
     CONTRACTL_END;
@@ -575,6 +578,7 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MethodDef) == mdtMethodDef);
     }
     CONTRACTL_END;
@@ -655,6 +659,7 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(fieldDef) == mdtFieldDef);
     }
     CONTRACTL_END;
@@ -727,6 +732,7 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -802,6 +808,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MethodSpec) == mdtMethodSpec);
         PRECONDITION(ppTH != NULL && ppTH->IsNull());
         PRECONDITION(!((ppTypeSig == NULL) ^ (pcbTypeSig == NULL)));
@@ -902,6 +909,7 @@ MemberLoader::GetMethodDescFromMethodDef(
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(MethodDef) == mdtMethodDef);
     }
@@ -941,6 +949,7 @@ FieldDesc* MemberLoader::GetFieldDescFromMemberDefOrRef(
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1223,6 +1232,7 @@ MemberLoader::FindMethodForInterfaceSlot(MethodTable * pMT, MethodTable *pInterf
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pInterface));
         PRECONDITION(pInterface->IsInterface());
         PRECONDITION(slotNum < pInterface->GetNumVirtuals());

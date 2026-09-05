@@ -171,6 +171,7 @@ void BaseAssemblySpec::Init(SString& assemblyDisplayName)
         INSTANCE_CHECK;
         GC_TRIGGERS;
         THROWS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
