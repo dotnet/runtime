@@ -12,9 +12,9 @@
     <win_ChromeRevision>1669021</win_ChromeRevision>
     <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1669035</win_ChromeBaseSnapshotUrl>
     <win_V8Version>15.2.124</win_V8Version>
-    <linux_FirefoxRevision>140.11.0esr</linux_FirefoxRevision>
+    <linux_FirefoxRevision>155.0.1</linux_FirefoxRevision>
     <linux_GeckoDriverRevision>0.37.0</linux_GeckoDriverRevision>
-    <win_FirefoxRevision>140.11.0esr</win_FirefoxRevision>
+    <win_FirefoxRevision>155.0.1</win_FirefoxRevision>
     <win_GeckoDriverRevision>0.37.0</win_GeckoDriverRevision>
   </PropertyGroup>
 </Project>
