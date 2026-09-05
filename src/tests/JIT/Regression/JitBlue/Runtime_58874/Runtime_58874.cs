@@ -7,10 +7,12 @@ namespace Runtime_58874;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 public unsafe class Runtime_58874
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133259", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static void TestEntryPoint()
     {

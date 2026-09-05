@@ -7,6 +7,7 @@ namespace Runtime_79354;
 using System;
 using System.Reflection;
 
+using TestLibrary;
 using Xunit;
 
 public interface IGetContents {
@@ -28,6 +29,7 @@ public class Program {
 
     public delegate (string, int, string) MyDelegate(IGetContents arg);
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131886", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -2271,7 +2271,11 @@ public class Program
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
-        RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        // ActiveIssue https://github.com/dotnet/runtime/issues/133307
+        if (!OperatingSystem.IsBrowser() || Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") != "1")
+        {
+            RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        }
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
         RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());
