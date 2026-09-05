@@ -34,8 +34,6 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
-#define JIT_WRITE_BARRIER_BUFFER_SIZE 0x100
-
 #define ThisPtrRetBufPrecodeData__Target      0x00
 ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
 
