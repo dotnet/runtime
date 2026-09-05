@@ -58,7 +58,7 @@ else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [[ "$__TargetOS" != linux-bionic && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
+    if [[ "$__TargetOS" != linux-bionic && "$__TargetOS" != ohos && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__TargetArch build"
     fi
