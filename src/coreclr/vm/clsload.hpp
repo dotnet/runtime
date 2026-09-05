@@ -326,6 +326,9 @@ private:
     Assembly*       m_pCallerAssembly;
 };
 
+class TargetTypeForAccessCheck;
+class TargetMethodForAccessCheck;
+
 //******************************************************************************
 // This type specifies the kind of accessibility checks to perform.
 // On failure, it can be configured to either return FALSE or to throw an exception.
@@ -338,17 +341,6 @@ public:
         // Desktop: Just do normal accessibility checks. No security demands.
         // CoreCLR: Just do normal accessibility checks.
         kNormalAccessibilityChecks,
-
-        // Used only for resource loading and reflection inovcation when the target is remoted.
-        // Desktop: If normal accessiblity checks fail, return TRUE if a demand for MemberAccess succeeds
-        // CoreCLR: If normal accessiblity checks fail, return TRUE if a the caller is Security(Safe)Critical
-        kMemberAccess,
-
-        // Used by Reflection invocation and DynamicMethod with RestrictedSkipVisibility.
-        // Desktop: If normal accessiblity checks fail, return TRUE if a demand for RestrictedMemberAccess
-        //          and grant set of the target assembly succeeds.
-        // CoreCLR: If normal accessiblity checks fail, return TRUE if the callee is App transparent code (in a user assembly)
-        kRestrictedMemberAccess,
 
         // Used by normal DynamicMethods in full trust CoreCLR
         // CoreCLR: Do normal visibility checks but bypass transparency checks.
@@ -364,13 +356,13 @@ public:
         AccessCheckType      accessCheckType,
         DynamicResolver *    pAccessContext,
         BOOL                 throwIfTargetIsInaccessible,
-        MethodTable *        pTargetMT);
+        TargetTypeForAccessCheck * pTargetType);
 
     AccessCheckOptions(
-        AccessCheckType      accessCheckType,
-        DynamicResolver *    pAccessContext,
-        BOOL                 throwIfTargetIsInaccessible,
-        MethodDesc *         pTargetMD);
+        AccessCheckType            accessCheckType,
+        DynamicResolver *          pAccessContext,
+        BOOL                       throwIfTargetIsInaccessible,
+        TargetMethodForAccessCheck* pTargetMethod);
 
     AccessCheckOptions(
         AccessCheckType      accessCheckType,
@@ -395,7 +387,7 @@ public:
         return m_fThrowIfTargetIsInaccessible;
     }
 
-    BOOL DemandMemberAccessOrFail(AccessCheckContext *pContext, MethodTable * pTargetMT, BOOL visibilityCheck) const;
+    BOOL DemandMemberAccessOrFail(AccessCheckContext *pContext, const TargetTypeForAccessCheck& pTargetType, BOOL visibilityCheck) const;
     BOOL FailOrThrow(AccessCheckContext *pContext) const;
 
     static AccessCheckOptions* s_pNormalAccessChecks;
@@ -406,19 +398,19 @@ private:
     void Initialize(
         AccessCheckType     accessCheckType,
         BOOL                throwIfTargetIsInaccessible,
-        MethodTable *       pTargetMT,
-        MethodDesc *        pTargetMD,
+        TargetTypeForAccessCheck* pTargetType,
+        TargetMethodForAccessCheck* pTargetMethod,
         FieldDesc *         pTargetFD);
 
-    BOOL DemandMemberAccess(AccessCheckContext *pContext, MethodTable * pTargetMT, BOOL visibilityCheck) const;
+    BOOL DemandMemberAccess(AccessCheckContext *pContext, const TargetTypeForAccessCheck& pTargetType, BOOL visibilityCheck) const;
 
     void ThrowAccessException(
         AccessCheckContext* pContext,
-        MethodTable*        pFailureMT = NULL,
+        const TargetTypeForAccessCheck * pFailureType = NULL,
         Exception*          pInnerException = NULL) const;
 
-    MethodTable *           m_pTargetMT;
-    MethodDesc *            m_pTargetMethod;
+    TargetTypeForAccessCheck* m_pTargetType;
+    TargetMethodForAccessCheck* m_pTargetMethod;
     FieldDesc *             m_pTargetField;
 
     AccessCheckType         m_accessCheckType;
@@ -817,35 +809,46 @@ public:
 
     static BOOL CanAccessClass(
         AccessCheckContext*     pContext,
-        MethodTable*            pTargetClass,
+        const TargetTypeForAccessCheck& pTargetClass,
         Assembly*               pTargetAssembly,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
     static BOOL CanAccess(
         AccessCheckContext*     pContext,
-        MethodTable*            pTargetClass,
+        const TargetTypeForAccessCheck& pTargetClass,
         Assembly*               pTargetAssembly,
         DWORD                   dwMemberAttrs,
-        MethodDesc*             pOptionalTargetMethod,
+        const TargetMethodForAccessCheck* pOptionalTargetMethod,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
-private:
+    static BOOL CanAccessInstantiation(
+        AccessCheckContext*     pContext,
+        Instantiation           inst,
+        const AccessCheckOptions & accessCheckOptions);
+
+    static BOOL CanAccessInstantiationBySignature(
+        AccessCheckContext*     pContext,
+        SigPointer              sig,
+        Module*                 module,
+        const AccessCheckOptions & accessCheckOptions);
+
+    private:
     // Access check helpers
     static BOOL CanAccessMethodInstantiation(
         AccessCheckContext*     pContext,
-        MethodDesc*             pOptionalTargetMethod,
+        const TargetMethodForAccessCheck* pOptionalTargetMethod,
         const AccessCheckOptions & accessCheckOptions);
 
     static BOOL CanAccessFamily(
-        MethodTable*            pCurrentClass,
-        MethodTable*            pTargetClass);
+        MethodTable*              pCurrentClass,
+        const TargetTypeForAccessCheck& pTargetClass);
 
     static BOOL CheckAccessMember(
         AccessCheckContext*     pContext,
-        MethodTable*            pTargetClass,
+        const TargetTypeForAccessCheck& pTargetClass,
         Assembly*               pTargetAssembly,
         DWORD                   dwMemberAttrs,
-        MethodDesc*             pOptionalTargetMethod,
+        const TargetMethodForAccessCheck* pOptionalTargetMethod,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
 
