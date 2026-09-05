@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 using Xunit;
 
 namespace System.Text.Encodings.Web.Tests
@@ -424,6 +426,255 @@ namespace System.Text.Encodings.Web.Tests
             };
 
             _RunEncodeUtf8_Battery(inputs, expectedOutputs);
+        }
+    }
+
+    public class InboxEncoderBulkAsciiRunTests
+    {
+        [Fact]
+        public void Encode_AllDestinationBoundariesMatchScalarReference()
+        {
+            foreach ((TextEncoder encoder, string input) in GetUtf16Inputs())
+            {
+                string expectedOutput = encoder.Encode(input);
+
+                for (int destinationLength = 0; destinationLength <= expectedOutput.Length + 1; destinationLength++)
+                {
+                    char[] destination = new char[destinationLength];
+                    OperationStatus status = encoder.Encode(input, destination, out int charsConsumed, out int charsWritten);
+                    (OperationStatus expectedStatus, int expectedCharsConsumed, string expectedPrefix) =
+                        EncodeUtf16ScalarByScalar(encoder, input, destinationLength, isFinalBlock: true);
+
+                    Assert.Equal(expectedStatus, status);
+                    Assert.True(expectedCharsConsumed == charsConsumed,
+                        $"{encoder.GetType().Name}, destinationLength: {destinationLength}, input: {input}");
+                    Assert.Equal(expectedPrefix.Length, charsWritten);
+                    Assert.Equal(expectedPrefix, destination.AsSpan(0, charsWritten).ToString());
+                }
+
+                Assert.Throws<ArgumentNullException>(() => encoder.Encode((string)null!));
+            }
+        }
+
+        [Fact]
+        public void EncodeUtf8_AllDestinationBoundariesMatchScalarReference()
+        {
+            foreach ((TextEncoder encoder, byte[] input) in GetUtf8Inputs())
+            {
+                byte[] expectedOutput = EncodeUtf8ScalarByScalar(encoder, input, int.MaxValue, isFinalBlock: true).Output;
+
+                for (int destinationLength = 0; destinationLength <= expectedOutput.Length + 1; destinationLength++)
+                {
+                    byte[] destination = new byte[destinationLength];
+                    OperationStatus status = encoder.EncodeUtf8(input, destination, out int bytesConsumed, out int bytesWritten);
+                    (OperationStatus expectedStatus, int expectedBytesConsumed, byte[] expectedPrefix) =
+                        EncodeUtf8ScalarByScalar(encoder, input, destinationLength, isFinalBlock: true);
+
+                    Assert.Equal(expectedStatus, status);
+                    Assert.True(expectedBytesConsumed == bytesConsumed,
+                        $"{encoder.GetType().Name}, destinationLength: {destinationLength}");
+                    Assert.Equal(expectedPrefix.Length, bytesWritten);
+                    Assert.Equal(expectedPrefix, destination.AsSpan(0, bytesWritten).ToArray());
+                }
+            }
+        }
+
+        [Fact]
+        public void Encode_IncompleteFinalScalarMatchesScalarReference()
+        {
+            foreach ((TextEncoder encoder, string input) in GetUtf16Inputs())
+            {
+                string incompleteInput = input + '\uD800';
+                int expectedOutputLength = EncodeUtf16ScalarByScalar(
+                    encoder, incompleteInput, int.MaxValue, isFinalBlock: false).Output.Length;
+
+                for (int destinationLength = 0; destinationLength <= expectedOutputLength; destinationLength++)
+                {
+                    char[] destination = new char[destinationLength];
+                    OperationStatus status = encoder.Encode(incompleteInput, destination, out int charsConsumed, out int charsWritten, isFinalBlock: false);
+                    (OperationStatus expectedStatus, int expectedCharsConsumed, string expectedPrefix) =
+                        EncodeUtf16ScalarByScalar(encoder, incompleteInput, destination.Length, isFinalBlock: false);
+
+                    Assert.Equal(expectedStatus, status);
+                    Assert.Equal(expectedCharsConsumed, charsConsumed);
+                    Assert.Equal(expectedPrefix.Length, charsWritten);
+                    Assert.Equal(expectedPrefix, destination.AsSpan(0, charsWritten).ToString());
+                }
+            }
+        }
+
+        [Fact]
+        public void EncodeUtf8_IncompleteFinalScalarMatchesScalarReference()
+        {
+            foreach ((TextEncoder encoder, byte[] input) in GetUtf8Inputs())
+            {
+                byte[] incompleteInput = input.Concat(new byte[] { 0xF0, 0x9F, 0x99 }).ToArray();
+                int expectedOutputLength = EncodeUtf8ScalarByScalar(
+                    encoder, incompleteInput, int.MaxValue, isFinalBlock: false).Output.Length;
+
+                for (int destinationLength = 0; destinationLength <= expectedOutputLength; destinationLength++)
+                {
+                    byte[] destination = new byte[destinationLength];
+                    OperationStatus status = encoder.EncodeUtf8(incompleteInput, destination, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+                    (OperationStatus expectedStatus, int expectedBytesConsumed, byte[] expectedPrefix) =
+                        EncodeUtf8ScalarByScalar(encoder, incompleteInput, destination.Length, isFinalBlock: false);
+
+                    Assert.Equal(expectedStatus, status);
+                    Assert.Equal(expectedBytesConsumed, bytesConsumed);
+                    Assert.Equal(expectedPrefix.Length, bytesWritten);
+                    Assert.Equal(expectedPrefix, destination.AsSpan(0, bytesWritten).ToArray());
+                }
+            }
+        }
+
+        [Fact]
+        public void Encode_IncompleteFinalScalarAfterFullAsciiRun_ReturnsNeedMoreData()
+        {
+            string input = "&" + new string('a', 8) + '\uD800';
+            Span<char> destination = stackalloc char[13];
+
+            OperationStatus status = HtmlEncoder.Default.Encode(
+                input, destination, out int charsConsumed, out int charsWritten, isFinalBlock: false);
+
+            Assert.Equal(OperationStatus.NeedMoreData, status);
+            Assert.Equal(9, charsConsumed);
+            Assert.Equal(13, charsWritten);
+        }
+
+        [Fact]
+        public void EncodeUtf8_IncompleteFinalScalarAfterFullAsciiRun_ReturnsNeedMoreData()
+        {
+            byte[] input = "<"u8.ToArray().Concat(new byte[8].Select(_ => (byte)'a')).Append((byte)0xC3).ToArray();
+            Span<byte> destination = stackalloc byte[12];
+
+            OperationStatus status = HtmlEncoder.Default.EncodeUtf8(
+                input, destination, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+
+            Assert.Equal(OperationStatus.NeedMoreData, status);
+            Assert.Equal(9, bytesConsumed);
+            Assert.Equal(12, bytesWritten);
+        }
+
+        [Fact]
+        public void Encode_MalformedDataBetweenAsciiRuns()
+        {
+            foreach ((TextEncoder encoder, string input) in GetUtf16Inputs())
+            {
+                int firstScalarLength = Rune.DecodeFromUtf16(input, out _, out int charsConsumed) == OperationStatus.Done
+                    ? charsConsumed
+                    : 1;
+                string malformedInput = input.Substring(0, firstScalarLength) + "ascii\uD800trailing";
+                string expectedOutput = encoder.Encode(malformedInput);
+                char[] destination = new char[expectedOutput.Length - 1];
+
+                OperationStatus status = encoder.Encode(malformedInput, destination, out int actualCharsConsumed, out int charsWritten);
+
+                Assert.Equal(OperationStatus.DestinationTooSmall, status);
+                Assert.Equal(malformedInput.Length - 1, actualCharsConsumed);
+                Assert.Equal(expectedOutput.Length - 1, charsWritten);
+                Assert.Equal(expectedOutput.AsSpan(0, expectedOutput.Length - 1).ToArray(), destination);
+            }
+        }
+
+        private static IEnumerable<(TextEncoder Encoder, string Input)> GetUtf16Inputs()
+        {
+            TextEncoderSettings customSettings = new(UnicodeRanges.BasicLatin, UnicodeRanges.Latin1Supplement);
+            customSettings.ForbidCharacters('!', '"', '&', '<', '>');
+
+            foreach ((TextEncoder encoder, char characterToEncode) in new[]
+            {
+                ((TextEncoder)HtmlEncoder.Default, '&'),
+                (JavaScriptEncoder.Default, '"'),
+                (JavaScriptEncoder.UnsafeRelaxedJsonEscaping, '"'),
+                (UrlEncoder.Default, '?'),
+                (JavaScriptEncoder.Create(customSettings), '!'),
+            })
+            {
+                yield return (encoder, characterToEncode + new string('a', 63));
+                yield return (encoder, new string('a', 31) + characterToEncode + new string('b', 32));
+                yield return (encoder, string.Concat(Enumerable.Repeat($"{characterToEncode}abcdefg", 8)));
+                yield return (encoder, $"{characterToEncode}ascii\u00E9ascii\U0001F642ascii");
+            }
+        }
+
+        private static IEnumerable<(TextEncoder Encoder, byte[] Input)> GetUtf8Inputs()
+        {
+            foreach ((TextEncoder encoder, string input) in GetUtf16Inputs())
+            {
+                yield return (encoder, Encoding.UTF8.GetBytes(input));
+            }
+        }
+
+        private static (OperationStatus Status, int CharsConsumed, string Output) EncodeUtf16ScalarByScalar(
+            TextEncoder encoder,
+            string source,
+            int destinationLength,
+            bool isFinalBlock)
+        {
+            int charsConsumed = 0;
+            StringBuilder output = new();
+
+            while (charsConsumed < source.Length)
+            {
+                OperationStatus status = Rune.DecodeFromUtf16(source.AsSpan(charsConsumed), out Rune scalarValue, out int charsConsumedJustNow);
+                if (status == OperationStatus.NeedMoreData && !isFinalBlock)
+                {
+                    return (OperationStatus.NeedMoreData, charsConsumed, output.ToString());
+                }
+
+                if (status != OperationStatus.Done)
+                {
+                    scalarValue = Rune.ReplacementChar;
+                    charsConsumedJustNow = 1;
+                }
+
+                string encodedScalar = encoder.Encode(scalarValue.ToString());
+                if (encodedScalar.Length > destinationLength - output.Length)
+                {
+                    return (OperationStatus.DestinationTooSmall, charsConsumed, output.ToString());
+                }
+
+                output.Append(encodedScalar);
+                charsConsumed += charsConsumedJustNow;
+            }
+
+            return (OperationStatus.Done, charsConsumed, output.ToString());
+        }
+
+        private static (OperationStatus Status, int BytesConsumed, byte[] Output) EncodeUtf8ScalarByScalar(
+            TextEncoder encoder,
+            byte[] source,
+            int destinationLength,
+            bool isFinalBlock)
+        {
+            int bytesConsumed = 0;
+            List<byte> output = new();
+
+            while (bytesConsumed < source.Length)
+            {
+                OperationStatus status = Rune.DecodeFromUtf8(source.AsSpan(bytesConsumed), out Rune scalarValue, out int bytesConsumedJustNow);
+                if (status == OperationStatus.NeedMoreData && !isFinalBlock)
+                {
+                    return (OperationStatus.NeedMoreData, bytesConsumed, output.ToArray());
+                }
+
+                if (status != OperationStatus.Done)
+                {
+                    scalarValue = Rune.ReplacementChar;
+                    bytesConsumedJustNow = 1;
+                }
+
+                byte[] encodedScalar = Encoding.UTF8.GetBytes(encoder.Encode(scalarValue.ToString()));
+                if (encodedScalar.Length > destinationLength - output.Count)
+                {
+                    return (OperationStatus.DestinationTooSmall, bytesConsumed, output.ToArray());
+                }
+
+                output.AddRange(encodedScalar);
+                bytesConsumed += bytesConsumedJustNow;
+            }
+
+            return (OperationStatus.Done, bytesConsumed, output.ToArray());
         }
     }
 
