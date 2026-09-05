@@ -406,10 +406,16 @@
              Link="Common\System\Security\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAead.cs"
              Link="Common\System\Security\Cryptography\HpkeAead.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAeadMetadata.cs"
+             Link="Common\System\Security\Cryptography\HpkeAeadMetadata.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKdf.cs"
              Link="Common\System\Security\Cryptography\HpkeKdf.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKdfMetadata.cs"
+             Link="Common\System\Security\Cryptography\HpkeKdfMetadata.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKem.cs"
              Link="Common\System\Security\Cryptography\HpkeKem.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKemMetadata.cs"
+             Link="Common\System\Security\Cryptography\HpkeKemMetadata.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
              Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"

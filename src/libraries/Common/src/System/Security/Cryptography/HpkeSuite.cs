@@ -11,6 +11,10 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.HpkeExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class HpkeSuite : IEquatable<HpkeSuite>
     {
+        private readonly HpkeAeadMetadata _aeadMetadata;
+        private readonly HpkeKdfMetadata _kdfMetadata;
+        private readonly HpkeKemMetadata _kemMetadata;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="HpkeSuite" /> class with the specified algorithms.
         /// </summary>
@@ -30,18 +34,9 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeSuite(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
         {
-            if (!IsValidHpkeKem(kem))
-                throw new ArgumentOutOfRangeException(nameof(kem));
-
-            if (!IsValidHpkeKdf(kdf))
-                throw new ArgumentOutOfRangeException(nameof(kdf));
-
-            if (!IsValidHpkeAead(aead))
-                throw new ArgumentOutOfRangeException(nameof(aead));
-
-            AeadAlgorithm = aead;
-            KdfAlgorithm = kdf;
-            KemAlgorithm = kem;
+            _kemMetadata = HpkeKemMetadata.Create(kem) ?? throw new ArgumentOutOfRangeException(nameof(kem));
+            _kdfMetadata = HpkeKdfMetadata.Create(kdf) ?? throw new ArgumentOutOfRangeException(nameof(kdf));
+            _aeadMetadata = HpkeAeadMetadata.Create(aead) ?? throw new ArgumentOutOfRangeException(nameof(aead));
         }
 
         /// <summary>
@@ -50,7 +45,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The authenticated encryption with associated data (AEAD) algorithm for the cipher suite.
         /// </value>
-        public HpkeAead AeadAlgorithm { get; }
+        public HpkeAead AeadAlgorithm => _aeadMetadata.Aead;
 
         /// <summary>
         ///   Gets the key derivation function (KDF) for the cipher suite.
@@ -58,7 +53,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The key derivation function (KDF) for the cipher suite.
         /// </value>
-        public HpkeKdf KdfAlgorithm { get; }
+        public HpkeKdf KdfAlgorithm => _kdfMetadata.Kdf;
 
         /// <summary>
         ///   Gets the key encapsulation mechanism (KEM) for the cipher suite.
@@ -66,7 +61,78 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The key encapsulation mechanism (KEM) for the cipher suite.
         /// </value>
-        public HpkeKem KemAlgorithm { get; }
+        public HpkeKem KemAlgorithm => _kemMetadata.Kem;
+
+        /// <summary>
+        ///   Gets the size of the authentication tag for the cipher suite, in bytes.
+        /// </summary>
+        /// <value>
+        ///   The size of the authentication tag for the cipher suite, in bytes.
+        /// </value>
+        public int AeadTagSizeInBytes => _aeadMetadata.Nt;
+
+        /// <summary>
+        ///   Gets the size of the decapsulation key for the cipher suite, in bytes.
+        /// </summary>
+        /// <value>
+        ///   The size of the decapsulation key for the cipher suite, in bytes.
+        /// </value>
+        /// <remarks>
+        ///   For ML-KEM and hybrid ML-KEM cipher suites, this is the size of the private seed.
+        /// </remarks>
+        public int DecapsulationKeySizeInBytes => _kemMetadata.Nsk;
+
+        /// <summary>
+        ///   Gets the size of an encapsulated secret for the cipher suite, in bytes.
+        /// </summary>
+        /// <value>
+        ///   The size of an encapsulated secret for the cipher suite, in bytes.
+        /// </value>
+        public int EncapsulatedSecretSizeInBytes => _kemMetadata.Nenc;
+
+        /// <summary>
+        ///   Gets the size of the encapsulation key for the cipher suite, in bytes.
+        /// </summary>
+        /// <value>
+        ///   The size of the encapsulation key for the cipher suite, in bytes.
+        /// </value>
+        public int EncapsulationKeySizeInBytes => _kemMetadata.Npk;
+
+        /// <summary>
+        ///   Gets the name of the cipher suite.
+        /// </summary>
+        /// <value>
+        ///   A string containing the KEM, KDF, and AEAD names, separated by spaces.
+        /// </value>
+        public string Name => field ??= $"{_kemMetadata.Name} {_kdfMetadata.Name} {_aeadMetadata.Name}";
+
+        /// <summary>
+        ///   Gets the length of the ciphertext produced by encrypting a plaintext of the specified length.
+        /// </summary>
+        /// <param name="plaintextLength">
+        ///   The length of the plaintext, in bytes.
+        /// </param>
+        /// <returns>
+        ///   The length of the ciphertext, in bytes.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="plaintextLength" /> is negative or the resulting ciphertext length cannot be
+        ///   represented as a signed 32-bit integer.
+        /// </exception>
+        /// <remarks>
+        ///   The returned length includes the authentication tag, but does not include the encapsulated secret.
+        /// </remarks>
+        public int GetCiphertextLength(int plaintextLength)
+        {
+            int tagSize = AeadTagSizeInBytes;
+
+            if (plaintextLength < 0 || plaintextLength > int.MaxValue - tagSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(plaintextLength));
+            }
+
+            return plaintextLength + tagSize;
+        }
 
         /// <summary>
         ///   Compares two <see cref="HpkeSuite" /> objects.
@@ -95,6 +161,9 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(KemAlgorithm, KdfAlgorithm, AeadAlgorithm);
+
+        /// <inheritdoc />
+        public override string ToString() => Name;
 
         /// <summary>
         ///   Determines whether two <see cref="HpkeSuite" /> objects specify the same algorithms.
@@ -126,31 +195,5 @@ namespace System.Security.Cryptography
         ///   <see langword="true" /> if the objects are not considered equal; otherwise, <see langword="false" />.
         /// </returns>
         public static bool operator !=(HpkeSuite? left, HpkeSuite? right) => !(left == right);
-
-        internal static bool IsValidHpkeAead(HpkeAead aead)
-        {
-            return aead is HpkeAead.AES_128_GCM or HpkeAead.AES_256_GCM or HpkeAead.ChaCha20Poly1305;
-        }
-
-        internal static bool IsValidHpkeKdf(HpkeKdf kdf)
-        {
-            return kdf is HpkeKdf.HKDF_SHA256 or
-                HpkeKdf.HKDF_SHA384 or
-                HpkeKdf.HKDF_SHA512 or
-                HpkeKdf.SHAKE128 or
-                HpkeKdf.SHAKE256;
-        }
-
-        internal static bool IsValidHpkeKem(HpkeKem kem)
-        {
-            return kem is HpkeKem.DHKEM_P256_HKDF_SHA256 or
-                HpkeKem.DHKEM_P384_HKDF_SHA384 or
-                HpkeKem.DHKEM_X25519_HKDF_SHA256 or
-                HpkeKem.MLKEM_512 or
-                HpkeKem.MLKEM_768 or
-                HpkeKem.MLKEM_1024 or
-                HpkeKem.MLKEM768_P256 or
-                HpkeKem.MLKEM1024_P384;
-        }
     }
 }

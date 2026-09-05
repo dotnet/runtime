@@ -77,6 +77,89 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256, 32, 65, 65)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384, 48, 97, 97)]
+        [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256, 32, 32, 32)]
+        [InlineData(HpkeKem.MLKEM_512, 64, 768, 800)]
+        [InlineData(HpkeKem.MLKEM_768, 64, 1088, 1184)]
+        [InlineData(HpkeKem.MLKEM_1024, 64, 1568, 1568)]
+        [InlineData(HpkeKem.MLKEM768_P256, 32, 1153, 1249)]
+        [InlineData(HpkeKem.MLKEM1024_P384, 32, 1665, 1665)]
+        public static void KemSizes(
+            HpkeKem kem,
+            int decapsulationKeySizeInBytes,
+            int encapsulatedSecretSizeInBytes,
+            int encapsulationKeySizeInBytes)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            Assert.Equal(decapsulationKeySizeInBytes, suite.DecapsulationKeySizeInBytes);
+            Assert.Equal(encapsulatedSecretSizeInBytes, suite.EncapsulatedSecretSizeInBytes);
+            Assert.Equal(encapsulationKeySizeInBytes, suite.EncapsulationKeySizeInBytes);
+        }
+
+        [Theory]
+        [InlineData(HpkeAead.AES_128_GCM)]
+        [InlineData(HpkeAead.AES_256_GCM)]
+        [InlineData(HpkeAead.ChaCha20Poly1305)]
+        public static void AeadTagSizeInBytes(HpkeAead aead)
+        {
+            HpkeSuite suite = new(HpkeKem.MLKEM_768, HpkeKdf.HKDF_SHA256, aead);
+
+            Assert.Equal(16, suite.AeadTagSizeInBytes);
+        }
+
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM,
+            "DHKEM(P-256, HKDF-SHA256) HKDF-SHA256 AES-128-GCM")]
+        [InlineData(HpkeKem.MLKEM_768, HpkeKdf.HKDF_SHA512, HpkeAead.AES_256_GCM,
+            "ML-KEM-768 HKDF-SHA512 AES-256-GCM")]
+        [InlineData(HpkeKem.MLKEM1024_P384, HpkeKdf.SHAKE256, HpkeAead.ChaCha20Poly1305,
+            "MLKEM1024-P384 SHAKE256 ChaCha20Poly1305")]
+        public static void NameAndToString(HpkeKem kem, HpkeKdf kdf, HpkeAead aead, string expectedName)
+        {
+            HpkeSuite suite = new(kem, kdf, aead);
+
+            Assert.Equal(expectedName, suite.ToString());
+            Assert.Equal(expectedName, suite.Name);
+        }
+
+        [Theory]
+        [InlineData(0, 16)]
+        [InlineData(1, 17)]
+        [InlineData(15, 31)]
+        [InlineData(16, 32)]
+        [InlineData(17, 33)]
+        [InlineData(1024, 1040)]
+        [InlineData(int.MaxValue - 16, int.MaxValue)]
+        public static void GetCiphertextLength(int plaintextLength, int expectedLength)
+        {
+            foreach (HpkeAead aead in Enum.GetValues(typeof(HpkeAead)))
+            {
+                HpkeSuite suite = new(HpkeKem.MLKEM_768, HpkeKdf.HKDF_SHA256, aead);
+
+                Assert.Equal(expectedLength, suite.GetCiphertextLength(plaintextLength));
+            }
+        }
+
+        [Theory]
+        [InlineData(int.MinValue)]
+        [InlineData(-1)]
+        [InlineData(int.MaxValue - 15)]
+        [InlineData(int.MaxValue)]
+        public static void GetCiphertextLength_InvalidLength(int plaintextLength)
+        {
+            foreach (HpkeAead aead in Enum.GetValues(typeof(HpkeAead)))
+            {
+                HpkeSuite suite = new(HpkeKem.MLKEM_768, HpkeKdf.HKDF_SHA256, aead);
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    nameof(plaintextLength),
+                    () => suite.GetCiphertextLength(plaintextLength));
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(ValidAlgorithms))]
         public static void Equality_SameAlgorithms(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
         {

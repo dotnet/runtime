@@ -1921,13 +1921,20 @@ namespace System.Security.Cryptography
     {
         public HpkeSuite(System.Security.Cryptography.HpkeKem kem, System.Security.Cryptography.HpkeKdf kdf, System.Security.Cryptography.HpkeAead aead) { }
         public System.Security.Cryptography.HpkeAead AeadAlgorithm { get { throw null; } }
+        public int AeadTagSizeInBytes { get { throw null; } }
+        public int DecapsulationKeySizeInBytes { get { throw null; } }
+        public int EncapsulatedSecretSizeInBytes { get { throw null; } }
+        public int EncapsulationKeySizeInBytes { get { throw null; } }
         public System.Security.Cryptography.HpkeKdf KdfAlgorithm { get { throw null; } }
         public System.Security.Cryptography.HpkeKem KemAlgorithm { get { throw null; } }
+        public string Name { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.HpkeSuite? other) { throw null; }
+        public int GetCiphertextLength(int plaintextLength) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
+        public override string ToString() { throw null; }
     }
     public partial interface ICryptoTransform : System.IDisposable
     {
