@@ -72,7 +72,6 @@ ErrorString palErrorStrings[] =
     { ERROR_BUFFER_OVERFLOW, W("The file name is too long.\n") },
     { ERROR_DISK_FULL, W("There is not enough space on the disk.\n") },
     { ERROR_CALL_NOT_IMPLEMENTED, W("This function is not supported on this system.\n") },
-    { ERROR_SEM_TIMEOUT, W("The semaphore timeout period has expired.\n") },
     { ERROR_INSUFFICIENT_BUFFER, W("The data area passed to a system call is too small.\n") },
     { ERROR_INVALID_NAME, W("The filename, directory name, or volume label syntax is incorrect.\n") },
     { ERROR_MOD_NOT_FOUND, W("The specified module or one of its dependencies could not be found.\n") },

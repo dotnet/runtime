@@ -11,8 +11,148 @@
 #include "stdafx.h"
 #include "metadata.h"
 #include "rwutil.h"
-#include "utsem.h"
+#include "contract.h"
 #include "../inc/mdlog.h"
+
+#if defined(FEATURE_METADATA_IN_VM) && !defined(SELF_NO_HOST) && defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#define TRACK_METADATA_CANT_STOP_COUNT
+#endif
+
+HRESULT CreateMDReadWriteLock(minipal_rwlock **ppLock)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    minipal_rwlock *pLock = new (nothrow) minipal_rwlock;
+    IfNullRet(pLock);
+
+    if (!minipal_rwlock_init(pLock))
+    {
+        delete pLock;
+        return E_OUTOFMEMORY;
+    }
+
+    *ppLock = pLock;
+    return S_OK;
+}
+
+void DestroyMDReadWriteLock(minipal_rwlock *pLock)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (pLock != NULL)
+    {
+        minipal_rwlock_destroy(pLock);
+        delete pLock;
+    }
+}
+
+HRESULT AcquireMDReadLock(minipal_rwlock *pLock)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    IncCantStopCount();
+#endif
+
+    if (!minipal_rwlock_enter_read(pLock))
+    {
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+        DecCantStopCount();
+#endif
+        return E_FAIL;
+    }
+
+    EE_LOCK_TAKEN(pLock);
+    return S_OK;
+}
+
+HRESULT AcquireMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd))
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    IncCantStopCount();
+#endif
+
+    if (!minipal_rwlock_enter_write(pLock))
+    {
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+        DecCantStopCount();
+#endif
+        return E_FAIL;
+    }
+
+#ifdef _DEBUG
+    if (pMiniMd != NULL)
+    {
+        pMiniMd->Debug_SetIsLockedForWrite(true);
+    }
+#endif // _DEBUG
+    EE_LOCK_TAKEN(pLock);
+    return S_OK;
+}
+
+void ReleaseMDReadLock(minipal_rwlock *pLock)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    minipal_rwlock_leave_read(pLock);
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    DecCantStopCount();
+#endif
+    EE_LOCK_RELEASED(pLock);
+}
+
+void ReleaseMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd))
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef _DEBUG
+    if (pMiniMd != NULL)
+    {
+        pMiniMd->Debug_SetIsLockedForWrite(false);
+    }
+#endif // _DEBUG
+    minipal_rwlock_leave_write(pLock);
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    DecCantStopCount();
+#endif
+    EE_LOCK_RELEASED(pLock);
+}
+
+#undef TRACK_METADATA_CANT_STOP_COUNT
 
 //*****************************************************************************
 // Helper methods
@@ -1153,13 +1293,15 @@ ErrExit:
 // Constructor
 //
 //*********************************************************************************************************
-CMDSemReadWrite::CMDSemReadWrite(
-    UTSemReadWrite * pSem)
+CMDReadWriteLock::CMDReadWriteLock(
+    minipal_rwlock * pLock
+    COMMA_INDEBUG(CMiniMdRW *pMiniMd))
 {
     m_fLockedForRead = false;
     m_fLockedForWrite = false;
-    m_pSem = pSem;
-} // CMDSemReadWrite::CMDSemReadWrite
+    m_pLock = pLock;
+    INDEBUG(m_pMiniMd = pMiniMd;)
+} // CMDReadWriteLock::CMDReadWriteLock
 
 
 
@@ -1168,68 +1310,68 @@ CMDSemReadWrite::CMDSemReadWrite(
 // Destructor
 //
 //*********************************************************************************************************
-CMDSemReadWrite::~CMDSemReadWrite()
+CMDReadWriteLock::~CMDReadWriteLock()
 {
     _ASSERTE(!m_fLockedForRead || !m_fLockedForWrite);
-    if (m_pSem == NULL)
+    if (m_pLock == NULL)
     {
         return;
     }
     if (m_fLockedForRead)
     {
-        LOG((LF_METADATA, LL_EVERYTHING, "UnlockRead called from CSemReadWrite::~CSemReadWrite \n"));
-        m_pSem->UnlockRead();
+        LOG((LF_METADATA, LL_EVERYTHING, "ReleaseMDReadLock called from CMDReadWriteLock::~CMDReadWriteLock\n"));
+        ReleaseMDReadLock(m_pLock);
     }
     if (m_fLockedForWrite)
     {
-        LOG((LF_METADATA, LL_EVERYTHING, "UnlockWrite called from CSemReadWrite::~CSemReadWrite \n"));
-        m_pSem->UnlockWrite();
+        LOG((LF_METADATA, LL_EVERYTHING, "ReleaseMDWriteLock called from CMDReadWriteLock::~CMDReadWriteLock\n"));
+        ReleaseMDWriteLock(m_pLock COMMA_INDEBUG(m_pMiniMd));
     }
-} // CMDSemReadWrite::~CMDSemReadWrite
+} // CMDReadWriteLock::~CMDReadWriteLock
 
 //*********************************************************************************************************
 //
 // Used to obtain the read lock
 //
 //*********************************************************************************************************
-HRESULT CMDSemReadWrite::LockRead()
+HRESULT CMDReadWriteLock::LockRead()
 {
     HRESULT hr = S_OK;
 
     _ASSERTE(!m_fLockedForRead && !m_fLockedForWrite);
 
-    if (m_pSem == NULL)
+    if (m_pLock == NULL)
     {
         INDEBUG(m_fLockedForRead = true);
         return hr;
     }
 
-    LOG((LF_METADATA, LL_EVERYTHING, "LockRead called from CSemReadWrite::LockRead \n"));
-    IfFailRet(m_pSem->LockRead());
+    LOG((LF_METADATA, LL_EVERYTHING, "AcquireMDReadLock called from CMDReadWriteLock::LockRead\n"));
+    IfFailRet(AcquireMDReadLock(m_pLock));
     m_fLockedForRead = true;
 
     return hr;
-} // CMDSemReadWrite::LockRead
+} // CMDReadWriteLock::LockRead
 
 //*********************************************************************************************************
 //
-// Used to obtain the read lock
+// Used to obtain the write lock
 //
 //*********************************************************************************************************
-HRESULT CMDSemReadWrite::LockWrite()
+HRESULT CMDReadWriteLock::LockWrite()
 {
     HRESULT hr = S_OK;
 
     _ASSERTE(!m_fLockedForRead && !m_fLockedForWrite);
 
-    if (m_pSem == NULL)
+    if (m_pLock == NULL)
     {
         INDEBUG(m_fLockedForWrite = true);
         return hr;
     }
 
-    LOG((LF_METADATA, LL_EVERYTHING, "LockWrite called from CSemReadWrite::LockWrite \n"));
-    IfFailRet(m_pSem->LockWrite());
+    LOG((LF_METADATA, LL_EVERYTHING, "AcquireMDWriteLock called from CMDReadWriteLock::LockWrite\n"));
+    IfFailRet(AcquireMDWriteLock(m_pLock COMMA_INDEBUG(m_pMiniMd)));
     m_fLockedForWrite = true;
 
     return hr;
@@ -1240,13 +1382,13 @@ HRESULT CMDSemReadWrite::LockWrite()
 // Convert a read lock to a write lock
 //
 //*********************************************************************************************************
-HRESULT CMDSemReadWrite::ConvertReadLockToWriteLock()
+HRESULT CMDReadWriteLock::ConvertReadLockToWriteLock()
 {
     _ASSERTE(!m_fLockedForWrite);
 
     HRESULT hr = S_OK;
 
-    if (m_pSem == NULL)
+    if (m_pLock == NULL)
     {
         INDEBUG(m_fLockedForRead = false);
         INDEBUG(m_fLockedForWrite = true);
@@ -1255,16 +1397,16 @@ HRESULT CMDSemReadWrite::ConvertReadLockToWriteLock()
 
     if (m_fLockedForRead)
     {
-        LOG((LF_METADATA, LL_EVERYTHING, "UnlockRead called from CSemReadWrite::ConvertReadLockToWriteLock \n"));
-        m_pSem->UnlockRead();
+        LOG((LF_METADATA, LL_EVERYTHING, "ReleaseMDReadLock called from CMDReadWriteLock::ConvertReadLockToWriteLock\n"));
+        ReleaseMDReadLock(m_pLock);
         m_fLockedForRead = false;
     }
-    LOG((LF_METADATA, LL_EVERYTHING, "LockWrite called from  CSemReadWrite::ConvertReadLockToWriteLock\n"));
-    IfFailRet(m_pSem->LockWrite());
+    LOG((LF_METADATA, LL_EVERYTHING, "AcquireMDWriteLock called from CMDReadWriteLock::ConvertReadLockToWriteLock\n"));
+    IfFailRet(AcquireMDWriteLock(m_pLock COMMA_INDEBUG(m_pMiniMd)));
     m_fLockedForWrite = true;
 
     return hr;
-} // CMDSemReadWrite::ConvertReadLockToWriteLock
+} // CMDReadWriteLock::ConvertReadLockToWriteLock
 
 
 //*********************************************************************************************************
@@ -1272,19 +1414,33 @@ HRESULT CMDSemReadWrite::ConvertReadLockToWriteLock()
 // Unlocking for write
 //
 //*********************************************************************************************************
-void CMDSemReadWrite::UnlockWrite()
+void CMDReadWriteLock::UnlockWrite()
 {
     _ASSERTE(!m_fLockedForRead);
 
-    if (m_pSem == NULL)
+    if (m_pLock == NULL)
     {
         INDEBUG(m_fLockedForWrite = false);
         return;
     }
     if (m_fLockedForWrite)
     {
-        LOG((LF_METADATA, LL_EVERYTHING, "UnlockWrite called from CSemReadWrite::UnlockWrite \n"));
-        m_pSem->UnlockWrite();
+        LOG((LF_METADATA, LL_EVERYTHING, "ReleaseMDWriteLock called from CMDReadWriteLock::UnlockWrite\n"));
+        ReleaseMDWriteLock(m_pLock COMMA_INDEBUG(m_pMiniMd));
         m_fLockedForWrite = false;
     }
-} // CMDSemReadWrite::UnlockWrite
+} // CMDReadWriteLock::UnlockWrite
+
+#ifdef _DEBUG
+void CMDReadWriteLock::Debug_DetachMiniMd()
+{
+    _ASSERTE(m_fLockedForWrite);
+    _ASSERTE(m_pMiniMd != NULL);
+
+    if (m_pLock != NULL)
+    {
+        m_pMiniMd->Debug_SetIsLockedForWrite(false);
+    }
+    m_pMiniMd = NULL;
+}
+#endif // _DEBUG
