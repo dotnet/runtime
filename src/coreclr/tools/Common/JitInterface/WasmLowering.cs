@@ -635,7 +635,7 @@ namespace Internal.JitInterface
             {
                 flags |= LoweringFlags.IsAsyncCall;
             }
-            if (callSig->getCallConv() != CorInfoCallConv.CORINFO_CALLCONV_DEFAULT)
+            if ((callSig->callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK) != CorInfoCallConv.CORINFO_CALLCONV_DEFAULT)
             {
                 flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
