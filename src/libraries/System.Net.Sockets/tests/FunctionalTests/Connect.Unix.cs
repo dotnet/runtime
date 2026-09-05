@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -193,7 +194,6 @@ namespace System.Net.Sockets.Tests
             Assert.False(IsSocketNonBlocking(accepted2));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128141", TestPlatforms.Android)]
         [Fact]
         public async Task ConnectAsync_WithBuffer_Succeeds()
         {
@@ -221,18 +221,67 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(SocketError.Success, saea.SocketError);
             Assert.True(client.Blocking);
 
-            // On Apple and Android platforms, TFO (connectx/sendto) may complete the connect+send
-            // in a single syscall, so the socket can end up blocking even on the async path.
-            // On Linux, async connect always leaves the socket non-blocking when
-            // buffer > 0 because SendToAsync is pending.
-            if (!completedAsync || PlatformDetection.IsApplePlatform || PlatformDetection.IsAndroid)
+            // Native blocking mode is only restored once the entire connect, including any
+            // buffered send, has fully completed -- regardless of platform, and regardless of
+            // whether that completion happened synchronously or asynchronously.
+            Assert.False(IsSocketNonBlocking(client));
+        }
+
+        [Fact]
+        public async Task ConnectAsync_WithLargeBuffer_PendingSendCompletesBeforeBlockingIsRestored()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Force a small send buffer so a multi-megabyte payload can't fit in a single non-blocking
+            // send(), guaranteeing (rather than merely hoping) that the buffered send started as part
+            // of ConnectAsync goes through the asynchronous (IOPending) completion path.
+            client.SendBufferSize = 8 * 1024;
+
+            byte[] data = new byte[4 * 1024 * 1024];
+
+            using var saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = (IPEndPoint)listener.LocalEndPoint!;
+            saea.SetBuffer(data, 0, data.Length);
+
+            var tcs = new TaskCompletionSource();
+            saea.Completed += (_, _) => tcs.SetResult();
+
+            bool completedAsync = client.ConnectAsync(saea);
+            if (!completedAsync)
             {
-                Assert.False(IsSocketNonBlocking(client));
+                tcs.SetResult();
             }
-            else
+
+            // Sanity check: the small buffers configured above should have forced this send async.
+            Assert.True(completedAsync);
+
+            using var cts = new CancellationTokenSource(TestSettings.PassingTestTimeout);
+            using Socket accepted = await listener.AcceptAsync(cts.Token);
+            accepted.ReceiveBufferSize = 8 * 1024;
+
+            byte[] readBuffer = new byte[8 * 1024];
+            int totalRead = 0;
+            while (totalRead < data.Length)
             {
-                Assert.True(IsSocketNonBlocking(client));
+                int n = await accepted.ReceiveAsync(readBuffer, SocketFlags.None, cts.Token);
+                Assert.NotEqual(0, n);
+                totalRead += n;
             }
+
+            await tcs.Task.WaitAsync(cts.Token);
+
+            Assert.Equal(SocketError.Success, saea.SocketError);
+            Assert.Equal(data.Length, saea.BytesTransferred);
+            Assert.True(client.Blocking);
+
+            // Native blocking mode must not be restored until the pending buffered send has actually
+            // completed -- restoring it prematurely (e.g. right after connect() succeeds, before the
+            // follow-up send finishes) would fail intermittently depending on scheduling.
+            Assert.False(IsSocketNonBlocking(client));
         }
     }
 }
