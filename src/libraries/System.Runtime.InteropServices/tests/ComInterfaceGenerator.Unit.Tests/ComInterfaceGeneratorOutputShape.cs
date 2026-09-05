@@ -368,7 +368,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 var accessors = comp.SyntaxTrees
                     .SelectMany(t => t.GetRoot().DescendantNodes().OfType<AccessorDeclarationSyntax>())
                     .Where(a => a.Kind() is SyntaxKind.GetAccessorDeclaration or SyntaxKind.SetAccessorDeclaration
-                                && a.Body is not null)
+                                && a.Body is not null
+                                // Only the generated stubs carry these attributes. Other generated types have
+                                // accessors of their own, such as the vtable pointer on InterfaceInformation.
+                                && a.Ancestors().OfType<TypeDeclarationSyntax>().First().Identifier.Text == "InterfaceImplementation")
                     .ToList();
 
                 Assert.Equal(4, accessors.Count);

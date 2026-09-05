@@ -123,9 +123,10 @@ namespace Microsoft.Interop.JavaScript
                     Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))))
                 .WithParameterList(ParameterList(SingletonSeparatedList(
                     Parameter(Identifier(Constants.ArgumentsBuffer)).WithType(PointerType(ParseTypeName(Constants.JSMarshalerArgumentGlobal))))))
-                .WithBody(wrapperStatements);
+                // The modifier above states the contract for callers; the body needs a context of its own.
+                .WithBody(wrapperStatements.WrapInUnsafeBlock());
 
-            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(wrappperMethod);
+            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntax(wrappperMethod);
 
             return toPrint;
         }
@@ -262,9 +263,10 @@ namespace Microsoft.Interop.JavaScript
             var ns = NamespaceDeclaration(IdentifierName(generatedNamespace))
                         .WithMembers(
                             SingletonList<MemberDeclarationSyntax>(
+                                // None of the members below name a pointer type, so the class needs no 'unsafe'
+                                // modifier. Under the updated memory safety rules one on a type means nothing at
+                                // all, and it never established a context for the members in the first place.
                                 ClassDeclaration(initializerClass)
-                                .WithModifiers(TokenList(new SyntaxToken[]{
-                                    Token(SyntaxKind.UnsafeKeyword)}))
                                 .WithMembers(List(new[] { field, initializerMethod, method }))
                                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                                     Attribute(IdentifierName(Constants.CompilerGeneratedAttributeGlobal)))
