@@ -29,7 +29,7 @@ public class Program {
 
     public delegate (string, int, string) MyDelegate(IGetContents arg);
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/131886", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131886", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static int TestEntryPoint()
     {

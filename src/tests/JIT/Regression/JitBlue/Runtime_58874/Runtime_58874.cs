@@ -12,7 +12,7 @@ using Xunit;
 
 public unsafe class Runtime_58874
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133259", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133259", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static void TestEntryPoint()
     {

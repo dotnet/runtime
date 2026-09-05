@@ -2273,7 +2273,7 @@ public class Program
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
         // ActiveIssue https://github.com/dotnet/runtime/issues/133307
-        if (!PlatformDetection.IsBrowser || !PlatformDetection.IsReadyToRunCompiled)
+        if (!PlatformDetection.IsWasm || !PlatformDetection.IsReadyToRunCompiled)
         {
             RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
         }
