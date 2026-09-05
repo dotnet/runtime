@@ -29,6 +29,18 @@ namespace System.Net.Security
         // Freed by OnDispose if the session is disposed before that handoff runs.
         private SafeBioHandle? _peekBio;
 
+        // Post-handshake client-certificate exchange state for fd-mode sessions. Set by
+        // TryFastRequestClientCertificate and cleared once the peer's answer has been
+        // processed; _fdPostHandshakeRequestSent tracks whether the CertificateRequest /
+        // HelloRequest flight has already been written to the socket.
+        private bool _fdPostHandshakeAuthPending;
+        private bool _fdPostHandshakeRequestSent;
+        // Set when SSL_do_handshake stalls on SSL_ERROR_WANT_WRITE during the post-handshake
+        // exchange (the socket send buffer filled mid-flight). It forces the next Handshake()
+        // to re-enter OpenSSL to finish the write even when the peer is idle, so a write-blocked
+        // flight cannot deadlock behind the PeerHasPendingData() readable-data gate.
+        private bool _fdPostHandshakeWriteBlocked;
+
         // Bind the socket directly to the SSL object so OpenSSL drives ciphertext
         // I/O itself. AllocateSslHandle inspects options.SocketHandle and skips
         // the ManagedSpanBio installation when set. With fd-mode active, no
@@ -221,15 +233,156 @@ namespace System.Net.Security
                 return;
             }
 
+            // Mirror HandshakeBufferedCore's external-validation gates. A rejected peer
+            // certificate faults the session, and a suspension the caller hasn't resolved
+            // yet re-surfaces without re-entering OpenSSL.
+            if (_externalValidationFault is not null && (_isHandshakeComplete || !_externalValidationResolved))
+            {
+                throw _externalValidationFault;
+            }
+
+            if (_externalValidationPending)
+            {
+                result = TlsOperationStatus.NeedsCertificateValidation;
+                return;
+            }
+
             SafeSslHandle ssl = EnsureFdSslHandle();
+
+            if (_fdPostHandshakeAuthPending)
+            {
+                result = DriveFdPostHandshakeAuth(ssl);
+                return;
+            }
+
             int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err);
             if (ret == 1)
             {
                 OnHandshakeCompleted();
-                result = TlsOperationStatus.Complete;
+
+                // OnHandshakeCompleted captures the peer certificate for external validation
+                // (unless the caller already resolved it or suppressed the internal callback).
+                // Surface the suspension so the caller's validation runs, exactly like the
+                // buffered path; swallowing it here would silently skip certificate validation.
+                result = _externalValidationPending
+                    ? TlsOperationStatus.NeedsCertificateValidation
+                    : TlsOperationStatus.Complete;
                 return;
             }
             result = MapSslError(err, ret, SR.net_ssl_handshake_failed_error);
+        }
+
+        // Drives the post-handshake client-certificate exchange started by
+        // TryFastRequestClientCertificate. SSL_do_handshake reports success as soon as our
+        // flight has been written to the socket, i.e. before the peer has answered, so
+        // completing on that alone would capture a peer certificate that has not arrived yet.
+        // HandshakeBufferedCore avoids this by refusing to enter the PAL without caller-supplied
+        // peer bytes; the fd path has no caller-supplied bytes, so gate re-entry on the socket
+        // actually having something to process (the analog of SslStream.RenegotiateAsync, which
+        // always receives a handshake frame before re-testing the status). The gate is bypassed
+        // while our own flight still needs writing so a send that backpressures on
+        // SSL_ERROR_WANT_WRITE resumes instead of waiting on the (still idle) peer.
+        private TlsOperationStatus DriveFdPostHandshakeAuth(SafeSslHandle ssl)
+        {
+            bool flushingRequest = !_fdPostHandshakeRequestSent;
+            if (!flushingRequest && !_fdPostHandshakeWriteBlocked && !PeerHasPendingData())
+            {
+                return TlsOperationStatus.NeedMoreData;
+            }
+
+            int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err);
+            bool writeBlocked = err == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE;
+            // Track a write-side stall so the next call re-enters to finish the flush even if
+            // the peer sends nothing in the meantime (OpenSSL may still owe handshake bytes
+            // after consuming the peer's flight, e.g. the TLS 1.2 renegotiation Finished).
+            _fdPostHandshakeWriteBlocked = writeBlocked;
+
+            // The request flight is fully on the wire unless the send backpressured
+            // (SSL_ERROR_WANT_WRITE). A partial write keeps flushingRequest sticky so the
+            // resumed call finishes writing instead of waiting for a peer answer that cannot
+            // come; WANT_READ means the request is out and OpenSSL is now awaiting the peer.
+            if (!writeBlocked)
+            {
+                _fdPostHandshakeRequestSent = true;
+            }
+
+            if (ret != 1)
+            {
+                return MapSslError(err, ret, SR.net_ssl_handshake_failed_error);
+            }
+
+            if (flushingRequest ||
+                !Interop.Ssl.IsSslStateOK(ssl) ||
+                Interop.Ssl.IsSslRenegotiatePending(ssl))
+            {
+                // The request has just gone out (TLS 1.3 post-handshake auth) or the
+                // renegotiation is still in flight (TLS 1.2); wait for the peer.
+                return TlsOperationStatus.NeedMoreData;
+            }
+
+            _fdPostHandshakeAuthPending = false;
+            OnHandshakeCompleted();
+            return _externalValidationPending
+                ? TlsOperationStatus.NeedsCertificateValidation
+                : TlsOperationStatus.Complete;
+        }
+
+        // True when the socket has ciphertext waiting (or has been closed / reset). fd-mode
+        // sessions leave the socket to OpenSSL, so the managed Socket wrapper is created
+        // lazily here; TlsSession.Dispose disposes it (and with it the owned handle).
+        private bool PeerHasPendingData()
+        {
+            _socket ??= new Socket(_socketHandle!);
+            return _socket.Poll(0, SelectMode.SelectRead);
+        }
+
+        // Socket-bound (fd-mode) analog of RequestClientCertificateBufferedCore. OpenSSL owns
+        // the fd, so the CertificateRequest / HelloRequest is written straight to the socket
+        // when the caller drives Handshake(); there are no staged ciphertext bytes to drain.
+        // All this hook has to do is ask the PAL for the post-handshake exchange and re-arm
+        // the handshake state machine so Handshake() re-enters OpenSSL and re-surfaces
+        // NeedsCertificateValidation once the peer's certificate arrives.
+        partial void TryFastRequestClientCertificate(ref TlsOperationStatus? result)
+        {
+            if (!_useFdMode)
+            {
+                return;
+            }
+
+            if (!_context!.IsServer)
+            {
+                throw new InvalidOperationException(SR.net_tlssession_request_client_cert_server_only);
+            }
+
+            if (!_isHandshakeComplete || _securityContext is null || _securityContext.IsInvalid)
+            {
+                throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
+            }
+
+            // Match SslStream.RenegotiateAsync: promote the client-certificate requirement for
+            // the post-handshake exchange even when the initial handshake allowed no client cert.
+            _options.RemoteCertRequired = true;
+
+            SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate((SafeSslHandle)_securityContext, out _);
+            if (status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
+            {
+                // The peer declined the renegotiation. Leave the session in its completed
+                // state; there is nothing for the caller to drive.
+                result = TlsOperationStatus.Complete;
+                return;
+            }
+
+            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            {
+                throw new AuthenticationException(SR.net_auth_SSPI, status.Exception);
+            }
+
+            _isHandshakeComplete = false;
+            _externalValidationResolved = false;
+            _fdPostHandshakeAuthPending = true;
+            _fdPostHandshakeRequestSent = false;
+            _fdPostHandshakeWriteBlocked = false;
+            result = TlsOperationStatus.Complete;
         }
 
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result)
@@ -238,6 +391,10 @@ namespace System.Net.Security
             {
                 return;
             }
+
+            // The buffered Read/Write cores gate on the external-validation state; the
+            // fd fast path bypasses them, so apply the same guard here.
+            ThrowIfPendingExternalValidation();
 
             if (buffer.IsEmpty)
             {
@@ -262,6 +419,10 @@ namespace System.Net.Security
             {
                 return;
             }
+
+            // The buffered Read/Write cores gate on the external-validation state; the
+            // fd fast path bypasses them, so apply the same guard here.
+            ThrowIfPendingExternalValidation();
 
             if (buffer.IsEmpty)
             {
