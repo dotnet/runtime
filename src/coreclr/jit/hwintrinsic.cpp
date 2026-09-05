@@ -1019,6 +1019,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_WasmBase, LAST_NI_WasmBase },                    // WasmBase
     { FIRST_NI_PackedSimd, LAST_NI_PackedSimd },                // PackedSimd
     { FIRST_NI_Vector, LAST_NI_Vector },                        // Vector128
+    { FIRST_NI_RelaxedSimd, LAST_NI_RelaxedSimd },              // RelaxedSimd
 #else
 #error Unsupported platform
 #endif

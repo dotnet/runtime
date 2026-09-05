@@ -2947,8 +2947,9 @@ typedef enum {
 									  | MONO_CPU_X86_AES            | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
 #endif
 #ifdef TARGET_WASM
-	MONO_CPU_WASM_BASE = 1 << 1,
-	MONO_CPU_WASM_SIMD = 1 << 2,
+	MONO_CPU_WASM_BASE         = 1 << 1,
+	MONO_CPU_WASM_SIMD         = 1 << 2,
+	MONO_CPU_WASM_RELAXED_SIMD = 1 << 3,
 #endif
 #ifdef TARGET_ARM64
 	MONO_CPU_ARM64_BASE   = 1 << 1,

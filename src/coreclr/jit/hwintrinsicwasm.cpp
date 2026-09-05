@@ -25,6 +25,10 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     {
         return InstructionSet_PackedSimd;
     }
+    else if (strcmp(className, "RelaxedSimd") == 0)
+    {
+        return InstructionSet_RelaxedSimd;
+    }
     else if ((strcmp(className, "Vector128") == 0) || (strcmp(className, "Vector128`1") == 0))
     {
         return InstructionSet_Vector128;

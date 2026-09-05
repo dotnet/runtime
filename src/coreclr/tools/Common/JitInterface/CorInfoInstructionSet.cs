@@ -66,6 +66,7 @@ namespace Internal.JitInterface
         Wasm32_WasmBase = InstructionSet_Wasm32.WasmBase,
         Wasm32_PackedSimd = InstructionSet_Wasm32.PackedSimd,
         Wasm32_Vector128 = InstructionSet_Wasm32.Vector128,
+        Wasm32_RelaxedSimd = InstructionSet_Wasm32.RelaxedSimd,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_AVX = InstructionSet_X64.AVX,
         X64_AVX2 = InstructionSet_X64.AVX2,
@@ -224,6 +225,7 @@ namespace Internal.JitInterface
         WasmBase = 1,
         PackedSimd = 2,
         Vector128 = 3,
+        RelaxedSimd = 4,
     }
 
     public enum InstructionSet_X64
@@ -620,6 +622,8 @@ namespace Internal.JitInterface
                     case TargetArchitecture.Wasm32:
                         if (resultflags.HasInstructionSet(InstructionSet.Wasm32_Vector128))
                             resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.Wasm32_RelaxedSimd))
+                            resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
                         if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
                             resultflags.AddInstructionSet(InstructionSet.Wasm32_WasmBase);
                         break;
@@ -823,6 +827,7 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
+        // Expands unsupported instruction sets. If A implies B and B is unsupported, A is unsupported too.
         public void ExpandInstructionSetByReverseImplication(TargetArchitecture architecture)
         {
             this = ExpandInstructionSetByReverseImplicationHelper(architecture, this);
@@ -931,6 +936,8 @@ namespace Internal.JitInterface
                     case TargetArchitecture.Wasm32:
                         if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
                             resultflags.AddInstructionSet(InstructionSet.Wasm32_Vector128);
+                        if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
+                            resultflags.AddInstructionSet(InstructionSet.Wasm32_RelaxedSimd);
                         if (resultflags.HasInstructionSet(InstructionSet.Wasm32_WasmBase))
                             resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
                         break;
@@ -1194,6 +1201,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("base", "WasmBase", InstructionSet.Wasm32_WasmBase, true);
                     yield return new InstructionSetInfo("simd128", "PackedSimd", InstructionSet.Wasm32_PackedSimd, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.Wasm32_Vector128, false);
+                    yield return new InstructionSetInfo("relaxed-simd", "RelaxedSimd", InstructionSet.Wasm32_RelaxedSimd, true);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1662,6 +1670,9 @@ namespace Internal.JitInterface
 
                         case "PackedSimd":
                             return InstructionSet.Wasm32_PackedSimd;
+
+                        case "RelaxedSimd":
+                            return InstructionSet.Wasm32_RelaxedSimd;
 
                         default:
                             return InstructionSet.ILLEGAL;
@@ -2362,6 +2373,16 @@ namespace Internal.JitInterface
                 case (InstructionSet.Wasm32_PackedSimd, TargetArchitecture.Wasm32):
                 {
                     var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "PackedSimd"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                    }
+                }
+                break;
+
+                case (InstructionSet.Wasm32_RelaxedSimd, TargetArchitecture.Wasm32):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "RelaxedSimd"u8, false);
                     if (type != null)
                     {
                         yield return type;

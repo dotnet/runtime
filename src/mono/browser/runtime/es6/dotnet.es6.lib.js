@@ -8,6 +8,7 @@
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
+const WASM_ENABLE_RELAXED_SIMD = process.env.WASM_ENABLE_RELAXED_SIMD === "1";
 const WASM_ENABLE_EVENTPIPE = process.env.WASM_ENABLE_EVENTPIPE === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_DEVTOOLS_PROFILER = process.env.ENABLE_DEVTOOLS_PROFILER === "1";
@@ -82,6 +83,7 @@ function injectDependencies() {
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
         `wasmEnableSIMD: ${WASM_ENABLE_SIMD},` +
+        `wasmEnableRelaxedSimd: ${WASM_ENABLE_RELAXED_SIMD},` +
         `wasmEnableEH: ${WASM_ENABLE_EH},` +
         `enableAotProfiler: ${ENABLE_AOT_PROFILER}, ` +
         `enableDevToolsProfiler: ${ENABLE_DEVTOOLS_PROFILER}, ` +
