@@ -56,6 +56,20 @@
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
+  <Target Name="_RootWasmTestRunnerForTrimming"
+          BeforeTargets="PrepareForILLink"
+          Condition="'$(TestFramework)' == 'xunit' and '$(PublishTrimmed)' == 'true' and '$(EnableAggressiveTrimming)' != 'true'">
+    <ItemGroup>
+      <TrimmerRootAssembly Include="WasmTestRunner" RootMode="all" />
+
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'" />
+
+      <!-- Only root TestUtilities when it is actually in the link set; some trimmed apps don't reference it. -->
+      <_ResolvedTestUtilities Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.FileName)' == 'TestUtilities'" />
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true' and '@(_ResolvedTestUtilities)' != ''" />
+    </ItemGroup>
+  </Target>
+
   <PropertyGroup>
     <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>

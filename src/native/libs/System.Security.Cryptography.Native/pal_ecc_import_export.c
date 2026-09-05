@@ -693,7 +693,11 @@ static int32_t EvpPKeyGetEcKeyParameters(
     BIGNUM *ecA = NULL;
     BIGNUM *ecB = NULL;
     uint8_t* pubKeyBuf = NULL;
+    const uint8_t* pubKeyData = NULL;
     size_t pubKeyLen = 0;
+    OSSL_PARAM* exportedParameters = NULL;
+    const OSSL_PARAM* publicKeyParameter = NULL;
+    const void* publicKeyValue = NULL;
     EC_GROUP* group = NULL;
     EC_POINT* point = NULL;
     char curveName[80] = {0};
@@ -705,18 +709,62 @@ static int32_t EvpPKeyGetEcKeyParameters(
     ERR_clear_error();
 
     // Get the public key as an encoded point (may be compressed or uncompressed).
-    // We use OSSL_PKEY_PARAM_PUB_KEY instead of OSSL_PKEY_PARAM_EC_PUB_X/Y
-    // because the individual X/Y components may not be materialized yet.
-    if (!EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, NULL, 0, &pubKeyLen))
-        goto error;
+    if (EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, NULL, 0, &pubKeyLen))
+    {
+        if (pubKeyLen == 0)
+            goto error;
 
-    pubKeyBuf = (uint8_t*)OPENSSL_zalloc(pubKeyLen);
-    if (pubKeyBuf == NULL)
-        goto error;
+        pubKeyBuf = (uint8_t*)OPENSSL_zalloc(pubKeyLen);
+        if (pubKeyBuf == NULL)
+            goto error;
 
-    if (!EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, pubKeyLen, &pubKeyLen))
-        goto error;
+        if (!EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, pubKeyLen, &pubKeyLen))
+            goto error;
 
+        pubKeyData = pubKeyBuf;
+        goto public_key_exported;
+    }
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_todata) ||
+        !API_EXISTS(OSSL_PARAM_free) ||
+        !API_EXISTS(OSSL_PARAM_get_octet_string_ptr) ||
+        !API_EXISTS(OSSL_PARAM_locate_const))
+    {
+        goto error;
+    }
+#endif
+
+    ERR_clear_error();
+
+    // Some providers (e.g., the PKCS#11 provider) only support exporting the public key through the `export` KEYMGMT
+    // API, not the `get_params` KEYMGMT APIs. See:
+    // https://github.com/openssl-projects/pkcs11-provider/blame/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/ec.c#L548
+    // If the `get_params` KEYMGMT surface does not work, use the `export` KEYMGMT API, which some providers use for hydrating their internal
+    // representation. https://github.com/openssl-projects/pkcs11-provider/blob/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/common.c#L496-L498
+    if (!EVP_PKEY_todata(pkey, EVP_PKEY_PUBLIC_KEY, &exportedParameters) || exportedParameters == NULL)
+    {
+        goto error;
+    }
+
+    // OSSL_PKEY_PARAM_PUB_KEY is "pub" https://docs.openssl.org/3.4/man7/EVP_PKEY-EC/#common-ec-parameters:
+    // > The public key value in encoded EC point format conforming to Sec. 2.3.3 and 2.3.4 of the SECG SEC 1
+    // > ("Elliptic Curve Cryptography") standard.
+    // It notes that the exported key may be compressed or uncompressed. This is later given to EC_POINT_oct2point
+    // which handles both compressed and uncompressed keys.
+    publicKeyParameter = OSSL_PARAM_locate_const(exportedParameters, OSSL_PKEY_PARAM_PUB_KEY);
+
+    if (publicKeyParameter == NULL ||
+        !OSSL_PARAM_get_octet_string_ptr(publicKeyParameter, &publicKeyValue, &pubKeyLen) ||
+        publicKeyValue == NULL ||
+        pubKeyLen == 0)
+    {
+        goto error;
+    }
+
+    pubKeyData = (const uint8_t*)publicKeyValue;
+
+public_key_exported:
     // Decode the encoded point (compressed or uncompressed) to extract X and Y.
     // Build an EC_GROUP from the key's parameters to perform the decoding.
 
@@ -766,7 +814,7 @@ static int32_t EvpPKeyGetEcKeyParameters(
 
     point = EC_POINT_new(group);
     if (point == NULL ||
-        !EC_POINT_oct2point(group, point, pubKeyBuf, pubKeyLen, NULL))
+        !EC_POINT_oct2point(group, point, pubKeyData, pubKeyLen, NULL))
     {
         goto error;
     }
@@ -816,6 +864,7 @@ error:
     *cbD = 0;
 
 exit:
+    if (exportedParameters) OSSL_PARAM_free(exportedParameters);
     if (xBn) BN_free(xBn);
     if (yBn) BN_free(yBn);
     if (dBn) BN_clear_free(dBn);

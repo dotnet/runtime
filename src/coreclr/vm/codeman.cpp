@@ -5701,7 +5701,17 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
     // taken over the call to JitCodeToMethodInfo too so that nobody pulls out
     // the range section from underneath us.
 
-    RangeSection * pRS = GetRangeSection(currentPC, pLockState);
+    RangeSection* pRS;
+#ifdef TARGET_WASM
+    if (IsVirtualIP(currentPC))
+    {
+        pRS = FindCodeRange(currentPC, ScanNoReaderLock);
+    }
+    else
+#endif // TARGET_WASM
+    {
+        pRS = GetRangeSection(currentPC, pLockState);
+    }
     if (pRS == NULL)
         return FALSE;
 

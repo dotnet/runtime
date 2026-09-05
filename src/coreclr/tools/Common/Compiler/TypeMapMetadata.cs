@@ -24,6 +24,94 @@ namespace ILCompiler
             TypeMapAssociation
         }
 
+        private readonly struct TypeWithSerializedName
+        {
+            public TypeWithSerializedName(TypeDesc type, string serializedName)
+            {
+                Type = type;
+                SerializedName = serializedName;
+            }
+
+            public TypeDesc Type { get; }
+            public string SerializedName { get; }
+        }
+
+        private readonly struct TypeMapCustomAttributeTypeProvider : ICustomAttributeTypeProvider<TypeWithSerializedName>
+        {
+            private readonly CustomAttributeTypeProvider _provider;
+
+            public TypeMapCustomAttributeTypeProvider(EcmaModule module)
+            {
+                _provider = new CustomAttributeTypeProvider(module);
+            }
+
+            public TypeWithSerializedName GetPrimitiveType(PrimitiveTypeCode typeCode)
+                => new TypeWithSerializedName(_provider.GetPrimitiveType(typeCode), null);
+
+            public TypeWithSerializedName GetSystemType()
+                => new TypeWithSerializedName(_provider.GetSystemType(), null);
+
+            public TypeWithSerializedName GetSZArrayType(TypeWithSerializedName elementType)
+                => new TypeWithSerializedName(_provider.GetSZArrayType(elementType.Type), null);
+
+            public TypeWithSerializedName GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+                => new TypeWithSerializedName(_provider.GetTypeFromDefinition(reader, handle, rawTypeKind), null);
+
+            public TypeWithSerializedName GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+                => new TypeWithSerializedName(_provider.GetTypeFromReference(reader, handle, rawTypeKind), null);
+
+            public TypeWithSerializedName GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, byte rawTypeKind)
+                => new TypeWithSerializedName(_provider.GetTypeFromSpecification(reader, handle, rawTypeKind), null);
+
+            public TypeWithSerializedName GetTypeFromSerializedName(string name)
+                => new TypeWithSerializedName(_provider.GetTypeFromSerializedName(name), name);
+
+            public PrimitiveTypeCode GetUnderlyingEnumType(TypeWithSerializedName type)
+                => _provider.GetUnderlyingEnumType(type.Type);
+
+            public bool IsSystemType(TypeWithSerializedName type)
+                => _provider.IsSystemType(type.Type);
+        }
+
+        internal readonly struct ExternalTypeMapEntry
+        {
+            public ExternalTypeMapEntry(
+                TypeDesc type,
+                string serializedTypeName,
+                TypeDesc trimmingType,
+                string serializedTrimmingTypeName,
+                ModuleDesc declaringModule)
+            {
+                Type = type;
+                SerializedTypeName = serializedTypeName;
+                TrimmingType = trimmingType;
+                SerializedTrimmingTypeName = serializedTrimmingTypeName;
+                DeclaringModule = declaringModule;
+            }
+
+            public TypeDesc Type { get; }
+            public string SerializedTypeName { get; }
+            public TypeDesc TrimmingType { get; }
+            public string SerializedTrimmingTypeName { get; }
+            public ModuleDesc DeclaringModule { get; }
+        }
+
+        internal readonly struct ProxyTypeMapEntry
+        {
+            public ProxyTypeMapEntry(TypeDesc type, string serializedSourceTypeName, string serializedTypeName, ModuleDesc declaringModule)
+            {
+                Type = type;
+                SerializedSourceTypeName = serializedSourceTypeName;
+                SerializedTypeName = serializedTypeName;
+                DeclaringModule = declaringModule;
+            }
+
+            public TypeDesc Type { get; }
+            public string SerializedSourceTypeName { get; }
+            public string SerializedTypeName { get; }
+            public ModuleDesc DeclaringModule { get; }
+        }
+
         private static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
         {
             var typeDef = attrType.GetTypeDefinition() as MetadataType;
@@ -41,13 +129,13 @@ namespace ILCompiler
 
         internal interface IExternalTypeMap
         {
-            IReadOnlyDictionary<string, (TypeDesc type, TypeDesc trimmingType)> TypeMap { get; }
+            IReadOnlyDictionary<string, ExternalTypeMapEntry> TypeMap { get; }
             MethodDesc ThrowingMethodStub { get; }
         }
 
         internal interface IProxyTypeMap
         {
-            IReadOnlyDictionary<TypeDesc, TypeDesc> TypeMap { get; }
+            IReadOnlyDictionary<TypeDesc, ProxyTypeMapEntry> TypeMap { get; }
             MethodDesc ThrowingMethodStub { get; }
         }
 
@@ -95,8 +183,8 @@ namespace ILCompiler
                 public override TypeSystemContext Context => OwningType.Context;
             }
 
-            private readonly Dictionary<TypeDesc, TypeDesc> _associatedTypeMap = [];
-            private readonly Dictionary<string, (TypeDesc type, TypeDesc trimmingTarget)> _externalTypeMap = [];
+            private readonly Dictionary<TypeDesc, ProxyTypeMapEntry> _associatedTypeMap = [];
+            private readonly Dictionary<string, ExternalTypeMapEntry> _externalTypeMap = [];
             private readonly List<ModuleDesc> _targetModules = [];
             private ThrowingMethodStub _externalTypeMapExceptionStub;
             private ThrowingMethodStub _associatedTypeMapExceptionStub;
@@ -116,16 +204,31 @@ namespace ILCompiler
             /// </summary>
             public bool HasAssemblyTargetAttributes { get; set; }
 
-            public void AddAssociatedTypeMapEntry(TypeDesc type, TypeDesc associatedType)
+            public void AddAssociatedTypeMapEntry(
+                TypeDesc type,
+                string serializedTypeName,
+                TypeDesc associatedType,
+                string serializedAssociatedTypeName,
+                ModuleDesc declaringModule)
             {
-                if (!_associatedTypeMap.TryAdd(type, associatedType))
+                if (!_associatedTypeMap.TryAdd(
+                    type,
+                    new ProxyTypeMapEntry(associatedType, serializedTypeName, serializedAssociatedTypeName, declaringModule)))
                 {
                     ThrowHelper.ThrowBadImageFormatException();
                 }
             }
-            public void AddExternalTypeMapEntry(string typeName, TypeDesc type, TypeDesc trimmingTarget)
+            public void AddExternalTypeMapEntry(
+                string typeName,
+                TypeDesc type,
+                string serializedTypeName,
+                TypeDesc trimmingTarget,
+                string serializedTrimmingTypeName,
+                ModuleDesc declaringModule)
             {
-                if (!_externalTypeMap.TryAdd(typeName, (type, trimmingTarget)))
+                if (!_externalTypeMap.TryAdd(
+                    typeName,
+                    new ExternalTypeMapEntry(type, serializedTypeName, trimmingTarget, serializedTrimmingTypeName, declaringModule)))
                 {
                     ThrowHelper.ThrowBadImageFormatException();
                 }
@@ -165,9 +268,14 @@ namespace ILCompiler
                     {
                         try
                         {
-                            foreach (KeyValuePair<TypeDesc, TypeDesc> kvp in pendingMap._associatedTypeMap)
+                            foreach (KeyValuePair<TypeDesc, ProxyTypeMapEntry> kvp in pendingMap._associatedTypeMap)
                             {
-                                AddAssociatedTypeMapEntry(kvp.Key, kvp.Value);
+                                AddAssociatedTypeMapEntry(
+                                    kvp.Key,
+                                    kvp.Value.SerializedSourceTypeName,
+                                    kvp.Value.Type,
+                                    kvp.Value.SerializedTypeName,
+                                    kvp.Value.DeclaringModule);
                             }
                         }
                         catch (TypeSystemException ex)
@@ -195,9 +303,15 @@ namespace ILCompiler
                     {
                         try
                         {
-                            foreach (KeyValuePair<string, (TypeDesc type, TypeDesc trimmingTarget)> kvp in pendingMap._externalTypeMap)
+                            foreach (KeyValuePair<string, ExternalTypeMapEntry> kvp in pendingMap._externalTypeMap)
                             {
-                                AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, kvp.Value.trimmingTarget);
+                                AddExternalTypeMapEntry(
+                                    kvp.Key,
+                                    kvp.Value.Type,
+                                    kvp.Value.SerializedTypeName,
+                                    kvp.Value.TrimmingType,
+                                    kvp.Value.SerializedTrimmingTypeName,
+                                    kvp.Value.DeclaringModule);
                             }
                         }
                         catch (TypeSystemException ex)
@@ -227,11 +341,11 @@ namespace ILCompiler
             /// </summary>
             public IReadOnlyList<ModuleDesc> TargetModules => _targetModules;
 
-            IReadOnlyDictionary<string, (TypeDesc type, TypeDesc trimmingType)> IExternalTypeMap.TypeMap => _externalTypeMap;
+            IReadOnlyDictionary<string, ExternalTypeMapEntry> IExternalTypeMap.TypeMap => _externalTypeMap;
 
             MethodDesc IExternalTypeMap.ThrowingMethodStub => _externalTypeMapExceptionStub;
 
-            IReadOnlyDictionary<TypeDesc, TypeDesc> IProxyTypeMap.TypeMap => _associatedTypeMap;
+            IReadOnlyDictionary<TypeDesc, ProxyTypeMapEntry> IProxyTypeMap.TypeMap => _associatedTypeMap;
 
             MethodDesc IProxyTypeMap.ThrowingMethodStub => _associatedTypeMapExceptionStub;
         }
@@ -328,7 +442,7 @@ namespace ILCompiler
                         continue;
                     }
 
-                    CustomAttributeValue<TypeDesc> attrValue = attr.DecodeValue(new CustomAttributeTypeProvider(currentAssembly));
+                    CustomAttributeValue<TypeWithSerializedName> attrValue = attr.DecodeValue(new TypeMapCustomAttributeTypeProvider(currentAssembly));
 
                     TypeDesc typeMapGroup = type.Instantiation[0];
 
@@ -420,7 +534,7 @@ namespace ILCompiler
                     scannedAssemblies.Add((currentAssembly, currentTypeMapGroup));
                 }
 
-                void ProcessTypeMapAssemblyTargetAttribute(CustomAttributeValue<TypeDesc> attrValue, Map typeMapState)
+                void ProcessTypeMapAssemblyTargetAttribute(CustomAttributeValue<TypeWithSerializedName> attrValue, Map typeMapState)
                 {
                     typeMapState.HasAssemblyTargetAttributes = true;
 
@@ -442,19 +556,40 @@ namespace ILCompiler
                     }
                 }
 
-                void ProcessTypeMapAttribute(CustomAttributeValue<TypeDesc> attrValue, Map typeMapState)
+                void ProcessTypeMapAttribute(CustomAttributeValue<TypeWithSerializedName> attrValue, Map typeMapState)
                 {
                     switch (attrValue.FixedArguments)
                     {
-                        case [{ Value: string typeName }, { Value: TypeDesc targetType }]:
+                        case
+                        [
+                            { Value: string typeName },
+                            { Value: TypeWithSerializedName { Type: TypeDesc targetType, SerializedName: string serializedTargetTypeName } }
+                        ]:
                         {
-                            typeMapState.AddExternalTypeMapEntry(typeName, targetType, null);
+                            typeMapState.AddExternalTypeMapEntry(
+                                typeName,
+                                targetType,
+                                serializedTargetTypeName,
+                                null,
+                                null,
+                                currentAssembly);
                             break;
                         }
 
-                        case [{ Value: string typeName }, { Value: TypeDesc targetType }, { Value: TypeDesc trimTargetType }]:
+                        case
+                        [
+                            { Value: string typeName },
+                            { Value: TypeWithSerializedName { Type: TypeDesc targetType, SerializedName: string serializedTargetTypeName } },
+                            { Value: TypeWithSerializedName { Type: TypeDesc trimTargetType, SerializedName: string serializedTrimTargetTypeName } }
+                        ]:
                         {
-                            typeMapState.AddExternalTypeMapEntry(typeName, targetType, trimTargetType);
+                            typeMapState.AddExternalTypeMapEntry(
+                                typeName,
+                                targetType,
+                                serializedTargetTypeName,
+                                trimTargetType,
+                                serializedTrimTargetTypeName,
+                                currentAssembly);
                             break;
                         }
 
@@ -464,17 +599,26 @@ namespace ILCompiler
                     }
                 }
 
-                void ProcessTypeMapAssociationAttribute(CustomAttributeValue<TypeDesc> attrValue, Map typeMapState)
+                void ProcessTypeMapAssociationAttribute(CustomAttributeValue<TypeWithSerializedName> attrValue, Map typeMapState)
                 {
                     // If attribute is TypeMapAssociationAttribute, we need to extract the generic argument (type map group)
                     // and process it.
-                    if (attrValue.FixedArguments is not [{ Value: TypeDesc type }, { Value: TypeDesc associatedType }])
+                    if (attrValue.FixedArguments is not
+                        [
+                            { Value: TypeWithSerializedName { Type: TypeDesc type, SerializedName: string serializedTypeName } },
+                            { Value: TypeWithSerializedName { Type: TypeDesc associatedType, SerializedName: string serializedAssociatedTypeName } }
+                        ])
                     {
                         ThrowHelper.ThrowBadImageFormatException();
                         return;
                     }
 
-                    typeMapState.AddAssociatedTypeMapEntry(type, associatedType);
+                    typeMapState.AddAssociatedTypeMapEntry(
+                        type,
+                        serializedTypeName,
+                        associatedType,
+                        serializedAssociatedTypeName,
+                        currentAssembly);
                 }
             }
 

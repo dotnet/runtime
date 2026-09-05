@@ -288,6 +288,15 @@
   <data name="TargetOSOption" xml:space="preserve">
     <value>Target OS for cross compilation</value>
   </data>
+  <data name="GeneratePortableCallHelpersOption" xml:space="preserve">
+    <value>Generate the portable entry point call helper sources into the given directory instead of compiling</value>
+  </data>
+  <data name="DirectPInvokeOption" xml:space="preserve">
+    <value>Name of a statically linked native module P/Invokes may resolve against</value>
+  </data>
+  <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
+    <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
+  </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
   </data>
