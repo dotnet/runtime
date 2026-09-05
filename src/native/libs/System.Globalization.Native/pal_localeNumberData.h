@@ -44,11 +44,14 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* lo
                                                                  int32_t* secondaryGroupSize);
 #if defined(APPLE_HYBRID_GLOBALIZATION)
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName,
-                                                             LocaleNumberData localeNumberData);
+                                                             LocaleNumberData localeNumberData,
+                                                             int32_t useUserOverride);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* localeName,
-                                                                      LocaleNumberData localeGroupingData);
+                                                                            LocaleNumberData localeGroupingData,
+                                                                            int32_t useUserOverride);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName,
-                                                                           LocaleNumberData localeGroupingData);
+                                                                              LocaleNumberData localeGroupingData,
+                                                                              int32_t useUserOverride);
 #endif
