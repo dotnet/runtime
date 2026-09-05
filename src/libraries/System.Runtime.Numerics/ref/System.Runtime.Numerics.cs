@@ -201,6 +201,7 @@ namespace System.Numerics
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetShortestBitLength() { throw null; }
         static System.Numerics.BigInteger System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.Log10(System.Numerics.BigInteger value) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.ReverseBits(System.Numerics.BigInteger value) { throw null; }
         static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
         static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
