@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -211,6 +212,54 @@ namespace System
                 return "/apex/com.android.tzdata";
             }
 
+            private static string? GetTzLookupFilePath(string tzFileDir)
+            {
+                string tzLookupFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
+                if (File.Exists(tzLookupFilePath))
+                {
+                    return tzLookupFilePath;
+                }
+
+                // Android 15+ stores tzlookup.xml under versioned/<format-major>.
+                // The unversioned tz_version begins with the three-digit format major for
+                // the newest data set shipped in the module.
+                // https://android.googlesource.com/platform/external/icu/+/474ba9832e41cc4ee44b20a9ee07ec6d573ce1a4/android_icu4j/libcore_bridge/src/java/com/android/i18n/timezone/TimeZoneDataFiles.java#53
+                // https://android.googlesource.com/platform/external/icu/+/474ba9832e41cc4ee44b20a9ee07ec6d573ce1a4/android_icu4j/libcore_bridge/src/java/com/android/i18n/timezone/TzDataSetVersion.java#93
+                const int FormatMajorVersionLength = 3;
+                const int FormatVersionLength = 7;
+                string versionFilePath = Path.Combine(tzFileDir, "tz_version");
+                if (!File.Exists(versionFilePath))
+                {
+                    return null;
+                }
+
+                try
+                {
+                    string version = File.ReadAllText(versionFilePath);
+                    if (version.Length < FormatVersionLength ||
+                        version[FormatMajorVersionLength] != '.' ||
+                        !int.TryParse(version.AsSpan(0, FormatMajorVersionLength), NumberStyles.None, CultureInfo.InvariantCulture, out int formatMajorVersion))
+                    {
+                        return null;
+                    }
+
+                    string versionedFilePath = Path.Combine(
+                        tzFileDir,
+                        "versioned",
+                        formatMajorVersion.ToString(CultureInfo.InvariantCulture),
+                        "tzlookup.xml");
+                    return File.Exists(versionedFilePath) ? versionedFilePath : null;
+                }
+                catch (IOException)
+                {
+                    return null;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return null;
+                }
+            }
+
             private static string GetApexRuntimeRoot()
             {
                 string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
@@ -231,7 +280,7 @@ namespace System
                                                        GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
                                                        Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
                                                        Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory ];
-                foreach (var tzFileDir in tzFileDirList)
+                foreach (string tzFileDir in tzFileDirList)
                 {
                     string tzFilePath = Path.Combine(tzFileDir, TimeZoneFileName);
                     if (LoadData(tzFileDir, tzFilePath))
@@ -270,9 +319,11 @@ namespace System
             // to determine if an id is backwards and label it as such if they are.
             private static HashSet<string>? FilterBackwardIDs(string tzFileDir)
             {
-                string tzLookupFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
-                if (!File.Exists(tzLookupFilePath))
-                    return null;
+                string? tzLookupFilePath = GetTzLookupFilePath(tzFileDir);
+                if (tzLookupFilePath is null)
+                {
+                    return GetCanonicalLocationTimeZoneIds();
+                }
 
                 HashSet<string>? tzLookupIDs = null;
                 try
@@ -300,12 +351,53 @@ namespace System
                         }
                     }
                 }
-                catch
+                catch (IOException)
+                {
+                    return GetCanonicalLocationTimeZoneIds();
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return GetCanonicalLocationTimeZoneIds();
+                }
+
+                return tzLookupIDs ?? GetCanonicalLocationTimeZoneIds();
+            }
+
+            private static HashSet<string>? GetCanonicalLocationTimeZoneIds()
+            {
+                if (GlobalizationMode.Invariant)
                 {
                     return null;
                 }
 
-                return tzLookupIDs;
+                int bufferLength = Interop.Globalization.GetCanonicalLocationTimeZoneIds(null, 0);
+                if (bufferLength <= 0)
+                {
+                    return null;
+                }
+
+                char[] buffer = new char[bufferLength];
+                int actualLength = Interop.Globalization.GetCanonicalLocationTimeZoneIds(buffer, bufferLength);
+                if (actualLength <= 0 || actualLength > buffer.Length)
+                {
+                    return null;
+                }
+
+                HashSet<string> ids = new HashSet<string>();
+                int index = 0;
+                while (index < actualLength)
+                {
+                    int idLength = buffer[index++];
+                    if (idLength == 0 || idLength > actualLength - index)
+                    {
+                        return null;
+                    }
+
+                    ids.Add(new string(buffer, index, idLength));
+                    index += idLength;
+                }
+
+                return ids;
             }
 
             [MemberNotNullWhen(true, nameof(_ids))]

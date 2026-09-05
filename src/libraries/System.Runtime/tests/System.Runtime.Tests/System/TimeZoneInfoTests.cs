@@ -3156,14 +3156,8 @@ namespace System.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
         public static void NoBackwardTimeZones()
         {
-            if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))
-            {
-                throw new SkipTestException("This test won't work on API level < 26");
-            }
-
             // Clear cached data to always ensure predictable results
             TimeZoneInfo.ClearCachedData();
             if (SupportLegacyTimeZoneNames)
@@ -3197,7 +3191,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/90269", TestPlatforms.Android)]
         public static void TestGetSystemTimeZones()
         {
             TimeZoneInfo.ClearCachedData(); // Start clean
