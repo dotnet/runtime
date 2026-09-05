@@ -2309,7 +2309,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)
         => flags.HasFlag(AsyncMethodFlags.Thunk)
-            && (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant));
+            && (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk)
+                || flags.HasFlag(AsyncMethodFlags.CovariantForwardingThunk)
+                || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant));
 
     private static bool HasClassOrMethodInstantiation(IRuntimeTypeSystem rts, MethodDescHandle md)
     {
