@@ -17,6 +17,7 @@
 #define LLFORMAT "%llu"
 
 ULONGLONG dwCreateThreadTestParameter = 0;
+LONG completedThreadCount_CreateThread_test1 = 0;
 
 DWORD PALAPI CreateThreadTestThread( LPVOID lpParameter)
 {
@@ -24,6 +25,7 @@ DWORD PALAPI CreateThreadTestThread( LPVOID lpParameter)
 
     /* save parameter for test */
     dwCreateThreadTestParameter = (ULONGLONG)lpParameter;
+    InterlockedIncrement(&completedThreadCount_CreateThread_test1);
 
     return dwRet;
 }
@@ -31,8 +33,6 @@ DWORD PALAPI CreateThreadTestThread( LPVOID lpParameter)
 BOOL CreateThreadTest()
 {
     BOOL bRet = FALSE;
-    DWORD dwRet = 0;
-
     LPSECURITY_ATTRIBUTES lpThreadAttributes = NULL;
     DWORD dwStackSize = 0;
     LPTHREAD_START_ROUTINE lpStartAddress =  &CreateThreadTestThread;
@@ -58,31 +58,21 @@ BOOL CreateThreadTest()
     /* Ensure that the HANDLE is not invalid! */
     if (hThread != NULL)
     {
-        dwRet = WaitForSingleObject(hThread,INFINITE);
+        WaitForThreadCompletion(&completedThreadCount_CreateThread_test1, 1);
 
-        if (dwRet != WAIT_OBJECT_0)
+        /* Check to ensure that the parameter passed to the thread
+           function is the same in the function as what we passed.
+        */
+        if (dwCreateThreadTestParameter != (ULONGLONG)lpParameter)
         {
-            Trace("CreateThreadTest:WaitForSingleObject "
-                   "failed (%x)\n",GetLastError());
+            Trace("CreateThreadTest:parameter error.  The "
+                   "parameter passed should have been " LLFORMAT " but when "
+                   "passed to the Thread function it was " LLFORMAT " . GetLastError[%x]\n",
+                   dwCreateThreadTestParameter,lpParameter, GetLastError());
         }
         else
         {
-            /* Check to ensure that the parameter passed to the thread
-               function is the same in the function as what we passed.
-            */
-
-            if (dwCreateThreadTestParameter != (ULONGLONG)lpParameter)
-            {
-                Trace("CreateThreadTest:parameter error.  The "
-                       "parameter passed should have been " LLFORMAT " but when "
-                       "passed to the Thread function it was " LLFORMAT " . GetLastError[%x]\n",
-                       dwCreateThreadTestParameter,lpParameter, GetLastError());
-            }
-            else
-            {
-                bRet = TRUE;
-            }
-
+            bRet = TRUE;
         }
 	CloseHandle(hThread);
     }

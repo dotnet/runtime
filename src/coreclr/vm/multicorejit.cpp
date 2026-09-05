@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 #include "vars.hpp"
 #include "eeconfig.h"
 #include "dllimport.h"
@@ -1058,7 +1059,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 {
                     MulticoreJitTrace(("Delay main thread %d ms", g_MulticoreJitDelay));
 
-                    ClrSleepEx(g_MulticoreJitDelay, FALSE);
+                    minipal_sleep(g_MulticoreJitDelay);
                 }
 
                 player.SuppressRelease();

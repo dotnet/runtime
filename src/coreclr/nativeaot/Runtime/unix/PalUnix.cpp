@@ -83,17 +83,6 @@ using std::nullptr_t;
 #define PAGE_EXECUTE_READ       0x20
 #define PAGE_EXECUTE_READWRITE  0x40
 
-#define WAIT_OBJECT_0           0
-#define WAIT_TIMEOUT            258
-#define WAIT_FAILED             0xFFFFFFFF
-
-static const int tccSecondsToMilliSeconds = 1000;
-static const int tccSecondsToMicroSeconds = 1000000;
-static const int tccSecondsToNanoSeconds = 1000000000;
-static const int tccMilliSecondsToMicroSeconds = 1000;
-static const int tccMilliSecondsToNanoSeconds = 1000000;
-static const int tccMicroSecondsToNanoSeconds = 1000;
-
 void RhFailFast()
 {
     // Causes creation of a crash dump if enabled
@@ -204,230 +193,6 @@ static void UnmaskActivationSignal()
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
 }
-
-static void TimeSpecAdd(timespec* time, uint32_t milliseconds)
-{
-    uint64_t nsec = time->tv_nsec + (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
-    if (nsec >= tccSecondsToNanoSeconds)
-    {
-        time->tv_sec += nsec / tccSecondsToNanoSeconds;
-        nsec %= tccSecondsToNanoSeconds;
-    }
-
-    time->tv_nsec = nsec;
-}
-
-// Convert nanoseconds to the timespec structure
-// Parameters:
-//  nanoseconds - time in nanoseconds to convert
-//  t           - the target timespec structure
-static void NanosecondsToTimeSpec(uint64_t nanoseconds, timespec* t)
-{
-    t->tv_sec = nanoseconds / tccSecondsToNanoSeconds;
-    t->tv_nsec = nanoseconds % tccSecondsToNanoSeconds;
-}
-
-void ReleaseCondAttr(pthread_condattr_t* condAttr)
-{
-    int st = pthread_condattr_destroy(condAttr);
-    ASSERT_MSG(st == 0, "Failed to destroy pthread_condattr_t object");
-}
-
-class PthreadCondAttrHolder : public Wrapper<pthread_condattr_t*, DoNothing, ReleaseCondAttr, nullptr>
-{
-public:
-    PthreadCondAttrHolder(pthread_condattr_t* attrs)
-    : Wrapper<pthread_condattr_t*, DoNothing, ReleaseCondAttr, nullptr>(attrs)
-    {
-    }
-};
-
-class UnixEvent
-{
-    pthread_cond_t m_condition;
-    pthread_mutex_t m_mutex;
-    bool m_manualReset;
-    bool m_state;
-    bool m_isValid;
-
-public:
-
-    UnixEvent(bool manualReset, bool initialState)
-    : m_manualReset(manualReset),
-      m_state(initialState),
-      m_isValid(false)
-    {
-    }
-
-    bool Initialize()
-    {
-        pthread_condattr_t attrs;
-        int st = pthread_condattr_init(&attrs);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to initialize UnixEvent condition attribute");
-            return false;
-        }
-
-        PthreadCondAttrHolder attrsHolder(&attrs);
-
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_CLOCK_GETTIME_NSEC_NP
-        // Ensure that the pthread_cond_timedwait will use CLOCK_MONOTONIC
-        st = pthread_condattr_setclock(&attrs, CLOCK_MONOTONIC);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to set UnixEvent condition variable wait clock");
-            return false;
-        }
-#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_CLOCK_GETTIME_NSEC_NP
-
-        st = pthread_mutex_init(&m_mutex, NULL);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to initialize UnixEvent mutex");
-            return false;
-        }
-
-        st = pthread_cond_init(&m_condition, &attrs);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to initialize UnixEvent condition variable");
-
-            st = pthread_mutex_destroy(&m_mutex);
-            ASSERT_MSG(st == 0, "Failed to destroy UnixEvent mutex");
-            return false;
-        }
-
-        m_isValid = true;
-
-        return true;
-    }
-
-    bool Destroy()
-    {
-        bool success = true;
-
-        if (m_isValid)
-        {
-            int st = pthread_mutex_destroy(&m_mutex);
-            ASSERT_MSG(st == 0, "Failed to destroy UnixEvent mutex");
-            success = success && (st == 0);
-
-            st = pthread_cond_destroy(&m_condition);
-            ASSERT_MSG(st == 0, "Failed to destroy UnixEvent condition variable");
-            success = success && (st == 0);
-        }
-
-        return success;
-    }
-
-    uint32_t Wait(uint32_t milliseconds)
-    {
-        timespec endTime;
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-        uint64_t endNanoseconds;
-        if (milliseconds != INFINITE)
-        {
-            uint64_t nanoseconds = (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
-            NanosecondsToTimeSpec(nanoseconds, &endTime);
-            endNanoseconds = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) + nanoseconds;
-        }
-#elif HAVE_PTHREAD_CONDATTR_SETCLOCK
-        if (milliseconds != INFINITE)
-        {
-            clock_gettime(CLOCK_MONOTONIC, &endTime);
-            TimeSpecAdd(&endTime, milliseconds);
-        }
-#else
-#error "Don't know how to perform timed wait on this platform"
-#endif
-
-        int st = 0;
-
-        pthread_mutex_lock(&m_mutex);
-        while (!m_state)
-        {
-            if (milliseconds == INFINITE)
-            {
-                st = pthread_cond_wait(&m_condition, &m_mutex);
-            }
-            else
-            {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-                // Since OSX doesn't support CLOCK_MONOTONIC, we use relative variant of the
-                // timed wait and we need to handle spurious wakeups properly.
-                st = pthread_cond_timedwait_relative_np(&m_condition, &m_mutex, &endTime);
-                if ((st == 0) && !m_state)
-                {
-                    uint64_t currentNanoseconds = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-                    if (currentNanoseconds < endNanoseconds)
-                    {
-                        // The wake up was spurious, recalculate the relative endTime
-                        uint64_t remainingNanoseconds = (endNanoseconds - currentNanoseconds);
-                        NanosecondsToTimeSpec(remainingNanoseconds, &endTime);
-                    }
-                    else
-                    {
-                        // Although the timed wait didn't report a timeout, time calculated from the
-                        // mach time shows we have already reached the end time. It can happen if
-                        // the wait was spuriously woken up right before the timeout.
-                        st = ETIMEDOUT;
-                    }
-                }
-#else // HAVE_CLOCK_GETTIME_NSEC_NP
-                st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
-#endif // HAVE_CLOCK_GETTIME_NSEC_NP
-            }
-
-            if (st != 0)
-            {
-                // wait failed or timed out
-                break;
-            }
-        }
-
-        if ((st == 0) && !m_manualReset)
-        {
-            // Clear the state for auto-reset events so that only one waiter gets released
-            m_state = false;
-        }
-
-        pthread_mutex_unlock(&m_mutex);
-
-        uint32_t waitStatus;
-
-        if (st == 0)
-        {
-            waitStatus = WAIT_OBJECT_0;
-        }
-        else if (st == ETIMEDOUT)
-        {
-            waitStatus = WAIT_TIMEOUT;
-        }
-        else
-        {
-            waitStatus = WAIT_FAILED;
-        }
-
-        return waitStatus;
-    }
-
-    void Set()
-    {
-        pthread_mutex_lock(&m_mutex);
-        m_state = true;
-        // Unblock all threads waiting for the condition variable
-        pthread_cond_broadcast(&m_condition);
-        pthread_mutex_unlock(&m_mutex);
-    }
-
-    void Reset()
-    {
-        pthread_mutex_lock(&m_mutex);
-        m_state = false;
-        pthread_mutex_unlock(&m_mutex);
-    }
-};
 
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
@@ -712,28 +477,6 @@ UInt32_BOOL PalMarkThunksAsValidCallTargets(
     return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
 
-void PalSleep(uint32_t milliseconds)
-{
-#if HAVE_CLOCK_NANOSLEEP
-    timespec endTime;
-    clock_gettime(CLOCK_MONOTONIC, &endTime);
-    TimeSpecAdd(&endTime, milliseconds);
-    while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &endTime, NULL) == EINTR)
-    {
-    }
-#else // HAVE_CLOCK_NANOSLEEP
-    timespec requested;
-    requested.tv_sec = milliseconds / tccSecondsToMilliSeconds;
-    requested.tv_nsec = (milliseconds - requested.tv_sec * tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
-
-    timespec remaining;
-    while (nanosleep(&requested, &remaining) == EINTR)
-    {
-        requested = remaining;
-    }
-#endif // HAVE_CLOCK_NANOSLEEP
-}
-
 UInt32_BOOL __stdcall PalSwitchToThread()
 {
     // sched_yield yields to another thread in the current process.
@@ -748,35 +491,6 @@ UInt32_BOOL __stdcall PalSwitchToThread()
 UInt32_BOOL PalAreShadowStacksEnabled()
 {
     return false;
-}
-
-UInt32_BOOL PalCloseHandle(HANDLE handle)
-{
-    if ((handle == NULL) || (handle == INVALID_HANDLE_VALUE))
-    {
-        return UInt32_FALSE;
-    }
-
-    UnixEvent* event = (UnixEvent*)handle;
-    bool success = event->Destroy();
-    delete event;
-
-    return success ? UInt32_TRUE : UInt32_FALSE;
-}
-
-HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
-{
-    UnixEvent* event = new (nothrow) UnixEvent(manualReset, initialState);
-    if (event == NULL)
-    {
-        return INVALID_HANDLE_VALUE;
-    }
-    if (!event->Initialize())
-    {
-        delete event;
-        return INVALID_HANDLE_VALUE;
-    }
-    return (HANDLE)event;
 }
 
 typedef uint32_t(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
@@ -1013,20 +727,6 @@ uint32_t PalGetCurrentProcessId()
     return getpid();
 }
 
-UInt32_BOOL PalSetEvent(HANDLE event)
-{
-    UnixEvent* unixEvent = (UnixEvent*)event;
-    unixEvent->Set();
-    return UInt32_TRUE;
-}
-
-UInt32_BOOL PalResetEvent(HANDLE event)
-{
-    UnixEvent* unixEvent = (UnixEvent*)event;
-    unixEvent->Reset();
-    return UInt32_TRUE;
-}
-
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
     const char* value = getenv(name);
@@ -1184,20 +884,6 @@ void PalHijack(Thread* pThreadToHijack)
     }
 }
 #endif // FEATURE_HIJACK
-
-uint32_t PalWaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)
-{
-    UnixEvent* unixEvent = (UnixEvent*)handle;
-    return unixEvent->Wait(milliseconds);
-}
-
-uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
-{
-    // Only a single handle wait for event is supported
-    ASSERT(handleCount == 1);
-
-    return PalWaitForSingleObjectEx(pHandles[0], timeout, alertable);
-}
 
 HANDLE PalCreateLowMemoryResourceNotification()
 {
