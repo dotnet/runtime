@@ -1108,7 +1108,7 @@ void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlag
         PRECONDITION(CheckPointer(typeOwner));
     } CONTRACTL_END;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -1156,7 +1156,7 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
 
     if (!m_Code)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting CodeInfo on resolver 0x%p...\n", this));
 
@@ -1211,7 +1211,7 @@ LCGMethodResolver::GetLocalSig()
 
     if (m_LocalSig.IsNull())
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting LocalSig on resolver 0x%p...\n", this));
 
@@ -1249,7 +1249,7 @@ LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     STRINGREF* string = NULL;
     STRINGREF strRef = GetStringLiteral(metaTok);
@@ -1276,7 +1276,7 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     return GetStringLiteral(metaTok) != NULL;
 }
@@ -1375,7 +1375,7 @@ void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -1425,7 +1425,7 @@ LCGMethodResolver::ResolveSignature(
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -1465,7 +1465,7 @@ LCGMethodResolver::ResolveSignatureForVarArg(
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -1503,7 +1503,7 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {

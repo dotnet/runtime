@@ -22,7 +22,7 @@ extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnS
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     LOADERALLOCATORREF keepAlive = NULL;
     GCPROTECT_BEGIN(keepAlive);
@@ -47,7 +47,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandle
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     PTRARRAYREF asmArray = NULL;
     GCPROTECT_BEGIN(asmArray);
@@ -240,7 +240,7 @@ extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str, QCal
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     STRINGREF refString = str.Get();
     GCPROTECT_BEGIN(refString);
@@ -257,7 +257,7 @@ extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str, QCallExc
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     STRINGREF refString = str.Get();
     GCPROTECT_BEGIN(refString);
