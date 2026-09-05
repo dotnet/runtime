@@ -2880,9 +2880,11 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // Check for Delegate.Invoke(). If so, we inline it. We get the
     // target-object and target-function from the delegate-object, and do
     // an indirect call.
+    GenTree* delegateAccess = nullptr;
+    GenTree* delegateTarget = nullptr;
     if (call->IsDelegateInvoke())
     {
-        controlExpr = LowerDelegateInvoke(call);
+        controlExpr = LowerDelegateInvoke(call, &delegateAccess, &delegateTarget);
     }
     else
     {
@@ -3015,6 +3017,72 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
     ContainCheckCallOperands(call);
+
+    // An uncontained delegate target leaves an unreported code pointer live between its load and
+    // the control transfer. Keep that sequence non-interruptible if the code may be collectible.
+    bool targetContainedByCall =
+        (delegateTarget != nullptr) && delegateTarget->isContained() && (call->gtControlExpr == delegateTarget);
+    if ((delegateTarget != nullptr) && m_compiler->GetInterruptible() && !targetContainedByCall)
+    {
+        bool               isClosed;
+        LIR::ReadOnlyRange targetRange = BlockRange().GetTreeRange(delegateTarget, &isClosed);
+        assert(isClosed);
+
+        GenTree* firstAccess = LIR::FirstNode(delegateAccess, targetRange.FirstNode());
+        GenTree* startNoGC   = nullptr;
+
+        if (call->IsFastTailCall())
+        {
+            // Stack argument setup may have already opened a region that lasts through the epilog.
+            for (GenTree* node = firstAccess->gtPrev; node != nullptr; node = node->gtPrev)
+            {
+                if (node->OperIs(GT_END_NONGC))
+                {
+                    break;
+                }
+
+                if (node->OperIs(GT_START_NONGC))
+                {
+                    startNoGC = node;
+                    break;
+                }
+            }
+        }
+
+        if (call->IsFastTailCall())
+        {
+            for (GenTree* node = firstAccess; node != call; node = node->gtNext)
+            {
+                if (node->OperIs(GT_PROF_HOOK))
+                {
+                    BlockRange().Remove(node);
+                    BlockRange().InsertBefore((startNoGC != nullptr) ? startNoGC : firstAccess, node);
+                    break;
+                }
+            }
+        }
+
+        if (startNoGC == nullptr)
+        {
+            startNoGC = new (m_compiler, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
+            BlockRange().InsertBefore(firstAccess, startNoGC);
+
+            if (call->IsFastTailCall() && (m_compiler->fgBBcount == 1) &&
+                !m_compiler->compCurBB->HasFlag(BBF_GC_SAFE_POINT))
+            {
+                // Keep this region from merging with the prolog and making the method non-interruptible.
+                BlockRange().InsertBefore(startNoGC, new (m_compiler, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID));
+            }
+        }
+
+        // Fast tail calls transfer control in the epilog, which closes any open NoGC region.
+        if (!call->IsFastTailCall())
+        {
+            GenTree* endNoGC = new (m_compiler, GT_END_NONGC) GenTree(GT_END_NONGC, TYP_VOID);
+            BlockRange().InsertAfter(call, endNoGC);
+        }
+    }
+
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
@@ -6471,12 +6539,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 // LowerDelegateInvoke: lower a delegate invoke, accessing fields of the delegate
 //
 // Arguments:
-//     call - call representing a delegate invoke.
+//     call           - call representing a delegate invoke.
+//     delegateAccess - [out] the first access to the delegate.
+//     delegateTarget - [out] the target loaded from the delegate.
 //
 // Return Value:
 //    Control expr for the delegate invoke call, for further lowering.
 //
-GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
+GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call, GenTree** delegateAccess, GenTree** delegateTarget)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
@@ -6558,6 +6628,9 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     unsigned targetOffs = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
     GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
     GenTree* callTarget = Ind(result);
+
+    *delegateAccess = newThisAddr;
+    *delegateTarget = callTarget;
 
     // don't need to sequence and insert this tree, caller will do it
 

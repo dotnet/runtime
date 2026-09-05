@@ -2471,6 +2471,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_SWITCH:
             case GT_RETFILT:
             case GT_START_NONGC:
+            case GT_END_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
             case GT_SWITCH_TABLE:
