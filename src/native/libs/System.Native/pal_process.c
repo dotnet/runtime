@@ -64,6 +64,7 @@
 #endif
 
 #include <minipal/getexepath.h>
+#include <minipal/getcmdline.h>
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -1387,4 +1388,14 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
+}
+
+char** SystemNative_GetCommandLine(int* argc)
+{
+    return minipal_getcmdline(argc);
+}
+
+void SystemNative_FreeCommandLine(char** buffer)
+{
+    free(buffer);
 }
