@@ -4,15 +4,24 @@
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true' or '$(ClrNativeAotSubset)' == 'true'">true</HasCdacBuildTool>
+    <HasCdacDumpCollectProvider Condition="'$(UseCdacDumpCollectProvider)' == 'true' and ('$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true')">true</HasCdacDumpCollectProvider>
     <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath</BuildRuntimeDependsOnTargets>
     <BuildRuntimeDependsOnTargets Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildRuntimeDependsOnTargets);InitializeSourceControlInformationFromSourceControlManager</BuildRuntimeDependsOnTargets>
     <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets);GenerateEmccExports</BuildRuntimeDependsOnTargets>
     <BuildRuntimeDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildRuntimeDependsOnTargets)</BuildRuntimeDependsOnTargets>
   </PropertyGroup>
 
+  <Import Project="..\native\managed\subproject.props" Condition="'$(HasCdacDumpCollectProvider)' == 'true'" />
+
   <ItemGroup>
     <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
+    <ProjectReference
+      Condition="'$(HasCdacDumpCollectProvider)' == 'true'"
+      Include="..\native\managed\cdac\Microsoft.Diagnostics.DataContractReader.EnumMemory\Microsoft.Diagnostics.DataContractReader.EnumMemory.csproj"
+      AdditionalProperties="$(SplitSubprojectProps);NativeLib=shared"
+      ReferenceOutputAssembly="false"
+      Targets="Publish" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
@@ -55,6 +64,7 @@
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH='$(DOTNET_HOST_PATH)'&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
+      <_CoreClrBuildArg Condition="'$(HasCdacDumpCollectProvider)' == 'true'" Include="-cmakeargs &quot;-DCLR_DUMP_COLLECT_PROVIDER_PATH=$(RuntimeBinDir)$(LibPrefix)mscordaccore$(LibSuffix)&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureDynamicCodeCompiled)' == 'true' or '$(FeatureDynamicCodeCompiled)' == ''" Include="-cmakeargs &quot;-DFEATURE_DYNAMIC_CODE_COMPILED=1&quot;" />

@@ -20,9 +20,9 @@ set(MSCORDBI_SOURCES
 )
 
 # Add the DAC PAL export mapping file
-if(CLR_CMAKE_HOST_LINUX)
+if(CLR_CMAKE_HOST_LINUX AND NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
     list(APPEND MSCORDBI_SOURCES ${PAL_REDEFINES_FILE})
-endif(CLR_CMAKE_HOST_LINUX)
+endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
 
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
@@ -96,10 +96,19 @@ if(CLR_CMAKE_HOST_WIN32)
 
 elseif(CLR_CMAKE_HOST_UNIX)
 
-    list(APPEND COREDBI_LIBRARIES
-        # share the PAL in the dac module
-        mscordaccore
-    )
+    if(CLR_DUMP_COLLECT_PROVIDER_PATH)
+        target_compile_definitions(mscordbi PRIVATE MSCORDBI_LINKS_PRIVATE_PAL)
+        list(APPEND COREDBI_LIBRARIES
+            mscorrc
+            coreclrpal
+            coreclrminipal
+        )
+    else()
+        list(APPEND COREDBI_LIBRARIES
+            # share the PAL in the dac module
+            mscordaccore
+        )
+    endif()
 
     if(CLR_CMAKE_HOST_HAIKU)
         list(APPEND COREDBI_LIBRARIES
@@ -123,11 +132,13 @@ elseif(CLR_CMAKE_HOST_UNIX)
     # find all symbols.
     target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
 
-    add_dependencies(mscordbi mscordaccore)
+    if(NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
+        add_dependencies(mscordbi mscordaccore)
+    endif()
 
-    if(CLR_CMAKE_HOST_LINUX)
+    if(CLR_CMAKE_HOST_LINUX AND NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
         add_dependencies(mscordbi pal_redefines_file)
-    endif(CLR_CMAKE_HOST_LINUX)
+    endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
