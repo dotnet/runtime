@@ -1,0 +1,640 @@
+#!/usr/bin/env python3
+
+import argparse
+from dataclasses import dataclass
+import json
+import os
+import re
+import secrets
+import stat
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+from pathlib import Path
+from typing import Callable
+
+
+OUTPUT_ROOT = Path("/tmp/gh-aw/agent")
+TIMEOUT_SECONDS = 30
+JSON_LIMIT = 16 * 1024 * 1024
+LOG_LIMIT = 64 * 1024 * 1024
+CHUNK_SIZE = 64 * 1024
+ALLOWED_SKIPS = (0, 10, 20, 30, 40)
+AZDO_HOST = "dev.azure.com"
+AZDO_PATH_PREFIX = "/dnceng-public/public/_apis/build/"
+HELIX_HOST = "helix.dot.net"
+USER_AGENT = "ci-evidence-reader/1.0"
+
+_AZDO_BUILD_PATH = re.compile(r"^/dnceng-public/public/_apis/build/builds$")
+_AZDO_TIMELINE_PATH = re.compile(
+    r"^/dnceng-public/public/_apis/build/builds/[1-9][0-9]*/timeline$"
+)
+_AZDO_LOG_PATH = re.compile(
+    r"^/dnceng-public/public/_apis/build/builds/[1-9][0-9]*/logs/[1-9][0-9]*$"
+)
+_HELIX_WORK_ITEMS_PATH = re.compile(
+    r"^/api/jobs/[0-9a-f-]{36}/workitems$", re.IGNORECASE
+)
+_HELIX_CONSOLE_PATH = re.compile(
+    r"^/api/(?:2019-06-17/)?jobs/[0-9a-f-]{36}/workitems/"
+    r"[^/]+/files/console(?:\.[A-Za-z0-9_-]+)?\.log$",
+    re.IGNORECASE,
+)
+_BLOB_CONSOLE_PATH = re.compile(
+    r"^/(?:[^/]+/)+console(?:\.[A-Za-z0-9_-]+)?\.log$",
+    re.IGNORECASE,
+)
+_WORK_ITEM_NAME = re.compile(r"^[^\x00-\x1f\x7f]{1,512}$")
+_BLOB_QUERY_KEYS = {
+    "helixlogtype",
+    "rscc",
+    "rscd",
+    "rsce",
+    "rscl",
+    "rsct",
+    "se",
+    "si",
+    "sig",
+    "sip",
+    "ske",
+    "skoid",
+    "sks",
+    "skt",
+    "sktid",
+    "skv",
+    "sp",
+    "spr",
+    "sr",
+    "st",
+    "sv",
+}
+
+
+class TransportError(RuntimeError):
+    pass
+
+
+def _single_query_values(url: str) -> tuple[urllib.parse.SplitResult, dict[str, str]]:
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https":
+        raise TransportError("only HTTPS URLs are allowed")
+    if parts.username is not None or parts.password is not None:
+        raise TransportError("URL credentials are not allowed")
+    if parts.fragment:
+        raise TransportError("URL fragments are not allowed")
+    try:
+        if parts.port not in (None, 443):
+            raise TransportError("only the default HTTPS port is allowed")
+    except ValueError as error:
+        raise TransportError("invalid URL port") from error
+
+    values: dict[str, str] = {}
+    try:
+        query_values = (
+            urllib.parse.parse_qsl(
+                parts.query, keep_blank_values=True, strict_parsing=True
+            )
+            if parts.query
+            else ()
+        )
+    except ValueError as error:
+        raise TransportError("invalid URL query") from error
+    for key, value in query_values:
+        if key in values:
+            raise TransportError(f"duplicate query parameter: {key}")
+        values[key] = value
+    return parts, values
+
+
+def _validate_azdo_url(parts: urllib.parse.SplitResult, query: dict[str, str]) -> None:
+    if parts.hostname != AZDO_HOST or not parts.path.startswith(AZDO_PATH_PREFIX):
+        raise TransportError("URL is not a permitted dnceng-public build API endpoint")
+
+    if _AZDO_BUILD_PATH.fullmatch(parts.path):
+        expected_keys = {
+            "api-version",
+            "branchName",
+            "definitions",
+            "resultFilter",
+            "statusFilter",
+            "$top",
+            "$skip",
+        }
+        if set(query) != expected_keys:
+            raise TransportError("unexpected Azure DevOps build-list query parameters")
+        try:
+            definition = _positive_int(query["definitions"])
+            top = int(query["$top"])
+        except (ValueError, argparse.ArgumentTypeError) as error:
+            raise TransportError("invalid Azure DevOps build-list query") from error
+        try:
+            skip = int(query["$skip"])
+        except ValueError as error:
+            raise TransportError("invalid Azure DevOps build-list query") from error
+        if (
+            top != 25
+            or skip not in ALLOWED_SKIPS
+        ):
+            raise TransportError("Azure DevOps build-list query is outside permitted bounds")
+        if (
+            query["api-version"] != "7.1"
+            or query["branchName"] != "refs/heads/main"
+            or query["statusFilter"] != "completed"
+            or query["resultFilter"] != "succeeded,failed,partiallySucceeded"
+        ):
+            raise TransportError("Azure DevOps build-list filters are not permitted")
+        return
+
+    if (
+        _AZDO_TIMELINE_PATH.fullmatch(parts.path)
+        or _AZDO_LOG_PATH.fullmatch(parts.path)
+    ) and query == {"api-version": "7.1"}:
+        return
+
+    raise TransportError("URL is not a permitted Azure DevOps build endpoint")
+
+
+def _validate_helix_api_url(
+    parts: urllib.parse.SplitResult, query: dict[str, str]
+) -> str:
+    if parts.hostname != HELIX_HOST:
+        raise TransportError("URL is not a permitted Helix endpoint")
+    if _HELIX_WORK_ITEMS_PATH.fullmatch(parts.path) and query == {
+        "api-version": "2019-06-17"
+    }:
+        return "helix-work-items"
+    if _HELIX_CONSOLE_PATH.fullmatch(parts.path) and not query:
+        return "helix-console"
+    raise TransportError("URL is not a permitted Helix endpoint")
+
+
+def _validate_blob_console_url(
+    parts: urllib.parse.SplitResult, query: dict[str, str]
+) -> None:
+    hostname = parts.hostname or ""
+    if (
+        not hostname.startswith("helix")
+        or not hostname.endswith(".blob.core.windows.net")
+        or not _BLOB_CONSOLE_PATH.fullmatch(parts.path)
+    ):
+        raise TransportError("URL is not a permitted Helix console blob")
+    if not set(query).issubset(_BLOB_QUERY_KEYS):
+        raise TransportError("unexpected Helix console blob query parameters")
+
+
+def _validate_url(url: str, allowed_families: set[str]) -> None:
+    parts, query = _single_query_values(url)
+    if parts.hostname == AZDO_HOST:
+        _validate_azdo_url(parts, query)
+        family = "azdo"
+    elif parts.hostname == HELIX_HOST:
+        family = _validate_helix_api_url(parts, query)
+    elif (parts.hostname or "").endswith(".blob.core.windows.net"):
+        _validate_blob_console_url(parts, query)
+        family = "helix-console"
+    else:
+        raise TransportError("URL host is not permitted")
+
+    if family not in allowed_families:
+        raise TransportError(f"redirect escaped the permitted {sorted(allowed_families)} endpoints")
+
+
+class _ValidatingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def __init__(self, allowed_families: set[str]) -> None:
+        self._allowed_families = allowed_families
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _validate_url(newurl, self._allowed_families)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _read_response(response, limit: int) -> bytes:
+    content_length = response.headers.get("Content-Length")
+    if content_length is not None:
+        try:
+            if int(content_length) > limit:
+                raise TransportError(f"response exceeds the {limit}-byte limit")
+        except ValueError as error:
+            raise TransportError("invalid Content-Length header") from error
+
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = response.read(min(CHUNK_SIZE, limit - total + 1))
+        if not chunk:
+            return b"".join(chunks)
+        total += len(chunk)
+        if total > limit:
+            raise TransportError(f"response exceeds the {limit}-byte limit")
+        chunks.append(chunk)
+
+
+def _request_bytes(
+    url: str,
+    allowed_families: set[str],
+    limit: int,
+    opener=None,
+) -> bytes:
+    _validate_url(url, allowed_families)
+    if opener is None:
+        opener = urllib.request.build_opener(
+            _ValidatingRedirectHandler(allowed_families)
+        )
+    request = urllib.request.Request(url, method="GET", headers={"User-Agent": USER_AGENT})
+    try:
+        with opener.open(request, timeout=TIMEOUT_SECONDS) as response:
+            status = getattr(response, "status", 200)
+            if not 200 <= status < 300:
+                raise TransportError(f"HTTP request failed with status {status}")
+            return _read_response(response, limit)
+    except urllib.error.HTTPError as error:
+        raise TransportError(f"HTTP request failed with status {error.code}") from error
+    except urllib.error.URLError as error:
+        raise TransportError(f"HTTP request failed: {error.reason}") from error
+    except TimeoutError as error:
+        raise TransportError("HTTP request timed out") from error
+
+
+def _validate_output_path(value: str, suffixes: tuple[str, ...]) -> Path:
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        raise TransportError("output path must be absolute")
+
+    root = Path(os.path.abspath(OUTPUT_ROOT))
+    candidate = Path(os.path.abspath(candidate))
+    try:
+        candidate.relative_to(root)
+    except ValueError as error:
+        raise TransportError(f"output path must be under {OUTPUT_ROOT}/") from error
+
+    resolved_root = root.resolve()
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(resolved_root)
+    except ValueError as error:
+        raise TransportError(f"output path must be under {OUTPUT_ROOT}/") from error
+    if candidate == root or candidate.suffix.lower() not in suffixes:
+        raise TransportError(f"output path must end in one of: {', '.join(suffixes)}")
+    if candidate.is_symlink():
+        raise TransportError("output path must not be a symlink")
+    if candidate.exists() and not candidate.is_file():
+        raise TransportError("output path must be a regular file")
+    return candidate
+
+
+def _open_output_parent(output: Path) -> tuple[int, str]:
+    root = Path(os.path.abspath(OUTPUT_ROOT))
+    relative = output.relative_to(root)
+    root.mkdir(parents=True, exist_ok=True)
+
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    current_fd = -1
+    try:
+        current_fd = os.open(root, flags)
+        for component in relative.parts[:-1]:
+            try:
+                os.mkdir(component, mode=0o700, dir_fd=current_fd)
+            except FileExistsError:
+                pass
+            next_fd = os.open(component, flags, dir_fd=current_fd)
+            os.close(current_fd)
+            current_fd = next_fd
+        return current_fd, relative.name
+    except OSError as error:
+        if current_fd >= 0:
+            os.close(current_fd)
+        raise TransportError("output parent must be a real directory") from error
+
+
+def _open_portable_output_parent(output: Path) -> Path:
+    root = Path(os.path.abspath(OUTPUT_ROOT))
+    relative = output.relative_to(root)
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise TransportError("output parent must be a real directory") from error
+    if root.is_symlink() or not root.is_dir():
+        raise TransportError("output parent must be a real directory")
+
+    parent = root
+    for component in relative.parts[:-1]:
+        parent /= component
+        try:
+            parent.mkdir(mode=0o700, exist_ok=True)
+        except OSError as error:
+            raise TransportError("output parent must be a real directory") from error
+        if parent.is_symlink() or not parent.is_dir():
+            raise TransportError("output parent must be a real directory")
+    return parent
+
+
+def _reject_invalid_output(parent_fd: int, output_name: str) -> None:
+    try:
+        output_stat = os.stat(output_name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    if not stat.S_ISREG(output_stat.st_mode):
+        raise TransportError("output path must be a regular file")
+
+
+def _write_output_portably(data: bytes, output: Path) -> None:
+    parent = _open_portable_output_parent(output)
+    temporary = parent / f".{output.name}.{secrets.token_hex(8)}.tmp"
+    try:
+        if output.is_symlink() or (output.exists() and not output.is_file()):
+            raise TransportError("output path must be a regular file")
+        descriptor = os.open(
+            temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+        )
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if output.is_symlink() or (output.exists() and not output.is_file()):
+            raise TransportError("output path must be a regular file")
+        os.replace(temporary, output)
+    except OSError as error:
+        raise TransportError("could not write output") from error
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def _write_output(data: bytes, value: str, suffixes: tuple[str, ...]) -> None:
+    output = _validate_output_path(value, suffixes)
+    if not (hasattr(os, "O_DIRECTORY") and hasattr(os, "O_NOFOLLOW")):
+        _write_output_portably(data, output)
+        print(f"wrote {len(data)} bytes to {output}")
+        return
+
+    parent_fd, output_name = _open_output_parent(output)
+    temporary_name = f".{output_name}.{secrets.token_hex(8)}.tmp"
+    try:
+        _reject_invalid_output(parent_fd, output_name)
+        descriptor = os.open(
+            temporary_name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+            0o600,
+            dir_fd=parent_fd,
+        )
+        with os.fdopen(descriptor, "wb") as temporary:
+            temporary.write(data)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        os.replace(
+            temporary_name,
+            output_name,
+            src_dir_fd=parent_fd,
+            dst_dir_fd=parent_fd,
+        )
+    except OSError as error:
+        try:
+            os.unlink(temporary_name, dir_fd=parent_fd)
+        except FileNotFoundError:
+            pass
+        raise TransportError("could not write output") from error
+    finally:
+        os.close(parent_fd)
+    print(f"wrote {len(data)} bytes to {output}")
+
+
+def _positive_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be an integer") from error
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return parsed
+
+
+def _top(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be an integer") from error
+    if parsed != 25:
+        raise argparse.ArgumentTypeError("must be 25")
+    return parsed
+
+
+def _skip(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be an integer") from error
+    if parsed not in ALLOWED_SKIPS:
+        raise argparse.ArgumentTypeError("must be one of: 0, 10, 20, 30, 40")
+    return parsed
+
+
+def _job_id(value: str) -> str:
+    try:
+        return str(uuid.UUID(value))
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a UUID") from error
+
+
+def _work_item(value: str) -> str:
+    if not _WORK_ITEM_NAME.fullmatch(value) or value in {".", ".."}:
+        raise argparse.ArgumentTypeError("invalid work-item name")
+    return value
+
+
+def _azdo_builds_url(definition: int, top: int = 25, skip: int = 0) -> str:
+    query = urllib.parse.urlencode(
+        {
+            "definitions": definition,
+            "branchName": "refs/heads/main",
+            "statusFilter": "completed",
+            "resultFilter": "succeeded,failed,partiallySucceeded",
+            "$top": top,
+            "$skip": skip,
+            "api-version": "7.1",
+        },
+        safe=",/",
+    )
+    return f"https://{AZDO_HOST}{AZDO_PATH_PREFIX}builds?{query}"
+
+
+def _helix_work_items_url(job_id: str) -> str:
+    return (
+        f"https://{HELIX_HOST}/api/jobs/{job_id}/workitems"
+        "?api-version=2019-06-17"
+    )
+
+
+def _azdo_timeline_url(build_id: int) -> str:
+    return (
+        f"https://{AZDO_HOST}{AZDO_PATH_PREFIX}builds/{build_id}/timeline"
+        "?api-version=7.1"
+    )
+
+
+def _azdo_log_url(build_id: int, log_id: int) -> str:
+    return (
+        f"https://{AZDO_HOST}{AZDO_PATH_PREFIX}builds/{build_id}/logs/{log_id}"
+        "?api-version=7.1"
+    )
+
+
+@dataclass(frozen=True)
+class _RequestSpec:
+    argument_names: tuple[str, ...]
+    url_builder: Callable[..., str]
+    allowed_families: set[str]
+    limit: int
+    suffixes: tuple[str, ...]
+
+
+_REQUEST_SPECS = {
+    "azdo-builds": _RequestSpec(
+        ("definition", "top", "skip"),
+        _azdo_builds_url,
+        {"azdo"},
+        JSON_LIMIT,
+        (".json",),
+    ),
+    "azdo-timeline": _RequestSpec(
+        ("build_id",),
+        _azdo_timeline_url,
+        {"azdo"},
+        JSON_LIMIT,
+        (".json",),
+    ),
+    "azdo-log": _RequestSpec(
+        ("build_id", "log_id"),
+        _azdo_log_url,
+        {"azdo"},
+        LOG_LIMIT,
+        (".log", ".txt"),
+    ),
+    "helix-work-items": _RequestSpec(
+        ("job_id",),
+        _helix_work_items_url,
+        {"helix-work-items"},
+        JSON_LIMIT,
+        (".json",),
+    ),
+}
+
+
+def _request_from_spec(args: argparse.Namespace, spec: _RequestSpec) -> bytes:
+    arguments = (getattr(args, name) for name in spec.argument_names)
+    return _request_bytes(
+        spec.url_builder(*arguments), spec.allowed_families, spec.limit
+    )
+
+
+def _json_items(payload: bytes) -> list[dict]:
+    try:
+        document = json.loads(payload)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise TransportError("Helix work-item response was not valid JSON") from error
+
+    if isinstance(document, list):
+        items = document
+    elif isinstance(document, dict):
+        items = next(
+            (
+                document[key]
+                for key in ("value", "WorkItems", "workItems")
+                if isinstance(document.get(key), list)
+            ),
+            None,
+        )
+    else:
+        items = None
+    if items is None or not all(isinstance(item, dict) for item in items):
+        raise TransportError("Helix work-item response had an unexpected shape")
+    return items
+
+
+def _case_insensitive_field(item: dict, field_name: str):
+    for key, value in item.items():
+        if key.casefold() == field_name.casefold():
+            return value
+    return None
+
+
+def _console_url(payload: bytes, work_item: str) -> str:
+    matches = [
+        item
+        for item in _json_items(payload)
+        if (
+            _case_insensitive_field(item, "Name")
+            or _case_insensitive_field(item, "WorkItemName")
+        )
+        == work_item
+    ]
+    if len(matches) != 1:
+        raise TransportError(
+            f"expected exactly one Helix work item named {work_item!r}, found {len(matches)}"
+        )
+    console_url = _case_insensitive_field(matches[0], "ConsoleOutputUri")
+    if not isinstance(console_url, str) or not console_url:
+        raise TransportError("Helix work item did not contain a console output URL")
+    _validate_url(console_url, {"helix-console"})
+    return console_url
+
+
+def _run(args: argparse.Namespace) -> None:
+    if args.command == "helix-console":
+        work_items = _request_from_spec(args, _REQUEST_SPECS["helix-work-items"])
+        console_url = _console_url(work_items, args.work_item)
+        data = _request_bytes(console_url, {"helix-console"}, LOG_LIMIT)
+        suffixes = (".log", ".txt")
+    else:
+        spec = _REQUEST_SPECS[args.command]
+        data = _request_from_spec(args, spec)
+        suffixes = spec.suffixes
+    _write_output(data, args.output, suffixes)
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Read constrained CI evidence from approved endpoints"
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    builds = subparsers.add_parser("azdo-builds")
+    builds.add_argument("--definition", required=True, type=_positive_int)
+    builds.add_argument("--top", type=_top, default=25)
+    builds.add_argument("--skip", type=_skip, default=0)
+    builds.add_argument("--output", required=True)
+
+    timeline = subparsers.add_parser("azdo-timeline")
+    timeline.add_argument("--build-id", required=True, type=_positive_int)
+    timeline.add_argument("--output", required=True)
+
+    log = subparsers.add_parser("azdo-log")
+    log.add_argument("--build-id", required=True, type=_positive_int)
+    log.add_argument("--log-id", required=True, type=_positive_int)
+    log.add_argument("--output", required=True)
+
+    work_items = subparsers.add_parser("helix-work-items")
+    work_items.add_argument("--job-id", required=True, type=_job_id)
+    work_items.add_argument("--output", required=True)
+
+    console = subparsers.add_parser("helix-console")
+    console.add_argument("--job-id", required=True, type=_job_id)
+    console.add_argument("--work-item", required=True, type=_work_item)
+    console.add_argument("--output", required=True)
+    return parser
+
+
+def main() -> int:
+    try:
+        _run(_parser().parse_args())
+        return 0
+    except TransportError as error:
+        print(f"ci-evidence-reader: {error}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

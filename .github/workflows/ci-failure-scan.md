@@ -44,7 +44,7 @@ tools:
     toolsets: [pull_requests, repos, issues, search]
     min-integrity: approved
   edit:
-  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
+  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod", "ci-evidence-reader:*"]
 
 checkout:
   fetch-depth: 50
@@ -64,6 +64,14 @@ network:
     - dev.azure.com
     - helix.dot.net
     - "*.blob.core.windows.net"
+
+pre-agent-steps:
+  - name: Install CI evidence reader
+    run: |
+      mkdir -p "${RUNNER_TEMP}/gh-aw/ci-evidence-tools/bin"
+      cp .github/workflows/ci-evidence-reader "${RUNNER_TEMP}/gh-aw/ci-evidence-tools/bin/ci-evidence-reader"
+      chmod 0555 "${RUNNER_TEMP}/gh-aw/ci-evidence-tools/bin/ci-evidence-reader"
+      printf '%s\n' "${RUNNER_TEMP}/gh-aw/ci-evidence-tools/bin" >> "$GITHUB_PATH"
 ---
 
 # CI Outer-Loop Failure Scanner
@@ -128,7 +136,7 @@ Read once at start:
 
 For each row in the pipeline table below:
 
-1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
+1. Run `ci-evidence-reader azdo-builds --definition <id> --top 25 --skip 0 --output /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
 2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. That later build is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one. (The dnceng-public build-list is sorted DESC by `queueTime`, so `source` will appear AFTER its `follow_up` in the JSON array; "later in time" refers to wall-clock, not array position.)
 3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`. The 14-day window accommodates JIT-stress family pipelines (defs 109–160, 230, 235) that run on a weekly-or-longer cadence; tightening to 72h blanket-suppresses their actionable failures.
 4. Otherwise pass `source`'s failed timeline records to Step 3.
@@ -200,8 +208,8 @@ Do **not** collapse a build to one arbitrarily chosen failed `Send to Helix` log
 Save the canonical failure log to `/tmp/gh-aw/agent/failure.log` per signature before extracting; KBE check 7 greps it for the verbatim signature.
 
 ```bash
-log_url="<console URL from Helix work item or AzDO task log>"
-curl -s "$log_url" | tee /tmp/gh-aw/agent/failure.log | tail -5
+ci-evidence-reader helix-console --job-id JOBID --work-item "WORKITEM" --output /tmp/gh-aw/agent/failure.log
+tail -5 /tmp/gh-aw/agent/failure.log
 ```
 
 1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. Read the signature from the failing compile task log (CSxxxx / linker error / cmake error line).
@@ -217,9 +225,10 @@ If the same signature appears in *every* sampled build (100% failure rate in the
 #### Data sources
 
 - **AzDO REST.** `https://dev.azure.com/dnceng-public/public/_apis/build/...`. Anonymous, no auth.
-  - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1`
-  - Timeline: `/builds/{id}/timeline?api-version=7.1` returns flat `records[]`; reconstruct via `parentId`. A failed record with non-null log id is a leaf to inspect.
-- **Helix REST.** `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Each item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`.
+  - List builds: `ci-evidence-reader azdo-builds --definition ID --top 25 --skip N --output PATH.json`, with `N` restricted to `0,10,20,30,40`.
+  - Timeline: `ci-evidence-reader azdo-timeline --build-id ID --output PATH.json` returns flat `records[]`; reconstruct via `parentId`. A failed record with non-null log id is a leaf to inspect.
+  - Task log: `ci-evidence-reader azdo-log --build-id ID --log-id ID --output PATH.log`.
+- **Helix REST.** `ci-evidence-reader helix-work-items --job-id JOBID --output PATH.json` returns items with `Name`, `State`, `ExitCode`, and `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`. Use `ci-evidence-reader helix-console --job-id JOBID --work-item "WORKITEM" --output PATH.log` for the selected console.
 - **Build Analysis GitHub check (best-effort).** Read the source SHA from the
   AzDO build, then query
   `GET /repos/dotnet/runtime/commits/{sha}/check-runs` and inspect the completed
@@ -389,21 +398,15 @@ Sanitize every log excerpt in KBE issue bodies using
 
 ## Environment constraints
 
-These look like permission errors but are physical.
+All AzDO and Helix reads must use the repository-owned
+`ci-evidence-reader` helper installed by `pre-agent-steps`. It constructs and
+validates the fixed HTTPS endpoints, permits only GET requests, follows only
+allow-listed redirects, enforces response limits and a 30-second timeout, and writes
+only below `/tmp/gh-aw/agent/`. Use `--top 25` and `--skip 0|10|20|30|40` for build
+pagination. Do not invoke another HTTP client, construct URLs in shell, or use
+`actions/setup-python`; the execution image must provide `python3`.
 
-- **Pre-bind every URL to a shell variable on its own line, then `curl -s "$url"`.** Inline URLs with `?` or `&` are rejected as "Permission denied" even single-quoted (the tool-approver treats query strings as interactive prompts). Working pattern:
-
-  ```bash
-  url='https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1'
-  curl -s "$url" | jq '.' | tee /tmp/gh-aw/agent/builds.json | jq -r '.value[0] | "\(.id) \(.result)"'
-  ```
-
-  Do NOT retry an inline URL hoping the rejection clears. Switch to the variable pattern immediately.
-
-- **No `>` or `-o` redirection.** Use `| tee /path/to/file`.
-- **No `$(...)` or `${var@P}`.** Compose via `xargs -I{}` or by reading files inline.
-- **OData `$top` must be encoded as `%24top` in URLs.**
-- **Bash allowlist** (per the frontmatter `tools.bash`): `dotnet`, `git`, `find`, `ls`, `cat`, `grep`, `head`, `tail`, `wc`, `curl`, `jq`, `tee`, `sed`, `awk`, `tr`, `cut`, `sort`, `uniq`, `xargs`, `echo`, `date`, `mkdir`, `test`, `env`, `basename`, `dirname`, `bash`, `sh`, `chmod`. No `gh`, no `pwsh`, no `python`.
+- **Bash allowlist** (per the frontmatter `tools.bash`): `dotnet`, `git`, `find`, `ls`, `cat`, `grep`, `head`, `tail`, `wc`, `jq`, `tee`, `sed`, `awk`, `tr`, `cut`, `sort`, `uniq`, `xargs`, `echo`, `date`, `mkdir`, `test`, `env`, `basename`, `dirname`, `bash`, `sh`, `chmod`, `ci-evidence-reader:*`. No `gh`, `pwsh`, or `python`.
 - **Each bash call runs in a fresh subshell.** Persist state to `/tmp/gh-aw/agent/<file>`.
 
 ## Output discipline
