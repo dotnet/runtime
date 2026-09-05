@@ -5,8 +5,6 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133303 -->
-    <R2RIncompatible Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
     <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
     <IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
   </PropertyGroup>
