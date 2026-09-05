@@ -1045,13 +1045,17 @@ private:
 public:
     int GetStackOffset() const
     {
-        assert(lvValueSize().IsExact());
+        assert(lvValueSize().IsExact() || lvIsOSRLocal);
         return lvStkOffs;
     }
 
     void SetStackOffset(int offset)
     {
-        assert(lvValueSize().IsExact());
+        // If the local is a vector or a mask and has unknown size, we have to deal with VL
+        // scaled offsets and shouldn't be using this function. There is an exception for OSR
+        // locals, because OSR is a JIT only feature. We can derive an exact offset in this
+        // situation.
+        assert(lvValueSize().IsExact() || lvIsOSRLocal);
         lvStkOffs = offset;
     }
 
@@ -4740,6 +4744,15 @@ public:
             return GetOffset((unsigned)tmpDsc->tdTempOffs(), tmpDsc->tdTempType() == TYP_MASK);
         }
 
+        // When the VL is known at compile-time (JIT mode), we can determine the absolute
+        // offset relative to the initial state of SP after the prolog.
+        int GetExactOffset(LclVarDsc* varDsc, unsigned vl)
+        {
+            assert(isPow2(vl) && (vl >= MIN_SVE_REGSIZE_BYTES) && (vl <= MAX_SVE_REGSIZE_BYTES));
+            int scale = varDsc->TypeIs(TYP_MASK) ? vl / 8 : vl;
+            return GetAddressingOffset(varDsc) * scale;
+        }
+
         // This system ensures we don't try and generate an address on the frame
         // without finishing all allocations.
         void Finalize()
@@ -4854,6 +4867,28 @@ public:
 #else
         return false;
 #endif
+    }
+
+    //----------------------------------------------------------------------------------
+    // lvaIsLocalOnUnknownSizeFrame: Is this local allocated on the UnknownSizeFrame,
+    //                               instead of in traditional stack memory?
+    //
+    // If `varTypeHasUnknownSize(lclType) == true`, the local should be allocated on
+    // UnknownSizeFrame. There are some exceptions however:
+    //  1. If the local is a field of a dependently promoted structure, that structure
+    //     will be placed on the original stack frame.
+    //  2. If the local is an OSR local, it will be placed on the traditional stack
+    //     frame, and have an exact virtual address assigned.
+    //
+    // TODO-SVE: Situation 1 is inherently not VL-agnostic, and needs to be handled
+    //           with VL-agnostic struct layouts.
+    //
+    // Returns:
+    //     True if the local has a stack home on the UnknownSizeFrame.
+    bool lvaLocalIsOnUnknownSizeFrame(unsigned varNum)
+    {
+        return lvaIsUnknownSizeLocal(varNum)
+        && !lvaIsOSRLocal(varNum) && !lvaIsFieldOfDependentlyPromotedStruct(lvaGetDesc(varNum));
     }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
