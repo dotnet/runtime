@@ -50,6 +50,23 @@ namespace System.IO
             }
         }
 
+        // Returns the number of bytes available in the super stream from this substream window's start.
+        // Returns null when the super stream isn't seekable.
+        internal long? AvailableLengthInSuperStream
+        {
+            get
+            {
+                ThrowIfDisposed();
+                if (!_superStream.CanSeek)
+                {
+                    return null;
+                }
+
+                long superStreamLength = _superStream.Length;
+                return superStreamLength <= _startInSuperStream ? 0 : superStreamLength - _startInSuperStream;
+            }
+        }
+
         public override long Position
         {
             get
