@@ -5798,7 +5798,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-    if (!tailcall && !newObj && !isCalli && callInfo.sig.retType != CORINFO_TYPE_VOID)
+    // The interpreter does not currently report the Runtime Async continuation state alongside
+    // the normal return-value home. Suppress MRV information for async calls rather than expose
+    // the return slot from a suspended call as if it were a completed result.
+    if (!tailcall && !newObj && !isCalli && !callInfo.sig.isAsyncCall() &&
+        callInfo.sig.retType != CORINFO_TYPE_VOID)
         m_pLastNewIns->flags |= INTERP_INST_FLAG_DBG_CALL_INSTRUCTION;
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;

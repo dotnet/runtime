@@ -5857,7 +5857,12 @@ public:
     VMPTR_MethodDesc GetVMNativeCodeMethodDescToken() { return m_vmNativeCodeMethodDescToken; };
 
     // Worker function for GetReturnValueLiveOffset.
-    HRESULT GetReturnValueVariableHomes(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos);
+    HRESULT GetReturnValueVariableHomes(Instantiation *currentInstantiation,
+                                        ULONG32 ILoffset,
+                                        ULONG32 bufferSize,
+                                        ULONG32 *pFetched,
+                                        const ICorDebugInfo::NativeVarInfo **ppVarInfos,
+                                        bool includeAsyncContinuationMarker = false);
 
     // get total size of the code including both hot and cold regions
     ULONG32 GetSize();
