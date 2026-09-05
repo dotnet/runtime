@@ -19,9 +19,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void LatestHost_OldRuntime_BackwardsCompatible_60()
+        public void LatestHost_OldRuntime_BackwardsCompatible_100()
         {
-            LatestHost_OldRuntime_BackwardsCompatible(sharedTestState.App60);
+            LatestHost_OldRuntime_BackwardsCompatible(sharedTestState.App100);
         }
 
         private void LatestHost_OldRuntime_BackwardsCompatible(TestApp previousVersionApp)
@@ -59,9 +59,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void OldHost_LatestRuntime_ForwardCompatible_60()
+        public void OldHost_LatestRuntime_ForwardCompatible_100()
         {
-            OldHost_LatestRuntime_ForwardCompatible(sharedTestState.App60);
+            OldHost_LatestRuntime_ForwardCompatible(sharedTestState.App100);
         }
 
         private void OldHost_LatestRuntime_ForwardCompatible(TestApp previousVersionApp)
@@ -104,14 +104,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public class SharedTestState : IDisposable
         {
-            public TestApp App60 { get; }
+            public TestApp App100 { get; }
             public TestApp AppLatest { get; }
 
             private const string AppName = "HelloWorld";
+            private const string PreviousVersionTfm = "net10.0";
 
             public SharedTestState()
             {
-                App60 = TestApp.CreateFromBuiltAssets(AppName, Path.Combine("SelfContained", "net6.0"));
+                App100 = TestApp.CreateFromBuiltAssets(AppName, Path.Combine("SelfContained", PreviousVersionTfm));
 
                 AppLatest = TestApp.CreateFromBuiltAssets(AppName);
                 AppLatest.PopulateSelfContained(TestApp.MockedComponent.None);
@@ -119,7 +120,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public void Dispose()
             {
-                App60?.Dispose();
+                App100?.Dispose();
                 AppLatest?.Dispose();
             }
         }
