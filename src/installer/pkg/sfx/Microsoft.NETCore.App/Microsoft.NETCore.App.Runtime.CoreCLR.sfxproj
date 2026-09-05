@@ -75,13 +75,16 @@
        webcil-in-wasm R2R images under native/r2r/ for trimming and per-app R2R. -->
   <Target Name="_ConfigureBrowserFrameworkR2R"
           Condition="'$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true'"
-          BeforeTargets="_PrepareForReadyToRunCompilation">
+          BeforeTargets="_PrepareForReadyToRunCompilation"
+          DependsOnTargets="ResolveProjectReferences;ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
-      <_WasmFrameworkR2RInput Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll"
-                              Exclude="$(LibrariesSharedFrameworkBinArtifactsPath)*.resources.dll" />
+      <_WasmFrameworkR2RReference Include="@(_NetCoreAppLibrarySourceAssembly)"
+                                  Condition="'%(_NetCoreAppLibrarySourceAssembly.Extension)' == '.dll' and
+                                             '%(_NetCoreAppLibrarySourceAssembly.Filename)' != 'System.Private.CoreLib'" />
+      <_WasmFrameworkR2RInput Include="@(_WasmFrameworkR2RReference)" />
       <_WasmFrameworkR2RInput Remove="@(_WasmFrameworkR2RInput)"
                               Condition="'$(WasmFrameworkR2RSubset)' != '' and !$([System.String]::Copy(';$(WasmFrameworkR2RSubset);').Contains(';%(FileName);'))" />
-      <_WasmFrameworkR2RExclude Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll"
+      <_WasmFrameworkR2RExclude Include="@(_WasmFrameworkR2RReference)"
                                 Exclude="@(_WasmFrameworkR2RInput)" />
       <PublishReadyToRunExclude Include="@(_WasmFrameworkR2RExclude->'%(FileName)%(Extension)')" />
       <PublishReadyToRunExclude Include="System.Private.CoreLib.dll" />
@@ -96,7 +99,7 @@
     <Error Condition="!Exists('$(_WasmCrossgen2Exe)')"
            Text="PublishReadyToRun is true but crossgen2 was not found at '$(_WasmCrossgen2Exe)'. Build the crossgen2 pack or set PublishReadyToRun=false." />
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll;$(_WasmCoreLibIL)" />
+      <_ReadyToRunCompilerInputs Include="@(_WasmFrameworkR2RReference);$(_WasmCoreLibIL)" />
       <_ReadyToRunCompilerInputs Include="$(Crossgen2InBuildDir)*jit*.dll;$(Crossgen2InBuildDir)*jit*.dylib;$(Crossgen2InBuildDir)*jit*.so" />
     </ItemGroup>
   </Target>
