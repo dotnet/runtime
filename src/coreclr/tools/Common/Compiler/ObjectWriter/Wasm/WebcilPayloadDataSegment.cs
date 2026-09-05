@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.TypeSystem;
 using Microsoft.NET.WebAssembly.Webcil;
 
@@ -12,19 +13,22 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// The data segment of Webcil modules that contains the Webcil payload composed of WebcilSections.
     /// </summary>
-    internal sealed class WebcilPayloadDataSegment : IWasmDataSegment
+    internal sealed class WebcilPayloadDataSegment : IWasmActiveDataSegment
     {
         private readonly WebcilHeader _header;
         private readonly WebcilSection[] _sections;
+        private readonly WasmInstructionGroup _offsetExpr;
         private readonly int _alignment;
         private int _paddingBytesCount;
 
         public WebcilPayloadDataSegment(
             WebcilHeader header,
-            WebcilSection[] sections)
+            WebcilSection[] sections,
+            WasmInstructionGroup offsetExpr = null)
         {
             _header = header;
             _sections = sections;
+            _offsetExpr = offsetExpr;
             _alignment = WebCilObjectWriter.WebcilSectionAlignment;
             foreach (WebcilSection section in sections)
             {
@@ -33,9 +37,10 @@ namespace ILCompiler.ObjectWriter
         }
 
         public int HeaderSize =>
-            WasmDataSegmentEncoding.GetHeaderSize(WasmDataSegmentType.Passive, initExpr: null);
+            WasmDataSegmentEncoding.GetHeaderSize(SegmentType, _offsetExpr);
 
         public int FileAlignment => _alignment;
+        public int MemoryAlignment => _alignment;
 
         private int RawContentSize
         {
@@ -56,7 +61,8 @@ namespace ILCompiler.ObjectWriter
 
         public int ContentSize => checked(RawContentSize + _paddingBytesCount);
 
-        public WasmDataSegmentType SegmentType => WasmDataSegmentType.Passive;
+        public WasmDataSegmentType SegmentType =>
+            _offsetExpr is null ? WasmDataSegmentType.Passive : WasmDataSegmentType.Active;
 
         public int EncodeSize() => HeaderSize + ContentSize;
 
@@ -65,8 +71,8 @@ namespace ILCompiler.ObjectWriter
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             int headerSize = WasmDataSegmentEncoding.EncodeHeader(
                 headerBuffer,
-                WasmDataSegmentType.Passive,
-                initExpr: null,
+                SegmentType,
+                _offsetExpr,
                 ContentSize);
             Debug.Assert(headerSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
@@ -108,6 +114,13 @@ namespace ILCompiler.ObjectWriter
         {
             Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);
             return offsetInSegment;
+        }
+
+        public void SetMemoryOffset(int offset)
+        {
+            // The payload is the only active segment and is based at the host-supplied image base.
+            // Its section RVAs remain relative to that base, not to an absolute linear-memory address.
+            Debug.Assert(offset == 0);
         }
     }
 }

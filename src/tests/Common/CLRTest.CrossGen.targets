@@ -66,6 +66,10 @@ fi
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   export TEST_READY_TO_RUN_MODE=1
+  if [ "$(TargetOS)" == "wasi" ]; then
+    # WASI loads R2R code from a single composite spliced into the host.
+    export CompositeBuildMode=1
+  fi
   compilationDoneFlagFile="IL-CG2/done"
   if [ -d IL-CG2 ]%3B then
     while [ ! -f $compilationDoneFlagFile ]%3B
@@ -233,6 +237,21 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
               break
             fi
           done
+      fi
+
+      if [ "$(TargetOS)" == "wasi" ] && [ $__cg2ExitCode -eq 0 ] && [ $__r2rDumpExitCode -eq 0 ]; then
+        (
+          mkdir -p IL-CG2/wasi-r2r/comp || exit 1
+          for dllFile in "$PWD"/IL-CG2/*.dll; do
+            bareFileName="${dllFile##*/}"
+            cp "$PWD/${bareFileName%.dll}.wasm" IL-CG2/wasi-r2r/comp/ || exit 1
+          done
+          COMP="$PWD/composite-r2r.wasm" CORERUN="$CORE_ROOT/corerun" OUTDIR="$PWD/IL-CG2/wasi-r2r" python3 "$CORE_ROOT/wasi-r2r/compose-r2r.py"
+        )
+        __linkExitCode=$?
+        if [ $__linkExitCode -ne 0 ]; then
+          rm -f "$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm"
+        fi
       fi
 
       echo "Crossgen2 compilation finished, exit code $__cg2ExitCode" >> $compilationDoneFlagFile
