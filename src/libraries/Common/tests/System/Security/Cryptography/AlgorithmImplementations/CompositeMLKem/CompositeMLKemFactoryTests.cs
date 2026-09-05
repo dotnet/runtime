@@ -41,14 +41,26 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void IsAlgorithmSupported_AgreesWithPlatform(CompositeMLKemAlgorithm algorithm)
         {
-            bool supported =
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
-                MLKem.IsSupported &&
-                CompositeMLKemTestData.ExecuteComponentFunc(
-                    algorithm,
-                    rsa => true,
-                    ecdh => ecdh.IsSecg,
-                    xdh => xdh.IsX25519 && X25519DiffieHellman.IsSupported);
+            bool supported;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                supported =
+                    CompositeMLKemTestHelpers.IsBCryptSupported &&
+                        (algorithm == CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256 ||
+                        algorithm == CompositeMLKemAlgorithm.MLKem768WithX25519 ||
+                        algorithm == CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP384);
+            }
+            else
+            {
+                supported =
+                    MLKem.IsSupported &&
+                    CompositeMLKemTestData.ExecuteComponentFunc(
+                        algorithm,
+                        rsa => true,
+                        ecdh => ecdh.IsSecg,
+                        xdh => xdh.IsX25519 && X25519DiffieHellman.IsSupported);
+            }
 
             Assert.Equal(supported, CompositeMLKem.IsAlgorithmSupported(algorithm));
         }
