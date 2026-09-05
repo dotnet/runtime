@@ -131,9 +131,9 @@ namespace System.Text
             _value = scalarValue;
         }
 
-        public static bool operator ==(Rune left, Rune right) => left._value == right._value;
+        public static bool operator ==(Rune left, Rune right) => left.Equals(right);
 
-        public static bool operator !=(Rune left, Rune right) => left._value != right._value;
+        public static bool operator !=(Rune left, Rune right) => !left.Equals(right);
 
         public static bool operator <(Rune left, Rune right) => left._value < right._value;
 
@@ -787,7 +787,7 @@ namespace System.Text
 
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
-        public bool Equals(Rune other) => this == other;
+        public bool Equals(Rune other) => _value == other._value;
 
         /// <summary>
         /// Returns a value that indicates whether the current instance and a specified rune are equal using the specified comparison option.

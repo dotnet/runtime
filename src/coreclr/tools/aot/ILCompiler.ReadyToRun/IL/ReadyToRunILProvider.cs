@@ -77,11 +77,6 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
-            {
-                return RuntimeHelpersIntrinsics.EmitIL(method);
-            }
-
             if (mdType.Name == "Unsafe"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
                 return UnsafeIntrinsics.EmitIL(method);
@@ -105,11 +100,6 @@ namespace Internal.IL
             var mdType = method.OwningType as MetadataType;
             if (mdType == null)
                 return null;
-
-            if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
-            {
-                return RuntimeHelpersIntrinsics.EmitIL(method);
-            }
 
             if (mdType.Name == "Activator"u8 && mdType.Namespace == "System"u8)
             {
