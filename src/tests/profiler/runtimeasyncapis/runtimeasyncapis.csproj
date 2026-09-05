@@ -4,6 +4,13 @@
     <OutputType>exe</OutputType>
     <Optimize>true</Optimize>
     <Features>$(Features);runtime-async=on</Features>
+    <!--
+      This profiler test relies on JIT hooks firing, so it does not validate the same behavior when
+      the runtime is executed in interpreter or ReadyToRun modes. Skip those non-fully-JITed paths
+      until ActiveIssue https://github.com/dotnet/runtime/issues/132810 is fixed.
+    -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <R2RIncompatible>true</R2RIncompatible>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
