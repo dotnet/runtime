@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -908,8 +909,21 @@ namespace System.Runtime.CompilerServices
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     Continuation? nextContinuation = state.SentinelContinuation!.Next;
+                    Task? awaitedTask = (nextContinuation as RuntimeAsyncTaskContinuation)?.Task;
 
                     AsyncDebugger.HandleSuspended(nextContinuation);
+
+                    TplEventSource log = TplEventSource.Log;
+                    if (awaitedTask is not null &&
+                        log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TaskTransfer | TplEventSource.Keywords.Tasks))
+                    {
+                        log.TaskWaitBegin(
+                            m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
+                            Id,
+                            awaitedTask.Id,
+                            TplEventSource.TaskWaitBehavior.Asynchronous,
+                            Id);
+                    }
 
                     if (!HandleSuspended(ref state))
                     {
