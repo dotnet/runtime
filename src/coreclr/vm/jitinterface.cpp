@@ -13061,7 +13061,15 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 }
 
 /*********************************************************************/
-HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
+#ifdef FEATURE_PGO
+static bool InterpreterPgoInstrumentationEnabled()
+{
+    static ConfigDWORD s_interpPgo;
+    return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
+}
+#endif // FEATURE_PGO
+
+HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
             uint32_t countSchemaItems, /* IN */
@@ -13080,9 +13088,10 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
 
 #ifdef FEATURE_PGO
 
-    // Only try instrumenting tiering-eligible methods
+    // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
+    // which case we instrument every method for offline profile collection.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    if (pMD->IsEligibleForTieredCompilation())
+    if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
     {
         hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
     }
@@ -13091,7 +13100,7 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         hr = E_NOTIMPL;
     }
 #else
-    _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
+    _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
 #endif // !FEATURE_PGO
 
@@ -13100,9 +13109,9 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     return hr;
 }
 
-// Consider implementing getBBProfileData on CEEJitInfo.  This will allow us
+// Consider implementing getBBProfileData on CEECodeGenInfo.  This will allow us
 // to use profile info in codegen for non zapped images.
-HRESULT CEEJitInfo::getPgoInstrumentationResults(
+HRESULT CEECodeGenInfo::getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
@@ -13163,7 +13172,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     *pPgoSource = pDataCur->m_pgoSource;
     hr = pDataCur->m_hr;
 #else
-    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEEJitInfo!");
+    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
 #endif
 

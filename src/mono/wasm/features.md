@@ -430,6 +430,56 @@ globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
 
 The counters could be opened in VS or in `PerfView.exe`
 
+```js
+globalThis.getDotnetRuntime(0).collectPgoTrace()
+// stops and downloads automatically after 10s; pass a different duration with:
+globalThis.getDotnetRuntime(0).collectPgoTrace({durationSeconds: 30})
+```
+
+This captures a startup PGO trace on the CoreCLR interpreter. To arm the trace before the first
+managed method compiles, set `DOTNET_DiagnosticPorts=js://pgo`. The trace always contains the method
+list; to also capture **block counts** the interpreter must be instrumented, which is enabled with
+`DOTNET_InterpPGO=1`:
+
+```xml
+<ItemGroup>
+  <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
+  <WasmEnvironmentVariable Include="DOTNET_InterpPGO" Value="1" />
+</ItemGroup>
+```
+
+Instrumentation can be scoped to a subset of methods with `DOTNET_InterpPGOMethods` (standard MethodSet
+filter format; empty = all methods) to bound overhead during bring-up.
+
+Convert the downloaded `xxx.nettrace` into an `.mibc` with `dotnet-pgo` (installed via
+`dotnet tool install --global dotnet-pgo`, or from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`
+in a runtime build):
+
+```console
+dotnet-pgo create-mibc --trace xxx.nettrace --reference <trimmed-IL-dlls>/*.dll --output app.mibc
+```
+
+The resulting `.mibc` drives a profile-guided crossgen2 build.
+
+#### Referencing the right (IL-trimmed) assemblies
+
+`--reference` must point at assemblies whose **MVID** matches the modules recorded in the trace, otherwise
+`dotnet-pgo` reports `Dll mismatch ...` (or `Unknown ModuleID` for the affected methods). On browser/wasm
+the assemblies loaded by the runtime are the **IL-trimmed** ones: `PublishTrimmed`/ILLink rewrites each
+assembly and **generates a fresh MVID**, then those trimmed DLLs are converted to the fingerprinted
+`*.wasm` files in `_framework` (webcil preserves the MVID byte-for-byte). So the trace records the
+**trimmed** MVIDs, which do **not** match the untrimmed assemblies in the runtime pack
+(`microsoft.netcore.app.runtime.browser-wasm/.../runtimes/browser-wasm/native/*.dll`).
+
+Point `--reference` at the ILLink trim output instead:
+
+- Published app: `obj/<Config>/<TFM>/browser-wasm/linked/*.dll`
+- In this repo's WASM samples: `artifacts/obj/mono/<App>/browser.wasm.<Config>/linked/*.dll`
+
+If a method's assembly is not among the references, `dotnet-pgo` skips it with an `Unknown ModuleID`
+warning; pass every trimmed assembly the app exercised to capture all of them. `dotnet-pgo dump --input app.mibc`
+lists the methods and their block counts.
+
 
 ### Profiling in the browser dev tools
 

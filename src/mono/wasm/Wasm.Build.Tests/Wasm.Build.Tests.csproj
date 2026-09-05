@@ -57,10 +57,30 @@
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
+    <!-- Built (not linked) so EventPipeDiagnosticsTests can invoke it to turn an interpreter PGO trace into an .mibc. -->
+    <ProjectReference Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
+                      Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
+                      ReferenceOutputAssembly="false" />
+
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Copy dotnet-pgo (and its dependencies) next to the test so EventPipeDiagnosticsTests can run it. -->
+  <Target Name="_CopyDotnetPgoToTestOutput" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" AfterTargets="Build">
+    <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="_DotnetPgoBuiltAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <_DotnetPgoOutputFiles Include="%(_DotnetPgoBuiltAssembly.RootDir)%(_DotnetPgoBuiltAssembly.Directory)**\*" />
+    </ItemGroup>
+    <!-- Pre-create nested output dirs (e.g. amd64/, arm64/); Copy's own dir creation races on them. -->
+    <MakeDir Directories="@(_DotnetPgoOutputFiles->'$(OutDir)dotnet-pgo\%(RecursiveDir)')" />
+    <Copy SourceFiles="@(_DotnetPgoOutputFiles)"
+          DestinationFiles="@(_DotnetPgoOutputFiles->'$(OutDir)dotnet-pgo\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
     <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''" Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />

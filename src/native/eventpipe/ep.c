@@ -802,6 +802,11 @@ stop_session (EventPipeSessionID id)
 		EventPipeProviderCallbackData provider_callback_data;
 		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
 
+		// Give the runtime a chance to emit any pending end-of-session data (e.g. block-count PGO)
+		// into the still-live session. This must run before taking the EventPipe lock: emitting events
+		// re-enters the write path, which requires the lock not be held.
+		ep_rt_session_stopping ();
+
 		EP_LOCK_ENTER (section1)
 			if (is_session_id_in_collection (id))
 				disable_holding_lock (id, provider_callback_data_queue);
