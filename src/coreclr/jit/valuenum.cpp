@@ -14978,6 +14978,8 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     {
         if (call->GetAsyncInfo().AlwaysSuspends)
         {
+            JITDUMP("Call [%06u] always suspends; establishing always resumed state for V%02u\n", dspTreeID(call),
+                    asyncResumedLclAddr->GetLclNum());
             asyncResumedVNP.SetBoth(vnStore->VNOneForType(TYP_I_IMPL));
         }
         else
@@ -14996,6 +14998,8 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
                     ValueNum resumedUseVN = vnStore->VNNormalValue(resumedUseArg->GetNode()->GetVN(vnKind));
                     if (vnStore->IsVNConstant(resumedUseVN) && (vnStore->CoercedConstantValue<int>(resumedUseVN) == 1))
                     {
+                        JITDUMP("Call [%06u] propagates always resumed state for V%02u (%s VN)\n", dspTreeID(call),
+                                asyncResumedLclAddr->GetLclNum(), vnKind == VNK_Liberal ? "liberal" : "conservative");
                         asyncResumedVNP.Set(vnKind, vnStore->VNOneForType(TYP_I_IMPL));
                     }
                 }
