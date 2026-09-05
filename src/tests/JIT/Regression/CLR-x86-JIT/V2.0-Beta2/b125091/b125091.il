@@ -8,8 +8,6 @@
 }
 .assembly extern mscorlib {}
 .assembly extern System {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
-.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly 'b125091' {}
 .assembly extern xunit.core {}
 .class public EHTest
@@ -141,11 +139,6 @@ ret
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
-.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-    string('https://github.com/dotnet/runtime/issues/133221')
-    type([TestLibrary]TestLibrary.PlatformDetection)
-    string[2] ('IsBrowser' 'IsReadyToRunCompiled')
-}
 .entrypoint
 .maxstack 500
 .maxstack 500
