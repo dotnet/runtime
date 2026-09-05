@@ -2549,9 +2549,6 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
-        [Intrinsic]
-        internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void MulticastDebuggerTraceHelper(object o, int count)
         {
