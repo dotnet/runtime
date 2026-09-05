@@ -72,6 +72,26 @@ uses `user.login` to recognize trusted bots before filtering search results.
    human-filed report (`Test failure: ...`) that lacks both the
    `Known Build Error` and area labels, so the label-scoped variations above
    skip over it.
+8. Build-break invariant plus leg root. For a build break with no test or method
+   identifier, derive two bounded, verbatim fragments:
+   - an invariant error phrase from `ErrorMessage` / `ErrorPattern`, removing
+     only volatile paths, line numbers, hashes, GUIDs, timestamps, and exit
+     codes; keep a distinctive 1–8 word literal fragment and reject generic
+     tool or build-failed text;
+   - a leg root from `Build error leg or test failing`, taking the leg portion
+     before the template's final `-` separator (commonly rendered as ` - `),
+     then removing platform, architecture, configuration, retry, and
+     parenthesized run-specific details; keep at most 4 distinctive words
+     (80 characters).
+
+   Search the pair together in the same issue:
+   `is:issue is:open label:"Known Build Error" in:body "<invariant-error-phrase>" "<leg-root>"`.
+   For an `ErrorMessage` array, try each stable element separately. Treat a
+   result as a candidate only when both fragments match and the full candidate
+   verification below succeeds. If more than one candidate remains plausible,
+   do not guess: record `skipped: ambiguous dup #<a>/#<b>, needs human review`.
+   If either fragment cannot be bounded, do not broaden the search; record the
+   existing `skipped: weak signature` outcome instead.
 
 When a failure includes a complete test method identifier, search that
 identifier verbatim before deriving any shorter stem. Do not truncate
@@ -84,6 +104,8 @@ different platform or runtime variant, plus pre-existing area-team trackers
 that lack the `Known Build Error` label. Variation 6 catches siblings at
 different bit widths, instantiations, script runners, or exit/signal
 descriptors. Variation 7 catches an open human report with no label at all.
+Variation 8 catches build-break duplicates whose invariant error text and leg
+root remain stable while title prose drifts.
 
 If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
