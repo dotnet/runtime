@@ -404,11 +404,37 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
     return continueResolving;
 }
 
+void probe_paths_t::tpa_t::add(pal::string_t&& path)
+{
+    size_t file_name_offset = path.find_last_of(DIR_SEPARATOR);
+    assert(file_name_offset != pal::string_t::npos);
+    ++file_name_offset;
+    assert(file_name_offset < path.size());
+
+    size_t directory_index = 0;
+    for (; directory_index < directories.size(); ++directory_index)
+    {
+        const entry_t& existing = entries[directories[directory_index]];
+        if (existing.file_name_offset == file_name_offset &&
+            path.compare(0, file_name_offset, existing.path, 0, existing.file_name_offset) == 0)
+        {
+            break;
+        }
+    }
+
+    if (directory_index == directories.size())
+    {
+        directories.push_back(entries.size());
+    }
+
+    entries.push_back({ std::move(path), directory_index, file_name_offset });
+}
+
 /**
  *  Resolve the TPA assembly locations
  */
 bool deps_resolver_t::resolve_tpa_list(
-        pal::string_t* output,
+        probe_paths_t::tpa_t* output,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {
@@ -565,11 +591,10 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    // Convert the paths into a string and return it
-    for (const auto& item : items)
+    output->entries.reserve(output->entries.size() + items.size());
+    for (std::pair<const pal::string_t, deps_resolved_asset_t>& item : items)
     {
-        output->append(item.second.resolved_path);
-        output->push_back(PATH_SEPARATOR);
+        output->add(std::move(item.second.resolved_path));
     }
 
     return true;

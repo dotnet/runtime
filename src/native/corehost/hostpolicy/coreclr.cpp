@@ -155,7 +155,6 @@ namespace
 {
     const pal::char_t *PropertyNameMapping[] =
     {
-        _X("TRUSTED_PLATFORM_ASSEMBLIES"),
         _X("NATIVE_DLL_SEARCH_DIRECTORIES"),
         _X("PLATFORM_RESOURCE_ROOTS"),
         _X("APP_CONTEXT_BASE_DIRECTORY"),
@@ -210,6 +209,11 @@ bool coreclr_property_bag_t::add(const pal::char_t *key, const pal::char_t *valu
         _properties[key] = value;
         return false;
     }
+}
+
+bool coreclr_property_bag_t::contains(const pal::char_t *key) const
+{
+    return _properties.find(key) != _properties.cend();
 }
 
 bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **value) const
