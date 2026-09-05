@@ -1580,18 +1580,37 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
 
     /* +0x390 */ DWORD64 XStateFeaturesMask;
-
-    //
-    // Sve Registers
-    //
-    // TODO-SVE: Support Vector register sizes >128bit
-    // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
-    /* +0x398 */ DWORD Vl;
-    /* +0x39c */ DWORD Ffr;
-    /* +0x3a0 */ DWORD P[16];
-    /* +0x3e0 */
+    /* +0x3a0 */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+// The SVE header immediately follows CONTEXT, when CONTEXT_XSTATE is set and
+// XStateFeaturesMask contains XSTATE_MASK_ARM64_SVE.
+// If CONTEXT_SVE_STATE_HEADER.VectorLengthInBytes != 0, it is immediately
+// followed by the serialized state of the vector/predicate register files,
+// and the first-faulting register, padded to 16-byte alignment. The bottom
+// 128 bits of each Z register are duplicated in CONTEXT::V in this design.
+//
+//  +------------------------------------------+
+//  |                 CONTEXT                  |
+//  +------------------------------------------+
+//  | CONTEXT_SVE_STATE_HEADER (16 bytes)      |
+//  +------------------------------------------+
+//  | Z0..Z31 (32 * VL bytes)                  |
+//  +------------------------------------------+
+//  | P0..P15 (16 * VL/8 bytes)                |
+//  +------------------------------------------+
+//  | FFR (VL/8 bytes)                         |
+//  +------------------------------------------+
+//  | padding to 16-byte alignment             |
+//  +------------------------------------------+
+//
+// TODO-SVE: We should update this layout to conform with Windows XSTATE.
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT_SVE_STATE_HEADER
+{
+    DWORD VectorLengthInBytes;
+    DWORD Reserved[3];
+} CONTEXT_SVE_STATE_HEADER, *PCONTEXT_SVE_STATE_HEADER;
 
 //
 // Nonvolatile context pointer record.
