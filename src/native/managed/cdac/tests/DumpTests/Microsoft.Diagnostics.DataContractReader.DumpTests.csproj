@@ -88,9 +88,10 @@
     </MSBuild>
 
     <ItemGroup Condition="'$(SkipDebuggeeCopy)' != 'true'">
+      <_MiniDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Mini'))" DumpDir="mini" MiniDumpType="1" />
       <_HeapDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap'))" DumpDir="heap" MiniDumpType="2" />
       <_FullDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" MiniDumpType="4" />
-      <_DumpTypeDebuggee Include="@(_HeapDebuggee);@(_FullDebuggee)" />
+      <_DumpTypeDebuggee Include="@(_MiniDebuggee);@(_HeapDebuggee);@(_FullDebuggee)" />
       <!-- Cross-product DumpType × R2RMode -->
       <_R2RDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" R2RValue="1" />
       <_JitDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit'))" R2RDir="jit" R2RValue="0" />
