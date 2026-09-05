@@ -344,8 +344,8 @@ internal static partial class Interop
                                     Debug.Fail($"Unexpected cgroup version \"{cgroupVersion}\"");
                                 }
 
-                                root = mount.Root.ToString();
-                                path = mount.MountPoint.ToString();
+                                root = Interop.procfs.DecodeMountInfoPath(mount.Root);
+                                path = Interop.procfs.DecodeMountInfoPath(mount.MountPoint);
 
                                 return true;
                             }
