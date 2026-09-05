@@ -65,6 +65,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
+            PseudoCustomAttributes.Lower(_entityRegistry, _diagnostics);
             Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
             // MetadataRootBuilder only supports module-wide validation suppression, which is
             // required because wrapped GenericParam numbers intentionally violate table ordering.
