@@ -24,8 +24,14 @@ public class Runtime_117566
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
     public static void TestEntryPoint()
     {
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return;
+        }
+
         var context = new AssemblyLoadContext("CollectibleALC", isCollectible: true);
-        Assembly assembly = context.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+        Assembly assembly = context.LoadFromAssemblyPath(assemblyPath);
 
         var method = assembly.GetType(nameof(Runtime_117566)).GetMethod(nameof(Synchronized), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
         method?.Invoke(null, []);
