@@ -30,6 +30,47 @@ static const int MAX_SEARCH_DEPTH = 100;
 static const int MAX_VISIT_BUDGET = 8192;
 
 //------------------------------------------------------------------------
+// IsVNUnsignedRemainder: Check whether a VN is an unsigned division remainder
+//
+// Return Value:
+//    True if the VN has the form dividend - (dividend / divisor) * divisor
+//
+static bool IsVNUnsignedRemainder(ValueNumStore* vnStore, ValueNum vn, ValueNum* divisorVN)
+{
+    ValueNum dividendVN;
+    ValueNum productVN;
+    if (!vnStore->IsVNBinFunc(vn, VNF_SUB, &dividendVN, &productVN))
+    {
+        return false;
+    }
+
+    ValueNum productOp1VN;
+    ValueNum productOp2VN;
+    if (!vnStore->IsVNBinFunc(productVN, VNF_MUL, &productOp1VN, &productOp2VN))
+    {
+        return false;
+    }
+
+    ValueNum quotientDividendVN;
+    ValueNum quotientDivisorVN;
+    if (vnStore->IsVNBinFunc(productOp1VN, VNF_UDIV, &quotientDividendVN, &quotientDivisorVN) &&
+        (quotientDividendVN == dividendVN) && (quotientDivisorVN == productOp2VN))
+    {
+        *divisorVN = quotientDivisorVN;
+        return true;
+    }
+
+    if (vnStore->IsVNBinFunc(productOp2VN, VNF_UDIV, &quotientDividendVN, &quotientDivisorVN) &&
+        (quotientDividendVN == dividendVN) && (quotientDivisorVN == productOp1VN))
+    {
+        *divisorVN = quotientDivisorVN;
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // GetRangeCheck: get the RangeCheck instance
 //
 // Returns:
@@ -109,35 +150,27 @@ int RangeCheck::GetArrLength(ValueNum vn)
 // BetweenBounds: Check if the computed range is within bounds
 //
 // Arguments:
-//    Range - the range to check if in bounds
-//    upper - the array length vn
-//    arrSize - the length of the array if known, or <= 0
+//    range - the range of possible starting indices
+//    uLimitVN - the value number of the exclusive upper bound
+//    arrSize - the constant upper bound if known, or <= 0
+//    accessWidth - the number of elements accessed starting at the lower bound
 //
 // Return Value:
-//    True iff range is between [0 and vn - 1] or [0, arrSize - 1]
+//    True iff every possible access is within [0, uLimitVN) or [0, arrSize)
 //
-// notes:
-//    This function assumes that the lower range is resolved and upper range is symbolic as in an
-//    increasing loop.
-//
-// TODO-CQ: This is not general enough.
-//
-bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
+bool RangeCheck::BetweenBounds(Range& range, ValueNum uLimitVN, int arrSize, unsigned accessWidth)
 {
+    assert((accessWidth > 0) && (accessWidth <= INT_MAX));
+
 #ifdef DEBUG
     assert(range.IsValid());
     if (m_compiler->verbose)
     {
-        printf("%s BetweenBounds <%d, ", range.ToString(m_compiler), 0);
-        Compiler::printTreeID(upper);
-        printf(">\n");
+        printf("%s BetweenBounds <%d, " FMT_VN ">\n", range.ToString(m_compiler), 0, uLimitVN);
     }
 #endif // DEBUG
 
     ValueNumStore* vnStore = m_compiler->vnStore;
-
-    // Get the VN for the upper limit.
-    ValueNum uLimitVN = vnStore->VNConservativeNormalValue(upper->gtVNPair);
 
 #ifdef DEBUG
     JITDUMP(FMT_VN " upper bound is: ", uLimitVN);
@@ -166,8 +199,8 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 
         int ucns = range.UpperLimit().GetConstant();
 
-        // Upper limit: Len + [0..n]
-        if (ucns >= 0)
+        // The highest accessed element must remain below Len.
+        if (ucns > -static_cast<int64_t>(accessWidth))
         {
             return false;
         }
@@ -208,10 +241,12 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
             return false;
         }
         int ucns = range.UpperLimit().GetConstant();
-        if (ucns >= arrSize)
+        if ((accessWidth > static_cast<unsigned>(arrSize)) || (ucns < 0) ||
+            (static_cast<unsigned>(ucns) > (static_cast<unsigned>(arrSize) - accessWidth)))
         {
             return false;
         }
+
         if (range.LowerLimit().IsConstant())
         {
             int lcns = range.LowerLimit().GetConstant();
@@ -237,6 +272,34 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
     return false;
 }
 
+//------------------------------------------------------------------------
+// IsRangeInBounds: Check whether an access is within bounds
+//
+// Arguments:
+//    block - the block containing the access
+//    index - the index where the access starts
+//    upperVN - the upper bound's value number
+//    accessWidth - the number of elements accessed
+//
+// Return Value:
+//    True if every element in the access is within [0, upperVN)
+//
+bool RangeCheck::IsRangeInBounds(BasicBlock* block, GenTree* index, ValueNum upperVN, unsigned accessWidth)
+{
+    assert((accessWidth > 0) && (accessWidth <= INT_MAX));
+
+    Range range = Range(Limit(Limit::keUndef));
+    if (!TryGetRange(block, index, &range, upperVN))
+    {
+        JITDUMP("Failed to get range\n");
+        return false;
+    }
+
+    Range arrSizeRng = GetRangeFromAssertions(m_compiler, upperVN, block->bbAssertionIn);
+    int   arrSize    = arrSizeRng.IsConstantRange() ? arrSizeRng.LowerLimit().GetConstant() : 0;
+    return BetweenBounds(range, upperVN, arrSize, accessWidth);
+}
+
 void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* treeParent)
 {
     // Check if we are dealing with a bounds check node.
@@ -259,28 +322,11 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     GenTree*          treeIndex = bndsChk->GetIndex();
 
     ValueNum arrLenVn = m_compiler->optConservativeNormalVN(bndsChk->GetArrayLength());
-
-    // Get the range for this index.
-    Range range = Range(Limit(Limit::keUndef));
-    if (!TryGetRange(block, treeIndex, &range, arrLenVn))
+    if (IsRangeInBounds(block, treeIndex, arrLenVn, 1))
     {
-        JITDUMP("Failed to get range\n");
-        return;
-    }
-
-    Range arrSizeRng = GetRangeFromAssertions(m_compiler, bndsChk->GetArrayLength(), block->bbAssertionIn);
-
-    if (arrSizeRng.IsConstantRange())
-    {
-        int arrSize = arrSizeRng.LowerLimit().GetConstant();
-
-        // Is the range between the lower and upper bound values.
-        if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
-        {
-            JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
-            m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
-            m_updateStmt = true;
-        }
+        JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
+        m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+        m_updateStmt = true;
     }
 }
 
@@ -301,77 +347,116 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
     if (range.LowerLimit().IsDependent() || range.LowerLimit().IsUnknown())
     {
         // To determine the lower bound, ask if the loop increases monotonically.
-        bool increasing = IsMonotonicallyIncreasing(tree, false);
+        bool increasing = IsMonotonicallyChanging(tree, Monotonicity::Increasing);
         if (increasing)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
             ClearRangeMap();
-            *pRange = GetRangeWorker(block, tree, true DEBUGARG(0));
+            Range widenedRange(GetRangeWorker(block, tree, Monotonicity::Increasing DEBUGARG(0)).LowerLimit(),
+                               range.UpperLimit());
+            if (widenedRange.IsValid())
+            {
+                range = widenedRange;
+            }
+        }
+    }
+
+    // Try to deduce the upper bound, if it is not known already.
+    if (range.UpperLimit().IsDependent() || range.UpperLimit().IsUnknown())
+    {
+        bool decreasing = IsMonotonicallyChanging(tree, Monotonicity::Decreasing);
+        if (decreasing)
+        {
+            JITDUMP("[%06d] is monotonically decreasing.\n", Compiler::dspTreeID(tree));
+            ClearRangeMap();
+            Range widenedRange(range.LowerLimit(),
+                               GetRangeWorker(block, tree, Monotonicity::Decreasing DEBUGARG(0)).UpperLimit());
+            if (widenedRange.IsValid())
+            {
+                range = widenedRange;
+            }
         }
     }
 }
 
-bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
+bool RangeCheck::IsBinOpMonotonicallyChanging(GenTreeOp*   binop,
+                                              Monotonicity monotonicity,
+                                              bool         rejectNegativeConst,
+                                              bool         insidePhi)
 {
     assert(binop->OperIs(GT_ADD));
+    assert(monotonicity != Monotonicity::None);
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
+    JITDUMP("[RangeCheck::IsBinOpMonotonicallyChanging] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
             Compiler::dspTreeID(op2));
 
-    // Canonicalize to (lclVar + {lclVar|const}).
-    if (op2->OperIs(GT_LCL_VAR))
+    if (op1->IsCnsIntOrI() && !op2->IsCnsIntOrI())
     {
         std::swap(op1, op2);
     }
 
-    if (!op1->OperIs(GT_LCL_VAR))
+    if (op2->IsCnsIntOrI())
     {
-        JITDUMP("Not monotonically increasing because op1 is not lclVar.\n");
-        return false;
-    }
-    switch (op2->OperGet())
-    {
-        case GT_LCL_VAR:
-            // When adding two local variables, we also must ensure that any constant is non-negative.
-            return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
-
-        case GT_CNS_INT:
-            if (op2->AsIntConCommon()->IconValue() < 0)
-            {
-                JITDUMP("Not monotonically increasing because of encountered negative constant\n");
-                return false;
-            }
-
-            return IsMonotonicallyIncreasing(op1, false);
-
-        default:
-            JITDUMP("Not monotonically increasing because expression is not recognized.\n");
+        ssize_t constant = op2->AsIntConCommon()->IconValue();
+        if (((monotonicity == Monotonicity::Increasing) && (constant < 0)) ||
+            ((monotonicity == Monotonicity::Decreasing) && (constant > 0)))
+        {
+            JITDUMP("Not monotonically changing because the constant changes in the wrong direction\n");
             return false;
+        }
+
+        if ((monotonicity == Monotonicity::Increasing) && !op1->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP("Not monotonically increasing because op1 is not lclVar.\n");
+            return false;
+        }
+
+        return IsMonotonicallyChanging(op1, monotonicity, false, nullptr, insidePhi);
     }
+
+    if ((monotonicity == Monotonicity::Increasing) && op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR))
+    {
+        // When adding two local variables, we also must ensure that any constant is non-negative.
+        return IsMonotonicallyChanging(op1, monotonicity, true) && IsMonotonicallyChanging(op2, monotonicity, true);
+    }
+
+    JITDUMP("Not monotonically changing because expression is not recognized.\n");
+    return false;
 }
 
-// The parameter rejectNegativeConst is true when we are adding two local vars (see above)
-bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeConst)
+bool RangeCheck::IsDominatedBy(BasicBlock* block, BasicBlock* dominator)
 {
-    JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
+    while ((block != nullptr) && (block != dominator))
+    {
+        block = block->bbIDom;
+    }
+
+    return block != nullptr;
+}
+
+// The parameter rejectNegativeConst is true when we are adding two local vars (see above).
+bool RangeCheck::IsMonotonicallyChanging(
+    GenTree* expr, Monotonicity monotonicity, bool rejectNegativeConst, BasicBlock* definingBlock, bool insidePhi)
+{
+    assert(monotonicity != Monotonicity::None);
+    JITDUMP("[RangeCheck::IsMonotonicallyChanging] [%06d]\n", Compiler::dspTreeID(expr));
 
     if (IsOverBudget())
     {
         return false;
     }
+
     m_nVisitBudget--;
 
-    // Add hashtable entry for expr.
     bool alreadyPresent = GetSearchPath()->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
     {
         return true;
     }
 
-    // Remove hashtable entry for expr when we exit the present scope.
     auto code = [this, expr] {
         GetSearchPath()->Remove(expr);
     };
@@ -383,11 +468,11 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
 
     // If expr is constant, then it is not part of the dependency
-    // loop which has to increase monotonically.
+    // loop which has to change monotonically.
     ValueNum vn = expr->gtVNPair.GetConservative();
     if (m_compiler->vnStore->IsVNInt32Constant(vn))
     {
-        if (rejectNegativeConst)
+        if ((monotonicity == Monotonicity::Increasing) && rejectNegativeConst)
         {
             int cons = m_compiler->vnStore->ConstantValue<int>(vn);
             return (cons >= 0);
@@ -401,32 +486,62 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     else if (expr->IsLocal())
     {
         LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
-        return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst);
+        return (ssaDef != nullptr) && IsMonotonicallyChanging(ssaDef->GetDefNode()->Data(), monotonicity,
+                                                              rejectNegativeConst, ssaDef->GetBlock(), insidePhi);
     }
     else if (expr->OperIs(GT_ADD))
     {
-        return IsBinOpMonotonicallyIncreasing(expr->AsOp());
+        return IsBinOpMonotonicallyChanging(expr->AsOp(), monotonicity, rejectNegativeConst, insidePhi);
     }
     else if (expr->OperIs(GT_PHI))
     {
+        bool isDecreasing = monotonicity == Monotonicity::Decreasing;
+        if (isDecreasing && ((definingBlock == nullptr) || insidePhi))
+        {
+            return false;
+        }
+
+        bool sawEntry    = false;
+        bool sawBackedge = false;
         for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
-            // If the arg is already in the path, skip.
-            if (GetSearchPath()->Lookup(use.GetNode()))
+            GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+            if (!isDecreasing)
             {
+                if (!GetSearchPath()->Lookup(phiArg) &&
+                    !IsMonotonicallyChanging(phiArg, monotonicity, rejectNegativeConst))
+                {
+                    JITDUMP("Phi argument not monotonically increasing\n");
+                    return false;
+                }
                 continue;
             }
-            if (!IsMonotonicallyIncreasing(use.GetNode(), rejectNegativeConst))
+
+            // Entry values only establish the initial upper bound. The backedge values
+            // determine whether subsequent values can exceed it.
+            if (!IsDominatedBy(phiArg->gtPredBB, definingBlock))
             {
-                JITDUMP("Phi argument not monotonically increasing\n");
+                if (sawEntry || !IsDominatedBy(definingBlock, phiArg->gtPredBB))
+                {
+                    return false;
+                }
+
+                sawEntry = true;
+                continue;
+            }
+
+            sawBackedge = true;
+            if (!IsMonotonicallyChanging(phiArg, monotonicity, rejectNegativeConst, nullptr, true))
+            {
+                JITDUMP("Phi backedge argument not monotonically decreasing\n");
                 return false;
             }
         }
-        return true;
+        return !isDecreasing || (sawEntry && sawBackedge);
     }
     else if (expr->OperIs(GT_COMMA))
     {
-        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst);
+        return IsMonotonicallyChanging(expr->gtEffectiveVal(), monotonicity, rejectNegativeConst, nullptr, insidePhi);
     }
     JITDUMP("Unknown tree type\n");
     return false;
@@ -736,10 +851,23 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_UMOD:
             case VNF_UDIV:
             {
+                ValueNum divisorVN;
+                if ((funcApp.GetFunc() == VNF_SUB) && IsVNUnsignedRemainder(comp->vnStore, num, &divisorVN))
+                {
+                    Range divisorRange   = GetRangeFromAssertionsWorker(comp, divisorVN, assertions, --budget, visited);
+                    Range remainderRange = RangeOps::UnsignedMod(result, divisorRange);
+                    if (remainderRange.IsConstantRange())
+                    {
+                        result = remainderRange;
+                        break;
+                    }
+                }
+
                 // Get ranges of both operands and perform the same operation on the ranges.
                 Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
                 Range r2 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(1), assertions, --budget, visited);
                 Range binOpResult = Range(Limit(Limit::keUnknown));
+
                 switch (funcApp.GetFunc())
                 {
                     case VNF_ADD:
@@ -993,7 +1121,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
         // If phiRange is not yet set, set it to the first edgeRange
         // else merge it with the new edgeRange. Example: [10..100] U [50..150] = [10..150]
-        phiRange = phiRange.IsUndef() ? edgeRange : RangeOps::Merge(phiRange, edgeRange, false);
+        phiRange = phiRange.IsUndef() ? edgeRange : RangeOps::Merge(phiRange, edgeRange, Monotonicity::None);
 
         // if any edge produces a non-constant range, we abort further processing
         // We also give up if the range is full, as it won't help tighten the result.
@@ -1163,7 +1291,13 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
 
     if (!comp->optAssertionHasAssertionsForVN(normalLclVN))
     {
-        return;
+        ValueNum addOp;
+        int      addCns;
+        if (!comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) ||
+            !comp->optAssertionHasAssertionsForVN(addOp))
+        {
+            return;
+        }
     }
 
     assert(canUseCheckedBounds || (preferredBoundVN == ValueNumStore::NoVN));
@@ -1798,10 +1932,12 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 }
 
 // Compute the range for a binary operation.
-Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
+Range RangeCheck::ComputeRangeForBinOp(BasicBlock*               block,
+                                       GenTreeOp*                binop,
+                                       Monotonicity monotonicity DEBUGARG(int indent))
 {
     assert(genActualType(binop) == TYP_INT);
-    assert(binop->OperIs(GT_ADD, GT_OR, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+    assert(binop->OperIs(GT_ADD, GT_SUB, GT_OR, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
 
     // For XOR we only care about Log2 pattern for now
     if (binop->OperIs(GT_XOR))
@@ -1817,6 +1953,18 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
+
+    ValueNum divisorVN;
+    ValueNum binopVN = m_compiler->vnStore->VNConservativeNormalValue(binop->gtVNPair);
+    if (binop->OperIs(GT_SUB) && IsVNUnsignedRemainder(m_compiler->vnStore, binopVN, &divisorVN))
+    {
+        Range divisorRange   = GetRangeFromAssertions(m_compiler, divisorVN, block->bbAssertionIn);
+        Range remainderRange = RangeOps::UnsignedMod(Limit(Limit::keUnknown), divisorRange);
+        if (remainderRange.IsConstantRange())
+        {
+            return remainderRange;
+        }
+    }
 
     ValueNum op1VN = op1->gtVNPair.GetConservative();
     ValueNum op2VN = op2->gtVNPair.GetConservative();
@@ -1835,7 +1983,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     }
 
     // Get range (cached or compute) for an operand, merging assertions as needed.
-    auto getRange = [this, block, monIncreasing DEBUGARG(indent)](GenTree* op) -> Range {
+    auto getRange = [this, block, monotonicity DEBUGARG(indent)](GenTree* op) -> Range {
         Range* opRangeCached = nullptr;
         Range  opRange       = Limit(Limit::keUndef);
         // Check if the range value is already cached.
@@ -1844,7 +1992,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             // If we already have the op in the path, then, just rely on assertions, else
             // find the range.
             opRange = GetSearchPath()->Lookup(op) ? Range(Limit(Limit::keDependent))
-                                                  : GetRangeWorker(block, op, monIncreasing DEBUGARG(indent));
+                                                  : GetRangeWorker(block, op, monotonicity DEBUGARG(indent));
             MergeAssertion(block, op, &opRange DEBUGARG(indent + 1));
         }
         else
@@ -1863,6 +2011,9 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     {
         case GT_ADD:
             r = RangeOps::Add(op1Range, op2Range);
+            break;
+        case GT_SUB:
+            r = RangeOps::Subtract(op1Range, op2Range);
             break;
         case GT_MUL:
             r = RangeOps::Multiply(op1Range, op2Range);
@@ -1930,9 +2081,9 @@ Range RangeCheck::GetRangeFromType(var_types type)
 }
 
 // Compute the range for a local var definition.
-Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
-                                          GenTreeLclVarCommon* lcl,
-                                          bool monIncreasing   DEBUGARG(int indent))
+Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*               block,
+                                          GenTreeLclVarCommon*      lcl,
+                                          Monotonicity monotonicity DEBUGARG(int indent))
 {
     LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
     if (ssaDef == nullptr)
@@ -1947,7 +2098,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
         JITDUMP("----------------------------------------------------\n");
     }
 #endif
-    Range range = GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
+    Range range = GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monotonicity DEBUGARG(indent));
     if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_compiler->GetAssertionCount() > 0))
     {
         JITDUMP("Merge assertions from " FMT_BB ": ", block->bbNum);
@@ -2006,24 +2157,6 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
 }
 
 // Check if the arithmetic overflows.
-bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
-{
-    int max1;
-    if (!GetLimitMax(limit1, &max1))
-    {
-        return true;
-    }
-
-    int max2;
-    if (!GetLimitMax(limit2, &max2))
-    {
-        return true;
-    }
-
-    return IntAddOverflows(max1, max2);
-}
-
-// Check if the arithmetic overflows.
 bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
 {
     int max1;
@@ -2058,24 +2191,81 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
     }
 
     // Get the cached ranges of op1
-    Range* op1Range = nullptr;
+    Range  computedOp1Range = Limit(Limit::keUndef);
+    Range* op1Range         = nullptr;
     if (!GetRangeMap()->Lookup(op1, &op1Range))
     {
-        return true;
+        if (!binop->OperIs(GT_SUB))
+        {
+            return true;
+        }
+
+        computedOp1Range = GetRangeWorker(block, op1, Monotonicity::None DEBUGARG(0));
+        op1Range         = &computedOp1Range;
     }
     // Get the cached ranges of op2
-    Range* op2Range = nullptr;
+    Range  computedOp2Range = Limit(Limit::keUndef);
+    Range* op2Range         = nullptr;
     if (!GetRangeMap()->Lookup(op2, &op2Range))
     {
-        return true;
+        if (!binop->OperIs(GT_SUB))
+        {
+            return true;
+        }
+
+        computedOp2Range = GetRangeWorker(block, op2, Monotonicity::None DEBUGARG(0));
+        op2Range         = &computedOp2Range;
     }
 
     JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()), op1Range->ToString(m_compiler),
             op2Range->ToString(m_compiler));
 
+    auto addOverflows = [this](Range& addend1, Range& addend2) {
+        const Limit& op1Lower = addend1.LowerLimit();
+        const Limit& op2Lower = addend2.LowerLimit();
+        const Limit& op1Upper = addend1.UpperLimit();
+        const Limit& op2Upper = addend2.UpperLimit();
+
+        bool mayUnderflow = true;
+        if ((op1Lower.IsConstant() && (op1Lower.GetConstant() >= 0)) ||
+            (op2Lower.IsConstant() && (op2Lower.GetConstant() >= 0)) ||
+            (op1Lower.IsBinOpArray() && (op1Lower.GetConstant() == 0)) ||
+            (op2Lower.IsBinOpArray() && (op2Lower.GetConstant() == 0)))
+        {
+            mayUnderflow = false;
+        }
+        else if (op1Lower.IsConstant() && op2Lower.IsConstant())
+        {
+            mayUnderflow = IntAddOverflows(op1Lower.GetConstant(), op2Lower.GetConstant());
+        }
+
+        bool mayOverflow = true;
+        if ((op1Upper.IsConstant() && (op1Upper.GetConstant() <= 0)) ||
+            (op2Upper.IsConstant() && (op2Upper.GetConstant() <= 0)))
+        {
+            mayOverflow = false;
+        }
+        else
+        {
+            int op1Max;
+            int op2Max;
+            if (GetLimitMax(addend1.UpperLimit(), &op1Max) && GetLimitMax(addend2.UpperLimit(), &op2Max))
+            {
+                mayOverflow = IntAddOverflows(op1Max, op2Max);
+            }
+        }
+
+        return mayUnderflow || mayOverflow;
+    };
+
     if (binop->OperIs(GT_ADD))
     {
-        return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+        return addOverflows(*op1Range, *op2Range);
+    }
+    if (binop->OperIs(GT_SUB))
+    {
+        Range negatedOp2Range = RangeOps::Negate(*op2Range);
+        return addOverflows(*op1Range, negatedOp2Range);
     }
     if (binop->OperIs(GT_MUL))
     {
@@ -2123,7 +2313,7 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
     // But only if the range from the assertion is more strict than the global
     // range computed; otherwise we might still have used the def's value to
     // tighten the range of the global range.
-    Range merged = RangeOps::Merge(range, assertionRange, false);
+    Range merged = RangeOps::Merge(range, assertionRange, Monotonicity::None);
     if (merged.LowerLimit().Equals(range.LowerLimit()) && merged.UpperLimit().Equals(range.UpperLimit()))
     {
         return false;
@@ -2201,7 +2391,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = DoesVarDefOverflow(block, expr->AsLclVarCommon(), range);
     }
     // Check if these bin ops overflow.
-    else if (expr->OperIs(GT_ADD, GT_OR, GT_MUL, GT_LSH))
+    else if (expr->OperIs(GT_ADD, GT_SUB, GT_OR, GT_MUL, GT_LSH))
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
@@ -2244,7 +2434,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
 // Arguments:
 //   block - the block that contains `expr`;
 //   expr - expression to compute the range for;
-//   monIncreasing - true if `expr` is proven to be monotonically increasing;
+//   monotonicity - the proven direction in which `expr` moves;
 //   indent - debug printing indent.
 //
 // Return value:
@@ -2255,11 +2445,9 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
 //   If the result cannot be determined i.e., the dependency chain does not terminate in a value,
 //   but continues to loop, which will happen with phi nodes we end the looping by calling the
 //   value as "dependent" (dep).
-//   If the loop is proven to be "monIncreasing", then make liberal decisions for the lower bound
-//   while merging phi node. eg.: merge((0, dep), (dep, dep)) = (0, dep),
-//   merge((0, 1), (dep, dep)) = (0, dep), merge((0, 5), (dep, 10)) = (0, 10).
+//   If the loop is proven to be monotonic, then ignore dependent phi limits opposite its direction.
 //
-Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
+Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, Monotonicity monotonicity DEBUGARG(int indent))
 {
     bool  newlyAdded = !GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
     Range range      = Limit(Limit::keUndef);
@@ -2320,18 +2508,18 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
     {
-        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
+        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monotonicity DEBUGARG(indent + 1));
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
+    else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_SUB, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
     {
-        range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
+        range = ComputeRangeForBinOp(block, expr->AsOp(), monotonicity DEBUGARG(indent + 1));
     }
     else if (expr->OperIs(GT_NEG))
     {
         // Compute range for negation, e.g.: [0..8] -> [-8..0]
-        Range op1Range = GetRangeWorker(block, expr->gtGetOp1(), monIncreasing DEBUGARG(indent + 1));
+        Range op1Range = GetRangeWorker(block, expr->gtGetOp1(), monotonicity DEBUGARG(indent + 1));
         range          = RangeOps::Negate(op1Range);
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
@@ -2347,19 +2535,19 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             }
             else
             {
-                argRange = GetRangeWorker(block, use.GetNode(), monIncreasing DEBUGARG(indent + 1));
+                argRange = GetRangeWorker(block, use.GetNode(), monotonicity DEBUGARG(indent + 1));
             }
             assert(!argRange.LowerLimit().IsUndef());
             assert(!argRange.UpperLimit().IsUndef());
             MergeAssertion(block, use.GetNode(), &argRange DEBUGARG(indent + 1));
             JITDUMP("Merging ranges %s %s:", range.ToString(m_compiler), argRange.ToString(m_compiler));
-            range = RangeOps::Merge(range, argRange, monIncreasing);
+            range = RangeOps::Merge(range, argRange, monotonicity);
             JITDUMP("%s\n", range.ToString(m_compiler));
         }
     }
     else if (expr->OperIs(GT_COMMA))
     {
-        range = GetRangeWorker(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
+        range = GetRangeWorker(block, expr->gtEffectiveVal(), monotonicity DEBUGARG(indent + 1));
     }
     else if (expr->OperIs(GT_ARR_LENGTH))
     {
@@ -2413,7 +2601,7 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, Va
     ClearRangeMap();
     ClearSearchPath();
 
-    Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
+    Range range = GetRangeWorker(block, expr, Monotonicity::None DEBUGARG(0));
     assert(range.IsValid());
     if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
     {
@@ -2450,13 +2638,13 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, Va
 // Arguments:
 //    block         - the block that contains `expr`;
 //    expr          - expression to compute the range for;
-//    monIncreasing - true if `expr` is proven to be monotonically increasing;
+//    monotonicity - the proven direction in which `expr` moves;
 //    indent        - debug printing indent.
 //
 // Return Value:
 //    expr's range
 //
-Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
+Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, Monotonicity monotonicity DEBUGARG(int indent))
 {
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -2471,7 +2659,7 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
 
     Range* pRange = nullptr;
     Range  range =
-        GetRangeMap()->Lookup(expr, &pRange) ? *pRange : ComputeRange(block, expr, monIncreasing DEBUGARG(indent));
+        GetRangeMap()->Lookup(expr, &pRange) ? *pRange : ComputeRange(block, expr, monotonicity DEBUGARG(indent));
 
 #ifdef DEBUG
     if (m_compiler->verbose)

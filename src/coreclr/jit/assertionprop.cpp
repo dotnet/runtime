@@ -4467,7 +4467,113 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions,
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp: try and optimize a relop via assertion propagation
+// optAssertionPropGlobal_RangeCheck: determine whether a range check relop can be folded
+//
+// Arguments:
+//   tree  - range check relop
+//   block - the block containing the relop
+//
+// Returns:
+//   True if range analysis proves the non-throwing relation represented by the relop.
+//
+bool Compiler::optAssertionPropGlobal_RangeCheck(GenTree* tree, BasicBlock* block)
+{
+    assert(tree->IsUnsigned() && tree->OperIs(GT_LE, GT_GT, GT_GE, GT_LT));
+
+    GenTree* op1   = tree->AsOp()->gtOp1;
+    GenTree* op2   = tree->AsOp()->gtOp2;
+    ValueNum op2VN = optConservativeNormalVN(op2);
+
+#ifdef TARGET_64BIT
+    if (!tree->OperIs(GT_LE, GT_GT))
+    {
+        return false;
+    }
+
+    ValueNum startCastVN;
+    int      accessWidth;
+    if (!op1->OperIs(GT_ADD) ||
+        !vnStore->IsVNBinFuncWithConst(vnStore->VNNormalValue(op1->GetVN(VNK_Liberal)), VNF_ADD, &startCastVN,
+                                       &accessWidth) ||
+        (accessWidth <= 0))
+    {
+        return false;
+    }
+
+    auto getUnsignedIntToLongSource = [this](ValueNum castVN, ValueNum* sourceVN) {
+        ValueNum castInfoVN;
+        if (!vnStore->IsVNBinFunc(castVN, VNF_Cast, sourceVN, &castInfoVN))
+        {
+            return false;
+        }
+
+        var_types castToType;
+        bool      sourceIsUnsigned;
+        vnStore->GetCastOperFromVN(castInfoVN, &castToType, &sourceIsUnsigned);
+        return (genActualType(castToType) == TYP_LONG) && sourceIsUnsigned &&
+               (genActualType(vnStore->TypeOfVN(*sourceVN)) == TYP_INT);
+    };
+
+    ValueNum startVN;
+    ValueNum limitVN;
+    if (!getUnsignedIntToLongSource(startCastVN, &startVN) || !getUnsignedIntToLongSource(op2VN, &limitVN))
+    {
+        return false;
+    }
+
+    GenTree* start = op1->gtGetOp1();
+    if (vnStore->VNNormalValue(start->GetVN(VNK_Liberal)) != startCastVN)
+    {
+        start = op1->gtGetOp2();
+    }
+
+    // CSE retains the original cast in the comma's store.
+    if (start->OperIs(GT_COMMA) && start->gtGetOp1()->OperIs(GT_STORE_LCL_VAR))
+    {
+        start = start->gtGetOp1()->AsLclVar()->Data();
+    }
+
+    if (!start->OperIs(GT_CAST) || (vnStore->VNNormalValue(start->GetVN(VNK_Liberal)) != startCastVN) ||
+        (vnStore->VNNormalValue(start->AsCast()->CastOp()->GetVN(VNK_Liberal)) != startVN))
+    {
+        return false;
+    }
+
+    return GetRangeCheck()->IsRangeInBounds(block, start->AsCast()->CastOp(), limitVN,
+                                            static_cast<unsigned>(accessWidth));
+#else
+    ValueNum op1VN = optConservativeNormalVN(op1);
+    if (!op1->TypeIs(TYP_INT) || !op2->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    if (tree->OperIs(GT_LE, GT_GT))
+    {
+        return GetRangeCheck()->IsRangeInBounds(block, op1, op2VN, 1);
+    }
+
+    int      accessWidth;
+    ValueNum limitVN;
+    ValueNum startVN;
+    if (!op1->OperIs(GT_SUB) || !vnStore->IsVNIntegralConstant(op2VN, &accessWidth) || (accessWidth <= 0) ||
+        !vnStore->IsVNBinFunc(op1VN, VNF_SUB, &limitVN, &startVN))
+    {
+        return false;
+    }
+
+    GenTree* start = op1->gtGetOp2();
+    if (optConservativeNormalVN(start) != startVN)
+    {
+        return false;
+    }
+
+    return GetRangeCheck()->IsRangeInBounds(block, start, limitVN, static_cast<unsigned>(accessWidth));
+#endif // TARGET_64BIT
+}
+
+//------------------------------------------------------------------------
+// optAssertionPropGlobal_RelOp: try and optimize a relop via assertion propagation
 //
 // Arguments:
 //   assertions  - set of live assertions
@@ -4579,6 +4685,14 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 return optAssertionProp_Update(newTree, tree, stmt);
             }
         }
+    }
+
+    if (tree->IsUnsigned() && tree->OperIs(GT_LE, GT_GT, GT_GE, GT_LT) &&
+        optAssertionPropGlobal_RangeCheck(tree, block))
+    {
+        newTree = tree->OperIs(GT_LE, GT_GE) ? gtNewTrue() : gtNewFalse();
+        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+        return optAssertionProp_Update(newTree, tree, stmt);
     }
 
     // See if we can fold the relop based on range information.

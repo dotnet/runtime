@@ -9349,6 +9349,7 @@ public:
                                           GenTree*         tree,
                                           Statement*       stmt,
                                           BasicBlock*      block);
+    bool     optAssertionPropGlobal_RangeCheck(GenTree* tree, BasicBlock* block);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
