@@ -57,9 +57,6 @@ extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void);
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
 
-extern "C" void STDCALL VirtualMethodFixupStub(void);
-extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
-
 #ifdef FEATURE_READYTORUN
 #ifdef TARGET_WASM
 // Wasm requires the signatures to be identical since the implementation is actually in C++

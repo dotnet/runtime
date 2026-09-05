@@ -961,7 +961,7 @@ BOOL StubDispatchFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
 {
     WRAPPER_NO_CONTRACT;
 
-    // StubDispatchFixupWorker and VSD_ResolveWorker never directly call managed code. Returning false instructs the debugger to
+    // VSD_ResolveWorker never directly calls managed code. Returning false instructs the debugger to
     // step out of the call that erected this frame and continuing trying to trace execution from there.
     LOG((LF_CORDB, LL_INFO1000, "StubDispatchFrame::TraceFrame: return FALSE\n"));
 

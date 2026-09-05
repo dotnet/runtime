@@ -271,13 +271,6 @@ ENDM
 ; Write barrier wrappers with fcall calling convention
 ;
 
-        .data
-        ALIGN 4
-        public  _JIT_WriteBarrierEAX_Loc
-_JIT_WriteBarrierEAX_Loc dd 0
-
-        .code
-
 ; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
 ; WriteBarrier functions so can determine if got AV in them.
 ;

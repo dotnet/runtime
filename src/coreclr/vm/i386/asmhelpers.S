@@ -109,23 +109,6 @@ LEAF_ENTRY ResetCurrentContext, _TEXT
     ret
 LEAF_END ResetCurrentContext, _TEXT
 
-// Incoming:
-//    ESP+4: Pointer to buffer to which FPU state should be saved
-LEAF_ENTRY CaptureFPUContext, _TEXT
-    mov     ecx, [esp + 4]
-    fnstenv [ecx]
-    ret     4
-
-LEAF_END CaptureFPUContext, _TEXT
-
-// Incoming:
-//  ESP+4: Pointer to buffer from which FPU state should be restored
-LEAF_ENTRY RestoreFPUContext, _TEXT
-    mov     ecx, [esp + 4]
-    fldenv  [ecx]
-    ret     4
-LEAF_END RestoreFPUContext, _TEXT
-
 // ------------------------------------------------------------------------------
 //  This helper routine enregisters the appropriate arguments and makes the
 //  actual call.

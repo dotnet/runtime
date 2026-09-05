@@ -49,8 +49,6 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-EXTERN_C void checkStack(void);
-
 #define THUMB_CODE      1
 
 #define GetEEFuncEntryPoint(pfn) (GFN_TADDR(pfn) | THUMB_CODE)
@@ -570,12 +568,6 @@ public:
         Emit16((WORD)(0x0b00 | (source << 12) | offset));
     }
 
-    void ThumbEmitCallRegister(ThumbReg target)
-    {
-        // blx regTarget
-        Emit16((WORD)(0x4780 | (target << 3)));
-    }
-
     void ThumbEmitJumpRegister(ThumbReg target)
     {
         // bx regTarget
@@ -586,41 +578,6 @@ public:
     {
         // mov regDest, regSource
         Emit16((WORD)(0x4600 | ((dest > 7) ? 0x0080 : 0x0000) | (source << 3) | (dest & 0x0007)));
-    }
-
-    //Assuming SP is only subtracted in prolog
-    void ThumbEmitSubSp(int value)
-    {
-        _ASSERTE(value >= 0);
-        _ASSERTE((value & 0x3) == 0);
-
-        if(value < 512)
-        {
-            // encoding T1
-            // sub sp, sp, #(value >> 2)
-            Emit16((WORD)(0xb080 | (value >> 2)));
-        }
-        else if(value < 4096)
-        {
-            // Using 32-bit encoding
-            Emit16((WORD)(0xf2ad| ((value & 0x0800) >> 1)));
-            Emit16((WORD)(0x0d00| ((value & 0x0700) << 4) | (value & 0x00ff)));
-        }
-        else
-        {
-            // For values >= 4K (pageSize) must check for guard page
-
-            // mov r4, value
-            ThumbEmitMovConstant(ThumbReg(4), value);
-            // mov r12, checkStack
-            ThumbEmitMovConstant(ThumbReg(12), (int)checkStack);
-            // bl r12
-            ThumbEmitCallRegister(ThumbReg(12));
-
-            // sub sp,sp,r4
-            Emit16((WORD)0xebad);
-            Emit16((WORD)0x0d04);
-        }
     }
 
     void ThumbEmitAddSp(int value)

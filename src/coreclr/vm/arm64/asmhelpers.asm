@@ -13,7 +13,6 @@
     IMPORT VSD_ResolveWorkerForInterfaceLookupSlot
 #endif
     IMPORT ComPreStubWorker
-    IMPORT CallDescrWorkerUnwindFrameChainHandler
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
     IMPORT GetCurrentSavedRedirectContext
@@ -31,36 +30,11 @@
     IMPORT ExecuteInterpretedMethod
 #endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    IMPORT  g_write_watch_table
-#endif
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    IMPORT g_card_bundle_table
-#endif
-
-    IMPORT  g_ephemeral_low
-    IMPORT  g_ephemeral_high
-    IMPORT  g_lowest_address
-    IMPORT  g_highest_address
-    IMPORT  g_card_table
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
 #endif
     IMPORT g_pPollGC
     IMPORT g_TrapReturningThreads
-
-#ifdef WRITE_BARRIER_CHECK
-    SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
-    SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
-
-    IMPORT g_lowest_address
-    IMPORT $g_GCShadow
-    IMPORT $g_GCShadowEnd
-#endif // WRITE_BARRIER_CHECK
-
-    IMPORT JIT_WriteBarrier_Table_Loc
-    IMPORT JIT_WriteBarrier_Loc
 
     ;;like TEXTAREA, but with 64 byte alignment so that we can align the patchable pool below to 64 without warning
     AREA    |.text|,ALIGN=6,CODE,READONLY
@@ -142,63 +116,6 @@ ThePreStubPatchLabel
         LEAF_END
 
 #ifdef FEATURE_COMINTEROP
-
-; ------------------------------------------------------------------
-; setStubReturnValue
-; w0 - size of floating point return value (MetaSig::GetFPReturnSize())
-; x1 - pointer to the return buffer in the stub frame
-    LEAF_ENTRY setStubReturnValue
-
-        cbz     w0, NoFloatingPointRetVal
-
-        ;; Float return case
-        cmp     x0, #4
-        bne     LNoFloatRetVal
-        ldr     s0, [x1]
-        ret
-LNoFloatRetVal
-
-        ;; Double return case
-        cmp     w0, #8
-        bne     LNoDoubleRetVal
-        ldr     d0, [x1]
-        ret
-LNoDoubleRetVal
-
-        ;; Float HFA return case
-        cmp     w0, #16
-        bne     LNoFloatHFARetVal
-        ldp     s0, s1, [x1]
-        ldp     s2, s3, [x1, #8]
-        ret
-LNoFloatHFARetVal
-
-        ;;Double HFA return case
-        cmp     w0, #32
-        bne     LNoDoubleHFARetVal
-        ldp     d0, d1, [x1]
-        ldp     d2, d3, [x1, #16]
-        ret
-LNoDoubleHFARetVal
-
-        ;;Vector HVA return case
-        cmp     w3, #64
-        bne     LNoVectorHVARetVal
-        ldp     q0, q1, [x1]
-        ldp     q2, q3, [x1, #32]
-        ret
-LNoVectorHVARetVal
-
-        EMIT_BREAKPOINT ; Unreachable
-
-NoFloatingPointRetVal
-
-        ;; Restore the return value from retbuf
-        ldr     x0, [x1]
-        ldr     x1, [x1, #8]
-        ret
-
-    LEAF_END
 
 ; ------------------------------------------------------------------
 ; COM to CLR stub called the first time a particular method is invoked.

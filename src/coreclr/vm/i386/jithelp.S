@@ -211,14 +211,6 @@ LEAF_ENTRY JIT_WriteBarrierGroup, _TEXT
     ret
 LEAF_END JIT_WriteBarrierGroup, _TEXT
 
-// Pointer to JIT_WriteBarrierEAX
-    .data
-    .align 4
-    .global C_FUNC(JIT_WriteBarrierEAX_Loc)
-C_FUNC(JIT_WriteBarrierEAX_Loc):
-    .word 0
-    .text
-
 .macro UniversalWriteBarrierHelper name
 .align 4
 

@@ -6288,6 +6288,8 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 
 #define EXCEPTION_VISUALCPP_DEBUGGER        ((DWORD) (1<<30 | 0x6D<<16 | 5000))
 
+#ifndef TARGET_UNIX
+
 #if defined(TARGET_X86)
 
 // This holder is used to capture the FPU state, reset it to what the CLR expects
@@ -6341,8 +6343,6 @@ public:
 };
 
 #endif // defined(TARGET_X86)
-
-#ifndef TARGET_UNIX
 
 LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 {

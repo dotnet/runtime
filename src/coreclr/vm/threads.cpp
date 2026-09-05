@@ -1001,14 +1001,12 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
     return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
 }
 
-#ifdef TARGET_X86
-extern "C" void *JIT_WriteBarrierEAX_Loc;
-#elif TARGET_AMD64
+#ifndef TARGET_X86
 extern "C" void *JIT_WriteBarrier_Loc;
-#else
-extern "C" void *JIT_WriteBarrier_Loc;
+#ifndef TARGET_AMD64
 void *JIT_WriteBarrier_Loc = 0;
-#endif
+#endif // !TARGET_AMD64
+#endif // !TARGET_X86
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 extern "C" void (*JIT_WriteBarrier_Table)();
@@ -1210,11 +1208,7 @@ void InitThreadManager()
             ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
             memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
         }
-        // Store the JIT_WriteBarrier copy location to a global variable so that helpers
-        // can jump to it.
 #ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX);
-
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
     SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg);
@@ -1224,6 +1218,8 @@ void InitThreadManager()
 #undef X86_WRITE_BARRIER_REGISTER
 
 #else // TARGET_X86
+        // Store the JIT_WriteBarrier copy location to a global variable so that helpers
+        // can jump to it.
         JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
@@ -1246,18 +1242,16 @@ void InitThreadManager()
 #endif // TARGET_AMD64
 
     }
+#ifndef TARGET_X86
     else
     {
-#ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;
-#else
         JIT_WriteBarrier_Loc = (void*)RhpAssignRef;
-#endif
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
         JIT_WriteBarrier_Table_Loc = NULL;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
+#endif // !TARGET_X86
 #endif // !FEATURE_PORTABLE_HELPERS
 
 #ifndef TARGET_UNIX

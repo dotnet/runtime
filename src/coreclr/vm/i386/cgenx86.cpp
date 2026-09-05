@@ -157,7 +157,7 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
         // the call happened on the call instruction to get the ESP unwound properly.
         //
         // This path is hit when we are throwing null reference exception from
-        // code:VSD_ResolveWorker or code:StubDispatchFixupWorker
+        // code:VSD_ResolveWorker
         pRD->ControlPC = GetAdjustedCallAddress(pRD->ControlPC);
 
         // We need to set EIP to match ControlPC to ensure Thread::VirtualUnwindCallFrame
