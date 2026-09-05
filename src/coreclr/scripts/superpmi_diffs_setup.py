@@ -242,12 +242,35 @@ def build_partitions(partitions_dir, do_asmdiffs, bin_path, host_bitness):
     prefix_urlencoded = urllib.parse.quote(prefix)
     list_superpmi_container_uri = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + prefix_urlencoded + "/"
 
-    try:
-        contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
-    except Exception as exception:
-        raise Exception("Didn't find any collections using %s", list_superpmi_container_uri)
+    # The Blob Service "List Blobs" API returns results in pages, and the page size it
+    # chooses is not guaranteed to cover the whole prefix. When more results remain, the
+    # response carries a NextMarker that must be passed back to retrieve the next page.
+    #
+    # Failing to follow it silently yields a subset of the collections: the listing is
+    # ordered by blob name, so a truncated first page can drop entire target directories
+    # (e.g. everything from linux/x64 onwards). That produces zero partitions for the
+    # affected targets, and the Helix send then fails with "given no WorkItems to send".
+    blobs = []
+    marker = None
+    while True:
+        list_uri = list_superpmi_container_uri
+        if marker:
+            list_uri += "&marker=" + urllib.parse.quote(marker)
 
-    elem = ET.fromstring(contents)
+        try:
+            contents = urllib.request.urlopen(list_uri).read().decode('utf-8-sig')
+        except Exception as exception:
+            raise Exception("Didn't find any collections using {}".format(list_uri))
+
+        elem = ET.fromstring(contents)
+        blobs.extend(elem.findall(".//Blob"))
+
+        next_marker = elem.find("NextMarker")
+        marker = next_marker.text if next_marker is not None else None
+        if not marker:
+            break
+
+    print("Found {} blobs under {}".format(len(blobs), prefix))
 
     # Each tuple is (target_os, target_arch, blob_arch) where blob_arch is the architecture
     # directory used in blob storage. For wasm collections the MCH files are uploaded under
@@ -272,7 +295,7 @@ def build_partitions(partitions_dir, do_asmdiffs, bin_path, host_bitness):
 
     targets = [(target_os, target_arch, blob_arch, []) for (target_os, target_arch, blob_arch) in targets]
 
-    for blob in elem.findall(".//Blob"):
+    for blob in blobs:
         name = blob.find("Name").text
         for (target_os, target_arch, blob_arch, collections) in targets:
             name_pref = prefix + "/" + target_os + "/" + blob_arch + "/"
