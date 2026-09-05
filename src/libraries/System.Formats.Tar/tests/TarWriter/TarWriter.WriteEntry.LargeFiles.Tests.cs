@@ -14,16 +14,7 @@ namespace System.Formats.Tar.Tests
     /// </summary>
     public class TarWriter_WriteEntry_LargeFiles_Tests : TarTestsBase
     {
-        public static IEnumerable<object[]> WriteEntry_LargeFile_TheoryData()
-        {
-            foreach (TarEntryFormat format in new[] { TarEntryFormat.Pax, TarEntryFormat.Gnu })
-            {
-                foreach (bool isAsync in new[] { false, true })
-                {
-                    yield return new object[] { format, isAsync };
-                }
-            }
-        }
+        public static IEnumerable<object[]> WriteEntry_LargeFile_TheoryData() => GetPaxAndGnuFormatBooleanData();
 
         [Theory]
         [OuterLoop("Runs for several seconds")]
