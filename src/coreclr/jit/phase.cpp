@@ -116,10 +116,11 @@ void Phase::PostPhase(PhaseStatus status)
 
     // Don't dump or check post phase unless the phase made changes.
     //
-    const bool madeChanges       = (status != PhaseStatus::MODIFIED_NOTHING);
-    const bool doPostPhase       = madeChanges;
-    const bool doPostPhaseChecks = (m_compiler->activePhaseChecks != PhaseChecks::CHECK_NONE);
-    const bool doPostPhaseDumps  = (m_compiler->activePhaseDumps == PhaseDumps::DUMP_ALL);
+    const bool madeChanges = (status != PhaseStatus::MODIFIED_NOTHING);
+    const bool doPostPhase = madeChanges;
+    const bool doPostPhaseChecks =
+        (m_compiler->activePhaseChecks != PhaseChecks::CHECK_NONE) && (JitConfig.JitEnablePhaseChecks() != 0);
+    const bool doPostPhaseDumps = (m_compiler->activePhaseDumps == PhaseDumps::DUMP_ALL);
 
     const char* const statusMessage = madeChanges ? "" : " [no changes]";
 
