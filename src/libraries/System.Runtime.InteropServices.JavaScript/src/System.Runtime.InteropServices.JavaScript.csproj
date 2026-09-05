@@ -21,6 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="System.Runtime.InteropServices.JavaScript.SupportedOSPlatform.cs" />
   </ItemGroup>
 

@@ -13,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="System\Net\WebSockets\AsyncMutex.cs" />
     <Compile Include="System\Net\WebSockets\Compression\WebSocketDeflater.cs" />
     <Compile Include="System\Net\WebSockets\Compression\WebSocketInflater.cs" />

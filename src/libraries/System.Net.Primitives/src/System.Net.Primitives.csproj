@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="System\Net\AuthenticationSchemes.cs" />
     <Compile Include="System\Net\Cookie.cs" />
     <Compile Include="System\Net\CookieContainer.cs" />
