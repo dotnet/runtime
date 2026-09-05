@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -231,6 +232,69 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Key, Key + i);
                 Assert.Equal(tags[i].Value, Value + i);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void ConcurrentTagAddsPreserveAllValues()
+        {
+            const int Count = 1_000;
+            Activity activity = new Activity("activity");
+
+            Parallel.For(0, Count, i => activity.AddTag(i.ToString(CultureInfo.InvariantCulture), i));
+
+            KeyValuePair<string, object?>[] tags = activity.TagObjects.ToArray();
+            Assert.Equal(Count, tags.Length);
+            Assert.Equal(Count, tags.Select(tag => tag.Key).Distinct().Count());
+            foreach (KeyValuePair<string, object?> tag in tags)
+            {
+                Assert.Equal(int.Parse(tag.Key, CultureInfo.InvariantCulture), tag.Value);
+            }
+        }
+
+        [Fact]
+        public void TagsLinkedListClearsLastRemovedValue()
+        {
+            object value = new object();
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", value));
+
+            MethodInfo remove = Assert.IsAssignableFrom<MethodInfo>(tags.GetType().GetMethod("Remove"));
+            PropertyInfo first = Assert.IsAssignableFrom<PropertyInfo>(tags.GetType().GetProperty("First"));
+            FieldInfo storedValue = Assert.IsAssignableFrom<FieldInfo>(tags.GetType().GetField("Value"));
+            remove.Invoke(tags, new object[] { "key" });
+
+            Assert.Null(first.GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)storedValue.GetValue(tags));
+        }
+
+        [Fact]
+        public void TagsLinkedListDoesNotRetainIgnoredSetValue()
+        {
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", null), set: true);
+            PropertyInfo first = Assert.IsAssignableFrom<PropertyInfo>(tags.GetType().GetProperty("First"));
+            FieldInfo storedValue = Assert.IsAssignableFrom<FieldInfo>(tags.GetType().GetField("Value"));
+
+            Assert.Null(first.GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)storedValue.GetValue(tags));
+        }
+
+        [Fact]
+        public void TagsLinkedListToStringFormatsValues()
+        {
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("string", "value"));
+            MethodInfo add = Assert.IsAssignableFrom<MethodInfo>(tags.GetType().GetMethod("Add", new Type[] { typeof(KeyValuePair<string, object>) }));
+            add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("object", 42) });
+            add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("null", null) });
+
+            Assert.Equal("string:value, object:42, null:", tags.ToString());
+        }
+
+        private static object CreateTagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false)
+        {
+            Type? tagsType = typeof(Activity).GetNestedType("TagsLinkedList", BindingFlags.NonPublic);
+            Assert.NotNull(tagsType);
+            object? tags = Activator.CreateInstance(tagsType, new object[] { firstValue, set });
+            Assert.NotNull(tags);
+            return tags;
         }
 
         /// <summary>
@@ -2727,6 +2791,265 @@ namespace System.Diagnostics.Tests
             string debuggerDisplay = DebuggerAttributes.ValidateDebuggerDisplayReferences(activityEvent);
             Assert.Contains("Name = \"TestEvent\"", debuggerDisplay);
             Assert.Contains("Timestamp =", debuggerDisplay);
+        }
+
+        [Fact]
+        public void TestLinksAtCreationSingleLinkToStringMatchesAddLinkToString()
+        {
+            // Ensures the co-located first-node list used for links passed at Activity creation produces identical
+            // ToString() output to the equivalent list built by calling AddLink after creation, and to a list with
+            // multiple links (which allocates additional, non-co-located nodes).
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestLinksAtCreationSingleLinkToStringMatchesAddLinkToString));
+
+            var link1 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+            var link2 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None));
+
+            using Activity? createdWithLink = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link1 });
+            Assert.NotNull(createdWithLink);
+            using Activity? addedLink = source.StartActivity("op");
+            Assert.NotNull(addedLink);
+            addedLink!.AddLink(link1);
+
+            Assert.Equal(createdWithLink!.Links.ToString(), addedLink.Links.ToString());
+            Assert.Single(createdWithLink.Links);
+            Assert.Single(addedLink.Links);
+
+            // Multiple links: one co-located at creation plus one appended afterward.
+            using Activity? multi = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link1 });
+            Assert.NotNull(multi);
+            multi!.AddLink(link2);
+            Assert.Equal(2, multi.Links.Count());
+            Assert.Contains(link1, multi.Links);
+            Assert.Contains(link2, multi.Links);
+        }
+
+        [Fact]
+        public void TestEventsSingleEventToStringAndMultipleEvents()
+        {
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestEventsSingleEventToStringAndMultipleEvents));
+
+            using Activity? a = source.StartActivity("op");
+            Assert.NotNull(a);
+            Assert.Empty(a!.Events);
+            Assert.Equal("[]", a.Events.ToString());
+
+            a.AddEvent(new ActivityEvent("first"));
+            Assert.Single(a.Events);
+            string firstOnlyToString = a.Events.ToString()!;
+            Assert.Contains("first", firstOnlyToString);
+            Assert.DoesNotContain(",\u200B(", firstOnlyToString);
+
+            a.AddEvent(new ActivityEvent("second"));
+            Assert.Equal(2, a.Events.Count());
+            string bothToString = a.Events.ToString()!;
+            Assert.Contains("first", bothToString);
+            Assert.Contains("second", bothToString);
+            Assert.Contains(",\u200B", bothToString);
+        }
+
+        [Fact]
+        public void TestConcurrentAddLinkAndAddEventDoNotLoseEntries()
+        {
+            // Regression test for the co-located first-node list types (ActivityLinksLinkedList / ActivityEventsLinkedList):
+            // concurrent AddLink/AddEvent calls racing on the Interlocked.CompareExchange-guarded first assignment, followed
+            // by lock-protected appends, must not lose any entries or corrupt the list.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestConcurrentAddLinkAndAddEventDoNotLoseEntries));
+            using Activity? a = source.StartActivity("op");
+            Assert.NotNull(a);
+
+            const int ThreadCount = 8;
+            const int PerThread = 200;
+            using Barrier barrier = new Barrier(ThreadCount * 2);
+
+            Task[] tasks = new Task[ThreadCount * 2];
+            for (int t = 0; t < ThreadCount; t++)
+            {
+                int threadId = t;
+                tasks[t] = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int i = 0; i < PerThread; i++)
+                    {
+                        a!.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
+                    }
+                });
+                tasks[ThreadCount + t] = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int i = 0; i < PerThread; i++)
+                    {
+                        a!.AddEvent(new ActivityEvent($"evt-{threadId}-{i}"));
+                    }
+                });
+            }
+
+            Task.WaitAll(tasks);
+
+            Assert.Equal(ThreadCount * PerThread, a!.Links.Count());
+            Assert.Equal(ThreadCount * PerThread, a.Events.Count());
+        }
+
+        [Fact]
+        public void TestActivityCreateWithMultipleLinksEnumeratorPath()
+        {
+            // Covers Activity.Create's links-from-enumerator construction path (used by ActivitySource.CreateActivity),
+            // which now constructs the co-located ActivityLinksLinkedList directly from the enumerator instead of via
+            // a parameterless DiagLinkedList followed by per-item Add calls.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestActivityCreateWithMultipleLinksEnumeratorPath));
+
+            var link1 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+            var link2 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None));
+            var link3 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+
+            using Activity? a = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link1, link2, link3 });
+            Assert.NotNull(a);
+            Assert.Equal(3, a!.Links.Count());
+            Assert.Equal(new[] { link1, link2, link3 }, a.Links.ToArray());
+        }
+
+        [Fact]
+        public void TestNoActivityCreatedAndNoLinksEventsListsTouchedWhenListenerDeclinesSampling()
+        {
+            // When no listener requests anything other than ActivitySamplingResult.None, Activity.Create takes the
+            // "not recorded" early-exit path and returns null before ever constructing an Activity object, so the
+            // co-located ActivityLinksLinkedList/ActivityEventsLinkedList types are never allocated or touched at all
+            // for this call, regardless of what links were requested at creation time. (Unlike ActivitySamplingResult.
+            // None, PropagationData/AllData/AllDataAndRecorded all still create the Activity and pass links/tags/events
+            // through as provided -- "unnecessary" for those listeners per the API doc is only non-binding guidance to
+            // listener authors, not something the runtime enforces by stripping the data.)
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.None,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestNoActivityCreatedAndNoLinksEventsListsTouchedWhenListenerDeclinesSampling));
+
+            var link = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+
+            using Activity? a = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link });
+            Assert.Null(a);
+        }
+
+        [Fact]
+        public void TestLinksEventsAndTagsCoexistIndependently()
+        {
+            // Regression test covering the interaction between this round's Links/Events co-location and the
+            // separately co-located first-tag storage (TagsLinkedList): setting tags, links, and events on the
+            // same Activity must not corrupt or cross-contaminate any of the three independent collections.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestLinksEventsAndTagsCoexistIndependently));
+
+            var link = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+
+            using Activity? a = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link });
+            Assert.NotNull(a);
+
+            a!.SetTag("http.method", "GET");
+            a.SetTag("http.status_code", 200);
+            a.AddEvent(new ActivityEvent("request.received"));
+
+            Assert.Single(a.Links);
+            Assert.Equal(link, a.Links.First());
+
+            Assert.Single(a.Events);
+            Assert.Equal("request.received", a.Events.First().Name);
+
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("GET", a.GetTagItem("http.method"));
+            Assert.Equal(200, a.GetTagItem("http.status_code"));
+
+            // Adding more of each afterward must not disturb the others.
+            a.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
+            a.AddEvent(new ActivityEvent("response.sent"));
+            a.SetTag("http.url", "https://example.com/");
+
+            Assert.Equal(2, a.Links.Count());
+            Assert.Equal(2, a.Events.Count());
+            Assert.Equal(3, a.TagObjects.Count());
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("string-value")]
+        [InlineData(42)]
+        public void TestActivityEventWithVariousTagDataTypesOnCoLocatedFirstEvent(object? tagValue)
+        {
+            // The first ActivityEvent is now co-located with the ActivityEventsLinkedList container; ensure its
+            // embedded ActivityTagsCollection continues to round-trip null, string, and boxed-value-type tag data.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestActivityEventWithVariousTagDataTypesOnCoLocatedFirstEvent));
+
+            using Activity? a = source.StartActivity("op");
+            Assert.NotNull(a);
+
+            var tags = new ActivityTagsCollection { { "key", tagValue } };
+            a!.AddEvent(new ActivityEvent("ev", tags: tags));
+
+            ActivityEvent onlyEvent = Assert.Single(a.Events);
+            Assert.Equal(tagValue, onlyEvent.Tags.First().Value);
+        }
+
+        [Fact]
+        public void TestActivityLinkWithTagsOnCoLocatedFirstLink()
+        {
+            // The first ActivityLink is now co-located with the ActivityLinksLinkedList container; ensure its
+            // embedded tags (ActivityTagsCollection) survive both the "passed at creation" and "AddLink" paths.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestActivityLinkWithTagsOnCoLocatedFirstLink));
+
+            var tags = new ActivityTagsCollection { { "reason", "batch" } };
+            var linkWithTags = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded), tags);
+
+            using Activity? createdWithLink = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { linkWithTags });
+            Assert.NotNull(createdWithLink);
+            ActivityLink onlyLink = Assert.Single(createdWithLink!.Links);
+            Assert.Equal("batch", onlyLink.Tags!.First().Value);
+
+            using Activity? addedLink = source.StartActivity("op");
+            Assert.NotNull(addedLink);
+            addedLink!.AddLink(linkWithTags);
+            ActivityLink onlyAddedLink = Assert.Single(addedLink.Links);
+            Assert.Equal("batch", onlyAddedLink.Tags!.First().Value);
         }
     }
 }
