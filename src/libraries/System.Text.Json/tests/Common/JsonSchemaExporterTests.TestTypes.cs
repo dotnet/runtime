@@ -833,6 +833,34 @@ namespace System.Text.Json.Schema.Tests
                     }
                     """);
 
+            yield return new TestData<PocoWithReadOnlyProperties>(
+                Value: new() { Name = "name" },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "Name": { "type": ["string", "null"] },
+                        "ReadOnlyProperty": { "type": "integer" },
+                        "ReadOnlyCollectionProperty": { "type": ["array", "null"], "items": { "type": "integer" } }
+                    }
+                }
+                """);
+
+            // Read-only properties are omitted when IgnoreReadOnlyProperties is enabled,
+            // with the exception of read-only properties of collection types.
+            yield return new TestData<PocoWithReadOnlyProperties>(
+                Value: new() { Name = "name" },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "Name": { "type": ["string", "null"] },
+                        "ReadOnlyCollectionProperty": { "type": ["array", "null"], "items": { "type": "integer" } }
+                    }
+                }
+                """,
+                SerializerOptions: new() { IgnoreReadOnlyProperties = true });
+
             yield return new TestData<PocoDisallowingUnmappedMembers>(
                 Value: new() { Name = "name", Age = 42 },
                 ExpectedJsonSchema: """
@@ -1552,6 +1580,13 @@ namespace System.Text.Json.Schema.Tests
 
             [JsonExtensionData]
             public Dictionary<string, object>? ExtensionData { get; set; }
+        }
+
+        public class PocoWithReadOnlyProperties
+        {
+            public string? Name { get; set; }
+            public int ReadOnlyProperty => 42;
+            public List<int> ReadOnlyCollectionProperty { get; } = new();
         }
 
         [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
