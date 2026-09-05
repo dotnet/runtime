@@ -1,0 +1,56 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.ReadyToRun.targets
+
+ReadyToRun compiler override for CoreCLR browser-wasm. See dotnet/runtime#121257.
+
+Appended to AfterMicrosoftNETSdkTargets by Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.props (only when
+Crossgen2InBuildDir is set), so it imports after Microsoft.NET.Publish.targets and its ResolveReadyToRunCompilers
+wins (MSBuild last-definition-wins). Mirrors AppleBuild.ReadyToRun.targets.
+
+The raw in-build crossgen2 directory ($(Crossgen2InBuildDir)) has crossgen2 at its root; the shipped
+Microsoft.NETCore.App.Crossgen2.<hostRid> pack has it under tools/ (both carry clrjit_universal_wasm next to
+crossgen2, which crossgen2 auto-loads when targeting wasm). This override probes both and sets the Crossgen2Tool
+item directly, because the base SDK / Crossgen2Tasks pack resolver keys on ResolvedCrossgen2Pack, which a
+standalone SDK app doesn't populate for a local build. Once the crossgen2 pack flows as a real restorable package
+(so ResolvedCrossgen2Pack is set), this override can be retired in favour of it. Inert for normal consumers (no
+Crossgen2InBuildDir).
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>
+  <Target Name="ResolveReadyToRunCompilers"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2InBuildDir)' != '' and Exists('$(Crossgen2InBuildDir)')"
+          DependsOnTargets="$(ResolveReadyToRunCompilersDependsOn)">
+    <PropertyGroup>
+      <_WasmCrossgen2ExeSuffix Condition="'$(ExeSuffix)' != ''">$(ExeSuffix)</_WasmCrossgen2ExeSuffix>
+      <_WasmCrossgen2ExeSuffix Condition="'$(_WasmCrossgen2ExeSuffix)' == '' and $([MSBuild]::IsOSPlatform('windows'))">.exe</_WasmCrossgen2ExeSuffix>
+      <!-- Accept both layouts: the raw in-build dir has crossgen2 at its root; the shipped
+           Microsoft.NETCore.App.Crossgen2.<hostRid> pack (dotnet/runtime#132466 G2) has it under tools/.
+           Probing both lets Crossgen2InBuildDir point at either the in-build dir or the pack root. -->
+      <_WasmCrossgen2RootExe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCrossgen2ExeSuffix)'))</_WasmCrossgen2RootExe>
+      <_WasmCrossgen2ToolsExe>$([MSBuild]::NormalizePath('$([MSBuild]::NormalizeDirectory('$(Crossgen2InBuildDir)', 'tools'))', 'crossgen2$(_WasmCrossgen2ExeSuffix)'))</_WasmCrossgen2ToolsExe>
+      <Crossgen2Path Condition="Exists('$(_WasmCrossgen2RootExe)')">$(_WasmCrossgen2RootExe)</Crossgen2Path>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and Exists('$(_WasmCrossgen2ToolsExe)')">$(_WasmCrossgen2ToolsExe)</Crossgen2Path>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == ''">$(_WasmCrossgen2RootExe)</Crossgen2Path>
+      <!-- Directory of the resolved crossgen2, so _WasmCoreClrConservativeR2RInputs (G9) can add the wasm JIT
+           crossgen2 auto-loads to the R2R inputs. -->
+      <_WasmResolvedCrossgen2Dir>$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetDirectoryName('$(Crossgen2Path)'))))</_WasmResolvedCrossgen2Dir>
+      <!-- RunReadyToRunCompiler (NETSDK1158) requires non-empty TargetOS/TargetArch on the Crossgen2Tool item
+           when JitPath is unset (crossgen2 then auto-loads its own clrjit_universal_wasm). In-tree builds set
+           $(TargetOS)/$(TargetArchitecture); a standalone SDK app does not. -->
+      <_WasmR2RTargetOS Condition="'$(TargetOS)' != ''">$(TargetOS)</_WasmR2RTargetOS>
+      <_WasmR2RTargetOS Condition="'$(_WasmR2RTargetOS)' == ''">browser</_WasmR2RTargetOS>
+      <_WasmR2RTargetArch Condition="'$(TargetArchitecture)' != ''">$(TargetArchitecture)</_WasmR2RTargetArch>
+      <_WasmR2RTargetArch Condition="'$(_WasmR2RTargetArch)' == ''">wasm</_WasmR2RTargetArch>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(_WasmR2RTargetArch)"
+                     TargetOS="$(_WasmR2RTargetOS)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)" />
+    </ItemGroup>
+  </Target>
+</Project>
