@@ -111,7 +111,7 @@ namespace ILCompiler.ObjectWriter
                 sectionIndex = _sectionIndexToData.Count;
                 CreateSection(section, comdatName, symbolName, sectionIndex, sectionData.GetReadStream());
                 _sectionIndexToData.Add(sectionData);
-                _sectionIndexToRelocations.Add(new());
+                _sectionIndexToRelocations.Add(null);
                 if (comdatName.IsNull)
                 {
                     _sectionNameToSectionIndex.Add(section.Name, sectionIndex);
@@ -234,12 +234,19 @@ namespace ILCompiler.ObjectWriter
             Utf8String symbolName,
             long addend)
         {
-            _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
+            List<SymbolicRelocation> relocations = _sectionIndexToRelocations[sectionIndex];
+            if (relocations is null)
+            {
+                relocations = new List<SymbolicRelocation>();
+                _sectionIndexToRelocations[sectionIndex] = relocations;
+            }
+
+            relocations.Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
         }
 
         private protected bool SectionHasRelocations(int sectionIndex)
         {
-            return _sectionIndexToRelocations[sectionIndex].Count > 0;
+            return _sectionIndexToRelocations[sectionIndex]?.Count > 0;
         }
 
         private protected virtual void EmitReferencedMethod(Utf8String symbolName) { }
@@ -310,6 +317,11 @@ namespace ILCompiler.ObjectWriter
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
             {
+                if (relocationList is null)
+                {
+                    continue;
+                }
+
                 foreach (var symbolicRelocation in relocationList)
                 {
                     if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
@@ -597,7 +609,11 @@ namespace ILCompiler.ObjectWriter
             int relocSectionIndex = 0;
             foreach (List<SymbolicRelocation> relocationList in _sectionIndexToRelocations)
             {
-                EmitRelocations(relocSectionIndex, relocationList);
+                if (relocationList is not null)
+                {
+                    EmitRelocations(relocSectionIndex, relocationList);
+                }
+
                 relocSectionIndex++;
             }
 
