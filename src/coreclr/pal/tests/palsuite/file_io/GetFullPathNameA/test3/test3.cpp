@@ -156,7 +156,8 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
     if (CloseHandle(hFile) != TRUE)
     {
         Trace("ERROR :%ld: CloseHandle failed close hFile=0x%lx.\n",
-              GetLastError());
+              GetLastError(),
+              hFile);
         bRetVal = FAIL;
         goto cleanUpThree;
     }
