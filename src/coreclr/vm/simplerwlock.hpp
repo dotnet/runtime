@@ -9,6 +9,10 @@
 
 #include "threads.h"
 
+#ifdef _DEBUG
+extern thread_local int t_unsafeAnyModeHeldCount;
+#endif
+
 class SimpleRWLock;
 
 //-------------------------------------------------------------------------------------------
