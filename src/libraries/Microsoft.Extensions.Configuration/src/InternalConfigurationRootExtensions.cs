@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -21,61 +20,33 @@ namespace Microsoft.Extensions.Configuration
         internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path)
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
-            IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
+            IList<IConfigurationProvider> providers = AsList(reference?.Providers ?? root.Providers);
 
-            IEnumerable<IConfigurationSection> children = providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
+            IEnumerable<string> keys = ConfigurationEngine.Default.GetChildKeys(providers, path);
+            if (reference is not null)
+            {
+                keys = keys.ToList();
+            }
 
-            if (reference is null)
-            {
-                return children;
-            }
-            else
-            {
-                // Eagerly evaluate the IEnumerable before releasing the reference so we don't allow iteration over disposed providers.
-                return children.ToList();
-            }
+            return keys.Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
         }
 
         internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
         {
-            // common cases Providers is IList<IConfigurationProvider> in ConfigurationRoot
-            IList<IConfigurationProvider> providers = root.Providers is IList<IConfigurationProvider> list
-                ? list
-                : root.Providers.ToList();
-
-            // ensure looping in the reverse order
-            for (int i = providers.Count - 1; i >= 0; i--)
+            if (root is ConfigurationManager manager)
             {
-                IConfigurationProvider provider = providers[i];
-
-                try
-                {
-                    if (provider.TryGet(key, out value))
-                    {
-                        return true;
-                    }
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Skip disposed providers to avoid exceptions during access.
-                    // This is especially relevant for cases like ConfigurationManager,
-                    // which implements IConfigurationRoot and may dispose providers
-                    // if configuration sources are concurrently modified. A new collection
-                    // is created in this case, so it's still safe to iterate over it.
-                    //
-                    // If we want to avoid this possible exception altogether, we could update
-                    // ConfigurationSection.TryGetValue to be virtual and have ConfigurationManager
-                    // implement it with reference counting like it does for the indexer.
-                }
+                // Hold the reference for the whole read: resolving a reference reads several keys, and they all have to
+                // come from the same provider generation.
+                using ReferenceCountedProviders reference = manager.GetProvidersReference();
+                return ConfigurationEngine.Default.Get(reference.Providers, key, out value, out _);
             }
 
-            value = null;
-            return false;
+            return ConfigurationEngine.Default.Get(AsList(root.Providers), key, out value, out _);
         }
 
+        // Providers is IList<IConfigurationProvider> for both of the roots in this library, and for the pinned
+        // generation a ConfigurationManager hands out.
+        private static IList<IConfigurationProvider> AsList(IEnumerable<IConfigurationProvider> providers) =>
+            providers as IList<IConfigurationProvider> ?? providers.ToList();
     }
 }
