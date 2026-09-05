@@ -14,10 +14,12 @@ namespace ILAssembler;
 internal sealed class Program
 {
     private readonly IlasmRootCommand _command;
+    private readonly ParseResult _result;
 
-    public Program(IlasmRootCommand command)
+    public Program(IlasmRootCommand command, ParseResult result)
     {
         _command = command;
+        _result = result;
     }
 
     public int Run()
@@ -28,7 +30,7 @@ internal sealed class Program
             stopwatch = Stopwatch.StartNew();
         }
 
-        string[]? inputFiles = _command.Result.GetValue(_command.InputFilePaths);
+        string[]? inputFiles = _result.GetValue(_command.InputFilePaths);
         bool quiet = Get(_command.Quiet);
 
         if (!Get(_command.NoLogo) && !quiet)
@@ -81,9 +83,9 @@ internal sealed class Program
             bool errorTolerant = Get(_command.ErrorTolerant);
             var options = new Options
             {
+                Dll = isDll,
                 NoAutoInherit = Get(_command.NoAutoInherit),
                 ErrorTolerant = errorTolerant,
-                IsDll = isDll,
             };
 
             // Apply PE header overrides from command line
@@ -282,16 +284,17 @@ internal sealed class Program
         return exitCode;
     }
 
-    private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument)!;
+    private T Get<T>(Argument<T> argument) => _result.GetValue(argument)!;
 
-    private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
+    private T Get<T>(Option<T> option) => _result.GetValue(option)!;
 
     private static int Main(string[] args)
     {
+        IlasmRootCommand command = new();
         string[] normalizedArgs;
         try
         {
-            normalizedArgs = NativeCommandLine.Normalize(args);
+            normalizedArgs = NativeCommandLine.Normalize(args, command);
         }
         catch (ArgumentException e)
         {
@@ -299,7 +302,29 @@ internal sealed class Program
             return 1;
         }
 
-        return new IlasmRootCommand()
+        command.SetAction(result =>
+        {
+            if (result.GetValue(command.WaitForDebugger))
+            {
+                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
+                Console.ReadLine();
+            }
+
+            try
+            {
+                return new Program(command, result).Run();
+            }
+            catch (Exception e)
+            {
+                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine("Error: " + e.Message);
+                Console.ResetColor();
+                return 1;
+            }
+        });
+
+        return command
             .Parse(normalizedArgs)
             .Invoke();
     }

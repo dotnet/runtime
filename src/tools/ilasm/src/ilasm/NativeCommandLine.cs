@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
 
 namespace ILAssembler;
 
@@ -42,45 +43,28 @@ internal static class NativeCommandLine
         ["X64"] = "--x64",
     };
 
-    private static readonly HashSet<string> s_optionsWithValues = new(StringComparer.Ordinal)
-    {
-        "--alignment",
-        "--aname",
-        "--base",
-        "--flags",
-        "--include",
-        "--key",
-        "--mdv",
-        "--output",
-        "--ssver",
-        "--stack",
-        "--subsystem",
-    };
-
-    private static readonly HashSet<string> s_modernOptionsWithSeparateValues = new(StringComparer.Ordinal)
-    {
-        "--alignment",
-        "--aname",
-        "--base",
-        "--debug-mode",
-        "--flags",
-        "--include",
-        "--key",
-        "--mdv",
-        "--output",
-        "--ssver",
-        "--stack",
-        "--subsystem",
-        "-I",
-        "-k",
-        "-o",
-    };
-
     internal static string[] Normalize(string[] args) =>
-        Normalize(args, allowSlashOptions: OperatingSystem.IsWindows());
+        Normalize(args, new IlasmRootCommand(), allowSlashOptions: OperatingSystem.IsWindows());
 
     internal static string[] Normalize(string[] args, bool allowSlashOptions)
+        => Normalize(args, new IlasmRootCommand(), allowSlashOptions);
+
+    internal static string[] Normalize(string[] args, IlasmRootCommand command)
+        => Normalize(args, command, allowSlashOptions: OperatingSystem.IsWindows());
+
+    private static string[] Normalize(string[] args, IlasmRootCommand command, bool allowSlashOptions)
     {
+        HashSet<string> optionsWithValues = new(StringComparer.Ordinal);
+        Dictionary<string, Option> modernShortOptions = new(StringComparer.Ordinal);
+        foreach (Option option in command.Options)
+        {
+            AddModernOption(option.Name, option);
+            foreach (string alias in option.Aliases)
+            {
+                AddModernOption(alias, option);
+            }
+        }
+
         List<string> result = new(args.Length);
         bool preserveRemainingArguments = false;
         bool preserveNextArgument = false;
@@ -101,7 +85,7 @@ internal static class NativeCommandLine
                 continue;
             }
 
-            if (s_modernOptionsWithSeparateValues.Contains(arg))
+            if (optionsWithValues.Contains(arg))
             {
                 result.Add(arg);
                 preserveNextArgument = true;
@@ -122,7 +106,7 @@ internal static class NativeCommandLine
 
             if (optionName.Length < 3)
             {
-                if (!IsValidModernShortOption(arg[0], optionName, value))
+                if (!IsValidModernShortOption(arg[0], optionName, value, modernShortOptions))
                 {
                     throw new ArgumentException($"Invalid native option '{arg}'.");
                 }
@@ -172,7 +156,7 @@ internal static class NativeCommandLine
 
             if (normalizedOption is null)
             {
-                if (IsValidModernShortOption(arg[0], optionName, value))
+                if (IsValidModernShortOption(arg[0], optionName, value, modernShortOptions))
                 {
                     result.Add(arg);
                     continue;
@@ -195,7 +179,7 @@ internal static class NativeCommandLine
             }
 
             result.Add(normalizedOption);
-            if (s_optionsWithValues.Contains(normalizedOption))
+            if (optionsWithValues.Contains(normalizedOption))
             {
                 if (value is null)
                 {
@@ -213,6 +197,29 @@ internal static class NativeCommandLine
         }
 
         return result.ToArray();
+
+        void AddModernOption(string name, Option option)
+        {
+            if (!name.StartsWith("-", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (option.Arity.MinimumNumberOfValues > 0)
+            {
+                optionsWithValues.Add(name);
+            }
+
+            AddModernShortOption(name, option);
+        }
+
+        void AddModernShortOption(string name, Option option)
+        {
+            if (name is ['-', _])
+            {
+                modernShortOptions.Add(name, option);
+            }
+        }
     }
 
     private static bool TrySplitNativeOption(
@@ -246,20 +253,30 @@ internal static class NativeCommandLine
         return true;
     }
 
-    private static bool IsValidModernShortOption(char prefix, string optionName, string? value)
+    private static bool IsValidModernShortOption(
+        char prefix,
+        string optionName,
+        string? value,
+        Dictionary<string, Option> modernShortOptions)
     {
         if (prefix != '-' || optionName.Length != 1)
         {
             return false;
         }
 
-        return optionName switch
+        if (!modernShortOptions.TryGetValue($"-{optionName}", out Option? option))
         {
-            "I" or "k" or "o" => true,
-            "O" or "g" or "q" => value is null || bool.TryParse(value, out _),
-            "h" => value is null,
-            _ => false,
-        };
+            return false;
+        }
+
+        if (option.Arity.MaximumNumberOfValues == 0)
+        {
+            return value is null;
+        }
+
+        return option.ValueType != typeof(bool) ||
+            value is null ||
+            bool.TryParse(value, out _);
     }
 
     private static string NormalizeDebugMode(string value)
