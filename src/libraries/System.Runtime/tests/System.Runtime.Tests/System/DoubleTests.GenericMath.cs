@@ -944,6 +944,14 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133311", TestPlatforms.Browser, TargetFrameworkMonikers.Any, TestRuntimes.Mono)]
+        [MemberData(nameof(GenericMathTestMemberData.MaxDoubleNaNSignAndPayload), MemberType = typeof(GenericMathTestMemberData))]
+        public static void MaxNaNSignAndPayloadTest(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, NumberHelper<double>.Max(x, y));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.MaxNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
         public static void MaxNumberTest(double x, double y, double expectedResult)
         {
@@ -953,6 +961,14 @@ namespace System.Tests
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.MinDouble), MemberType = typeof(GenericMathTestMemberData))]
         public static void MinTest(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, NumberHelper<double>.Min(x, y));
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133311", TestPlatforms.Browser, TargetFrameworkMonikers.Any, TestRuntimes.Mono)]
+        [MemberData(nameof(GenericMathTestMemberData.MinDoubleNaNSignAndPayload), MemberType = typeof(GenericMathTestMemberData))]
+        public static void MinNaNSignAndPayloadTest(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, NumberHelper<double>.Min(x, y));
         }

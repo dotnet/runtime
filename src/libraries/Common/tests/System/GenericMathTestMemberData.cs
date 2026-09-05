@@ -1372,14 +1372,21 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,   double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,   double.NaN };
-                yield return new object[] {  PositiveNaNDouble,          -0.0,                      PositiveNaNDouble };
-                yield return new object[] { -0.0,                        NegativeNaNDouble,          NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
                 yield return new object[] { -3.0f,                       2.0f,                      2.0f };
                 yield return new object[] {  3.0f,                      -2.0f,                      3.0f };
                 yield return new object[] { -2.0f,                       3.0f,                      3.0f };
+            }
+        }
+
+        public static IEnumerable<object[]> MaxDoubleNaNSignAndPayload
+        {
+            get
+            {
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                      PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,          NegativeNaNDouble };
             }
         }
 
@@ -1572,14 +1579,21 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                 double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,    double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,    double.NaN };
-                yield return new object[] {  PositiveNaNDouble,          -0.0,                       PositiveNaNDouble };
-                yield return new object[] { -0.0,                        NegativeNaNDouble,           NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
                 yield return new object[] { -3.0f,                       2.0f,                      -3.0f };
                 yield return new object[] {  3.0f,                      -2.0f,                      -2.0f };
                 yield return new object[] { -2.0f,                       3.0f,                      -2.0f };
+            }
+        }
+
+        public static IEnumerable<object[]> MinDoubleNaNSignAndPayload
+        {
+            get
+            {
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                       PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,           NegativeNaNDouble };
             }
         }
 
