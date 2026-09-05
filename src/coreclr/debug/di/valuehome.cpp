@@ -190,6 +190,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
     // If the value is in a reg, then it's going to be a register's width (regardless of
     // the actual width of the data).
     // For signed types, like i2, i1, make sure we sign extend.
+    IDacDbiInterface::TargetInfo targetInfo;
 
     if (fIsSigned)
     {
@@ -203,10 +204,13 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = (SSIZE_T) *(short*)newValue.StartAddress();          break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = (SSIZE_T) *(int*)newValue.StartAddress();            break;
-#if defined(TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
-                     extendedVal = (SSIZE_T) *(ULONGLONG*)newValue.StartAddress();      break;
-#endif // TARGET_64BIT
+            case 8:
+            {
+                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+                _ASSERTE(targetInfo.pointerSize == 8);
+                extendedVal = (SSIZE_T) *(INT64*)newValue.StartAddress();
+                break;
+            }
             default: _ASSERTE(!"bad size");
         }
     }
@@ -221,10 +225,13 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = *( WORD*)newValue.StartAddress();     break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = *(DWORD*)newValue.StartAddress();     break;
-#if defined(TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
-                     extendedVal = *(ULONGLONG*)newValue.StartAddress(); break;
-#endif // TARGET_64BIT
+            case 8:
+            {
+                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+                _ASSERTE(targetInfo.pointerSize == 8);
+                extendedVal = *(UINT64*)newValue.StartAddress();
+                break;
+            }
             default: _ASSERTE(!"bad size");
         }
     }
@@ -239,9 +246,9 @@ void RegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     UINT_PTR* reg = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
     _ASSERTE(reg != NULL);
-    _ASSERTE(sizeof(*reg) == valueOutBuffer.Size());
+    _ASSERTE(valueOutBuffer.Size() <= sizeof(*reg));
 
-    memcpy(valueOutBuffer.StartAddress(), reg, sizeof(*reg));
+    memcpy(valueOutBuffer.StartAddress(), reg, valueOutBuffer.Size());
 } // RegValueHome::GetEnregisteredValue
 
 
@@ -889,21 +896,9 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 } // RegisterValueHome::SetEnregisteredValue
 
 
-// Get an enregistered value from the register display of the native frame
-// Arguments:
-//     output: dest - buffer will hold the register value
-// Note: Throws E_NOTIMPL for attempts to get an enregistered value for a float register
-//       or for 64-bit platforms
 void RegisterValueHome::GetEnregisteredValue(MemoryRange dest)
 {
-#if !defined(TARGET_X86)
-    _ASSERTE(!"@TODO IA64/AMD64 -- Not Yet Implemented");
     ThrowHR(E_NOTIMPL);
-#else // TARGET_X86
-    _ASSERTE(m_pRemoteRegAddr != NULL);
-
-    m_pRemoteRegAddr->GetEnregisteredValue(dest); // throws
-#endif // !TARGET_X86
 } // RegisterValueHome::GetEnregisteredValue
 
 // Is this a signed type or unsigned type?
@@ -949,13 +944,15 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
 void HandleValueHome::GetValue(MemoryRange dest)
 {
     _ASSERTE((m_pProcess != NULL) && !m_vmObjectHandle.IsNull());
-    CORDB_ADDRESS objPtr = PTR_TO_CORDB_ADDRESS((void *)NULL);
+    CORDB_ADDRESS objPtr = 0;
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pProcess->GetTargetInfo(&targetInfo));
     IfFailThrow(m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle, &objPtr));
 
-    _ASSERTE(dest.Size() <= sizeof(void *));
+    _ASSERTE(dest.Size() == targetInfo.pointerSize);
     _ASSERTE(dest.StartAddress() != NULL);
     _ASSERTE(objPtr != (CORDB_ADDRESS)NULL);
-    m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, sizeof(void *)), (BYTE *)dest.StartAddress());
+    m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, targetInfo.pointerSize), (BYTE *)dest.StartAddress());
 } // HandleValueHome::GetValue
 
 // Sets a location to the value provided in src
@@ -964,13 +961,20 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
     _ASSERTE(!m_vmObjectHandle.IsNull());
 
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pProcess->GetTargetInfo(&targetInfo));
+    _ASSERTE(src.Size() == targetInfo.pointerSize);
+
+    CORDB_ADDRESS newReference = 0;
+    memcpy(&newReference, src.StartAddress(), src.Size());
+
     DebuggerIPCEvent event;
 
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
     event.SetReference.objectRefAddress = (CORDB_ADDRESS)0;
     event.SetReference.vmObjectHandle = m_vmObjectHandle;
-    event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
+    event.SetReference.newReference = newReference;
 
     // Note: two-way event here...
     IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -1064,8 +1068,10 @@ RefRemoteValueHome ::RefRemoteValueHome (CordbProcess *                 pProcess
                                          TargetBuffer                   remoteValue):
    RemoteValueHome(pProcess, remoteValue)
 {
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(pProcess->GetTargetInfo(&targetInfo));
     // caller supplies remoteValue, to work w/ Func-eval.
-    _ASSERTE((!remoteValue.IsEmpty()) && (remoteValue.cbSize == sizeof (void *)));
+    _ASSERTE((!remoteValue.IsEmpty()) && (remoteValue.cbSize == targetInfo.pointerSize));
 
 } // RefRemoteValueHome::RefRemoteValueHome
 
@@ -1080,6 +1086,13 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
     // We had better have a remote address.
     _ASSERTE(!m_remoteValue.IsEmpty());
+
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pProcess->GetTargetInfo(&targetInfo));
+    _ASSERTE(src.Size() == targetInfo.pointerSize);
+
+    CORDB_ADDRESS newReference = 0;
+    memcpy(&newReference, src.StartAddress(), src.Size());
 
     // send a Set Reference message to the right side with the address of this reference and whether or not
     // the reference points to a handle.
@@ -1099,7 +1112,7 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 
         event.SetReference.objectRefAddress = m_remoteValue.pAddress;
         event.SetReference.vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
-        event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
+        event.SetReference.newReference = newReference;
 
         // Note: two-way event here...
         IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -1145,4 +1158,3 @@ RefValueHome::RefValueHome(CordbProcess *                pProcess,
 
 
 } // RefValueHome::RefValueHome
-
