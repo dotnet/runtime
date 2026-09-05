@@ -22,7 +22,7 @@ namespace System.Net.Mime.Tests
                 Assert.InRange((byte)c, 0, 128);
             }
 
-            Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result));
+            Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result).Value);
         }
 
         [Theory]
@@ -41,7 +41,7 @@ namespace System.Net.Mime.Tests
                 Assert.InRange(foldedHeader.Length, 0, 76);
             }
 
-            Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result));
+            Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result).Value);
         }
 
         [Theory]
@@ -59,7 +59,7 @@ namespace System.Net.Mime.Tests
                 Assert.InRange(foldedHeader.Length, 0, 76);
             }
 
-            Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result));
+            Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result).Value);
         }
 
         [Fact]
