@@ -449,6 +449,44 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     }
 }
 
+EXTERN_C void JIT_ResumeAfterCatchImpl(uintptr_t callersStackPointer)
+{
+    InlinedCallFrame inlinedCallFrame;
+    Thread* pThread = GetThread();
+
+    inlinedCallFrame.m_pCallSiteSP          = (void*)callersStackPointer;
+    inlinedCallFrame.m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R;
+    inlinedCallFrame.m_pCalleeSavedFP       = 0;
+    inlinedCallFrame.m_pThread              = pThread;
+    // Frame::Push requires cooperative mode, but the frame must be linked before
+    // the returning-thread check can trigger a stack walk.
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    inlinedCallFrame.Push();
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        inlinedCallFrame.Pop();
+    }
+}
+
+EXTERN_C __attribute__((naked)) void JIT_ResumeAfterCatch(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+{
+    asm(
+        "global.get __stack_pointer\n"
+        "local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "local.get 0\n"                 /* callersStackPointer */
+        "global.set __stack_pointer\n"
+        "local.get 0\n"                 /* sp argument for the implementation */
+        "call %[JIT_ResumeAfterCatchImpl]\n"
+        "local.get 1\n"                 /* restore previous __stack_pointer */
+        "global.set __stack_pointer\n"
+        "return\n"
+        :: [JIT_ResumeAfterCatchImpl] "i" (JIT_ResumeAfterCatchImpl));
+}
+
 EXTERN_C FCDECL0(void, JIT_PollGC);
 EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
 {
