@@ -121,7 +121,7 @@
     <Compile Include="JitBlue\Runtime_116814\Runtime_116814.cs" />
     <Compile Include="JitBlue\Runtime_116823\Runtime_116823.cs" />
     <Compile Include="JitBlue\Runtime_117377\Runtime_117377.cs" />
-    <Compile Include="JitBlue\Runtime_117566\Runtime_117566.cs" />
+    <Compile Include="JitBlue\Runtime_117566\Runtime_117566.cs" Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'" />
     <Compile Include="JitBlue\Runtime_117605\Runtime_117605.cs" />
     <Compile Include="JitBlue\Runtime_117794\Runtime_117794.cs" />
     <Compile Include="JitBlue\Runtime_119710\Runtime_119710.cs" />
@@ -145,7 +145,7 @@
     <Compile Include="JitBlue\Runtime_41100\Runtime_41100.cs" />
     <Compile Include="JitBlue\Runtime_54956\Runtime_54956.cs" />
     <Compile Include="JitBlue\Runtime_57606\Runtime_57606.cs" />
-    <Compile Include="JitBlue\Runtime_58874\Runtime_58874.cs" />
+    <Compile Include="JitBlue\Runtime_58874\Runtime_58874.cs" Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'" />
     <Compile Include="JitBlue\Runtime_61045\Runtime_61045.cs" />
     <Compile Include="JitBlue\Runtime_61074\Runtime_61074.cs" />
     <Compile Include="JitBlue\Runtime_61077\Runtime_61077.cs" />
