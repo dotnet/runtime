@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -8,16 +8,9 @@ namespace System.Reflection.Emit
 {
     internal sealed partial class MethodOnTypeBuilderInstantiation : MethodInfo
     {
-        #region Internal Static Members
-        internal static MethodInfo GetMethod(MethodInfo method, TypeBuilderInstantiation type)
-        {
-            return new MethodOnTypeBuilderInstantiation(method, type);
-        }
-        #endregion
-
         #region Private Data Members
-        internal MethodInfo _method;
-        private Type _type;
+        internal readonly MethodInfo _method;
+        private readonly Type _type;
         #endregion
 
         #region Constructor

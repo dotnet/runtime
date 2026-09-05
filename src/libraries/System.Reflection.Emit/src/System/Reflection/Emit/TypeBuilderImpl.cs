@@ -636,7 +636,33 @@ namespace System.Reflection.Emit
         protected override bool IsByRefImpl() => false;
         protected override bool IsPointerImpl() => false;
         protected override bool IsPrimitiveImpl() => false;
-        protected override bool IsValueTypeImpl() => IsSubclassOf(_module.GetTypeFromCoreAssembly(CoreTypeId.ValueType));
+        protected override bool IsValueTypeImpl()
+        {
+            Type? baseType = BaseType;
+            Type valueType = _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType);
+
+            if (baseType is null)
+            {
+                return false;
+            }
+
+            // Check if the type directly inherits System.ValueType.
+            if (AreTypesEqual(baseType, valueType))
+            {
+                return true;
+            }
+
+            // The remaining case is whether the type is an enum, which means that it inherits from System.ValueType indirectly.
+            // If the base type is a signature type (which can happen on constructed generic types), we cannot call BaseType on
+            // it. But it wouldn't be possible for System.Enum to be a signature type, so we can bail out early in that case.
+            if (baseType.IsSignatureType)
+            {
+                return false;
+            }
+
+            return IsSubclassOf(valueType);
+        }
+
         protected override bool HasElementTypeImpl() => false;
         protected override TypeAttributes GetAttributeFlagsImpl() => _attributes;
         protected override bool IsCOMObjectImpl()
@@ -1396,7 +1422,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal static bool AreTypesEqual(Type t1, Type? t2)
+        internal static bool AreTypesEqual(Type? t1, Type? t2)
         {
             if (t1 == t2)
             {

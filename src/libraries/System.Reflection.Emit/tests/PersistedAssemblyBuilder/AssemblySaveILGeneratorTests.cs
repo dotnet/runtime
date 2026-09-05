@@ -2603,7 +2603,7 @@ public class MyType
                 PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 TypeBuilder nestedType = type.DefineNestedType("NestedType", TypeAttributes.NestedPublic);
 
-                Type returnType = typeof(List<>).MakeGenericType(typeof(Dictionary<,>).MakeGenericType(nestedType, typeof(bool)));
+                Type returnType = Type.MakeGenericSignatureType(typeof(List<>), typeof(Dictionary<,>).MakeGenericType(nestedType, typeof(bool)));
                 MethodBuilder nestedMethod = nestedType.DefineMethod("M1", MethodAttributes.Public, returnType, null);
                 ILGenerator nestedIL = nestedMethod.GetILGenerator();
                 nestedIL.Emit(OpCodes.Ldc_I4_4);
