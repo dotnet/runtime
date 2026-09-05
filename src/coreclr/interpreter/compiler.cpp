@@ -1072,8 +1072,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         if (ilOffset < (uint32_t)m_ILCodeSizeFromILHeader)
         {
             uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
+            bool isEmptyILStack = (ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) != 0;
+            bool isFilterOrCatchEntry = m_pCBB->isFilterOrCatchFuncletEntry && (ilOffset == (uint32_t)m_pCBB->ilOffset);
+
             // Only emit mapping entries at IL offsets where the evaluation stack is empty
-            if ((ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) &&
+            // or at filter and catch entries, where the exception object is on the stack.
+            if ((isEmptyILStack || isFilterOrCatchEntry) &&
                 ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset)))
             {
                 // This code assumes that instructions for the same IL offset are emitted in a single run without
@@ -1096,7 +1100,9 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::STACK_EMPTY;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = isEmptyILStack
+                    ? ICorDebugInfo::STACK_EMPTY
+                    : ICorDebugInfo::SOURCE_TYPE_INVALID;
                 m_ILToNativeMapSize++;
             }
 
