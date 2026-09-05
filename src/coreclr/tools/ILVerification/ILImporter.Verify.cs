@@ -1110,7 +1110,7 @@ namespace Internal.IL
                 else
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
-                    if (ftn.Method.IsVirtual && !ftn.Method.IsFinal && !obj.IsBoxedValueType)
+                    if (!ftn.Method.Signature.IsStatic && ftn.Method.IsVirtual && !ftn.Method.IsFinal && !obj.IsBoxedValueType)
                     {
                         var methodTypeDef = ftn.Method.OwningType.GetTypeDefinition() as MetadataType; // Method is always considered final if owning type is sealed
                         if (methodTypeDef == null || !methodTypeDef.IsSealed)
@@ -1843,6 +1843,10 @@ namespace Internal.IL
                     ClearPendingPrefix(Prefix.Constrained);
                     if (!_constrained.CanCastTo(method.OwningType))
                         VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                }
+                else
+                {
+                    Check(!method.IsAbstract, VerifierError.CallAbstract);
                 }
             }
             else if (opCode == ILOpcode.ldvirtftn)
