@@ -460,6 +460,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
                         if (m_argIt.IsArgPassedByRef())
                         {
+                            _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pSrc));
                             *(PVOID*)pDest = pSrc;
                         }
                         else

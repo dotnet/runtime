@@ -270,10 +270,10 @@ public:
         //
         // Calls with value type parameters must use the CallXXXWithValueTypes
         // variants.  Using the WithValueTypes variant indicates that the caller
-        // has gc-protected the contents of value types of size greater than
-        // ENREGISTERED_PARAMTYPE_MAXSIZE (when it is defined, which is currently
-        // only on AMD64).  ProtectValueClassFrame can be used to accomplish this,
-        // see CallDescrWithObjectArray in stackbuildersink.cpp.
+        // has GC-protected the contents of value types passed as implicit byrefs.
+        // These require writable copies outside the GC heap, since the callee
+        // may modify them without write barriers. ProtectValueClassFrame can be
+        // used to report the GC references in these copies.
         //
         // Not all usages of MethodDesc::CallXXX have been ported to the new convention. The end goal is to port them all and get
         //      rid of the non-portable BYTE* version.

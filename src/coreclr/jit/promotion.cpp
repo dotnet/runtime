@@ -810,20 +810,6 @@ public:
         costWith += countReadBacksWtd * COST_STRUCT_ACCESS_CYCLES;
         sizeWith += countReadBacks * COST_STRUCT_ACCESS_SIZE;
 
-        // Write backs with TYP_REFs when the base local is an implicit byref
-        // involves checked write barriers, so they are very expensive. We cost that at 10 cycles.
-        const weight_t COST_WRITEBARRIER_CYCLES = 10;
-        const weight_t COST_WRITEBARRIER_SIZE   = 10;
-
-        // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
-        // Otherwise we cost it like a store to stack at 3 cycles.
-        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF)
-                                     ? COST_WRITEBARRIER_CYCLES
-                                     : COST_STRUCT_ACCESS_CYCLES;
-        weight_t writeBackSize = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF)
-                                     ? COST_WRITEBARRIER_SIZE
-                                     : COST_STRUCT_ACCESS_SIZE;
-
         // We write back before an overlapping struct use passed as an arg.
         // TODO-CQ: A store-forwarding optimization in lowering could get rid
         // of these copies; however, it requires lowering to be able to prove
@@ -839,8 +825,8 @@ public:
         // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         unsigned countWriteBacks    = countOverlappedCallArg;
-        costWith += countWriteBacksWtd * writeBackCost;
-        sizeWith += countWriteBacks * writeBackSize;
+        costWith += countWriteBacksWtd * COST_STRUCT_ACCESS_CYCLES;
+        sizeWith += countWriteBacks * COST_STRUCT_ACCESS_SIZE;
 
         // Overlapping stores are decomposable so we don't cost them as
         // being more expensive than their unpromoted counterparts (i.e. we
@@ -864,7 +850,7 @@ public:
         weight_t sizeImprovement          = sizeWithout - sizeWith;
 
         JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
-        JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
+        JITDUMP("    Single write-back cost: " FMT_WT "\n", COST_STRUCT_ACCESS_CYCLES);
         JITDUMP("    Write backs: " FMT_WT "\n", countWriteBacksWtd);
         JITDUMP("    Read backs: " FMT_WT "\n", countReadBacksWtd);
         JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovementPerInvoc);
