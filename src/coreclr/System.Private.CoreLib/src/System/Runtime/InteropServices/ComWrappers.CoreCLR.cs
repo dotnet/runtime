@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices
             catch (Exception ex)
             {
                 *pException = ex;
-                return default;
+                return -1; // See TryInvokeICustomQueryInterfaceResult.FailedToInvoke
             }
         }
 
