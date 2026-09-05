@@ -193,6 +193,19 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CopyToOverflowValidation()
+        {
+            IImmutableSet<string> set = this.Empty<string>().Add("a");
+            var array = new string[5];
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<string>)set).CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<string>)set).CopyTo(array, -1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)set).CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)set).CopyTo(array, -1));
+        }
+
+        [Fact]
         public void NullHandling()
         {
             IImmutableSet<string> empty = this.Empty<string>();
