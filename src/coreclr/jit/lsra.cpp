@@ -13734,6 +13734,31 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         freeCandidates = linearScan->getFreeCandidates(candidates, regType);
     }
 
+    if (freeCandidates != RBM_NONE)
+    {
+        // Set the 'matchingConstants' set.
+        if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
+        {
+            matchingConstants = linearScan->getMatchingConstants(candidates, currentInterval, refPosition);
+        }
+
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+        if (linearScan->m_compiler->opts.OptimizationEnabled() && varTypeIsMask(regType))
+        {
+            // Avoid overwriting an available mask constant when another free register exists. A later
+            // definition can then reuse the constant; matching constants remain preferred candidates.
+            SingleTypeRegSet constantsToPreserve =
+                linearScan->m_RegistersWithConstants.GetRegSetForType(regType) & ~matchingConstants & ~fixedRegMask;
+            SingleTypeRegSet remainingFreeCandidates = freeCandidates & ~constantsToPreserve;
+            if (remainingFreeCandidates != RBM_NONE)
+            {
+                candidates &= ~constantsToPreserve;
+                freeCandidates = remainingFreeCandidates;
+            }
+        }
+#endif
+    }
+
     // If no free candidates, then double check if refPosition is an actual ref.
     if (freeCandidates == RBM_NONE)
     {
@@ -13742,14 +13767,6 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         {
             currentInterval->assignedReg = nullptr;
             return RBM_NONE;
-        }
-    }
-    else
-    {
-        // Set the 'matchingConstants' set.
-        if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
-        {
-            matchingConstants = linearScan->getMatchingConstants(candidates, currentInterval, refPosition);
         }
     }
 
