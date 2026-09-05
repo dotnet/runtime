@@ -6820,6 +6820,18 @@ PhaseStatus Compiler::optAssertionPropMain()
     }
     flow.ForwardAnalysis(ap);
 
+    // Blocks outside the DFS tree are not visited by dataflow and retain the initial full assertion set.
+    // Do not expose that lattice top as a set of facts to later assertion and range propagation.
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!m_dfsTree->Contains(block))
+        {
+            BitVecOps::ClearD(apTraits, block->bbAssertionIn);
+            BitVecOps::ClearD(apTraits, block->bbAssertionOut);
+            BitVecOps::ClearD(apTraits, bbJtrueAssertionOut[block->bbNum]);
+        }
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
