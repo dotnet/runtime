@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using TestLibrary;
 using Xunit;
 
 internal class ClassWithStatic
@@ -2272,7 +2273,7 @@ public class Program
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
         // ActiveIssue https://github.com/dotnet/runtime/issues/133307
-        if (!OperatingSystem.IsBrowser() || Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") != "1")
+        if (!PlatformDetection.IsBrowser || !PlatformDetection.IsReadyToRunCompiled)
         {
             RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
         }
