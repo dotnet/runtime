@@ -15,7 +15,9 @@ using System.Text;
 using System.Threading;
 
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
+#if !NATIVEAOT
 using MdToken = System.Reflection.MetadataToken;
+#endif
 
 namespace System
 {
@@ -38,7 +40,7 @@ namespace System
 
     internal sealed partial class RuntimeType : TypeInfo, ICloneable
     {
-        #region Definitions
+#if !NATIVEAOT
 
         internal enum MemberListType
         {
@@ -47,6 +49,7 @@ namespace System
             CaseInsensitive,
             HandleToInfo
         }
+#endif
 
         // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
         internal struct ListBuilder<T> where T : class
@@ -129,6 +132,7 @@ namespace System
             }
         }
 
+#if !NATIVEAOT
         internal sealed class RuntimeTypeCache
         {
             private const int MAXNAMELEN = 1024;
@@ -1768,7 +1772,6 @@ namespace System
 
             #endregion
         }
-        #endregion
 
         #region Static Members
 
@@ -4585,5 +4588,6 @@ namespace System.Reflection
                 m_Table.Insert(key, value);
             }
         }
+#endif
     }
 }
