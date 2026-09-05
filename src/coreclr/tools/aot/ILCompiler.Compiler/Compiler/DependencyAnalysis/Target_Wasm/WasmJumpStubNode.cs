@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
@@ -13,34 +11,17 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            INodeWithTypeSignature signatureNode = (INodeWithTypeSignature)this;
-            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
+            WasmFuncType signature = WasmLowering.GetSignature(this).FuncType;
+            int parameterCount = signature.Params.Types.Length;
 
-            if (signatureNode.HasGenericContextArg)
+            WasmExpr[] expressions = new WasmExpr[parameterCount + 1];
+            for (int i = 0; i < parameterCount; i++)
             {
-                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+                expressions[i] = Local.Get(i);
             }
 
-            if (signatureNode.IsAsyncCall)
-            {
-                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-            }
-
-            if (signatureNode.IsUnmanagedCallersOnly)
-            {
-                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-            }
-
-            WasmFuncType signature = WasmLowering.GetSignature(signatureNode.Signature, flags).FuncType;
-
-            List<WasmExpr> expressions = new List<WasmExpr>(signature.Params.Types.Length + 1);
-            for (int i = 0; i < signature.Params.Types.Length; i++)
-            {
-                expressions.Add(Local.Get(i));
-            }
-
-            expressions.Add(ControlFlow.ReturnCall(_target));
-            encoder.FunctionBody = new WasmFunctionBody(signature, expressions.ToArray());
+            expressions[parameterCount] = ControlFlow.ReturnCall(_target);
+            encoder.FunctionBody = new WasmFunctionBody(signature, expressions);
         }
     }
 }
