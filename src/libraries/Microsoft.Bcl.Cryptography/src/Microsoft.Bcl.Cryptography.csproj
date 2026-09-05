@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for some cryptographic primitives for .NET Framework and .NET Standard.</PackageDescription>
-    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB5006;SYSLIB5009</NoWarn>
     <IncludeIndexRangeTypes>true</IncludeIndexRangeTypes>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
@@ -33,6 +33,17 @@
 
     <Compile Include="Microsoft.Bcl.Cryptography.Forwards.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateKeyAccessors.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAead.cs"
+             Link="Common\System\Security\Cryptography\HpkeAead.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKdf.cs"
+             Link="Common\System\Security\Cryptography\HpkeKdf.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKem.cs"
+             Link="Common\System\Security\Cryptography\HpkeKem.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
+             Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true' ">
@@ -646,6 +657,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)"
+                      Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>

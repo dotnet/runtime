@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetFrameworkCurrent);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB5006;SYSLIB5009</NoWarn>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <IncludeIndexRangeTypes>true</IncludeIndexRangeTypes>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
@@ -127,6 +127,8 @@
              Link="CommonTest\System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CompositeMLKemAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\CompositeMLKemAlgorithmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeSuiteTests.cs"
+             Link="CommonTest\System\Security\Cryptography\HpkeSuiteTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"

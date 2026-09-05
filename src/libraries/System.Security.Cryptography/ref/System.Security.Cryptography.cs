@@ -1888,6 +1888,47 @@ namespace System.Security.Cryptography
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public enum HpkeAead
+    {
+        AES_128_GCM = 1,
+        AES_256_GCM = 2,
+        ChaCha20Poly1305 = 3,
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public enum HpkeKdf
+    {
+        HKDF_SHA256 = 1,
+        HKDF_SHA384 = 2,
+        HKDF_SHA512 = 3,
+        SHAKE128 = 16,
+        SHAKE256 = 17,
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public enum HpkeKem
+    {
+        DHKEM_P256_HKDF_SHA256 = 16,
+        DHKEM_P384_HKDF_SHA384 = 17,
+        DHKEM_X25519_HKDF_SHA256 = 32,
+        MLKEM_512 = 64,
+        MLKEM_768 = 65,
+        MLKEM_1024 = 66,
+        MLKEM768_P256 = 80,
+        MLKEM1024_P384 = 81,
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class HpkeSuite : System.IEquatable<System.Security.Cryptography.HpkeSuite>
+    {
+        public HpkeSuite(System.Security.Cryptography.HpkeKem kem, System.Security.Cryptography.HpkeKdf kdf, System.Security.Cryptography.HpkeAead aead) { }
+        public System.Security.Cryptography.HpkeAead AeadAlgorithm { get { throw null; } }
+        public System.Security.Cryptography.HpkeKdf KdfAlgorithm { get { throw null; } }
+        public System.Security.Cryptography.HpkeKem KemAlgorithm { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.HpkeSuite? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
+    }
     public partial interface ICryptoTransform : System.IDisposable
     {
         bool CanReuseTransform { get; }

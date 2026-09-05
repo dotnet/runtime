@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
     <NoWarn>$(NoWarn);CS0809</NoWarn>
-    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB5006;SYSLIB5009</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
@@ -404,6 +404,14 @@
              Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
              Link="Common\System\Security\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAead.cs"
+             Link="Common\System\Security\Cryptography\HpkeAead.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKdf.cs"
+             Link="Common\System\Security\Cryptography\HpkeKdf.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKem.cs"
+             Link="Common\System\Security\Cryptography\HpkeKem.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
+             Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\IImportExportShape.cs"
