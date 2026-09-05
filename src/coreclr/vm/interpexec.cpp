@@ -218,6 +218,7 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
+void InvokeUnmanagedMethodInPreemptiveMode(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
 void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet);
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
@@ -233,6 +234,15 @@ LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
     return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
         ? EXCEPTION_CONTINUE_SEARCH
         : EXCEPTION_EXECUTE_HANDLER;
+}
+
+NOINLINE static void DECLSPEC_NORETURN RethrowLastThrownObject()
+{
+    WRAPPER_NO_CONTRACT;
+
+    GCX_COOP();
+    OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+    DispatchManagedException(ohThrowable);
 }
 
 template<typename Function>
@@ -256,9 +266,7 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
         // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
-        GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
-        DispatchManagedException(ohThrowable);
+        RethrowLastThrownObject();
     }
     PAL_ENDTRY
 
@@ -288,10 +296,8 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
 
     PAL_TRY(Param *, pParam, &param)
     {
-        GCX_PREEMP_NO_DTOR();
         // WASM-TODO: Handle unmanaged calling conventions
-        InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
-        GCX_PREEMP_NO_DTOR_END();
+        InvokeUnmanagedMethodInPreemptiveMode(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget);
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
     {
@@ -301,9 +307,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
         // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
-        GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
-        DispatchManagedException(ohThrowable);
+        RethrowLastThrownObject();
     }
     PAL_ENDTRY
 
@@ -618,6 +622,14 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     return pHeader;
 }
 #endif // !TARGET_WASM
+
+void InvokeUnmanagedMethodInPreemptiveMode(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+{
+    WRAPPER_NO_CONTRACT;
+
+    GCX_PREEMP();
+    InvokeUnmanagedMethod(targetMethod, pArgs, pRet, callTarget);
+}
 
 #ifdef _DEBUG
 void DBG_PrintInterpreterStack()
@@ -4845,7 +4857,7 @@ do                                                                      \
     }
     catch (const ResumeAfterCatchException& ex)
     {
-        GCX_COOP_NO_DTOR();
+        _ASSERTE(GetThread()->PreemptiveGCDisabled());
         ex.GetResumeContext(&resumeSP, &resumeIP);
         _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
