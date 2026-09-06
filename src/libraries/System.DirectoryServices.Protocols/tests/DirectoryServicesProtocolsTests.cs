@@ -194,6 +194,32 @@ namespace System.DirectoryServices.Protocols.Tests
             return new LocalConnectionState(connection, server);
         }
 
+        [Theory]
+        [InlineData("(&(objectClass=domain)(dc=test))")]
+        [InlineData("((objectClass=*))")]
+        [InlineData("(&((objectClass=domain))((((dc=test)))))")]
+        [InlineData("(description=Domain\\ Controllers)")]
+        [InlineData("(description=Domain\\20Controllers)")]
+        public void SearchRequest_WindowsCompatibleFilter_ReturnsMatchingEntry(string filter)
+        {
+            using LdapTestServer server = StartLocalServer(out int port);
+            using LdapConnection connection = GetLocalConnection(port);
+
+            var modifyRequest = new ModifyRequest(
+                server.BaseDn,
+                DirectoryAttributeOperation.Add,
+                "description",
+                "Domain Controllers");
+            ModifyResponse modifyResponse = (ModifyResponse)connection.SendRequest(modifyRequest);
+            Assert.Equal(ResultCode.Success, modifyResponse.ResultCode);
+
+            var searchRequest = new SearchRequest(server.BaseDn, filter, SearchScope.Base);
+            SearchResponse searchResponse = (SearchResponse)connection.SendRequest(searchRequest);
+
+            Assert.Equal(ResultCode.Success, searchResponse.ResultCode);
+            Assert.Single(searchResponse.Entries);
+        }
+
         [InlineData(true)]
         [InlineData(false)]
         [Theory]
