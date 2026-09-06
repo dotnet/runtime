@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime NotAfter
+        public DateTimeOffset NotAfter
         {
             get
             {
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime NotBefore
+        public DateTimeOffset NotBefore
         {
             get
             {
@@ -858,7 +858,7 @@ namespace System.Security.Cryptography.X509Certificates
             return duplicate;
         }
 
-        internal static unsafe DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
+        internal static unsafe DateTimeOffset ExtractValidityDateTime(IntPtr validityDatePtr)
         {
             byte[] bytes = Interop.Crypto.GetAsn1StringBytes(validityDatePtr);
 
@@ -903,7 +903,9 @@ namespace System.Security.Cryptography.X509Certificates
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
                     out DateTime time))
                 {
-                    return time.ToLocalTime();
+                    // AdjustToUniversal guarantees Kind == Utc, so this is an exact UTC instant, not a guess.
+                    Debug.Assert(time.Kind == DateTimeKind.Utc);
+                    return new DateTimeOffset(time);
                 }
             }
 
