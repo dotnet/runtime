@@ -1688,10 +1688,6 @@ void AppDomain::Init()
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
 
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
-    if (!m_handleStore)
-    {
-        COMPlusThrowOM();
-    }
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_TypeEquivalenceCrst.Init(CrstTypeEquivalenceMap);
