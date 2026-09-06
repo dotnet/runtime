@@ -25,46 +25,56 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         return false;
     }
 
-    MethodDesc* pAsyncOtherVariant = nullptr;
+    MethodDesc* pThunkTarget = nullptr;
     if (!IsAsyncMethod())
     {
         // a non-async thunk is implemented in terms of the async variant which has user code
-        pAsyncOtherVariant = this->GetAsyncVariant();
+        pThunkTarget = this->GetAsyncVariant();
+    }
+    else if (IsCovariantForwardingThunk())
+    {
+        // this is an async variant of a method that covariantly returns a type derived from
+        // Task/Task<T>. It calls the ordinary variant, which has user code, and awaits the result.
+        pThunkTarget = this->GetOrdinaryVariant();
     }
     else
     {
         _ASSERTE(IsReturnDroppingThunk());
         // this is a special void-returning async variant that calls
         // the normal async variant and drops the result
-        pAsyncOtherVariant = this->GetAsyncVariant();
+        pThunkTarget = this->GetAsyncVariant();
     }
 
-    _ASSERTE(!IsWrapperStub() && !pAsyncOtherVariant->IsWrapperStub());
+    _ASSERTE(!IsWrapperStub() && !pThunkTarget->IsWrapperStub());
 
     MetaSig msig(this);
 
-    SigTypeContext sigContext(pAsyncOtherVariant);
+    SigTypeContext sigContext(pThunkTarget);
     ILStubLinker sl(
         GetModule(),
         GetSignature(),
         &sigContext,
-        pAsyncOtherVariant,
+        pThunkTarget,
         (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
 
     if (!IsAsyncMethod())
     {
-        EmitTaskReturningThunk(pAsyncOtherVariant, msig, &sl);
+        EmitTaskReturningThunk(pThunkTarget, msig, &sl);
+    }
+    else if (IsCovariantForwardingThunk())
+    {
+        EmitCovariantForwardingThunk(pThunkTarget, msig, &sl);
     }
     else
     {
         _ASSERTE(IsReturnDroppingThunk());
-        EmitReturnDroppingThunk(pAsyncOtherVariant, msig, &sl);
+        EmitReturnDroppingThunk(pThunkTarget, msig, &sl);
     }
 
     NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
     // Initialize the resolver target details.
     ilResolver->SetStubMethodDesc(this);
-    ilResolver->SetStubTargetMethodDesc(pAsyncOtherVariant);
+    ilResolver->SetStubTargetMethodDesc(pThunkTarget);
 
     // Generate all IL associated data for JIT
     *methodILDecoder = ilResolver->FinalizeILStub(&sl);
@@ -340,6 +350,13 @@ SigPointer MethodDesc::GetAsyncThunkResultTypeSig()
 // Task.FromResult<List<T>>.
 int MethodDesc::GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md)
 {
+    return GetTokenForGenericMethodCall(pCode, md, GetAsyncThunkResultTypeSig());
+}
+
+// Given a method Foo<T>, return a MethodSpec token for Foo<T> instantiated with the type
+// described by typeArgSig.
+int MethodDesc::GetTokenForGenericMethodCall(ILCodeStream* pCode, MethodDesc* md, SigPointer typeArgSig)
+{
     if (!md->HasClassOrMethodInstantiation())
     {
         return pCode->GetToken(md);
@@ -351,10 +368,9 @@ int MethodDesc::GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pC
     SigBuilder methodSigBuilder;
     methodSigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_GENERICINST);
     methodSigBuilder.AppendData(1);
-    SigPointer retTypeSig = GetAsyncThunkResultTypeSig();
     PCCOR_SIGNATURE retTypeSigRaw;
     uint32_t retTypeSigLen;
-    retTypeSig.GetSignature(&retTypeSigRaw, &retTypeSigLen);
+    typeArgSig.GetSignature(&retTypeSigRaw, &retTypeSigLen);
     methodSigBuilder.AppendBlob((const PVOID)retTypeSigRaw, retTypeSigLen);
 
     DWORD methodSigLen;
@@ -461,5 +477,92 @@ void MethodDesc::EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig
     pCode->EmitCALLVIRT(token, localArg, 1);
     // return;
     pCode->EmitPOP();
+    pCode->EmitRET();
+}
+
+// Returns a SigPointer to the return type in the given signature.
+// For example, for "int Foo(string)" this returns the signature representing (int).
+static SigPointer GetReturnTypeSig(Signature signature)
+{
+    SigPointer pSig(signature.GetRawSig(), signature.GetRawSigLen());
+    uint32_t callConvInfo;
+    IfFailThrow(pSig.GetCallingConvInfo(&callConvInfo));
+
+    if ((callConvInfo & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        // GenParamCount
+        IfFailThrow(pSig.GetData(NULL));
+    }
+
+    // ParamCount
+    IfFailThrow(pSig.GetData(NULL));
+
+    // ReturnType comes now. Skip the modifiers (like modreqs in async signatures).
+    IfFailThrow(pSig.SkipCustomModifiers());
+
+    PCCOR_SIGNATURE retTypeSig;
+    uint32_t tailLength;
+    pSig.GetSignature(&retTypeSig, &tailLength);
+
+    // Skip to the end of the return type so we can get the length.
+    IfFailThrow(pSig.SkipExactlyOne());
+
+    PCCOR_SIGNATURE retTypeSigEnd;
+    pSig.GetSignature(&retTypeSigEnd, &tailLength);
+
+    return SigPointer(retTypeSig, (DWORD)(retTypeSigEnd - retTypeSig));
+}
+
+// Provided an ordinary variant that covariantly returns a type derived from Task/Task<T>,
+// emits an async variant that calls the ordinary variant and awaits the returned Task.
+// A thunk is used (rather than an "async version" of this method's own IL) so that only
+// methods that covariantly override a task-returning method need an extra variant; other
+// overrides of the same slot keep being treated as ordinary, non-task-returning methods.
+void MethodDesc::EmitCovariantForwardingThunk(MethodDesc* pOrdinaryVariant, MetaSig& msig, ILStubLinker* pSL)
+{
+    _ASSERTE(IsAsyncMethod() && IsAsyncVariantMethod() && IsCovariantForwardingThunk());
+    _ASSERTE(!pOrdinaryVariant->IsAsyncVariantMethod());
+    _ASSERTE(!IsAsyncVariantForValueTaskReturningMethod());
+
+    _ASSERTE(this->IsVirtual());
+    _ASSERTE(pOrdinaryVariant->IsVirtual());
+    _ASSERTE(msig.HasThis());
+
+    // Implement IL that is effectively the following:
+    // {
+    //    return await this.ordinary(arg); // CALLVIRT + TransparentAwait
+    // }
+    ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
+    int token = GetTokenForThunkTarget(pCode, pOrdinaryVariant);
+
+    DWORD localArg = 0;
+    pCode->EmitLDARG(localArg++);
+    for (UINT iArg = 0; iArg < msig.NumFixedArgs(); iArg++)
+    {
+        pCode->EmitLDARG(localArg++);
+    }
+
+    // ordinary(arg)
+    // The returned type derives from Task or Task<T>, so it can be passed to the
+    // matching TransparentAwait overload as-is.
+    pCode->EmitCALLVIRT(token, localArg, 1);
+
+    // await the returned Task
+    bool returnsVoid = msig.IsReturnTypeVoid();
+    int awaitToken;
+    if (returnsVoid)
+    {
+        awaitToken = pCode->GetToken(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK));
+    }
+    else
+    {
+        MethodDesc* pAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_OF_T);
+        TypeHandle thRetType = msig.GetRetTypeHandleThrowing();
+        pAwaitMD = FindOrCreateAssociatedMethodDesc(pAwaitMD, pAwaitMD->GetMethodTable(), FALSE, Instantiation(&thRetType, 1), FALSE);
+        awaitToken = GetTokenForGenericMethodCall(pCode, pAwaitMD, GetReturnTypeSig(GetSignature()));
+    }
+
+    pCode->EmitCALL(awaitToken, 1, returnsVoid ? 0 : 1);
+    // return;
     pCode->EmitRET();
 }

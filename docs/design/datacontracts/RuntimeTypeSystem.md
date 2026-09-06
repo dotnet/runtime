@@ -210,6 +210,7 @@ public enum AsyncMethodFlags : uint
     IsAsyncVariant = 0x2,
     Thunk = 0x4,
     ReturnDroppingThunk = 0x8,
+    CovariantForwardingThunk = 0x10,
 }
 
 // Identifies one of the runtime's well-known singleton MethodTables, each addressable
@@ -1552,6 +1553,7 @@ And the following enumeration definitions
         IsAsyncVariant = 0x4,
         Thunk = 0x10,
         ReturnDroppingThunk = 0x20,
+        CovariantForwardingThunk = 0x40,
     }
 
     [Flags]
@@ -1998,6 +2000,8 @@ Reading a method's Runtime Async flags:
             result |= AsyncMethodFlags.Thunk;
         if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
             result |= AsyncMethodFlags.ReturnDroppingThunk;
+        if ((raw & AsyncMethodFlags_1.CovariantForwardingThunk) != 0)
+            result |= AsyncMethodFlags.CovariantForwardingThunk;
         return result;
     }
 ```
