@@ -123,6 +123,38 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Null(Converter.ConvertFromString(value));
         }
 
+        [Theory]
+        [InlineData(" 1,2", 1, 2)]
+        [InlineData("1 ,2", 1, 2)]
+        [InlineData("1, 2", 1, 2)]
+        [InlineData("1,2 ", 1, 2)]
+        [InlineData(" 1 ,2", 1, 2)]
+        [InlineData(" 1, 2", 1, 2)]
+        [InlineData(" 1,2 ", 1, 2)]
+        [InlineData("1 , 2", 1, 2)]
+        [InlineData("1 ,2 ", 1, 2)]
+        [InlineData("1, 2 ", 1, 2)]
+        [InlineData(" 1 , 2", 1, 2)]
+        [InlineData(" 1 ,2 ", 1, 2)]
+        [InlineData(" 1, 2 ", 1, 2)]
+        [InlineData("1 , 2 ", 1, 2)]
+        [InlineData(" 1 , 2 ", 1, 2)]
+        [InlineData("  1  ,  2  ", 1, 2)]
+        [InlineData("\t1\t,\t2\t", 1, 2)]
+        [InlineData("\r\n1,2\r\n", 1, 2)]
+        [InlineData("\u00A01,2\u00A0", 1, 2)]
+        [InlineData(" -1 , -2 ", -1, -2)]
+        [InlineData(" 0 , 0 ", 0, 0)]
+        [InlineData(" 123 , 456 ", 123, 456)]
+        [InlineData(" -1,2 ", -1, 2)]
+        public void ConvertFrom_ContainsWhitespace(string value, int x, int y)
+        {
+            var point = (Point)Converter.ConvertFromInvariantString(value);
+
+            Assert.Equal(x, point.X);
+            Assert.Equal(y, point.Y);
+        }
+
         public static IEnumerable<object[]> ConvertFrom_NotSupportedData =>
             new[]
             {
@@ -235,7 +267,7 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertFromString(int x, int y)
         {
             var point =
-                (Point)Converter.ConvertFromString(string.Format(" {0}{2} {1}", x, y,
+                (Point)Converter.ConvertFromString(string.Format("{0}{2} {1}", x, y,
                     CultureInfo.CurrentCulture.TextInfo.ListSeparator));
             Assert.Equal(x, point.X);
             Assert.Equal(y, point.Y);
