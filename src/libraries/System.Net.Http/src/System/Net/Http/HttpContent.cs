@@ -145,7 +145,19 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        encoding = Encoding.GetEncoding(charset);
+                        var normalised = charset switch
+                        {
+                            // discovered in https://github.com/PowerShell/PowerShell/issues/27788
+                            // where a server may reply with utf8, added below additional options,
+                            // with a fall back to current behaviour.
+                            "utf8" or "utf-8" or "utf_8" => "utf-8",
+                            "utf16" or "utf-16" or "utf_16" => "utf-16",
+                            "unicode" => "utf-16",
+                            "latin1" or "latin-1" => "iso-8859-1",
+                            "us-ascii" or "ascii" => "us-ascii",
+                            _ => charset
+                        };
+                        encoding = Encoding.GetEncoding(normalised);
                     }
 
                     // Byte-order-mark (BOM) characters may be present even if a charset was specified.
