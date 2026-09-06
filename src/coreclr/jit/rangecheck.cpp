@@ -1930,9 +1930,7 @@ Range RangeCheck::GetRangeFromType(var_types type)
 }
 
 // Compute the range for a local var definition.
-Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
-                                          GenTreeLclVarCommon* lcl,
-                                          bool monIncreasing   DEBUGARG(int indent))
+Range RangeCheck::ComputeRangeForLocalDef(GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent))
 {
     LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
     if (ssaDef == nullptr)
@@ -1947,17 +1945,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
         JITDUMP("----------------------------------------------------\n");
     }
 #endif
-    Range range = GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
-    if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_compiler->GetAssertionCount() > 0))
-    {
-        JITDUMP("Merge assertions from " FMT_BB ": ", block->bbNum);
-        Compiler::optDumpAssertionIndices(block->bbAssertionIn, " ");
-        JITDUMP("for definition [%06d]\n", Compiler::dspTreeID(ssaDef->GetDefNode()))
-
-        MergeEdgeAssertions(ssaDef->GetDefNode(), block->bbAssertionIn, &range);
-        JITDUMP("done merging\n");
-    }
-    return range;
+    return GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
 }
 
 // Get the limit's maximum possible value.
@@ -2320,7 +2308,8 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
     {
-        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
+        range = ComputeRangeForLocalDef(expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
+        // Phi arguments need edge assertions, not the assertions of a block that jump threading may have bypassed.
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
