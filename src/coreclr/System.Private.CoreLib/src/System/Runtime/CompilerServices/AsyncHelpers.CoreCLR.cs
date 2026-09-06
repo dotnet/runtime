@@ -810,35 +810,7 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (stackState->AwaiterContinuation != null)
-                    {
-                        // The awaiter is stored in the continuation for the caller of
-                        // AwaitAwaiterInContinuation or UnsafeAwaitAwaiterInContinuation.
-                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        stackState->AwaiterContinuation(
-                            headContinuation, stackState->AwaiterOffset, GetContinuationAction());
-                    }
-                    else if (stackState->CriticalNotifier is { } critNotifier)
-                    {
-                        // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                        // These never have special continuation context handling.
-                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        critNotifier.UnsafeOnCompleted(GetContinuationAction());
-                    }
-                    else if (stackState->TaskContinuation is { } taskCont)
-                    {
-                        Debug.Assert(headContinuation == taskCont);
-                        // Runtime async callable wrapper for task returning
-                        // method. This implements the context transparent
-                        // forwarding and makes these wrappers minimal cost.
-                        Debug.Assert(taskCont.Task != null);
-                        taskCont.RuntimeAsyncTask = this;
-                        if (!taskCont.Task.AddTaskContinuation(taskCont, addBeforeOthers: false))
-                        {
-                            taskCont.Execute(canInline: false);
-                        }
-                    }
-                    else if (stackState->ValueTaskSourceContinuation is { } valueTaskSourceCont)
+                    if (stackState->ValueTaskSourceContinuation is { } valueTaskSourceCont)
                     {
                         Debug.Assert(headContinuation == valueTaskSourceCont);
                         object? source = valueTaskSourceCont.Source;
@@ -885,6 +857,34 @@ namespace System.Runtime.CompilerServices
                             this,
                             valueTaskSourceCont.Token,
                             configFlags);
+                    }
+                    else if (stackState->AwaiterContinuation != null)
+                    {
+                        // The awaiter is stored in the continuation for the caller of
+                        // AwaitAwaiterInContinuation or UnsafeAwaitAwaiterInContinuation.
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                        stackState->AwaiterContinuation(
+                            headContinuation, stackState->AwaiterOffset, GetContinuationAction());
+                    }
+                    else if (stackState->CriticalNotifier is { } critNotifier)
+                    {
+                        // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
+                        // These never have special continuation context handling.
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                        critNotifier.UnsafeOnCompleted(GetContinuationAction());
+                    }
+                    else if (stackState->TaskContinuation is { } taskCont)
+                    {
+                        Debug.Assert(headContinuation == taskCont);
+                        // Runtime async callable wrapper for task returning
+                        // method. This implements the context transparent
+                        // forwarding and makes these wrappers minimal cost.
+                        Debug.Assert(taskCont.Task != null);
+                        taskCont.RuntimeAsyncTask = this;
+                        if (!taskCont.Task.AddTaskContinuation(taskCont, addBeforeOthers: false))
+                        {
+                            taskCont.Execute(canInline: false);
+                        }
                     }
                     else
                     {
