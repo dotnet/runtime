@@ -296,7 +296,7 @@ bool TailCallHelp::GenerateGCDescriptor(
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer
-                if (reportInstArg)
+                if (reportInstArg && pTargetMD)
                 {
                     _ASSERTE(i == 0 || i == 1);
                     builder->WriteToken(argPos, pTargetMD->RequiresInstMethodDescArg() ? GCREFMAP_METHOD_PARAM : GCREFMAP_TYPE_PARAM);
@@ -325,7 +325,7 @@ bool TailCallHelp::GenerateGCDescriptor(
 
 #ifdef TARGET_X86
     // The generic instantiation arg is last
-    if (reportInstArg)
+    if (reportInstArg && pTargetMD)
     {
         const ArgBufferValue& val = layout.Values[layout.Values.GetCount() - 1];
         unsigned int argPos = (val.Offset - offsetof(TailCallArgBuffer, Args)) / TARGET_POINTER_SIZE;
