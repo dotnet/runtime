@@ -9,6 +9,9 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 #include "threadsuspend.h"
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 CrstStatic _ep_rt_coreclr_config_lock;
@@ -167,6 +170,20 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	ThreadSuspend::RestartEE (true /* SuspendSucceeded */);
 
 	return;
+}
+
+void
+ep_rt_coreclr_session_stopping (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+#ifdef FEATURE_PGO
+	EX_TRY
+	{
+		PgoManager::FlushInstrumentationData ();
+	}
+	EX_CATCH { }
+	EX_END_CATCH
+#endif // FEATURE_PGO
 }
 
 #endif /* ENABLE_PERFTRACING */

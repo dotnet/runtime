@@ -2065,6 +2065,14 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
 #endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+                INTOP_CASE(INTOP_PGO_COUNT)
+                    // Increment the block-count PGO counter whose address is stored as a data item.
+                    (*(int32_t*)pMethod->pDataItems[ip[1]])++;
+                    ip += 2;
+                    INTOP_NEXT;
+#endif // TARGET_BROWSER || TARGET_WASI
+
                 INTOP_CASE(INTOP_BR)
                     ip += ip[1];
                     INTOP_NEXT;

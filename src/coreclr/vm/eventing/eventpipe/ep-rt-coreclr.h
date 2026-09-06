@@ -658,6 +658,16 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 #endif // !DACCESS_COMPILE && PROFILING_SUPPORTED
 }
 
+static
+inline
+void
+ep_rt_session_stopping (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_coreclr_session_stopping (void);
+    ep_rt_coreclr_session_stopping ();
+}
+
 /*
  * Arrays.
  */
@@ -1092,8 +1102,13 @@ ep_rt_queue_job (
 	void *params)
 {
 #ifdef HOST_BROWSER
-	// In single-threaded mode the job runs on the browser event loop
-	SystemJS_DiagnosticServerQueueJob ((ep_rt_job_cb_t)job_func, params);
+	// In single-threaded mode the job runs on the browser event loop. Run the callback inline the
+	// first time so the diagnostic server makes progress synchronously (e.g. it can connect and
+	// resume during startup suspension) and only defer a re-schedule if it isn't done yet. Mirrors
+	// the Mono ep_rt_queue_job in ep-rt-mono.h.
+	ep_rt_job_cb_t cb = (ep_rt_job_cb_t)job_func;
+	if (!cb (params))
+		SystemJS_DiagnosticServerQueueJob (cb, params);
 	return true;
 #else
 	EP_UNREACHABLE ("Not implemented on this platform");

@@ -41,13 +41,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/132410", typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
     public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
+        // force no R2R until https://github.com/dotnet/runtime/issues/130521
         string extraProperties = @"
                 <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
+                <PublishReadyToRun>false</PublishReadyToRun>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
@@ -90,6 +91,49 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
 
         Assert.True(methodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug, false)]
+    [InlineData(Configuration.Release, false)]
+    public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot)
+    {
+        // Interpreter block-count PGO: instrumentation is armed from startup by DOTNET_InterpPGO, the
+        // counters are collected into an EventPipe trace while the app runs, and dotnet-pgo turns that
+        // trace into an .mibc. R2R is forced off until https://github.com/dotnet/runtime/issues/130521.
+        string extraProperties = @"
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmDebugLevel>0</WasmDebugLevel>
+                <PublishReadyToRun>false</PublishReadyToRun>
+                <WBTDevServer>true</WBTDevServer>
+            ";
+        string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_InterpPGO"" Value=""1"" />";
+
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_interp_pgo", extraProperties: extraProperties, extraItems: extraItems);
+
+        UpdateCounterPage();
+
+        BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+
+        async Task CollectInterpPgoTest(IPage page)
+        {
+            await SetupCounterPage(page, "pgo.nettrace", "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0, skipDownload: true })");
+            await ClickAndCollect(page);
+        }
+
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(
+            Configuration: config,
+            Test: CollectInterpPgoTest,
+            TimeoutSeconds: 60,
+            CheckCounter: false,
+            ServerEnvironment: new Dictionary<string, string>
+            {
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
+            }
+        ));
+
+        ValidateInterpPgoTrace(info, config, "pgo.nettrace", "IncrementCount");
     }
 
     [Fact]
@@ -206,6 +250,38 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         {
             Assert.True(actualEvents.ContainsKey(expectedEvent), $"The metrics.nettrace should contain event: {expectedEvent}");
         }
+    }
+
+    private void ValidateInterpPgoTrace(ProjectInfo info, Configuration config, string traceFileName, string expectedMethod)
+    {
+        string tracePath = Path.GetFullPath(Path.Combine(info.LogPath, traceFileName));
+        Assert.True(File.Exists(tracePath), $"PGO trace {tracePath} was not created");
+
+        // The untrimmed IL assemblies next to the app (bin/<Config>/<TFM>) share the MVID of the served
+        // webcil, so dotnet-pgo can resolve the block-count events against them.
+        string referenceDir = Path.Combine(_projectDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor);
+        Assert.True(Directory.Exists(referenceDir), $"Reference assembly directory {referenceDir} was not found");
+
+        // dotnet-pgo is copied next to the test by the _CopyDotnetPgoToTestOutput target.
+        string pgoTool = Path.Combine(AppContext.BaseDirectory, "dotnet-pgo", "dotnet-pgo.dll");
+        Assert.True(File.Exists(pgoTool), $"dotnet-pgo was not found at {pgoTool}");
+
+        string mibcPath = Path.Combine(info.LogPath, "pgo.mibc");
+
+        using (var createCmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+        {
+            createCmd.ExecuteWithCapturedOutput(
+                $"exec \"{pgoTool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{mibcPath}\"")
+                .EnsureSuccessful();
+        }
+        Assert.True(File.Exists(mibcPath), $"dotnet-pgo did not produce {mibcPath}");
+
+        string dumpPath = Path.Combine(info.LogPath, "pgo.dump.txt");
+        using (var dumpCmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+        {
+            dumpCmd.ExecuteWithCapturedOutput($"exec \"{pgoTool}\" dump --input \"{mibcPath}\" --output \"{dumpPath}\"").EnsureSuccessful();
+        }
+        Assert.Contains(expectedMethod, File.ReadAllText(dumpPath));
     }
 
     private string ConvertTrace(ProjectInfo info, string fileName)
