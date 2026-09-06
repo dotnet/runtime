@@ -365,6 +365,30 @@ static int32_t CopySockAddrToIPAddress(sockaddr* addr, sa_family_t family, IPAdd
     return -1;
 }
 
+#if HAVE_GETIFADDRS
+// Determines whether the result of resolving 'address' should be augmented with the local
+// interface addresses, which happens when 'address' refers to the machine's own host name.
+static bool ShouldAugmentWithInterfaceAddresses(const char* address, const char* hostName)
+{
+    if (strcasecmp(address, hostName) != 0)
+    {
+        return false;
+    }
+
+#ifdef TARGET_ANDROID
+    // Per RFC 6761, "localhost" must resolve to loopback addresses only. On Android gethostname()
+    // can itself return "localhost", which would otherwise cause non-loopback interface addresses
+    // to leak into the result for "localhost" (and, via the *.localhost fallback, "*.localhost").
+    if (strcasecmp(address, "localhost") == 0)
+    {
+        return false;
+    }
+#endif
+
+    return true;
+}
+#endif
+
 int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry)
 {
     if (address == NULL || entry == NULL)
@@ -430,7 +454,9 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
     includeIPv4Loopback = true;
     includeIPv6Loopback = true;
 
-    if (result == 0 && strcasecmp((const char*)address, name) == 0)
+    // Augment the result with the local interface addresses when resolving the machine's own
+    // host name (see ShouldAugmentWithInterfaceAddresses for platform-specific exceptions).
+    if (result == 0 && ShouldAugmentWithInterfaceAddresses((const char*)address, name))
     {
         // Get all interface addresses if the host name corresponds to the local host.
         result = getifaddrs(&addrs);
