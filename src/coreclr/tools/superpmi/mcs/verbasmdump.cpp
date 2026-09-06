@@ -28,31 +28,25 @@ int verbASMDump::DoWork(const char* nameOfInput, const char* nameOfOutput, int i
         char buff[500];
         sprintf_s(buff, 500, "%s-%d.asm", nameOfOutput, mci.MethodContextNumber());
 
-        HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-        if (hFileOut == INVALID_HANDLE_VALUE)
+        FILE* fpOut = fopen(buff, "w");
+        if (fpOut == NULL)
         {
-            LogError("Failed to open output '%s'. GetLastError()=%u", buff, GetLastError());
+            LogError("Failed to open output '%s'. errno=%d", buff, errno);
             return -1;
         }
 
         if (mc->cr->IsEmpty())
         {
-            const size_t bufflen = 4096;
-            DWORD        bytesWritten;
-            char         buff[bufflen];
-            ZeroMemory(buff, bufflen * sizeof(char));
-            int buff_offset = sprintf_s(buff, bufflen, ";;Method context has no compile result");
-            WriteFile(hFileOut, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
+            fprintf(fpOut, ";;Method context has no compile result");
         }
         else
         {
-            ASMDumper::DumpToFile(hFileOut, mc, mc->cr);
+            ASMDumper::DumpToFile(fpOut, mc, mc->cr);
         }
 
-        if (!CloseHandle(hFileOut))
+        if (fclose(fpOut) != 0)
         {
-            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("fclose failed. errno=%d", errno);
             return -1;
         }
         savedCount++;
