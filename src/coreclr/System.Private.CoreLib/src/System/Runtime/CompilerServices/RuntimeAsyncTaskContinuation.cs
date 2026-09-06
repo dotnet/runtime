@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -153,6 +154,19 @@ namespace System.Runtime.CompilerServices
             private static Continuation? ResumeTaskContinuation(Continuation cont, ref byte result)
             {
                 var taskCont = (RuntimeAsyncTaskContinuation)cont;
+
+                TplEventSource log = TplEventSource.Log;
+                if (Task.s_asyncDebuggingEnabled &&
+                    log.IsEnabled(EventLevel.Verbose, TplEventSource.Keywords.Tasks))
+                {
+                    Task awaitedTask = taskCont.Task!;
+                    Task runtimeAsyncTask = taskCont.RuntimeAsyncTask!;
+                    log.TaskWaitEnd(
+                        runtimeAsyncTask.m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
+                        runtimeAsyncTask.Id,
+                        awaitedTask.Id);
+                }
+
                 taskCont.Next = null;
                 taskCont.RuntimeAsyncTask = null;
                 taskCont.ContinuationContext = null;
