@@ -10597,7 +10597,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 //          CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE(handle)
                 GenTree* cond =
                     gtNewOperNode(GT_NE, TYP_INT, gtNewLclVarNode(handleTemp, TYP_BYREF), gtNewZeroConNode(TYP_BYREF));
-                GenTree* qmark = gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, storeResult, storeDefault));
+                GenTreeQmark* qmark =
+                    gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, storeResult, storeDefault));
+
+                // Struct QMARKs should be expanded early since physical promotion does not support decomposing struct
+                // stores inside QMARK arms. REFANYTYPE is uncommon, so early expansion is acceptable.
+                optMethodFlags |= OMF_HAS_EARLY_QMARKS;
+                qmark->SetEarlyExpandableQmark();
 
                 impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
                 op1 = gtNewLclVarNode(resultTmp, TYP_STRUCT);
