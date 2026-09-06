@@ -386,7 +386,7 @@
                                          // See ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell in crossgen2.
 #define RBM_R2R_INDIRECT_PARAM RBM_RAX
 
-// IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
+// IL stub's SecretStubArgument parameter
 #define REG_SECRET_STUB_PARAM    REG_R10
 #define RBM_SECRET_STUB_PARAM    RBM_R10
 

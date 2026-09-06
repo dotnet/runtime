@@ -3447,34 +3447,6 @@ void CodeGen::genSpillOrAddRegisterParam(
 }
 
 // -----------------------------------------------------------------------------
-// genSpillOrAddNonStandardRegisterParam: Handle a non-standard register parameter either
-// by homing it to stack immediately, or by adding it to the register graph.
-//
-// Parameters:
-//    lclNum    - Local that represents the non-standard parameter
-//    sourceReg - Register that the non-standard parameter is in on entry to the function
-//    graph     - The register graph to add to
-//
-void CodeGen::genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, RegGraph* graph)
-{
-    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(varDsc->TypeGet()), emitActualTypeSize(varDsc), sourceReg, lclNum, 0);
-    }
-
-    if (varDsc->lvIsInReg())
-    {
-        RegNode* sourceRegNode = graph->GetOrAdd(sourceReg);
-        RegNode* destRegNode   = graph->GetOrAdd(varDsc->GetRegNum());
-        if (sourceRegNode != destRegNode)
-        {
-            graph->AddEdge(sourceRegNode, destRegNode, TYP_I_IMPL, 0);
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 // genHomeRegisterParams: Move all register parameters to their initial
 // assigned location.
 //
@@ -3519,13 +3491,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                                               lclNum, seg.Offset);
                 }
             }
-        }
-
-        if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE) &&
-            m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar)->lvOnFrame)
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
-                                      m_compiler->lvaStubArgumentVar, 0);
         }
 
         return;
@@ -3587,11 +3552,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 genSpillOrAddRegisterParam(lclNum, segment.Offset, lclNum, segment, &graph);
             }
         }
-    }
-
-    if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
-    {
-        genSpillOrAddNonStandardRegisterParam(m_compiler->lvaStubArgumentVar, REG_SECRET_STUB_PARAM, &graph);
     }
 
     DBEXEC(VERBOSE, graph.Dump());

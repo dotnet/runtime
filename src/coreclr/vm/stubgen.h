@@ -723,6 +723,7 @@ public:
 
     void SetStubMethodDesc(MethodDesc *pMD);
 protected:
+    static constexpr UINT_PTR SECRET_STUB_ARGUMENT = static_cast<UINT_PTR>(-1);
 
     void DeleteCodeLabels();
     void DeleteCodeStreams();
@@ -849,6 +850,7 @@ protected:
 
     DWORD SetStubTargetArgType(CorElementType typ, bool fConsumeStubArg = true);
     DWORD SetStubTargetArgType(LocalDesc* pLoc = NULL, bool fConsumeStubArg = true);       // passing pLoc = NULL means "use stub arg type"
+    void SetSecretStubArgumentIndex(DWORD uArgIdx);
     void SetStubTargetReturnType(CorElementType typ);
     void SetStubTargetReturnType(LocalDesc* pLoc);
     void SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv);
@@ -874,6 +876,7 @@ protected:
     INT     m_iTargetStackDelta;
     DWORD   m_cbCurrentCompressedSigLen;
     DWORD   m_nLocals;
+    DWORD   m_uSecretStubArgumentIndex;
 
     bool    m_fHasThis;
 
@@ -1072,6 +1075,7 @@ public:
 
     void EmitLabel(ILCodeLabel* pLabel);
     void EmitLoadThis ();
+    void EmitLoadSecretStubArgument();
     void EmitLoadNullPtr();
 
     ILCodeLabel* NewCodeLabel();

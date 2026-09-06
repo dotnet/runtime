@@ -14624,7 +14624,7 @@ void Compiler::fgSetOptions()
         codeGen->setFramePointerRequired(true); // Setup of Pinvoke frame currently requires an EBP style frame
     }
 
-    if (info.compPublishStubParam)
+    if (info.compIsVarArgs && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         codeGen->setFramePointerRequiredGCInfo(true);
     }

@@ -2443,7 +2443,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 #ifdef TARGET_X86
         int spOffset = -(int)frameSize;
 
-        if (m_compiler->info.compPublishStubParam)
+        if (m_compiler->compHasSecretStubArgument())
         {
             GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             spOffset += REGSIZE_BYTES;
@@ -2454,7 +2454,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
-        if (m_compiler->info.compPublishStubParam)
+        if (m_compiler->compHasSecretStubArgument())
         {
             GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, frameSize);
