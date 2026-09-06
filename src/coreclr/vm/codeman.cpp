@@ -2718,7 +2718,12 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
     }
 #endif
-    pBaseAddr = (BYTE *)pInfo->GetAllocator()->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
+    // Keep Tier1 code in a dedicated large reservation rather than consuming
+    // the LoaderAllocator's small initial code block.
+    if (!pInfo->IsOptimizedCode())
+    {
+        pBaseAddr = (BYTE *)pInfo->GetAllocator()->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
+    }
     if (pBaseAddr != NULL)
     {
         pCodeHeap->m_LoaderHeap.SetReservedRegion(pBaseAddr, dwSizeAcquiredFromInitialBlock, FALSE);
@@ -2775,6 +2780,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
+    pHp->isOptimizedCode = false;
 
 #if defined(TARGET_64BIT)
     if (pInfo->IsInterpreted())
@@ -2881,6 +2887,7 @@ CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllo
     , m_isCollectible{ false }
     , m_isInterpreted{ false }
     , m_throwOnOutOfMemoryWithinRange{ true }
+    , m_isOptimizedCode{ false }
 {
     CONTRACTL
     {
@@ -2979,6 +2986,15 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     if (reserveSize < minReserveSize)
         reserveSize = minReserveSize;
+
+    if (pInfo->IsOptimizedCode())
+    {
+        static ConfigDWORD configTier1CodeHeapReserveSize;
+        size_t tier1ReserveSize =
+            configTier1CodeHeapReserveSize.val(CLRConfig::INTERNAL_Tier1CodeHeapReserveSize);
+        reserveSize = max(reserveSize, tier1ReserveSize);
+    }
+
     reserveSize = ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
     pInfo->SetReserveSize(reserveSize);
@@ -2987,7 +3003,18 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     DWORD flags = RangeSection::RANGE_SECTION_CODEHEAP;
 
-    if (pInfo->IsInterpreted())
+    if (pInfo->IsOptimizedCode())
+    {
+        // Optimized code is mutually exclusive with both interpreter and dynamic
+        // (LCG) domain because callers gate SetOptimizedCode() on neither being
+        // set. Tagging the RangeSection lets CanUseCodeHeap reject mismatched
+        // requests, keeping optimized and non-optimized JIT'd code in separate
+        // per-LoaderAllocator heaps.
+        _ASSERTE(!pInfo->IsInterpreted());
+        _ASSERTE(!pInfo->IsDynamicDomain());
+        flags |= RangeSection::RANGE_SECTION_OPTIMIZEDCODE;
+    }
+    else if (pInfo->IsInterpreted())
     {
         flags |= RangeSection::RANGE_SECTION_INTERPRETER;
     }
@@ -3014,6 +3041,10 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     _ASSERTE (pHp != NULL);
     _ASSERTE (pHp->maxCodeHeapSize >= initialRequestSize);
+
+    // Cache the optimized-code bit on the HeapList so CanUseCodeHeap
+    // doesn't have to do a FindCodeRange lookup on every cache check.
+    pHp->isOptimizedCode = (flags & RangeSection::RANGE_SECTION_OPTIMIZEDCODE) != 0;
 
     // Append the current code heap to the new code heap element.
     pHp->SetNext(m_pAllCodeHeaps);
@@ -3109,6 +3140,12 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        if (pInfo->IsOptimizedCode())
+        {
+            pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap;
+            pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap = NULL;
+        }
+        else
         {
             pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedCodeHeap;
             pInfo->GetAllocator()->m_pLastUsedCodeHeap = NULL;
@@ -3187,6 +3224,11 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        if (pInfo->IsOptimizedCode())
+        {
+            pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap = pCodeHeap;
+        }
+        else
         {
             pInfo->GetAllocator()->m_pLastUsedCodeHeap = pCodeHeap;
         }
@@ -3207,7 +3249,7 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
 }
 
 template<typename TCodeHeader>
-void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
                                , BYTE** ppRealHeader
                                , UINT nUnwindInfos
@@ -3265,6 +3307,16 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     {
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
+    }
+
+    // Optionally route Tier1 code to its own per-LoaderAllocator heap. LCG and
+    // interpreter requests are excluded because they use separate heap paths.
+    if (!requestInfo.IsDynamicDomain()
+        && !requestInfo.IsInterpreted()
+        && isTier1Code
+        && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SeparateOptimizedCodeHeaps) != 0)
+    {
+        requestInfo.SetOptimizedCode();
     }
 
     // Scope the lock
@@ -3354,14 +3406,14 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     *ppCodeHeaderRW = pCodeHdrRW;
 }
 
-template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                                                       size_t* pAllocatedSize, HeapList** ppCodeHeap
                                                     , BYTE** ppRealHeader
                                                     , UINT nUnwindInfos
                                                      );
 
 #ifdef FEATURE_INTERPRETER
-template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                                                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
                                                                , BYTE** ppRealHeader
                                                                , UINT nUnwindInfos
@@ -3419,6 +3471,15 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
 
     if ((pInfo->GetLoAddr() == 0) && (pInfo->GetHiAddr() == 0))
     {
+        // Don't mix optimized and non-optimized code in the same heap. LCG and
+        // interpreter requests never set IsOptimizedCode(), so dynamic-domain
+        // and interpreter heaps don't carry the flag either, and this check
+        // is a no-op for them.
+        if (pCodeHeap->isOptimizedCode != pInfo->IsOptimizedCode())
+        {
+            return false;
+        }
+
         // We have no constraint so this non empty heap will be able to satisfy our request
         if (pInfo->IsDynamicDomain())
         {
