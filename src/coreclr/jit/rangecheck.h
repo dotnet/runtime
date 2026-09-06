@@ -304,6 +304,13 @@ struct Range
     }
 };
 
+enum class Monotonicity
+{
+    None,
+    Increasing,
+    Decreasing,
+};
+
 // Helpers for operations performed on ranges
 struct RangeOps
 {
@@ -563,9 +570,9 @@ struct RangeOps
         return Range(Limit(Limit::keConstant, numLo / divHi), Limit(Limit::keConstant, numHi / divLo));
     }
 
-    // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
-    // then ignore the dependent variables for the lower bound but not for the upper bound.
-    static Range Merge(const Range& r1, const Range& r2, bool monIncreasing)
+    // Given two ranges "r1" and "r2", do a Phi merge. For a monotonic merge,
+    // ignore dependent limits in the direction opposite the induction variable's movement.
+    static Range Merge(const Range& r1, const Range& r2, Monotonicity monotonicity)
     {
         assert(r1.IsValid());
         assert(r2.IsValid());
@@ -588,7 +595,7 @@ struct RangeOps
         }
         else if (r1lo.IsDependent() || r2lo.IsDependent())
         {
-            if (monIncreasing)
+            if (monotonicity == Monotonicity::Increasing)
             {
                 result.lLimit = r1lo.IsDependent() ? r2lo : r1lo;
             }
@@ -609,7 +616,14 @@ struct RangeOps
         }
         else if (r1hi.IsDependent() || r2hi.IsDependent())
         {
-            result.uLimit = Limit(Limit::keDependent);
+            if (monotonicity == Monotonicity::Decreasing)
+            {
+                result.uLimit = r1hi.IsDependent() ? r2hi : r1hi;
+            }
+            else
+            {
+                result.uLimit = Limit(Limit::keDependent);
+            }
         }
 
         if (r1lo.IsConstant() && r2lo.IsConstant())
@@ -846,6 +860,8 @@ public:
 
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN = ValueNumStore::NoVN);
 
+    bool IsRangeInBounds(BasicBlock* block, GenTree* index, ValueNum upperVN, unsigned accessWidth);
+
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
@@ -867,10 +883,10 @@ private:
     int GetArrLength(ValueNum vn);
 
     // Check whether the computed range is within 0 and upper bounds. This function
-    // assumes that the lower range is resolved and upper range is symbolic as in an
-    // increasing loop.
+    // assumes that the lower range is resolved and the upper range is relative to
+    // the supplied upper bound.
     // TODO-CQ: This is not general enough.
-    bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
+    bool BetweenBounds(Range& range, ValueNum uLimitVN, int arrSize, unsigned accessWidth);
 
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that
@@ -878,17 +894,19 @@ private:
     void OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* tree);
 
     // Internal worker for GetRange.
-    Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
+    Range GetRangeWorker(BasicBlock* block, GenTree* expr, Monotonicity monotonicity DEBUGARG(int indent));
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
-    Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
+    Range ComputeRangeForLocalDef(BasicBlock*               block,
+                                  GenTreeLclVarCommon*      lcl,
+                                  Monotonicity monotonicity DEBUGARG(int indent));
 
     // Compute the range, rather than retrieve a cached value. Helper for GetRangeWorker.
-    Range ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
+    Range ComputeRange(BasicBlock* block, GenTree* expr, Monotonicity monotonicity DEBUGARG(int indent));
 
     // Compute the range for the op1 and op2 for the given binary operator.
-    Range ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent));
+    Range ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, Monotonicity monotonicity DEBUGARG(int indent));
 
     // Merge assertions from AssertionProp's flags, for the corresponding "phiArg."
     // Requires "pRange" to contain range that is computed partially.
@@ -924,9 +942,6 @@ private:
     // return "false". For example: CORINFO_Array_MaxLength for array length.
     bool GetLimitMax(Limit& limit, int* pMax);
 
-    // Does the addition of the two limits overflow?
-    bool AddOverflows(Limit& limit1, Limit& limit2);
-
     // Does the multiplication of the two limits overflow?
     bool MultiplyOverflows(Limit& limit1, Limit& limit2);
 
@@ -947,11 +962,21 @@ private:
     // Requires "pRange" to be partially computed.
     void Widen(BasicBlock* block, GenTree* tree, Range* pRange);
 
-    // Is the binary operation increasing the value.
-    bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop);
+    // Is the binary operation changing the value in the specified direction.
+    bool IsBinOpMonotonicallyChanging(GenTreeOp*   binop,
+                                      Monotonicity monotonicity,
+                                      bool         rejectNegativeConst,
+                                      bool         insidePhi);
 
-    // Given an expression trace its value to check if it is monotonically increasing.
-    bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst);
+    // Returns true if block is dominated by dominator.
+    static bool IsDominatedBy(BasicBlock* block, BasicBlock* dominator);
+
+    // Given an expression trace its value to check if it changes monotonically in the specified direction.
+    bool IsMonotonicallyChanging(GenTree*     tree,
+                                 Monotonicity monotonicity,
+                                 bool         rejectNegativeConst = false,
+                                 BasicBlock*  definingBlock       = nullptr,
+                                 bool         insidePhi           = false);
 
     // We allocate a budget to avoid walking long UD chains. When traversing each link in the UD
     // chain, we decrement the budget. When the budget hits 0, then no more range check optimization
