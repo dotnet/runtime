@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata.Ecma335
     {
         internal SerializedMetadata GetSerializedMetadata(ImmutableArray<int> externalRowCounts, int metadataVersionByteCount, bool isStandaloneDebugMetadata)
         {
-            var stringHeapBuilder = new HeapBlobBuilder(_stringHeapCapacity);
+            var stringHeapBuilder = _createBlobBuilderFunc(_stringHeapCapacity);
             var stringMap = SerializeStringHeap(stringHeapBuilder, _strings, _stringHeapStartOffset);
 
             Debug.Assert(HeapIndex.UserString == 0);
