@@ -1797,6 +1797,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("PINVOKE_END");
                     break;
 
+                case ReadyToRunHelper.ResumeAfterCatch:
+                    builder.Append("RESUME_AFTER_CATCH");
+                    break;
+
                 case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
                     break;
