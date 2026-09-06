@@ -825,8 +825,16 @@ endif(CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
 
 if(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_UNIX>)
-  # Contracts are disabled on UNIX.
-  add_definitions(-DDISABLE_CONTRACTS)
+  if(NOT (
+      CLR_CMAKE_RUNTIME_CORECLR AND
+      (
+        (CLR_CMAKE_TARGET_LINUX AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)) OR
+        (CLR_CMAKE_TARGET_OSX AND CLR_CMAKE_TARGET_ARCH_ARM64)
+      )
+    ))
+    # Contracts are disabled on UNIX except CoreCLR on Linux x64/Arm64 and macOS Arm64.
+    add_definitions(-DDISABLE_CONTRACTS)
+  endif()
   if(CLR_CMAKE_TARGET_APPLE)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_APPLE>)
   endif()
