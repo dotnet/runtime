@@ -107,6 +107,48 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Validates that <paramref name="index"/> and <paramref name="count"/> represent a valid range
+        /// within a collection of size <paramref name="listCount"/>.
+        /// </summary>
+        /// <param name="index">The zero-based starting index of the range.</param>
+        /// <param name="count">The number of elements in the range.</param>
+        /// <param name="listCount">The total number of elements in the collection.</param>
+        /// <param name="indexParameterName">The name of the index parameter for exception messages.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative or greater than <paramref name="listCount"/>,
+        /// or <paramref name="count"/> is negative or <c>index + count</c> exceeds <paramref name="listCount"/>.
+        /// </exception>
+        [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateRange(int index, int count, int listCount, string indexParameterName = "index")
+        {
+            Debug.Assert(listCount >= 0);
+            Range((uint)index <= (uint)listCount, indexParameterName);
+            Range(count >= 0 && (uint)(index + count) <= (uint)listCount, nameof(count));
+        }
+
+        /// <summary>
+        /// Validates that <paramref name="startIndex"/> and <paramref name="count"/> represent a valid
+        /// reverse (backward) range within a collection of size <paramref name="listCount"/>.
+        /// </summary>
+        /// <param name="startIndex">The zero-based starting index of the backward search.</param>
+        /// <param name="count">The number of elements in the range.</param>
+        /// <param name="listCount">The total number of elements in the collection.</param>
+        /// <param name="startIndexParameterName">The name of the startIndex parameter for exception messages.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startIndex"/> is negative or not a valid index (unless both it and <paramref name="count"/> are zero),
+        /// or <paramref name="count"/> is negative, exceeds <paramref name="listCount"/>, or the backward range extends before index 0.
+        /// </exception>
+        [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateReverseRange(int startIndex, int count, int listCount, string startIndexParameterName = "startIndex")
+        {
+            Debug.Assert(listCount >= 0);
+            Range(startIndex == 0 || (uint)startIndex < (uint)listCount, startIndexParameterName);
+            Range((uint)count <= (uint)listCount && startIndex - count + 1 >= 0, nameof(count));
+        }
+
+        /// <summary>
         /// Throws an <see cref="ArgumentException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]
