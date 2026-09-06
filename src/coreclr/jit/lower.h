@@ -197,7 +197,7 @@ private:
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
-    GenTree* LowerDelegateInvoke(GenTreeCall* call);
+    GenTree* LowerDelegateInvoke(GenTreeCall* call, GenTree** delegateAccess, GenTree** delegateTarget);
     void     OptimizeCallIndirectTargetEvaluation(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
