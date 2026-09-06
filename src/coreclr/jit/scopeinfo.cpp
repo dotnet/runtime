@@ -208,6 +208,30 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
     // Note: mask registers (K0-K7) and XMM16+ are accepted but will produce
     // VLT_INVALID since they can't be encoded in debug info.
 
+#if defined(TARGET_WASM)
+    if (reg == REG_NA)
+    {
+        vlType = VLT_INVALID;
+        return;
+    }
+
+    assert(genIsValidReg(reg));
+
+    if (otherReg == REG_NA)
+    {
+        vlType       = VLT_REG;
+        vlReg.vlrReg = reg;
+    }
+    else
+    {
+        assert(genIsValidReg(otherReg));
+        vlType            = VLT_REG_REG;
+        vlRegReg.vlrrReg1 = reg;
+        vlRegReg.vlrrReg2 = otherReg;
+    }
+    return;
+#endif // defined(TARGET_WASM)
+
     if (otherReg == REG_NA)
     {
         if (genIsValidFloatReg(reg))
@@ -471,6 +495,12 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
 void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
     const LclVarDsc* varDsc, var_types type, regNumber baseReg, int offset, bool isFramePointerUsed)
 {
+#if defined(TARGET_WASM)
+    this->vlType       = VLT_REG;
+    this->vlReg.vlrReg = varDsc->GetRegNum();
+    return;
+#endif // defined(TARGET_WASM)
+
     switch (type)
     {
         case TYP_INT:
@@ -1598,6 +1628,14 @@ void CodeGen::siInit()
     siLastEndOffs = 0;
 
     m_compiler->compResetScopeLists();
+
+#if defined(TARGET_WASM)
+    siWasmOpenedScopes = nullptr;
+    if (m_compiler->info.compVarScopesCount > 0)
+    {
+        siWasmOpenedScopes = new (m_compiler, CMK_DebugInfo) bool[m_compiler->info.compVarScopesCount]();
+    }
+#endif // defined(TARGET_WASM)
 }
 
 /*****************************************************************************
@@ -1682,16 +1720,50 @@ void CodeGen::siBeginBlock(BasicBlock* block)
 //
 void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned int lastBlockILEndOffset)
 {
+    unsigned int beginOffs = block->bbCodeOffs;
+
 #if defined(TARGET_WASM)
-    // TODO-WASM: Wasm structured control flow
-    // requirements are incompatible with debug codegen's
-    // desire to keep blocks in increasing IL offset
-    // order. Figure out the proper scope manipulations.
-    //
+    // Scan all scopes directly because the relooper does not emit blocks in
+    // increasing IL offset order.
+    if (m_compiler->opts.OptimizationDisabled())
+    {
+        unsigned int endOffs = block->bbCodeOffsEnd;
+
+        for (unsigned i = 0; i < m_compiler->info.compVarScopesCount; i++)
+        {
+            VarScopeDsc* varScope = &m_compiler->info.compVarScopes[i];
+
+            if (siWasmOpenedScopes[i])
+            {
+                continue;
+            }
+
+            if ((varScope->vsdLifeBeg >= endOffs) || (varScope->vsdLifeEnd <= beginOffs))
+            {
+                continue;
+            }
+
+            siWasmOpenedScopes[i] = true;
+
+            LclVarDsc* lclVarDsc = m_compiler->lvaGetDesc(varScope->vsdVarNum);
+
+            // Only report locals that were referenced, if we're not doing debug codegen
+            if (m_compiler->opts.compDbgCode || (lclVarDsc->lvRefCnt() > 0))
+            {
+                JITDUMP("Scope info: opening scope, LVnum=%u [%03X..%03X)\n", varScope->vsdLVnum, varScope->vsdLifeBeg,
+                        varScope->vsdLifeEnd);
+
+                varLiveKeeper->siStartVariableLiveRange(lclVarDsc, varScope->vsdVarNum);
+            }
+            else
+            {
+                JITDUMP("Skipping open scope for V%02u, unreferenced\n", varScope->vsdVarNum);
+            }
+        }
+    }
+
     return;
 #endif // defined(TARGET_WASM)
-
-    unsigned int beginOffs = block->bbCodeOffs;
 
     // There aren't any tracked locals.
     //

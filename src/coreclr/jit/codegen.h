@@ -744,6 +744,12 @@ protected:
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
 
+#if defined(TARGET_WASM)
+    // The relooper can reorder and duplicate blocks, so wasm cannot discover
+    // scopes with the monotonic enter/exit cursors used by other targets.
+    bool* siWasmOpenedScopes;
+#endif // defined(TARGET_WASM)
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
