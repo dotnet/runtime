@@ -82,7 +82,7 @@ namespace System.Threading
         // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
         // On OpenBSD, cross process mutexes are not supported in the pthread implementation. See https://github.com/dotnet/runtime/pull/125089.
         // On Haiku, robust mutexes are WIP. See https://github.com/dotnet/runtime/pull/126701#issuecomment-4334338213.
-        private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku();
+        private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku() && !OperatingSystem.IsOpenHarmony();
 
         private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;

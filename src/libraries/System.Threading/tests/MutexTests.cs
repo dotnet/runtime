@@ -1039,7 +1039,16 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAny(new WaitHandle[] { m, mre }, 0));
         }
 
-        private const string GlobalSharedMemoryDirectory = $"/tmp/.dotnet/shm/global";
+        // The runtime places global shared memory files under {SharedFilesPath}/.dotnet/shm/global
+        // (see SharedMemoryManager.Unix.cs). SharedFilesPath is /tmp/ on non-Apple platforms except
+        // on OpenHarmony, where it honors TMPDIR. Mirror the runtime's derivation so these tests
+        // always target the same directory the runtime uses.
+        private static string GlobalSharedMemoryDirectory =>
+#if TARGET_OPENHARMONY
+            Path.Combine(Path.GetTempPath(), ".dotnet", "shm", "global");
+#else
+            "/tmp/.dotnet/shm/global";
+#endif
         private const UnixFileMode AllUsersRwx =
             UnixFileMode.UserRead
             | UnixFileMode.UserWrite

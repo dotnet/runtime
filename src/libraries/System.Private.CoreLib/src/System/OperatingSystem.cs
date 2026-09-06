@@ -221,6 +221,17 @@ namespace System
 #endif
 
         /// <summary>
+        /// Indicates whether the current application is running on OpenHarmony.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOpenHarmony() =>
+#if TARGET_OPENHARMONY
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
         /// Indicates whether the current application is running on Android.
         /// </summary>
         [NonVersionable]
