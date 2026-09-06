@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
 
         private static ReadOnlySpan<byte> VersionLabel => "HPKE-v1"u8;
 
-        protected HpkeSuite Suite { get; }
+        internal HpkeSuite Suite { get; }
         protected HpkeKdfMetadata KeyDerivationKdf => Suite.KemMetadata.KemKdf;
 
         protected HpkeManagedKemAdapter(HpkeSuite suite)

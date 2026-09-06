@@ -1889,10 +1889,15 @@ namespace System.Security.Cryptography
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    public abstract partial class Hpke
+    public abstract partial class Hpke : System.IDisposable
     {
         protected Hpke(System.Security.Cryptography.HpkeSuite suite) { }
         public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
+        public static System.Security.Cryptography.Hpke DeriveKey(System.Security.Cryptography.HpkeSuite suite, byte[] ikm) { throw null; }
+        public static System.Security.Cryptography.Hpke DeriveKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> ikm) { throw null; }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public static System.Security.Cryptography.Hpke GenerateKey(System.Security.Cryptography.HpkeSuite suite) { throw null; }
         public static bool IsSupported(System.Security.Cryptography.HpkeSuite suite) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]

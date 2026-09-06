@@ -607,6 +607,7 @@
     <Compile Include="HmacSha3_384Tests.cs" />
     <Compile Include="HmacSha3_512Tests.cs" />
     <Compile Include="HmacTests.cs" />
+    <Compile Include="HpkeTests.cs" />
     <Compile Include="IncrementalHashTests.cs" />
     <Compile Include="InvalidUsageTests.cs" />
     <Compile Include="KeyedHashAlgorithmTests.cs" />

@@ -84,7 +84,7 @@ namespace System.Security.Cryptography
                     case HpkeKem.MLKEM_1024:
                     case HpkeKem.MLKEM768_P256:
                     case HpkeKem.MLKEM1024_P384:
-                        return MLKem.IsSupported;
+                        return false;
                     default:
                         Debug.Fail($"Kem ${Kem}'s support is unknown.");
                         return false;
