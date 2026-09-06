@@ -196,7 +196,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     if (parentNode->isContained())
         return false;
 
-    if (!varTypeIsIntegral(parentNode))
+    if (!varTypeIsIntegral(parentNode) && !parentNode->TypeIs(TYP_BYREF))
         return false;
 
     if (parentNode->gtGetOp1()->isContained() || (parentNode->OperIsBinary() && parentNode->gtGetOp2()->isContained()))
