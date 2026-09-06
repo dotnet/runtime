@@ -457,6 +457,7 @@ public unsafe class MetaDataImportImplTests
         IMetaDataImport2 wrapper = CreateWrapper();
 
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetModuleFromScope(null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
     }
@@ -1073,6 +1074,22 @@ public unsafe class MetaDataImportImplTests
         int hr = wrapper.CountEnum(0, &count);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(0u, count);
+    }
+
+    [Fact]
+    public void EnumOperations_UnknownHandle_ReturnsInvalidArg()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        nint unknownHandle = nint.MaxValue;
+        uint count = 42;
+
+        int hr = wrapper.CountEnum(unknownHandle, &count);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+        Assert.Equal(0u, count);
+
+        hr = wrapper.ResetEnum(unknownHandle, 0);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
     }
 
     [Fact]

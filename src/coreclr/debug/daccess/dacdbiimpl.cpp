@@ -320,8 +320,7 @@ DacDbiInterfaceInstance(
                 if (cdac.IsValid())
                 {
                     ReleaseHolder<IUnknown> cdacInterface;
-                    cdac.CreateDacDbiInterface(&cdacInterface);
-                    if (cdacInterface != nullptr)
+                    if (cdac.CreateDacDbiInterface(&cdacInterface) == S_OK && cdacInterface != nullptr)
                     {
                         IDacDbiInterface* pCDacDbi = nullptr;
                         HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);

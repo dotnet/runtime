@@ -63,7 +63,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
         try
         {
-            if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+            if (_legacyImpl is not null)
             {
                 DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodDefinitionOut = new(isNullRef: methodDefinition.IsNullRef);
                 hrLocal = _legacyImpl.GetDefinition(legacyMethodDefinitionOut);
@@ -110,9 +110,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 {
                     DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
                     int hrLegacy = _legacyImpl.GetTokenAndScope(token, legacyModOut);
-                    if (hrLegacy < 0)
-                        return hrLegacy;
-                    legacyMod = legacyModOut.Interface;
+                    if (hrLegacy >= 0)
+                        legacyMod = legacyModOut.Interface;
                 }
 
                 TargetPointer mtAddr = rts.GetMethodTable(_methodDesc);
