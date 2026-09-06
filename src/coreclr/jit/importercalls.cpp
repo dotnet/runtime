@@ -3261,6 +3261,64 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 }
 
 //------------------------------------------------------------------------
+// impIsAtomicLightUpCandidate: Should the given Interlocked API be left unexpanded so that the
+//    managed `if (Lse.IsSupported)` check in its body can light up the Armv8.1 atomics?
+//
+// Arguments:
+//    ni         - The named intrinsic
+//    sig        - Signature of the call
+//    mustExpand - Whether the JIT is required to expand this call
+//
+// Return Value:
+//    True if the call should be imported as a regular (inlineable) call.
+//
+// Notes:
+//    This is only ever true when the Armv8.1 atomics are not part of our baseline instruction set
+//    but may still be present on the machine that ends up running the code - in practice that means
+//    NativeAOT, whose baseline is typically armv8-a. In every other configuration the answer is
+//    "no" and these APIs keep expanding exactly like they always have.
+//
+//    'mustExpand' is what stops the light-up from recursing forever: the fallback arm of the check
+//    calls the very same API from within its own body, and recursive intrinsic calls must expand.
+//
+bool Compiler::impIsAtomicLightUpCandidate(NamedIntrinsic ni, CORINFO_SIG_INFO* sig, bool mustExpand)
+{
+#ifdef TARGET_ARM64
+    switch (ni)
+    {
+        case NI_System_Threading_Interlocked_And:
+        case NI_System_Threading_Interlocked_Or:
+        case NI_System_Threading_Interlocked_CompareExchange:
+        case NI_System_Threading_Interlocked_Exchange:
+        case NI_System_Threading_Interlocked_ExchangeAdd:
+            break;
+
+        default:
+            return false;
+    }
+
+    if (mustExpand)
+    {
+        return false;
+    }
+
+    // Only the overloads that actually carry the managed check qualify: the ones operating on a
+    // machine word sized integer. The object overloads use a write barrier helper instead, and the
+    // byte and halfword ones funnel through a masking loop, so leaving those unexpanded would just
+    // pessimize them.
+    var_types retType = JITtype2varType(sig->retType);
+    if (!varTypeIsIntegral(retType) || (genTypeSize(retType) < 4) || (genTypeSize(retType) > TARGET_POINTER_SIZE))
+    {
+        return false;
+    }
+
+    return compGetAtomicsImpl() == AtomicsImpl::Dynamic;
+#else
+    return false;
+#endif // TARGET_ARM64
+}
+
+//------------------------------------------------------------------------
 // impIntrinsic: possibly expand intrinsic call into alternate IR sequence
 //
 // Arguments:
@@ -3531,6 +3589,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
     }
 
     *pIntrinsicName = ni;
+
+    if (impIsAtomicLightUpCandidate(ni, sig, mustExpand))
+    {
+        // The Armv8.1 atomics may be available on the machine running this code even though they
+        // are not part of our baseline instruction set. Leave the call alone so that the managed
+        // `if (Lse.IsSupported)` check in the API's body gets inlined and lights them up.
+        JITDUMP("Not expanding %s to allow the managed Armv8.1 atomics light-up\n", eeGetMethodFullName(method));
+        return nullptr;
+    }
 
     if (ni == NI_System_StubHelpers_GetStubContext)
     {

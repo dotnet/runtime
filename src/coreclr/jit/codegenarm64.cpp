@@ -3810,7 +3810,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     emitAttr dataSize = emitActualTypeSize(data);
 
-    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+    if (m_compiler->compGetAtomicsImplForNode(treeNode) == Compiler::AtomicsImpl::Lse)
     {
         assert(!data->isContainedIntOrIImmed());
 
@@ -3988,8 +3988,11 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
     emitAttr dataSize = emitActualTypeSize(data);
 
-    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+    if (m_compiler->compGetAtomicsImplForNode(treeNode) == Compiler::AtomicsImpl::Lse)
     {
+        // 'casal' has no immediate form, so lowering must not have contained the comparand.
+        assert(!comparand->isContained());
+
         // casal use the comparand as the target reg
         GetEmitter()->emitIns_Mov(INS_mov, dataSize, targetReg, comparandReg, /* canSkip */ true);
 

@@ -5410,6 +5410,7 @@ protected:
                           R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                           NamedIntrinsic*         pIntrinsicName,
                           bool*                   isSpecialIntrinsic = nullptr);
+    bool     impIsAtomicLightUpCandidate(NamedIntrinsic ni, CORINFO_SIG_INFO* sig, bool mustExpand);
     GenTree* impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
@@ -10968,6 +10969,46 @@ public:
         compExactlyDependsOn(isa);
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
+
+#ifdef TARGET_ARM64
+    // How the Interlocked/atomic operations (GT_CMPXCHG, GT_XADD, GT_XCHG, GT_XORR, GT_XAND)
+    // are to be expanded by codegen.
+    enum class AtomicsImpl : uint8_t
+    {
+        Uninitialized,
+        LlSc,    // ldaxr/stlxr retry loop
+        Lse,     // Armv8.1 single instruction atomics
+        Dynamic, // not in the baseline, but may still be available at run time
+    };
+
+    AtomicsImpl compGetAtomicsImpl();
+
+    //------------------------------------------------------------------------
+    // compGetAtomicsImplForNode: How a specific atomic node is to be expanded.
+    //
+    // The importer only ever creates an atomic node when it knows which sequence to use: in the
+    // AtomicsImpl::Dynamic case the Interlocked APIs are left unexpanded and the managed
+    // `if (Lse.IsSupported)` check in their bodies picks the arm, marking the node it creates
+    // with GTF_ATOMIC_LSE. So lowering, LSRA and codegen only ever see a concrete answer.
+    //
+    AtomicsImpl compGetAtomicsImplForNode(GenTree* node)
+    {
+        assert(node->OperIsAtomicOp());
+
+        if ((node->gtFlags & GTF_ATOMIC_LSE) != 0)
+        {
+            return AtomicsImpl::Lse;
+        }
+
+        AtomicsImpl impl = compGetAtomicsImpl();
+        return (impl == AtomicsImpl::Lse) ? AtomicsImpl::Lse : AtomicsImpl::LlSc;
+    }
+
+private:
+    AtomicsImpl m_atomicsImpl = AtomicsImpl::Uninitialized;
+
+public:
+#endif // TARGET_ARM64
 
 private:
 #ifdef DEBUG
