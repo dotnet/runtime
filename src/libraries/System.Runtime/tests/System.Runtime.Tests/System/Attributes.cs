@@ -316,6 +316,25 @@ namespace System.Tests
                 () => Assert.Equal(4, attribute.OptionalValue));
         }
 
+        [Fact]
+        public static void GetCustomAttributesWithSettersDefinedOnBaseClass()
+        {
+            object[] attributes = typeof(ClassWithDerivedAttr).GetCustomAttributes(true);
+            object attribute = Assert.Single(attributes);
+            var derivedAttributeWithGetterAttr = Assert.IsType<DerivedAttributeWithGetter>(attribute);
+            Assert.Equal(2, derivedAttributeWithGetterAttr.P);
+        }
+
+        [Fact]
+        public static void GetCustomAttributesWithCovariantOverrideAndSetterOnBaseClass_Throws()
+        {
+            Type expectedExceptionType = PlatformDetection.IsNativeAot
+                ? typeof(AmbiguousMatchException)
+                : typeof(CustomAttributeFormatException);
+
+            Assert.Throws(expectedExceptionType, () => typeof(ClassWithDerivedCovariantAttr).GetCustomAttributes(true));
+        }
+
         private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
         {
             Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
@@ -326,6 +345,46 @@ namespace System.Tests
                 () => Assert.NotEmpty(closedGenericAttributes),
                 () => Assert.All(closedGenericAttributes, a => Assert.IsType<GenericAttribute<TGenericParameter>>(a)));
         }
+
+        public class BaseAttributeWithGetterSetter : Attribute
+        {
+            protected int _p;
+
+            public virtual int P
+            {
+                get => _p;
+                set
+                {
+                    _p = value;
+                }
+            }
+        }
+
+        public class DerivedAttributeWithGetter : BaseAttributeWithGetterSetter
+        {
+            public override int P
+            {
+                get => _p;
+            }
+        }
+
+        [DerivedAttributeWithGetter(P = 2)]
+        public class ClassWithDerivedAttr
+        { }
+
+        public class BaseAttributeWithObjectProp : Attribute
+        {
+            public virtual object Prop { get; set; }
+        }
+
+        public class DerivedAttributeWithCovariantGetter : BaseAttributeWithObjectProp
+        {
+            public override string Prop { get => (string)base.Prop; }
+        }
+
+        [DerivedAttributeWithCovariantGetter(Prop = "hello")]
+        public class ClassWithDerivedCovariantAttr
+        { }
     }
 
     public static class GetCustomAttribute
