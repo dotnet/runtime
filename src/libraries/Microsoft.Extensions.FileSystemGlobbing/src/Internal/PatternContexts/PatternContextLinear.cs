@@ -52,7 +52,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             {
                 // Determine this frame's contribution to the stem (if any)
                 IPathSegment segment = Pattern.Segments[Frame.SegmentIndex];
+#if USE_TOUKI_GLOBBING
+                if (TrackStem && (frame.InStem || segment.CanProduceStem))
+#else
                 if (frame.InStem || segment.CanProduceStem)
+#endif
                 {
                     frame.InStem = true;
                     frame.StemItems.Add(directory.Name);
@@ -92,6 +96,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         }
 
         protected ILinearPattern Pattern { get; }
+
+    #if USE_TOUKI_GLOBBING
+        internal bool TrackStem { get; set; } = true;
+    #endif
 
         protected bool IsLastSegment()
         {
