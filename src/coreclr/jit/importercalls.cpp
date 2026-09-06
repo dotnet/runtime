@@ -7179,7 +7179,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                     result       = gtNewIconNode(BitOperations::TrailingZeroCount(cns), baseType);
                 }
 
-                baseType = retType;
                 break;
             }
 
