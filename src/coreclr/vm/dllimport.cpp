@@ -5944,9 +5944,7 @@ void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pNMD));
     }
@@ -6105,13 +6103,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
     PreserveLastErrorHolder preserveLastError;
 
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame());
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
