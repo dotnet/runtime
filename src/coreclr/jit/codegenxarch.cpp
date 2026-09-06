@@ -2441,9 +2441,11 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     else
     {
 #ifdef TARGET_X86
-        int spOffset = -(int)frameSize;
+        int        spOffset = -(int)frameSize;
+        const bool preserveStackProbeHelperArg =
+            m_compiler->info.compPublishStubParam || ((maskArgRegsLiveIn & RBM_STACK_PROBE_HELPER_ARG) != RBM_NONE);
 
-        if (m_compiler->info.compPublishStubParam)
+        if (preserveStackProbeHelperArg)
         {
             GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             spOffset += REGSIZE_BYTES;
@@ -2454,7 +2456,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
-        if (m_compiler->info.compPublishStubParam)
+        if (preserveStackProbeHelperArg)
         {
             GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, frameSize);
