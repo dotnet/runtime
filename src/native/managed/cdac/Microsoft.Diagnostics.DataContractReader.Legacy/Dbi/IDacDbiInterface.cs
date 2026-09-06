@@ -938,8 +938,36 @@ public unsafe partial interface IDacDbiInterface
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
 
     [PreserveSig]
+    int GetTargetInfo(TargetInfo* pTargetInfo);
+
+    [PreserveSig]
     int GetReadWriteMetadataSize(ulong vmModule, uint* pSize);
 
     [PreserveSig]
     int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer);
+}
+
+public enum TargetArchitecture
+{
+    Unknown = 0,
+    X86,
+    AMD64,
+    Arm,
+    Arm64,
+    LoongArch64,
+    RiscV64,
+    Wasm,
+}
+
+public enum TargetOperatingSystem
+{
+    Unknown = 0,
+    Windows,
+    Unix,
+}
+
+public struct TargetInfo
+{
+    public TargetArchitecture Arch;
+    public TargetOperatingSystem OS;
 }
