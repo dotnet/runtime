@@ -40,6 +40,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute Condition="'$(StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute)' == ''">true</StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute>
   </PropertyGroup>
 
+  <!-- CoreCLR browser-wasm ReadyToRun wiring, isolated from Mono; active only with an in-build crossgen2. -->
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.props"
+          Condition="'$(Crossgen2InBuildDir)' != ''" />
+
   <ItemGroup>
     <ProjectCapability Include="WebAssembly" />
   </ItemGroup>
