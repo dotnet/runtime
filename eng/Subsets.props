@@ -640,7 +640,10 @@
 
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
-    <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
+    <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj"
+                    AdditionalProperties="LibrariesRuntimeFlavor=$(RuntimeFlavor);RuntimeFlavor=$(RuntimeFlavor)"
+                    GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
+                    Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.sfx+'))">
@@ -780,7 +783,9 @@
           </ItemGroup>
           <ItemGroup>
             <SharedFrameworkProjectToBuild Condition="'$(_BuildBundle)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" />
-            <ProjectToBuild Include="@(SharedFrameworkProjectToBuild)" Category="packs" />
+            <ProjectToBuild Include="@(SharedFrameworkProjectToBuild)"
+                            AdditionalProperties="%(SharedFrameworkProjectToBuild.AdditionalProperties);LibrariesRuntimeFlavor=$(RuntimeFlavor)"
+                            Category="packs" />
           </ItemGroup>
         </Otherwise>
       </Choose>
