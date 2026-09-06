@@ -1,86 +1,105 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
     public class TarReader_File_GlobalExtendedAttributes_Tests : TarReader_File_Tests_Base
     {
-        [Fact]
-        public void Read_Archive_File() =>
-            Read_Archive_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_File(bool async) =>
+            await Read_Archive_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_File_HardLink() =>
-            Read_Archive_File_HardLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_File_HardLink(bool async) =>
+            await Read_Archive_File_HardLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_File_SymbolicLink() =>
-            Read_Archive_File_SymbolicLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_File_SymbolicLink(bool async) =>
+            await Read_Archive_File_SymbolicLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_Folder_File() =>
-            Read_Archive_Folder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_Folder_File(bool async) =>
+            await Read_Archive_Folder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_Folder_File_Utf8() =>
-            Read_Archive_Folder_File_Utf8_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_Folder_File_Utf8(bool async) =>
+            await Read_Archive_Folder_File_Utf8_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_Folder_Subfolder_File() =>
-            Read_Archive_Folder_Subfolder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_Folder_Subfolder_File(bool async) =>
+            await Read_Archive_Folder_Subfolder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_FolderSymbolicLink_Folder_Subfolder_File() =>
-            Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_FolderSymbolicLink_Folder_Subfolder_File(bool async) =>
+            await Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_Many_Small_Files() =>
-            Read_Archive_Many_Small_Files_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_Many_Small_Files(bool async) =>
+            await Read_Archive_Many_Small_Files_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_LongPath_Splitable_Under255() =>
-            Read_Archive_LongPath_Splitable_Under255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_LongPath_Splitable_Under255(bool async) =>
+            await Read_Archive_LongPath_Splitable_Under255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_SpecialFiles() =>
-            Read_Archive_SpecialFiles_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_SpecialFiles(bool async) =>
+            await Read_Archive_SpecialFiles_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_File_LongSymbolicLink() =>
-            Read_Archive_File_LongSymbolicLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_File_LongSymbolicLink(bool async) =>
+            await Read_Archive_File_LongSymbolicLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_LongFileName_Over100_Under255() =>
-            Read_Archive_LongFileName_Over100_Under255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_LongFileName_Over100_Under255(bool async) =>
+            await Read_Archive_LongFileName_Over100_Under255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void Read_Archive_LongPath_Over255() =>
-            Read_Archive_LongPath_Over255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea);
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Read_Archive_LongPath_Over255(bool async) =>
+            await Read_Archive_LongPath_Over255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
-        [Fact]
-        public void ExtractGlobalExtendedAttributesEntry_Throws()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task ExtractGlobalExtendedAttributesEntry_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
-
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
             {
+                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: true);
+                TarWriter writer = writerHolder;
+
                 PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
-                writer.WriteEntry(gea);
-            }
+                await WriteEntry(writer, gea, async);
+                        }
 
             archiveStream.Position = 0;
 
-            using (TarReader reader = new TarReader(archiveStream, leaveOpen: false))
             {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.Throws<InvalidOperationException>(() => entry.ExtractToFile(Path.Join(root.Path, "file"), overwrite: true));
-            }
+                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
+                TarEntry entry = await GetNextEntry(reader, async: async);
+                Assert.NotNull(entry);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, Path.Join(root.Path, "file"), overwrite: true, async));
+                        }
         }
 
         [Theory]

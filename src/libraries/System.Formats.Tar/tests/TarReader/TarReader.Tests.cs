@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -21,22 +22,25 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<ArgumentException>(() => new TarReader(ws));
         }
 
-        [Fact]
-        public void TarReader_LeaveOpen_False()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task TarReader_LeaveOpen_False(bool async)
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            using (TarReader reader = new TarReader(ms, leaveOpen: false))
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 TarEntry entry;
-                while ((entry = reader.GetNextEntry()) != null)
+                while ((entry = await GetNextEntry(reader, async: async)) != null)
                 {
                     if (entry.DataStream != null)
                     {
                         dataStreams.Add(entry.DataStream);
                     }
                 }
-            }
+                        }
 
             Assert.Throws<ObjectDisposedException>(() => ms.ReadByte());
 
@@ -47,22 +51,25 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public void TarReader_LeaveOpen_True()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task TarReader_LeaveOpen_True(bool async)
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            using (TarReader reader = new TarReader(ms, leaveOpen: true))
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: true);
+                TarReader reader = readerHolder;
+
                 TarEntry entry;
-                while ((entry = reader.GetNextEntry()) != null)
+                while ((entry = await GetNextEntry(reader, async: async)) != null)
                 {
                     if (entry.DataStream != null)
                     {
                         dataStreams.Add(entry.DataStream);
                     }
                 }
-            }
+                        }
 
             ms.ReadByte(); // Should not throw
 
@@ -74,22 +81,25 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public void TarReader_LeaveOpen_False_CopiedDataNotDisposed()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task TarReader_LeaveOpen_False_CopiedDataNotDisposed(bool async)
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            using (TarReader reader = new TarReader(ms, leaveOpen: false))
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 TarEntry entry;
-                while ((entry = reader.GetNextEntry(copyData: true)) != null)
+                while ((entry = await GetNextEntry(reader, copyData: true, async: async)) != null)
                 {
                     if (entry.DataStream != null)
                     {
                         dataStreams.Add(entry.DataStream);
                     }
                 }
-            }
+                        }
 
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)
@@ -100,22 +110,27 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetPaxExtendedAttributesRoundtripTestData))]
-        public void PaxExtendedAttribute_Roundtrips(string key, string value)
+        [MemberData(nameof(GetPaxExtendedAttributesRoundtripTestDataAndBooleanData))]
+        public async Task PaxExtendedAttribute_Roundtrips(string key, string value, bool async)
         {
-            var stream = new MemoryStream();
-            using (var writer = new TarWriter(stream, leaveOpen: true))
+            // Verify the same roundtrip works with async APIs
+            using MemoryStream stream = new MemoryStream();
             {
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "entryName", new Dictionary<string, string>() { { key, value } }));
+                await using TarWriterHolder writerHolder = CreateTarWriter(stream, async, leaveOpen: true);
+                TarWriter writer = writerHolder;
+
+                await WriteEntry(writer, new PaxTarEntry(TarEntryType.Directory, "entryName", new Dictionary<string, string>() { { key, value } }), async);
             }
 
             stream.Position = 0;
-            using (var reader = new TarReader(stream))
             {
-                PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+                await using TarReaderHolder readerHolder = CreateTarReader(stream, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
+                PaxTarEntry entry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
                 Assert.Equal(3, entry.ExtendedAttributes.Count);
                 Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
-                Assert.Null(reader.GetNextEntry());
+                Assert.Null(await GetNextEntry(reader, async: async));
             }
         }
 
