@@ -10,12 +10,21 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // This file contains managed declarations for the IXCLRData interfaces.
 // See src/coreclr/inc/clrdata.idl
 
+public enum CLRDataEnumMemoryFlags
+{
+    CLRDATA_ENUM_MEM_DEFAULT = 0x0,
+    CLRDATA_ENUM_MEM_MINI = CLRDATA_ENUM_MEM_DEFAULT,
+    CLRDATA_ENUM_MEM_HEAP = 0x1,
+    CLRDATA_ENUM_MEM_TRIAGE = 0x2,
+    CLRDATA_ENUM_MEM_HEAP2 = 0x3,
+}
+
 [GeneratedComInterface]
 [Guid("471c35b4-7c2f-4ef0-a945-00f8c38056f1")]
 public unsafe partial interface ICLRDataEnumMemoryRegions
 {
     [PreserveSig]
-    int EnumMemoryRegions(/*ICLRDataEnumMemoryRegionsCallback*/ void* callback, uint miniDumpFlags, /*CLRDataEnumMemoryFlags*/ int clrFlags);
+    int EnumMemoryRegions(/*ICLRDataEnumMemoryRegionsCallback*/ void* callback, uint miniDumpFlags, CLRDataEnumMemoryFlags clrFlags);
 }
 
 [GeneratedComInterface]

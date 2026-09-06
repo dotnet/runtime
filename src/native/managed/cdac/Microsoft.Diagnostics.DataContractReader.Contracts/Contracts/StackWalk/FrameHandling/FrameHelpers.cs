@@ -358,17 +358,28 @@ internal sealed class FrameHelpers
 
     private IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
     {
-        return context switch
-        {
-            ContextHolder<X86Context> contextHolder => new X86FrameHandler(_target, contextHolder),
-            ContextHolder<AMD64Context> contextHolder => new AMD64FrameHandler(_target, contextHolder),
-            ContextHolder<ARMContext> contextHolder => new ARMFrameHandler(_target, contextHolder),
-            ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(_target, contextHolder),
-            ContextHolder<RISCV64Context> contextHolder => new RISCV64FrameHandler(_target, contextHolder),
-            ContextHolder<LoongArch64Context> contextHolder => new LoongArch64FrameHandler(_target, contextHolder),
-            ContextHolder<WasmContext> contextHolder => new WasmFrameHandler(_target, contextHolder),
-            _ => throw new InvalidOperationException("Unsupported context type"),
-        };
+        if (TargetArchitectureSupport.IsX86Supported && context is ContextHolder<X86Context> x86Context)
+            return new X86FrameHandler(_target, x86Context);
+
+        if (TargetArchitectureSupport.IsX64Supported && context is ContextHolder<AMD64Context> x64Context)
+            return new AMD64FrameHandler(_target, x64Context);
+
+        if (TargetArchitectureSupport.IsArmSupported && context is ContextHolder<ARMContext> armContext)
+            return new ARMFrameHandler(_target, armContext);
+
+        if (TargetArchitectureSupport.IsArm64Supported && context is ContextHolder<ARM64Context> arm64Context)
+            return new ARM64FrameHandler(_target, arm64Context);
+
+        if (TargetArchitectureSupport.IsRiscV64Supported && context is ContextHolder<RISCV64Context> riscV64Context)
+            return new RISCV64FrameHandler(_target, riscV64Context);
+
+        if (TargetArchitectureSupport.IsLoongArch64Supported && context is ContextHolder<LoongArch64Context> loongArch64Context)
+            return new LoongArch64FrameHandler(_target, loongArch64Context);
+
+        if (TargetArchitectureSupport.IsWasmSupported && context is ContextHolder<WasmContext> wasmContext)
+            return new WasmFrameHandler(_target, wasmContext);
+
+        throw new InvalidOperationException($"Unsupported context type {context.GetType()}");
     }
 
     private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
