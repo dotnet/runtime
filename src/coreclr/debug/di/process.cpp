@@ -1484,8 +1484,20 @@ void CordbProcess::FreeDac()
 
     if (m_hDacModule != NULL)
     {
+#ifdef HOST_UNIX
+        // Release ownership of the DAC without unloading it. The DAC embeds the PAL, whose TLS
+        // initialization registers a pthread key with a destructor that lives in the DAC image,
+        // and nothing deletes that key on unload: the DAC's DLL_PROCESS_DETACH only destroys the
+        // DAC mutex, and the PAL's TLSCleanup is reachable only from the PAL_Initialize failure
+        // path or from PAL_TerminateEx, which exits the process. Unloading would therefore leave
+        // glibc holding a destructor pointer into unmapped memory, and any thread that entered the
+        // DAC's PAL faults in __nptl_deallocate_tsd once it exits.
+        LOG((LF_CORDB, LL_INFO1000, "Leaving DAC loaded\n"));
+        m_hDacModule.Detach();
+#else
         LOG((LF_CORDB, LL_INFO1000, "Unloading DAC\n"));
         m_hDacModule.Free();
+#endif // HOST_UNIX
     }
 }
 
