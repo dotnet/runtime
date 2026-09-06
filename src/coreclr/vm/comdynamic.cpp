@@ -499,7 +499,7 @@ void COMDynamicWrite::TermCreateClass(Module* pModule, INT32 tk, QCall::ObjectHa
 
     if (!typeHnd.IsNull())
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retType.Set(typeHnd.GetManagedClassObject());
     }
 }

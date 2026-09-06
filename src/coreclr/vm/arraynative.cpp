@@ -132,7 +132,7 @@ extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32
         {
             _ASSERTE(pLowerBounds == NULL || pLowerBounds[0] == 0);
 
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
             goto Done;
         }
@@ -149,7 +149,7 @@ extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32
             // Shortcut for common cases
             if (CorTypeInfo::IsPrimitiveType(corType))
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
                 retArray.Set(AllocatePrimitiveArray(corType, pLengths[0]));
                 goto Done;
             }
@@ -157,7 +157,7 @@ extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32
             typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd);
 
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
                 retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
                 goto Done;
             }
@@ -194,7 +194,7 @@ extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32
         }
 
         {
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             retArray.Set(AllocateArrayEx(typeHnd, bounds, boundsSize));
         }
     }
@@ -209,7 +209,7 @@ extern "C" void QCALLTYPE Array_Ctor(MethodTable* pArrayMT, UINT32 dwNumArgs, IN
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     _ASSERTE(pArrayMT->IsFullyLoaded());
     _ASSERTE(pArrayMT->IsArray());
