@@ -7202,8 +7202,13 @@ namespace System.Data
             for (int i = 0; i < count; i++)
             {
                 DataColumn dc = columns[i];
+                if (dc.DataExpression == null)
+                {
+                    continue;
+                }
+
                 // if this column is NOT in my table or it is in the table and is not a local aggregate (self refs)
-                if (dc.Table != this || (dc.DataExpression != null && !dc.DataExpression.HasLocalAggregate()))
+                if (dc.Table != this || !dc.DataExpression.HasLocalAggregate())
                 {
                     DataRowVersion foreignVer = (version == DataRowVersion.Proposed) ? DataRowVersion.Default : version;
 
@@ -7225,9 +7230,7 @@ namespace System.Data
 
                             if (cachedRow != null && ((cachedRow.RowState != DataRowState.Deleted) && (version != DataRowVersion.Original || cachedRow._oldRecord != -1)))
                             {
-                                // if deleted GetRecordFromVersion will throw
-                                // TODO: Possible bug, dc.DataExpression may be null
-                                object newValue = dc.DataExpression!.Evaluate(cachedRow, foreignVer);
+                                object newValue = dc.DataExpression.Evaluate(cachedRow, foreignVer);
                                 SilentlySetValue(cachedRow, dc, foreignVer, newValue);
                             }
                         }
@@ -7257,9 +7260,7 @@ namespace System.Data
 
                             if (parentRow != null && ((parentRow.RowState != DataRowState.Deleted) && (version != DataRowVersion.Original || parentRow._oldRecord != -1)))
                             {
-                                // if deleted GetRecordFromVersion will throw
-                                // TODO: Possible bug, dc.DataExpression may be null
-                                object newValue = dc.DataExpression!.Evaluate(parentRow, foreignVer);
+                                object newValue = dc.DataExpression.Evaluate(parentRow, foreignVer);
                                 SilentlySetValue(parentRow, dc, foreignVer, newValue);
                             }
                         }
@@ -7289,9 +7290,7 @@ namespace System.Data
 
                             if (childRow != null && ((childRow.RowState != DataRowState.Deleted) && (version != DataRowVersion.Original || childRow._oldRecord != -1)))
                             {
-                                // if deleted GetRecordFromVersion will throw
-                                // TODO: Possible bug, dc.DataExpression may be null
-                                object newValue = dc.DataExpression!.Evaluate(childRow, foreignVer);
+                                object newValue = dc.DataExpression.Evaluate(childRow, foreignVer);
                                 SilentlySetValue(childRow, dc, foreignVer, newValue);
                             }
                         }
