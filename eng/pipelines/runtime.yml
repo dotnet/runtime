@@ -1251,7 +1251,7 @@ extends:
           runOnlyOnChromeVersionUpdate: true
           shouldRunSmokeOnly: 'true'
           nameSuffix: _SmokeMac
-          extraBuildArgs: /p:AotHostArchitecture=arm64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
             - WasmTestOnChrome

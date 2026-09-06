@@ -216,17 +216,103 @@ public class R2RTestSuites
             static string Format(IReadOnlyList<byte> valTypes) =>
                 $"[{string.Join(",", valTypes.Select(b => $"0x{b:X2}"))}]";
         }
+    }
 
-        static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
-            ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmRelaxedSimdModule()
+    {
+        var wasmRelaxedSimdModule = new CompiledAssembly
         {
-            uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
-            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
-            Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+            AssemblyName = nameof(WasmRelaxedSimdModule),
+            SourceResourceNames = ["Webcil/WasmSimdModule.cs"],
+        };
 
-            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
-            Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
-            return body.Value;
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmRelaxedSimdModule),
+            [
+                new(nameof(WasmRelaxedSimdModule), [new CrossgenAssembly(wasmRelaxedSimdModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    {
+                        "--instruction-set",
+                        "relaxed-simd",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+
+            foreach ((string name, uint opcode) in
+                     new[]
+                     {
+                         ("RelaxedSwizzleNative", 0x100u),
+                         ("RelaxedConvertF32ToInt32Native", 0x101u),
+                         ("RelaxedConvertF32ToUInt32Native", 0x102u),
+                         ("RelaxedConvertF64ToInt32Native", 0x103u),
+                         ("RelaxedConvertF64ToUInt32Native", 0x104u),
+                         ("RelaxedMultiplyAddF32", 0x105u),
+                         ("RelaxedMultiplyAddNegatedF32", 0x106u),
+                         ("RelaxedMultiplyAddF64", 0x107u),
+                         ("RelaxedMultiplyAddNegatedF64", 0x108u),
+                         ("RelaxedLaneSelectI8Native", 0x109u),
+                         ("RelaxedLaneSelectI16Native", 0x10Au),
+                         ("RelaxedLaneSelectI32Native", 0x10Bu),
+                         ("RelaxedLaneSelectI64Native", 0x10Cu),
+                         ("RelaxedMinF32Native", 0x10Du),
+                         ("RelaxedMaxF32Native", 0x10Eu),
+                         ("RelaxedMinF64Native", 0x10Fu),
+                         ("RelaxedMaxF64Native", 0x110u),
+                         ("RelaxedMultiplyRoundedQ15Native", 0x111u),
+                         ("RelaxedDotProductNative", 0x112u),
+                         ("RelaxedDotProductAddNative", 0x113u),
+                     })
+            {
+                ReadyToRunMethod method = Assert.Single(
+                    methods, m => m.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+
+                Assert.True(
+                    WasmR2RAssert.WasmFunctionContainsPrefixedOpcode(body, 0xFD, opcode),
+                    $"'{name}' did not contain relaxed SIMD opcode 0xFD 0x{opcode:X}.");
+            }
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmRelaxedSimdDisabledModule()
+    {
+        var wasmRelaxedSimdDisabledModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmRelaxedSimdDisabledModule),
+            SourceResourceNames = ["Webcil/WasmSimdModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmRelaxedSimdDisabledModule),
+            [
+                new(nameof(WasmRelaxedSimdDisabledModule), [new CrossgenAssembly(wasmRelaxedSimdDisabledModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            ReadyToRunMethod method = Assert.Single(
+                methods, m => m.SignatureString.Contains(".RelaxedSwizzleNativeIfSupported(", StringComparison.Ordinal));
+            WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+
+            Assert.False(
+                WasmR2RAssert.WasmFunctionContainsPrefixedOpcode(body, 0xFD, 0x100),
+                "The default Wasm instruction-set baseline emitted a relaxed SIMD opcode.");
         }
     }
 
@@ -273,6 +359,18 @@ public class R2RTestSuites
             int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
             Assert.Equal(0, payloadOffset & 0xF);
         }
+    }
+
+    private static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+        ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
+    {
+        uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
+        int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+        Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+
+        WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+        Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+        return body.Value;
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]

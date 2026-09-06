@@ -23,6 +23,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     {
         ("RunAOTCompilation", true),
         ("WasmEnableSIMD", false),
+        ("WasmEnableRelaxedSimd", true),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
         //("InvariantGlobalization", true), - not applicable for blazor

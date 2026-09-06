@@ -89,6 +89,8 @@
       -->
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmRelaxedSimd.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableRelaxedSimd)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmRelaxedSimd.xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -159,6 +161,7 @@
       <_WasmPropertyNames Include="WasmBuildNative" />
       <_WasmPropertyNames Include="WasmDebugLevel" />
       <_WasmPropertyNames Include="WasmDedup" />
+      <_WasmPropertyNames Include="WasmEnableRelaxedSimd" />
       <_WasmPropertyNames Include="WasmLinkIcalls" />
       <_WasmPropertyNames Include="WasmNativeStrip" />
       <_WasmPropertyNames Include="WasmNativeDebugSymbols" />

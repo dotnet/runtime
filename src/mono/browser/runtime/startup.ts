@@ -82,6 +82,10 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
+    const relaxedSimdConfigValue = runtimeHelpers.config.runtimeConfig?.runtimeOptions?.configProperties?.["System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"];
+    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableRelaxedSimd || relaxedSimdConfigValue === true || relaxedSimdConfigValue === "true") {
+        mono_assert(runtimeHelpers.featureWasmRelaxedSimd, "This browser/engine doesn't support WASM relaxed SIMD. Disable WasmEnableRelaxedSimd or use a compatible browser.");
+    }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
         mono_assert(runtimeHelpers.featureWasmFinalEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
