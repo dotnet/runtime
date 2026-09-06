@@ -53,6 +53,13 @@ public static class DiagnosticIds
     public const string TooManyGenericParameters = "ILA0033";
     public const string UnsupportedTlsData = "ILA0034";
     public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
+    public const string UnsupportedTlsData = "ILA0036";
+    public const string PseudoCustomAttributeInvalidTarget = "ILA0037";
+    public const string PseudoCustomAttributeInvalidValue = "ILA0038";
+    public const string PseudoCustomAttributeInvalidBlob = "ILA0039";
+    public const string PseudoCustomAttributeInvalidGuid = "ILA0040";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0041";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0042";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -91,4 +98,10 @@ internal static class DiagnosticMessageTemplates
     public const string TooManyGenericParameters = "Generic parameter count {0} exceeds the maximum of {1}";
     public const string UnsupportedTlsData = "TLS RVA data declarations are not supported";
     public const string GenericParameterConstraintOwnerOutOfRange = "Generic parameter constraint owner index {0} exceeds the maximum encodable generic parameter index of {1}";
+    public const string PseudoCustomAttributeInvalidTarget = "Custom attribute '{0}' cannot be applied to this target";
+    public const string PseudoCustomAttributeInvalidValue = "Custom attribute '{0}' has an invalid argument value";
+    public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
+    public const string PseudoCustomAttributeInvalidGuid = "Custom attribute '{0}' does not specify a valid GUID";
+    public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
+    public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
 }
