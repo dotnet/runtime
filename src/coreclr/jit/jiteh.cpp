@@ -989,6 +989,26 @@ void Compiler::ehUpdateLastBlocks(BasicBlock* oldLast, BasicBlock* newLast)
     }
 }
 
+//-----------------------------------------------------------------------------
+// ehUpdateLastTryBlocks: Update the end pointer of the try region containing 'oldTryLast',
+// as well as the end pointers of any parent try regions, to 'newTryLast'.
+//
+// Arguments:
+//    oldTryLast - The previous end block of the try region(s) to be updated
+//    newTryLast - The new end block
+//
+void Compiler::ehUpdateLastTryBlocks(BasicBlock* oldTryLast, BasicBlock* newTryLast)
+{
+    assert(oldTryLast->hasTryIndex() && BasicBlock::sameTryRegion(oldTryLast, newTryLast));
+    unsigned XTnum = oldTryLast->getTryIndex();
+    for (EHblkDsc* HBtab = ehGetDsc(XTnum); (XTnum < compHndBBtabCount) && (HBtab->ebdTryLast == oldTryLast);
+         XTnum++, HBtab++)
+    {
+        assert((XTnum == oldTryLast->getTryIndex()) || (ehGetDsc(XTnum - 1)->ebdEnclosingTryIndex == XTnum));
+        fgSetTryEnd(HBtab, newTryLast);
+    }
+}
+
 unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTryRegion)
 {
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
@@ -1271,16 +1291,8 @@ EHblkDsc* Compiler::ehFindEHblkDscById(unsigned short id)
 void Compiler::fgSetTryBeg(EHblkDsc* handlerTab, BasicBlock* newTryBeg)
 {
     assert(newTryBeg != nullptr);
-
-    // Check if we are going to change the existing value of endTryLast
-    //
-    if (handlerTab->ebdTryBeg != newTryBeg)
-    {
-        // Update the EH table with the newTryLast block
-        handlerTab->ebdTryBeg = newTryBeg;
-
-        JITDUMP("EH#%u: New first block of try: " FMT_BB "\n", ehGetIndex(handlerTab), handlerTab->ebdTryBeg->bbNum);
-    }
+    handlerTab->ebdTryBeg = newTryBeg;
+    JITDUMP("EH#%u: New first block of try: " FMT_BB "\n", ehGetIndex(handlerTab), newTryBeg->bbNum);
 }
 
 /*****************************************************************************
@@ -1290,22 +1302,8 @@ void Compiler::fgSetTryBeg(EHblkDsc* handlerTab, BasicBlock* newTryBeg)
 void Compiler::fgSetTryEnd(EHblkDsc* handlerTab, BasicBlock* newTryLast)
 {
     assert(newTryLast != nullptr);
-
-    //
-    // Check if we are going to change the existing value of endTryLast
-    //
-    if (handlerTab->ebdTryLast != newTryLast)
-    {
-        // Update the EH table with the newTryLast block
-        handlerTab->ebdTryLast = newTryLast;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("EH#%u: New last block of try: " FMT_BB "\n", ehGetIndex(handlerTab), newTryLast->bbNum);
-        }
-#endif // DEBUG
-    }
+    handlerTab->ebdTryLast = newTryLast;
+    JITDUMP("EH#%u: New last block of try: " FMT_BB "\n", ehGetIndex(handlerTab), newTryLast->bbNum);
 }
 
 /*****************************************************************************
@@ -1316,22 +1314,8 @@ void Compiler::fgSetTryEnd(EHblkDsc* handlerTab, BasicBlock* newTryLast)
 void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
 {
     assert(newHndLast != nullptr);
-
-    //
-    // Check if we are going to change the existing value of endHndLast
-    //
-    if (handlerTab->ebdHndLast != newHndLast)
-    {
-        // Update the EH table with the newHndLast block
-        handlerTab->ebdHndLast = newHndLast;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("EH#%u: New last block of handler: " FMT_BB "\n", ehGetIndex(handlerTab), newHndLast->bbNum);
-        }
-#endif // DEBUG
-    }
+    handlerTab->ebdHndLast = newHndLast;
+    JITDUMP("EH#%u: New last block of handler: " FMT_BB "\n", ehGetIndex(handlerTab), newHndLast->bbNum);
 }
 
 //-------------------------------------------------------------
