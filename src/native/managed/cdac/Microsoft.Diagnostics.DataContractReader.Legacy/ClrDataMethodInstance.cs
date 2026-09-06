@@ -354,6 +354,38 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         return hr;
     }
 
+    private static TargetPointer GetAddressForRelOffset(
+        TargetPointer hotStart,
+        uint hotSize,
+        TargetPointer coldStart,
+        uint coldSize,
+        uint relativeOffset)
+    {
+        if (relativeOffset < hotSize)
+            return hotStart + relativeOffset;
+
+        uint coldOffset = relativeOffset - hotSize;
+        if (coldStart == TargetPointer.Null || coldOffset >= coldSize)
+            throw new InvalidOperationException($"Relative offset {relativeOffset} is outside the method regions");
+
+        return coldStart + coldOffset;
+    }
+
+    private static TargetPointer GetEndAddressForRelOffset(
+        TargetPointer hotStart,
+        uint hotSize,
+        TargetPointer coldStart,
+        uint coldSize,
+        uint startRelativeOffset,
+        uint endRelativeOffset)
+    {
+        // Logical offsets are contiguous, but the physical hot and cold regions are not.
+        if (startRelativeOffset < hotSize && endRelativeOffset >= hotSize)
+            return hotStart + hotSize;
+
+        return GetAddressForRelOffset(hotStart, hotSize, coldStart, coldSize, endRelativeOffset);
+    }
+
     int IXCLRDataMethodInstance.GetAddressRangesByILOffset(
         uint ilOffset,
         uint rangesLen,
@@ -372,9 +404,18 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
             TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
             TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
-            TargetPointer codeStart = pCode.ToAddress(_target);
             if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+            CodeBlockHandle codeBlockHandle = executionManager.GetCodeBlockHandle(pCode)
+                ?? throw new InvalidOperationException("Unable to get code block information");
+            TargetPointer hotStart = executionManager.GetStartAddress(codeBlockHandle);
+            executionManager.GetMethodRegionInfo(
+                codeBlockHandle,
+                out uint hotSize,
+                out TargetPointer coldStart,
+                out uint coldSize);
 
             IEnumerable<OffsetMapping> mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
@@ -393,10 +434,17 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 if (addressRanges is not null && hits < addressRanges.Length)
                 {
                     uint nativeEndOffset = i == map.Count - 1 ? 0 : map[i + 1].NativeOffset;
-                    addressRanges[hits].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
+                    addressRanges[hits].startAddress =
+                        GetAddressForRelOffset(hotStart, hotSize, coldStart, coldSize, entry.NativeOffset).ToClrDataAddress(_target);
                     addressRanges[hits].endAddress = entry.ILOffset == (uint)CLRDataILOffsetMarker.CLRDATA_IL_OFFSET_EPILOG && nativeEndOffset == 0
                         ? default
-                        : new TargetPointer(codeStart + nativeEndOffset).ToClrDataAddress(_target);
+                        : GetEndAddressForRelOffset(
+                            hotStart,
+                            hotSize,
+                            coldStart,
+                            coldSize,
+                            entry.NativeOffset,
+                            nativeEndOffset).ToClrDataAddress(_target);
                 }
 
                 hits++;
@@ -462,12 +510,21 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         {
             TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
             TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
-            TargetPointer codeStart = pCode.ToAddress(_target);
 
             // No debug info exists at all (e.g. ILStubs).
             // This matches the DAC where GetBoundariesAndVars returns FALSE -> E_FAIL.
             if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+            CodeBlockHandle codeBlockHandle = executionManager.GetCodeBlockHandle(pCode)
+                ?? throw new InvalidOperationException("Unable to get code block information");
+            TargetPointer hotStart = executionManager.GetStartAddress(codeBlockHandle);
+            executionManager.GetMethodRegionInfo(
+                codeBlockHandle,
+                out uint hotSize,
+                out TargetPointer coldStart,
+                out uint coldSize);
 
             IEnumerable<OffsetMapping> mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
@@ -489,8 +546,16 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                     if (outputMapIndex < maps.Length)
                     {
                         maps[outputMapIndex].ilOffset = entry.ILOffset;
-                        maps[outputMapIndex].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
-                        maps[outputMapIndex].endAddress = new TargetPointer(codeStart + nativeEndOffset).ToClrDataAddress(_target);
+                        maps[outputMapIndex].startAddress =
+                            GetAddressForRelOffset(hotStart, hotSize, coldStart, coldSize, entry.NativeOffset).ToClrDataAddress(_target);
+                        maps[outputMapIndex].endAddress =
+                            GetEndAddressForRelOffset(
+                                hotStart,
+                                hotSize,
+                                coldStart,
+                                coldSize,
+                                entry.NativeOffset,
+                                nativeEndOffset).ToClrDataAddress(_target);
                         maps[outputMapIndex].type = ClrDataSourceType.CLRDATA_SOURCE_TYPE_INVALID;
 
                         outputMapIndex++;

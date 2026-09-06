@@ -597,6 +597,19 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     }
 #endif // FEATURE_CFI_SUPPORT
 
+    bool useColdFuncletHostRecord = false;
+
+#if defined(TARGET_ARM64)
+    // A funclet whose code is entirely in the cold section has its real prolog there,
+    // so its first unwind record must remain a host record. Only secondary fragments
+    // of the funclet should use phantom prologs.
+    useColdFuncletHostRecord = isFunclet && funcHasColdSection;
+    if (useColdFuncletHostRecord)
+    {
+        funcHasColdSection = false;
+    }
+#endif // TARGET_ARM64
+
     // If there is cold code, split the unwind data between the hot section and the
     // cold section. This needs to be done before we split into fragments, as each
     // of the hot and cold sections can have multiple fragments.
@@ -617,10 +630,11 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     // The ARM Exception Data specification "Function Fragments" section describes this.
     func->uwi.Split();
 
-    // If the function is split, EH funclets are always cold; skip this call for cold funclets.
+    // ARM32 represents a cold funclet through uwiCold below. ARM64 keeps the original
+    // funclet unwind info as the cold host record.
     if (!isFunclet || !funcHasColdSection)
     {
-        func->uwi.Reserve(isFunclet, true);
+        func->uwi.Reserve(isFunclet, !useColdFuncletHostRecord);
     }
 
     // After the hot section, split and reserve the cold section
@@ -663,10 +677,22 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     }
 #endif // FEATURE_CFI_SUPPORT
 
-    // If the function is split, EH funclets are always cold; skip this call for cold funclets.
+    bool useColdFuncletHostRecord = false;
+
+#if defined(TARGET_ARM64)
+    useColdFuncletHostRecord = (func->funKind != FUNC_ROOT) && (fgFirstColdBlock != nullptr);
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting())
+    {
+        useColdFuncletHostRecord = false;
+    }
+#endif // DEBUG
+#endif // TARGET_ARM64
+
+    // Allocate the root or the original unwind info for a hot funclet or ARM64 cold funclet host.
     if ((func->funKind == FUNC_ROOT) || (func->uwiCold == NULL))
     {
-        func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
+        func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, !useColdFuncletHostRecord);
     }
 
     if (func->uwiCold != NULL)
@@ -1808,7 +1834,7 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 // expand!) during issuing (although this is extremely rare in any case, and may not
 // actually occur on ARM), so we don't finalize actual sizes or offsets.
 //
-// ARM64 has very similar limitations, except functions can be up to 1MB. TODO-ARM64-Bug?: make sure this works!
+// ARM64 has very similar limitations, except functions can be up to 1MB.
 //
 // We don't split any prolog or epilog. Ideally, we might not split an instruction,
 // although that doesn't matter because the unwind at any point would still be

@@ -8,12 +8,10 @@ improving application performance via fewer instruction cache misses, less OS pa
 
 ## Background
 
-The JIT previously supported hot/cold splitting for AOT-compiled NGEN images in .NET Framework. With Crossgen2 support
-[in progress](https://github.com/dotnet/runtimelab/tree/feature/hot-cold-splitting) (and no existing support for
-splitting dynamically-generated code), JIT support has not been tested since retiring .NET Framework -- thus, there
-are likely regressions. Furthermore, the JIT never supported splitting functions with certain features, like exception
-handling or switch tables. Finally, with ARM64 code generation being a newer addition to the JIT, hot/cold splitting
-was never implemented for the architecture. These limitations significantly inhibit the applicability of hot/cold splitting.
+The JIT previously supported hot/cold splitting for AOT-compiled NGEN images in .NET Framework. After NGEN was retired,
+the feature required renewed JIT and runtime work to support dynamically-generated code and newer architectures.
+Functions containing switch tables or EH filters remain unsupported, but dynamically-compiled CoreCLR code can split
+root bodies and EH funclets on x64 and ARM64.
 
 The below sections describe various improvements made to the JIT's hot/cold splitting support to remove such limitations.
 
@@ -96,18 +94,23 @@ instruction. (Final sequence: `adrp + ldr + fmov`)
 Aside from these pseudo-instructions, hot/cold splitting required a few other tweaks to ARM64 code generation:
 * When emitting long jumps between hot/cold sections, the JIT reports the target's relocation to the host with the
 relocation type `IMAGE_REL_ARM64_BRANCH26`.
-* While enabling fake-splitting did not require changes here, it is worth noting an importance difference in unwind info
-generation on x64 versus ARM64. On x64, the JIT emits the full unwind info for a hot function fragment, and emits
-"chained" unwind info for the cold function fragment. This chained unwind info does not contain any unwind codes, but
-instead points to the hot fragment's unwind info. When unwinding, the VM will use this chained info to find the relevant
-unwind info.
+* ARM64 unwind data uses a different form of chaining than AMD64. An AMD64 cold root record uses
+`UNW_FLAG_CHAININFO` to point at the hot root record. An ARM64 secondary function fragment instead has its own
+`.xdata`; its phantom prolog begins with `end_c`, copies the host record's prolog operations, and terminates with
+`end`. The `end_c` opcode ends the chained scope, not the complete unwind sequence.
 
-There is no concept of chained unwind info on ARM64; instead, the JIT generates unwind info for each function fragment,
-regardless of its hot/cold status. While this should not have any immediate implications for JIT work around hot/cold
-splitting, this does affect the feature's implementation in Crossgen2 and the VM. On x64, the Crossgen2 splitting
-prototype uses chained unwind info to differentiate between cold main body fragments and cold EH funclets (see below for
-details on EH splitting). This comparison is not possible on ARM64 -- the JIT may have to pass more information to the
-host when generating unwind info on ARM64 to indicate if a cold fragment is a funclet.
+For dynamically-compiled ARM64 code, the JIT and VM publish every hot and cold `RUNTIME_FUNCTION` record:
+
+* The first hot root record is a host record containing the real root prolog.
+* Cold root records and later size-based root fragments are secondary records whose phantom prologs begin with
+  `end_c`. Walking backward through the function table finds the hot root host record.
+* A wholly cold EH funclet starts with its own host record because its real prolog is emitted in the cold section.
+* Only later size-based fragments of that funclet use `end_c`. Walking backward from such a fragment therefore finds
+  the cold funclet host rather than the hot root.
+
+This format-derived distinction lets the VM identify root fragments and funclets without extending the JIT-EE
+interface or storing an additional unwind-record kind. Runtime method-region and debugger mappings translate physical
+cold-code addresses back into the logical contiguous hot-plus-cold method offset space.
 
 ### PRs
 
@@ -162,12 +165,7 @@ key metrics could include number of hot/cold page touches, number of jumps to th
 instruction cache misses, etc. It is important that such profiling utilizes PGO data, as the JIT's splitting heuristics
 are quite sparse, and may not be useful for measuring performance.
 * Enable hot/cold splitting of functions with switch tables.
-* Work with Crossgen2 prototype to support hot/cold splitting on ARM64.
-  * This task will specifically require work in the JIT for differentiating cold funclets from regular cold code.
-On x64, Crossgen2 and the VM use chained unwind info (or lack thereof) to differentiate the two. Since there is no
-concept of chained unwind info on ARM64, the JIT may need to report more information to the host.
-* Support hot/cold splitting of dynamically-compiled code.
-  * Since the JIT has historically never supported splitting jitted code, it may be interesting to measure the overhead
-of performing hot/cold splitting during runtime.
+* Work with Crossgen2 to support hot/cold splitting on ARM64.
+* Continue measuring the runtime and memory overhead of splitting dynamically-compiled code.
 * Support hot/cold splitting of NativeAOT code.
   * Most of the work here will likely involve generating unwind info correctly.
