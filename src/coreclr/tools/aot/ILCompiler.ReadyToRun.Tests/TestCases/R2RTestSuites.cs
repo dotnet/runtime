@@ -3,6 +3,7 @@
 
 extern alias crossgen2;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -153,6 +154,141 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmVirtualDispatch()
+    {
+        var wasmVirtualDispatch = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmVirtualDispatch),
+            SourceResourceNames = ["Webcil/WasmVirtualDispatch.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmVirtualDispatch),
+            [
+                new(nameof(WasmVirtualDispatch), [new CrossgenAssembly(wasmVirtualDispatch)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            ReadOnlySpan<byte> image = reader.Image;
+            IEnumerable<ReadyToRunImportSection.ImportSectionEntry> importEntries =
+                reader.ImportSections
+                    .Where(section => section.Entries is not null)
+                    .SelectMany(section => section.Entries);
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+
+            // Verify that eligible version-resilient callvirt sites use dispatch imports. This covers
+            // virtual and nonvirtual methods, methods on generic types, runtime-context lookups, and
+            // distinct Wasm calling convention shapes.
+            ReadyToRunImportSection dispatchImports = Assert.Single(
+                reader.ImportSections,
+                section => section.Type == ReadyToRunImportSectionType.StubDispatch &&
+                    section.EntrySize == sizeof(uint) &&
+                    section.Entries.Any(entry => entry.Signature?.ToString(signatureFormattingOptions)
+                        .Contains("WasmVirtualDispatchBase.Transform", StringComparison.Ordinal) == true));
+            Assert.Equal(7, dispatchImports.Entries.Count);
+
+            List<string> dispatchSignatures = dispatchImports.Entries
+                .Select(entry => entry.Signature.ToString(signatureFormattingOptions))
+                .ToList();
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmVirtualDispatchBase.Transform", StringComparison.Ordinal));
+            Assert.Equal(2, dispatchSignatures.Count(signature =>
+                signature.Contains("WasmGenericVirtualDispatchBase", StringComparison.Ordinal)));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmCallingConventionDispatchBase.TransformPointer", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmCallingConventionDispatchBase.TransformStruct", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("System.Object.ToString", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("System.Collections.Generic.List", StringComparison.Ordinal) &&
+                signature.Contains("get_Count", StringComparison.Ordinal));
+            Assert.DoesNotContain(dispatchSignatures, signature =>
+                signature.Contains("WasmGenericMethodDispatchBase.Transform", StringComparison.Ordinal));
+
+            // Verify that dispatch imports reuse delay-load code from a regular method import when
+            // their rich import-thunk signatures are identical.
+            ReadyToRunImportSection methodImports = Assert.Single(
+                reader.ImportSections,
+                section => section.Type == ReadyToRunImportSectionType.StubDispatch &&
+                    section.EntrySize == sizeof(uint) &&
+                    section.Entries.Any(entry => entry.Signature?.ToString(signatureFormattingOptions)
+                        .Contains("WasmVirtualDispatchBase.DirectTransform", StringComparison.Ordinal) == true));
+            ReadyToRunImportSection.ImportSectionEntry methodImport = Assert.Single(
+                methodImports.Entries,
+                entry => entry.Signature?.ToString(signatureFormattingOptions)
+                    .Contains("WasmVirtualDispatchBase.DirectTransform", StringComparison.Ordinal) == true);
+            uint methodImportThunk = GetImportThunkTableIndex(reader, methodImport);
+            Assert.All(
+                dispatchImports.Entries.Where(entry =>
+                {
+                    string? signature = entry.Signature?.ToString(signatureFormattingOptions);
+                    return signature?.Contains(".Transform(", StringComparison.Ordinal) == true ||
+                        signature?.Contains("TransformPointer", StringComparison.Ordinal) == true;
+                }),
+                entry => Assert.Equal(methodImportThunk, GetImportThunkTableIndex(reader, entry)));
+
+            // Verify that virtual dispatch thunks are registered by their canonical Wasm signatures.
+            // ABI-equivalent managed signatures share Viiiii, while ToString requires Viiii.
+            ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
+                importEntries,
+                entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
+
+            int offset = reader.GetOffset((int)injectStringThunks.SignatureRVA);
+            Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
+
+            ReadOnlySpan<byte> thunkKey = "Viiiii"u8;
+            ReadOnlySpan<byte> toStringThunkKey = "Viiii"u8;
+            int matchingThunkKeyCount = 0;
+            int virtualThunkKeyCount = 0;
+            int toStringThunkKeyCount = 0;
+            while (image[offset] != 0)
+            {
+                int terminator = image[offset..].IndexOf((byte)0);
+                Assert.True(terminator >= 0, "Unterminated InjectStringThunks key.");
+                ReadOnlySpan<byte> candidateKey = image.Slice(offset, terminator);
+                if (candidateKey[0] == (byte)'V')
+                {
+                    virtualThunkKeyCount++;
+                    if (candidateKey.SequenceEqual(thunkKey))
+                    {
+                        matchingThunkKeyCount++;
+                    }
+                    else if (candidateKey.SequenceEqual(toStringThunkKey))
+                    {
+                        toStringThunkKeyCount++;
+                    }
+                    else
+                    {
+                        Assert.Fail($"Unexpected virtual dispatch thunk key '{System.Text.Encoding.UTF8.GetString(candidateKey)}'.");
+                    }
+                }
+
+                offset += terminator + 1 + sizeof(uint);
+            }
+
+            Assert.Equal(2, virtualThunkKeyCount);
+            Assert.Equal(1, matchingThunkKeyCount);
+            Assert.Equal(1, toStringThunkKeyCount);
+
+            static uint GetImportThunkTableIndex(
+                ReadyToRunReader reader,
+                ReadyToRunImportSection.ImportSectionEntry entry)
+            {
+                int portableEntrypointOffset = reader.GetOffset(checked((int)entry.Section));
+                return BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(portableEntrypointOffset, sizeof(uint)));
+            }
         }
     }
 
