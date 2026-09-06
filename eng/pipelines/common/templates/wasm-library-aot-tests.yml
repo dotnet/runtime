@@ -11,6 +11,7 @@ parameters:
   shouldRunSmokeOnly: false
   shouldContinueOnError: false
   scenarios: []
+  useHelixMonitor: false
 
 jobs:
 
@@ -31,6 +32,7 @@ jobs:
       alwaysRun: ${{ parameters.alwaysRun }}
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       scenarios:
         - ${{ if ne(parameters.scenarios[0], '') }}:
           - ${{ parameters.scenarios }}

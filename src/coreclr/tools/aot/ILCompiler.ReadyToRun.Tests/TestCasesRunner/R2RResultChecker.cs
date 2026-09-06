@@ -4,7 +4,6 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -34,54 +33,6 @@ internal static class R2RAssert
             methods.Add(instanceMethod.Method);
 
         return methods;
-    }
-
-    /// <summary>
-    /// Returns true if any WASM function body in the image contains a <c>global.get</c> of the
-    /// given ABI well-known-global index, emitted as a maximally padded 5-byte
-    /// <c>WASM_GLOBAL_INDEX_LEB</c> reference (the <c>global.get</c> opcode <c>0x23</c> followed
-    /// by the 5-byte padded ULEB128 of the index).
-    /// </summary>
-    /// <remarks>
-    /// The wasm JIT references only the three ABI well-known globals (0 = stack pointer, 1 = image base,
-    /// 2 = table base) in this padded form; ordinary <c>global.get</c> instructions use the minimal
-    /// LEB128 encoding. The R2R object writer self-resolves the relocation in place, so after
-    /// compilation the padded slot holds the fixed index, e.g. image base -&gt;
-    /// <c>23 81 80 80 80 00</c> and table base -&gt; <c>23 82 80 80 80 00</c>. This is a regression
-    /// smoke check for that self-resolution: it scans raw instruction bytes and does not decode
-    /// wasm instruction boundaries.
-    /// </remarks>
-    public static bool WasmImageContainsWellKnownGlobalGet(WebcilImageReader reader, int wellKnownGlobalIndex)
-    {
-        // The well-known globals are 0/1/2, which all fit in a single ULEB128 payload byte. The padded
-        // encoding below only writes that single payload byte, so it is correct for indices <= 0x7F.
-        Debug.Assert((uint)wellKnownGlobalIndex <= 0x7F,
-            $"Only single-byte well-known-global indices are supported; got {wellKnownGlobalIndex}.");
-
-        // global.get (0x23) followed by the 5-byte padded ULEB128 of wellKnownGlobalIndex. Padding sets
-        // the continuation bit on the first four bytes and clears the last, so a small index N
-        // encodes as (N | 0x80), 0x80, 0x80, 0x80, 0x00.
-        Span<byte> pattern = stackalloc byte[6];
-        pattern[0] = 0x23;
-        pattern[1] = (byte)((wellKnownGlobalIndex & 0x7F) | 0x80);
-        pattern[2] = 0x80;
-        pattern[3] = 0x80;
-        pattern[4] = 0x80;
-        pattern[5] = 0x00;
-
-        for (int functionIndex = 0; ; functionIndex++)
-        {
-            WebcilImageReader.WasmFunctionInfo? body = reader.GetWasmFunctionBody(functionIndex);
-            if (body is null)
-                break;
-
-            ReadOnlySpan<byte> instructions = body.Value.Image.AsSpan().Slice(
-                body.Value.InstructionOffset, body.Value.InstructionLength);
-            if (instructions.IndexOf(pattern) >= 0)
-                return true;
-        }
-
-        return false;
     }
 
     /// <summary>
@@ -955,6 +906,47 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if the global eager baseline <see cref="ReadyToRunFixupKind.Check_InstructionSetSupport"/>
+    /// fixup does not assert that any instruction set must be absent at runtime ("must be absent" entries render
+    /// with a <c>-</c> suffix; supported entries use <c>+</c>). Targets that cannot generate code at runtime must
+    /// not encode these assertions, as a failing eager fixup fatally disables all ReadyToRun code with no JIT fallback.
+    /// </summary>
+    public static bool EagerInstructionSetSupportHasNoUnsupportedEntries(ReadyToRunReader reader, out string diagnostic)
+    {
+        var options = new SignatureFormattingOptions();
+        var signatures = new List<string>();
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if (section.Entries is null)
+                continue;
+
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                if (entry.Signature is not null && entry.Signature.FixupKind == ReadyToRunFixupKind.Check_InstructionSetSupport)
+                    signatures.Add(entry.Signature.ToString(options));
+            }
+        }
+
+        if (signatures.Count == 0)
+        {
+            diagnostic = "Expected a global Check_InstructionSetSupport eager fixup, but none was found.";
+            return false;
+        }
+
+        var withUnsupported = signatures.Where(s => s.Contains('-')).ToList();
+        if (withUnsupported.Count > 0)
+        {
+            diagnostic =
+                "Global Check_InstructionSetSupport fixup must not assert any instruction set is absent " +
+                $"on no-JIT targets, but found: [{string.Join(", ", withUnsupported)}]";
+            return false;
+        }
+
+        diagnostic = $"Global Check_InstructionSetSupport fixup asserts only supported instruction sets: [{string.Join(", ", signatures)}]";
+        return true;
+    }
+
+    /// <summary>
     /// Returns true if the R2R image contains at least one fixup of the given kind.
     /// </summary>
     public static bool HasFixupKind(ReadyToRunReader reader, ReadyToRunFixupKind kind, out string diagnostic)
@@ -1078,10 +1070,21 @@ internal static class R2RAssert
     /// Optionally checks method-level generic instantiation args.
     /// </summary>
     public static bool HasCompiledMethod(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: false, out diagnostic);
+
+    /// <summary>
+    /// Returns true if the image contains a precompiled unboxing thunk with a body for a value type
+    /// method.
+    /// </summary>
+    public static bool HasUnboxingThunk(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: true, out diagnostic);
+
+    private static bool HasCompiledMethodCore(ReadyToRunReader reader, string declaringType, string methodName, string[]? instanceArgs, bool unboxingThunk, out string diagnostic)
     {
         List<ReadyToRunMethod> allMethods = GetAllMethods(reader);
         List<ReadyToRunMethod> matchingMethods = allMethods
             .Where(m => m.DeclaringType == declaringType && m.Name == methodName)
+            .Where(m => m.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal) == unboxingThunk)
             .Where(m =>
             {
                 if (instanceArgs is null)
@@ -1100,6 +1103,8 @@ internal static class R2RAssert
         string expected = instanceArgs is null
             ? $"'{declaringType}.{methodName}'"
             : $"'{declaringType}.{methodName}<{string.Join(",", instanceArgs)}>'";
+        if (unboxingThunk)
+            expected = $"unboxing thunk for {expected}";
 
         if (matchingMethods.Count > 0)
         {
@@ -1109,7 +1114,7 @@ internal static class R2RAssert
 
         diagnostic =
             $"Expected compiled method {expected} not found.\n" +
-            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name}"))}";
+            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name} {m.SignatureString}"))}";
         return false;
     }
 
@@ -1194,11 +1199,15 @@ internal static class R2RAssert
 /// </summary>
 internal sealed class SimpleAssemblyResolver : IAssemblyResolver
 {
-    private readonly TestPaths _paths;
+    private readonly Dictionary<string, string> _assemblyPaths;
 
-    public SimpleAssemblyResolver(TestPaths paths)
+    public SimpleAssemblyResolver(IEnumerable<string> referencePaths)
     {
-        _paths = paths;
+        _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string referencePath in referencePaths)
+        {
+            _assemblyPaths[Path.GetFileNameWithoutExtension(referencePath)] = referencePath;
+        }
     }
 
     public IAssemblyMetadata? FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
@@ -1217,10 +1226,12 @@ internal sealed class SimpleAssemblyResolver : IAssemblyResolver
 
         string candidate = Path.Combine(dir, simpleName + ".dll");
         if (!File.Exists(candidate))
-            candidate = Path.Combine(_paths.RuntimePackDir, simpleName + ".dll");
+        {
+            if (!_assemblyPaths.TryGetValue(simpleName, out string? referencePath) || referencePath is null)
+                return null;
 
-        if (!File.Exists(candidate))
-            return null;
+            candidate = referencePath;
+        }
 
         return new SimpleAssemblyMetadata(candidate);
     }

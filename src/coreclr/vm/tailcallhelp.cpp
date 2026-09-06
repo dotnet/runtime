@@ -21,7 +21,7 @@ FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
 }
 FCIMPLEND
 
-extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size)
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -118,7 +118,6 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 

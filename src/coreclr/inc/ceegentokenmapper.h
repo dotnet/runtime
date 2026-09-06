@@ -60,7 +60,6 @@ public:
     virtual ULONG STDMETHODCALLTYPE Release()
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
         SUPPORTS_DAC_HOST_ONLY;
 
         ULONG cRefs = --m_cRefs;

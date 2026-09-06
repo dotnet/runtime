@@ -189,7 +189,6 @@ inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     return GetGCSafeMethodTable()->GetArrayElementTypeHandle();
@@ -227,7 +226,6 @@ inline TypeHandle Object::GetTypeHandle()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END

@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ProbeExtensionResult))]
 internal sealed partial class ProbeExtensionResult : IData<ProbeExtensionResult>
 {
-    [Field] public int Type { get; }
+    [Field] public partial int Type { get; }
 }

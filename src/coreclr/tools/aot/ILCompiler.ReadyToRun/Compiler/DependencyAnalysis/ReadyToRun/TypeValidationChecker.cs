@@ -73,7 +73,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Spot check that the system module ALWAYS succeeds
                 if (failAtEnd)
                 {
-                    throw new InternalCompilerErrorException("System module failed to validate all types");
+                    throw new InternalCompilerErrorException("System module failed to validate all types:" + Environment.NewLine
+                        + string.Join(Environment.NewLine, _typeLoadValidationErrors.Select(e => e.type.ToString())));
                 }
             }
 #endif
@@ -309,7 +310,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
 
                     // Validate that generic variance is properly respected in method signatures
-                    if (type.IsInterface && method.IsVirtual && !method.Signature.IsStatic && type.HasInstantiation)
+                    if (type.IsInterface && type.HasInstantiation && (method.IsVirtual || !method.Signature.IsStatic))
                     {
                         if (!ValidateVarianceInSignature(type.Instantiation, method.Signature, Internal.TypeSystem.GenericVariance.Covariant, Internal.TypeSystem.GenericVariance.Contravariant))
                         {
@@ -340,18 +341,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 // Generic class special rules
                 // Validate that a generic class cannot be a ComImport class, or a ComEventInterface class -- UNIMPLEMENTED
-
-                foreach (var genericParameterType in type.Instantiation)
-                {
-                    foreach (var constraint in ((GenericParameterDesc)genericParameterType).TypeConstraints)
-                    {
-                        if (!ValidateVarianceInType(type.Instantiation, constraint, Internal.TypeSystem.GenericVariance.Contravariant))
-                        {
-                            AddTypeValidationError(type, $"'{genericParameterType}' has invalid variance in generic parameter constraint {constraint}");
-                            return false;
-                        }
-                    }
-                }
+                // A generic type's own parameter constraints have no variance restrictions (ECMA-335 II.9.7).
 
                 // Validate that generic variance is properly respected in interface signatures
                 if (type.HasInstantiation && type.IsInterface)

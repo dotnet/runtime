@@ -208,7 +208,6 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
 
         // The member info must have been initialized before this is called.
         PRECONDITION(TRUE == m_bInitialized);
@@ -386,23 +385,22 @@ void DispatchMemberInfo::MarshalReturnValueManagedToNative(OBJECTREF *pSrcObj, V
 
 ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, ComMTMemberInfoMap *pMemberMap)
 {
-    CONTRACT (ComMTMethodProps*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(MemberInfoObj != NULL);
         PRECONDITION(CheckPointer(pMemberMap, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DISPID DispId = DISPID_UNKNOWN;
     ComMTMethodProps *pMemberProps = NULL;
 
     // If we don't have a member map then we cannot retrieve properties for the member.
     if (!pMemberMap)
-        RETURN NULL;
+        return NULL;
 
     // Get the member's properties.
     struct { OBJECTREF MemberInfoObj; REFLECTMODULEBASEREF module; } gc;
@@ -420,7 +418,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             {
                 // We don't expose runtime-async methods via IDispatch.
                 if (pMeth->IsAsyncMethod())
-                    RETURN NULL;
+                    return NULL;
 
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
             }
@@ -444,7 +442,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
     }
     GCPROTECT_END();
 
-    RETURN pMemberProps;
+    return pMemberProps;
 }
 
 DISPID DispatchMemberInfo::GetMemberDispId(OBJECTREF MemberInfoObj, ComMTMemberInfoMap *pMemberMap)
@@ -474,17 +472,15 @@ DISPID DispatchMemberInfo::GetMemberDispId(OBJECTREF MemberInfoObj, ComMTMemberI
 
 LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInfoMap *pMemberMap)
 {
-    CONTRACT (LPWSTR)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(MemberInfoObj != NULL);
         PRECONDITION(CheckPointer(pMemberMap, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     NewArrayHolder<WCHAR> strMemberName = NULL;
     ComMTMethodProps *pMemberProps = NULL;
@@ -521,7 +517,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
     GCPROTECT_END();
 
     strMemberName.SuppressRelease();
-    RETURN strMemberName;
+    return strMemberName;
 }
 
 void DispatchMemberInfo::DetermineMemberType()
@@ -880,7 +876,6 @@ void DispatchMemberInfo::SetUpDispParamAttributes(int iParam, MarshalInfo* Info)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(Info));
     }
     CONTRACTL_END;
@@ -949,19 +944,18 @@ DispatchInfo::~DispatchInfo()
 
 DispatchMemberInfo* DispatchInfo::FindMember(DISPID DispID)
 {
-    CONTRACT (DispatchMemberInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // We need to special case DISPID_UNKNOWN and -2 because the hashtable cannot handle them.
     // This is OK since these are invalid DISPID's.
     if ((DispID == DISPID_UNKNOWN) || (DispID == -2))
-        RETURN NULL;
+        return NULL;
 
     // Lookup in the hashtable to find member with the specified DISPID. Note: this hash is unsynchronized, but LookupValueByUniqueKey
     // doesn't require synchronization.
@@ -973,24 +967,23 @@ DispatchMemberInfo* DispatchInfo::FindMember(DISPID DispID)
 
         pMemberInfo->EnsureInitialized();
 
-        RETURN pMemberInfo;
+        return pMemberInfo;
     }
     else
     {
-        RETURN NULL;
+        return NULL;
     }
 }
 
 DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensitive)
 {
-    CONTRACT (DispatchMemberInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     BOOL fFound = FALSE;
 
@@ -1010,7 +1003,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
                 // We have found the member, so ensure it is initialized and return it.
                 pCurrMemberInfo->EnsureInitialized();
 
-                RETURN pCurrMemberInfo;
+                return pCurrMemberInfo;
             }
         }
 
@@ -1019,27 +1012,25 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
     }
 
     // No member has been found with the corresponding name.
-    RETURN NULL;
+    return NULL;
 }
 
 // Helper method used to create DispatchMemberInfo's. This is only here because
 // we can't call new inside a method that has a EX_TRY statement.
 DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID dispID, SString& strMemberName, OBJECTREF memberInfoObj)
 {
-    CONTRACT (DispatchMemberInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, dispID, strMemberName);
     pInfo->SetHandle(AllocateHandle(memberInfoObj));
 
-    RETURN pInfo;
+    return pInfo;
 }
 
 // Used for cleanup of managed objects via custom marshalers. This class is stack-allocated
@@ -1116,7 +1107,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         // there are too many fields in pObjs, here I assume once one of them is
         // protected, the whole structure is protected.
         PRECONDITION(IsProtectedByGCFrame(&pObjs->MemberInfo));
@@ -1653,110 +1643,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
 
-void DispatchInfo::InvokeMemberDebuggerWrapper(
-                                      DispatchMemberInfo*   pDispMemberInfo,
-                                      InvokeObjects*        pObjs,
-                                      int                   NumParams,
-                                      int                   NumArgs,
-                                      int                   NumNamedArgs,
-                                      int&                  NumByrefArgs,
-                                      int&                  iSrcArg,
-                                      DISPID                id,
-                                      DISPPARAMS*           pdp,
-                                      VARIANT*              pVarRes,
-                                      WORD                  wFlags,
-                                      LCID                  lcid,
-                                      DISPID*               pSrcArgNames,
-                                      VARIANT*              pSrcArgs,
-                                      OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle,
-                                      int*                  pManagedMethodParamIndexMap,
-                                      VARIANT**             aByrefArgOleVariant,
-                                      Frame *               pFrame)
-
-{
-    // Use static contracts b/c we have SEH.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    // @todo - we have a PAL_TRY/PAL_EXCEPT here as a general (cross-platform) way to get a 1st-pass
-    // filter. If that's bad perf, we could inline an FS:0 handler for x86-only; and then inline
-    // both this wrapper and the main body.
-
-    struct Param : public NotifyOfCHFFilterWrapperParam
-    {
-        DispatchInfo*         pThis;
-        DispatchMemberInfo*   pDispMemberInfo;
-        InvokeObjects*        pObjs;
-        int                   NumParams;
-        int                   NumArgs;
-        int                   NumNamedArgs;
-        int&                  NumByrefArgs;
-        int&                  iSrcArg;
-        DISPID                id;
-        DISPPARAMS*           pdp;
-        VARIANT*              pVarRes;
-        WORD                  wFlags;
-        LCID                  lcid;
-        DISPID*               pSrcArgNames;
-        VARIANT*              pSrcArgs;
-        OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle;
-        int*                  pManagedMethodParamIndexMap;
-        VARIANT**             aByrefArgOleVariant;
-
-        Param(int& _NumByrefArgs, int& _iSrcArg)
-            : NumByrefArgs(_NumByrefArgs), iSrcArg(_iSrcArg)
-        {}
-    } param(NumByrefArgs, iSrcArg);
-
-    param.pFrame = GetThread()->GetFrame(); // Inherited from NotifyOfCHFFilterWrapperParam
-    param.pThis = this;
-    param.pDispMemberInfo = pDispMemberInfo;
-    param.pObjs = pObjs;
-    param.NumParams = NumParams;
-    param.NumArgs = NumArgs;
-    param.NumNamedArgs = NumNamedArgs;
-    //param.NumByrefArgs = NumByrefArgs;
-    //param.iSrcArg = iSrcArg;
-    param.id = id;
-    param.pdp = pdp;
-    param.pVarRes = pVarRes;
-    param.wFlags = wFlags;
-    param.lcid = lcid;
-    param.pSrcArgNames = pSrcArgNames;
-    param.pSrcArgs = pSrcArgs;
-    param.aByrefStaticArrayBackupObjHandle = aByrefStaticArrayBackupObjHandle;
-    param.pManagedMethodParamIndexMap = pManagedMethodParamIndexMap;
-    param.aByrefArgOleVariant = aByrefArgOleVariant;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        pParam->pThis->InvokeMemberWorker(pParam->pDispMemberInfo,
-                                          pParam->pObjs,
-                                          pParam->NumParams,
-                                          pParam->NumArgs,
-                                          pParam->NumNamedArgs,
-                                          pParam->NumByrefArgs,
-                                          pParam->iSrcArg,
-                                          pParam->id,
-                                          pParam->pdp,
-                                          pParam->pVarRes,
-                                          pParam->wFlags,
-                                          pParam->lcid,
-                                          pParam->pSrcArgNames,
-                                          pParam->pSrcArgs,
-                                          pParam->aByrefStaticArrayBackupObjHandle,
-                                          pParam->pManagedMethodParamIndexMap,
-                                          pParam->aByrefArgOleVariant);
-    }
-    PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(false);
-    }
-    PAL_ENDTRY
-}
-
 // Helper method that invokes the member with the specified DISPID.
 HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr)
 {
@@ -1765,7 +1651,6 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSimpleWrap));
         PRECONDITION(CheckPointer(pdp, NULL_OK));
         PRECONDITION(CheckPointer(pVarRes, NULL_OK));
@@ -1980,31 +1865,25 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // Invoke the method.
         //
 
-        // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
-        // which may swallow managed exceptions.  The debugger needs this in order to send a
-        // CatchHandlerFound (CHF) notification.
-        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
-
         EX_TRY
         {
-            InvokeMemberDebuggerWrapper(pDispMemberInfo,
-                                        &Objs,
-                                        NumParams,
-                                        NumArgs,
-                                        NumNamedArgs,
-                                        NumByrefArgs,
-                                        iSrcArg,
-                                        id,
-                                        pdp,
-                                        pVarRes,
-                                        wFlags,
-                                        lcid,
-                                        pSrcArgNames,
-                                        pSrcArgs,
-                                        aByrefStaticArrayBackupObjHandle,
-                                        pManagedMethodParamIndexMap,
-                                        aByrefArgOleVariant,
-                                        &catchFrame);
+            InvokeMemberWorker(pDispMemberInfo,
+                               &Objs,
+                               NumParams,
+                               NumArgs,
+                               NumNamedArgs,
+                               NumByrefArgs,
+                               iSrcArg,
+                               id,
+                               pdp,
+                               pVarRes,
+                               wFlags,
+                               lcid,
+                               pSrcArgNames,
+                               pSrcArgs,
+                               aByrefStaticArrayBackupObjHandle,
+                               pManagedMethodParamIndexMap,
+                               aByrefArgOleVariant);
         }
         EX_CATCH
         {
@@ -2012,7 +1891,6 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
             RethrowTerminalExceptions();
         }
         EX_END_CATCH
-        catchFrame.Pop();
 
         if (pThrowable != NULL)
         {
@@ -2238,7 +2116,6 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMemberInfo, NULL_OK));
         PRECONDITION(CheckPointer(pSrcArgNames));
         PRECONDITION(pNamedParamArray != NULL);
@@ -2306,15 +2183,14 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
 
 VARIANT *DispatchInfo::RetrieveSrcVariant(VARIANT *pDispParamsVariant)
 {
-    CONTRACT (VARIANT*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pDispParamsVariant));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // For VB6 compatibility reasons, if the VARIANT is a VT_BYREF | VT_VARIANT that
     // contains another VARIANT with VT_BYREF | VT_VARIANT, then we need to extract the
@@ -2323,11 +2199,11 @@ VARIANT *DispatchInfo::RetrieveSrcVariant(VARIANT *pDispParamsVariant)
     if (V_VT(pDispParamsVariant) == (VT_VARIANT | VT_BYREF) &&
         (V_VT(V_VARIANTREF(pDispParamsVariant)) & (VT_TYPEMASK | VT_BYREF)) == (VT_VARIANT | VT_BYREF))
     {
-        RETURN (V_VARIANTREF(pDispParamsVariant));
+        return V_VARIANTREF(pDispParamsVariant);
     }
     else
     {
-        RETURN pDispParamsVariant;
+        return pDispParamsVariant;
     }
 }
 
@@ -2383,14 +2259,13 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
 MethodDesc* DispatchInfo::GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFieldInfoType)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     MethodDesc *pMD;
 
@@ -2407,19 +2282,18 @@ MethodDesc* DispatchInfo::GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFi
     _ASSERTE(pMD && "Unable to find specified FieldInfo method");
 
     // Return the specified method desc.
-    RETURN pMD;
+    return pMD;
 }
 
 MethodDesc* DispatchInfo::GetPropertyInfoMD(BinderMethodID Method, TypeHandle hndPropInfoType)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     MethodDesc *pMD;
 
@@ -2436,19 +2310,18 @@ MethodDesc* DispatchInfo::GetPropertyInfoMD(BinderMethodID Method, TypeHandle hn
     _ASSERTE(pMD && "Unable to find specified PropertyInfo method");
 
     // Return the specified method desc.
-    RETURN pMD;
+    return pMD;
 }
 
 MethodDesc* DispatchInfo::GetMethodInfoMD(BinderMethodID Method, TypeHandle hndMethodInfoType)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     MethodDesc *pMD;
 
@@ -2465,25 +2338,24 @@ MethodDesc* DispatchInfo::GetMethodInfoMD(BinderMethodID Method, TypeHandle hndM
     _ASSERTE(pMD && "Unable to find specified MethodInfo method");
 
     // Return the specified method desc.
-    RETURN pMD;
+    return pMD;
 }
 
 MethodDesc* DispatchInfo::GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvider)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable *pMT = hndCustomAttrProvider.AsMethodTable();
     MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(METHOD__ICUSTOM_ATTR_PROVIDER__GET_CUSTOM_ATTRIBUTES), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
-    RETURN pMD;
+    return pMD;
 }
 
 // This method synchronizes the DispatchInfo's members with the ones in the method tables type.
@@ -2514,13 +2386,12 @@ BOOL DispatchInfo::SynchWithManagedView()
     // Determine if this is the first time we synch.
     BOOL bFirstSynch = (m_pFirstMemberInfo == NULL);
 
+    GCX_PREEMP();
+
     // This method needs to be synchronized to make sure two threads don't try and
     // add members at the same time.
     CrstHolder ch(&m_lock);
     {
-        // Make sure we switch to cooperative mode before we start.
-        GCX_COOP();
-
         // Go through the list of member info's and find the end.
         DispatchMemberInfo **ppNextMember = &m_pFirstMemberInfo;
         while (*ppNextMember)
@@ -2528,6 +2399,9 @@ BOOL DispatchInfo::SynchWithManagedView()
 
         // Retrieve the member info map.
         pMemberMap = GetMemberInfoMap();
+
+        // Make sure we switch to cooperative mode before we start.
+        GCX_COOP();
 
         for (int cPhase = 0; cPhase < 3; cPhase++)
         {
@@ -2670,7 +2544,6 @@ OBJECTREF DispatchInfo::GetOleAutBinder()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2803,16 +2676,15 @@ PTRARRAYREF DispatchInfo::RetrieveMethList()
 // Virtual method to retrieve the InvokeMember method desc.
 MethodDesc* DispatchInfo::GetInvokeMemberMD()
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN CoreLibBinder::GetMethod(METHOD__CLASS__INVOKE_MEMBER);
+    return CoreLibBinder::GetMethod(METHOD__CLASS__INVOKE_MEMBER);
 }
 
 // Virtual method to retrieve the object associated with this DispatchInfo that
@@ -2833,16 +2705,13 @@ OBJECTREF DispatchInfo::GetReflectionObject()
 // Virtual method to retrieve the member info map.
 ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
 {
-    CONTRACT (ComMTMemberInfoMap*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
+        MODE_PREEMPTIVE;
     }
-    CONTRACT_END;
-
+    CONTRACTL_END;
 
     // Create the member info map.
     NewHolder<ComMTMemberInfoMap> pMemberInfoMap (new ComMTMemberInfoMap(m_pMT));
@@ -2851,7 +2720,7 @@ ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
     pMemberInfoMap->Init(sizeof(void*));
 
     pMemberInfoMap.SuppressRelease();
-    RETURN pMemberInfoMap;
+    return pMemberInfoMap;
 }
 
 // Helper function to fill in an EXCEPINFO for an InvocationException.
@@ -3004,40 +2873,38 @@ DispatchExInfo::~DispatchExInfo()
 // find the method.
 DispatchMemberInfo* DispatchExInfo::SynchFindMember(DISPID DispID)
 {
-    CONTRACT (DispatchMemberInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DispatchMemberInfo *pMemberInfo = FindMember(DispID);
 
     if (!pMemberInfo && SynchWithManagedView())
         pMemberInfo = FindMember(DispID);
 
-    RETURN pMemberInfo;
+    return pMemberInfo;
 }
 
 DispatchMemberInfo* DispatchExInfo::SynchFindMember(SString& strName, BOOL bCaseSensitive)
 {
-    CONTRACT (DispatchMemberInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DispatchMemberInfo *pMemberInfo = FindMember(strName, bCaseSensitive);
 
     if (!pMemberInfo && SynchWithManagedView())
         pMemberInfo = FindMember(strName, bCaseSensitive);
 
-    RETURN pMemberInfo;
+    return pMemberInfo;
 }
 
 // Helper method that invokes the member with the specified DISPID. These methods synch
@@ -3064,14 +2931,13 @@ HRESULT DispatchExInfo::SynchInvokeMember(SimpleComCallWrapper *pSimpleWrap, DIS
 
 DispatchMemberInfo* DispatchExInfo::GetFirstMember()
 {
-    CONTRACT (DispatchMemberInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Start with the first member.
     DispatchMemberInfo **ppNextMemberInfo = &m_pFirstMemberInfo;
@@ -3094,24 +2960,23 @@ DispatchMemberInfo* DispatchExInfo::GetFirstMember()
     while ((*ppNextMemberInfo) && !(*ppNextMemberInfo)->GetMemberInfoObject())
         ppNextMemberInfo = (*ppNextMemberInfo)->GetNextPtr();
 
-    RETURN *ppNextMemberInfo;
+    return *ppNextMemberInfo;
 }
 
 DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
 {
-    CONTRACT (DispatchMemberInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Do a lookup in the hashtable to find the DispatchMemberInfo for the DISPID.
     DispatchMemberInfo *pDispMemberInfo = FindMember(CurrMemberDispID);
     if (!pDispMemberInfo)
-        RETURN NULL;
+        return NULL;
 
     // Start from the next member.
     DispatchMemberInfo **ppNextMemberInfo = pDispMemberInfo->GetNextPtr();
@@ -3134,25 +2999,24 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
     while ((*ppNextMemberInfo) && !(*ppNextMemberInfo)->GetMemberInfoObject())
         ppNextMemberInfo = (*ppNextMemberInfo)->GetNextPtr();
 
-    RETURN *ppNextMemberInfo;
+    return *ppNextMemberInfo;
 }
 
 MethodDesc* DispatchExInfo::GetIReflectMD(BinderMethodID Method)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
     MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
-    RETURN pMD;
+    return pMD;
 }
 
 PTRARRAYREF DispatchExInfo::RetrievePropList()
@@ -3227,16 +3091,15 @@ PTRARRAYREF DispatchExInfo::RetrieveMethList()
 // Virtual method to retrieve the InvokeMember method desc.
 MethodDesc* DispatchExInfo::GetInvokeMemberMD()
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN GetIReflectMD(METHOD__IREFLECT__INVOKE_MEMBER);
+    return GetIReflectMD(METHOD__IREFLECT__INVOKE_MEMBER);
 }
 
 // Virtual method to retrieve the object associated with this DispatchInfo that

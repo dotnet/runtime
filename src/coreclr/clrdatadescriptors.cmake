@@ -90,20 +90,11 @@ function(generate_data_descriptors)
   target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
 
   if(MSVC)
-    # Give this OBJECT library a deterministic, per-target compile PDB. Without this,
-    # MSVC writes debug info to the default `vc140.pdb`, which does not travel with
-    # the .obj files when they are archived into a static library (e.g.
-    # Runtime.ServerGC.lib). Downstream linkers - notably the NativeAOT publish
-    # of ILCompiler/crossgen2/ilasm/mscordaccore_universal - then emit LNK4099
-    # ("PDB ... was not found"), which is fatal under /WX in the VMR build.
-    set_target_properties(${LIBRARY} PROPERTIES
-        COMPILE_PDB_NAME "${LIBRARY}"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
-    # Even with a per-target PDB name, the external PDB stays in the producer's
-    # binary dir and is not visible to downstream linkers consuming the static lib.
-    # Embed CodeView debug info directly into each .obj (/Z7) so the debug data
-    # travels with the object when it is archived into the static library, removing
-    # the need for the linker to find a separate PDB and silencing LNK4099.
-    target_compile_options(${LIBRARY} PRIVATE /Z7)
+    # Embed debug info in the object files (/Z7). CMake does not assign a compile
+    # PDB to OBJECT libraries, so the objects archived into a static library (e.g.
+    # Runtime.ServerGC.lib) would otherwise reference an absent vc140.pdb, producing
+    # LNK4099 for the NativeAOT publish of ILCompiler/crossgen2/ilasm/mscordaccore_universal,
+    # which is fatal under /WX in the VMR build.
+    set_target_properties(${LIBRARY} PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
   endif()
 endfunction(generate_data_descriptors)

@@ -28,6 +28,17 @@
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
 
+// Defined in dbgutil; resolves a runtime export address from the data target.
+extern "C" bool TryGetSymbol(
+    ICorDebugDataTarget* dataTarget,
+    uint64_t baseAddress,
+    const char* symbolName,
+    uint64_t* symbolAddress);
+
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+HRESULT EnsureUniversalDbiInitialized();
+#endif // MSCORDBI_LINKS_PRIVATE_PAL && HOST_UNIX
+
 // Keep this around for retail debugging. It's very very useful because
 // it's global state that we can always find, regardless of how many locals the compiler
 // optimizes away ;)
@@ -178,6 +189,13 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
 {
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+    HRESULT hrInit = EnsureUniversalDbiInitialized();
+    if (FAILED(hrInit))
+    {
+        return hrInit;
+    }
+#endif
 #ifdef TARGET_WINDOWS
     HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #else
@@ -553,6 +571,7 @@ CordbProcess::CreateDacDbiInterface()
 {
     _ASSERTE(m_pDACDataTarget != NULL);
     _ASSERTE(m_pDacPrimitives == NULL); // don't double-init
+    _ASSERTE(m_pLegacyDac == NULL);
 
     // Caller has already determined which CLR in the target is being debugged.
     _ASSERTE(m_clrInstanceId != 0);
@@ -577,26 +596,40 @@ CordbProcess::CreateDacDbiInterface()
     IDacDbiInterface::IAllocator * pAllocator = this;
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup = this;
 
+    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
+    // DAC only needs it if it wants to route through cdac or to compare results.
+    CLRDATA_ADDRESS contractDescriptorAddress = 0;
+    {
+        uint64_t address = 0;
+        if (TryGetSymbol(m_pDACDataTarget, m_clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
+        {
+            contractDescriptorAddress = address;
+        }
+    }
 
     typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
         ICorDebugDataTarget *,
         CORDB_ADDRESS,
+        CLRDATA_ADDRESS,
         IDacDbiInterface::IAllocator *,
         IDacDbiInterface::IMetaDataLookup *,
-        IDacDbiInterface **);
+        IDacDbiInterface **,
+        IUnknown **);
 
     IDacDbiInterface* pInterfacePtr = NULL;
+    IUnknown* pLegacyDac = NULL;
     PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
     if (!pfnEntry)
     {
         ThrowLastError();
     }
 
-    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, pAllocator, pMetaDataLookup, &pInterfacePtr);
+    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
     IfFailThrow(hrStatus);
 
-    // We now have a resource, pInterfacePtr, that needs to be freed.
+    // We now have resources that need to be freed.
     m_pDacPrimitives = pInterfacePtr;
+    m_pLegacyDac = pLegacyDac;
 
     // Setup DAC target consistency checking based on what we're using for DBI
     IfFailThrow(m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency ));
@@ -852,6 +885,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_dispatchedEvent(DB_IPCE_DEBUGGER_INVALID),
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
+    m_pLegacyDac(NULL),
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
@@ -926,8 +960,9 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
 
         CordbHashTable        m_steppers; // Closed in ~CordbProcess
 
+        // Deleted in ~CordbProcess
+        WaitEvent            *m_leftSideEventAvailable;
         // Closed in CloseIPCEventHandles called from ~CordbProcess
-        HANDLE                m_leftSideEventAvailable;
         HANDLE                m_leftSideEventRead;
 
         // Closed in ~CordbProcess
@@ -943,7 +978,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
 
 CordbProcess::~CordbProcess()
 {
-    LOG((LF_CORDB, LL_INFO1000, "CP::~CP: deleting process 0x%08x\n", this));
+    LOG((LF_CORDB, LL_INFO1000, "CP::~CP: deleting process %p\n", this));
 
     DTOR_ENTRY(this);
 
@@ -953,6 +988,11 @@ CordbProcess::~CordbProcess()
 
     // We shouldn't still be in Cordb's list of processes. Unfortunately, our root Cordb object
     // may have already been deleted b/c we're at the mercy of ref-counting, so we can't check.
+
+    // RCET wait sets hold non-owning pointers to this wrapper while retaining the CordbProcess.
+    // Keep it alive until the final process reference is released.
+    delete m_leftSideEventAvailable;
+    m_leftSideEventAvailable = NULL;
 
     m_processMutex.Destroy();
     m_StopGoLock.Destroy();
@@ -1033,14 +1073,15 @@ HRESULT ShimProcess::DebugActiveProcess(
         // being 'managed attached'
         if(!pShim->m_fIsInteropDebugging)
         {
-            DWORD  dwHandles = 2;
-            HANDLE arrHandles[2];
-
-            arrHandles[0] = pShim->m_terminatingEvent;
-            arrHandles[1] = pShim->m_markAttachPendingEvent;
+            WaitEvent terminatingEvent(pShim->m_terminatingEvent);
+            WaitEvent markAttachPendingEvent(pShim->m_markAttachPendingEvent);
+            const WaitHandle *waitSet[] = { &terminatingEvent, &markAttachPendingEvent };
 
             // Wait for the completion of marking pending attach bit or debugger detaching
-            WaitForMultipleObjectsEx(dwHandles, arrHandles, FALSE, INFINITE, FALSE);
+            WaitHandle::Wait(
+                waitSet,
+                ARRAY_SIZE(waitSet),
+                WaitHandle::Infinite);
         }
 #endif //!FEATURE_DBGIPC_TRANSPORT_DI
     }
@@ -1235,13 +1276,6 @@ void CordbProcess::CloseIPCHandles()
 {
     INTERNAL_API_ENTRY(this);
 
-    // Close off Right Side's handles.
-    if (m_leftSideEventAvailable != NULL)
-    {
-        CloseHandle(m_leftSideEventAvailable);
-        m_leftSideEventAvailable = NULL;
-    }
-
     if (m_leftSideEventRead != NULL)
     {
         CloseHandle(m_leftSideEventRead);
@@ -1250,12 +1284,7 @@ void CordbProcess::CloseIPCHandles()
 
     if (m_handle != NULL)
     {
-        // @dbgtodo  - We should probably add asserts to all calls to CloseHandles(), but this has been
-        // a particularly problematic spot in the past for Mac debugging.
-        BOOL fSuccess = CloseHandle(m_handle);
-        (void)fSuccess; //prevent "unused variable" error from GCC
-        _ASSERTE(fSuccess);
-
+        delete m_handle;
         m_handle = NULL;
     }
 
@@ -1436,8 +1465,21 @@ void CordbProcess::FreeDac()
 
     if (m_pDacPrimitives != NULL)
     {
+        HRESULT hr = m_pDacPrimitives->Destroy();
+        _ASSERTE(SUCCEEDED(hr));
+        if (FAILED(hr))
+        {
+            LOG((LF_CORDB, LL_ERROR, "Failed to prepare DAC for unload, hr=0x%08x\n", hr));
+            return;
+        }
         m_pDacPrimitives->Release();
         m_pDacPrimitives = NULL;
+    }
+
+    if (m_pLegacyDac != NULL)
+    {
+        m_pLegacyDac->Release();
+        m_pLegacyDac = NULL;
     }
 
     if (m_hDacModule != NULL)
@@ -1578,10 +1620,12 @@ HRESULT CordbProcess::Init()
         // signal existing RS infrastructure. Eventually get rid of LSEA, LSER completely.
         //
 
-        m_leftSideEventAvailable = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (m_leftSideEventAvailable == NULL)
+        m_leftSideEventAvailable = new (nothrow) WaitEvent(false);
+        if ((m_leftSideEventAvailable == nullptr) || !m_leftSideEventAvailable->IsValid())
         {
-            ThrowLastError();
+            delete m_leftSideEventAvailable;
+            m_leftSideEventAvailable = nullptr;
+            ThrowOutOfMemory();
         }
 
         m_leftSideEventRead = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -1610,7 +1654,7 @@ HRESULT CordbProcess::Init()
             // This is not needed in the V3 pipeline because we don't assume we have a live, local, process.
             m_handle = GetShim()->GetNativePipeline()->GetProcessHandle();
 
-            if (m_handle == NULL)
+            if ((m_handle == nullptr) || !m_handle->IsValid())
             {
                 ThrowLastError();
             }
@@ -1724,7 +1768,7 @@ void CordbProcess::Terminating(BOOL fDetach)
 {
     INTERNAL_API_ENTRY(this);
 
-    LOG((LF_CORDB, LL_INFO1000,"CP::T: Terminating process 0x%x detach=%d\n", m_id, fDetach));
+    LOG((LF_CORDB, LL_INFO1000,"CP::T: Terminating process 0x%zx detach=%d\n", m_id, fDetach));
     m_terminated = true;
 
     m_cordb->ProcessStateChanged();
@@ -1733,7 +1777,7 @@ void CordbProcess::Terminating(BOOL fDetach)
     // But don't set RSER unless we actually read the event. We don't block on RSER
     // since that wait also checks the leftside's process handle.
     SetEvent(m_leftSideEventRead);
-    SetEvent(m_leftSideEventAvailable);
+    m_leftSideEventAvailable->Set();
     SetEvent(m_stopWaitEvent);
 
     if (m_pShim != NULL)
@@ -2969,9 +3013,10 @@ void CordbProcess::DetachShim()
         IfFailThrow(hr);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        const HANDLE rghWaitSet[] = {
-            m_detachSetThreadContextNeededEvent, // Signaled on every debug event after the first SendCanDetach request
-            UnsafeGetProcessHandle()             // Signaled when the process exits
+        WaitEvent detachSetThreadContextNeededEvent(m_detachSetThreadContextNeededEvent);
+        const WaitHandle *waitSet[] = {
+            &detachSetThreadContextNeededEvent, // Signaled on every debug event after the first SendCanDetach request
+            UnsafeGetProcessWaitHandle()        // Signaled when the process exits
         };
 
         bool fDetachComplete = !m_fOutOfProcessSetThreadContextEventReceived;
@@ -2982,14 +3027,17 @@ void CordbProcess::DetachShim()
         }
         while (!fDetachComplete)
         {
-            DWORD dwResult = WaitForMultipleObjectsEx(_countof(rghWaitSet), rghWaitSet, FALSE, DETACH_WAIT_TIMEOUT_MS, FALSE);
-            if (dwResult == WAIT_OBJECT_0)
+            int32_t waitResult = WaitHandle::Wait(
+                waitSet,
+                ARRAY_SIZE(waitSet),
+                DETACH_WAIT_TIMEOUT_MS);
+            if (waitResult == 0)
             {
                 // We have been signaled via TryDetach() to determine if it is safe to detach
                 // so call CanDetach and then detach if it returns S_OK
                 fDetachComplete = (this->m_pShim->GetWin32EventThread()->SendCanDetach() == S_OK);
             }
-            else if (dwResult == WAIT_OBJECT_0 + 1 /*UnsafeGetProcessHandle()*/)
+            else if (waitResult == 1)
             {
                 // The process has exited while waiting for the detach to complete
                 m_detached = true;
@@ -3001,7 +3049,7 @@ void CordbProcess::DetachShim()
                 // We timed out waiting for debug events, indicating the process is idle.
                 // Simply detach as if it had succeeded.
 
-                _ASSERTE(dwResult == WAIT_TIMEOUT);
+                _ASSERTE(waitResult == WaitHandle::Timeout);
                 CONSISTENCY_CHECK_MSGF(false, ("Timeout while waiting for detach to complete"));
 
                 fDetachComplete = true;
@@ -3235,6 +3283,12 @@ HRESULT CordbProcess::GetHandle(HANDLE *phProcessHandle)
     FAIL_IF_NEUTERED(this); // Once we neuter the process, we close our OS handle to it.
     VALIDATE_POINTER_TO_OBJECT(phProcessHandle, HANDLE *);
 
+#ifdef HOST_UNIX
+    // COMPAT: Unix callers historically received an opaque PAL process handle and only rely on this
+    // API succeeding, so return the process ID as an opaque sentinel now that DBI uses minipal internally.
+    *phProcessHandle = reinterpret_cast<HANDLE>(static_cast<uintptr_t>(GetProcessDescriptor()->m_Pid));
+    return S_OK;
+#else
     if (m_pShim == NULL)
     {
         _ASSERTE(!"CordbProcess::GetHandle() should be not be called on the new architecture");
@@ -3243,9 +3297,10 @@ HRESULT CordbProcess::GetHandle(HANDLE *phProcessHandle)
     }
     else
     {
-        *phProcessHandle = m_handle;
+        *phProcessHandle = UnsafeGetProcessHandle();
         return S_OK;
     }
+#endif
 }
 
 HRESULT CordbProcess::IsRunning(BOOL *pbRunning)
@@ -3278,7 +3333,7 @@ HRESULT CordbProcess::Stop(DWORD dwTimeout)
 
 HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainToken)
 {
-    LOG((LF_CORDB, LL_INFO1000, "CP::S: stopping process 0x%x(%d) with timeout %d\n", m_id, m_id,  dwTimeout));
+    LOG((LF_CORDB, LL_INFO1000, "CP::S: stopping process 0x%zx(%zu) with timeout %d\n", m_id, m_id, dwTimeout));
 
     INTERNAL_API_ENTRY(this);
 
@@ -3416,7 +3471,8 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
     event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
     InitIPCEvent(event, DB_IPCE_ASYNC_BREAK, false, pAppDomainToken);
 
-    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%x.\n", VmPtrToCookie(pAppDomainToken));
+    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%zx.\n",
+                static_cast<size_t>(VmPtrToCookie(pAppDomainToken)));
 
     hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
     hr = WORST_HR(hr, event->hr);
@@ -3427,7 +3483,8 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
         return hr;
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%zx.\n",
+         static_cast<size_t>(VmPtrToCookie(pAppDomainToken))));
 
     // Wait for the sync complete message to come in. Note: when the sync complete message arrives to the RCEventThread,
     // it will mark the process as synchronized and _not_ dispatch any events. Instead, it will set m_stopWaitEvent
@@ -3652,7 +3709,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
 
     CORDBFailIfOnWin32EventThread(this);
 
-    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::CI: continuing IB,  this=0x%X\n", this);
+    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::CI: continuing IB, this=%p\n", this);
 
     // Stop + Continue are executed under the Stop-Go lock. This makes them atomic.
     // We'll toggle the process-lock (b/c we communicate w/ the W32et, so that's not sufficient).
@@ -4006,7 +4063,8 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
     }
     else if (fWasSynchronized)
     {
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%zx.\n",
+             static_cast<size_t>(VmPtrToCookie(pAppDomainToken))));
 #ifdef FEATURE_INTEROP_DEBUGGING
         STRESS_LOG2(LF_CORDB, LL_INFO1000, "Continue flags:special=%d, dowin32=%d\n", m_specialDeferment, fDoWin32Continue);
 #endif
@@ -4028,7 +4086,8 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
         }
         _ASSERTE(SUCCEEDED(pEvent->hr));
 
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%zx.\n",
+             static_cast<size_t>(VmPtrToCookie(pAppDomainToken))));
     }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -4743,10 +4802,10 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_LOAD_MODULE:
         {
             LOG((LF_CORDB, LL_INFO100,
-                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08x AD:0x%08x \n",
+                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08zx AD:0x%08zx \n",
                 dwVolatileThreadId,
-                VmPtrToCookie(pEvent->LoadModuleData.vmAssembly),
-                VmPtrToCookie(pEvent->vmAppDomain)));
+                static_cast<size_t>(VmPtrToCookie(pEvent->LoadModuleData.vmAssembly)),
+                static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -4774,10 +4833,10 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_UNLOAD_MODULE:
         {
-            STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%x AD:0x%08x\n",
+            STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%zx AD:0x%08zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->UnloadModuleData.vmAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->UnloadModuleData.vmAssembly)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -4811,12 +4870,12 @@ void CordbProcess::RawDispatchEvent(
             CordbClass *pClass = NULL;
 
             LOG((LF_CORDB, LL_INFO10000,
-                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08x Asm:0x%08x AD:0x%08x\n",
+                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08zx Asm:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
-                 pEvent->LoadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->LoadClass.vmAssembly),
-                 LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 static_cast<mdTypeDef>(pEvent->LoadClass.classMetadataToken),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->LoadClass.vmAssembly)),
+                 static_cast<size_t>(LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -4869,11 +4928,11 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_UNLOAD_CLASS:
         {
             LOG((LF_CORDB, LL_INFO10000,
-                 "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08x AD:0x%08x\n",
+                 "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
-                 pEvent->UnloadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->UnloadClass.vmAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 static_cast<mdTypeDef>(pEvent->UnloadClass.classMetadataToken),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->UnloadClass.vmAssembly)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             // get the appdomain object
             _ASSERTE (pAppDomain != NULL);
@@ -4908,8 +4967,7 @@ void CordbProcess::RawDispatchEvent(
             ULONG cchCategory = pEvent->FirstLogMessage.cchCategory;
             ULONG cchContent = pEvent->FirstLogMessage.cchContent;
 
-            const ULONG cchMax = 0x10000;
-            if (cchCategory > cchMax || cchContent > cchMax)
+            if (cchCategory > MAX_LOG_SWITCH_NAME_LEN)
             {
                 IfFailThrow(E_UNEXPECTED);
             }
@@ -4973,9 +5031,9 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_CREATE_APP_DOMAIN:
         {
             STRESS_LOG2(LF_CORDB, LL_INFO100,
-                 "RCET::HRCE: create appdomain on thread %#x AD:0x%08x \n",
+                 "RCET::HRCE: create appdomain on thread %#x AD:0x%08zx \n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->vmAppDomain));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain)));
 
 
             // Enumerate may have prepopulated the appdomain, so check if it already exists.
@@ -4995,10 +5053,10 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_UNLOAD_ASSEMBLY:
         {
-            LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%x AD:0x%x\n",
+            LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%zx AD:0x%zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->AssemblyData.vmAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->AssemblyData.vmAssembly)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -5110,9 +5168,9 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_NAME_CHANGE:
         {
-            LOG((LF_CORDB, LL_INFO1000, "RCET::HRCE: Name Change %d  0x%p\n",
+            LOG((LF_CORDB, LL_INFO1000, "RCET::HRCE: Name Change %d  0x%zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->NameChange.vmAppDomain)));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->NameChange.vmAppDomain))));
 
             pThread = NULL;
             pAppDomain.Clear();
@@ -5314,9 +5372,9 @@ void CordbProcess::RawDispatchEvent(
             STRESS_LOG4(LF_CORDB, LL_INFO100,
                 "RCET::DRCE: Exception2 0x%p 0x%X 0x%X 0x%X\n",
                  CORDB_ADDRESS_TO_PTR(pEvent->ExceptionCallback2.framePointer),
-                 pEvent->ExceptionCallback2.nOffset,
-                 pEvent->ExceptionCallback2.eventType,
-                 pEvent->ExceptionCallback2.dwFlags
+                 static_cast<UINT>(pEvent->ExceptionCallback2.nOffset),
+                 static_cast<unsigned>(pEvent->ExceptionCallback2.eventType),
+                 static_cast<DWORD>(pEvent->ExceptionCallback2.dwFlags)
                  );
 
             if (pThread == NULL)
@@ -5364,8 +5422,8 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG2(LF_CORDB, LL_INFO100,
                 "RCET::DRCE: Exception Unwind 0x%X 0x%X\n",
-                 pEvent->ExceptionCallback2.eventType,
-                 pEvent->ExceptionCallback2.dwFlags
+                 static_cast<unsigned>(pEvent->ExceptionCallback2.eventType),
+                 static_cast<DWORD>(pEvent->ExceptionCallback2.dwFlags)
                  );
 
             if (pThread == NULL)
@@ -5425,7 +5483,7 @@ void CordbProcess::RawDispatchEvent(
         _ASSERTE(!"Unknown event");
         LOG((LF_CORDB, LL_INFO1000,
              "[%x] RCET::HRCE: Unknown event: 0x%08x\n",
-             GetCurrentThreadId(), pEvent->type));
+             GetCurrentThreadId(), static_cast<unsigned>(pEvent->type)));
     }
 
 
@@ -5630,7 +5688,7 @@ HRESULT CordbProcess::SetAllThreadsDebugState(CorDebugThreadState state,
     }
     CordbThread * pCordbExceptThread = static_cast<CordbThread *> (pExceptThread);
 
-    LOG((LF_CORDB, LL_INFO1000, "CP::SATDS: except thread=0x%08x 0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "CP::SATDS: except thread=%p 0x%zx\n",
          pExceptThread,
          (pCordbExceptThread != NULL) ? pCordbExceptThread->m_id : 0));
 
@@ -5732,7 +5790,8 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
         _ASSERTE(eventData.type == DB_IPCE_IS_TRANSITION_STUB_RESULT);
 
         *pfTransitionStub = eventData.IsTransitionStubResult.isStub;
-        LOG((LF_CORDB, LL_INFO1000, "CP::ITS: addr=0x%p result=%d\n", address, *pfTransitionStub));
+        LOG((LF_CORDB, LL_INFO1000, "CP::ITS: addr=%p result=%d\n", CORDB_ADDRESS_TO_PTR(address),
+             *pfTransitionStub));
         // @todo - beware that IsTransitionStub has a very important sideeffect - it synchronizes the runtime!
         // This for example covers an OS bug where SetThreadContext may silently fail if we're not synchronized.
         // (See IMDArocess::SetThreadContext for details on that bug).
@@ -6098,7 +6157,7 @@ HRESULT CordbProcess::ReadMemory(CORDB_ADDRESS address,
     // read.
     if ((*read > 0) && (*read <= size))
     {
-        LOG((LF_CORDB, LL_INFO100000, "CP::RM: read %d bytes from 0x%08x, first byte is 0x%x\n",
+        LOG((LF_CORDB, LL_INFO100000, "CP::RM: read %zu bytes from 0x%08x, first byte is 0x%x\n",
              *read, (DWORD)address, buffer[0]));
 
         if (m_initialized)
@@ -6188,7 +6247,7 @@ HRESULT CordbProcess::AdjustBuffer( CORDB_ADDRESS address,
     if (!m_runtimeOffsetsInitialized)
         return S_OK;
 
-    LOG((LF_CORDB,LL_INFO10000, "CordbProcess::AdjustBuffer at addr 0x%p\n", address));
+    LOG((LF_CORDB,LL_INFO10000, "CordbProcess::AdjustBuffer at addr %p\n", CORDB_ADDRESS_TO_PTR(address)));
 
     if (mode == AB_WRITE)
     {
@@ -6711,7 +6770,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     }
 
 
-    LOG((LF_CORDB, LL_INFO100000, "CP::WM: wrote %d bytes at 0x%08x, first byte is 0x%x\n",
+    LOG((LF_CORDB, LL_INFO100000, "CP::WM: wrote %zu bytes at 0x%08x, first byte is 0x%x\n",
          *written, (DWORD)address, buffer[0]));
 
     if (bUpdateOriginalPatchTable == TRUE )
@@ -7095,57 +7154,57 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 #ifdef FEATURE_INTEROP_DEBUGGING
     LOG((LF_CORDB, LL_INFO10000, "    m_genericHijackFuncAddr=          0x%p\n",
          m_runtimeOffsets.m_genericHijackFuncAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_signalHijackStartedBPAddr=      0x%p\n",
-         m_runtimeOffsets.m_signalHijackStartedBPAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_excepNotForRuntimeBPAddr=       0x%p\n",
-         m_runtimeOffsets.m_excepNotForRuntimeBPAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   0x%p\n",
-         m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr));
+    LOG((LF_CORDB, LL_INFO10000, "    m_signalHijackStartedBPAddr=      %p\n",
+         (void*)(m_runtimeOffsets.m_signalHijackStartedBPAddr)));
+    LOG((LF_CORDB, LL_INFO10000, "    m_excepNotForRuntimeBPAddr=       %p\n",
+         (void*)(m_runtimeOffsets.m_excepNotForRuntimeBPAddr)));
+    LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   %p\n",
+         (void*)(m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr)));
     LOG((LF_CORDB, LL_INFO10000, "    m_debuggerWordTLSIndex=           0x%08x\n",
          m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
 
-    LOG((LF_CORDB, LL_INFO10000, "    m_setThreadContextNeededAddr=     0x%p\n",
-         m_runtimeOffsets.m_setThreadContextNeededAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_setThreadContextNeededAddr=     %p\n",
+         (void*)(m_runtimeOffsets.m_setThreadContextNeededAddr)));
+    LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08zx\n",
          m_runtimeOffsets.m_TLSIndex));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08zx\n",
          m_runtimeOffsets.m_EEThreadStateOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateNCOffset=          0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateNCOffset=          0x%08zx\n",
          m_runtimeOffsets.m_EEThreadStateNCOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledOffset=      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledOffset=      0x%08zx\n",
          m_runtimeOffsets.m_EEThreadPGCDisabledOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledValue=       0x%08x\n",
          m_runtimeOffsets.m_EEThreadPGCDisabledValue));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadFrameOffset=            0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadFrameOffset=            0x%08zx\n",
          m_runtimeOffsets.m_EEThreadFrameOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadMaxNeededSize=          0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadMaxNeededSize=          0x%08zx\n",
          m_runtimeOffsets.m_EEThreadMaxNeededSize));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadSteppingStateMask=      0x%08x\n",
          m_runtimeOffsets.m_EEThreadSteppingStateMask));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEMaxFrameValue=                0x%08x\n",
          m_runtimeOffsets.m_EEMaxFrameValue));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08zx\n",
          m_runtimeOffsets.m_EEThreadDebuggerFilterContextOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08zx\n",
          m_runtimeOffsets.m_EEFrameNextOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEIsManagedExceptionStateMask=  0x%08x\n",
          m_runtimeOffsets.m_EEIsManagedExceptionStateMask));
-    LOG((LF_CORDB, LL_INFO10000, "    m_pPatches=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_pPatches=                       %p\n",
          m_runtimeOffsets.m_pPatches));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offRgData=                      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offRgData=                      0x%08zx\n",
          m_runtimeOffsets.m_offRgData));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offCData=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offCData=                       0x%08zx\n",
          m_runtimeOffsets.m_offCData));
-    LOG((LF_CORDB, LL_INFO10000, "    m_cbPatch=                        0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_cbPatch=                        0x%08zx\n",
          m_runtimeOffsets.m_cbPatch));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offAddr=                        0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offAddr=                        0x%08zx\n",
          m_runtimeOffsets.m_offAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offOpcode=                      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offOpcode=                      0x%08zx\n",
          m_runtimeOffsets.m_offOpcode));
-    LOG((LF_CORDB, LL_INFO10000, "    m_cbOpcode=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_cbOpcode=                       0x%08zx\n",
          m_runtimeOffsets.m_cbOpcode));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offTraceType=                   0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offTraceType=                   0x%08zx\n",
          m_runtimeOffsets.m_offTraceType));
     LOG((LF_CORDB, LL_INFO10000, "    m_traceTypeUnmanaged=             0x%08x\n",
          m_runtimeOffsets.m_traceTypeUnmanaged));
@@ -7885,7 +7944,7 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
 bool CordbProcess::CheckIfLSExited()
 {
 // Check by waiting on the handle with no timeout.
-    if (WaitForSingleObject(m_handle, 0) == WAIT_OBJECT_0)
+    if (WaitHandle::Wait(*m_handle, 0) == 0)
     {
         Lock();
         m_terminated = true;
@@ -8357,7 +8416,7 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 HRESULT
 CordbProcess::SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32 * bufLen)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBP: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBP: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -8384,7 +8443,7 @@ CordbProcess::SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYT
 HRESULT
 CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32 * bufLen)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBPI: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBPI: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -8476,7 +8535,7 @@ ErrExit:
 HRESULT
 CordbProcess::ClearUnmanagedBreakpoint(CORDB_ADDRESS address)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::ClearUnBP: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::ClearUnBP: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -8697,7 +8756,7 @@ CordbRCEventThread::CordbRCEventThread(Cordb* cordb)
 CordbRCEventThread::~CordbRCEventThread()
 {
     if (m_threadControlEvent != NULL)
-        CloseHandle(m_threadControlEvent);
+        delete m_threadControlEvent;
 
     if (m_thread != NULL)
         CloseHandle(m_thread);
@@ -8713,10 +8772,14 @@ HRESULT CordbRCEventThread::Init()
     if (m_cordb == NULL)
         return E_INVALIDARG;
 
-    m_threadControlEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+    m_threadControlEvent = new (nothrow) WaitEvent(false);
 
-    if (m_threadControlEvent == NULL)
-        return HRESULT_FROM_GetLastError();
+    if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
+    {
+        delete m_threadControlEvent;
+        m_threadControlEvent = nullptr;
+        return E_OUTOFMEMORY;
+    }
 
     return S_OK;
 }
@@ -8740,7 +8803,7 @@ void CordbProcess::DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, RemoteHA
     // On Launch, we don't have them yet, but on attach we do.
     if (*pLocalHandle == NULL)
     {
-        BOOL fSuccess = pRemoteHandle->DuplicateToLocalProcess(m_handle, pLocalHandle);
+        BOOL fSuccess = pRemoteHandle->DuplicateToLocalProcess(UnsafeGetProcessHandle(), pLocalHandle);
         if (!fSuccess)
         {
             ThrowLastError();
@@ -8798,9 +8861,9 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         BOOL fBlockExists;
         GetEventBlock(&fBlockExists); // throws on error
 
-        LOG((LF_CORDB, LL_EVERYTHING, "Size of CdbP is %d\n", sizeof(CordbProcess)));
+        LOG((LF_CORDB, LL_EVERYTHING, "Size of CdbP is %zu\n", sizeof(CordbProcess)));
 
-        m_pEventChannel->Init(m_handle);
+        IfFailThrow(m_pEventChannel->Init(UnsafeGetProcessHandle()));
 
 #if defined(FEATURE_INTEROP_DEBUGGING)
         DuplicateHandleToLocalProcess(&m_leftSideUnmanagedWaitEvent, &GetDCB()->m_leftSideUnmanagedWaitEvent);
@@ -9232,8 +9295,9 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     if (eventSize > CorDBIPC_BUFFER_SIZE)
         return E_INVALIDARG;
 
-    STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%x, proc 0x%x(%d)\n",
-         IPCENames::GetName(event->type), VmPtrToCookie(event->vmAppDomain), process->m_id, process->m_id);
+    STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%zx, proc 0x%zx(%zu)\n",
+         IPCENames::GetName(event->type), static_cast<size_t>(VmPtrToCookie(event->vmAppDomain)),
+         static_cast<size_t>(process->m_id), static_cast<size_t>(process->m_id));
 
     // For 2-way events, this check is unnecessary (since we already check for LS exit)
     // But for async events, we need this.
@@ -9275,13 +9339,11 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     }
     else
     {
-        // Get a handle to the target process - this call always succeeds
-        HANDLE hLSProcess = NULL;
-        process->GetHandle(&hLSProcess);
+        WaitHandle *pLSProcess = process->UnsafeGetProcessWaitHandle();
 
         // We take locks to ensure that the CordbProcess object is still alive,
         // even if the OS process exited.
-        _ASSERTE(hLSProcess != NULL);
+        _ASSERTE(pLSProcess != nullptr);
 
         // Check if Sending the IPC event failed
         if (FAILED(hr))
@@ -9291,8 +9353,8 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // There is a race here - we can't rely on any check above SendEventToLeftSide
             // to tell us whether the process has exited yet.
             // Check for that case and return an accurate hresult.
-            DWORD ret = WaitForSingleObject(hLSProcess, 0);
-            if (ret == WAIT_OBJECT_0)
+            int32_t waitResult = WaitHandle::Wait(*pLSProcess, 0);
+            if (waitResult == 0)
             {
                 return CORDBG_E_PROCESS_TERMINATED;
             }
@@ -9310,7 +9372,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
         {
             STRESS_LOG0(LF_CORDB, LL_INFO1000,"CRCET::SIPCE: waiting for left side to read event. (on RSER)\n");
 
-            DWORD ret;
+            int32_t waitResult;
 
             // Wait for either a reply (common case) or the left side to go away.
             // We can't detach while waiting for a reply (because detach needs to send events).
@@ -9319,7 +9381,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // and so ExitProcess may have been called, but it doesn't matter.
 
             enum {
-                ID_RSER = WAIT_OBJECT_0,
+                ID_RSER = 0,
                 ID_LSPROCESS,
                 ID_HELPERTHREAD,
             };
@@ -9329,29 +9391,48 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // follow up with an exit.
             // This includes when we've dispatch Native events, and it includes the AsyncBreak sent to get us from a
             // win32 frozen state to a synchronized state).
+#ifdef HOST_WINDOWS
+            NativeHandle *pHelperThreadWait = nullptr;
             HANDLE hHelperThread = NULL;
             if (process->IsStopped())
             {
                 hHelperThread = process->GetHelperThreadHandle();
             }
 
+            if (hHelperThread != NULL)
+            {
+                pHelperThreadWait = new (nothrow) NativeHandle(hHelperThread);
+                if ((pHelperThreadWait == nullptr) || !pHelperThreadWait->IsValid())
+                {
+                    delete pHelperThreadWait;
+                    return E_OUTOFMEMORY;
+                }
+            }
+#else
+            WaitHandle *pHelperThreadWait = nullptr;
+#endif
 
-            // Note that in case of a tie (multiple handles signaled), WaitForMultipleObjects gives
-            // priority to the handle earlier in the array.
-            HANDLE waitSet[] = { process->GetEventChannel()->GetRightSideEventAckHandle(), hLSProcess, hHelperThread};
+            // In a tie, wait-any gives priority to the handle earlier in the array.
+            const WaitHandle *waitSet[] = {
+                process->GetEventChannel()->GetRightSideEventAckHandle(),
+                pLSProcess,
+                pHelperThreadWait
+            };
             DWORD cWaitSet = ARRAY_SIZE(waitSet);
-            if (hHelperThread == NULL)
+            if (pHelperThreadWait == nullptr)
             {
                 cWaitSet--;
             }
 
             do
             {
-                ret = WaitForMultipleObjectsEx(cWaitSet, waitSet, FALSE, CordbGetWaitTimeout(), FALSE);
+                waitResult = WaitHandle::Wait(waitSet, cWaitSet, CordbGetWaitTimeout());
                 // If we timeout because we're waiting for an uncontinued OOB event, we need to just keep waiting.
-            } while ((ret == WAIT_TIMEOUT) && process->IsWaitingForOOBEvent());
+            } while ((waitResult == WaitHandle::Timeout) && process->IsWaitingForOOBEvent());
 
-            switch(ret)
+            delete pHelperThreadWait;
+
+            switch(waitResult)
             {
             case ID_RSER:
                 // Normal reply from LS.
@@ -9404,7 +9485,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
                     // If we timed out/failed, check the left side to see if it is in the unrecoverable error mode. If it is,
                     // return the HR from the left side that caused the error.  Otherwise, return that we timed out and that
                     // we don't really know why.
-                    HRESULT realHR = (ret == WAIT_FAILED) ? HRESULT_FROM_GetLastError() : ErrWrapper(CORDBG_E_TIMEOUT);
+                    HRESULT realHR = waitResult == WaitHandle::Failed ? E_FAIL : ErrWrapper(CORDBG_E_TIMEOUT);
 
                     hr = process->CheckForUnrecoverableError();
 
@@ -9580,8 +9661,11 @@ void CordbProcess::HandleRCEvent(
 
     IfFailThrow(pManagedEvent->hr);
 
-    STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%x, proc 0x%x(%d)\n",
-        IPCENames::GetName(pManagedEvent->type), VmPtrToCookie(pManagedEvent->vmAppDomain), this->m_id, this->m_id);
+    STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
+        IPCENames::GetName(pManagedEvent->type),
+        static_cast<size_t>(VmPtrToCookie(pManagedEvent->vmAppDomain)),
+        static_cast<size_t>(this->m_id),
+        static_cast<size_t>(this->m_id));
 
     RSExtSmartPtr<ICorDebugManagedCallback2> pCallback2;
     pCallback->QueryInterface(IID_ICorDebugManagedCallback2, reinterpret_cast<void **> (&pCallback2));
@@ -9608,7 +9692,7 @@ void CordbRCEventThread::ProcessStateChanged()
     m_cordb->LockProcessList();
     STRESS_LOG0(LF_CORDB, LL_INFO100000, "CRCET::ProcessStateChanged\n");
     m_processStateChanged = TRUE;
-    SetEvent(m_threadControlEvent);
+    m_threadControlEvent->Set();
     m_cordb->UnlockProcessList();
 }
 
@@ -9628,13 +9712,13 @@ void CordbRCEventThread::ProcessStateChanged()
 //---------------------------------------------------------------------------------------
 void CordbRCEventThread::ThreadProc()
 {
-    HANDLE         waitSet[MAXIMUM_WAIT_OBJECTS];
+    const WaitHandle *waitSet[MAXIMUM_WAIT_OBJECTS];
     CordbProcess * rgProcessSet[MAXIMUM_WAIT_OBJECTS];
     unsigned int   waitCount;
 
 #ifdef _DEBUG
     memset(&rgProcessSet, 0, MAXIMUM_WAIT_OBJECTS * sizeof(CordbProcess *));
-    memset(&waitSet, 0, MAXIMUM_WAIT_OBJECTS * sizeof(HANDLE));
+    memset(&waitSet, 0, sizeof(waitSet));
 #endif
 
 
@@ -9645,18 +9729,17 @@ void CordbRCEventThread::ThreadProc()
 
     while (m_run)
     {
-        DWORD dwStatus = WaitForMultipleObjectsEx(waitCount, waitSet, FALSE, 2000, FALSE);
+        int32_t waitResult = WaitHandle::Wait(waitSet, waitCount, 2000);
 
-        if (dwStatus == WAIT_FAILED)
+        if (waitResult == WaitHandle::Failed)
         {
-            STRESS_LOG1(LF_CORDB, LL_INFO10000, "CordbRCEventThread::ThreadProc WaitFor"
-                        "MultipleObjects failed: 0x%x\n", GetLastError());
+            STRESS_LOG0(LF_CORDB, LL_INFO10000, "CordbRCEventThread::ThreadProc wait failed\n");
         }
 #ifdef _DEBUG
-        else if ((dwStatus >= WAIT_OBJECT_0) && (dwStatus < WAIT_OBJECT_0 + waitCount) && m_run)
+        else if ((waitResult >= 0) && (static_cast<unsigned int>(waitResult) < waitCount) && m_run)
         {
             // Got an event. Figure out which process it came from.
-            unsigned int procNumber = dwStatus - WAIT_OBJECT_0;
+            unsigned int procNumber = static_cast<unsigned int>(waitResult);
 
             if (procNumber != 0)
             {
@@ -9716,7 +9799,7 @@ void CordbRCEventThread::ThreadProc()
                 // per-process mutex when checking the process's synchronized flag here.
                 if (!pProcess->GetSynchronized() && pProcess->IsSafeToSendEvents())
                 {
-                    STRESS_LOG2(LF_CORDB, LL_INFO1000, "RCET::TP: listening to process 0x%x(%d)\n",
+                    STRESS_LOG2(LF_CORDB, LL_INFO1000, "RCET::TP: listening to process 0x%zx(%zu)\n",
                                 pProcess->m_id, pProcess->m_id);
 
                     waitSet[waitCount] = pProcess->m_leftSideEventAvailable;
@@ -9910,7 +9993,7 @@ void CordbRCEventThread::QueueAsyncWorkItem(RCETWorkItem * pItem)
     m_WorkerStack.Push(pItem);
 
     // Ping the RCET so that it drains the queue.
-    SetEvent(m_threadControlEvent);
+    m_threadControlEvent->Set();
 }
 
 // Execute & delete all workitems in the queue.
@@ -9965,26 +10048,27 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
 
     CORDBRequireProcessStateOKAndSync(pProcess, pAppDomain);
 
-    DWORD dwStatus;
+    int32_t waitResult;
     HRESULT hr = S_OK;
 
     do
     {
-        dwStatus = SafeWaitForSingleObject(pProcess,
-                                           pProcess->m_leftSideEventAvailable,
-                                           CordbGetWaitTimeout());
+        _ASSERTE(!pProcess->ThreadHoldsProcessLock());
+        waitResult = WaitHandle::Wait(
+            *pProcess->m_leftSideEventAvailable,
+            CordbGetWaitTimeout());
 
         if (pProcess->m_terminated)
         {
             return CORDBG_E_PROCESS_TERMINATED;
         }
         // If we timeout because we're waiting for an uncontinued OOB event, we need to just keep waiting.
-    } while ((dwStatus == WAIT_TIMEOUT) && pProcess->IsWaitingForOOBEvent());
+    } while ((waitResult == WaitHandle::Timeout) && pProcess->IsWaitingForOOBEvent());
 
 
 
 
-    if (dwStatus == WAIT_OBJECT_0)
+    if (waitResult == 0)
     {
         pProcess->CopyRCEventFromIPCBlock(pEvent);
 
@@ -9992,11 +10076,11 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
         {
             IfFailThrow(pEvent->hr);
 
-            STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%x, proc 0x%x(%d)\n",
+            STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
                         IPCENames::GetName(pEvent->type),
-                        VmPtrToCookie(pEvent->vmAppDomain),
-                        pProcess->m_id,
-                        pProcess->m_id);
+                        static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain)),
+                        static_cast<size_t>(pProcess->m_id),
+                        static_cast<size_t>(pProcess->m_id));
 
         }
         EX_CATCH_HRESULT(hr)
@@ -10005,7 +10089,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
 
         return hr;
     }
-    else if (dwStatus == WAIT_TIMEOUT)
+    else if (waitResult == WaitHandle::Timeout)
     {
         //
         // If we timed out, check the left side to see if it is in the
@@ -10027,9 +10111,9 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
     }
     else
     {
-        _ASSERTE(dwStatus == WAIT_FAILED);
+        _ASSERTE(waitResult == WaitHandle::Failed);
 
-        hr = HRESULT_FROM_GetLastError();
+        hr = E_FAIL;
 
         CORDBSetUnrecoverableError(pProcess, hr, 0);
 
@@ -10076,7 +10160,7 @@ HRESULT CordbRCEventThread::Stop()
 
         m_run = FALSE;
 
-        SetEvent(m_threadControlEvent);
+        m_threadControlEvent->Set();
 
         DWORD ret = WaitForSingleObject(m_thread, INFINITE);
 
@@ -10145,7 +10229,7 @@ CordbWin32EventThread::~CordbWin32EventThread()
         CloseHandle(m_thread);
 
     if (m_threadControlEvent != NULL)
-        CloseHandle(m_threadControlEvent);
+        delete m_threadControlEvent;
 
     if (m_actionTakenEvent != NULL)
         CloseHandle(m_actionTakenEvent);
@@ -10170,9 +10254,13 @@ HRESULT CordbWin32EventThread::Init()
 
     m_sendToWin32EventThreadMutex.Init("Win32-Send lock", RSLock::cLockFlat, RSLock::LL_WIN32_SEND_LOCK);
 
-    m_threadControlEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    if (m_threadControlEvent == NULL)
-        return HRESULT_FROM_GetLastError();
+    m_threadControlEvent = new (nothrow) WaitEvent(false);
+    if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
+    {
+        delete m_threadControlEvent;
+        m_threadControlEvent = nullptr;
+        return E_OUTOFMEMORY;
+    }
 
     m_actionTakenEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (m_actionTakenEvent == NULL)
@@ -10282,7 +10370,7 @@ void CordbProcess::FilterClrNotification(
 
         // Save the IPC event and wake up the thread which is waiting for it from the LS.
         GetEventChannel()->SaveEventFromLeftSide(pManagedEvent);
-        SetEvent(this->m_leftSideEventAvailable);
+        this->m_leftSideEventAvailable->Set();
 
         // Some other thread called code:CordbRCEventThread::WaitForIPCEventFromProcess, and
         // that will respond here and set the event.
@@ -11108,7 +11196,7 @@ void CordbWin32EventThread::Win32EventLoop()
 
 
         // Have to wait on 2 sources:
-        // WaitForMultipleObjects - ping for messages (create, attach, Continue, detach) and also
+        // Control wait set - ping for messages (create, attach, Continue, detach) and also
         //    process exits in the managed-only case.
         // Native Debug Events - This is a huge perf hit so we want to avoid it whenever we can.
         //    Only wait on these if we're interop debugging and if the process is not frozen.
@@ -11117,9 +11205,9 @@ void CordbWin32EventThread::Win32EventLoop()
 
         unsigned int cWaitCount = 1;
 
-        HANDLE rghWaitSet[2];
+        const WaitHandle *waitSet[2];
 
-        rghWaitSet[0] = m_threadControlEvent;
+        waitSet[0] = m_threadControlEvent;
 
         DWORD dwWaitTimeout = INFINITE;
         DEBUG_EVENT event = {};
@@ -11182,16 +11270,17 @@ void CordbWin32EventThread::Win32EventLoop()
         // that will ensure that we only wait for an Exit event once.
         if ((m_pProcess != NULL) && fDidNotJustGetExitProcessEvent)
         {
-            rghWaitSet[1] = m_pProcess->UnsafeGetProcessHandle();
+            waitSet[1] = m_pProcess->UnsafeGetProcessWaitHandle();
             cWaitCount = 2;
         }
 
         // See if any process that we aren't attached to as the Win32 debugger have exited. (Note: this is a
         // polling action if we are also waiting for Win32 debugger events. We're also looking at the thread
         // control event here, too, to see if we're supposed to do something, like attach.
-        DWORD dwStatus = WaitForMultipleObjectsEx(cWaitCount, rghWaitSet, FALSE, dwWaitTimeout, FALSE);
+        int32_t waitResult = WaitHandle::Wait(waitSet, cWaitCount, dwWaitTimeout);
 
-        _ASSERTE((dwStatus == WAIT_TIMEOUT) || (dwStatus < cWaitCount));
+        _ASSERTE((waitResult == WaitHandle::Timeout) ||
+                 (waitResult >= 0 && static_cast<unsigned int>(waitResult) < cWaitCount));
 
         if (!m_run)
         {
@@ -11200,15 +11289,15 @@ void CordbWin32EventThread::Win32EventLoop()
         }
 
         LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL - got event , ret=%d, has w32 dbg event=%d\n",
-             dwStatus, fEventAvailable));
+             waitResult, fEventAvailable));
 
         // If we haven't timed out, or if it wasn't the thread control event
         // that was set, then a process has
         // exited...
-        if ((dwStatus != WAIT_TIMEOUT) && (dwStatus != WAIT_OBJECT_0))
+        if ((waitResult != WaitHandle::Timeout) && (waitResult != 0))
         {
             // Grab the process that exited.
-            _ASSERTE((dwStatus - WAIT_OBJECT_0) == 1);
+            _ASSERTE(waitResult == 1);
             ExitProcess(false); // not detach
             fEventAvailable = false;
         }
@@ -11462,7 +11551,7 @@ CordbUnmanagedThread * CordbProcess::GetUnmanagedThreadFromEvent(const DEBUG_EVE
 
                 // Kill the process.
                 // RS will pump events until we LS process exits.
-                TerminateProcess(this->m_handle, hr);
+                TerminateProcess(UnsafeGetProcessHandle(), hr);
 
                 return pUnmanagedThread;
             }
@@ -12092,7 +12181,7 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
             this->m_helperThreadDead = true;
 
             // This only works on Windows, not on Mac.  We don't support interop-debugging on Mac anyway.
-            SetEvent(m_pEventChannel->GetRightSideEventAckHandle());
+            m_pEventChannel->GetRightSideEventAckHandle()->Set();
 
             // Note: we remember that this was a second chance event from one of the special stack overflow
             // cases with CUES_ExceptionUnclearable. This tells us to force the process to terminate when we
@@ -13384,7 +13473,7 @@ HRESULT CordbWin32EventThread::SendDebugActiveProcessEvent(
     // threads from making requests at the same time.
     m_action = W32ETA_ATTACH_PROCESS;
 
-    BOOL succ = SetEvent(m_threadControlEvent);
+    BOOL succ = m_threadControlEvent->Set();
 
     if (succ)
     {
@@ -13623,7 +13712,7 @@ HRESULT CordbWin32EventThread::SendDetachProcessEvent(CordbProcess *pProcess)
     // requests at the same time.
     m_action = W32ETA_DETACH;
 
-    BOOL succ = SetEvent(m_threadControlEvent);
+    BOOL succ = m_threadControlEvent->Set();
 
     if (succ)
     {
@@ -13670,7 +13759,7 @@ HRESULT CordbWin32EventThread::SendUnmanagedContinue(CordbProcess *pProcess,
     // threads from making requests at the same time.
     m_action = W32ETA_CONTINUE;
 
-    BOOL succ = SetEvent(m_threadControlEvent);
+    BOOL succ = m_threadControlEvent->Set();
 
     if (succ)
     {
@@ -14135,7 +14224,7 @@ HRESULT CordbWin32EventThread::SendCanDetach()
 
     m_action = W32ETA_CAN_DETACH;
 
-    BOOL succ = SetEvent(m_threadControlEvent);
+    BOOL succ = m_threadControlEvent->Set();
 
     if (succ)
     {
@@ -14214,7 +14303,7 @@ HRESULT CordbWin32EventThread::Stop()
         m_action = W32ETA_NONE;
         m_run = FALSE;
 
-        SetEvent(m_threadControlEvent);
+        m_threadControlEvent->Set();
         UnlockSendToWin32EventThreadMutex();
 
         DWORD ret = WaitForSingleObject(m_thread, INFINITE);

@@ -315,6 +315,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
@@ -2444,6 +2447,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512_FusedMultiplySubtractAdd:
             case NI_AVX512_FusedMultiplySubtractNegated:
             case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplyAddScalar:
             {
                 // While this operation is RMW, it is also almost freely reorderable
                 // and so we do not need to set the operands as delay free unless

@@ -3,8 +3,6 @@
 
 #include "createdump.h"
 
-extern uint8_t g_debugHeaderCookie[4];
-
 int g_readProcessMemoryResult = KERN_SUCCESS;
 
 bool
@@ -125,7 +123,7 @@ CrashInfo::EnumerateMemoryRegions()
             address,
             address + size,
             size / PAGE_SIZE,
-            info.pages_resident,
+            (unsigned long long)info.pages_resident,
             info.offset,
             info.is_submap ? "sub" : "   ",
             depth,
@@ -268,19 +266,11 @@ void CrashInfo::VisitModule(MachOModule& module)
         else if (m_appModel == AppModelType::NativeAOT)
         {
             uint64_t symbolOffset;
-            if (module.TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+            if (module.TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_runtimeBaseAddress = module.BaseAddress();
-
-                uint8_t cookie[sizeof(g_debugHeaderCookie)];
-                if (ReadMemory(module.BaseAddress() + symbolOffset, cookie, sizeof(cookie)))
-                {
-                    if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
-                    {
-                        TRACE("Found valid NativeAOT runtime module\n");
-                    }
-                }
+                TRACE("Found valid NativeAOT runtime module\n");
             }
         }
     }
@@ -412,8 +402,8 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
             g_readProcessMemoryResult = result;
-            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %s (%x)\n",
-                (void*)address, size, bytesLeft, bytesRead, (void*)addressAligned, mach_error_string(result), result);
+            TRACE_VERBOSE("ReadProcessMemory(%p %zd): vm_read_overwrite failed bytesLeft %zd bytesRead %lu from %p: %s (%x)\n",
+                (void*)address, size, bytesLeft, (unsigned long)bytesRead, (void*)addressAligned, mach_error_string(result), result);
             break;
         }
         ssize_t bytesToCopy = PAGE_SIZE - offset;

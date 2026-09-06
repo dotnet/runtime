@@ -46,6 +46,19 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader.GetNextEntry());
         }
 
+        [Fact]
+        public void MalformedArchive_SizeFieldExceedsStreamLength_CopyData()
+        {
+            using MemoryStream malformed = new MemoryStream();
+            // Header declares a huge size, but no actual data follows it in the stream.
+            WriteRawTarHeader(malformed, "file.txt", mode: 0, uid: 0, gid: 0,
+                size: long.MaxValue / 512, mtime: 0, typeflag: '0', linkname: string.Empty);
+            malformed.Seek(0, SeekOrigin.Begin);
+
+            using TarReader reader = new TarReader(malformed);
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry(copyData: true));
+        }
+
 
         [Fact]
         public void LongEndMarkers_DoNotAdvanceStream()

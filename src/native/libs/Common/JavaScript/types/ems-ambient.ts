@@ -104,4 +104,9 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
 
     wasmMemory: WebAssembly.Memory;
     wasmTable: WebAssembly.Table;
+    wasmExports: {
+        __stack_pointer: WebAssembly.Global;
+        __coreclr_wasm_rtlrestorecontext_tag: object;
+        [key: string]: unknown;
+    };
 }

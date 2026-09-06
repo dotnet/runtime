@@ -40,6 +40,19 @@ static bool AllowR2RForImage(PEImage* pOwner)
 #ifndef DACCESS_COMPILE
 extern BOOL g_useDefaultBaseAddr;
 
+#ifdef TARGET_WASM
+// Guards s_relocatedWebcilBases in ApplyBaseRelocations so concurrent loads of the same shared
+// host-probed webcil buffer cannot relocate it more than once. Initialized by PEImageLayout::Startup.
+static CrstStatic s_webcilRelocationCrst;
+
+/*static*/
+void PEImageLayout::Startup()
+{
+    WRAPPER_NO_CONTRACT;
+    s_webcilRelocationCrst.Init(CrstWebcilImageRelocation);
+}
+#endif // TARGET_WASM
+
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
@@ -117,7 +130,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     }
 
     // we can use flat layout for this
-    return pFlat.Extract();
+    return pFlat.Detach();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -141,7 +154,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 
                 PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
                 if (pAlloc->GetBase() != NULL)
-                    return pAlloc.Extract();
+                    return pAlloc.Detach();
 
 #if TARGET_WINDOWS
                 // For regular PE files always use OS loader on Windows.
@@ -248,6 +261,34 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     SSIZE_T tableBaseDelta = GetTableBaseOffset();
 #endif // FEATURE_WEBCIL
 
+#ifdef TARGET_WASM
+    // Host-probed webcil R2R images share one in-memory buffer, so the binder can open the same
+    // image twice (identity probe + load). WASM table-index relocations are additive
+    // (index += tableBase), so relocating the shared buffer twice doubles tableBase and corrupts
+    // indirect calls. Track the buffers already relocated and skip re-relocation.
+    //
+    // The lock is taken before the Contains check and held for the rest of the method so that, when
+    // WASM is built with threads (FEATURE_MULTITHREADING), two concurrent loads of the same shared
+    // buffer cannot both pass the check and relocate it twice.
+    //
+    // INTERIM: the intended production fix is to relocate the host-probed buffer once at the point the
+    // host hands it to the runtime and skip webcil relocation here entirely, removing this set.
+    typedef SetSHash< TADDR,
+                      NoRemoveSHashTraits< NonDacAwareSHashTraits< SetSHashTraits<TADDR> > > > RelocatedWebcilSet;
+    static RelocatedWebcilSet s_relocatedWebcilBases;
+    CrstHolder relocationGuard(&s_webcilRelocationCrst);
+    if (IsWebcilFormat())
+    {
+        const TADDR webcilBase = (TADDR)GetBase();
+        if (s_relocatedWebcilBases.Contains(webcilBase))
+            return;
+        // Record before applying: once we commit to relocating this shared buffer, no other load may
+        // additively relocate it again. A failure partway through relocation is unrecoverable for the
+        // additive model and fails the load regardless, so there is no "safe" point to record instead.
+        s_relocatedWebcilBases.Add(webcilBase);
+    }
+#endif // TARGET_WASM
+
     // Nothing to do - image is loaded at preferred base and no table base offset
     if (delta == 0
 #ifdef FEATURE_WEBCIL
@@ -258,7 +299,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         return;
     }
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %x, actual: %x)\n",
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %p, actual: %p)\n",
         GetPreferredBase(), GetBase()));
 
     COUNT_T dirSize;
@@ -306,6 +347,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         DWORD rva = VAL32(r->VirtualAddress);
 
+        // For webcil (wasm-only) this relies on the flat-mapped invariant PointerToRawData ==
+        // VirtualAddress, so GetBase() + rva is the correct address (equivalent to GetRvaData(rva)).
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
         // Check whether the page is outside the unprotected region.
@@ -504,7 +547,6 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -595,7 +637,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pOwner));
     }
@@ -693,7 +734,6 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pOwner));
     }
@@ -827,11 +867,9 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     m_pOwner = pOwner;

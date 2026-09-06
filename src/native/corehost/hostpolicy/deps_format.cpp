@@ -364,7 +364,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
             {
                 if (iter->first != matched_rid)
                 {
-                    trace::verbose(_X("    Removing %s assets"),iter->first.c_str(), package.first.c_str());
+                    trace::verbose(_X("    Removing %s assets from %s"), iter->first.c_str(), package.first.c_str());
                     iter = rid_assets.erase(iter);
                 }
                 else

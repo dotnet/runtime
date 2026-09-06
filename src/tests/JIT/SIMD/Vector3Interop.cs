@@ -24,6 +24,7 @@ using System.Text;
 using Xunit;
 using TestLibrary;
 
+namespace SIMDTests.Vector3InteropTests;
 
 public struct DT 
 {
@@ -558,6 +559,7 @@ public class Test_Vector3Interop
     [ActiveIssue("https://github.com/dotnet/runtime/issues/96051", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsOSX))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/127827", typeof(TestLibrary.CoreClrConfigurationDetection), nameof(TestLibrary.CoreClrConfigurationDetection.IsGCStressC))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static int TestEntryPoint() 
     {

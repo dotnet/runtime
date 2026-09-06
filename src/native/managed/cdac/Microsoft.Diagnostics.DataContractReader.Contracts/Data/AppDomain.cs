@@ -6,10 +6,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.AppDomain))]
 internal sealed partial class AppDomain : IData<AppDomain>
 {
-    [Field] public TargetPointer RootAssembly { get; }
+    [Field] public partial TargetPointer RootAssembly { get; }
 
     [FieldAddress]
-    public TargetPointer AssemblyList { get; }
+    public partial TargetPointer AssemblyList { get; }
 
-    [Field] public TargetPointer FriendlyName { get; }
+    [Field] public partial TargetPointer FriendlyName { get; }
 }

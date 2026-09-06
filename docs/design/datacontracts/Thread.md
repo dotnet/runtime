@@ -92,73 +92,75 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 
 ## Version 1
 
-The contract depends on the following globals
+<!-- BEGIN GENERATED: usage contract=Thread version=c1 -->
+### Data descriptors used
 
-| Global name | Type | Meaning |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `EEAllocContext` | `GCAllocationContext` | `GCAllocContext` | Embedded GC allocation context for the thread |
+| `ExceptionInfo` | `ContextRecord` | `pointer` | Pointer to the OS `CONTEXT` the OS dispatcher pushed for this exception |
+| `ExceptionInfo` | `ExceptionFlags` | `uint32` | Exception state flags |
+| `ExceptionInfo` | `ExceptionRecord` | `pointer` | Pointer to the OS `EXCEPTION_RECORD` the OS dispatcher pushed for this exception |
+| `ExceptionInfo` | `PreviousNestedInfo` | `pointer` | Pointer to previous nested exception info |
+| `ExceptionInfo` | `ThrownObject` | `pointer` | Handle to the thrown exception object |
+| `GCAllocContext` | `AllocBytes` | `int64` | Number of bytes allocated on SOH by this context |
+| `GCAllocContext` | `AllocBytesLoh` | `int64` | Number of bytes allocated not on SOH by this context |
+| `GCAllocContext` | `Limit` | `pointer` | Allocation limit pointer |
+| `GCAllocContext` | `Pointer` | `pointer` | GC allocation pointer |
+| `IdDispenser` | `HighestId` | `uint32` | Highest possible small thread ID |
+| `IdDispenser` | `IdToThread` | `pointer` | Array mapping small thread IDs to thread pointers |
+| `InFlightTLSData` | `Next` | `pointer` | Pointer to next in-flight TLS data entry |
+| `InFlightTLSData` | `TLSData` | `ObjectHandle` | Object handle to the TLS data for the static field |
+| `InFlightTLSData` | `TlsIndex` | `TLSIndex` | TLS index for the in-flight static field |
+| `RuntimeThreadLocals` | `AllocContext` | `EEAllocContext` | GC allocation context for the thread |
+| `Thread` | `CachedStackBase` | `pointer` | Pointer to the base of the stack |
+| `Thread` | `CachedStackLimit` | `pointer` | Pointer to the limit of the stack |
+| `Thread` | `CurrentCustomDebuggerNotification` | `ObjectHandle` | Handle to the current custom debugger notification object |
+| `Thread` | `DebuggerControlledThreadState` | `uint32` | Thread state flags controlled by the debugger |
+| `Thread` | `DebuggerFilterContext` | `pointer` | Pointer to the debugger filter context for the thread |
+| `Thread` | `ExceptionTracker` | `pointer` | Pointer to exception tracking information |
+| `Thread` | `ExposedObject` | `ObjectHandle` | Handle to the managed `Thread` object exposed to the debugger |
+| `Thread` | `Frame` | `pointer` | Pointer to current frame |
+| `Thread` | `GCFrame` | `pointer` | Pointer to the head of the thread's GCFrame chain. |
+| `Thread` | `Id` | `uint32` | Thread identifier |
+| `Thread` | `InteropDebuggingHijacked` | `uint32` | Whether the thread has been hijacked for interop debugging |
+| `Thread` | `LastThrownObject` | `ObjectHandle` | Handle to last thrown exception object |
+| `Thread` | `LastThrownObjectIsUnhandled` | `uint32` | Whether `LastThrownObject` should be treated as unhandled |
+| `Thread` | `LinkNext` | `pointer` | Pointer to get next thread |
+| `Thread` | `OSId` | `nuint` | Operating system thread identifier |
+| `Thread` | `PreemptiveGCDisabled` | `uint32` | Flag indicating if preemptive GC is disabled |
+| `Thread` | `RuntimeThreadLocals` | `pointer` | Pointer to some thread-local storage |
+| `Thread` | `State` | `uint32` | Thread state flags |
+| `Thread` | `ThreadHandle` | `pointer` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
+| `Thread` | `ThreadLocalDataPtr` | `pointer` | Pointer to thread local data structure |
+| `ThreadLocalData` | `CollectibleTlsArrayData` | `pointer` | Pointer to collectible TLS array data |
+| `ThreadLocalData` | `CollectibleTlsDataCount` | `int32` | Count of collectible TLS data entries |
+| `ThreadLocalData` | `InFlightData` | `pointer` | Pointer to in-flight TLS data for fields being initialized |
+| `ThreadLocalData` | `NonCollectibleTlsArrayData` | `pointer` | Pointer to non-collectible TLS array data |
+| `ThreadLocalData` | `NonCollectibleTlsDataCount` | `int32` | Count of non-collectible TLS data entries |
+| `ThreadStore` | `BackgroundCount` | `int32` | Number of background threads |
+| `ThreadStore` | `DeadCount` | `int32` | Number of dead threads |
+| `ThreadStore` | `FirstThreadLink` | `pointer` | Pointer to first thread in the linked list |
+| `ThreadStore` | `PendingCount` | `int32` | Number of pending threads |
+| `ThreadStore` | `ThreadCount` | `int32` | Number of threads |
+| `ThreadStore` | `UnstartedCount` | `int32` | Number of unstarted threads |
+| `TLSIndex` | `TLSIndexRawIndex` | `uint32` | Raw index value containing type and offset |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `AppDomain` | TargetPointer | A pointer to the address of the one AppDomain |
-| `ThreadStore` | TargetPointer | A pointer to the address of the ThreadStore |
-| `FeatureEHFunclets` | TargetPointer | 1 if EH funclets are enabled, 0 otherwise |
-| `FinalizerThread` | TargetPointer | A pointer to the finalizer thread |
-| `GCThread` | TargetPointer | A pointer to the GC thread |
-| `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects |
-| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array |
-| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array |
+| `FinalizerThread` | `pointer` | Pointer to the finalizer thread |
+| `GCThread` | `pointer` | Pointer to the GC thread |
+| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | `uint8` | Number of unused slots in the non-collectible TLS array |
+| `PtrArrayOffsetToDataArray` | `pointer` | Offset from a pointer-array object to its enclosed data array |
+| `ThinlockThreadIdDispenser` | `pointer` | Pointer to the dispenser of thin-lock thread IDs |
+| `ThreadStore` | `pointer` | Pointer to the runtime thread store |
 
-The contract additionally depends on these data descriptors
+### Contracts used
 
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
-| `ExceptionInfo` | `ThrownObjectHandle` | Pointer to exception object handle |
-| `ExceptionInfo` | `ExceptionRecord` | Pointer to the OS `EXCEPTION_RECORD` the OS dispatcher pushed for this exception |
-| `ExceptionInfo` | `ContextRecord` | Pointer to the OS `CONTEXT` the OS dispatcher pushed for this exception |
-| `GCAllocContext` | `Pointer` | GC allocation pointer |
-| `GCAllocContext` | `Limit` | Allocation limit pointer |
-| `GCAllocContext` | `AllocBytes` | Number of bytes allocated on SOH by this context |
-| `GCAllocContext` | `AllocBytesLoh` | Number of bytes allocated not on SOH by this context |
-| `IdDispenser` | `HighestId` | Highest possible small thread ID |
-| `IdDispenser` | `IdToThread` | Array mapping small thread IDs to thread pointers |
-| `InflightTLSData` | `Next` | Pointer to next in-flight TLS data entry |
-| `InflightTLSData` | `TlsIndex` | TLS index for the in-flight static field |
-| `InflightTLSData` | `TLSData` | Object handle to the TLS data for the static field |
-| `ObjectHandle` | `Object` | Pointer to the managed object |
-| `RuntimeThreadLocals` | `AllocContext` | GC allocation context for the thread |
-| `TLSIndex` | `IndexOffset` | Offset index for thread local storage |
-| `TLSIndex` | `IndexType` | Type of thread local storage index |
-| `TLSIndex` | `IsAllocated` | Whether TLS storage has been allocated |
-| `TLSIndex` | `TLSIndexRawIndex` | Raw index value containing type and offset |
-| `Thread` | `Id` | Thread identifier |
-| `Thread` | `OSId` | Operating system thread identifier |
-| `Thread` | `State` | Thread state flags |
-| `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
-| `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
-| `Thread` | `Frame` | Pointer to current frame |
-| `Thread` | `GCFrame` | Pointer to the head of the thread's GCFrame chain. |
-| `Thread` | `CachedStackBase` | Pointer to the base of the stack |
-| `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
-| `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
-| `Thread` | `LastThrownObject` | Handle to last thrown exception object |
-| `Thread` | `LastThrownObjectIsUnhandled` | Whether `LastThrownObject` should be treated as unhandled |
-| `Thread` | `CurrentCustomDebuggerNotification` | Handle to the current custom debugger notification object |
-| `Thread` | `LinkNext` | Pointer to get next thread |
-| `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
-| `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
-| `Thread` | `InteropDebuggingHijacked` | Whether the thread has been hijacked for interop debugging |
-| `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
-| `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
-| `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
-| `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
-| `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
-| `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
-| `ThreadLocalData` | `CollectibleTlsArrayData` | Pointer to collectible TLS array data |
-| `ThreadLocalData` | `InFlightData` | Pointer to in-flight TLS data for fields being initialized |
-| `ThreadStore` | `ThreadCount` | Number of threads |
-| `ThreadStore` | `FirstThreadLink` | Pointer to first thread in the linked list |
-| `ThreadStore` | `UnstartedCount` | Number of unstarted threads |
-| `ThreadStore` | `BackgroundCount` | Number of background threads |
-| `ThreadStore` | `PendingCount` | Number of pending threads |
-| `ThreadStore` | `DeadCount` | Number of dead threads |
+_None._
+<!-- END GENERATED: usage contract=Thread version=c1 -->
 
 ``` csharp
 enum TLSIndexType

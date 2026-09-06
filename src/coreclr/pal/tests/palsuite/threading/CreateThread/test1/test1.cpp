@@ -56,7 +56,7 @@ BOOL CreateThreadTest()
                             &dwThreadId );
 
     /* Ensure that the HANDLE is not invalid! */
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         dwRet = WaitForSingleObject(hThread,INFINITE);
 

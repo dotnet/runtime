@@ -36,8 +36,6 @@ FORCEINLINE void InlinedForwardGCSafeCopyHelper(void *dest, const void *src, siz
     _ASSERTE(IS_ALIGNED(src, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(len, sizeof(SIZE_T)));
 
-    _ASSERTE(CheckPointer(dest));
-    _ASSERTE(CheckPointer(src));
 
     SIZE_T *dptr = (SIZE_T *)dest;
     SIZE_T *sptr = (SIZE_T *)src;
@@ -170,8 +168,6 @@ FORCEINLINE void InlinedBackwardGCSafeCopyHelper(void *dest, const void *src, si
     _ASSERTE(IS_ALIGNED(src, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(len, sizeof(SIZE_T)));
 
-    _ASSERTE(CheckPointer(dest));
-    _ASSERTE(CheckPointer(src));
 
     SIZE_T *dptr = (SIZE_T *)((BYTE *)dest + len);
     SIZE_T *sptr = (SIZE_T *)((BYTE *)src + len);
@@ -304,8 +300,6 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
     _ASSERTE(IS_ALIGNED(src, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(len, sizeof(SIZE_T)));
 
-    _ASSERTE(CheckPointer(dest));
-    _ASSERTE(CheckPointer(src));
 
     const bool notInHeap = ((BYTE*)dest < g_lowest_address || (BYTE*)dest >= g_highest_address);
 

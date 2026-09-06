@@ -29,34 +29,20 @@ namespace System
             int i = totalCharsConsumed + (bytesLeftInBuffer * 3);
 
         ReadByteFromInput:
-            if ((uint)(input.Length - i) <= 2 || input[i] != '%')
+            if ((uint)(i + 2) >= (uint)input.Length || input[i] != '%')
                 goto NoMoreOrInvalidInput;
 
-            uint value = input[i + 1];
-            if ((uint)((value - 'A') & ~0x20) <= ('F' - 'A'))
-            {
-                value = (value | 0x20) - 'a' + 10;
-            }
-            else if ((value - '8') <= ('9' - '8'))
-            {
-                value -= '0';
-            }
-            else goto NoMoreOrInvalidInput; // First character wasn't hex or was <= 7F (Ascii)
+            uint value = (uint)HexConverter.FromChar(input[i + 1]);
 
-            uint second = (uint)input[i + 2] - '0';
-            if (second <= 9)
-            {
-                // second is already [0, 9]
-            }
-            else if ((uint)((second - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
-            {
-                second = ((second + '0') | 0x20) - 'a' + 10;
-            }
-            else goto NoMoreOrInvalidInput; // Second character wasn't Hex
+            // Check if the first character is 0 to avoid the case where "%0_" passes the "(value - 128) > 127" guard below since
+            // an invalid second character decodes to 0xFF on its own. If we exclude 0, all invalid values will map outside the range.
+            if (value == 0)
+                goto NoMoreOrInvalidInput;
 
-            value = (value << 4) | second;
+            value = (value << 4) + (uint)HexConverter.FromChar(input[i + 2]);
 
-            Debug.Assert(value >= 128);
+            if ((value - 128) > 127)
+                goto NoMoreOrInvalidInput; // Either not Hex or the decoded value is ASCII
 
             // Rotate the buffer and overwrite the last byte
             if (BitConverter.IsLittleEndian)

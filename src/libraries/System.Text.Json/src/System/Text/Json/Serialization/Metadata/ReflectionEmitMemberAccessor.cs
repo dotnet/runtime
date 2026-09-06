@@ -68,8 +68,8 @@ namespace System.Text.Json.Serialization.Metadata
             return CreateDelegate<Func<object>>(dynamicMethod);
         }
 
-        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
+        public override Func<object?[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
+            CreateDelegate<Func<object?[], T>>(CreateParameterizedConstructor(constructor));
 
         private static DynamicMethod CreateParameterizedConstructor(ConstructorInfo constructor)
         {

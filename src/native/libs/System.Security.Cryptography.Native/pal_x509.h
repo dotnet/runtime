@@ -131,13 +131,6 @@ Always succeeds.
 PALEXPORT void CryptoNative_X509Destroy(X509* a);
 
 /*
-Shims the X509_dup method.
-
-Returns the duplicated X509 instance.
-*/
-PALEXPORT X509* CryptoNative_X509Duplicate(X509* x509);
-
-/*
 Shims the PEM_read_bio_X509 method.
 
 Returns the read X509 instance.

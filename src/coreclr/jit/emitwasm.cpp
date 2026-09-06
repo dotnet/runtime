@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
 #include "codegen.h"
 
 // clang-format off
@@ -89,6 +90,17 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //
 void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 {
+    // Rewrite `local.set N; local.get N` as `local.tee N`.
+    //
+    if ((ins == INS_local_get) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
+        (emitLastIns->idIns() == INS_local_set) && (emitGetInsSC(emitLastIns) == imm))
+    {
+        JITDUMP("\n -- rewriting 'local.set %d' as 'local.tee %d' since it is followed by a get of the same local.\n",
+                (int)imm, (int)imm);
+        emitLastIns->idIns(INS_local_tee);
+        return;
+    }
+
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
@@ -153,33 +165,41 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 {
-    NYI_WASM("emitIns_R");
+    unreached();
 }
 
 void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, cnsval_ssize_t imm)
 {
-    NYI_WASM("emitIns_R_I");
+    unreached();
 }
 
 void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
 {
-    NYI_WASM("emitIns_Mov");
+    unreached();
 }
 
 void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 {
-    NYI_WASM("emitIns_R_R");
+    unreached();
 }
 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    NYI_WASM("emitIns_S_R");
+    unreached();
 }
 
 bool emitter::emitInsIsStore(instruction ins)
 {
-    NYI_WASM("emitInsIsStore");
-    return false;
+    unreached();
+}
+
+//------------------------------------------------------------------------
+// emitImageBase: Emit the module base (imageBase global) onto the stack.
+//
+void emitter::emitImageBase()
+{
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
 }
 
 //------------------------------------------------------------------------
@@ -188,10 +208,29 @@ bool emitter::emitInsIsStore(instruction ins)
 void emitter::emitAddressConstant(void* address)
 {
     // Load our module base from the image base global, then load our address constant, then sum them.
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
-              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
+    emitImageBase();
     emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
+}
+
+//------------------------------------------------------------------------
+// emitIns_MemargAddress: Emit a load or store whose memarg offset is a relocated address constant.
+//
+// Arguments:
+//   ins     - the load or store instruction
+//   attr    - emit attributes
+//   address - the address constant, relocated relative to the module base
+//
+// Notes:
+//   The module base must already be on the stack; see emitImageBase. This folds the addition that
+//   emitAddressConstant would otherwise emit into the memarg offset. The memarg offset is always a
+//   relocation, never a raw address, so the caller must only reach here when relocating.
+//
+void emitter::emitIns_MemargAddress(instruction ins, emitAttr attr, void* address)
+{
+    assert(emitInsFormat(ins) == IF_MEMARG);
+    assert(m_compiler->opts.compReloc);
+    emitIns_I(ins, EA_SET_FLG(attr, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
 }
 
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
@@ -200,6 +239,34 @@ void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
     emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
               (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
+    emitIns(INS_i32_add);
+}
+
+//------------------------------------------------------------------------
+// emitDataOffsetConstant: Emit a constant whose value is the linear-memory
+// address of an entry in this method's JIT-emitted data (constants) section.
+//
+// The encoding mirrors emitAddressConstant: we load the image base global
+// (the module image base), emit a relocated i32.const for the entry's offset,
+// then add them. At output time the reloc target is resolved to the host
+// pointer of the data section entry, which crossgen2 maps to the per-method
+// read-only data symbol + offset.
+//
+// Arguments:
+//    dataOffs - JIT data section offset of the entry (from
+//               Compiler::eeGetJitDataOffs / emitter::emitDataGenBeg).
+//
+void emitter::emitDataOffsetConstant(UNATIVE_OFFSET dataOffs)
+{
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
+
+    instrDesc* id = emitNewInstrSC(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)dataOffs);
+    id->idIns(INS_i32_const_dataoffs);
+    id->idInsFmt(IF_DATAOFFS);
+    dispIns(id);
+    appendToCurIG(id);
+
     emitIns(INS_i32_add);
 }
 
@@ -683,6 +750,9 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_FUNCLETIDX:
             size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
             break;
+        case IF_DATAOFFS:
+            size += PADDED_RELOC_SIZE; // data-section offsets are always emitted as relocations
+            break;
         case IF_CALL_INDIRECT:
         {
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
@@ -747,7 +817,7 @@ unsigned emitter::instrDesc::idCodeSize() const
 
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
-    NYI_WASM("emitSetShortJump");
+    unreached();
 }
 
 size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
@@ -947,6 +1017,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
             break;
         }
+        case IF_DATAOFFS:
+        {
+            // Resolve the JIT data-section offset to a host pointer and record a
+            // memory-address reloc (same shape as IF_MEMADDR).
+            dst += emitOutputOpcode(dst, ins);
+            UNATIVE_OFFSET dataOffs = (UNATIVE_OFFSET)emitGetInsSC(id);
+            BYTE*          target   = emitDataOffsetToPtr(dataOffs);
+            emitRecordRelocation(dst, target, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
+            dst += emitOutputPaddedReloc(dst);
+            break;
+        }
         case IF_FUNCPTR:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1003,12 +1084,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMARG:
         {
             dst += emitOutputOpcode(dst, ins);
-            uint64_t align  = emitGetAlignHintLog2(id);
-            uint64_t offset = emitGetInsSC(id);
+            uint64_t align = emitGetAlignHintLog2(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
             dst += emitOutputULEB128(dst, align);
-            dst += emitOutputULEB128(dst, offset);
+            // TODO-WASM: as with IF_MEMADDR, this reloc is specific to R2R and assumes the address we want is an
+            // offset from __image_base.
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_LEB);
             break;
         }
         case IF_LOCAL_DECL:
@@ -1100,8 +1182,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         default:
-            NYI_WASM("emitOutputInstr");
-            break;
+            unreached();
     }
 
 #ifdef DEBUG
@@ -1252,7 +1333,7 @@ void emitter::emitDispIns(
         case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu", (uint64_t)imm);
+            printf(" %" PRIu64, (uint64_t)imm);
             dispJumpTargetIfAny();
             dispHandleIfAny();
             dispLclVarInfoIfAny();
@@ -1262,14 +1343,14 @@ void emitter::emitDispIns(
         case IF_CALL_INDIRECT:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu 0", (uint64_t)imm);
+            printf(" %" PRIu64 " 0", (uint64_t)imm);
             dispHandleIfAny();
         }
         break;
         case IF_MEMIDX_MEMIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
+            printf(" %" PRIu64 " %" PRIu64, (uint64_t)imm, (uint64_t)imm);
         }
         break;
         case IF_LOCAL_DECL:
@@ -1304,7 +1385,7 @@ void emitter::emitDispIns(
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %lli", (int64_t)imm);
+            printf(" %" PRId64, (int64_t)imm);
             dispLclVarInfoIfAny();
         }
         break;
@@ -1313,7 +1394,15 @@ void emitter::emitDispIns(
         case IF_FUNCLETIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf("funclet %lli", (int64_t)imm);
+            printf("funclet %lli", static_cast<long long>(imm));
+            dispLclVarInfoIfAny();
+        }
+        break;
+
+        case IF_DATAOFFS:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf("data 0x%llx", static_cast<unsigned long long>(imm));
             dispLclVarInfoIfAny();
         }
         break;
@@ -1332,7 +1421,14 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+            if (id->idIsCnsReloc())
+            {
+                printf(" %u reloc 0x%" PRIx64, log2align, (uint64_t)offset);
+            }
+            else
+            {
+                printf(" %u %" PRIu64, log2align, (uint64_t)offset);
+            }
             dispLclVarInfoIfAny();
         }
         break;
@@ -1406,7 +1502,7 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+            printf(" %u %llu", log2align, static_cast<unsigned long long>(offset));
             dispLclVarInfoIfAny();
 
             uint8_t lane = emitGetLaneImmValue(id);

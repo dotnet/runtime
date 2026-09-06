@@ -494,27 +494,84 @@ namespace System
             Justification = "The parameter 'methodType' is passed by ref to QCallTypeHandle")]
         private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] RuntimeType methodType, string method, DelegateBindingFlags flags)
         {
-            Delegate d = this;
-            return BindToMethodName(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
-                new QCallTypeHandle(ref methodType), method, flags);
-        }
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodName(ObjectHandleOnStack d, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
+            unsafe
+            {
+                ret = BindToMethodName(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                new QCallTypeHandle(ref methodType), method, flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
 
-        private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
-        {
-            Delegate d = this;
-            bool ret = BindToMethodInfo(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
-                method.Value, new QCallTypeHandle(ref methodType), flags);
-            GC.KeepAlive(method);
+            if (ret)
+            {
+                // Apply the results of the QCall to the delegate instance.
+                _methodPtr = bindToMethodDetails.methodPtr;
+                _methodPtrAux = bindToMethodDetails.methodPtrAux;
+                _extraData = bindToMethodDetails.extraData;
+                if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+                {
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    GC.KeepAlive(methodType);
+                }
+
+                if (bindToMethodDetails.selfReferentialTarget != 0)
+                    _target = this;
+                else
+                    _target = target;
+            }
             return ret;
         }
 
+        private struct BindToMethodDetails
+        {
+            public int selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
+            public IntPtr methodPtr;
+            public IntPtr methodPtrAux;
+            public IntPtr extraData;
+            public GCHandle loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT, QCallTypeHandle methodType, string method, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
+
+        private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
+        {
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
+
+            if (ret)
+            {
+                // Apply the results of the QCall to the delegate instance.
+                _methodPtr = bindToMethodDetails.methodPtr;
+                _methodPtrAux = bindToMethodDetails.methodPtrAux;
+                _extraData = bindToMethodDetails.extraData;
+                if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+                {
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    GC.KeepAlive(method);
+                }
+
+                if (bindToMethodDetails.selfReferentialTarget != 0)
+                    _target = this;
+                else
+                    _target = target;
+            }
+            return ret;
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
+        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private static Delegate InternalAlloc(RuntimeType type)
         {
@@ -562,16 +619,37 @@ namespace System
                 throw new ArgumentNullException(nameof(method));
             }
 
-            Delegate _this = this;
-            Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                Construct(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    method, out bindToMethodDetails);
+            }
+
+            // Apply the results of the QCall to the delegate instance.
+            _methodPtr = bindToMethodDetails.methodPtr;
+            _methodPtrAux = bindToMethodDetails.methodPtrAux;
+            _extraData = bindToMethodDetails.extraData;
+            if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+            {
+                _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+            }
+
+            if (bindToMethodDetails.selfReferentialTarget != 0)
+                _target = this;
+            else
+                _target = target;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
-        private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
+        private static partial void Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, IntPtr method, out BindToMethodDetails bindToMethodDetails);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
@@ -607,6 +685,7 @@ namespace System
             return methodInfo!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_CreateMethodInfo")]
         private static unsafe partial void CreateMethodInfo(MethodDesc* methodDesc, ObjectHandleOnStack retMethodInfo);
 
@@ -617,6 +696,7 @@ namespace System
             return GetMethodDesc(ObjectHandleOnStack.Create(ref instance));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
         private static unsafe partial MethodDesc* GetMethodDesc(ObjectHandleOnStack instance);
 
@@ -805,11 +885,17 @@ namespace System
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
         {
-            return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
+            unsafe
+            {
+                IntPtr result = AdjustTarget(RuntimeHelpers.GetMethodTable(target), methodPtr);
+                GC.KeepAlive(target);
+                return result;
+            }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
-        private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
+        private static partial IntPtr AdjustTarget(MethodTable* targetMT, IntPtr methodPtr);
 
         internal void InitializeVirtualCallStub(IntPtr methodPtr)
         {
@@ -817,6 +903,7 @@ namespace System
             InitializeVirtualCallStub(ObjectHandleOnStack.Create(ref d), methodPtr);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
 

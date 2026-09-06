@@ -12,15 +12,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
-#include <sys/time.h>
+#include <minipal/conditionvariable.h>
+#include <minipal/mutex.h>
 #include <minipal/thread.h>
 #if HAVE_SCHED_GETCPU
 #include <sched.h>
-#endif
-
-#if defined(TARGET_OSX)
-// So we can use the declaration of pthread_cond_timedwait_relative_np
-#undef _XOPEN_SOURCE
 #endif
 
 #if defined(TARGET_LINUX)
@@ -41,8 +37,8 @@
 
 struct LowLevelMonitor
 {
-    pthread_mutex_t Mutex;
-    pthread_cond_t Condition;
+    minipal_nonrecursive_mutex Mutex;
+    minipal_condition_variable Condition;
 #ifdef DEBUG
     bool IsLocked;
 #endif
@@ -67,42 +63,17 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
         return NULL;
     }
 
-    int error;
-
-    error = pthread_mutex_init(&monitor->Mutex, NULL);
-    if (error != 0)
+    if (!minipal_nonrecursive_mutex_init(&monitor->Mutex))
     {
         free(monitor);
         return NULL;
     }
 
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK
-    pthread_condattr_t conditionAttributes;
-    error = pthread_condattr_init(&conditionAttributes);
-    if (error != 0)
+    if (!minipal_condition_variable_init(&monitor->Condition))
     {
-        goto mutex_destroy;
-    }
-
-    error = pthread_condattr_setclock(&conditionAttributes, CLOCK_MONOTONIC);
-    if (error != 0)
-    {
-        error = pthread_condattr_destroy(&conditionAttributes);
-        assert(error == 0);
-        goto mutex_destroy;
-    }
-
-    error = pthread_cond_init(&monitor->Condition, &conditionAttributes);
-
-    int condAttrDestroyError;
-    condAttrDestroyError = pthread_condattr_destroy(&conditionAttributes);
-    assert(condAttrDestroyError == 0);
-#else
-    error = pthread_cond_init(&monitor->Condition, NULL);
-#endif
-    if (error != 0)
-    {
-        goto mutex_destroy;
+        minipal_nonrecursive_mutex_destroy(&monitor->Mutex);
+        free(monitor);
+        return NULL;
     }
 
 #ifdef DEBUG
@@ -110,25 +81,14 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
 #endif
 
     return monitor;
-
-mutex_destroy:
-    error = pthread_mutex_destroy(&monitor->Mutex);
-    assert(error == 0);
-    free(monitor);
-    return NULL;
 }
 
 void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
-    int error;
-
-    error = pthread_cond_destroy(&monitor->Condition);
-    assert(error == 0);
-
-    error = pthread_mutex_destroy(&monitor->Mutex);
-    assert(error == 0);
+    minipal_condition_variable_destroy(&monitor->Condition);
+    minipal_nonrecursive_mutex_destroy(&monitor->Mutex);
 
     free(monitor);
 }
@@ -137,10 +97,7 @@ void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
-    int error;
-
-    error = pthread_mutex_lock(&monitor->Mutex);
-    assert(error == 0);
+    minipal_nonrecursive_mutex_enter(&monitor->Mutex);
 
     SetIsLocked(monitor, true);
 }
@@ -151,10 +108,7 @@ void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
-    int error;
-
-    error = pthread_mutex_unlock(&monitor->Mutex);
-    assert(error == 0);
+    minipal_nonrecursive_mutex_leave(&monitor->Mutex);
 }
 
 void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
@@ -163,10 +117,12 @@ void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
-    int error;
-
-    error = pthread_cond_wait(&monitor->Condition, &monitor->Mutex);
-    assert(error == 0);
+    minipal_condition_variable_result result =
+        minipal_condition_variable_wait_nonrecursive(
+            &monitor->Condition,
+            &monitor->Mutex,
+            MINIPAL_CONDITION_VARIABLE_INFINITE);
+    assert(result == MINIPAL_CONDITION_VARIABLE_SIGNALED);
 
     SetIsLocked(monitor, true);
 }
@@ -177,55 +133,30 @@ int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t
 
     SetIsLocked(monitor, false);
 
-    int error;
-
-    // Calculate the time at which a timeout should occur, and wait. Older versions of OSX don't support clock_gettime with
-    // CLOCK_MONOTONIC, so we instead compute the relative timeout duration, and use a relative variant of the timed wait.
-    struct timespec timeoutTimeSpec;
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    timeoutTimeSpec.tv_sec = timeoutMilliseconds / 1000;
-    timeoutTimeSpec.tv_nsec = (timeoutMilliseconds % 1000) * 1000 * 1000;
-
-    error = pthread_cond_timedwait_relative_np(&monitor->Condition, &monitor->Mutex, &timeoutTimeSpec);
-#else
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK
-    error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
-    assert(error == 0);
-#else
-    struct timeval tv;
-
-    error = gettimeofday(&tv, NULL);
-    assert(error == 0);
-
-    timeoutTimeSpec.tv_sec = tv.tv_sec;
-    timeoutTimeSpec.tv_nsec = tv.tv_usec * 1000;
-#endif
-    uint64_t nanoseconds = (uint64_t)timeoutMilliseconds * 1000 * 1000 + (uint64_t)timeoutTimeSpec.tv_nsec;
-    timeoutTimeSpec.tv_sec += nanoseconds / (1000 * 1000 * 1000);
-    timeoutTimeSpec.tv_nsec = nanoseconds % (1000 * 1000 * 1000);
-
-    error = pthread_cond_timedwait(&monitor->Condition, &monitor->Mutex, &timeoutTimeSpec);
-#endif
-    assert(error == 0 || error == ETIMEDOUT);
+    minipal_condition_variable_result result =
+        minipal_condition_variable_wait_nonrecursive(
+            &monitor->Condition,
+            &monitor->Mutex,
+            (uint32_t)timeoutMilliseconds);
+    assert(
+        result == MINIPAL_CONDITION_VARIABLE_SIGNALED ||
+        result == MINIPAL_CONDITION_VARIABLE_TIMED_OUT);
 
     SetIsLocked(monitor, true);
 
-    return error == 0;
+    return result == MINIPAL_CONDITION_VARIABLE_SIGNALED;
 }
 
 void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
-    int error;
-
-    error = pthread_cond_signal(&monitor->Condition);
-    assert(error == 0);
+    bool result = minipal_condition_variable_signal(&monitor->Condition);
+    assert(result);
 
     SetIsLocked(monitor, false);
 
-    error = pthread_mutex_unlock(&monitor->Mutex);
-    assert(error == 0);
+    minipal_nonrecursive_mutex_leave(&monitor->Mutex);
 }
 
 #if defined(TARGET_LINUX)

@@ -97,24 +97,26 @@ namespace TestLibrary
         }
 
         // These platforms have not had their infrastructure updated to support native test assets.
+        // WebAssembly has no dynamic loading, so a test only gets its native assets when the build
+        // produced a test-specific corerun with them linked in; the run script tells us when that
+        // happened.
         public static bool PlatformDoesNotSupportNativeTestAssets =>
-            OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
+            OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid()
+            || ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) && !s_nativeTestAssetsLinked);
+
+        private static readonly bool s_nativeTestAssetsLinked = IsEnvironmentVariableTrue("__TestNativeAssetsLinked");
         public static bool IsAppleMobile => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
 
         // wasm properties
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
         public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 
-        private static bool IsEnvironmentVariableTrue(string variableName)
-        {
-            if (!IsBrowser)
-                return false;
-
-            return Environment.GetEnvironmentVariable(variableName) is "true";
-        }
+        private static bool IsEnvironmentVariableTrue(string variableName) =>
+            Environment.GetEnvironmentVariable(variableName) is "true";
 
         public static bool IsUsingSynthesizedPgoData => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CrossGen2SynthesizePgo"));
     }

@@ -149,10 +149,17 @@ namespace System.Threading.Channels
             where TAsyncOp : AsyncOperation<TAsyncOp>
         {
             Debug.Assert(op is not null);
+
+            // If the list has already been detached, the operation's links may be cleared concurrently.
+            if (head is null)
+            {
+                return;
+            }
+
             Debug.Assert(op.Next is null == op.Previous is null);
 
             // If the operation is known to not be in the list referenced by head, avoid further manipulating the instance.
-            if (head is null || op.Next is null)
+            if (op.Next is null)
             {
                 return;
             }

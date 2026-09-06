@@ -147,7 +147,6 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -180,7 +179,6 @@ void LookupMap<TYPE>::EnsureElementCanBeStored(Module * pModule, DWORD rid)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -326,7 +324,7 @@ inline Assembly *ModuleBase::LookupAssemblyRef(mdAssemblyRef token)
 #ifndef DACCESS_COMPILE
 inline void Module::ForceStoreAssemblyRef(mdAssemblyRef token, Assembly *value)
 {
-    WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+    WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
     _ASSERTE(value->GetModule());
     _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
 

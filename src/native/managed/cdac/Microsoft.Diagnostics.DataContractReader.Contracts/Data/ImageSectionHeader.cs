@@ -13,14 +13,14 @@ internal sealed partial class ImageSectionHeader : IData<ImageSectionHeader>
     public const uint Size = 40;
 
     [RawOffset(VirtualSizeOffset, LittleEndian = true)]
-    public uint VirtualSize { get; }
+    public partial uint VirtualSize { get; }
 
     [RawOffset(VirtualAddressOffset, LittleEndian = true)]
-    public uint VirtualAddress { get; }
+    public partial uint VirtualAddress { get; }
 
     [RawOffset(SizeOfRawDataOffset, LittleEndian = true)]
-    public uint SizeOfRawData { get; }
+    public partial uint SizeOfRawData { get; }
 
     [RawOffset(PointerToRawDataOffset, LittleEndian = true)]
-    public uint PointerToRawData { get; }
+    public partial uint PointerToRawData { get; }
 }

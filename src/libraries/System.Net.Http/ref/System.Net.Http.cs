@@ -321,6 +321,8 @@ namespace System.Net.Http
         public HttpRequestMessage() { }
         public HttpRequestMessage(System.Net.Http.HttpMethod method, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri) { }
         public HttpRequestMessage(System.Net.Http.HttpMethod method, System.Uri? requestUri) { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5008", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public long? ConnectionId { get { throw null; } set { } }
         public System.Net.Http.HttpContent? Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders Headers { get { throw null; } }
         public System.Net.Http.HttpMethod Method { get { throw null; } set { } }
@@ -442,8 +444,20 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpConnectionContext
     {
         internal SocketsHttpConnectionContext() { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5008", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public long ConnectionId { get { throw null; } }
         public System.Net.DnsEndPoint DnsEndPoint { get { throw null; } }
         public System.Net.Http.HttpRequestMessage InitialRequestMessage { get { throw null; } }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5008", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class SocketsHttpConnectionEvictionContext
+    {
+        internal SocketsHttpConnectionEvictionContext() { }
+        public System.TimeSpan Age { get { throw null; } }
+        public long ConnectionId { get { throw null; } }
+        public System.Net.DnsEndPoint DnsEndPoint { get { throw null; } }
+        public System.Version HttpVersion { get { throw null; } }
+        public System.Net.IPEndPoint? RemoteEndPoint { get { throw null; } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
@@ -462,6 +476,7 @@ namespace System.Net.Http
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public bool EnableMultipleHttp3Connections { get { throw null; } set { } }
         public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
+        public int InitialHttp2MaxConcurrentStreams { get { throw null; } set { } }
         public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
         public static bool IsSupported { get { throw null; } }
@@ -483,6 +498,8 @@ namespace System.Net.Http
         public System.Net.Http.HeaderEncodingSelector<System.Net.Http.HttpRequestMessage>? RequestHeaderEncodingSelector { get { throw null; } set { } }
         public System.TimeSpan ResponseDrainTimeout { get { throw null; } set { } }
         public System.Net.Http.HeaderEncodingSelector<System.Net.Http.HttpRequestMessage>? ResponseHeaderEncodingSelector { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5008", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public System.Func<System.Net.Http.SocketsHttpConnectionEvictionContext, System.Threading.CancellationToken, System.Threading.Tasks.Task<bool>>? ShouldEvictConnection { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Net.Security.SslClientAuthenticationOptions SslOptions { get { throw null; } set { } }
         public bool UseCookies { get { throw null; } set { } }
@@ -494,6 +511,8 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpPlaintextStreamFilterContext
     {
         internal SocketsHttpPlaintextStreamFilterContext() { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5008", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public long ConnectionId { get { throw null; } }
         public System.Net.Http.HttpRequestMessage InitialRequestMessage { get { throw null; } }
         public System.Version NegotiatedHttpVersion { get { throw null; } }
         public System.IO.Stream PlaintextStream { get { throw null; } }

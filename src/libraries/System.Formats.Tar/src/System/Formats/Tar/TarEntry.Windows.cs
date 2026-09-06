@@ -14,14 +14,14 @@ namespace System.Formats.Tar
         // Throws on Windows. Block devices are not supported on this platform.
         private void ExtractAsBlockDevice(string destinationFileName)
         {
-            Debug.Assert(EntryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice);
+            Debug.Assert(EntryType is TarEntryType.BlockDevice);
             throw new InvalidOperationException(SR.IO_DeviceFiles_NotSupported);
         }
 
         // Throws on Windows. Character devices are not supported on this platform.
         private void ExtractAsCharacterDevice(string destinationFileName)
         {
-            Debug.Assert(EntryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice);
+            Debug.Assert(EntryType is TarEntryType.CharacterDevice);
             throw new InvalidOperationException(SR.IO_DeviceFiles_NotSupported);
         }
 

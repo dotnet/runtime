@@ -1,0 +1,17 @@
+; Licensed to the .NET Foundation under one or more agreements.
+; The .NET Foundation licenses this file to you under the MIT license.
+
+; This export set intentionally differs from the traditional DBI.
+; This binary is only ever loaded by cDAC-aware dbgshim that's collocated, which resolves exactly
+; two DBI entrypoints on it: OpenVirtualProcessImpl2 (out-of-proc / data-target activation)
+; and CoreCLRCreateCordbObject3 (in-proc creation).
+; The LIBRARY name differs so the module's internal name matches mscordbi_universal.dll.
+
+LIBRARY         mscordbi_universal
+
+EXPORTS
+    ; In-proc creation path from the shim
+    CoreCLRCreateCordbObject3 private
+
+    ; Out-of-proc creation path from the shim - ICLRDebugging
+    OpenVirtualProcessImpl2

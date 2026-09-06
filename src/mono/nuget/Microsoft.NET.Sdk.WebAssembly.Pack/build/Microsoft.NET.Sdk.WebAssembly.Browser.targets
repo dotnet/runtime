@@ -62,6 +62,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.AttachWebcilSizes" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -406,23 +407,58 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <!-- Property NAMES whose values select what _ConvertBuildDllsToWebcil stages (a prebuilt R2R image vs
+       an IL webcil). This selection comes from properties, not files, so it is invisible to the target's
+       timestamp-based Inputs; the stamp below turns it into a file input. Add a flag here to include it.
+       Contributes to https://github.com/dotnet/runtime/issues/94595 . -->
+  <ItemGroup>
+    <_WasmWebcilStampProperty Include="_WasmEnableWebcil" />
+    <_WasmWebcilStampProperty Include="_WasmWebcilVersion" />
+    <_WasmWebcilStampProperty Include="PublishReadyToRun" />
+    <_WasmWebcilStampProperty Include="_WasmBuildPrebuiltR2RDirectory" />
+  </ItemGroup>
+
+  <!-- Writes one "name=value" line per _WasmWebcilStampProperty. WriteOnlyWhenDifferent bumps the stamp's
+       timestamp only when a value changes, invalidating _ConvertBuildDllsToWebcil so it re-stages instead
+       of leaving a stale IL/R2R webcil. Runs unconditionally (no Inputs/Outputs) so the comparison always
+       happens; the stamp file itself is the incremental gate for the convert target. -->
+  <Target Name="_WriteWasmBuildWebcilStamp"
+          DependsOnTargets="_ComputeWasmBuildCandidates"
+          Condition="'$(_WasmEnableWebcil)' == 'true'">
+    <ItemGroup>
+      <_WasmBuildPrebuiltR2RInput Include="$(_WasmBuildPrebuiltR2RDirectory)*.dll;$(_WasmBuildPrebuiltR2RDirectory)*.wasm"
+                                  Condition="'$(_WasmBuildPrebuiltR2RDirectory)' != ''" />
+      <_WasmWebcilBuildStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
+      <_WasmWebcilBuildStampLine Include="%(_WasmWebcilStampProperty.Identity)=$(%(_WasmWebcilStampProperty.Identity))" />
+      <_WasmWebcilBuildStampLine Include="PrebuiltR2R=%(_WasmBuildPrebuiltR2RInput.Identity)|%(_WasmBuildPrebuiltR2RInput.ModifiedTime)" />
+      <_WasmWebcilBuildStampLine Include="Input=%(_WasmWebcilBuildStampInput.Identity)|%(_WasmWebcilBuildStampInput.ModifiedTime)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)wasm-webcil-build.stamp"
+                      Lines="@(_WasmWebcilBuildStampLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-build.stamp" />
+    </ItemGroup>
+  </Target>
+
   <!-- Convert DLL assemblies to webcil format.
        Outputs is a direct transform of the item-based Inputs, enabling MSBuild partial target
        execution: when only some DLLs change, MSBuild passes only out-of-date pairs to the
-       target body. Property inputs (project/targets/task assembly) are global dependencies —
-       if any changes, all outputs are rebuilt.
+       target body. Property inputs (project/targets/task assembly, and the webcil staging-mode
+       stamp) are global dependencies — if any changes, all outputs are rebuilt.
        Touch is needed because the task uses content comparison (MoveIfDifferent) which preserves
        old timestamps when webcil content is unchanged. Without Touch, property-triggered full
        rebuilds would loop since skipped outputs retain pre-existing timestamps. -->
   <Target Name="_ConvertBuildDllsToWebcil"
-    DependsOnTargets="_ComputeWasmBuildCandidates"
+    DependsOnTargets="_ComputeWasmBuildCandidates;_WriteWasmBuildWebcilStamp"
     Condition="'$(_WasmEnableWebcil)' == 'true'"
-    Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
+    Inputs="@(_WasmDllBuildCandidates);$(IntermediateOutputPath)wasm-webcil-build.stamp;$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-      <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
+      <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
 
     <!-- Touch is needed for property-triggered full rebuilds: the task's content comparison
@@ -681,6 +717,19 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
   </Target>
 
+  <!-- Attach PayloadSize/TableSize metadata onto webcil-in-wasm resources by reading the already-
+       produced webcil files, so GenerateWasmBootJson can emit them into the boot config without
+       opening the files itself. Runs every build (cheap: only the small size header of each webcil
+       is read), so the metadata is present even when ConvertDllsToWebcil was skipped for unchanged
+       assemblies. Non-webcil resources pass through unchanged, so the output is a drop-in
+       replacement for @(WasmStaticWebAsset) even when webcil is disabled. -->
+  <Target Name="_AttachBuildWebcilSizes"
+    DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
+    <AttachWebcilSizes Candidates="@(WasmStaticWebAsset)">
+      <Output TaskParameter="CandidatesWithSizes" ItemName="_WasmStaticWebAssetWithSizes" />
+    </AttachWebcilSizes>
+  </Target>
+
   <!-- Write a property stamp file that captures non-file parameters passed to GenerateWasmBootJson.
        This ensures property-only changes (e.g., WasmDebugLevel, environment name) invalidate the
        incremental boot JSON target. WriteOnlyWhenDifferent preserves the timestamp when unchanged. -->
@@ -707,15 +756,15 @@ Copyright (c) .NET Foundation. All rights reserved.
        it here, the outer build's Inputs/Outputs check would find the stale output and skip
        regeneration, leaving the final boot JSON without VFS content files. -->
   <Target Name="_WriteBuildWasmBootJsonFile"
-    DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
+    DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp;_AttachBuildWebcilSizes"
     Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
-    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
+    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(ProjectRuntimeConfigDevFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
       ApplicationEnvironment="$(_WasmBuildApplicationEnvironmentName)"
-      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      Resources="@(_WasmStaticWebAssetWithSizes);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
@@ -733,6 +782,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnvVariables="@(WasmEnvironmentVariable)"
       Profilers="$(WasmProfilers)"
       RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
+      RuntimeConfigDevJsonPath="$(ProjectRuntimeConfigDevFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
@@ -995,10 +1045,34 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <!-- Publish always reaches the conversion task. Keep a composition stamp so changes to properties
+         or prebuilt R2R membership/timestamps override per-file timestamp checks. -->
+    <ItemGroup>
+      <_WasmPublishPrebuiltR2RInput Include="$(_WasmPublishPrebuiltR2RDirectory)*.dll;$(_WasmPublishPrebuiltR2RDirectory)*.wasm"
+                                    Condition="'$(_WasmPublishPrebuiltR2RDirectory)' != ''" />
+      <_WasmPublishWebcilStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
+      <_WasmPublishWebcilStampLine Include="_WasmEnableWebcil=$(_WasmEnableWebcil)" />
+      <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
+      <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
+      <_WasmPublishWebcilStampLine Include="_WasmPublishPrebuiltR2RDirectory=$(_WasmPublishPrebuiltR2RDirectory)" />
+      <_WasmPublishWebcilStampLine Include="PrebuiltR2R=%(_WasmPublishPrebuiltR2RInput.Identity)|%(_WasmPublishPrebuiltR2RInput.ModifiedTime)" />
+      <_WasmPublishWebcilStampLine Include="Input=%(_WasmPublishWebcilStampInput.Identity)|%(_WasmPublishWebcilStampInput.ModifiedTime)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)wasm-webcil-publish.stamp"
+                      Lines="@(_WasmPublishWebcilStampLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-publish.stamp" />
+    </ItemGroup>
+
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedPublishWebcilOutputs" />
     </ConvertDllsToWebcil>
+    <!-- Content-equal copies preserve timestamps; mark outputs newer than the processed stamp. -->
+    <Touch Files="@(_WasmConvertedPublishWebcilOutputs)" Condition="'@(_WasmConvertedPublishWebcilOutputs)' != ''" />
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
@@ -1175,6 +1249,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
   </Target>
 
+  <!-- Attach PayloadSize/TableSize metadata onto webcil-in-wasm publish resources (see the build-
+       side _AttachBuildWebcilSizes for details). Non-webcil resources pass through unchanged. -->
+  <Target Name="_AttachPublishWebcilSizes"
+    DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
+    <AttachWebcilSizes Candidates="@(_WasmPublishAsset)">
+      <Output TaskParameter="CandidatesWithSizes" ItemName="_WasmPublishAssetWithSizes" />
+    </AttachWebcilSizes>
+  </Target>
+
   <!-- Write a property stamp for publish boot JSON incrementalism. Same approach as build stamp. -->
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
@@ -1195,14 +1278,14 @@ Copyright (c) .NET Foundation. All rights reserved.
        This target is incremental: when all inputs (assemblies, publish assets, config files,
        extensions, property stamp) are older than the output, the target is skipped. -->
   <Target Name="GeneratePublishWasmBootJson"
-    DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp"
+    DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp;_AttachPublishWebcilSizes"
     Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
       ApplicationEnvironment="$(_WasmPublishApplicationEnvironmentName)"
-      Resources="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish)"
+      Resources="@(_WasmPublishAssetWithSizes);@(_WasmJsModuleCandidatesForPublish)"
       Endpoints="@(_WasmResolvedEndpointsForPublish)"
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"
@@ -1268,21 +1351,35 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Prevent the wwwroot glob from picking up dotnet.d.ts copied by _EnsureDotnetTypeScriptDefinitions (https://github.com/dotnet/runtime/issues/124729) -->
   <ItemGroup Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
-    <Content Remove="wwwroot\dotnet.d.ts" />
+    <Content Remove="wwwroot\_framework\dotnet.d.ts" />
   </ItemGroup>
 
-  <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience when enabled -->
-  <Target Name="_EnsureDotnetTypeScriptDefinitions" 
-          AfterTargets="_ResolveWasmConfiguration" 
-          Condition="'$(_WasmEmitTypeScriptDefinitions)' == 'true'">
+  <!-- Ensure dotnet.d.ts is beside dotnet.js in wwwroot/_framework for TypeScript development experience when enabled -->
+  <PropertyGroup>
+    <_DotnetTypesDestDir>$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), 'wwwroot', '_framework'))</_DotnetTypesDestDir>
+    <_DotnetTypesDestPath>$([MSBuild]::NormalizePath($(_DotnetTypesDestDir), 'dotnet.d.ts'))</_DotnetTypesDestPath>
+  </PropertyGroup>
+
+  <Target Name="_ResolveDotnetTypeScriptDefinitionPaths"
+          DependsOnTargets="ResolveRuntimePackAssets">
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
       <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
       <_DotnetTypesSourcePath>$([MSBuild]::NormalizePath($(_RuntimePackNativeDir), 'dotnet.d.ts'))</_DotnetTypesSourcePath>
-      <_DotnetTypesDestPath>$(MSBuildProjectDirectory)\wwwroot\dotnet.d.ts</_DotnetTypesDestPath>
     </PropertyGroup>
-    
+  </Target>
+
+  <Target Name="_EnsureDotnetTypeScriptDefinitions"
+          DependsOnTargets="_ResolveDotnetTypeScriptDefinitionPaths"
+          AfterTargets="PrepareForBuild"
+          Inputs="$(_DotnetTypesSourcePath)"
+          Outputs="$(_DotnetTypesDestPath)"
+          Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
+
+    <MakeDir Directories="$(_DotnetTypesDestDir)"
+             Condition="Exists('$(_DotnetTypesSourcePath)')" />
+
     <!-- Copy dotnet.d.ts if source exists. MSBuild will skip if files are identical. -->
     <Copy SourceFiles="$(_DotnetTypesSourcePath)"
           DestinationFiles="$(_DotnetTypesDestPath)"
@@ -1319,4 +1416,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="all" />
     </ItemGroup>
   </Target>
+
+  <!-- CoreCLR browser-wasm R2R, isolated from Mono. '== false' (not '!= true'): the WasmSdk defaults UseMonoRuntime=true, so CoreCLR is the explicit opt-in. -->
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets"
+          Condition="'$(UseMonoRuntime)' == 'false'" />
 </Project>

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <Optimize>True</Optimize>
     <HasMergedInTests>True</HasMergedInTests>
-    <PublishReadyToRunStripILBodies>false</PublishReadyToRunStripILBodies>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="JitBlue\Runtime_105467\Runtime_105467.cs" />
@@ -127,6 +126,8 @@
     <Compile Include="JitBlue\Runtime_117794\Runtime_117794.cs" />
     <Compile Include="JitBlue\Runtime_119710\Runtime_119710.cs" />
     <Compile Include="JitBlue\Runtime_1241\Runtime_1241.cs" />
+    <Compile Include="JitBlue\Runtime_131377\Runtime_131377.cs" />
+    <Compile Include="JitBlue\Runtime_133209\Runtime_133209.cs" />
     <Compile Include="JitBlue\Runtime_13417\Runtime_13417.cs" />
     <Compile Include="JitBlue\Runtime_13669\Runtime_13669.cs" />
     <Compile Include="JitBlue\Runtime_13762\Runtime_13762.cs" />

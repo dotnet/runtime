@@ -1,0 +1,356 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+
+[GeneratedComClass]
+public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
+{
+    private readonly Lock _apiLock;
+    private readonly Target _target;
+    private readonly ITypeHandle _typeHandle;
+    private readonly IXCLRDataTypeInstance? _legacyImpl;
+
+    internal ITypeHandle TypeHandle => _typeHandle;
+    internal IXCLRDataTypeInstance? LegacyImpl => _legacyImpl;
+
+    public ClrDataTypeInstance(Target target, ITypeHandle typeHandle, IXCLRDataTypeInstance? legacyImpl, Lock apiLock)
+    {
+        _apiLock = apiLock;
+        _target = target;
+        _typeHandle = typeHandle;
+        _legacyImpl = legacyImpl;
+    }
+
+    int IXCLRDataTypeInstance.StartEnumMethodInstances(ulong* handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumMethodInstances(handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EnumMethodInstance(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> methodInstance)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumMethodInstance(handle, methodInstance) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EndEnumMethodInstances(ulong handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumMethodInstances(handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.StartEnumMethodInstancesByName(char* name, uint flags, ulong* handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumMethodInstancesByName(name, flags, handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EnumMethodInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> method)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EndEnumMethodInstancesByName(ulong handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetNumStaticFields(uint* numFields)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetNumStaticFields(numFields) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetStaticFieldByIndex(uint index, IXCLRDataTask? tlsTask, DacComNullableByRef<IXCLRDataValue> field, uint bufLen, uint* nameLen, char* nameBuf, uint* token)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetStaticFieldByIndex(index, tlsTask, field, bufLen, nameLen, nameBuf, token) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.StartEnumStaticFieldsByName(char* name, uint flags, IXCLRDataTask? tlsTask, ulong* handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumStaticFieldsByName(name, flags, tlsTask, handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EnumStaticFieldByName(ulong* handle, DacComNullableByRef<IXCLRDataValue> value)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumStaticFieldByName(handle, value) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EndEnumStaticFieldsByName(ulong handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumStaticFieldsByName(handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetNumTypeArguments(uint* numTypeArgs)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (flags != 0)
+                throw new ArgumentException("GetName requires flags=0.", nameof(flags));
+
+            string name = _typeHandle.GetName(_target);
+            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
+            if (truncated)
+            {
+                hr = CorDbgHResults.ERROR_INSUFFICIENT_BUFFER;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        {
+            uint nameLenLocal = 0;
+            char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
+            int hrLocal;
+            fixed (char* pNameBufLocal = nameBufLocal)
+            {
+                hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, nameBuf is null ? null : pNameBufLocal);
+            }
+
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0)
+            {
+                string nameLenMessage = nameLen is null
+                    ? $"cDAC: <null>, DAC: {nameLenLocal}"
+                    : $"cDAC: {*nameLen}, DAC: {nameLenLocal}";
+                Debug.Assert(nameLen is null || nameLenLocal == *nameLen, nameLenMessage);
+
+                if (nameBuf is not null && nameLenLocal > 0)
+                {
+                    string dacName = new string(nameBufLocal, 0, (int)nameLenLocal - 1);
+                    string cdacName = new string(nameBuf, 0, (int)nameLenLocal - 1);
+                    Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataTypeInstance.GetModule(DacComNullableByRef<IXCLRDataModule> mod)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetModule(mod) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetDefinition(DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        IXCLRDataTypeDefinition? legacyDefinition = null;
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && !typeDefinition.IsNullRef)
+        {
+            DacComNullableByRef<IXCLRDataTypeDefinition> legacyDefinitionOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.GetDefinition(legacyDefinitionOut);
+            legacyDefinition = legacyDefinitionOut.Interface;
+        }
+
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            ITypeHandle? definitionType = null;
+            TargetPointer module = default;
+            uint token = 0;
+
+            if (rts.IsArray(_typeHandle, out _) || rts.IsFunctionPointer(_typeHandle, out _, out _))
+            {
+                definitionType = _typeHandle;
+                module = rts.GetModule(definitionType);
+                token = rts.GetTypeDefToken(definitionType);
+            }
+            else if (rts.IsTypeDesc(_typeHandle) && rts.HasTypeParam(_typeHandle))
+            {
+                definitionType = rts.GetTypeParam(_typeHandle);
+                module = rts.GetModule(definitionType);
+                token = rts.GetTypeDefToken(definitionType);
+            }
+            else
+            {
+                module = rts.GetModule(_typeHandle);
+                token = rts.GetTypeDefToken(_typeHandle);
+                ILoader loader = _target.Contracts.Loader;
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
+                TargetPointer definitionTypeAddress = loader.GetModuleLookupMapElement(
+                    moduleHandle,
+                    ModuleLookupMapKind.TypeDefToMethodTable,
+                    token,
+                    out _);
+                definitionType = definitionTypeAddress == TargetPointer.Null ? null : rts.GetTypeHandle(definitionTypeAddress);
+            }
+
+            typeDefinition.Interface = new ClrDataTypeDefinition(
+                _target,
+                module,
+                token,
+                definitionType,
+                legacyDefinition,
+                _apiLock);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && !typeDefinition.IsNullRef)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataTypeInstance.GetFlags(uint* flags)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.IsSameObject(IXCLRDataTypeInstance? type)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameObject(type) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetNumStaticFields2(uint flags, uint* numFields)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetNumStaticFields2(flags, numFields) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.StartEnumStaticFields(uint flags, IXCLRDataTask? tlsTask, ulong* handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumStaticFields(flags, tlsTask, handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EnumStaticField(ulong* handle, DacComNullableByRef<IXCLRDataValue> value)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumStaticField(handle, value) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EndEnumStaticFields(ulong handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumStaticFields(handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.StartEnumStaticFieldsByName2(char* name, uint nameFlags, uint fieldFlags, IXCLRDataTask? tlsTask, ulong* handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumStaticFieldsByName2(name, nameFlags, fieldFlags, tlsTask, handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EnumStaticFieldByName2(ulong* handle, DacComNullableByRef<IXCLRDataValue> value)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumStaticFieldByName2(handle, value) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EndEnumStaticFieldsByName2(ulong handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumStaticFieldsByName2(handle) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetStaticFieldByToken(uint token, IXCLRDataTask? tlsTask, DacComNullableByRef<IXCLRDataValue> field, uint bufLen, uint* nameLen, char* nameBuf)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetStaticFieldByToken(token, tlsTask, field, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetBase(DacComNullableByRef<IXCLRDataTypeInstance> @base)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetBase(@base) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EnumStaticField2(ulong* handle, DacComNullableByRef<IXCLRDataValue> value, uint bufLen, uint* nameLen, char* nameBuf, DacComNullableByRef<IXCLRDataModule> tokenScope, uint* token)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumStaticField2(handle, value, bufLen, nameLen, nameBuf, tokenScope, token) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.EnumStaticFieldByName3(ulong* handle, DacComNullableByRef<IXCLRDataValue> value, DacComNullableByRef<IXCLRDataModule> tokenScope, uint* token)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumStaticFieldByName3(handle, value, tokenScope, token) : HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTypeInstance.GetStaticFieldByToken2(IXCLRDataModule? tokenScope, uint token, IXCLRDataTask? tlsTask, DacComNullableByRef<IXCLRDataValue> field, uint bufLen, uint* nameLen, char* nameBuf)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetStaticFieldByToken2(tokenScope, token, tlsTask, field, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+    }
+}

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_StructPromote_SP2c;
+
 using System.Runtime.CompilerServices;
 using System;
 using Xunit;
@@ -31,6 +33,7 @@ public class SP2c
         return Foo(i2, l0, s); // r0 <= inarg[4]; r2/r3 <= r0/r1; outarg[0] <= inarg[0]; outarg[8/12] <= r2/r3
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

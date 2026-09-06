@@ -2879,15 +2879,6 @@ static unsigned UpperNBitsOfWordSignExtend(ssize_t word)
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
 }
 
-template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
-static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
-{
-    static constexpr size_t kLowerSignExtend = static_cast<size_t>(1) << (63 - LowerMaskSize);
-    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (63 - UpperMaskSize);
-
-    return doubleWord + (kLowerSignExtend | kUpperSignExtend);
-}
-
 /*static*/ unsigned emitter::TrimSignedToImm12(ssize_t imm12)
 {
     assert(isValidSimm12(imm12));
@@ -3537,7 +3528,7 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
     {
         return emitPrintLabel(id->idAddr()->iiaIGlabel);
     }
-    printf("L_M%03u_", FMT_BB, m_compiler->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+    printf("L_M%03u_" FMT_BB, m_compiler->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
 }
 
 bool emitter::emitDispBranch(unsigned         opcode2,
@@ -4781,7 +4772,7 @@ void emitter::emitDispInsName(
         default:
         {
             printf("CODE: %#x\n", code);
-            printf("MajorOpcode: %d\n", GetMajorOpcode(code));
+            printf("MajorOpcode: %d\n", static_cast<int>(GetMajorOpcode(code)));
             NO_WAY("illegal ins within emitDisInsName!");
         }
     }

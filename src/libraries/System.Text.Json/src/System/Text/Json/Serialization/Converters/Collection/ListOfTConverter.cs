@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-            if (state.Current.JsonTypeInfo.CreateObject == null)
+            if (state.Current.JsonTypeInfo.CreateObject is null)
             {
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
             }
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Converters
             int index = state.Current.EnumeratorIndex;
             JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
 
-            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
             {
                 // Fast path that avoids validation and extra indirection.
                 for (; index < list.Count; index++)

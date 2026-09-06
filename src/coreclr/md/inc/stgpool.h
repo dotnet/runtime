@@ -82,7 +82,6 @@ public:
 //*****************************************************************************
 class StgPoolSeg
 {
-    friend class VerifyLayoutsMD;
     friend struct ::cdac_data<StgPoolSeg>;
 public:
     StgPoolSeg() :
@@ -145,8 +144,6 @@ friend class CBlobPoolHash;
 friend class MetaData::StringHeapRO;
 friend class MetaData::StringHeapRW;
 friend class MetaData::BlobHeapRO;
-friend class VerifyLayoutsMD;
-
 public:
     StgPoolReadOnly()
     { LIMITED_METHOD_CONTRACT; };
@@ -280,7 +277,6 @@ public:
         GUID UNALIGNED **ppGuid)        // Output buffer for Guid.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         HRESULT hr;
         MetaData::DataBlob heapData;
@@ -397,7 +393,6 @@ protected:
     virtual int IsValidOffset(UINT32 nOffset)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         MetaData::DataBlob data;
         return (StgBlobPoolReadOnly::GetBlob(nOffset, &data) == S_OK);
@@ -421,7 +416,6 @@ friend class StgStringPool;
 friend class StgBlobPool;
 friend class RecordPool;
 friend class CBlobPoolHash;
-friend class VerifyLayoutsMD;
 friend struct ::cdac_data<StgPool>;
 
 public:
@@ -523,7 +517,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
         // Size is offset of last seg + size of last seg.
@@ -546,7 +539,6 @@ public:
         UINT32 *pcbSaveSize) const  // Return save size of this pool.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
         UINT32 cbSize = 0;
@@ -762,7 +754,6 @@ protected:
 //*****************************************************************************
 class StgStringPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
 public:
     StgStringPool() :
         StgPool(DFT_STRING_HEAP_SIZE),
@@ -923,7 +914,6 @@ private:
 //*****************************************************************************
 class StgGuidPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
 public:
     StgGuidPool() :
         StgPool(DFT_GUID_HEAP_SIZE),
@@ -1035,7 +1025,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
 
@@ -1075,8 +1064,6 @@ private:
 //*****************************************************************************
 class StgBlobPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
-
     using StgPool::InitNew;
     using StgPool::InitOnMem;
 
@@ -1169,7 +1156,6 @@ public:
     virtual int IsEmpty()                    // true if empty.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         return (GetNextOffset() <= 1);
     }
@@ -1184,7 +1170,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         return StgPool::GetSaveSize(pcbSaveSize);
     }
@@ -1197,7 +1182,6 @@ protected:
     virtual int IsValidOffset(UINT32 nOffset)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         MetaData::DataBlob data;
         return (StgBlobPool::GetBlob(nOffset, &data) == S_OK);

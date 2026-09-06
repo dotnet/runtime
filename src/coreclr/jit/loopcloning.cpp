@@ -3184,11 +3184,28 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
     return true;
 }
 
-/* static */
-Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pTree, Compiler::fgWalkData* data)
+class LoopCloneVisitor final : public GenTreeVisitor<LoopCloneVisitor>
 {
-    return data->m_compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
-}
+    Compiler::LoopCloneVisitorInfo* m_info;
+
+public:
+    enum
+    {
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+    };
+
+    LoopCloneVisitor(Compiler* compiler, Compiler::LoopCloneVisitorInfo* info)
+        : GenTreeVisitor<LoopCloneVisitor>(compiler)
+        , m_info(info)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        return m_compiler->optCanOptimizeByLoopCloning(*use, m_info);
+    }
+};
 
 //------------------------------------------------------------------------
 // optIdentifyLoopOptInfo: Identify loop optimization candidates.
@@ -3231,16 +3248,14 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
             shouldCloneForArrayBounds ? " (array bounds)" : "", shouldCloneForGdvTests ? " (GDV tests)" : "");
 
     LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
+    LoopCloneVisitor     visitor(this, &info);
 
-    loop->VisitLoopBlocksReversePostOrder([=, &info](BasicBlock* block) {
+    loop->VisitLoopBlocksReversePostOrder([=, &info, &visitor](BasicBlock* block) {
         compCurBB = block;
         for (Statement* const stmt : block->Statements())
         {
-            info.stmt               = stmt;
-            const bool lclVarsOnly  = false;
-            const bool computeStack = false;
-            fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
-                          computeStack);
+            info.stmt = stmt;
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
 
         return BasicBlockVisit::Continue;

@@ -2878,6 +2878,39 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_ExtensionData_UnknownElementWithCData()
+    {
+        // An unknown member that carries its value in a CDATA section, as can be produced by a
+        // newer contract version or an external system.
+        string sourceXml =
+            "<CdataVersioned xmlns=\"http://example.com/cdata\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+            "<Prop1>hello</Prop1>" +
+            "<Prop2><![CDATA[<InnerTag2></InnerTag2>]]></Prop2>" +
+            "</CdataVersioned>";
+
+        // A version that knows Prop2 reads the CDATA content as the member value.
+        var directReader = XmlDictionaryReader.CreateTextReader(Encoding.UTF8.GetBytes(sourceXml), XmlDictionaryReaderQuotas.Max);
+        var direct = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).ReadObject(directReader);
+        Assert.Equal("<InnerTag2></InnerTag2>", direct.Prop2);
+
+        // A down-level version stores the unknown Prop2 (with CDATA) in ExtensionData. This used to
+        // throw a SerializationException because CDATA content was not handled while reading extension data.
+        var serV1 = new DataContractSerializer(typeof(CdataVersionedV1));
+        var v1Reader = XmlDictionaryReader.CreateTextReader(Encoding.UTF8.GetBytes(sourceXml), XmlDictionaryReaderQuotas.Max);
+        var v1 = (CdataVersionedV1)serV1.ReadObject(v1Reader);
+        Assert.Equal("hello", v1.Prop1);
+        Assert.NotNull(v1.ExtensionData);
+
+        // Round-trip the down-level object and read it back as the new version; Prop2 is preserved.
+        var ms = new MemoryStream();
+        serV1.WriteObject(ms, v1);
+        ms.Position = 0;
+        var v2 = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).ReadObject(ms);
+        Assert.Equal("hello", v2.Prop1);
+        Assert.Equal("<InnerTag2></InnerTag2>", v2.Prop2);
+    }
+
+    [Fact]
     public static void DCS_ExtensionDataObjectTest()
     {
         var p2 = new PersonV2();

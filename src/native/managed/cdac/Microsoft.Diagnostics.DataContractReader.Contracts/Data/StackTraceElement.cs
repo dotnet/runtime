@@ -3,21 +3,10 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class StackTraceElement : IData<StackTraceElement>
+[CdacType(nameof(DataType.StackTraceElement))]
+internal sealed partial class StackTraceElement : IData<StackTraceElement>
 {
-    static StackTraceElement IData<StackTraceElement>.Create(Target target, TargetPointer address)
-        => new StackTraceElement(target, address);
-
-    public StackTraceElement(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.StackTraceElement);
-
-        Ip = target.ReadPointerField(address, type, nameof(Ip));
-        MethodDesc = target.ReadPointerField(address, type, nameof(MethodDesc));
-        Flags = target.ReadField<int>(address, type, nameof(Flags));
-    }
-
-    public TargetPointer Ip { get; init; }
-    public TargetPointer MethodDesc { get; init; }
-    public int Flags { get; init; }
+    [Field] public partial TargetPointer Ip { get; }
+    [Field] public partial TargetPointer MethodDesc { get; }
+    [Field] public partial int Flags { get; }
 }

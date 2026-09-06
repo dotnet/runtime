@@ -32,6 +32,7 @@
     <_CoreCLRSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_CoreCLRSupportedOS>
 
     <_CoreCLRSupportedOS Condition="'$(TargetsAndroid)' == 'true' and '$(TargetArchitecture)' != 'x86'">true</_CoreCLRSupportedOS>
+    <_CoreCLRSupportedOS Condition="'$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'arm'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsBrowser)' == 'true'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsWasi)' == 'true'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsAppleMobile)' == 'true'">true</_CoreCLRSupportedOS>
@@ -72,8 +73,10 @@
     <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(NativeAotSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">clr+libs+tools+host+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. -->
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
@@ -98,6 +101,7 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == ''">
     <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and ($(_subset.Contains('+clr.nativeaotlibs+')) or $(_subset.Contains('+clr.runtime+')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsAndroid)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetsLinuxBionic)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsAppleMobile)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsBrowser)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsWasi)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
@@ -110,13 +114,14 @@
     <DefaultCoreClrSubsets>clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsLinuxBionic)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">provision.emsdk+clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+libs.native+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsWasi)' == 'true'">clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+libs.native+host.native</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
-    <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
+    <DefaultNativeAotSubsets>clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
 
     <_MonoAotCrossSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">mono.aotcross</_MonoAotCrossSubsets>
 
@@ -163,9 +168,9 @@
 
     <!-- Define AllSubsets to include all available subsets including OnDemand ones -->
     <AllSubsetsExpansion>clr.nativeprereqs+clr.iltools+clr.runtime+clr.native+clr.aot+clr.nativeaotlibs+clr.nativeaotruntime+clr.crossarchtools</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.packages</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.r2rtests+clr.packages</AllSubsetsExpansion>
     <AllSubsetsExpansion Condition="$([MSBuild]::IsOsPlatform(Windows))">$(AllSubsetsExpansion)+linuxdac+alpinedac</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi+mono.workloads</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests+tools.cdacdumptests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+host.native+host.pkg+host.tools+host.pretest+host.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+libs.native+libs.sfx+libs.oob+libs.pretest+libs.tests</AllSubsetsExpansion>
@@ -211,7 +216,7 @@
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools (ilasm/ildasm)." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime. Includes clr.jit, clr.iltools, clr.hosts." />
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools. Includes clr.hosts, clr.runtime, clr.jit, clr.alljits, clr.paltests, clr.iltools, clr.nativeaotruntime, clr.spmi." />
-    <SubsetName Include="Clr.Aot" Description="Everything needed for Native AOT workloads, including clr.alljits, clr.tools, clr.nativeaotlibs, and clr.nativeaotruntime" />
+    <SubsetName Include="Clr.Aot" Description="Everything needed for Native AOT workloads, including clr.jit, clr.tools, clr.nativeaotlibs, and clr.nativeaotruntime" />
     <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
     <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
     <SubsetName Include="Clr.CrossArchTools" Description="The cross-targeted CoreCLR tools." />
@@ -227,6 +232,7 @@
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Clr.ToolsTests" OnDemand="true" Description="Unit tests for the clr.tools subset." />
+    <SubsetName Include="Clr.R2RTests" OnDemand="true" Description="Unit tests for crossgen2 (ReadyToRun compiler)." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
     <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
     <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86" />
@@ -237,6 +243,7 @@
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Provision.EmSDK" Description="The emsdk provisioning." />
+    <SubsetName Include="Clean.WasmTools" Description="Prunes unreferenced entries from the shared wasm tool cache." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Manifests" Description="The NuGet packages with manifests defining the mobile and Blazor workloads." />
@@ -246,7 +253,6 @@
     <SubsetName Include="Mono.WasiRuntime" Description="The WASI runtime." />
     <SubsetName Include="Mono.WasmWorkload" Description="*Helper* subset for building some pre-requisites for wasm workload testing, useful on CI." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
-    <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
 
     <!-- Tools -->
     <SubsetName Include="Tools" Description="Additional runtime tools projects. Equivalent to: $(DefaultToolsSubsets)" />
@@ -302,6 +308,10 @@
   <!-- emscripten provisioning, needs to be placed before runtime projects -->
   <ItemGroup Condition="$(_subset.Contains('+provision.emsdk+'))">
     <ProjectToBuild Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.proj" Category="provision" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clean.wasmtools+'))">
+    <ProjectToBuild Include="$(RepositoryEngineeringDir)wasm\PruneWasmToolCache.proj" Category="provision" />
   </ItemGroup>
 
   <!-- CoreClr sets -->
@@ -373,7 +383,11 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '')">true</_BuildAnyCrossArch>
+    <!-- Cross-build only the host cross-components; the target runtime build keeps its own CrossBuild setting. -->
+    <CrossBuildHostTools Condition="'$(CrossBuildHostTools)' == ''">false</CrossBuildHostTools>
+    <!-- linux-bionic reports TargetOS as 'linux', so the HostOS/TargetOS check below never fires for it.
+         It always targets the bionic libc via the NDK though, so host tools must be built separately. -->
+    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(TargetsLinuxBionic)' == 'true' or '$(EnableNativeSanitizers)' != '')">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
@@ -382,7 +396,6 @@
 
   <ItemGroup>
     <!-- crossgen2/ILC have dependencies on the JITs, so build them if the cross component includes crossgen2/ILC. -->
-    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' != 'wasm' and $(_subset.Contains('+clr.toolstests+'))" Include="ClrAllJitsSubset=true" />
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' != 'wasm' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrJitSubset=true" />
     <!-- When targeting WebAssembly, only build the wasm JIT for the cross component. -->
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' == 'wasm' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrWasmJitSubset=true" />
@@ -403,7 +416,7 @@
                             HostCrossOS=$(HostOS);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
-                            CrossBuild=false;
+                            CrossBuild=$(CrossBuildHostTools);
                             BuildSubdirectory=$(BuildArchitecture);
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       UndefineProperties="EnableNativeSanitizers"
@@ -502,17 +515,22 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework.Tests\ILCompiler.DependencyAnalysisFramework.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.Tests\ILCompiler.TypeSystem.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.ReadyToRun.Tests\ILCompiler.ReadyToRun.Tests.csproj"
-      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILVerification.Tests\ILVerification.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILTrim.Tests\ILTrim.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clr.r2rtests+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.ReadyToRun.Tests\ILCompiler.ReadyToRun.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
@@ -528,12 +546,15 @@
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj;
+                             $(SharedNativeRoot)managed\cdac\tools\CdacUsageGraph\src\CdacUsageGraph\CdacUsageGraph.csproj;
                              $(SharedNativeRoot)managed\cdac\tests\TestInfrastructure\Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UnitTests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\DataGenerator\Microsoft.Diagnostics.DataContractReader.DataGenerator.Tests.csproj" Test="true" Category="tools"/>
+    <!-- Uses CdacUsageGraph, which depends on Roslyn and System.CommandLine packages unavailable in source-only builds. -->
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UsageTests\Microsoft.Diagnostics.DataContractReader.Usage.Tests.csproj" Test="true" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">
@@ -697,7 +718,7 @@
             <_BuildCoreCLRRuntimePack Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
-            <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
+            <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 
@@ -734,10 +755,21 @@
           </ItemGroup>
           <ItemGroup>
             <!--
-              When we're building in the VMR, we need to provide a crossgen2 that runs on the host machine for downstream repos to use to R2R their code.
-              In non-VMR builds, downstream repos can use the crossgen2 built for the target host SDK from another build leg, but in the VMR we need to provide one to use.
+              When BuildHostTools is enabled, we need to provide a crossgen2 that runs on the host machine for downstream repos to use to R2R their code.
+              Non-VMR builds normally use the crossgen2 built for the target host SDK from another build leg, but builds without one can opt in.
             -->
-            <ProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(BuildHostTools)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
+            <ProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser') and '$(TargetsLinuxBionic)' != 'true' and '$(BuildHostTools)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
+
+            <!--
+              The wasm-tools workload manifest declares the host crossgen2 pack, so the workload
+              testing legs need it in their local package feed. Those legs do not set
+              $(BuildHostTools), so the project above does not produce one for them. The Host variant
+              pins the RID to the build host, which is exactly the pack the workload resolves.
+
+              Opt-in only. The official build already publishes this pack from the host platform
+              legs, and building it here as well would produce a second package with the same id.
+            -->
+            <ProjectToBuild Condition="'$(BuildCrossgen2HostPackForWorkloadTesting)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(BuildHostTools)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
           </ItemGroup>
           <ItemGroup>
             <SharedFrameworkProjectToBuild Condition="'$(_BuildHostPack)' == 'true'" Include="$(InstallerProjectRoot)pkg\archives\dotnet-nethost.proj" />

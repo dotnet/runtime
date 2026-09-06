@@ -374,9 +374,15 @@ namespace System.Threading
                 //
                 int newSampleInterval;
                 if (ratio.Real < 0.0 && newThreadCount == minThreads)
-                    newSampleInterval = (int)(0.5 + _currentSampleMs * (10.0 * Math.Min(-ratio.Real, 1.0)));
+                {
+                    // Scale the sample interval between 1x and 10x of the current one, proportionally to how
+                    // much increasing the thread count appears to be hurting the throughput.
+                    newSampleInterval = (int)(0.5 + _currentSampleMs * (1.0 + 9.0 * Math.Min(-ratio.Real, 1.0)));
+                }
                 else
+                {
                     newSampleInterval = _currentSampleMs;
+                }
 
                 return (newThreadCount, newSampleInterval);
             }

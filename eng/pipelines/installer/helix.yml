@@ -4,6 +4,8 @@ parameters:
   osSubgroup: ''
   creator: ''
   helixQueues: ''
+  condition: always()
+  useHelixMonitor: false
 
 steps:
   - template: /eng/common/templates/steps/send-to-helix.yml
@@ -36,3 +38,5 @@ steps:
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         Creator: ${{ parameters.creator }}
         HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}
+      UseHelixMonitor: ${{ parameters.useHelixMonitor }}
+      condition: and(succeeded(), ${{ parameters.condition }})

@@ -101,21 +101,19 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     Instantiation classInst,         // the type arguments to the type (if any)
     Instantiation methodInst)        // the type arguments to the method (if any)
 {
-    CONTRACT(Module*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(CheckPointer(pDefinitionModule, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     // No generic instantiation, return the definition module
     if (classInst.IsEmpty() && methodInst.IsEmpty())
-        RETURN PTR_Module(pDefinitionModule);
+        return PTR_Module(pDefinitionModule);
 
     // Use the definition module as the loader module by default
     Module *pLoaderModule = pDefinitionModule;
@@ -192,7 +190,7 @@ ComputeCollectibleLoaderModule:
         if (pLatestLoaderModule != NULL)
             pLoaderModule = pLatestLoaderModule;
     }
-    RETURN PTR_Module(pLoaderModule);
+    return PTR_Module(pLoaderModule);
 }
 
 /*static*/
@@ -245,7 +243,6 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(token) == mdtTypeDef || TypeFromToken(token) == mdtMethodDef);
         SUPPORTS_DAC;
@@ -314,11 +311,10 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
                                                ClassLoader::LoadTypesFlag fLoadTypes,
                                                ClassLoadLevel level)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
 
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
@@ -326,24 +322,37 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(pNameHandle != NULL);
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        POSTCONDITION(CheckPointer(RETVAL,
-                     (fNotFound == ThrowIfNotFound && fLoadTypes == LoadTypes )? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(RETVAL.IsNull() || RETVAL.CheckLoadLevel(level));
         SUPPORTS_DAC;
 #ifdef DACCESS_COMPILE
         PRECONDITION((fNotFound == ClassLoader::ReturnNullIfNotFound) && (fLoadTypes == DontLoadTypes));
 #endif
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     if (fLoadTypes == ClassLoader::DontLoadTypes)
         pNameHandle->SetTokenNotToLoad(tdAllTypes);
 
     ClassLoader* classLoader = pAssembly->GetLoader();
+
+    TypeHandle result;
     if (fNotFound == ClassLoader::ThrowIfNotFound)
-        RETURN classLoader->LoadTypeHandleThrowIfFailed(pNameHandle, level);
+        result = classLoader->LoadTypeHandleThrowIfFailed(pNameHandle, level);
     else
-        RETURN classLoader->LoadTypeHandleThrowing(pNameHandle, level);
+        result = classLoader->LoadTypeHandleThrowing(pNameHandle, level);
+
+    if (fNotFound == ClassLoader::ThrowIfNotFound && fLoadTypes == LoadTypes)
+    {
+        _ASSERTE(!result.IsNull());
+    }
+
+#ifndef DACCESS_COMPILE
+    if (!result.IsNull())
+    {
+        _ASSERTE(result.CheckLoadLevel(level));
+    }
+#endif
+
+    return result;
 }
 
 #ifndef DACCESS_COMPILE
@@ -363,21 +372,18 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
 TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoadLevel level,
                                                     Module* pLookInThisModuleOnly/*=NULL*/)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         DAC_LOADS_TYPE(level, !pName->OKToLoad());
         MODE_ANY;
         PRECONDITION(CheckPointer(pName));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        POSTCONDITION(CheckPointer(RETVAL, pName->OKToLoad() ? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(RETVAL.IsNull() || RETVAL.CheckLoadLevel(level));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Lookup in the classes that this class loader knows about
     TypeHandle typeHnd = LoadTypeHandleThrowing(pName, level, pLookInThisModuleOnly);
@@ -406,7 +412,18 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
         }
     }
 
-    RETURN(typeHnd);
+    if (typeHnd.IsNull())
+    {
+        _ASSERTE(!pName->OKToLoad());
+    }
+    else
+    {
+#ifndef DACCESS_COMPILE
+        _ASSERTE(typeHnd.CheckLoadLevel(level));
+#endif
+    }
+
+    return typeHnd;
 }
 
 #ifndef DACCESS_COMPILE
@@ -420,7 +437,6 @@ EEClassHashEntry_t* ClassLoader::InsertValue(EEClassHashTable *pClassHash, EECla
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -439,8 +455,6 @@ EEClassHashEntry_t* ClassLoader::InsertValue(EEClassHashTable *pClassHash, EECla
     {
         // ! We cannot fail after this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
-
 
         pClassHash->InsertValueUsingPreallocatedEntry(pEntry, pszNamespace, pszClassName, Data, pEncloser);
 
@@ -470,7 +484,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pName));
         SUPPORTS_DAC;
     }
@@ -584,9 +597,8 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -638,9 +650,8 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTablesDontHaveLock()
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -655,9 +666,8 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -691,7 +701,6 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -716,7 +725,6 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 
         {
             CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
 
             amTracker.SuppressRelease();
             pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
@@ -747,21 +755,18 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,
                                                     const InstantiationContext *pInstContext /*=NULL*/)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(CheckPointer(pKey));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         PRECONDITION(CheckPointer(pInstContext, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, fLoadTypes==DontLoadTypes ? NULL_OK : NULL_NOT_OK));
-        POSTCONDITION(RETVAL.IsNull() || RETVAL.GetLoadLevel() >= level);
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     // Lookup in the classes that this class loader knows about
     TypeHandle typeHnd = LookupTypeHandleForTypeKey(pKey);
@@ -770,7 +775,8 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
         if (typeHnd.GetLoadLevel() >= level)
         {
             // If something has been published in the tables, and it's at the right level, just return it
-            RETURN typeHnd;
+            _ASSERTE(typeHnd.IsNull() || typeHnd.GetLoadLevel() >= level);
+            return typeHnd;
         }
     }
 
@@ -786,7 +792,7 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
     // instantiations either because we're in FORBIDGC_LOADER_USE mode, so
     // we should bail out here.
     if (fLoadTypes == DontLoadTypes)
-        RETURN TypeHandle();
+        return TypeHandle();
 
 #ifndef DACCESS_COMPILE
     // If we got here, we now have to allocate a new parameterized type.
@@ -794,10 +800,12 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
     CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
     Module *pLoaderModule = ComputeLoaderModule(pKey);
-    RETURN(pLoaderModule->GetClassLoader()->LoadTypeHandleForTypeKey(pKey, typeHnd, level, pInstContext));
+    typeHnd = (pLoaderModule->GetClassLoader()->LoadTypeHandleForTypeKey(pKey, typeHnd, level, pInstContext));
+    _ASSERTE(typeHnd.IsNull() || typeHnd.GetLoadLevel() >= level);
+    return typeHnd;
 #else
     DacNotImpl();
-    RETURN(typeHnd);
+    return typeHnd;
 #endif
 }
 
@@ -811,7 +819,6 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED()) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         SUPPORTS_DAC;
 
@@ -841,7 +848,6 @@ TypeHandle ClassLoader::LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTab
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pKey));
         PRECONDITION(pKey->IsConstructed());
         PRECONDITION(CheckPointer(pTable));
@@ -858,7 +864,6 @@ TypeHandle ClassLoader::LookupInLoaderModule(const TypeKey *pKey)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pKey));
         PRECONDITION(pKey->IsConstructed());
         MODE_ANY;
@@ -879,7 +884,6 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKey(const TypeKey *pKey)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pKey));
         MODE_ANY;
         SUPPORTS_DAC;
@@ -956,7 +960,6 @@ BOOL ClassLoader::FindClassModuleThrowing(
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pName));
         PRECONDITION(CheckPointer(ppModule));
         MODE_ANY;
@@ -1110,7 +1113,7 @@ bool CompareNameHandleWithTypeHandleNoThrow(
     {
         // This block is specifically designed to handle transient faults such
         // as OOM exceptions.
-        CONTRACT_VIOLATION(FaultViolation | ThrowsViolation);
+        CONTRACT_VIOLATION(ThrowsViolation);
         StackSString ssBuiltName;
         ns::MakePath(ssBuiltName,
                      StackSString(SString::Utf8, pName->GetNameSpace()),
@@ -1148,18 +1151,16 @@ ClassLoader::LoadTypeHandleThrowing(
     ClassLoadLevel level,
     Module *       pLookInThisModuleOnly /*=NULL*/)
 {
-    CONTRACT(TypeHandle) {
+    CONTRACTL {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         DAC_LOADS_TYPE(level, !pName->OKToLoad());
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         PRECONDITION(CheckPointer(pName));
-        POSTCONDITION(RETVAL.IsNull() || RETVAL.GetLoadLevel() >= level);
         MODE_ANY;
         SUPPORTS_DAC;
-    } CONTRACT_END
+    } CONTRACTL_END
 
     TypeHandle typeHnd;
     Module * pFoundModule = NULL;
@@ -1314,7 +1315,8 @@ ClassLoader::LoadTypeHandleThrowing(
     }
 #endif // !DACCESS_COMPILE
 
-    RETURN typeHnd;
+    _ASSERTE(typeHnd.IsNull() || typeHnd.GetLoadLevel() >= level);
+    return typeHnd;
 } // ClassLoader::LoadTypeHandleThrowing
 
 /* static */
@@ -1323,23 +1325,21 @@ TypeHandle ClassLoader::LoadPointerOrByrefTypeThrowing(CorElementType typ,
                                                        LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                        ClassLoadLevel level/*=CLASS_LOADED*/)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         MODE_ANY;
         PRECONDITION(CheckPointer(baseType));
         PRECONDITION(typ == ELEMENT_TYPE_BYREF || typ == ELEMENT_TYPE_PTR);
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     TypeKey key(typ, baseType);
-    RETURN(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 }
 
 /* static */
@@ -1347,21 +1347,19 @@ TypeHandle ClassLoader::LoadNativeValueTypeThrowing(TypeHandle baseType,
                                                     LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                     ClassLoadLevel level/*=CLASS_LOADED*/)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         PRECONDITION(CheckPointer(baseType));
         PRECONDITION(baseType.AsMethodTable()->IsValueType());
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     TypeKey key(ELEMENT_TYPE_VALUETYPE, baseType);
-    RETURN(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 }
 
 /* static */
@@ -1371,21 +1369,19 @@ TypeHandle ClassLoader::LoadFnptrTypeThrowing(BYTE callConv,
                                               LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                               ClassLoadLevel level/*=CLASS_LOADED*/)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     TypeKey key(callConv, ntypars, inst);
-    RETURN(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 }
 
 // Find an instantiation of a generic type if it has already been created.
@@ -1403,7 +1399,7 @@ TypeHandle ClassLoader::LoadGenericInstantiationThrowing(Module *pModule,
 {
     // This can be called in FORBIDGC_LOADER_USE mode by the debugger to find
     // a particular generic type instance that is already loaded.
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
@@ -1412,10 +1408,9 @@ TypeHandle ClassLoader::LoadGenericInstantiationThrowing(Module *pModule,
         MODE_ANY;
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         PRECONDITION(CheckPointer(pInstContext, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     // Essentially all checks to determine if a generic instantiation of a type
     // is well-formed go in this method, i.e. this is the
@@ -1432,7 +1427,7 @@ TypeHandle ClassLoader::LoadGenericInstantiationThrowing(Module *pModule,
                                             level,
                                             fFromNativeImage ? NULL : &inst);
         _ASSERTE(th.GetNumGenericArgs() == inst.GetNumArgs());
-        RETURN th;
+        return th;
     }
 
     if (!fFromNativeImage)
@@ -1455,11 +1450,11 @@ TypeHandle ClassLoader::LoadGenericInstantiationThrowing(Module *pModule,
     // for DACCESS_COMPILE.
     if (TypeHandle::IsCanonicalSubtypeInstantiation(inst) && !IsCanonicalGenericInstantiation(inst))
     {
-        RETURN(ClassLoader::LoadCanonicalGenericInstantiation(&key, fLoadTypes, level));
+        return ClassLoader::LoadCanonicalGenericInstantiation(&key, fLoadTypes, level);
     }
 #endif
 
-    RETURN(LoadConstructedTypeThrowing(&key, fLoadTypes, level, pInstContext));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level, pInstContext);
 }
 
 //   For non-nested classes, gets the ExportedType name and finds the corresponding
@@ -1478,7 +1473,6 @@ HRESULT ClassLoader::FindTypeDefByExportedType(IMDInternalImport *pCTImport, mdE
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -1519,7 +1513,6 @@ VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszNam
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1560,17 +1553,15 @@ VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszNam
 /*static*/
 TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken cl, ClassLoadLevel *pLoadLevel)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     BAD_FORMAT_NOTHROW_ASSERT((TypeFromToken(cl) == mdtTypeRef ||
                        TypeFromToken(cl) == mdtTypeDef ||
@@ -1590,7 +1581,7 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken 
         }
     }
 
-    RETURN(typeHandle);
+    return typeHandle;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1606,7 +1597,6 @@ void ClassLoader::FreeModules()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        DISABLED(FORBID_FAULT);  //Lots of crud to clean up to make this work
     }
     CONTRACTL_END;
 
@@ -1626,7 +1616,6 @@ ClassLoader::~ClassLoader()
         DESTRUCTOR_CHECK;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        DISABLED(FORBID_FAULT);  //Lots of crud to clean up to make this work
     }
     CONTRACTL_END
 
@@ -1683,11 +1672,9 @@ ClassLoader::ClassLoader(Assembly *pAssembly)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1757,19 +1744,17 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                                                        const Substitution *pSubst,
                                                        MethodTable *pMTInterfaceMapOwner)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         PRECONDITION(FORBIDGC_LOADER_USE_ENABLED() || GetAppDomain()->CheckCanLoadTypes(pModule->GetAssembly()));
-        POSTCONDITION(CheckPointer(RETVAL, (fNotFoundAction == ThrowIfNotFound)? NULL_NOT_OK : NULL_OK));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     if (TypeFromToken(typeDefOrRefOrSpec) == mdtTypeSpec)
     {
@@ -1785,7 +1770,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                 pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDefOrRefOrSpec, IDS_CLASSLOAD_BADFORMAT);
             }
 #endif //!DACCESS_COMPILE
-            RETURN (TypeHandle());
+            return TypeHandle();
         }
         SigPointer sigptr(pSig, cSig);
         TypeHandle typeHnd = sigptr.GetTypeHandleThrowing(pModule, pTypeContext, fLoadTypes,
@@ -1795,11 +1780,11 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
             pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDefOrRefOrSpec,
                                                            IDS_CLASSLOAD_GENERAL);
 #endif
-        RETURN (typeHnd);
+        return typeHnd;
     }
     else
     {
-        RETURN (LoadTypeDefOrRefThrowing(pModule, typeDefOrRefOrSpec,
+        return (LoadTypeDefOrRefThrowing(pModule, typeDefOrRefOrSpec,
                                          fNotFoundAction,
                                          fUninstantiated,
                                          ((fLoadTypes == LoadTypes) ? tdNoTypes : tdAllTypes),
@@ -1821,23 +1806,20 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                             Instantiation * pTargetInstantiation)
 {
 
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         DAC_LOADS_TYPE(level, !NameHandle::OKToLoad(typeDef, tokenNotToLoad));
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         PRECONDITION(FORBIDGC_LOADER_USE_ENABLED()
                      || GetAppDomain()->CheckCanLoadTypes(pModule->GetAssembly()));
 
-        POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(RETVAL.IsNull() || RETVAL.GetCl() == typeDef);
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     TypeHandle typeHnd;
 
@@ -1853,7 +1835,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
 
         if (existingLoadLevel >= level)
-            RETURN(typeHnd);
+            return typeHnd;
     }
 
     IMDInternalImport *pInternalImport = pModule->GetMDImport();
@@ -1988,7 +1970,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
     ;
 
-    RETURN(typeHnd);
+    return typeHnd;
 }
 
 // Given a token specifying a typeDef or typeRef, and a module in
@@ -2004,19 +1986,17 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                                                  ClassLoadLevel level)
 {
 
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
 
-        POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDefOrRef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // NotFoundAction could be the bizarre 'ThrowButNullV11McppWorkaround',
     //  which means ThrowIfNotFound EXCEPT if this might be the Everett MCPP
@@ -2050,7 +2030,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         // being used inappropriately.
         if (!((fUninstantiated == FailIfUninstDefOrRef) && !typeHnd.IsNull() && typeHnd.IsGenericTypeDefinition()))
         {
-            RETURN(typeHnd);
+            return typeHnd;
         }
     }
     else
@@ -2111,7 +2091,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                         if(typeHnd.IsNull() && bReturnNullOkWhenNoResolutionScope)
                         {
                             fNotFoundAction = ReturnNullIfNotFound;
-                            RETURN(typeHnd);
+                            return typeHnd;
                         }
                     }
                     else
@@ -2160,7 +2140,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
 #endif
     }
 
-    RETURN(thRes);
+    return thRes;
 }
 
 /*static*/
@@ -2173,16 +2153,15 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
     Loader::LoadFlag loadFlag,
     BOOL *           pfUsesTypeForwarder) // The semantic of this parameter: TRUE if a type forwarder is found. It is never set to FALSE.
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pTypeRefModule));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // It's a TypeDef already
     if (TypeFromToken(typeRefToken) == mdtTypeDef)
@@ -2194,7 +2173,7 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
             *ppTypeDefModule = static_cast<Module*>(pTypeRefModule);
         if (pTypeDefToken != NULL)
             *pTypeDefToken = typeRefToken;
-        RETURN TRUE;
+        return TRUE;
     }
 
     TypeHandle typeHnd = pTypeRefModule->LookupTypeRef(typeRefToken);
@@ -2207,7 +2186,7 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
             *ppTypeDefModule = typeHnd.GetModule();
         if (pTypeDefToken != NULL)
             *pTypeDefToken = typeHnd.GetCl();
-        RETURN TRUE;
+        return TRUE;
     }
 
     BOOL fNoResolutionScope; //not used
@@ -2219,7 +2198,7 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
 
     if (pFoundRefModule == NULL)
     {   // We didn't find the TypeRef anywhere
-        RETURN FALSE;
+        return FALSE;
     }
 
     // If checking for type forwarders, then we can see if a type forwarder was used based on the output of
@@ -2235,7 +2214,7 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
             *ppTypeDefModule = typeHnd.GetModule();
         if (pTypeDefToken != NULL)
             *pTypeDefToken = typeHnd.GetCl();
-        RETURN TRUE;
+        return TRUE;
     }
 
     // Not in my module, have to look it up by name
@@ -2243,7 +2222,7 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
     LPCUTF8 pszClassName;
     if (FAILED(pTypeRefModule->GetMDImport()->GetNameOfTypeRef(typeRefToken, &pszNameSpace, &pszClassName)))
     {
-        RETURN FALSE;
+        return FALSE;
     }
     NameHandle nameHandle(pTypeRefModule, typeRefToken);
     nameHandle.SetName(pszNameSpace, pszClassName);
@@ -2265,17 +2244,16 @@ ClassLoader::ResolveNameToTypeDefThrowing(
     Loader::LoadFlag loadFlag,
     BOOL *           pfUsesTypeForwarder) // The semantic of this parameter: TRUE if a type forwarder is found. It is never set to FALSE.
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pName));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     TypeHandle typeHnd;
     mdToken  foundTypeDef;
@@ -2299,7 +2277,7 @@ ClassLoader::ResolveNameToTypeDefThrowing(
             pSourceModule->IsReflectionEmit() ? NULL : pSourceModule,
             loadFlag))
         {
-            RETURN FALSE;
+            return FALSE;
         }
 
         // Type is already loaded and cached in the loader's by-name table
@@ -2313,12 +2291,12 @@ ClassLoader::ResolveNameToTypeDefThrowing(
                 *ppTypeDefModule = typeHnd.GetModule();
             if (pTypeDefToken != NULL)
                 *pTypeDefToken = typeHnd.GetCl();
-            RETURN TRUE;
+            return TRUE;
         }
 
         if (pFoundModule == NULL)
         {   // Module was probably not loaded
-            RETURN FALSE;
+            return FALSE;
         }
 
         if (TypeFromToken(foundExportedType) != mdtExportedType)
@@ -2333,7 +2311,7 @@ ClassLoader::ResolveNameToTypeDefThrowing(
                 *pTypeDefToken = foundTypeDef;
             if (ppTypeDefModule != NULL)
                 *ppTypeDefModule = pFoundModule;
-            RETURN TRUE;
+            return TRUE;
         }
         // It's exported type
 
@@ -2341,7 +2319,7 @@ ClassLoader::ResolveNameToTypeDefThrowing(
         pSourceModule = pFoundModule;
     }
     // Type forwarding chain is too long
-    RETURN FALSE;
+    return FALSE;
 } // ClassLoader::ResolveTokenToTypeDefThrowing
 
 #ifndef DACCESS_COMPILE
@@ -2360,7 +2338,6 @@ ClassLoader::GetEnclosingClassThrowing(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2401,17 +2378,15 @@ ClassLoader::LoadApproxTypeThrowing(
     SigPointer *           pSigInst,
     const SigTypeContext * pClassTypeContext)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
         PRECONDITION(CheckPointer(pSigInst, NULL_OK));
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IMDInternalImport * pInternalImport = pModule->GetMDImport();
 
@@ -2463,12 +2438,12 @@ ClassLoader::LoadApproxTypeThrowing(
         // of setting up the method table.
         if (genericTypeTH.IsInterface())
         {
-            RETURN genericTypeTH;
+            return genericTypeTH;
         }
         else
         {
             // approxTypes, i.e. approximate reference types by Object, i.e. load the canonical type
-            RETURN SigPointer(pSig, cSig).GetTypeHandleThrowing(
+            return SigPointer(pSig, cSig).GetTypeHandleThrowing(
                 pModule,
                 pClassTypeContext,
                 ClassLoader::LoadTypes,
@@ -2480,7 +2455,7 @@ ClassLoader::LoadApproxTypeThrowing(
     {
         if (pSigInst != NULL)
             *pSigInst = SigPointer();
-        RETURN LoadTypeDefOrRefThrowing(
+        return LoadTypeDefOrRefThrowing(
             pModule,
             tok,
             ClassLoader::ThrowIfNotFound,
@@ -2505,7 +2480,6 @@ ClassLoader::LoadApproxParentThrowing(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2627,15 +2601,14 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
 // For all other types, create a method table
 TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMemTracker* pamTracker)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pKey));
 
-        POSTCONDITION(RETVAL.CheckMatchesKey(pKey));
         MODE_ANY;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     TypeHandle typeHnd = TypeHandle();
 
@@ -2732,7 +2705,8 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
         }
     }
 
-    RETURN typeHnd;
+    _ASSERTE(typeHnd.CheckMatchesKey(pKey));
+    return typeHnd;
 }
 
 // Publish a type (and possibly member information) in the loader's
@@ -2787,7 +2761,6 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 
         // ! We cannot fail after this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
 
         // The type could have been loaded by a different thread as side-effect of avoiding deadlocks caused by LoadsTypeViolation
         TypeHandle existing = pModule->LookupTypeDef(typeDef);
@@ -2902,7 +2875,6 @@ void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END
@@ -2930,7 +2902,6 @@ void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
             // profiling API.
             //
 
-            FAULT_NOT_FATAL();
 
             EX_TRY
             {
@@ -3150,12 +3121,7 @@ ClassLoader::LoadTypeHandleForTypeKey_Body(
     TypeHandle                        typeHnd,
     ClassLoadLevel                    targetLevel)
 {
-    CONTRACT(TypeHandle)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(!typeHnd.IsNull() && typeHnd.GetLoadLevel() >= targetLevel);
-    }
-    CONTRACT_END
+    STANDARD_VM_CONTRACT;
 
     if (!pTypeKey->IsConstructed())
     {
@@ -3209,7 +3175,10 @@ retry:
             if (!typeHnd.IsNull())
             {
                 if (typeHnd.GetLoadLevel() >= targetLevel)
-                    RETURN typeHnd;
+                    {
+                    _ASSERTE(!typeHnd.IsNull() && typeHnd.GetLoadLevel() >= targetLevel);
+                        return typeHnd;
+                    }
             }
         }
 
@@ -3249,7 +3218,10 @@ retry:
                 if (!typeHnd.IsNull())
                 {
                     if (typeHnd.GetLoadLevel() >= targetLevel)
-                        RETURN typeHnd;
+                        {
+                        _ASSERTE(!typeHnd.IsNull() && typeHnd.GetLoadLevel() >= targetLevel);
+                            return typeHnd;
+                        }
                 }
             }
 
@@ -3271,7 +3243,10 @@ retry:
         {
             // If the type load on the other thread loaded the type to the needed level, return it here.
             if (typeHnd.GetLoadLevel() >= targetLevel)
-                RETURN typeHnd;
+                {
+                _ASSERTE(!typeHnd.IsNull() && typeHnd.GetLoadLevel() >= targetLevel);
+                    return typeHnd;
+                }
         }
 
         // The type load on the other thread did not load the type "enough". Begin the type load
@@ -3291,7 +3266,10 @@ retry:
     {
         currentLevel = typeHnd.GetLoadLevel();
         if (currentLevel >= targetLevel)
-            RETURN typeHnd;
+            {
+            _ASSERTE(!typeHnd.IsNull() && typeHnd.GetLoadLevel() >= targetLevel);
+                return typeHnd;
+            }
     }
 
     // It was not loaded, and it is not being loaded, so we must load it.  Create a new LoadingEntry
@@ -3323,7 +3301,7 @@ retry:
     }
     EX_HOOK
     {
-        LOG((LF_CLASSLOADER, LL_INFO10, "Caught an exception loading: %x, %0x (Module)\n", pTypeKey->IsConstructed() ? HashTypeKey(pTypeKey) : pTypeKey->GetTypeToken(), pTypeKey->GetModule()));
+        LOG((LF_CLASSLOADER, LL_INFO10, "Caught an exception loading: %x, %p (Module)\n", pTypeKey->IsConstructed() ? HashTypeKey(pTypeKey) : pTypeKey->GetTypeToken(), (void*)pTypeKey->GetModule()));
 
         if (!GetThread()->HasThreadStateNC(Thread::TSNC_LoadsTypeViolation))
         {
@@ -3361,7 +3339,8 @@ retry:
     if (currentLevel < targetLevel)
         goto retry;
 
-    RETURN typeHnd;
+    _ASSERTE(!typeHnd.IsNull() && typeHnd.GetLoadLevel() >= targetLevel);
+    return typeHnd;
 } // ClassLoader::LoadTypeHandleForTypeKey_Body
 
 #endif //!DACCESS_COMPILE
@@ -3377,17 +3356,15 @@ ClassLoader::LoadArrayTypeThrowing(
     LoadTypesFlag  fLoadTypes,  //=LoadTypes
     ClassLoadLevel level)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         MODE_ANY;
         SUPPORTS_DAC;
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     CorElementType predefinedElementType = ELEMENT_TYPE_END;
 
@@ -3397,7 +3374,7 @@ ClassLoader::LoadArrayTypeThrowing(
         if (predefinedElementType <= ELEMENT_TYPE_R8) {
             TypeHandle th = g_pPredefinedArrayTypes[predefinedElementType];
             if (th != 0)
-                RETURN(th);
+                return th;
         }
         // This call to AsPtr is somewhat bogus and only used
         // as an optimization.  If the TypeHandle is really a TypeDesc
@@ -3407,14 +3384,14 @@ ClassLoader::LoadArrayTypeThrowing(
             // Code duplicated because Object[]'s SigCorElementType is E_T_CLASS, not OBJECT
             TypeHandle th = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
             if (th != 0)
-                RETURN(th);
+                return th;
             predefinedElementType = ELEMENT_TYPE_OBJECT;
         }
         else if (elemType.AsPtr() == PTR_VOID(g_pStringClass)) {
             // Code duplicated because String[]'s SigCorElementType is E_T_CLASS, not STRING
             TypeHandle th = g_pPredefinedArrayTypes[ELEMENT_TYPE_STRING];
             if (th != 0)
-                RETURN(th);
+                return th;
             predefinedElementType = ELEMENT_TYPE_STRING;
         }
         else {
@@ -3442,7 +3419,7 @@ ClassLoader::LoadArrayTypeThrowing(
         g_pPredefinedArrayTypes[predefinedElementType] = th;
     }
 
-    RETURN(th);
+    return th;
 } // ClassLoader::LoadArrayTypeThrowing
 
 #ifndef DACCESS_COMPILE
@@ -3455,9 +3432,8 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -3490,9 +3466,8 @@ VOID ClassLoader::AddAvailableClassHaveLock(
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -3564,9 +3539,8 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -3589,9 +3563,8 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -3669,18 +3642,16 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
 
 static MethodTable* GetEnclosingMethodTable(MethodTable *pMT)
 {
-    CONTRACT(MethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(RETVAL == NULL || RETVAL->IsTypicalTypeDefinition());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN pMT->LoadEnclosingMethodTable();
+    return pMT->LoadEnclosingMethodTable();
 }
 
 AccessCheckContext::AccessCheckContext(MethodDesc* pCallerMethod)
@@ -4108,7 +4079,6 @@ BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, fals
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pContext));
     }
@@ -4168,7 +4138,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pContext));
         PRECONDITION(CheckPointer(pTargetClass));
@@ -4306,15 +4275,14 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
                                                         // there is no need to check the method's instantiation.
     const AccessCheckOptions & accessCheckOptions)      // = s_NormalAccessChecks
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pContext));
         MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AccessCheckOptions accessCheckOptionsNoThrow(accessCheckOptions, FALSE);
 
@@ -4361,11 +4329,11 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
         if (!canAccess)
         {
             BOOL fail = accessCheckOptions.FailOrThrow(pContext);
-            RETURN(fail);
+            return fail;
         }
     }
 
-    RETURN(TRUE);
+    return TRUE;
 } // BOOL ClassLoader::CanAccess()
 
 //******************************************************************************
@@ -4391,7 +4359,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pContext));
         MODE_ANY;
     }
@@ -4573,7 +4540,6 @@ BOOL ClassLoader::CanAccessFamily(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pTargetClass));
     }

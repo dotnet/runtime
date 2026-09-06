@@ -9,22 +9,28 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame2
 {
+    private readonly Lock _apiLock;
     private readonly Target _target;
+    private readonly TargetPointer _threadAddress;
     private readonly IXCLRDataFrame? _legacyImpl;
 
     private readonly IStackDataFrameHandle _dataFrame;
 
-    public ClrDataFrame(Target target, IStackDataFrameHandle dataFrame, IXCLRDataFrame? legacyImpl)
+    public ClrDataFrame(Target target, TargetPointer threadAddress, IStackDataFrameHandle dataFrame, IXCLRDataFrame? legacyImpl, Lock apiLock)
     {
+        _apiLock = apiLock;
         _target = target;
+        _threadAddress = threadAddress;
         _legacyImpl = legacyImpl;
 
         _dataFrame = dataFrame;
@@ -32,7 +38,11 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     // IXCLRDataFrame implementation
     int IXCLRDataFrame.GetFrameType(uint* simpleType, uint* detailedType)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataFrame.GetContext(
         uint contextFlags,
@@ -40,6 +50,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         uint* contextSize,
         [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -90,6 +101,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     int IXCLRDataFrame.GetAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         int hrLegacy = HResults.S_OK;
@@ -110,7 +122,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
             if (appDomainAddr != TargetPointer.Null)
             {
-                appDomain.Interface = new ClrDataAppDomain(_target, appDomainAddr, legacyAppDomain);
+                appDomain.Interface = new ClrDataAppDomain(_target, appDomainAddr, legacyAppDomain, _apiLock);
             }
             else
             {
@@ -134,6 +146,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     int IXCLRDataFrame.GetNumArguments(uint* numArgs)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -172,6 +185,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         uint* nameLen,
         char* name)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         int hrLegacy = HResults.S_OK;
@@ -263,6 +277,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     int IXCLRDataFrame.GetNumLocalVariables(uint* numLocals)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -294,6 +309,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         uint* nameLen,
         char* name)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         int hrLegacy = HResults.S_OK;
@@ -357,10 +373,15 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         uint bufLen,
         uint* nameLen,
         char* nameBuf)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetCodeName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetCodeName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataFrame.GetMethodInstance(DacComNullableByRef<IXCLRDataMethodInstance> method)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         int hrLocal = HResults.S_OK;
@@ -378,7 +399,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             MethodDescHandle mdh = GetFrameMethodDesc(out _);
             TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
-            method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
+            method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod, _apiLock);
         }
         catch (System.Exception ex)
         {
@@ -401,17 +422,33 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         byte* inBuffer,
         uint outBufferSize,
         byte* outBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataFrame.GetNumTypeArguments(uint* numTypeArgs)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataFrame.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     // IXCLRDataFrame2 implementation
     int IXCLRDataFrame2.GetExactGenericArgsToken(DacComNullableByRef<IXCLRDataValue> genericToken)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     // ========== Metadata resolution helpers ==========
 
@@ -429,7 +466,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         TargetPointer mtAddr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
         moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
 
@@ -463,14 +500,24 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         // Only VAR/MVAR (generic parameters) require runtime type system resolution.
         uint valueFlags;
         int typeSize = -1;
+        ITypeHandle? typeHandle;
         if (isArg && sigIndex == 0 && methodHeader.IsInstance)
         {
             // 'this' parameter is always a reference
             valueFlags = (uint)ClrDataValueFlag.IS_REFERENCE;
+            typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(
+                _target.Contracts.RuntimeTypeSystem.GetMethodTable(mdh));
         }
         else
         {
             (valueFlags, typeSize) = ComputeFlagsFromSignature(isArg, sigIndex, methodHeader, mdh, moduleHandle);
+            typeHandle = GetTypeHandleFromSignature(isArg, sigIndex, methodHeader, mdh, moduleHandle);
+            if (typeHandle is null)
+            {
+                typeHandle = _target.Contracts.RuntimeTypeSystem.GetPrimitiveType(CorElementType.U8);
+                valueFlags = (uint)ClrDataValueFlag.DEFAULT;
+                typeSize = -1;
+            }
         }
 
         // Match native DAC (ValueFromDebugInfo in stack.cpp): for primitives with a
@@ -497,7 +544,10 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             ];
         }
 
-        return new ClrDataValue(_target, valueFlags, locations, legacyImpl);
+        ulong baseAddress = locations.Length == 1 && !locations[0].IsRegisterValue
+            ? locations[0].AddressOrValue
+            : 0;
+        return new ClrDataValue(_target, _threadAddress, valueFlags, typeHandle, baseAddress, locations, legacyImpl, _apiLock);
     }
 
     // ========== Signature-based flag computation ==========
@@ -511,7 +561,15 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         uint token = rts.GetMethodToken(mdh);
         ILoader loader = _target.Contracts.Loader;
-        TargetPointer ilHeader = loader.GetILHeader(moduleHandle, token);
+
+        TargetPointer ilHeader = TargetPointer.Null;
+        ICodeVersions cv = _target.Contracts.CodeVersions;
+        ILCodeVersionHandle activeVersion = cv.GetActiveILCodeVersion(mdh.Address);
+        if (activeVersion.IsValid && activeVersion.IsExplicit && cv.GetSource(activeVersion) != CodeVersionSource.ReJIT)
+            ilHeader = cv.GetIL(activeVersion);
+
+        if (ilHeader == TargetPointer.Null)
+            ilHeader = loader.GetILHeader(moduleHandle, token);
         if (ilHeader == TargetPointer.Null)
         {
             mdReader = null!;
@@ -596,6 +654,40 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         catch (System.Exception)
         {
             return ((uint)ClrDataValueFlag.DEFAULT, -1);
+        }
+    }
+
+    private ITypeHandle? GetTypeHandleFromSignature(
+        bool isArg, uint sigIndex, SignatureHeader methodHeader,
+        MethodDescHandle mdh, Contracts.ModuleHandle moduleHandle)
+    {
+        try
+        {
+            MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle) ?? throw new NotImplementedException();
+            uint token = _target.Contracts.RuntimeTypeSystem.GetMethodToken(mdh);
+            MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token)));
+            SignatureTypeProvider<MethodDescHandle> provider = new(_target, moduleHandle);
+            SignatureDecoder<ITypeHandle?, MethodDescHandle> decoder = new(provider, mdReader, mdh);
+
+            if (isArg)
+            {
+                BlobReader sigReader = mdReader.GetBlobReader(methodDef.Signature);
+                MethodSignature<ITypeHandle?> methodSig = decoder.DecodeMethodSignature(ref sigReader);
+                int paramIndex = methodHeader.IsInstance ? (int)sigIndex - 1 : (int)sigIndex;
+                return methodSig.ParameterTypes[paramIndex];
+            }
+
+            BlobReader? localReader = GetLocalSignatureReader(mdh, moduleHandle, out _);
+            if (localReader is null)
+                return null;
+
+            BlobReader localSigReader = localReader.Value;
+            ImmutableArray<ITypeHandle?> localTypes = decoder.DecodeLocalSignature(ref localSigReader);
+            return localTypes[(int)sigIndex];
+        }
+        catch (System.Exception)
+        {
+            return null;
         }
     }
 
@@ -742,7 +834,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             try
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                ReadOnlySpan<TypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
+                ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
                 return ResolveGenericParam(rts, methodInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
@@ -754,14 +846,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mtAddr = rts.GetMethodTable(mdh);
-                TypeHandle declaringType = rts.GetTypeHandle(mtAddr);
-                ReadOnlySpan<TypeHandle> typeInst = rts.GetInstantiation(declaringType);
+                ITypeHandle declaringType = rts.GetTypeHandle(mtAddr);
+                ReadOnlySpan<ITypeHandle> typeInst = rts.GetInstantiation(declaringType);
                 return ResolveGenericParam(rts, typeInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
         }
 
-        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, TypeHandle resolvedType)
+        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, ITypeHandle resolvedType)
         {
             CorElementType elementType = rts.GetSignatureCorElementType(resolvedType);
             (uint flags, int size) = MapCorElementTypeToFlags(elementType);
@@ -946,14 +1038,31 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         if (context.TryReadRegister((int)registerNumber, out TargetNUInt value))
             return value.Value;
 
-        // REGNUM_AMBIENT_SP is beyond the normal register range on every architecture.
-        // It represents the entry-time SP, not necessarily the current SP.
-        // Map it to the stack pointer as a best-effort approximation (see util.cpp).
-        int spRegisterNumber = GetStackPointerRegisterNumber(target);
-        if (spRegisterNumber >= 0 && context.TryReadRegister(spRegisterNumber, out value))
-            return value.Value;
+        if (registerNumber == GetAmbientStackPointerRegisterNumber(target))
+        {
+            // REGNUM_AMBIENT_SP represents the entry-time SP, not necessarily the
+            // current SP. Map it to SP as a best-effort approximation (see util.cpp).
+            int spRegisterNumber = GetStackPointerRegisterNumber(target);
+            if (spRegisterNumber >= 0 && context.TryReadRegister(spRegisterNumber, out value))
+                return value.Value;
+        }
 
         return 0;
+    }
+
+    private static uint GetAmbientStackPointerRegisterNumber(Target target)
+    {
+        RuntimeInfoArchitecture arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        return arch switch
+        {
+            RuntimeInfoArchitecture.X64 => 33,
+            RuntimeInfoArchitecture.X86 => 9,
+            RuntimeInfoArchitecture.Arm64 => 66,
+            RuntimeInfoArchitecture.Arm => 17,
+            RuntimeInfoArchitecture.LoongArch64 => 34,
+            RuntimeInfoArchitecture.RiscV64 => 34,
+            _ => uint.MaxValue,
+        };
     }
 
     private static int GetStackPointerRegisterNumber(Target target)

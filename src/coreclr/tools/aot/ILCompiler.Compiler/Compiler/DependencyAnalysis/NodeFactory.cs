@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Text;
@@ -364,6 +365,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelegateTargetVirtualMethodNode(method, reflected: false);
             });
 
+            _reflectableVirtualMethodImpls = new NodeCache<(MethodDesc Declaration, MethodDesc Implementation), ReflectableVirtualMethodImplNode>(methods =>
+            {
+                return new ReflectableVirtualMethodImplNode(methods.Declaration, methods.Implementation);
+            });
+
             _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
             {
                 return new ReflectedDelegateNode(type);
@@ -497,12 +503,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details, constructed: false);
+                return new GenericCompositionNode(details, metadataEnabled: false);
             });
 
-            _constructedGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
+            _metadataEnabledGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details, constructed: true);
+                return new GenericCompositionNode(details, metadataEnabled: true);
             });
 
             _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
@@ -817,6 +823,14 @@ namespace ILCompiler.DependencyAnalysis
                 return NecessaryTypeSymbol(type);
         }
 
+        public IEETypeNode MaximallyMetadataEnabledType(TypeDesc type)
+        {
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                return NecessaryTypeSymbol(type);
+            else
+                return MetadataTypeSymbol(type);
+        }
+
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
 
         private IEETypeNode ImportedEETypeSymbol(TypeDesc type)
@@ -966,11 +980,11 @@ namespace ILCompiler.DependencyAnalysis
             return _genericCompositions.GetOrAdd(details);
         }
 
-        private NodeCache<Instantiation, GenericCompositionNode> _constructedGenericCompositions;
+        private NodeCache<Instantiation, GenericCompositionNode> _metadataEnabledGenericCompositions;
 
-        internal ISymbolNode ConstructedGenericComposition(Instantiation details)
+        internal ISymbolNode MetadataEnabledGenericComposition(Instantiation details)
         {
-            return _constructedGenericCompositions.GetOrAdd(details);
+            return _metadataEnabledGenericCompositions.GetOrAdd(details);
         }
 
         private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
@@ -1225,6 +1239,12 @@ namespace ILCompiler.DependencyAnalysis
         public DelegateTargetVirtualMethodNode DelegateTargetVirtualMethod(MethodDesc method)
         {
             return _delegateTargetMethods.GetOrAdd(method);
+        }
+
+        private NodeCache<(MethodDesc Declaration, MethodDesc Implementation), ReflectableVirtualMethodImplNode> _reflectableVirtualMethodImpls;
+        public ReflectableVirtualMethodImplNode ReflectableVirtualMethodImpl(MethodDesc declaration, MethodDesc implementation)
+        {
+            return _reflectableVirtualMethodImpls.GetOrAdd((declaration, implementation));
         }
 
         private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
@@ -1607,9 +1627,7 @@ namespace ILCompiler.DependencyAnalysis
         // memory efficiency on lookup
         public WasmTypeNode WasmTypeNode(MethodDesc desc)
         {
-            // TODO-Wasm: Construct proper function type based on the passed in MethodDesc
-            // once we have defined lowering rules for signatures in NativeAOT.
-            throw new NotImplementedException("NAOT wasm type signature lowering not yet implemented");
+            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(desc).FuncType);
         }
 
         /// <summary>
@@ -1692,7 +1710,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             public Vertex EncodeReferenceToMethod(NativeWriter writer, MethodDesc method)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.MethodEntrypoint(method)));
-            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type)
+            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.NecessaryTypeSymbol(type)));
         }
 

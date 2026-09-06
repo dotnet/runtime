@@ -113,7 +113,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
         size = 0;
         try
         {
-            TypeHandle handle = _rts.GetTypeHandle(mt);
+            ITypeHandle handle = _rts.GetTypeHandle(mt);
             ulong baseSize = _rts.GetBaseSize(handle);
             uint componentSize = _rts.GetComponentSize(handle);
             uint numComponentsOffset = 0;

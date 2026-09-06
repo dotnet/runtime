@@ -22,6 +22,18 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void IsSupported_AgreesWithPlatform()
         {
+#if NET
+            if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(33))
+            {
+                // Android documents that XDH is available in API Level 33 or higher. However, Android's primary
+                // cryptographic provider, Conscrypt, can be updated out-of-band from Android itself. API level 33 is
+                // when it was first documented but Android may make it available in previous versions.
+                // So if the Android version is API level 32 or lower, any support level is acceptable. For 33+ it is
+                // required.
+                return;
+            }
+#endif
+
             bool expectedSupported =
                 PlatformDetection.IsWindows10OrLater ||
                 PlatformDetection.IsApplePlatform ||

@@ -18,12 +18,12 @@ namespace System.Numerics
         /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
         /// <param name="x">The value whose quantum is returned.</param>
         /// <returns>The quantum of <paramref name="x" />.</returns>
-        static abstract TSelf Quantum(TSelf x);
+        static abstract TSelf GetQuantum(TSelf x);
 
         /// <summary>Determines whether two values have the same quantum (exponent).</summary>
         /// <param name="x">The first value to compare.</param>
         /// <param name="y">The second value to compare.</param>
         /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
-        static abstract bool SameQuantum(TSelf x, TSelf y);
+        static abstract bool HaveSameQuantum(TSelf x, TSelf y);
     }
 }

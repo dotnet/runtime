@@ -158,6 +158,7 @@
 // Defines the type SmallHashTable.
 #include "compiler.h"
 #include "smallhash.h"
+#include "simd.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
 // compilation.
@@ -269,6 +270,49 @@ static const var_types TYP_MEM = TYP_UNDEF;
 
 // We will use this placeholder type for memory maps representing "the heap" (GcHeap/ByrefExposed).
 static const var_types TYP_HEAP = TYP_UNKNOWN;
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+// Wrapper to hold a mask. The VN can only store a single type for each TYP (in order for
+// VarTypConv and others to work), but on ARM64 the mask can be scalable or fixed.
+struct simdmaskvalue_t
+{
+#if defined(TARGET_ARM64)
+    bool               isScalable;
+    simdmaskscalable_t scalable;
+#endif // TARGET_ARM64
+    simdmask_t fixed;
+
+    static simdmaskvalue_t FromFixed(const simdmask_t& mask)
+    {
+        simdmaskvalue_t result = {};
+
+#if defined(TARGET_ARM64)
+        result.isScalable = false;
+#endif // TARGET_ARM64
+        result.fixed = mask;
+
+        return result;
+    }
+
+#if defined(TARGET_ARM64)
+    static simdmaskvalue_t FromScalable(const simdmaskscalable_t& mask)
+    {
+        simdmaskvalue_t result = {};
+
+        result.isScalable = true;
+        result.scalable   = mask;
+        result.fixed      = simdmask_t::Zero();
+
+        return result;
+    }
+
+    inline bool IsScalable() const
+    {
+        return isScalable;
+    }
+#endif // TARGET_ARM64
+};
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 class ValueNumStore
 {
@@ -421,9 +465,15 @@ public:
 #if defined(TARGET_XARCH)
     simd32_t GetConstantSimd32(ValueNum argVN);
     simd64_t GetConstantSimd64(ValueNum argVN);
+#elif defined(TARGET_ARM64)
+    simdscalable_t GetConstantSimdScalable(ValueNum argVN);
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-    simdmask_t GetConstantSimdMask(ValueNum argVN);
+    simdmask_t      GetConstantSimdMask(ValueNum argVN);
+    simdmaskvalue_t GetConstantSimdMaskValue(ValueNum argVN);
+#if defined(TARGET_ARM64)
+    simdmaskscalable_t GetConstantSimdMaskScalable(ValueNum argVN);
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
@@ -507,6 +557,9 @@ public:
 #if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(const simd32_t& cnsVal);
     ValueNum VNForSimd64Con(const simd64_t& cnsVal);
+#elif defined(TARGET_ARM64)
+    ValueNum VNForSimdScalableCon(const simdscalable_t& cnsVal);
+    ValueNum VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVal);
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     ValueNum VNForSimdMaskCon(const simdmask_t& cnsVal);
@@ -1957,30 +2010,100 @@ private:
         }
         return m_simd64CnsMap;
     }
-#endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmask_t>
+#elif defined(TARGET_ARM64)
+    struct SimdScalablePrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdscalable_t>
     {
-        static bool Equals(const simdmask_t& x, const simdmask_t& y)
+        static bool Equals(const simdscalable_t& x, const simdscalable_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simdmask_t& val)
+        static unsigned GetHashCode(const simdscalable_t& val)
         {
             unsigned hash = 0;
 
-            hash = static_cast<unsigned>(hash ^ val.u32[0]);
-            hash = static_cast<unsigned>(hash ^ val.u32[1]);
+            if (val.IsZero())
+            {
+                // Canonicalize zero so all encodings hash the same.
+                hash = static_cast<unsigned>(hash ^ TYP_BYTE);
+                hash = static_cast<unsigned>(hash ^ SimdScalableRepeated);
+                return hash;
+            }
+
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableBaseType);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableKind);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableIndexU32[0]);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableIndexU32[1]);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableStepU32[0]);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableStepU32[1]);
 
             return hash;
         }
     };
 
-    typedef VNMap<simdmask_t, SimdMaskPrimitiveKeyFuncs> SimdMaskToValueNumMap;
-    SimdMaskToValueNumMap*                               m_simdMaskCnsMap;
-    SimdMaskToValueNumMap*                               GetSimdMaskCnsMap()
+    typedef VNMap<simdscalable_t, SimdScalablePrimitiveKeyFuncs> SimdScalableToValueNumMap;
+    SimdScalableToValueNumMap*                                   m_simdScalableCnsMap;
+    SimdScalableToValueNumMap*                                   GetSimdScalableCnsMap()
+    {
+        if (m_simdScalableCnsMap == nullptr)
+        {
+            m_simdScalableCnsMap = new (m_alloc) SimdScalableToValueNumMap(m_alloc);
+        }
+        return m_simdScalableCnsMap;
+    }
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmaskvalue_t>
+    {
+        static bool Equals(const simdmaskvalue_t& x, const simdmaskvalue_t& y)
+        {
+#if defined(TARGET_ARM64)
+            if (x.IsScalable() != y.IsScalable())
+            {
+                return false;
+            }
+
+            return x.IsScalable() ? (x.scalable == y.scalable) : (x.fixed == y.fixed);
+#else
+            return x.fixed == y.fixed;
+#endif // TARGET_ARM64
+        }
+
+        static unsigned GetHashCode(const simdmaskvalue_t& val)
+        {
+            unsigned hash = 0;
+
+#if defined(TARGET_ARM64)
+            if (val.IsScalable())
+            {
+                hash = static_cast<unsigned>(hash ^ static_cast<unsigned>(val.isScalable));
+                // simdmaskscalable_t::operator== treats all-zero scalable masks as equal
+                // regardless of base type, so canonicalize that case in the hash as well.
+                if (!val.scalable.IsZero())
+                {
+                    hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableBaseType);
+                    hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableIndex);
+                }
+            }
+            else
+            {
+                hash = static_cast<unsigned>(hash ^ static_cast<unsigned>(val.isScalable));
+                hash = static_cast<unsigned>(hash ^ val.fixed.u32[0]);
+                hash = static_cast<unsigned>(hash ^ val.fixed.u32[1]);
+            }
+#else
+            hash = static_cast<unsigned>(hash ^ val.fixed.u32[0]);
+            hash = static_cast<unsigned>(hash ^ val.fixed.u32[1]);
+#endif // TARGET_ARM64
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simdmaskvalue_t, SimdMaskPrimitiveKeyFuncs> SimdMaskToValueNumMap;
+    SimdMaskToValueNumMap*                                    m_simdMaskCnsMap;
+    SimdMaskToValueNumMap*                                    GetSimdMaskCnsMap()
     {
         if (m_simdMaskCnsMap == nullptr)
         {
@@ -1989,6 +2112,7 @@ private:
         return m_simdMaskCnsMap;
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
+
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>
@@ -2171,14 +2295,21 @@ struct ValueNumStore::VarTypConv<TYP_SIMD64>
     typedef simd64_t Type;
     typedef simd64_t Lang;
 };
+#elif defined(TARGET_ARM64)
+template <>
+struct ValueNumStore::VarTypConv<TYP_SIMD>
+{
+    typedef simdscalable_t Type;
+    typedef simdscalable_t Lang;
+};
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 struct ValueNumStore::VarTypConv<TYP_MASK>
 {
-    typedef simdmask_t Type;
-    typedef simdmask_t Lang;
+    typedef simdmaskvalue_t Type;
+    typedef simdmaskvalue_t Lang;
 };
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
@@ -2256,15 +2387,44 @@ FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, uns
     assert(c->m_typ == TYP_SIMD64);
     return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
 }
+#elif defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdscalable_t ValueNumStore::SafeGetConstantValue<simdscalable_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_SIMD);
+    return reinterpret_cast<VarTypConv<TYP_SIMD>::Lang*>(c->m_defs)[offset];
+}
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
-FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c, unsigned offset)
+FORCEINLINE simdmaskvalue_t ValueNumStore::SafeGetConstantValue<simdmaskvalue_t>(Chunk* c, unsigned offset)
 {
     assert(c->m_typ == TYP_MASK);
     return reinterpret_cast<VarTypConv<TYP_MASK>::Lang*>(c->m_defs)[offset];
 }
+
+template <>
+FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_MASK);
+    simdmaskvalue_t storage = SafeGetConstantValue<simdmaskvalue_t>(c, offset);
+#if defined(TARGET_ARM64)
+    assert(!storage.IsScalable());
+#endif // TARGET_ARM64
+    return storage.fixed;
+}
+
+#if defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdmaskscalable_t ValueNumStore::SafeGetConstantValue<simdmaskscalable_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_MASK);
+    simdmaskvalue_t storage = SafeGetConstantValue<simdmaskvalue_t>(c, offset);
+    assert(storage.IsScalable());
+    return storage.scalable;
+}
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <>
@@ -2337,6 +2497,20 @@ FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn 
 
     return SafeGetConstantValue<simd64_t>(c, offset);
 }
+#elif defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdscalable_t ValueNumStore::ConstantValueInternal<simdscalable_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_SIMD);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simdscalable_t>(c, offset);
+}
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -2353,6 +2527,37 @@ FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum
 
     return SafeGetConstantValue<simdmask_t>(c, offset);
 }
+
+template <>
+FORCEINLINE simdmaskvalue_t ValueNumStore::ConstantValueInternal<simdmaskvalue_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_MASK);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simdmaskvalue_t>(c, offset);
+}
+
+#if defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdmaskscalable_t
+ValueNumStore::ConstantValueInternal<simdmaskscalable_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_MASK);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simdmaskscalable_t>(c, offset);
+}
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 

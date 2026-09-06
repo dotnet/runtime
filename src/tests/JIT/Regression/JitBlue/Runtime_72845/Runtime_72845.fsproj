@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for GCStressIncompatible and NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <GCStressIncompatible>True</GCStressIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
 
     <!-- Not even printf is AOT compatible in F# -->
     <NativeAotIncompatible>true</NativeAotIncompatible>

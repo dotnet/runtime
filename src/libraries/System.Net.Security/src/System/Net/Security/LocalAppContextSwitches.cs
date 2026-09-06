@@ -20,6 +20,13 @@ namespace System
             get => GetCachedSwitchValue("System.Net.Security.DisableTlsResume", "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME", ref s_disableTlsResume);
         }
 
+        private static int s_captureClientHello;
+        internal static bool CaptureClientHello
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Net.Security.CaptureClientHello", "DOTNET_SYSTEM_NET_SECURITY_CAPTURECLIENTHELLO", ref s_captureClientHello, defaultValue: true);
+        }
+
         private static int s_enableServerAiaDownloads;
         internal static bool EnableServerAiaDownloads
         {
@@ -32,6 +39,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetCachedSwitchValue("System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux", ref s_enableOcspStapling);
+        }
+
+        private static int s_useLegacySslStreamHandshake;
+        internal static bool UseLegacySslStreamHandshake
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Net.Security.UseLegacySslStreamHandshake", "DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAMHANDSHAKE", ref s_useLegacySslStreamHandshake);
         }
 
 #if !TARGET_WINDOWS

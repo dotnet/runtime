@@ -1075,6 +1075,48 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void LoadStoreNullCheckTest()
+    {
+        Assert.Throws<NullReferenceException>(() => LoadScalarAndSplatVector128(null));
+        Assert.Throws<NullReferenceException>(() => LoadScalarVector128(null));
+        Assert.Throws<NullReferenceException>(() => LoadWideningVector128(null));
+        Assert.Throws<NullReferenceException>(() => LoadScalarAndInsert(null, 2));
+        Assert.Throws<NullReferenceException>(() => StoreSelectedScalar(null, 2));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<int> LoadScalarAndSplatVector128(int* address)
+    {
+        return PackedSimd.LoadScalarAndSplatVector128(address);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<int> LoadScalarVector128(int* address)
+    {
+        return PackedSimd.LoadScalarVector128(address);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<short> LoadWideningVector128(sbyte* address)
+    {
+        return PackedSimd.LoadWideningVector128(address);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<int> LoadScalarAndInsert(int* address, byte index)
+    {
+        Vector128<int> vector = Vector128.Create(1, 2, 3, 4);
+        return PackedSimd.LoadScalarAndInsert(address, vector, index);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe void StoreSelectedScalar(int* address, byte index)
+    {
+        Vector128<int> vector = Vector128.Create(1, 2, 3, 4);
+        PackedSimd.StoreSelectedScalar(address, vector, index);
+    }
+
+    [Fact]
     public static unsafe void LoadWideningTest()
     {
         byte[] bytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };

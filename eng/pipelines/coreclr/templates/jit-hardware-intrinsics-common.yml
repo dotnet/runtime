@@ -3,6 +3,9 @@ parameters:
     type: object
   - name: testBuildArgs
     type: string
+  - name: useHelixMonitor
+    type: boolean
+    default: false
 
 jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -30,6 +33,7 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: ${{ parameters.testBuildArgs }}
             testRunNamePrefixSuffix: CoreCLR
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
@@ -61,6 +65,7 @@ jobs:
             testBuildArgs: nativeaot ${{ parameters.testBuildArgs }}
             testRunNamePrefixSuffix: NativeAOT
             nativeAotTest: true
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:

@@ -25,6 +25,12 @@
           <CopyFile Id="copyFileCoreHostExe" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
       </Component>
+
+      <Component Id="cmpDnxCmd" Directory="DOTNETHOME">
+        <File Id="fileDnxCmd" KeyPath="yes" Source="$(var.HostSrc)\dnx.cmd">
+          <CopyFile Id="copyFileDnxCmd" DestinationDirectory="PROGRAMFILES_DOTNET" />
+        </File>
+      </Component>
         
       <Component Id="cmpSharedHostVersionRegistry" Directory="DOTNETHOME">
         <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">

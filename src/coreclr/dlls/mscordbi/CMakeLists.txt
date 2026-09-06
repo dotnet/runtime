@@ -69,11 +69,11 @@ endif(CLR_CMAKE_HOST_UNIX)
 set(COREDBI_LIBRARIES
     debug-pal
     cordbdi
+    dbgutil
     utilcodestaticnohost
     mdcompiler-dbi
     mdruntime-dbi
     mdruntimerw-dbi
-    mddatasource_dbi
     corguids
     minipal
 )

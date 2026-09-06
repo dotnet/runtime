@@ -8,9 +8,9 @@ internal sealed partial class ConditionalWeakTableContainer : IData<ConditionalW
 {
     /// <summary>Pointer to the <c>int[]</c> hash buckets array.</summary>
     [Field("_buckets")]
-    public TargetPointer Buckets { get; }
+    public partial TargetPointer Buckets { get; }
 
     /// <summary>Pointer to the <c>Entry[]</c> entries array.</summary>
     [Field("_entries")]
-    public TargetPointer Entries { get; }
+    public partial TargetPointer Entries { get; }
 }

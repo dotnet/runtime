@@ -417,32 +417,6 @@ ErrExit:
     return hr;
 }
 
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-// Open a metadata section for read/write
-__checkReturn
-HRESULT CLiteWeightStgdbRW::OpenForRead(
-    IMDCustomDataSource *pDataSource,   // data to open on top of
-    DWORD       dwFlags)                // Flags for the open.
-{
-    LPCWSTR     pNoFile = W("");            // Constant for empty file name.
-    StgIO       *pStgIO = NULL;         // For file i/o.
-    HRESULT     hr;
-
-    m_pImage = NULL;
-    m_dwImageSize = 0;
-    m_eFileType = FILETYPE_UNKNOWN;
-
-    IfFailGo(m_MiniMd.InitOnCustomDataSource(pDataSource));
-    IfFailGo(m_MiniMd.PostInit(0));
-
-    // Save off everything.
-    IfFailGo(SetFileName(pNoFile));
-
-ErrExit:
-    return hr;
-}
-#endif
-
 // Read/Write versions.
 //*****************************************************************************
 // Init the Stgdb and its subcomponents.
@@ -1015,11 +989,6 @@ HRESULT CLiteWeightStgdbRW::GetRawData(
     const void **ppvMd,                 // [OUT] put pointer to MD section here (aka, 'BSJB').
     ULONG   *pcbMd)                     // [OUT] put size of the stream here.
 {
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgIO == NULL)
-        return COR_E_NOTSUPPORTED;
-#endif
-
     *ppvMd = (const void*) m_pStgIO->m_pData;
     *pcbMd = m_pStgIO->m_cbData;
     return S_OK;
@@ -1043,11 +1012,6 @@ CLiteWeightStgdbRW::GetRawStreamInfo(
     ULONG          i;               // Loop control.
     void          *pData;
     ULONG          cbData;
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgIO == NULL)
-        IfFailGo(COR_E_NOTSUPPORTED);
-#endif
 
     pData = m_pStgIO->m_pData;
     cbData = m_pStgIO->m_cbData;

@@ -41,9 +41,7 @@
 #include "../debug/daccess/fntableaccess.h"
 #endif // HOST_64BIT
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 // Default number of jump stubs in a jump stub block
 #define DEFAULT_JUMPSTUBS_PER_BLOCK  32
@@ -182,6 +180,7 @@ namespace
             p[j] = key;
         }
     }
+
 }
 
 /****************************************************************************/
@@ -631,8 +630,15 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
     , m_Iterator{}
     , m_Heaps{}
     , m_HeapsIndexNext{ 0 }
-    , m_pLoaderAllocatorFilter{ pLoaderAllocatorFilter }
+    , m_pIteratorHeap{ NULL }
+    , m_iteratorHeapEnd{ 0 }
+    , m_pNextCode{ NULL }
+    , m_pNextCodeHeap{ NULL }
+    , m_nextCodeHeapEnd{ 0 }
+    , m_pCurrentCode{ NULL }
     , m_pCurrent{ NULL }
+    , m_stubCodeBlockKind{ STUB_CODE_BLOCK_UNKNOWN }
+    , m_codeSize{ 0 }
     , m_codeType(manager->GetCodeType())
 {
     CONTRACTL
@@ -647,16 +653,19 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
     HeapList* current = heapList;
     while (current)
     {
-        HeapListState* state = m_Heaps.AppendThrowing();
-        state->Heap = current;
-        state->MapBase = (void*)current->mapBase;
-        state->HdrMap = current->pHdrMap;
-        state->MaxCodeHeapSize = current->maxCodeHeapSize;
+        if (pLoaderAllocatorFilter == NULL || current->pLoaderAllocator == pLoaderAllocatorFilter)
+        {
+            HeapListState* state = m_Heaps.AppendThrowing();
+            state->Heap = current;
+            state->MapBase = (void*)current->mapBase;
+            state->HdrMap = current->pHdrMap;
+            state->MaxCodeHeapSize = current->maxCodeHeapSize;
+            state->EndAddress = current->endAddress;
+        }
 
         current = current->GetNext();
     }
 
-    // Move to the first method section.
     (void)NextMethodSectionIterator();
 }
 
@@ -718,39 +727,102 @@ bool CodeHeapIterator::Next()
     }
     CONTRACTL_END;
 
-    while (true)
+    if (m_pNextCode == NULL && !AdvanceIterator(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
     {
-        if (!m_Iterator.Next())
+        return false;
+    }
+
+    m_pCurrentCode = m_pNextCode;
+    HeapList* currentCodeHeap = m_pNextCodeHeap;
+    TADDR currentCodeHeapEnd = m_nextCodeHeapEnd;
+
+    if (!AdvanceIterator(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
+    {
+        m_pNextCode = NULL;
+        m_pNextCodeHeap = NULL;
+        m_nextCodeHeapEnd = 0;
+    }
+
+    TADDR currentCodeEnd = currentCodeHeapEnd;
+    if (m_pNextCode != NULL && m_pNextCodeHeap == currentCodeHeap)
+    {
+        currentCodeEnd = (TADDR)m_pNextCode;
+    }
+
+    _ASSERTE((TADDR)m_pCurrentCode < currentCodeEnd);
+    size_t boundedCodeSize = currentCodeEnd - (TADDR)m_pCurrentCode;
+    m_stubCodeBlockKind = STUB_CODE_BLOCK_UNKNOWN;
+    m_codeSize = 0;
+
+#ifdef FEATURE_INTERPRETER
+    if (m_codeType == (miManaged | miIL | miOPTIL))
+    {
+        // Interpreter case
+        InterpreterCodeHeader* pHdr = (InterpreterCodeHeader*)(m_pCurrentCode - sizeof(InterpreterCodeHeader));
+        m_pCurrent = pHdr->GetMethodDesc();
+    }
+    else
+#endif
+    {
+        CodeHeader* pHdr = (CodeHeader*)(m_pCurrentCode - sizeof(CodeHeader));
+        if (pHdr->IsStubCodeBlock())
         {
-            if (!NextMethodSectionIterator())
-                return false;
+            m_pCurrent = NULL;
+            m_stubCodeBlockKind = pHdr->GetStubCodeBlockKind();
+
+            if (m_pNextCode != NULL && m_pNextCodeHeap == currentCodeHeap)
+            {
+                _ASSERTE(boundedCodeSize > sizeof(CodeHeader));
+                boundedCodeSize -= sizeof(CodeHeader);
+            }
+
+            if (m_stubCodeBlockKind == STUB_CODE_BLOCK_JUMPSTUB)
+            {
+                JumpStubBlockHeader* jumpStubBlock = (JumpStubBlockHeader*)m_pCurrentCode;
+                size_t jumpStubBlockSize = jumpStubBlock->GetBlockSize();
+                _ASSERTE(jumpStubBlockSize <= boundedCodeSize);
+                boundedCodeSize = jumpStubBlockSize;
+            }
+            _ASSERTE(FitsInU4(boundedCodeSize));
+            m_codeSize = static_cast<DWORD>(boundedCodeSize);
         }
         else
         {
-            BYTE* code = m_Iterator.GetMethodCode();
-#ifdef FEATURE_INTERPRETER
-            if (m_codeType == (miManaged | miIL | miOPTIL))
+            m_pCurrent = pHdr->GetMethodDesc();
+        }
+    }
+
+    return true;
+}
+
+bool CodeHeapIterator::AdvanceIterator(BYTE** code, HeapList** heap, TADDR* heapEnd)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    while (true)
+    {
+        while (m_Iterator.Next())
+        {
+            BYTE* nextCode = m_Iterator.GetMethodCode();
+            if ((TADDR)nextCode < m_iteratorHeapEnd)
             {
-                // Interpreter case
-                InterpreterCodeHeader* pHdr = (InterpreterCodeHeader*)(code - sizeof(InterpreterCodeHeader));
-                m_pCurrent = pHdr->GetMethodDesc();
-            }
-            else
-#endif
-            {
-                CodeHeader* pHdr = (CodeHeader*)(code - sizeof(CodeHeader));
-                m_pCurrent = !pHdr->IsStubCodeBlock() ? pHdr->GetMethodDesc() : NULL;
+                *code = nextCode;
+                *heap = m_pIteratorHeap;
+                *heapEnd = m_iteratorHeapEnd;
+                return true;
             }
 
-            // LoaderAllocator filter
-            if (m_pLoaderAllocatorFilter && m_pCurrent)
-            {
-                LoaderAllocator *pCurrentLoaderAllocator = m_pCurrent->GetLoaderAllocator();
-                if (pCurrentLoaderAllocator != m_pLoaderAllocatorFilter)
-                    continue;
-            }
+            break;
+        }
 
-            return true;
+        if (!NextMethodSectionIterator())
+        {
+            return false;
         }
     }
 }
@@ -767,10 +839,14 @@ bool CodeHeapIterator::NextMethodSectionIterator()
     if (m_HeapsIndexNext >= m_Heaps.Count())
     {
         m_Iterator = {};
+        m_pIteratorHeap = NULL;
+        m_iteratorHeapEnd = 0;
         return false;
     }
 
     HeapListState& curr = m_Heaps.Table()[m_HeapsIndexNext++];
+    m_pIteratorHeap = curr.Heap;
+    m_iteratorHeapEnd = curr.EndAddress;
     m_Iterator = MethodSectionIterator{
         curr.MapBase,
         (COUNT_T)curr.MaxCodeHeapSize,
@@ -982,7 +1058,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
 
     _ASSERTE((pFunctionEntry->BeginAddress & THUMB_CODE) == THUMB_CODE);   // Sanity check: it's a thumb address
     DWORD Fbit = (unwindHeader >> 22) & 0x1;    // F "fragment" bit
-    return (Fbit == 1);
+    return Fbit == 1;
 #elif defined(TARGET_ARM64)
 
     // ARM64 is a little bit more flexible, in the sense that it supports partial prologs. However only one of the
@@ -1017,7 +1093,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
         pUnwindCodes += EpilogCount;
     }
 
-    return ((*pUnwindCodes & 0xFF) == 0xE5);
+    return (*pUnwindCodes & 0xFF) == 0xE5;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // LOONGARCH64 is a little bit more flexible, in the sense that it supports partial prologs. However only one of the
@@ -1052,7 +1128,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
         pUnwindCodes += EpilogCount;
     }
 
-    return ((*pUnwindCodes & 0xFF) == 0xE5);
+    return (*pUnwindCodes & 0xFF) == 0xE5;
 #else
     PORTABILITY_ASSERT("IsFunctionFragnent - NYI on this platform");
 #endif
@@ -1290,7 +1366,7 @@ BOOL IJitManager::LazyIsFunclet(EECodeInfo * pCodeInfo)
     TADDR funcletStartAddress = GetFuncletStartAddress(pCodeInfo);
     TADDR methodStartAddress = pCodeInfo->GetStartAddress();
 
-    return (funcletStartAddress != methodStartAddress);
+    return funcletStartAddress != methodStartAddress;
 }
 
 BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
@@ -1403,7 +1479,7 @@ void EEJitManager::SetCpuInfo()
     {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n"));
-#elif defined(TARGET_ARM64) && (defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_MACCATALYST))
+#elif defined(TARGET_ARM64) && (defined(TARGET_OSX) || defined(TARGET_MACCATALYST))
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n"));
 #elif defined(TARGET_ARM64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n"));
@@ -1618,6 +1694,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & ARM64IntrinsicConstants_Rdm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Rdm))
     {
         CPUCompileFlags.Set(InstructionSet_Rdm);
+    }
+
+    if (((cpuFeatures & ARM64IntrinsicConstants_Fp16) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Fp16))
+    {
+        CPUCompileFlags.Set(InstructionSet_Fp16);
     }
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sha1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sha1))
@@ -2243,6 +2324,23 @@ BOOL EEJitManager::LoadJIT()
 
 //**************************************************************************
 
+static void ReportCodeHeapStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+{
+    WRAPPER_NO_CONTRACT;
+
+    ReportStubBlock(start, size, kind);
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+    if (FitsInU4(size))
+    {
+        ETW::MethodLog::HelperInitialized(
+            reinterpret_cast<ULONGLONG>(start),
+            static_cast<ULONG>(size),
+            GetStubCodeBlockKindStringW(kind));
+    }
+#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
+}
+
 CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind)
     : m_pAllocator(pAllocator), m_pFreeBlocks(NULL), m_kind(kind),
     // CRST_DEBUGGER_THREAD - We take this lock on debugger thread during EnC add meth
@@ -2261,14 +2359,7 @@ void CodeFragmentHeap::AddBlock(VOID * pMem, size_t dwSize)
     }
     CONTRACTL_END;
 
-    // The new "nothrow" below failure is handled in a non-fault way, so
-    // make sure that callers with FORBID_FAULT can call this method without
-    // firing the contract violation assert.
-    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
-
     FreeBlock * pBlock = new (nothrow) FreeBlock;
-    // In the OOM case we don't add the block to the list of free blocks
-    // as we are in a FORBID_FAULT code path.
     if (pBlock != NULL)
     {
         pBlock->m_pNext = m_pFreeBlocks;
@@ -2310,7 +2401,6 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     dwRequestedSize = ALIGN_UP(dwRequestedSize, sizeof(TADDR));
 
     // We will try to batch up allocation of small blocks into one large allocation
-#define SMALL_BLOCK_THRESHOLD 0x100
     SIZE_T nFreeSmallBlocks = 0;
 
     FreeBlock ** ppBestFit = NULL;
@@ -2346,7 +2436,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         if (dwSize < SMALL_BLOCK_THRESHOLD)
             dwSize = 4 * SMALL_BLOCK_THRESHOLD;
         pMem = ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(dwSize, dwAlignment, m_pAllocator, m_kind);
-        ReportStubBlock(pMem, dwSize, m_kind);
+        ReportCodeHeapStubBlock(pMem, dwSize, m_kind);
     }
 
     SIZE_T dwExtra = (BYTE *)ALIGN_UP(pMem, dwAlignment) - (BYTE *)pMem;
@@ -2593,11 +2683,10 @@ static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 
 HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap *pJitMetaHeap)
 {
-    CONTRACT(HeapList *) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        POSTCONDITION((RETVAL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     size_t   reserveSize        = pInfo->GetReserveSize();
     size_t   initialRequestSize = pInfo->GetRequestSize();
@@ -2651,7 +2740,9 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 #ifdef _DEBUG
             // Always exercise the fallback path in the caller when forced relocs are turned on
             if (!pInfo->GetThrowOnOutOfMemoryWithinRange() && PEDecoder::GetForceRelocs())
-                RETURN NULL;
+                {
+                    return NULL;
+                }
 #endif
             pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(reserveSize, loAddr, hiAddr);
 
@@ -2659,7 +2750,9 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
             {
                 // Conserve emergency jump stub reserve until when it is really needed
                 if (!pInfo->GetThrowOnOutOfMemoryWithinRange())
-                    RETURN NULL;
+                    {
+                        return NULL;
+                    }
 #ifdef TARGET_AMD64
                 pBaseAddr = ExecutionManager::GetEEJitManager()->AllocateFromEmergencyJumpStubReserve(loAddr, hiAddr, &reserveSize);
                 if (!pBaseAddr)
@@ -2741,7 +2834,8 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          ));
 
     pCodeHeap.SuppressRelease();
-    RETURN pHp;
+    _ASSERTE((pHp != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
+    return pHp;
 }
 
 void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs)
@@ -2841,19 +2935,18 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
     if (codeInfo.IsValid())
         prf = codeInfo.GetFunctionEntry();
 
-    LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", ControlPc, prf));
+    LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", (void*)(size_t)ControlPc, (void*)(size_t)prf));
 
     return  prf;
 }
 
 HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapList *pADHeapList)
 {
-    CONTRACT(HeapList *) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
-        POSTCONDITION((RETVAL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     size_t initialRequestSize = pInfo->GetRequestSize();
     size_t minReserveSize = VIRTUAL_ALLOC_RESERVE_GRANULARITY; //     ( 64 KB)
@@ -2916,7 +3009,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
     if (pHp == NULL)
     {
         _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
-        RETURN(NULL);
+        return NULL;
     }
 
     _ASSERTE (pHp != NULL);
@@ -2971,19 +3064,18 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
     HeapList **ppHeapList = pADHeapList->m_CodeHeapList.AppendThrowing();
     *ppHeapList = pHp;
 
-    RETURN(pHp);
+    return pHp;
 }
 
 void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
                                      size_t header, size_t blockSize, unsigned align,
                                      HeapList ** ppCodeHeap)
 {
-    CONTRACT(void *) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
-        POSTCONDITION((RETVAL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     pInfo->SetRequestSize(header+blockSize+(align-1)+pInfo->GetReserveForJumpStubs());
 
@@ -3063,7 +3155,7 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
             if (pCodeHeap == NULL)
             {
                 _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
-                RETURN(NULL);
+                return NULL;
             }
 
             mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->GetReserveForJumpStubs());
@@ -3111,7 +3203,7 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         pCodeHeap->endAddress = (TADDR)mem+blockSize;
     }
 
-    RETURN(mem);
+    return mem;
 }
 
 template<typename TCodeHeader>
@@ -3446,15 +3538,14 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
                                                         LoaderAllocator *pLoaderAllocator,
                                                         bool throwOnOutOfMemoryWithinRange)
 {
-    CONTRACT(JumpStubBlockHeader *)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(loAddr < hiAddr);
         PRECONDITION(pLoaderAllocator != NULL);
-        POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE((sizeof(JumpStubBlockHeader) % CODE_SIZE_ALIGN) == 0);
 
@@ -3475,7 +3566,7 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
         if (mem == (TADDR)0)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
-            RETURN(NULL);
+            return NULL;
         }
 
         // CodeHeader comes immediately before the block
@@ -3483,39 +3574,38 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
         ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
         codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
-        NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
-
         blockWriterHolder.AssignExecutableWriterHolder((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
 
         _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
+
+        blockWriterHolder.GetRW()->m_next = NULL;
+        blockWriterHolder.GetRW()->m_used = 0;
+        blockWriterHolder.GetRW()->m_allocated = numJumps;
+        if (pMD && pMD->IsLCGMethod())
+            blockWriterHolder.GetRW()->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
+        else
+            blockWriterHolder.GetRW()->SetLoaderAllocator(pLoaderAllocator);
+
+        NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
     }
 
-    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
-
-    blockWriterHolder.GetRW()->m_next            = NULL;
-    blockWriterHolder.GetRW()->m_used            = 0;
-    blockWriterHolder.GetRW()->m_allocated       = numJumps;
-    if (pMD && pMD->IsLCGMethod())
-        blockWriterHolder.GetRW()->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
-    else
-        blockWriterHolder.GetRW()->SetLoaderAllocator(pLoaderAllocator);
+    ReportCodeHeapStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
 
     LOG((LF_JIT, LL_INFO1000, "Allocated new JumpStubBlockHeader for %d stubs at" FMT_ADDR " in loader allocator " FMT_ADDR "\n",
          numJumps, DBG_ADDR(mem) , DBG_ADDR(pLoaderAllocator) ));
 
-    RETURN((JumpStubBlockHeader*)mem);
+    return (JumpStubBlockHeader*)mem;
 }
 
 void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind)
 {
-    CONTRACT(void *)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(pLoaderAllocator != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HeapList *pCodeHeap = NULL;
     CodeHeapRequestInfo requestInfo(pLoaderAllocator);
@@ -3545,7 +3635,7 @@ void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment
         pCodeHeap->reserveForJumpStubs += requestInfo.GetReserveForJumpStubs();
     }
 
-    RETURN((void *)mem);
+    return (void *)mem;
 }
 
 BYTE* EECodeGenManager::AllocFromJitMetaHeap(MethodDesc* pMD, size_t blockSize)
@@ -4164,6 +4254,39 @@ bool EECodeGenManager::TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* 
     }
 
     FreeHostCodeHeapMemoryWorker(pCodeHeap, codeStart);
+    return true;
+}
+
+bool EECodeGenManager::TryFreeJumpStubBlock(HostCodeHeap* pCodeHeap, JumpStubBlockHeader* pJumpStubBlock)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pCodeHeap != NULL);
+        PRECONDITION(pJumpStubBlock != NULL);
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapLock);
+    if (m_iteratorCount != 0)
+    {
+        // If we are in the middle of an enumeration, we cannot destroy code heap memory.
+        return false;
+    }
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+    size_t blockSize = pJumpStubBlock->GetBlockSize();
+    if (FitsInU4(blockSize))
+    {
+        ETW::MethodLog::HelperDestroyed(
+            reinterpret_cast<ULONGLONG>(pJumpStubBlock),
+            static_cast<ULONG>(blockSize),
+            GetStubCodeBlockKindStringW(STUB_CODE_BLOCK_JUMPSTUB));
+    }
+#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
+
+    FreeHostCodeHeapMemoryWorker(pCodeHeap, pJumpStubBlock);
     return true;
 }
 
@@ -5431,7 +5554,6 @@ ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
     return result;
 }
 
-
 //**************************************************************************
 PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
 {
@@ -5451,7 +5573,6 @@ NativeCodeVersion ExecutionManager::GetNativeCodeVersion(PCODE currentPC)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5466,7 +5587,6 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -5568,7 +5688,17 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
     // taken over the call to JitCodeToMethodInfo too so that nobody pulls out
     // the range section from underneath us.
 
-    RangeSection * pRS = GetRangeSection(currentPC, pLockState);
+    RangeSection* pRS;
+#ifdef TARGET_WASM
+    if (IsVirtualIP(currentPC))
+    {
+        pRS = FindCodeRange(currentPC, ScanNoReaderLock);
+    }
+    else
+#endif // TARGET_WASM
+    {
+        pRS = GetRangeSection(currentPC, pLockState);
+    }
     if (pRS == NULL)
         return FALSE;
 
@@ -5875,7 +6005,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
     {
         endVIP = (TADDR)InterlockedAdd64((LONGLONG*)&s_nextVirtualIP, numVirtualIPs);
     }
-    
+
     TADDR startVIP = endVIP - numVirtualIPs;
 
     // Check for overflow
@@ -5890,7 +6020,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
         pJit,
         RangeSection::RANGE_SECTION_VIRTUALIP,
         pModule);
-    
+
     VirtualIPRangeSection* pOldRangeSection = nullptr;
     do
     {
@@ -6236,14 +6366,13 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
                                  LoaderAllocator *pLoaderAllocator,
                                  bool throwOnOutOfMemoryWithinRange)
 {
-    CONTRACT(PCODE) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(pLoaderAllocator != NULL || pMD != NULL);
         PRECONDITION(loAddr < hiAddr);
-        POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     PCODE jumpStub = (PCODE)NULL;
 
@@ -6300,7 +6429,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
         // Is the matching entry with the requested range?
         if (((TADDR)loAddr <= jumpStub) && (jumpStub <= (TADDR)hiAddr))
         {
-            RETURN(jumpStub);
+            return jumpStub;
         }
     }
 
@@ -6310,7 +6439,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     if (jumpStub == (PCODE)NULL)
     {
         _ASSERTE(!throwOnOutOfMemoryWithinRange);
-        RETURN((PCODE)NULL);
+        return (PCODE)NULL;
     }
 
     _ASSERTE(((TADDR)loAddr <= jumpStub) && (jumpStub <= (TADDR)hiAddr));
@@ -6318,7 +6447,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     LOG((LF_JIT, LL_INFO10000, "Add JumpStub to" FMT_ADDR "at" FMT_ADDR "\n",
             DBG_ADDR(target), DBG_ADDR(jumpStub) ));
 
-    RETURN(jumpStub);
+    return jumpStub;
 }
 
 PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
@@ -6326,13 +6455,13 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
                                         LoaderAllocator *pLoaderAllocator,
                                         bool throwOnOutOfMemoryWithinRange)
 {
-    CONTRACT(PCODE) {
+    CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(pLoaderAllocator != NULL);
         PRECONDITION(m_JumpStubCrst.OwnedByCurrentThread());
-        POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     BYTE *           jumpStub       = NULL;
     BYTE *           jumpStubRW     = NULL;
@@ -6410,7 +6539,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
     if (curBlock == NULL)
     {
         _ASSERTE(!throwOnOutOfMemoryWithinRange);
-        RETURN((PCODE)NULL);
+        return (PCODE)NULL;
     }
 
     curBlockWriterHolder.AssignExecutableWriterHolder(curBlock, sizeof(JumpStubBlockHeader) + ((size_t) (curBlock->m_used + 1) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE));
@@ -6434,9 +6563,7 @@ DONE:
 
     emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, PerfMapStubType::IndividualWithinBlock);
-#endif
 
     // We always add the new jumpstub to the jumpStubCache
     //
@@ -6497,7 +6624,7 @@ DONE:
         }
     }
 
-    RETURN((PCODE)jumpStub);
+    return (PCODE)jumpStub;
 }
 #endif // HOST_64BIT
 #endif // !DACCESS_COMPILE
@@ -7374,7 +7501,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
 #ifdef TARGET_AMD64
         // Chained unwind info is used only for cold part of the main code
         const UCHAR chainedUnwindFlag = (((PTR_UNWIND_INFO)pUnwindData)->Flags & UNW_FLAG_CHAININFO);
-        return (chainedUnwindFlag == 0);
+        return chainedUnwindFlag == 0;
 #else
         // TODO: We need a solution for arm64 here
         return false;
@@ -7387,7 +7514,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
     TADDR funcletStartAddress = GetFuncletStartAddress(pCodeInfo);
     TADDR methodStartAddress = pCodeInfo->GetStartAddress();
 
-    return (funcletStartAddress != methodStartAddress);
+    return funcletStartAddress != methodStartAddress;
 }
 
 BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)

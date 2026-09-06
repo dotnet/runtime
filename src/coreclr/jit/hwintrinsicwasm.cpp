@@ -25,7 +25,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     {
         return InstructionSet_PackedSimd;
     }
-    else if (strcmp(className, "Vector128") == 0)
+    else if ((strcmp(className, "Vector128") == 0) || (strcmp(className, "Vector128`1") == 0))
     {
         return InstructionSet_Vector128;
     }
@@ -76,7 +76,9 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
 
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
 {
-    NYI_WASM_SIMD("impNonConstFallback");
+    // On Wasm, for non-const immediate only instructions, we either emit a jump table
+    // or re-write to a fallback sequence, so impNonConstFallback should never be used.
+    unreached();
     return nullptr;
 }
 
@@ -187,14 +189,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             retNode = gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
-            break;
-        }
-
-        case NI_PackedSimd_LoadScalarVector128:
-        case NI_PackedSimd_LoadScalarAndSplatVector128:
-        case NI_PackedSimd_LoadScalarAndInsert:
-        case NI_PackedSimd_LoadWideningVector128:
-        {
             break;
         }
 

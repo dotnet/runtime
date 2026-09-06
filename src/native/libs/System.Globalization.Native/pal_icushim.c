@@ -111,7 +111,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
 #define PER_FUNCTION_BLOCK(fn, lib, required) \
     sprintf_s(symbolName, SYMBOL_NAME_SIZE, #fn "%s", symbolVersion); \
     fn##_ptr = (TYPEOF(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
-    if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
+    if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %lu\n", symbolName, GetLastError()); abort(); }
 
 static int FindICULibs(void)
 {

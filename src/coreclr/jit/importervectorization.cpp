@@ -474,7 +474,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
     {
         // check for fake "" first
         cnsLength = 0;
-        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n", str)
+        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n")
     }
     else
     {

@@ -1,6 +1,55 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+enum class ContinuationMemberType
+{
+    // A custom awaiter, stored so that it can be awaited from the continuation.
+    // Deduplicated by layout: all awaits of compatible awaiter types share one slot.
+    CustomAwaiterOfLayout,
+    // The ExecutionContext an inlined async frame captured when it logically returned
+    // to its caller. Deduplicated by inline depth.
+    InlineFrameExecutionContext,
+    // The continuation context an inlined async frame captured when it logically
+    // returned to its caller. Deduplicated by inline depth.
+    InlineFrameContinuationContext,
+    // The ContinuationFlags describing the above continuation context. Deduplicated by
+    // inline depth.
+    InlineFrameFlags,
+};
+
+struct ContinuationMember
+{
+    ContinuationMemberType Type;
+
+    void Print() const;
+
+private:
+    ClassLayout* m_customAwaiterLayout;
+    unsigned     m_inlineDepth;
+
+public:
+    ClassLayout* GetCustomAwaiterLayout() const;
+    unsigned     GetInlineDepth() const;
+
+    // Whether this member describes what an inlined async frame hands to its caller, and
+    // so is keyed by inline depth.
+    bool IsInlineFrameMember() const
+    {
+        return (Type == ContinuationMemberType::InlineFrameExecutionContext) ||
+               (Type == ContinuationMemberType::InlineFrameContinuationContext) ||
+               (Type == ContinuationMemberType::InlineFrameFlags);
+    }
+
+    // The type of the storage this member requires in the continuation.
+    var_types GetStorageType(ClassLayout** layout) const;
+
+    static ContinuationMember CustomAwaiterOfLayout(ClassLayout* layout);
+    static ContinuationMember InlineFrameExecutionContext(unsigned inlineDepth);
+    static ContinuationMember InlineFrameContinuationContext(unsigned inlineDepth);
+    static ContinuationMember InlineFrameFlags(unsigned inlineDepth);
+    static bool               AreCompatible(const ContinuationMember& a, const ContinuationMember& b);
+};
+
 struct ReturnTypeInfo
 {
     var_types    ReturnType   = TYP_UNDEF;
@@ -121,7 +170,7 @@ public:
 
     static bool Equals(const ContinuationLayoutBuilder& a, const ContinuationLayoutBuilder& b);
 
-    struct ContinuationLayout* Create();
+    struct ContinuationLayout* Create(ArrayStack<GenTree*>& continuationMemberOffsets);
 
     static ContinuationLayoutBuilder* CreateSharedLayout(Compiler*                                comp,
                                                          const jitstd::vector<struct AsyncState>& states);
@@ -137,11 +186,13 @@ struct ContinuationLayout
     unsigned                      ExecutionContextOffset    = UINT_MAX;
     jitstd::vector<LiveLocalInfo> Locals;
     jitstd::vector<ReturnInfo>    Returns;
+    jitstd::vector<unsigned>      ContinuationMemberOffsets;
     CORINFO_CLASS_HANDLE          ClassHnd = NO_CLASS_HANDLE;
 
     ContinuationLayout(Compiler* comp)
         : Locals(comp->getAllocator(CMK_Async))
         , Returns(comp->getAllocator(CMK_Async))
+        , ContinuationMemberOffsets(comp->getAllocator(CMK_Async))
     {
     }
 
@@ -368,12 +419,14 @@ class AsyncTransformation
     // saves/restores and then suspend.
     BasicBlock* m_sharedFinishContextHandlingWithContinuationContextBB    = nullptr;
     BasicBlock* m_sharedFinishContextHandlingWithoutContinuationContextBB = nullptr;
-    // Variables that shared suspension finishing BBs take the exec/sync contexts in
+    // Variables that shared suspension finishing BBs take the resumed/exec/sync contexts in
+    unsigned m_sharedFinishContextHandlingResumedVar     = BAD_VAR_NUM;
     unsigned m_sharedFinishContextHandlingExecContextVar = BAD_VAR_NUM;
     unsigned m_sharedFinishContextHandlingSyncContextVar = BAD_VAR_NUM;
 
     AggregatedAwaitInfo FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
-                                   ArrayStack<BasicBlock*>& blocksWithTailAwaits);
+                                   ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                                   ArrayStack<GenTree*>&    continuationMemberOffsets);
 
     void        TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits);
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
@@ -390,8 +443,6 @@ class AsyncTransformation
                                     const jitstd::vector<GenTree*>& defs,
                                     AsyncAnalysis&                  analyses,
                                     ContinuationLayoutBuilder*      layoutBuilder);
-
-    bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
 
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
@@ -453,7 +504,11 @@ class AsyncTransformation
                                                                          const ContinuationLayout&        layout,
                                                                          const ContinuationLayoutBuilder& subLayout,
                                                                          SuspensionContextHelper          helper);
-    void                    RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    GenTree*                RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    void                    StoreAsyncAwaiter(BasicBlock*               callBlock,
+                                              GenTreeCall*              call,
+                                              BasicBlock*               suspendBB,
+                                              const ContinuationLayout& layout);
     void                    CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                            GenTreeCall*              call,
                                                            const CallDefinitionInfo& callDefInfo,
@@ -471,6 +526,8 @@ class AsyncTransformation
     void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
                                             const ContinuationLayoutBuilder& subLayout,
                                             BasicBlock*                      resumeBB);
+    void        StoreResumedDef(BasicBlock* callBlock, GenTreeCall* call, BasicBlock* resumeBB);
+    void        StoreResumedDef(GenTreeLclVarCommon* resumedDef, BasicBlock* block);
     BasicBlock* RethrowExceptionOnResumption(BasicBlock* block, const ContinuationLayout& layout, BasicBlock* resumeBB);
     void        CopyReturnValueOnResumption(GenTreeCall*              call,
                                             const CallDefinitionInfo& callDefInfo,
@@ -488,25 +545,33 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
-                                                  const ContinuationLayoutBuilder& subLayout);
-    unsigned    GetReturnedContinuationVar();
-    unsigned    GetNewContinuationVar();
-    unsigned    GetResultBaseVar();
-    unsigned    GetExceptionVar();
-    void        CreateSharedReturnBB();
-    BasicBlock* CreateSharedFinishContextHandlingBB(SuspensionContextHelper   helper,
-                                                    const ContinuationLayout& layout,
-                                                    bool                      execContextMayVary,
-                                                    bool                      syncContextMayVary);
-    void        InsertFinishContextHandlingCall(BasicBlock*               block,
-                                                const ContinuationLayout& layout,
-                                                SuspensionContextHelper   helper,
-                                                GenTree*                  execContext,
-                                                GenTree*                  syncContext);
-    bool        ReuseContinuations();
-    void        CreateResumptionsAndSuspensions();
-    void        CreateResumptionSwitch();
+    void                      CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
+                                                                const ContinuationLayoutBuilder& subLayout);
+    unsigned                  GetReturnedContinuationVar();
+    unsigned                  GetNewContinuationVar();
+    unsigned                  GetResultBaseVar();
+    unsigned                  GetExceptionVar();
+    void                      CreateSharedReturnBB();
+    BasicBlock*               CreateSharedFinishContextHandlingBB(SuspensionContextHelper   helper,
+                                                                  const ContinuationLayout& layout,
+                                                                  GenTree*                  invariantResumed,
+                                                                  bool                      execContextMayVary,
+                                                                  bool                      syncContextMayVary);
+    void                      InsertFinishContextHandlingCall(BasicBlock*               block,
+                                                              const ContinuationLayout& layout,
+                                                              SuspensionContextHelper   helper,
+                                                              GenTree*                  resumed,
+                                                              GenTree*                  execContext,
+                                                              GenTree*                  syncContext);
+    GenTreeLclVarCommon*      FindAndRemoveCommonAsyncResumedDef();
+    const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
+    void                      CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyncResumedDef);
+
+    BasicBlock* CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
+                                                 GenTreeCall*              call,
+                                                 const ContinuationLayout& layout,
+                                                 GenTree*                  frameResumed);
+    GenTree*    ContinuationMemberAddress(const ContinuationLayout& layout, const ContinuationMember& member);
 
 public:
     AsyncTransformation(Compiler* comp)
