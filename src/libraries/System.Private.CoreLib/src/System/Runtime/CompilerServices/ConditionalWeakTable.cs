@@ -32,13 +32,13 @@ namespace System.Runtime.CompilerServices
         // may be delayed until appdomain shutdown.
 
         private const int InitialCapacity = 8;  // Initial length of the table. Must be a power of two.
-        private readonly object _lock;          // This lock protects all mutation of data in the table.  Readers do not take this lock.
+        private readonly Lock _lock;            // This lock protects all mutation of data in the table.  Readers do not take this lock.
         private volatile Container _container;  // The actual storage for the table; swapped out as the table grows. [cDAC] [ConditionalWeakTable] : Contract depends on the exact names of this field and its type.
         private int _activeEnumeratorRefCount;  // The number of outstanding enumerators on the table
 
         public ConditionalWeakTable()
         {
-            _lock = new object();
+            _lock = new Lock();
             _container = new Container(this);
         }
 
@@ -397,7 +397,7 @@ namespace System.Runtime.CompilerServices
             public Enumerator(ConditionalWeakTable<TKey, TValue> table)
             {
                 Debug.Assert(table != null, "Must provide a valid table");
-                Debug.Assert(Monitor.IsEntered(table._lock), "Must hold the _lock lock to construct the enumerator");
+                Debug.Assert(table._lock.IsHeldByCurrentThread, "Must hold the _lock lock to construct the enumerator");
                 Debug.Assert(table._container != null, "Should not be used on a finalized table");
                 Debug.Assert(table._container.FirstFreeEntry > 0, "Should have returned an empty enumerator instead");
 
@@ -497,7 +497,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value"></param>
         private void CreateEntry(TKey key, TValue value)
         {
-            Debug.Assert(Monitor.IsEntered(_lock));
+            Debug.Assert(_lock.IsHeldByCurrentThread);
             Debug.Assert(key != null); // key already validated as non-null and not already in table.
 
             Container c = _container;
