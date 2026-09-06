@@ -241,10 +241,11 @@ namespace System.Threading.Tasks
         private static ConditionalWeakTable<TaskScheduler, object?>? s_activeTaskSchedulers;
 
         // An AppDomain-wide default manager.
-        private static readonly TaskScheduler s_defaultTaskScheduler = new ThreadPoolTaskScheduler();
+        private static readonly ThreadPoolTaskScheduler s_defaultTaskScheduler = new() { m_taskSchedulerId = DefaultId };
+        internal const int DefaultId = 1;
 
         // static counter used to generate unique TaskScheduler IDs
-        internal static int s_taskSchedulerIdCounter;
+        private static int s_taskSchedulerIdCounter = DefaultId;
 
         // this TaskScheduler's unique ID
         private volatile int m_taskSchedulerId;
