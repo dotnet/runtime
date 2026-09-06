@@ -5298,11 +5298,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     fgUnlinkStmt(predBlock, stmt);
 
-                    if (predBlock->isEmpty())
-                    {
-                        tryRemoveAndFixFlow(predBlock, commSucc);
-                    }
-
                     // Add one of the matching stmts to block, and
                     // update its flags.
                     //
@@ -5310,6 +5305,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     {
                         fgInsertStmtAtBeg(commSucc, stmt);
                         commSucc->CopyFlags(predBlock, BBF_COPY_PROPAGATE);
+                    }
+
+                    if (predBlock->isEmpty())
+                    {
+                        tryRemoveAndFixFlow(predBlock, commSucc);
                     }
 
                     madeChanges = true;
@@ -5363,20 +5363,24 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     // From most to least preferable.
                     //
-                    if (isNoSplit && isFallThrough)
+                    if (predBlock == commSucc)
                     {
                         return 0;
                     }
-                    if (isNoSplit)
+                    if (isNoSplit && isFallThrough)
                     {
                         return 1;
                     }
-                    if (isFallThrough)
+                    if (isNoSplit)
                     {
                         return 2;
                     }
+                    if (isFallThrough)
+                    {
+                        return 3;
+                    }
 
-                    return 3;
+                    return 4;
                 };
 
                 unsigned const rank = getRank();
