@@ -739,7 +739,7 @@ namespace System.Formats.Tar
                 // (real) size, while the archive only contains the much smaller packed data.
                 // Preallocating to the expanded size would reserve disk space that bears no
                 // relation to the archive contents and can fail surprisingly on small volumes.
-                PreallocationSize = _header._gnuSparseDataStream is null ? Length : 0,
+                PreallocationSize = GetPreallocationSize(),
                 Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 
@@ -756,6 +756,34 @@ namespace System.Formats.Tar
             }
 
             return fileStreamOptions;
+        }
+
+        private long GetPreallocationSize()
+        {
+            if (_header._gnuSparseDataStream is not null)
+            {
+                return 0;
+            }
+
+            long length = Length;
+
+            if (length > 0 && _header._dataStream is SubReadStream subReadStream)
+            {
+                long remainingDeclared = Math.Max(0, length - subReadStream.Position);
+                long? availableLength = subReadStream.AvailableLengthInSuperStream;
+                if (availableLength.HasValue)
+                {
+                    long availableFromCurrentPosition = Math.Max(0, availableLength.Value - subReadStream.Position);
+                    if (availableFromCurrentPosition < remainingDeclared)
+                    {
+                        return availableFromCurrentPosition;
+                    }
+                }
+
+                return remainingDeclared;
+            }
+
+            return length;
         }
     }
 }

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,35 @@ namespace System.Formats.Tar.Tests
 {
     public class TarEntry_ExtractToFile_Tests : TarTestsBase
     {
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ExtractToFile_MismatchedSizeField_PreallocationDependsOnArchiveSeekability(bool seekableArchive)
+        {
+            const long HeaderSize = 100_000;
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", "small"u8.ToArray(), HeaderSize, HeaderSize);
+
+            using MemoryStream memoryStream = new MemoryStream(archive);
+            using Stream archiveStream = seekableArchive ?
+                memoryStream :
+                new WrappedStream(memoryStream, canRead: true, canWrite: false, canSeek: false);
+            using TarReader reader = new TarReader(archiveStream);
+
+            TarEntry entry = reader.GetNextEntry(copyData: false);
+            Assert.NotNull(entry);
+            Assert.Equal(HeaderSize, entry.Length);
+
+            long preallocationSize = GetPreallocationSize(entry);
+            if (seekableArchive)
+            {
+                Assert.Equal(archive.LongLength - entry.DataOffset, preallocationSize);
+            }
+            else
+            {
+                Assert.Equal(HeaderSize, preallocationSize);
+            }
+        }
+
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
@@ -106,6 +136,13 @@ namespace System.Formats.Tar.Tests
             entry.ExtractToFile(destination, overwrite: true);
 
             Verify_Extract(destination, entry, entryType);
+        }
+
+        private static long GetPreallocationSize(TarEntry entry)
+        {
+            MethodInfo method = typeof(TarEntry).GetMethod("GetPreallocationSize", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            return (long)method.Invoke(entry, null)!;
         }
     }
 }
