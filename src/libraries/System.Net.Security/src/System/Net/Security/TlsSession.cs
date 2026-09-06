@@ -76,6 +76,15 @@ namespace System.Net.Security
         private bool _suppressInternalCertificateValidation;
         private bool _externalValidationPending;
         private bool _externalValidationResolved;
+        // Server-side post-handshake client authentication. Set by
+        // RequestClientCertificate once the renegotiation / TLS 1.3 CertificateRequest
+        // has been staged; it re-arms the handshake state machine so the caller drives
+        // the second handshake to completion through Handshake(). Reset once the staged
+        // request bytes have been fully drained to the caller (so a DestinationTooSmall
+        // drain-continuation re-enters RequestClientCertificate without re-initiating).
+#if !TARGET_APPLE
+        private bool _postHandshakeAuthActive;
+#endif
         // Set by SetClientCertificateContext after a WantCredentials suspension; consumed by
         // the next ProcessHandshake to allow an empty-input re-entry past the frame guard.
         private bool _resumeAfterCredentials;
@@ -90,6 +99,11 @@ namespace System.Net.Security
         private X509Certificate2Collection? _externalRemoteCertificates;
         private X509Certificate2? _externalPendingCert;
         private Exception? _externalValidationFault;
+        // Set when the caller explicitly rejected the peer certificate via
+        // SetRemoteCertificateValidationResult / AcceptWithDefaultValidation. Once set,
+        // GetRemoteCertificate must not surface the refused cert even though the underlying
+        // PAL security context may still hold it (SChannel keeps the peer cert on the context).
+        private bool _remoteCertificateRejected;
         private SslClientHelloInfo? _clientHelloInfo;
         private byte[]? _clientHelloBytesBuffered;
         // Session-local credentials handle. Non-null once SetClientCertificateContext
@@ -295,6 +309,13 @@ namespace System.Net.Security
                 return _externalPendingCert;
             }
 
+            // The caller rejected the peer certificate; do not fall back to the PAL, which would
+            // re-surface the refused cert still held on the underlying security context (SChannel).
+            if (_remoteCertificateRejected)
+            {
+                return null;
+            }
+
             if (_securityContext == null || _securityContext.IsInvalid)
             {
                 return null;
@@ -456,6 +477,10 @@ namespace System.Net.Security
             }
             else
             {
+                // The caller refused the peer certificate. Record the rejection so
+                // GetRemoteCertificate does not later re-surface it from the PAL security context.
+                _remoteCertificateRejected = true;
+
                 // Post-hoc rejection (handshake already wire-complete on OpenSSL 1.1.x or Schannel):
                 // surface the fault immediately so subsequent Encrypt/Decrypt throw. For the
                 // retry-verify path the handshake is still incomplete and the fault is set when
@@ -1394,41 +1419,65 @@ namespace System.Net.Security
         /// </summary>
         /// <remarks>
         /// <para>
+        /// The session is created with client certificates optional
+        /// (<c>ClientCertificateRequired == false</c>); this method promotes the
+        /// requirement for the post-handshake exchange, mirroring
+        /// <see cref="SslStream.NegotiateClientCertificateAsync(System.Threading.CancellationToken)"/>.
+        /// </para>
+        /// <para>
         /// The generated handshake bytes are staged into the pending-output
-        /// buffer (drained into <paramref name="ciphertext"/>). The caller
-        /// must then continue normal <see cref="TlsBufferSession.Read"/> / <see cref="TlsBufferSession.Write"/>
-        /// operations; OpenSSL processes the peer's response transparently
-        /// inside subsequent <c>SSL_read</c> calls. Once the peer's
-        /// certificate has been received, it becomes observable via
-        /// <see cref="GetRemoteCertificate"/>.
+        /// buffer (drained into <paramref name="ciphertext"/>). The caller must
+        /// send them to the peer and then drive the second handshake to
+        /// completion via <see cref="TlsBufferSession.Handshake"/>,
+        /// exactly like the initial handshake: it re-surfaces
+        /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> (re-running the
+        /// remote-certificate validation callback) and finally returns
+        /// <see cref="TlsOperationStatus.Complete"/>. Once validation is accepted the
+        /// peer certificate becomes observable via <see cref="GetRemoteCertificate"/>.
         /// </para>
         /// </remarks>
         private protected TlsOperationStatus RequestClientCertificateBufferedCore(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
+            ThrowIfContextNotSet();
+            // Like Read/Write, post-handshake client authentication is a top-level session
+            // operation: if the previous handshake surfaced NeedsCertificateValidation the
+            // caller must record the result (or observe the recorded fault) before starting it.
+            ThrowIfPendingExternalValidation();
             bytesWritten = 0;
+
+            // Post-handshake client authentication is a server-only operation. Enforce the role
+            // guard before the Apple platform check so client-session misuse consistently surfaces
+            // InvalidOperationException on every platform rather than PlatformNotSupportedException.
+            if (!_context!.IsServer)
+            {
+                throw new InvalidOperationException(SR.net_tlssession_request_client_cert_server_only);
+            }
 
 #if TARGET_APPLE
             // SecureTransport does not expose a post-handshake client-authentication
             // path, and Network.framework does not provide renegotiation primitives.
             throw new PlatformNotSupportedException(SR.net_ssl_renegotiate_not_supported);
 #else
-            if (!_context!.IsServer)
+            if (!_postHandshakeAuthActive)
             {
-                throw new InvalidOperationException(SR.net_tlssession_request_client_cert_server_only);
-            }
+                if (!_isHandshakeComplete || _securityContext == null || _securityContext.IsInvalid)
+                {
+                    throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
+                }
 
-            if (!_isHandshakeComplete || _securityContext == null || _securityContext.IsInvalid)
-            {
-                throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
-            }
+                // Match SslStream.RenegotiateAsync: promote the client-certificate
+                // requirement for the post-handshake exchange even when the initial
+                // handshake was negotiated with RemoteCertRequired == false. This flips
+                // the MutualAuth context flag so the TLS 1.2 renegotiation / TLS 1.3
+                // post-handshake CertificateRequest actually asks for the client cert.
+                _options.RemoteCertRequired = true;
 
-            if (_pendingBuffer.ActiveLength == 0)
-            {
                 ProtocolToken token = SslStreamPal.Renegotiate(
                     ref ActiveCredentialsRef(),
                     ref _securityContext!,
                     _options);
+                bool staged = false;
                 try
                 {
                     if (token.Failed)
@@ -1440,16 +1489,43 @@ namespace System.Net.Security
                     {
                         Debug.Assert(token.Payload != null);
                         AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
+                        staged = true;
                     }
                 }
                 finally
                 {
                     token.ReleasePayload();
                 }
+
+                if (!staged)
+                {
+                    // The PAL produced no renegotiation request (e.g. the peer
+                    // declined with NoRenegotiation). Leave the session in its
+                    // completed state; there is nothing for the caller to drive.
+                    return TlsOperationStatus.Complete;
+                }
+
+                // Re-arm the handshake state machine so the caller drives the second
+                // handshake to completion via Handshake(), exactly like the initial
+                // handshake. HandshakeBufferedCore short-circuits to Complete while an
+                // already-complete session has resolved external validation, so both
+                // flags must be reset here for it to re-enter the PAL and re-surface
+                // NeedsCertificateValidation.
+                _isHandshakeComplete = false;
+                _externalValidationResolved = false;
+                _postHandshakeAuthActive = true;
             }
 
             bytesWritten = DrainTo(ciphertext);
-            return _pendingBuffer.ActiveLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
+            if (_pendingBuffer.ActiveLength > 0)
+            {
+                return TlsOperationStatus.DestinationTooSmall;
+            }
+
+            // All staged request bytes handed off; from here the caller drives the
+            // second handshake through Handshake().
+            _postHandshakeAuthActive = false;
+            return TlsOperationStatus.Complete;
 #endif
         }
 
@@ -2056,6 +2132,11 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
+            // A prior handshake may have surfaced NeedsCertificateValidation whose result the
+            // caller has not recorded yet. The buffered Read core gates on this, but the socket
+            // core can return NeedMoreData off a non-blocking recv before ever reaching it, so
+            // apply the guard here to stay consistent with the buffered path and socket Write.
+            ThrowIfPendingExternalValidation();
             bytesRead = 0;
 
             if (!_isHandshakeComplete)
@@ -2135,6 +2216,9 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
+            // Empty-buffer writes short-circuit before reaching WriteBufferedCore's guard, so
+            // gate on any unrecorded external-validation result here too, matching socket Read.
+            ThrowIfPendingExternalValidation();
             bytesWritten = 0;
 
             if (!_isHandshakeComplete)
@@ -2294,11 +2378,26 @@ namespace System.Net.Security
             });
 
         private protected TlsOperationStatus RequestClientCertificateSocketCore()
-            => DriveBufferedOpOverSocket(dest =>
+        {
+            ThrowIfDisposed();
+            ThrowIfNotSocketBound();
+            // The fd fast path below bypasses the buffered core, so apply the external-validation
+            // guard here as well, matching the other socket-bound operations.
+            ThrowIfPendingExternalValidation();
+
+            TlsOperationStatus? fast = null;
+            TryFastRequestClientCertificate(ref fast);
+            if (fast.HasValue)
+            {
+                return fast.Value;
+            }
+
+            return DriveBufferedOpOverSocket(dest =>
             {
                 TlsOperationStatus s = RequestClientCertificateBufferedCore(dest, out int w);
                 return (s, w);
             });
+        }
 
         // Platform hooks. Implemented by the OpenSSL partial (TlsSession.OpenSsl.cs)
         // to bind the socket fd directly to the SSL object and drive ciphertext
@@ -2306,6 +2405,7 @@ namespace System.Net.Security
         // ProcessHandshake/Encrypt/Decrypt path above is used unchanged.
         partial void EnableNativeSocketBinding(SafeSocketHandle socket, ref bool nativeBindingEnabled);
         partial void TryFastHandshake(ref TlsOperationStatus? result);
+        partial void TryFastRequestClientCertificate(ref TlsOperationStatus? result);
         partial void TryPeekClientHello(ref TlsOperationStatus? result);
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result);
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result);
