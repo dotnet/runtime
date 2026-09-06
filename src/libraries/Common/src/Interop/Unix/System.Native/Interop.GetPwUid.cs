@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -42,7 +41,7 @@ internal static partial class Interop
             }
 
             // Fallback to heap allocations if necessary, growing the buffer until
-            // we succeed.  TryGetUserNameFromPasswd will throw if there's an unexpected error.
+            // we succeed.
             int lastBufLen = BufLen;
             while (true)
             {
@@ -72,26 +71,16 @@ internal static partial class Interop
                 return true;
             }
 
-            // If the current user's entry could not be found, give back null,
-            // but still return true (false indicates the buffer was too small).
-            if (error == -1)
-            {
-                username = null;
-                return true;
-            }
+            // A missing entry and all other failures produce no user name. Only
+            // ERANGE indicates that the caller should retry with a larger buffer.
+            username = null;
+            return !ShouldRetryGetUserNameFromPasswd(error);
+        }
 
-            var errorInfo = new Interop.ErrorInfo(error);
-
-            // If the call failed because the buffer was too small, return false to
-            // indicate the caller should try again with a larger buffer.
-            if (errorInfo.Error == Interop.Error.ERANGE)
-            {
-                username = null;
-                return false;
-            }
-
-            // Otherwise, fail.
-            throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+        internal static bool ShouldRetryGetUserNameFromPasswd(int error)
+        {
+            Debug.Assert(error != 0);
+            return error != -1 && new Interop.ErrorInfo(error).Error == Interop.Error.ERANGE;
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]
