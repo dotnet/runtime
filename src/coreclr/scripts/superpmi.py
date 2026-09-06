@@ -348,6 +348,7 @@ replay_common_parser.add_argument("-private_store", action="append", help=privat
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
 replay_common_parser.add_argument("-details", help="Specify full path to details file or folder")
+replay_common_parser.add_argument("-no_ir_checks", action="store_true", help="Disable the phase IR checks in every JIT that is invoked.")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -376,6 +377,7 @@ asm_diff_parser.add_argument("-tag", help="Specify a word to add to the director
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
+asm_diff_parser.add_argument("-full_ir_checks", action="store_true", help="Run the phase IR checks in the base JIT as well. By default they are only run in the diff JIT, since the base JIT is already validated.")
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -1765,6 +1767,9 @@ class SuperPMIReplay:
 
             common_flags += repro_flags
 
+            if self.coreclr_args.no_ir_checks:
+                common_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
             #
             # Consider: currently, we loop over all the steps for each MCH file, including (1) invoke
@@ -2207,6 +2212,20 @@ class SuperPMIReplayAsmDiffs:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
                 diff_option_flags_for_diff_artifact += "-jitoption", o
+
+        # The base JIT is already validated, so the phase IR checks are turned off for it by
+        # default and left on for the diff JIT, which is the one under test. -full_ir_checks
+        # turns them back on for the base JIT, and -no_ir_checks turns them off everywhere.
+        #
+        # The diff artifact runs compare the base and diff JitDumps textually, so the checks
+        # have to be configured identically there. That rules out the asymmetric default, but
+        # -no_ir_checks applies to both JITs and can be passed along.
+        if not self.coreclr_args.full_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+        if self.coreclr_args.no_ir_checks:
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+            base_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
 
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
@@ -3101,6 +3120,12 @@ class SuperPMIReplayThroughputDiff:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
+        # Both JITs have to be configured the same way here, since this measures the base
+        # against the diff.
+        if self.coreclr_args.no_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
         diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
 
@@ -3456,6 +3481,12 @@ class SuperPMIReplayMetricDiff:
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
+
+        # Both JITs have to be configured the same way here, since this compares metrics
+        # from the base against the diff.
+        if self.coreclr_args.no_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
 
         metric_diffs = []
 
@@ -5220,6 +5251,11 @@ def setup_args(args):
         verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
+                            "no_ir_checks",
+                            lambda unused: True,
+                            "Unable to set no_ir_checks.")
+
+        coreclr_args.verify(args,
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
@@ -5364,6 +5400,11 @@ def setup_args(args):
                             "details",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set details")
+
+        coreclr_args.verify(args,
+                            "no_ir_checks",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set no_ir_checks.")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -5694,6 +5735,15 @@ def setup_args(args):
                             "git_diff",
                             lambda unused: True,
                             "Unable to set git_diff.")
+
+        coreclr_args.verify(args,
+                            "full_ir_checks",
+                            lambda unused: True,
+                            "Unable to set full_ir_checks.")
+
+        if coreclr_args.full_ir_checks and coreclr_args.no_ir_checks:
+            print("Warning: both -full_ir_checks and -no_ir_checks were specified; ignoring -no_ir_checks.")
+            coreclr_args.no_ir_checks = False
 
         process_base_jit_path_arg(coreclr_args)
 
