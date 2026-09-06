@@ -1845,6 +1845,11 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
             // Call popped these but stack level hasn't been adjusted yet, account for it here
             stackLevelBias -= (int)params.argSize;
         }
+#elif TARGET_ARM64
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(lclNum))
+        {
+            return;
+        }
 #endif
 
         // We can't provide an accurate location if the local is allocated on the UnknownSizeFrame.
@@ -3892,7 +3897,7 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             continue;
         }
@@ -4267,7 +4272,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             noway_assert(varDsc->lvOnFrame);
 
-            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
             {
                 // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
                 continue;
@@ -5367,7 +5372,7 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             continue;
         }
@@ -8556,7 +8561,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         assert(varDsc->lvOnFrame);
 
 #ifdef TARGET_ARM64
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             genPoisonUnknownSizeVariable(varNum, (char)poisonVal);
             continue;
