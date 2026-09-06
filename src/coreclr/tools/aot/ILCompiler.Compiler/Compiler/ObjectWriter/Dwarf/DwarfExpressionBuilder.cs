@@ -94,7 +94,7 @@ namespace ILCompiler.ObjectWriter
             {
                 TargetArchitecture.X86 => (int)RegNumX86.REGNUM_COUNT + 1,
                 TargetArchitecture.X64 => (int)RegNumAmd64.REGNUM_COUNT + 1,
-                TargetArchitecture.ARM64 => 34, // 33 int registers (X0-X28, FP, LR, SP, PC), +1
+                TargetArchitecture.ARM64 => 66, // 33 int registers + 32 V registers, +1
                 TargetArchitecture.ARM => 17,   // 16 int registers (R0-R12, SP, LR, PC), +1
                 TargetArchitecture.LoongArch64 => 34, // 33 int registers, +1
                 TargetArchitecture.RiscV64 => 34,     // 33 int registers, +1

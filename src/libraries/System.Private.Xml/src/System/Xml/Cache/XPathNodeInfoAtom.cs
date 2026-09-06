@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.XPath;
 
@@ -253,23 +254,25 @@ namespace MS.Internal.Xml.Cache
         {
             if (_hashCode == 0)
             {
-                int hashCode;
+                // All fields checked by Equals must be included here to avoid hash collisions.
+                // Equals uses reference equality for strings (atomized via NameTable) and
+                // page arrays, so we use RuntimeHelpers.GetHashCode for a 1:1 match.
+                HashCode hc = default;
+                hc.Add(RuntimeHelpers.GetHashCode(_localName));
+                hc.Add(RuntimeHelpers.GetHashCode(_namespaceUri));
+                hc.Add(RuntimeHelpers.GetHashCode(_prefix));
+                if (_baseUri is not null)
+                    hc.Add(RuntimeHelpers.GetHashCode(_baseUri));
+                if (_pageSibling is not null)
+                    hc.Add(RuntimeHelpers.GetHashCode(_pageSibling));
+                if (_pageParent is not null)
+                    hc.Add(RuntimeHelpers.GetHashCode(_pageParent));
+                if (_pageSimilar is not null)
+                    hc.Add(RuntimeHelpers.GetHashCode(_pageSimilar));
+                hc.Add(_lineNumBase);
+                hc.Add(_linePosBase);
 
-                // Start with local name
-                hashCode = _localNameHash;
-
-                // Add page indexes
-                unchecked
-                {
-                    if (_pageSibling != null)
-                        hashCode += (hashCode << 7) ^ _pageSibling[0].PageInfo!.PageNumber;
-
-                    if (_pageParent != null)
-                        hashCode += (hashCode << 7) ^ _pageParent[0].PageInfo!.PageNumber;
-
-                    if (_pageSimilar != null)
-                        hashCode += (hashCode << 7) ^ _pageSimilar[0].PageInfo!.PageNumber;
-                }
+                int hashCode = hc.ToHashCode();
 
                 // Save hashcode.  Don't save 0, so that it won't ever be recomputed.
                 _hashCode = ((hashCode == 0) ? 1 : hashCode);

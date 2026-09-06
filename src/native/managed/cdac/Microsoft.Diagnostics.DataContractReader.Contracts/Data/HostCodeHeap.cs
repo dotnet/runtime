@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.HostCodeHeap))]
 internal sealed partial class HostCodeHeap : IData<HostCodeHeap>
 {
-    [Field] public TargetPointer BaseAddress { get; }
-    [Field] public TargetPointer CurrentAddress { get; }
+    [Field] public partial TargetPointer BaseAddress { get; }
+    [Field] public partial TargetPointer CurrentAddress { get; }
 }

@@ -155,7 +155,7 @@ namespace System.Text.Json
                 PartialUtf16StringData = value.Slice(consumed);
             }
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<char>.Shared.Return(valueArray);
             }
@@ -321,7 +321,7 @@ namespace System.Text.Json
                 PartialUtf8StringData = utf8Value.Slice(consumed);
             }
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }

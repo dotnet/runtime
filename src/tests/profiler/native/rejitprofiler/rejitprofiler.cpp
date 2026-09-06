@@ -26,6 +26,24 @@ using std::vector;
 #define INFO(MSG) _MESSAGE("INFO", MSG)
 #define FAIL(MSG) _MESSAGE("FAIL", MSG)
 
+static bool StartsWith(const String& value, const String& prefix)
+{
+    if (value.Length() < prefix.Length())
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < prefix.Length(); i++)
+    {
+        if (value[i] != prefix[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wnull-arithmetic"
 #endif // __clang__
@@ -35,11 +53,14 @@ ReJITProfiler::ReJITProfiler() : Profiler(),
     _failures(0),
     _rejits(0),
     _reverts(0),
+    _runtimeAsyncRejits(0),
     _inlinings(),
     _triggerFuncId(0),
     _targetFuncId(0),
     _targetModuleId(0),
-    _targetMethodDef(mdTokenNil)
+    _targetMethodDef(mdTokenNil),
+    _runtimeAsyncTargetModuleId(0),
+    _runtimeAsyncTargetMethodDef(mdTokenNil)
 {
 
 }
@@ -110,8 +131,9 @@ HRESULT ReJITProfiler::Shutdown()
     }
 
     INFO(L" rejit count=" << _rejits << L" expected rejit count=" << expectedRejitCount);
+    INFO(L" runtime async rejit count=" << _runtimeAsyncRejits << L" expected runtime async rejit count=2");
 
-    if(_failures == 0 && _rejits == expectedRejitCount)
+    if(_failures == 0 && _rejits == expectedRejitCount && _runtimeAsyncRejits == 2)
     {
         printf("PROFILER TEST PASSES\n");
     }
@@ -209,7 +231,16 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
         }
     }
 
-    if (functionName == TargetMethodName && EndsWith(moduleName, TargetModuleName))
+    if (StartsWith(functionName, RuntimeAsyncTargetMethodName) && EndsWith(moduleName, TargetModuleName))
+    {
+        _runtimeAsyncTargetModuleId = moduleId;
+        _runtimeAsyncTargetMethodDef = GetMethodDefForFunction(functionId);
+        INFO(L"Runtime async target native version compiled. FunctionID=" << std::hex << functionId
+            << L", ModuleID=" << _runtimeAsyncTargetModuleId
+            << L", MethodDef=" << _runtimeAsyncTargetMethodDef);
+        return true;
+    }
+    else if (functionName == TargetMethodName && EndsWith(moduleName, TargetModuleName))
     {
         INFO(L"Found function id for target method");
         _targetFuncId = functionId;
@@ -236,6 +267,23 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
         INFO(L"Requesting revert for method " << GetFunctionIDName(_targetFuncId));
         INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
         _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
+    }
+    else if (functionName == RuntimeAsyncReJITTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Runtime async ReJIT trigger method jitting finished: " << functionName);
+        INFO(L"Requesting ReJIT with inliners for runtime async method. ModuleID=" << std::hex
+            << _runtimeAsyncTargetModuleId << L", MethodDef=" << _runtimeAsyncTargetMethodDef);
+
+        HRESULT hr = _profInfo10->RequestReJITWithInliners(
+            COR_PRF_REJIT_BLOCK_INLINING | COR_PRF_REJIT_INLINING_CALLBACKS,
+            1,
+            &_runtimeAsyncTargetModuleId,
+            &_runtimeAsyncTargetMethodDef);
+        if (FAILED(hr))
+        {
+            _failures++;
+            FAIL(L"RequestReJITWithInliners failed for runtime async target with hr=" << std::hex << hr);
+        }
     }
 
     return false;
@@ -317,8 +365,17 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationStarted(FunctionID func
 {
     SHUTDOWNGUARD();
 
-    INFO(L"Saw a ReJIT for function " << GetFunctionIDName(functionId));
-    _rejits++;
+    String functionName = GetFunctionIDName(functionId);
+    if (StartsWith(functionName, RuntimeAsyncTargetMethodName))
+    {
+        INFO(L"Saw a runtime async target ReJIT. FunctionID=" << std::hex << functionId << L", ReJITID=" << rejitId);
+        _runtimeAsyncRejits++;
+    }
+    else
+    {
+        INFO(L"Saw a ReJIT for function " << functionName);
+        _rejits++;
+    }
     return S_OK;
 }
 
@@ -326,7 +383,9 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
 {
     SHUTDOWNGUARD();
 
-    String functionName = GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId, false));
+    String functionName = moduleId == _runtimeAsyncTargetModuleId && methodId == _runtimeAsyncTargetMethodDef
+        ? RuntimeAsyncTargetMethodName
+        : GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId, false));
     INFO(L"Starting to build IL for method " << functionName);
     COMPtrHolder<IUnknown> pUnk;
     HRESULT hr = _profInfo10->GetModuleMetaData(moduleId, ofWrite, IID_IMetaDataEmit2, &pUnk);

@@ -1,16 +1,16 @@
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -25,36 +25,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -311,6 +311,9 @@
   <data name="security_ExtendedProtectionPolicy_NoEmptyServiceNameCollection" xml:space="preserve">
     <value>The ServiceNameCollection must contain at least one service name.</value>
   </data>
+  <data name="net_extprotection_not_supported" xml:space="preserve">
+    <value>Extended Protection is not supported on this platform.</value>
+  </data>
   <data name="net_allocate_ssl_context_failed" xml:space="preserve">
     <value>Failed to allocate SSL/TLS context, OpenSSL error - {0}.</value>
   </data>
@@ -337,6 +340,9 @@
   </data>
   <data name="net_ssl_read_bio_failed_error" xml:space="preserve">
     <value>SSL Read BIO failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_tlssession_context_not_set" xml:space="preserve">
+    <value>The session has no TlsContext assigned. Call SetContext with a client or server TlsContext before invoking this operation.</value>
   </data>
   <data name="net_ssl_use_cert_failed" xml:space="preserve">
     <value>Using SSL certificate failed with OpenSSL error - {0}.</value>
@@ -430,6 +436,45 @@
   </data>
   <data name="net_ssl_renegotiate_buffer" xml:space="preserve">
     <value>Client stream needs to be drained before renegotiation.</value>
+  </data>
+  <data name="net_ssl_renegotiate_not_supported" xml:space="preserve">
+    <value>TLS renegotiation is not supported on this platform.</value>
+  </data>
+  <data name="net_tlssession_setcontext_server_only" xml:space="preserve">
+    <value>SetContext can only be called on a server-side session.</value>
+  </data>
+  <data name="net_tlssession_context_must_be_server" xml:space="preserve">
+    <value>TlsContext must be server-side.</value>
+  </data>
+  <data name="net_tlssession_server_options_already_supplied" xml:space="preserve">
+    <value>Server options were already supplied when the TlsContext was created.</value>
+  </data>
+  <data name="net_tlssession_setcontext_needs_context_first" xml:space="preserve">
+    <value>SetContext can only be called after Handshake returned NeedsTlsContext.</value>
+  </data>
+  <data name="net_tlssession_setclientcert_client_only" xml:space="preserve">
+    <value>SetClientCertificateContext can only be called on a client-side session.</value>
+  </data>
+  <data name="net_tlssession_handshake_already_complete" xml:space="preserve">
+    <value>Handshake has already completed.</value>
+  </data>
+  <data name="net_tlssession_handshake_not_complete" xml:space="preserve">
+    <value>Handshake has not yet completed.</value>
+  </data>
+  <data name="net_tlssession_request_client_cert_server_only" xml:space="preserve">
+    <value>RequestClientCertificate can only be invoked on a server session.</value>
+  </data>
+  <data name="net_tlssession_not_socket_bound" xml:space="preserve">
+    <value>Session is not socket-bound.</value>
+  </data>
+  <data name="net_tlssession_validation_not_pending" xml:space="preserve">
+    <value>{0} can only be called when certificate validation is pending.</value>
+  </data>
+  <data name="net_tlssession_validation_result_not_recorded" xml:space="preserve">
+    <value>External certificate validation result has not been recorded. Call SetRemoteCertificateValidationResult or AcceptWithDefaultValidation first.</value>
+  </data>
+  <data name="net_tlssession_plaintext_buffer_too_small" xml:space="preserve">
+    <value>Plaintext buffer too small: needed {0}, got {1}.</value>
   </data>
   <data name="net_ssl_trust_store" xml:space="preserve">
     <value>Only LocalMachine stores are supported on Windows.</value>

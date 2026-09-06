@@ -44,8 +44,6 @@ void *PtrHashMap::operator new(size_t size, LoaderHeap *pHeap)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT; //return NULL;
-
     return pHeap->AllocMem(S_SIZE_T(size));
 }
 
@@ -61,8 +59,6 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;  //return FALSE;
-
     _ASSERTE(key != EMPTY);
     _ASSERTE(key != DELETED);
 
@@ -186,7 +182,6 @@ HashMap::HashMap()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     m_rgBuckets = NULL;
     m_pCompare = NULL;  // comparison object
@@ -262,7 +257,6 @@ void HashMap::Init(DWORD cbInitialSize, ComparePtr* pCompare, BOOL fAsyncMode, L
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -313,7 +307,6 @@ void PtrHashMap::Init(DWORD cbInitialSize, CompareFnPtr ptr, BOOL fAsyncMode, Lo
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -332,7 +325,6 @@ HashMap::~HashMap()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // free the current table
     Clear();
@@ -350,7 +342,6 @@ void HashMap::Clear()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // free the current table
     FreeBuckets(m_rgBuckets);
@@ -437,7 +428,6 @@ void HashMap::ProfileLookup(UPTR ntry, UPTR retValue)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef DACCESS_COMPILE
     #ifdef HASHTABLE_PROFILE
@@ -472,8 +462,6 @@ void HashMap::InsertValue (UPTR key, UPTR value)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
     _ASSERTE (OwnLock());
 
     // Enter EBR critical region to protect against concurrent bucket array
@@ -668,7 +656,6 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE (OwnLock());
 
@@ -753,7 +740,6 @@ UPTR HashMap::PutEntry (Bucket* rgBuckets, UPTR key, UPTR value)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -789,7 +775,6 @@ UPTR HashMap::NewSize() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     ASSERT(m_cbInserts >= m_cbDeletes);
     UPTR cbValidSlots = m_cbInserts-m_cbDeletes;
@@ -825,8 +810,6 @@ void HashMap::Rehash()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
     EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());
@@ -991,7 +974,6 @@ void HashMap::Compact()
     {
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             Rehash();
         }
         EX_CATCH
@@ -1038,7 +1020,6 @@ BOOL HashMap::OwnLock()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     DEBUG_ONLY_FUNCTION;
 

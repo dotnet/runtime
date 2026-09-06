@@ -20,9 +20,9 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = jsonParameterInfo.EffectiveConverter.TryReadAsObject(ref reader, jsonParameterInfo.ParameterType, jsonParameterInfo.Options, ref state, out object? arg);
 
-            if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
+            if (success && !(arg is null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
-                if (arg == null && !jsonParameterInfo.IsNullable && jsonParameterInfo.Options.RespectNullableAnnotations)
+                if (arg is null && !jsonParameterInfo.IsNullable && jsonParameterInfo.Options.RespectNullableAnnotations)
                 {
                     ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(jsonParameterInfo.Name, state.Current.JsonTypeInfo.Type);
                 }
@@ -35,8 +35,8 @@ namespace System.Text.Json.Serialization.Converters
 
         protected sealed override object CreateObject(ref ReadStackFrame frame)
         {
-            Debug.Assert(frame.CtorArgumentState != null);
-            Debug.Assert(frame.JsonTypeInfo.CreateObjectWithArgs != null);
+            Debug.Assert(frame.CtorArgumentState is not null);
+            Debug.Assert(frame.JsonTypeInfo.CreateObjectWithArgs is not null);
 
             object[] arguments = (object[])frame.CtorArgumentState.Arguments;
             frame.CtorArgumentState.Arguments = null!;

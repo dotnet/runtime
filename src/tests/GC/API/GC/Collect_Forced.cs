@@ -17,7 +17,7 @@ public class DefaultCollect
     public static int Main(string[] args )
     {
 
-        ProcessName = Process.GetCurrentProcess().ProcessName;
+        ProcessName = OperatingSystem.IsBrowser() ? nameof(DefaultCollect) : Process.GetCurrentProcess().ProcessName;
         int gen = -1;
         if ( (args.Length!=1) || (!Int32.TryParse(args[0], out gen)) )
         {

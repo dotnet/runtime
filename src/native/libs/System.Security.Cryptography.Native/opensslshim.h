@@ -327,6 +327,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(BIO_meth_set_destroy) \
     REQUIRED_FUNCTION(BIO_meth_set_read) \
     REQUIRED_FUNCTION(BIO_meth_set_write) \
+    REQUIRED_FUNCTION(BIO_method_type) \
     REQUIRED_FUNCTION(BIO_new) \
     REQUIRED_FUNCTION(BIO_new_file) \
     REQUIRED_FUNCTION(BIO_read) \
@@ -462,6 +463,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_aes_128_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_128_ecb) \
     REQUIRED_FUNCTION(EVP_aes_128_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_128_wrap) \
     REQUIRED_FUNCTION(EVP_aes_128_wrap_pad) \
     REQUIRED_FUNCTION(EVP_aes_192_cbc) \
     REQUIRED_FUNCTION(EVP_aes_192_ccm) \
@@ -469,6 +471,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_aes_192_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_192_ecb) \
     REQUIRED_FUNCTION(EVP_aes_192_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_192_wrap) \
     REQUIRED_FUNCTION(EVP_aes_192_wrap_pad) \
     REQUIRED_FUNCTION(EVP_aes_256_cbc) \
     REQUIRED_FUNCTION(EVP_aes_256_ccm) \
@@ -476,6 +479,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_aes_256_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_256_ecb) \
     REQUIRED_FUNCTION(EVP_aes_256_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_256_wrap) \
     REQUIRED_FUNCTION(EVP_aes_256_wrap_pad) \
     LIGHTUP_FUNCTION(EVP_chacha20_poly1305) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_ctrl) \
@@ -589,6 +593,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_PKEY_get_bn_param) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_utf8_string_param) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_octet_string_param) \
+    LIGHTUP_FUNCTION(EVP_PKEY_todata) \
     LIGHTUP_FUNCTION(EVP_rc2_cbc) \
     LIGHTUP_FUNCTION(EVP_rc2_ecb) \
     REQUIRED_FUNCTION(EVP_sha1) \
@@ -676,6 +681,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(OSSL_PARAM_BLD_push_BN) \
     LIGHTUP_FUNCTION(OSSL_PARAM_BLD_to_param) \
     LIGHTUP_FUNCTION(OSSL_PARAM_free) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_get_octet_string_ptr) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_locate_const) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
@@ -772,6 +779,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
     REQUIRED_FUNCTION(SSL_set_ex_data) \
+    REQUIRED_FUNCTION(SSL_set_fd) \
     REQUIRED_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
     REQUIRED_FUNCTION(SSL_get_session) \
@@ -924,6 +932,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define BIO_meth_set_destroy BIO_meth_set_destroy_ptr
 #define BIO_meth_set_read BIO_meth_set_read_ptr
 #define BIO_meth_set_write BIO_meth_set_write_ptr
+#define BIO_method_type BIO_method_type_ptr
 #define BIO_new BIO_new_ptr
 #define BIO_new_file BIO_new_file_ptr
 #define BIO_read BIO_read_ptr
@@ -1059,6 +1068,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_aes_128_ecb EVP_aes_128_ecb_ptr
 #define EVP_aes_128_gcm EVP_aes_128_gcm_ptr
 #define EVP_aes_128_ccm EVP_aes_128_ccm_ptr
+#define EVP_aes_128_wrap EVP_aes_128_wrap_ptr
 #define EVP_aes_128_wrap_pad EVP_aes_128_wrap_pad_ptr
 #define EVP_aes_192_cbc EVP_aes_192_cbc_ptr
 #define EVP_aes_192_cfb8 EVP_aes_192_cfb8_ptr
@@ -1066,6 +1076,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_aes_192_ecb EVP_aes_192_ecb_ptr
 #define EVP_aes_192_gcm EVP_aes_192_gcm_ptr
 #define EVP_aes_192_ccm EVP_aes_192_ccm_ptr
+#define EVP_aes_192_wrap EVP_aes_192_wrap_ptr
 #define EVP_aes_192_wrap_pad EVP_aes_192_wrap_pad_ptr
 #define EVP_aes_256_cbc EVP_aes_256_cbc_ptr
 #define EVP_aes_256_cfb8 EVP_aes_256_cfb8_ptr
@@ -1073,6 +1084,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_aes_256_ecb EVP_aes_256_ecb_ptr
 #define EVP_aes_256_gcm EVP_aes_256_gcm_ptr
 #define EVP_aes_256_ccm EVP_aes_256_ccm_ptr
+#define EVP_aes_256_wrap EVP_aes_256_wrap_ptr
 #define EVP_aes_256_wrap_pad EVP_aes_256_wrap_pad_ptr
 #define EVP_chacha20_poly1305 EVP_chacha20_poly1305_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
@@ -1188,6 +1200,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_get_bn_param EVP_PKEY_get_bn_param_ptr
 #define EVP_PKEY_get_utf8_string_param EVP_PKEY_get_utf8_string_param_ptr
 #define EVP_PKEY_get_octet_string_param EVP_PKEY_get_octet_string_param_ptr
+#define EVP_PKEY_todata EVP_PKEY_todata_ptr
 #define EVP_rc2_cbc EVP_rc2_cbc_ptr
 #define EVP_rc2_ecb EVP_rc2_ecb_ptr
 #define EVP_sha1 EVP_sha1_ptr
@@ -1276,6 +1289,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OSSL_PARAM_BLD_push_BN OSSL_PARAM_BLD_push_BN_ptr
 #define OSSL_PARAM_BLD_to_param OSSL_PARAM_BLD_to_param_ptr
 #define OSSL_PARAM_free OSSL_PARAM_free_ptr
+#define OSSL_PARAM_get_octet_string_ptr OSSL_PARAM_get_octet_string_ptr_ptr
+#define OSSL_PARAM_locate_const OSSL_PARAM_locate_const_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
@@ -1374,6 +1389,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
 #define SSL_set_ex_data SSL_set_ex_data_ptr
+#define SSL_set_fd SSL_set_fd_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_session SSL_set_session_ptr
 #define SSL_get_session SSL_get_session_ptr

@@ -28,7 +28,7 @@ internal static partial class Interop
 
             // Create a new connection context
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionCreate", StringMarshalling = StringMarshalling.Utf8)]
-            internal static unsafe partial SafeNwHandle NwConnectionCreate([MarshalAs(UnmanagedType.I4)] bool isServer, IntPtr context, string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength);
+            internal static unsafe partial SafeNwHandle NwConnectionCreate([MarshalAs(UnmanagedType.I4)] bool isServer, IntPtr context, string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength, IntPtr serverIdentity);
 
             // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionStart")]

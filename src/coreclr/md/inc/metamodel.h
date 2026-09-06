@@ -16,6 +16,7 @@
 #include <cor.h>
 #include <stgpool.h>
 #include <metamodelpub.h>
+#include "cdacdata.h"
 
 #include "../datablob.h"
 #include "../debug_metadata.h"
@@ -399,10 +400,12 @@ public:
 //     To make that happen would be a substantial refactoring job as RegMeta
 //     always embeds CMiniMdRW even when it was opened for ReadOnly.
 //*****************************************************************************
+class DacDbiInterfaceImpl;
 class CMiniMdBase : public IMetaModelCommonRO
 {
 
-    friend class VerifyLayoutsMD; // verifies class layout doesn't accidentally change
+    friend struct ::cdac_data<CMiniMdBase>;
+    friend class ::DacDbiInterfaceImpl;
 
 public:
     CMiniMdBase();
@@ -585,6 +588,13 @@ protected:
 private:
 
     BOOL UsesAllocatedMemory(CMiniColDef* pCols);
+};
+
+template<>
+struct cdac_data<CMiniMdBase>
+{
+    static constexpr size_t Schema = offsetof(CMiniMdBase, m_Schema);
+    static constexpr size_t TableCount = offsetof(CMiniMdBase, m_TblCount);
 };
 
 

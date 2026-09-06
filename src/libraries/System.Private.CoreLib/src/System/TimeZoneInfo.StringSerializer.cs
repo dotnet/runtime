@@ -36,6 +36,23 @@ namespace System
             private const string DateTimeFormat = "MM:dd:yyyy";
             private const string TimeOfDayFormat = "HH:mm:ss.FFF";
 
+            // Marks the start of the optional full-fidelity adjustment rule data that is appended
+            // after the separator terminating the adjustment rule list. Older readers stop at that
+            // separator and never see this data, so it is backward compatible.
+            private const char FullFidelityRulesMarker = '!';
+
+            // Version of the full-fidelity trailer layout. It is written right after the marker so a
+            // future revision of the layout can be detected. A reader that does not recognize the
+            // version ignores the trailer and falls back to the legacy rules instead of misparsing
+            // newer data.
+            private const int FullFidelityRulesVersion = 1;
+
+            // Minimum number of separator characters a single full-fidelity rule occupies: one after each
+            // of its seven numeric fields plus one after each of its two transitions (both encoded as the
+            // one-character "D" form). A rule can only be longer than this, so this is used to bound the
+            // rule count against the remaining input length before allocating.
+            private const int MinSeparatorsPerFullFidelityRule = 9;
+
             /// <summary>
             /// Creates the custom serialized string representation of a TimeZoneInfo instance.
             /// </summary>
@@ -58,35 +75,67 @@ namespace System
                 serializedText.Append(Sep);
 
                 AdjustmentRule[] rules = zone.GetAdjustmentRules();
+                DateTime? previousLegacyEndDate = null;
                 foreach (AdjustmentRule rule in rules)
                 {
+                    // Compute the whole-day, strictly ordered boundaries written to the legacy portion.
+                    // The exact boundaries are preserved in the full-fidelity trailer below.
+                    GetLegacyRuleDates(rule, ref previousLegacyEndDate, out DateTime legacyDateStart, out DateTime legacyDateEnd);
+
                     serializedText.Append(Lhs);
-                    serializedText.AppendSpanFormattable(rule.DateStart, DateTimeFormat, DateTimeFormatInfo.InvariantInfo);
+                    serializedText.AppendSpanFormattable(legacyDateStart, DateTimeFormat, DateTimeFormatInfo.InvariantInfo);
                     serializedText.Append(Sep);
-                    serializedText.AppendSpanFormattable(rule.DateEnd, DateTimeFormat, DateTimeFormatInfo.InvariantInfo);
+                    serializedText.AppendSpanFormattable(legacyDateEnd, DateTimeFormat, DateTimeFormatInfo.InvariantInfo);
                     serializedText.Append(Sep);
                     serializedText.AppendSpanFormattable(rule.DaylightDelta.TotalMinutes, format: default, CultureInfo.InvariantCulture);
                     serializedText.Append(Sep);
-                    // serialize the TransitionTime's
-                    SerializeTransitionTime(rule.DaylightTransitionStart, ref serializedText);
+                    // Serialize the TransitionTime's. The legacy format cannot represent an empty
+                    // transition (used by rules that carry no daylight transition) and requires the two
+                    // transitions to differ when NoDaylightTransitions is not set, so substitute distinct
+                    // parseable placeholders. The exact values are preserved in the full-fidelity trailer.
+                    GetLegacyTransitionTimes(rule, out TransitionTime legacyStart, out TransitionTime legacyEnd);
+                    SerializeTransitionTime(legacyStart, ref serializedText);
                     serializedText.Append(Sep);
-                    SerializeTransitionTime(rule.DaylightTransitionEnd, ref serializedText);
+                    SerializeTransitionTime(legacyEnd, ref serializedText);
                     serializedText.Append(Sep);
-                    if (rule.BaseUtcOffsetDelta != TimeSpan.Zero)
+                    if (rule.BaseUtcOffsetDelta != TimeSpan.Zero || rule.NoDaylightTransitions)
                     {
-                        // Serialize it only when BaseUtcOffsetDelta has a value to reduce the impact of adding rule.BaseUtcOffsetDelta
-                        serializedText.AppendSpanFormattable(rule.BaseUtcOffsetDelta.TotalMinutes, format: default, CultureInfo.InvariantCulture);
+                        // Serialize it only when BaseUtcOffsetDelta has a value to reduce the impact of adding rule.BaseUtcOffsetDelta.
+                        // The legacy format stores this offset in whole minutes and its reader rejects a fractional value, so write a
+                        // whole-minute value here. Some Unix rules carry a sub-minute BaseUtcOffsetDelta; its exact value is preserved
+                        // in the full-fidelity trailer below, and this whole-minute value keeps the legacy portion parseable for readers
+                        // that ignore the trailer.
+                        // It is also written (as 0 when absent) whenever the NoDaylightTransitions marker below is emitted, because the
+                        // legacy reader distinguishes these two optional fields positionally: it consumes a leading digit as the
+                        // BaseUtcOffsetDelta, so without a preceding offset token the '1' marker would be misread as a one-minute offset.
+                        serializedText.AppendSpanFormattable(rule.BaseUtcOffsetDelta.Ticks / TimeSpan.TicksPerMinute, format: default, CultureInfo.InvariantCulture);
                         serializedText.Append(Sep);
                     }
                     if (rule.NoDaylightTransitions)
                     {
-                        // Serialize it only when NoDaylightTransitions is true to reduce the impact of adding rule.NoDaylightTransitions
+                        // Emit the NoDaylightTransitions marker so a reader that ignores the full-fidelity trailer (for example an
+                        // older runtime) reconstructs a Linux-style rule and treats DateStart/DateEnd as the UTC window. Without it,
+                        // such a reader would parse the rule as a Windows-style seasonal rule and interpret the placeholder transitions
+                        // as local-time transitions, changing the calculated offsets. The exact rule is still preserved in the trailer.
                         serializedText.Append('1');
                         serializedText.Append(Sep);
                     }
                     serializedText.Append(Rhs);
                 }
                 serializedText.Append(Sep);
+
+                // The public rules serialized above are a Windows-shaped projection of the internal
+                // rules. On Unix that projection is lossy (for example NoDaylightTransitions rules,
+                // UTC sub-day boundaries, or multi-year rules that get split). When it cannot reproduce
+                // the internal rules exactly, append a full-fidelity copy of the internal rules so the
+                // round trip is exact. This is placed after the separator that terminates the rule list,
+                // which older readers ignore, so existing serialized strings and Windows output are
+                // unchanged.
+                AdjustmentRule[]? internalRules = zone._adjustmentRules;
+                if (internalRules is not null && RequiresFullFidelityRules(rules, internalRules))
+                {
+                    SerializeFullFidelityRules(internalRules, ref serializedText);
+                }
 
                 return serializedText.ToString();
             }
@@ -104,6 +153,10 @@ namespace System
                 string standardName = s.GetNextStringValue();
                 string daylightName = s.GetNextStringValue();
                 AdjustmentRule[]? rules = s.GetNextAdjustmentRuleArrayValue();
+
+                // If a full-fidelity copy of the internal rules was appended, use it instead of the
+                // legacy (public projection) rules so the round trip is exact.
+                rules = s.GetFullFidelityAdjustmentRulesIfPresent(rules);
 
                 try
                 {
@@ -124,6 +177,158 @@ namespace System
                 _serializedText = str;
                 _currentTokenStartIndex = 0;
                 _state = State.StartOfToken;
+            }
+
+            /// <summary>
+            /// Produces the transitions to write for the legacy portion of a rule. Empty transitions
+            /// (Month == 0), used by rules that carry no daylight transition, cannot be represented by
+            /// the legacy format because it reconstructs transitions through the TransitionTime factory
+            /// methods (which reject a zero month). They are replaced by placeholders. The placeholders
+            /// are also forced to differ from each other so the rule passes validation on readers that
+            /// do not honor the full-fidelity trailer. The exact values are preserved in that trailer.
+            /// </summary>
+            private static void GetLegacyTransitionTimes(AdjustmentRule rule, out TransitionTime start, out TransitionTime end)
+            {
+                start = rule.DaylightTransitionStart.Month != 0 ? rule.DaylightTransitionStart : s_legacyTransitionPlaceholderStart;
+                end = rule.DaylightTransitionEnd.Month != 0 ? rule.DaylightTransitionEnd : s_legacyTransitionPlaceholderEnd;
+
+                if (start.Equals(end))
+                {
+                    // The two transitions must differ (see TimeZoneInfo.AdjustmentRule validation). Pick a
+                    // month that is guaranteed to be different from the one already used.
+                    end = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), start.Month == 12 ? 6 : 12, 1);
+                }
+            }
+
+            private static readonly TransitionTime s_legacyTransitionPlaceholderStart = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 1, 1);
+            private static readonly TransitionTime s_legacyTransitionPlaceholderEnd = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 12, 31);
+
+            /// <summary>
+            /// Produces the whole-day, strictly ordered boundaries to write for the legacy portion of a
+            /// rule. The legacy format stores only the date component (see <see cref="DateTimeFormat"/>),
+            /// so internal rules whose boundaries are sub-day UTC instants can collapse onto the same
+            /// calendar day and make consecutive rules overlap. Readers that do not honor the
+            /// full-fidelity trailer validate the legacy rules for chronological order, so nudge the start
+            /// past the previous rule's end when they would collide. For Windows-shaped rules (already
+            /// whole-day and non-overlapping) this is a no-op, keeping the output byte-identical. The exact
+            /// boundaries are preserved in the full-fidelity trailer.
+            /// </summary>
+            private static void GetLegacyRuleDates(AdjustmentRule rule, ref DateTime? previousEndDate, out DateTime startDate, out DateTime endDate)
+            {
+                startDate = rule.DateStart.Date;
+                endDate = rule.DateEnd.Date;
+
+                if (previousEndDate is DateTime previous && startDate <= previous && previous < DateTime.MaxValue.Date)
+                {
+                    startDate = previous.AddDays(1);
+                    if (startDate > endDate)
+                    {
+                        endDate = startDate;
+                    }
+                }
+
+                previousEndDate = endDate;
+            }
+
+            /// <summary>
+            /// Determines whether the internal adjustment rules can be reproduced exactly from the
+            /// legacy (public projection) serialization. When they cannot, a full-fidelity copy of the
+            /// internal rules is appended to the serialized string.
+            /// </summary>
+            private static bool RequiresFullFidelityRules(AdjustmentRule[] publicRules, AdjustmentRule[] internalRules)
+            {
+                if (publicRules.Length != internalRules.Length)
+                {
+                    return true;
+                }
+
+                for (int i = 0; i < internalRules.Length; i++)
+                {
+                    AdjustmentRule internalRule = internalRules[i];
+
+                    // The legacy format only represents Windows-shaped rules: Unspecified-kind, whole-day
+                    // boundaries, whole-minute offsets, real daylight transitions, and no
+                    // NoDaylightTransitions marker. Anything else (produced on Unix) loses information when
+                    // projected through GetAdjustmentRules().
+                    if (internalRule.NoDaylightTransitions ||
+                        internalRule.DateStart.Kind == DateTimeKind.Utc ||
+                        internalRule.DateEnd.Kind == DateTimeKind.Utc ||
+                        internalRule.BaseUtcOffsetDelta.Ticks % TimeSpan.TicksPerMinute != 0 ||
+                        !publicRules[i].Equals(internalRule))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Appends a full-fidelity copy of the internal adjustment rules. It is written after the
+            /// separator that terminates the legacy rule list, which older readers ignore. The layout is
+            /// the marker, the format version, the rule count, then each rule.
+            /// </summary>
+            private static void SerializeFullFidelityRules(AdjustmentRule[] rules, ref ValueStringBuilder serializedText)
+            {
+                serializedText.Append(FullFidelityRulesMarker);
+                AppendInt32Value(FullFidelityRulesVersion, ref serializedText);
+                AppendInt32Value(rules.Length, ref serializedText);
+
+                foreach (AdjustmentRule rule in rules)
+                {
+                    AppendInt64Value(rule.DateStart.Ticks, ref serializedText);
+                    AppendInt32Value((int)rule.DateStart.Kind, ref serializedText);
+                    AppendInt64Value(rule.DateEnd.Ticks, ref serializedText);
+                    AppendInt32Value((int)rule.DateEnd.Kind, ref serializedText);
+                    AppendInt64Value(rule.DaylightDelta.Ticks, ref serializedText);
+                    AppendInt64Value(rule.BaseUtcOffsetDelta.Ticks, ref serializedText);
+                    AppendInt32Value(rule.NoDaylightTransitions ? 1 : 0, ref serializedText);
+                    SerializeFullFidelityTransitionTime(rule.DaylightTransitionStart, ref serializedText);
+                    SerializeFullFidelityTransitionTime(rule.DaylightTransitionEnd, ref serializedText);
+                }
+            }
+
+            /// <summary>
+            /// Serializes a TransitionTime with full fidelity, including empty (default) transitions.
+            /// </summary>
+            private static void SerializeFullFidelityTransitionTime(TransitionTime transition, ref ValueStringBuilder serializedText)
+            {
+                if (transition == default)
+                {
+                    serializedText.Append('D');
+                    serializedText.Append(Sep);
+                    return;
+                }
+
+                if (transition.IsFixedDateRule)
+                {
+                    serializedText.Append('F');
+                    serializedText.Append(Sep);
+                    AppendInt64Value(transition.TimeOfDay.Ticks, ref serializedText);
+                    AppendInt32Value(transition.Month, ref serializedText);
+                    AppendInt32Value(transition.Day, ref serializedText);
+                }
+                else
+                {
+                    serializedText.Append('W');
+                    serializedText.Append(Sep);
+                    AppendInt64Value(transition.TimeOfDay.Ticks, ref serializedText);
+                    AppendInt32Value(transition.Month, ref serializedText);
+                    AppendInt32Value(transition.Week, ref serializedText);
+                    AppendInt32Value((int)transition.DayOfWeek, ref serializedText);
+                }
+            }
+
+            private static void AppendInt32Value(int value, ref ValueStringBuilder serializedText)
+            {
+                serializedText.AppendSpanFormattable(value, format: default, CultureInfo.InvariantCulture);
+                serializedText.Append(Sep);
+            }
+
+            private static void AppendInt64Value(long value, ref ValueStringBuilder serializedText)
+            {
+                serializedText.AppendSpanFormattable(value, format: default, CultureInfo.InvariantCulture);
+                serializedText.Append(Sep);
             }
 
             /// <summary>
@@ -365,6 +570,149 @@ namespace System
                     throw new SerializationException(SR.Serialization_InvalidData);
                 }
                 return value;
+            }
+
+            /// <summary>
+            /// Helper function to read an Int64 token.
+            /// </summary>
+            private long GetNextInt64Value()
+            {
+                string token = GetNextStringValue();
+                if (!long.TryParse(token, NumberStyles.AllowLeadingSign /* "[sign]digits" */, CultureInfo.InvariantCulture, out long value))
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                return value;
+            }
+
+            /// <summary>
+            /// Reads the optional full-fidelity adjustment rules that follow the separator terminating
+            /// the legacy rule list. When present, they replace the legacy rules so the round trip is
+            /// exact; when absent (or unrecognized future data), the legacy rules are returned unchanged.
+            /// </summary>
+            private AdjustmentRule[]? GetFullFidelityAdjustmentRulesIfPresent(AdjustmentRule[]? legacyRules)
+            {
+                // The legacy rule array reader stops on the separator that terminates the list without
+                // consuming it. If there is nothing after that separator, there is no full-fidelity data.
+                if (_state == State.EndOfLine ||
+                    _currentTokenStartIndex >= _serializedText.Length ||
+                    _serializedText[_currentTokenStartIndex] != Sep)
+                {
+                    return legacyRules;
+                }
+
+                _currentTokenStartIndex++;
+                if (_currentTokenStartIndex >= _serializedText.Length ||
+                    _serializedText[_currentTokenStartIndex] != FullFidelityRulesMarker)
+                {
+                    // No marker: either end of string or unknown trailing data from a newer format. Keep
+                    // the legacy rules.
+                    return legacyRules;
+                }
+
+                _currentTokenStartIndex++;
+                _state = State.StartOfToken;
+
+                int version = GetNextInt32Value();
+                if (version != FullFidelityRulesVersion)
+                {
+                    // A trailer written by a newer runtime using a layout this reader does not understand.
+                    // Ignore it and keep the legacy rules rather than misparsing the newer data.
+                    return legacyRules;
+                }
+
+                int count = GetNextInt32Value();
+
+                // Guard against a corrupt or malicious count driving an unbounded allocation. Every rule
+                // occupies at least MinSeparatorsPerFullFidelityRule characters, so a count larger than the
+                // remaining characters can hold cannot be valid.
+                if (count <= 0 || count > (_serializedText.Length - _currentTokenStartIndex) / MinSeparatorsPerFullFidelityRule)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                AdjustmentRule[] rules = new AdjustmentRule[count];
+                for (int i = 0; i < count; i++)
+                {
+                    rules[i] = GetNextFullFidelityAdjustmentRuleValue();
+                }
+                return rules;
+            }
+
+            /// <summary>
+            /// Reads a single full-fidelity AdjustmentRule.
+            /// </summary>
+            private AdjustmentRule GetNextFullFidelityAdjustmentRuleValue()
+            {
+                long dateStartTicks = GetNextInt64Value();
+                int dateStartKind = GetNextInt32Value();
+                long dateEndTicks = GetNextInt64Value();
+                int dateEndKind = GetNextInt32Value();
+                long daylightDeltaTicks = GetNextInt64Value();
+                long baseUtcOffsetDeltaTicks = GetNextInt64Value();
+                int noDaylightTransitions = GetNextInt32Value();
+                if (noDaylightTransitions is not (0 or 1))
+                {
+                    // The writer only emits 0 or 1; reject any other value rather than treating it as true.
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                TransitionTime daylightStart = GetNextFullFidelityTransitionTimeValue();
+                TransitionTime daylightEnd = GetNextFullFidelityTransitionTimeValue();
+
+                try
+                {
+                    return AdjustmentRule.CreateAdjustmentRule(
+                        new DateTime(dateStartTicks, (DateTimeKind)dateStartKind),
+                        new DateTime(dateEndTicks, (DateTimeKind)dateEndKind),
+                        new TimeSpan(daylightDeltaTicks),
+                        daylightStart,
+                        daylightEnd,
+                        new TimeSpan(baseUtcOffsetDeltaTicks),
+                        noDaylightTransitions != 0);
+                }
+                catch (Exception e) when (e is ArgumentException or OverflowException)
+                {
+                    // The tick values are untrusted. Out-of-range dates surface as ArgumentException, and
+                    // extreme delta values can overflow while CreateAdjustmentRule normalizes them; both
+                    // are reported as corrupt serialized data.
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
+                }
+            }
+
+            /// <summary>
+            /// Reads a full-fidelity TransitionTime, including empty (default) transitions.
+            /// </summary>
+            private TransitionTime GetNextFullFidelityTransitionTimeValue()
+            {
+                string kind = GetNextStringValue();
+                try
+                {
+                    switch (kind)
+                    {
+                        case "D":
+                            return default;
+
+                        case "F":
+                            long fixedTicks = GetNextInt64Value();
+                            int fixedMonth = GetNextInt32Value();
+                            int fixedDay = GetNextInt32Value();
+                            return TransitionTime.CreateFixedDateRule(new DateTime(fixedTicks), fixedMonth, fixedDay);
+
+                        case "W":
+                            long floatingTicks = GetNextInt64Value();
+                            int floatingMonth = GetNextInt32Value();
+                            int floatingWeek = GetNextInt32Value();
+                            int floatingDayOfWeek = GetNextInt32Value();
+                            return TransitionTime.CreateFloatingDateRule(new DateTime(floatingTicks), floatingMonth, floatingWeek, (DayOfWeek)floatingDayOfWeek);
+
+                        default:
+                            throw new SerializationException(SR.Serialization_InvalidData);
+                    }
+                }
+                catch (ArgumentException e)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
+                }
             }
 
             /// <summary>

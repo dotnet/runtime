@@ -31,6 +31,12 @@ bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
+bool MyICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    jitInstance->mc->cr->AddCall("canValueClassInstancePointerEscape");
+    return jitInstance->mc->repCanValueClassInstancePointerEscape(ftn);
+}
+
 bool MyICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     jitInstance->mc->cr->AddCall("notifyMethodInfoUsage");
@@ -1080,15 +1086,47 @@ void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
         return;
     }
 
-#define JITMETADATAINFO(name, type, flags)
-#define JITMETADATAMETRIC(name, type, flags) \
-    if ((strcmp(key, #name) == 0) && (length == sizeof(type)))   \
-    {                                                            \
-        memcpy(&jitInstance->mc->cr->name, value, sizeof(type)); \
-        return;                                                  \
-    }
+    struct MetricEntry
+    {
+        const char* Name;
+        void (*Store)(CompileResult* cr, const void* value, size_t length);
+    };
 
+    static const MetricEntry s_metrics[] = {
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags)                                                                           \
+    {#name, [](CompileResult* cr, const void* value, size_t length) {                                                  \
+         if (length == sizeof(type))                                                                                   \
+         {                                                                                                             \
+             cr->name = *static_cast<const type*>(value);                                                              \
+         }                                                                                                             \
+     }},
 #include "jitmetadatalist.h"
+    };
+
+    const size_t count = ArrLen(s_metrics);
+
+    // The JIT reports metrics in the order they are declared in jitmetadatalist.h,
+    // so resume the search where the previous one matched instead of always scanning
+    // from the start. In practice this matches on the first comparison.
+    size_t index = m_metricSearchStart;
+    for (size_t i = 0; i < count; i++)
+    {
+        const MetricEntry& entry = s_metrics[index];
+
+        index++;
+        if (index == count)
+        {
+            index = 0;
+        }
+
+        if (strcmp(key, entry.Name) == 0)
+        {
+            m_metricSearchStart = index;
+            entry.Store(jitInstance->mc->cr, value, length);
+            return;
+        }
+    }
 }
 
 /*-------------------------- Misc ---------------------------------------*/
@@ -1197,10 +1235,27 @@ void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
 }
 
+void MyICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    jitInstance->mc->cr->AddCall("getWasmWellKnownGlobals");
+    jitInstance->mc->repGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
 CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     jitInstance->mc->cr->AddCall("getAwaitReturnCall");
     return jitInstance->mc->repGetAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
+CORINFO_METHOD_HANDLE MyICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    jitInstance->mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    return jitInstance->mc->repGetAwaitAwaiterInContinuationCall(
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
 }
 
 /*********************************************************************************/
@@ -1376,13 +1431,6 @@ void MyICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CON
 {
     jitInstance->mc->cr->AddCall("getAddressOfPInvokeTarget");
     jitInstance->mc->repGetAddressOfPInvokeTarget(method, pLookup);
-}
-
-// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("GetCookieForPInvokeCalliSig");
-    return jitInstance->mc->repGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
 }
 
 // Generate a cookie based on the signature to pass to INTOP_CALLI

@@ -108,6 +108,12 @@ public unsafe class Program
         }
 
         {
+            Console.WriteLine($" -- unmanaged tail");
+            var b = CallFunctionPointers.CallUnmanagedTailCharChar(cbDefault, a);
+            Assert.Equal(expected, b);
+        }
+
+        {
             Console.WriteLine($" -- unmanaged cdecl");
             var b = CallFunctionPointers.CallUnmanagedCdeclCharChar(cbCdecl, a);
             Assert.Equal(expected, b);
@@ -166,6 +172,8 @@ public unsafe class Program
     }
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

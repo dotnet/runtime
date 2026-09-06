@@ -1661,7 +1661,7 @@ ProcessFuncletsForGCReporting:
                                 {
                                     STRESS_LOG2(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: Reached parent of filter funclet @ CallerSP: %p, m_crawl.pFunc = %p\n",
-                                    m_sfFuncletParent.SP, m_crawl.pFunc);
+                                    (void*)m_sfFuncletParent.SP, m_crawl.pFunc);
 
                                     // Dev11 376329 - ARM: GC hole during filter funclet dispatch.
                                     // Filters are invoked during the first pass so we cannot skip
@@ -1729,7 +1729,8 @@ ProcessFuncletsForGCReporting:
 
                                     STRESS_LOG4(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: Found %sFilter funclet @ SP: %p, m_crawl.pFunc = %p; FuncletParentCallerSP: %p\n",
-                                    (fIsFilterFunclet) ? "" : "Non-", GetRegdisplaySP(m_crawl.GetRegisterSet()), m_crawl.pFunc, m_sfFuncletParent.SP);
+                                    (fIsFilterFunclet) ? "" : "Non-", (void*)GetRegdisplaySP(m_crawl.GetRegisterSet()),
+                                    m_crawl.pFunc, (void*)m_sfFuncletParent.SP);
 
                                     if (!fIsFilterFunclet)
                                     {
@@ -1833,7 +1834,7 @@ ProcessFuncletsForGCReporting:
                                     {
                                         STRESS_LOG2(LF_GCROOTS, LL_INFO100,
                                         "STACKWALK: Reached parent of non-filter funclet @ CallerSP: %p, m_crawl.pFunc = %p\n",
-                                        m_sfParent.SP, m_crawl.pFunc);
+                                        (void*)m_sfParent.SP, m_crawl.pFunc);
 
                                         // landing here indicates that the funclet's parent has been unwound so
                                         // this will always be true, no need to predicate on the state of the funclet
@@ -1888,7 +1889,7 @@ ProcessFuncletsForGCReporting:
 
                                     STRESS_LOG2(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: Reached parent of non-filter funclet @ CallerSP: %p, m_crawl.pFunc = %p\n",
-                                    m_sfParent.SP, m_crawl.pFunc);
+                                    (void*)m_sfParent.SP, m_crawl.pFunc);
 
                                     // by default a funclet's parent won't report its GC roots since they would have already
                                     // been reported by the funclet.  however there is a small window during unwind before
@@ -1988,7 +1989,7 @@ ProcessFuncletsForGCReporting:
                                     "STACKWALK: %s: not making callback for this frame, SPOfParent = %p, \
                                     isDiagnosticsHidden = %d, m_crawl.pFunc = %pM\n",
                                     (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_DIAGNOSTICS_HIDDEN"),
-                                    m_sfParent.SP,
+                                    (void*)m_sfParent.SP,
                                     (m_crawl.pFunc->IsDiagnosticsHidden() ? 1 : 0),
                                     m_crawl.pFunc);
 
@@ -2004,7 +2005,7 @@ ProcessFuncletsForGCReporting:
                                      "STACKWALK: %s: not making callback for this frame, SPOfParent = %p, \
                                      isDiagnosticsHidden = %d, m_crawl.pFunc = %pM\n",
                                      (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_DIAGNOSTICS_HIDDEN"),
-                                     m_sfParent.SP,
+                                     (void*)m_sfParent.SP,
                                      (m_crawl.pFunc->IsDiagnosticsHidden() ? 1 : 0),
                                      m_crawl.pFunc);
 
@@ -2223,7 +2224,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         {
             PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(GetSP(m_crawl.pRD->pCurrentContext));
             pInterpreterFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
-            LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from last interpreted frame under InterpreterFrame %p to native frame (IP=%p, SP=%p)\n", pInterpreterFrame, GetControlPC(m_crawl.pRD), GetRegdisplaySP(m_crawl.pRD)));
+            LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from last interpreted frame under InterpreterFrame %p to native frame (IP=%p, SP=%p)\n", pInterpreterFrame, (void*)GetControlPC(m_crawl.pRD), (void*)GetRegdisplaySP(m_crawl.pRD)));
         }
 #endif // FEATURE_INTERPRETER
 
@@ -2329,6 +2330,18 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             _ASSERTE(adr != (PCODE)POISONC);
 
             _ASSERTE(!pInlinedFrame || adr);
+
+#ifdef TARGET_WASM
+            if ((pInlinedFrame != NULL) && (adr == (PCODE)INLINED_PINVOKE_FROM_R2R))
+            {
+                adr = GetWasmVirtualIPFromStackPointer(dac_cast<TADDR>(((InlinedCallFrame*)pInlinedFrame)->GetCallSiteSP()));
+                if (adr == (PCODE)NULL)
+                {
+                    retVal = SWA_FAILED;
+                    goto Cleanup;
+                }
+            }
+#endif // TARGET_WASM
 
             if (adr)
             {
@@ -2602,16 +2615,15 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         {
             m_crawl.isFrameless     = false;
 
-            // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
-            // was passed to the stub as its secret argument. This is the true interop MD.
-            // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
-            // the call is made using the CALLI instruction.
+#ifdef FEATURE_VARARGS
+            // A vararg P/Invoke stub receives the true interop MethodDesc as its secret argument.
+            // Report that MethodDesc instead of the IL stub.
             bool fReportInteropMD =
                 m_crawl.pFrame != FRAME_TOP
                 && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame
                 && m_crawl.pFunc != NULL
                 && m_crawl.pFunc->IsILStub()
-                && m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
+                && m_crawl.pFunc->AsDynamicMethodDesc()->IsPInvokeVarArgStub();
             if (fReportInteropMD)
             {
                 m_crawl.pFunc = ((PTR_InlinedCallFrame)m_crawl.pFrame)->GetActualInteropMethodDesc();
@@ -2619,6 +2631,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
                 _ASSERTE(m_crawl.pFunc->SanityCheck());
             }
             else
+#endif // FEATURE_VARARGS
             {
                 m_crawl.pFunc = m_crawl.pFrame->GetFunction();
             }

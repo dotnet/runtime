@@ -16,11 +16,9 @@ enum host_mode_t
 
     apphost,        // Invoked as <appname>.exe from the application base; this is the renamed "apphost.exe".
 
-    split_fx,       // Invoked as "corehost.exe" for xunit scenarios. Supported for backwards compat for 1.x apps.
-                    // Split FX means, the host is operating like "corerun.exe" in a split location from the application base (CORE_ROOT equivalent),
-                    // but it has its "hostfxr.dll" next to it.
+    // split_fx = 3, // Formerly used for split-framework mode for 1.x apps.
 
-    libhost,        // Invoked from a non-exe scenario (e.g. COM Activation or self-hosting native application)
+    libhost = 4,    // Invoked from a non-exe scenario (e.g. COM Activation or self-hosting native application)
 };
 
 #define _HOST_INTERFACE_PACK 1

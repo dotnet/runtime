@@ -273,7 +273,18 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             }
         }
         break;
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#elif defined(FEATURE_HW_INTRINSICS) && defined(TARGET_WASM)
+        case GT_HWINTRINSIC:
+        {
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->AsHWIntrinsic()->GetHWIntrinsicId());
+            if (category == HW_Category_MemoryLoad || category == HW_Category_MemoryStore)
+            {
+                SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            }
+        }
+        break;
+
+#endif // defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_WASM))
 
         case GT_INDEX_ADDR:
             if (node->AsIndexAddr()->IsBoundsChecked())

@@ -763,8 +763,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 PreserveUnknownAttributes = false,
             };
 
-            Func<X509Certificate2> func =
-                () => LoadPfxNoFile(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw, loaderLimits: limits);
+            Func<X509Certificate2> func = () =>
+            {
+                return TestData.WithDuplicateAttributesPfx(limits, (bytes, limits) =>
+                {
+                    return LoadPfxNoFile(bytes, TestData.PlaceholderPw, loaderLimits: limits);
+                });
+            };
 
             if (allowDuplicates)
             {

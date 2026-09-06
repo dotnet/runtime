@@ -9,7 +9,7 @@ This skill provides **implementation guidance** when writing or modifying code u
 
 ## Scope
 
-Applies to all `System.Net.*` libraries, `System.Private.Uri`, and shared networking code in `Common/src`. For general dotnet/runtime conventions (style, builds, testing workflow), defer to the repo-level `copilot-instructions.md` and the `code-review` skill.
+Applies to all `System.Net.*` libraries, `System.Private.Uri`, and shared networking code in `Common/src`. For general dotnet/runtime conventions, defer to the path-scoped files under `.github/instructions/` (style, tests), the `build-and-test` skill (build and test workflow), and the `code-review` skill.
 
 ### Review Delegation
 
@@ -263,7 +263,7 @@ System.Net functional tests use in-process loopback servers to avoid real networ
 
 - Tests must clean up all sockets, streams, and servers — wrap in `using`/`await using`.
 - Stress tests live under `tests/StressTests/`; don't add long-running loops to functional tests.
-- General test conventions (prefer existing files, `[Theory]` over `[Fact]`) are in `copilot-instructions.md`.
+- General test conventions (prefer existing files, `[Theory]` over `[Fact]`) are in `.github/instructions/tests.instructions.md`.
 
 ---
 

@@ -26,22 +26,20 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo)
+HRESULT  AssemblySpec::Bind(BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(ppAssembly));
-        PRECONDITION(CheckPointer(pAppDomain));
         PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
     HRESULT hr=S_OK;
 
-    // Have a default binding context setup
-    AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
+    AssemblyBinder *pBinder = GetInitialBinder();
 
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
@@ -68,7 +66,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pPrivAsm != nullptr);
-        *ppAssembly = pPrivAsm.Extract();
+        *ppAssembly = pPrivAsm.Detach();
     }
 
     return hr;
@@ -186,7 +184,7 @@ void BaseAssemblySpec::Init(SString& assemblyDisplayName)
     parseAsAssemblySpec.InvokeThrowing(pAssemblyDisplayName, (void*)this);
 }
 
-extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec)
+extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

@@ -300,8 +300,8 @@ namespace System
             return value < PowersOf10[(int)approx] ? approx - 1 : approx;
         }
 
-        // Lookup table for power-of-10 boundaries corrections
-        private static ReadOnlySpan<ulong> PowersOf10 =>
+        // Lookup table for the powers of ten representable in a UInt64 (10^0 through 10^19).
+        internal static ReadOnlySpan<ulong> PowersOf10 =>
         [
             1,
             10,

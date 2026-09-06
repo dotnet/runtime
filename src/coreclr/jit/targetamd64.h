@@ -72,6 +72,8 @@
 #endif // !UNIX_AMD64_ABI
 
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
+#define TARGET_MASKS_SHIFTS      1       // Shift and rotate instructions implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         1       // Supports GT_MULHI, the high bits of an NxN multiply
 #define EMIT_TRACK_STACK_DEPTH   1
 #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
@@ -383,14 +385,6 @@
 #define REG_R2R_INDIRECT_PARAM REG_RAX // Indirection cell for R2R fast tailcall
                                          // See ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell in crossgen2.
 #define RBM_R2R_INDIRECT_PARAM RBM_RAX
-
-// GenericPInvokeCalliHelper VASigCookie Parameter
-#define REG_PINVOKE_COOKIE_PARAM          REG_R11
-#define RBM_PINVOKE_COOKIE_PARAM          RBM_R11
-
-// GenericPInvokeCalliHelper unmanaged target Parameter
-#define REG_PINVOKE_TARGET_PARAM          REG_R10
-#define RBM_PINVOKE_TARGET_PARAM          RBM_R10
 
 // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
 #define REG_SECRET_STUB_PARAM    REG_R10

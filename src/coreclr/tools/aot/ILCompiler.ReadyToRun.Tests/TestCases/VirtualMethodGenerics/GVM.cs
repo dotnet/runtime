@@ -117,6 +117,17 @@ struct Test7 : ITest7<int>
 {
 }
 
+// Test8 -- Interface GVM implemented by a value type
+interface ITest8
+{
+    int Test8Method<T>();
+}
+
+struct Test8 : ITest8
+{
+    public int Test8Method<T>() => 42;
+}
+
 class GVMTests
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -143,6 +154,9 @@ class GVMTests
         Console.WriteLine(T.Test7Method<int>());
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ITest8 CreateTest8() => new Test8();
+
     static void Run()
     {
         ITest1 t1 = CreateTest1();
@@ -164,5 +178,8 @@ class GVMTests
         Console.WriteLine(t6.Test6Method<int>());
 
         CallTest7<Test7>();
+
+        ITest8 t8 = CreateTest8();
+        Console.WriteLine(t8.Test8Method<int>());
     }
 }

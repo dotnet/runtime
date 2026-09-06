@@ -775,6 +775,32 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
+#ifdef TARGET_ARM
+        case NI_PRIMITIVE_SaturateToInt8:
+            // SSAT Rd, #8, Rn - saturate int32 to signed 8-bit range [-128, 127]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToInt16:
+            // SSAT Rd, #16, Rn - saturate int32 to signed 16-bit range [-32768, 32767]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt8:
+            // USAT Rd, #8, Rn - saturate int32 to unsigned 8-bit range [0, 255]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt16:
+            // USAT Rd, #16, Rn - saturate int32 to unsigned 16-bit range [0, 65535]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+#endif // TARGET_ARM
+
 #if defined(FEATURE_SIMD)
             // The handling is a bit more complex so genSimdUpperSave/Restore
             // handles genConsumeOperands and genProduceReg
@@ -3902,6 +3928,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
+        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaResumedIndicator) == -preservedAreaSize);
+        }
+
         if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
         {
             preservedAreaSize += TARGET_POINTER_SIZE;
@@ -5011,6 +5044,54 @@ void CodeGen::genUnknownSizeFrame()
         instGen_Set_Reg_To_Imm(EA_8BYTE, rsvd, totalVectorCount);
         GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_SCRATCH, 1);
         GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
+    }
+}
+
+//----------------------------------------------------------------------------
+//
+// genZeroInitializeUnknownSizeFrame: Zero-initialize the UnknownSizeFrame stack space.
+//
+// Remarks:
+//     This function emits code that assumes the state of sp has not been modified since
+//     establishing the UnknownSizeFrame. sp must point to the end of the UnknownSizeFrame.
+//
+void CodeGen::genZeroInitializeUnknownSizeFrame()
+{
+    assert(m_compiler->compUsesUnknownSizeFrame);
+
+    unsigned vectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
+
+    assert(vectorCount > 0);
+
+    // z9 <== {0, 0, ...}
+    GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, 0, INS_OPTS_SCALABLE_B);
+
+    // For small vector counts, emit unrolled loop of vector stores.
+    // Unrolling to a maximum of 5 stores optimizes for code size rather than performance.
+    // TODO-SVE: Does unrolling further improve performance?
+    if (vectorCount <= 5)
+    {
+        for (unsigned i = 0; i < vectorCount; i++)
+        {
+            // str z9, [sp, #i MUL VL]
+            GetEmitter()->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SP, i);
+        }
+    }
+    else
+    {
+        // $cursor <== x19
+        inst_Mov(TYP_BYREF, REG_SCRATCH, REG_UNKBASE, false);
+        BasicBlock* loop = genCreateTempLabel();
+        // loop:
+        genDefineInlineTempLabel(loop);
+        // addvl $cursor, $cursor, #-1
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, -1);
+        // str z9, [$cursor]
+        GetEmitter()->emitIns_R_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SCRATCH);
+        // cmp sp, $cursor
+        GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, REG_SP, REG_SCRATCH, INS_OPTS_UXTX);
+        // b.ne loop
+        GetEmitter()->emitIns_J(INS_bne, loop);
     }
 }
 #endif

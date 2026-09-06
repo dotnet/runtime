@@ -80,6 +80,68 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     return Limit(Limit::keUnknown);
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// optAssertionProp_HWIntrinsic: Propagate VN-derived facts to local var metadata.
+//
+// Arguments:
+//    comp - The compiler instance
+//    tree - The hwintrinsic node
+//
+static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
+{
+    NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
+
+    if (intrinsic != NI_Vector_ExtractMostSignificantBits)
+    {
+        return;
+    }
+
+    assert(tree->GetOperandCount() == 1);
+
+    GenTree* op1 = tree->Op(1);
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
+
+    if (!varDsc->lvSingleDef)
+    {
+        return;
+    }
+
+    ValueNum op1VN = comp->vnStore->VNConservativeNormalValue(op1->gtVNPair);
+
+    auto vnVisitor = [comp, tree](ValueNum vn) -> ValueNumStore::VNVisit {
+        if (vn == ValueNumStore::NoVN)
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        vn                 = comp->vnStore->VNNormalValue(vn);
+        var_types type     = comp->vnStore->TypeOfVN(vn);
+        unsigned  simdSize = tree->GetSimdSize();
+
+        if (!varTypeIsSIMD(type) || (genTypeSize(type) != simdSize))
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        return comp->vnStore->IsVectorPerElementMask(vn, tree->GetSimdBaseType(), simdSize)
+                   ? ValueNumStore::VNVisit::Continue
+                   : ValueNumStore::VNVisit::Abort;
+    };
+
+    if (comp->vnStore->VNVisitReachingVNs(op1VN, vnVisitor) == ValueNumStore::VNVisit::Continue)
+    {
+        varDsc->SetIsVectorPerElementMask(tree->GetSimdBaseType());
+    }
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
 //
@@ -413,6 +475,26 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
                 }
 
+                case NI_PRIMITIVE_SaturateToInt8:
+                {
+                    return {SymbolicIntegerValue::ByteMin, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToInt16:
+                {
+                    return {SymbolicIntegerValue::ShortMin, SymbolicIntegerValue::ShortMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt8:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UShortMax};
+                }
+
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                 {
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
@@ -664,9 +746,9 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 #ifdef DEBUG
 /* static */ void IntegralRange::Print(IntegralRange range)
 {
-    printf("[%lld", SymbolicToRealValue(range.m_lowerBound));
+    printf("[%lld", (long long)SymbolicToRealValue(range.m_lowerBound));
     printf("..");
-    printf("%lld]", SymbolicToRealValue(range.m_upperBound));
+    printf("%lld]", (long long)SymbolicToRealValue(range.m_upperBound));
 }
 #endif // DEBUG
 
@@ -927,7 +1009,7 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                 ssize_t iconVal = curAssertion.GetOp2().GetIntConstant();
                 if (IsAot())
                 {
-                    printf("MT(%p)", dspPtr(iconVal));
+                    printf("MT(%p)", (void*)dspPtr(iconVal));
                 }
                 else
                 {
@@ -940,11 +1022,11 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             }
             else if (curAssertion.GetOp2().HasIconFlag())
             {
-                printf("[%p]", dspPtr(curAssertion.GetOp2().GetIntConstant()));
+                printf("[%zx]", (size_t)dspPtr(curAssertion.GetOp2().GetIntConstant()));
             }
             else
             {
-                printf("%lld", (int64_t)curAssertion.GetOp2().GetIntConstant());
+                printf("%lld", (long long)curAssertion.GetOp2().GetIntConstant());
             }
             break;
 
@@ -1023,11 +1105,11 @@ void Compiler::optDumpAssertionIndices(const char* header, ASSERT_TP assertions,
     Compiler* compiler = JitTls::GetCompiler();
     if (compiler->verbose)
     {
-        printf(header);
+        printf("%s", header);
         compiler->optPrintAssertionIndices(assertions);
         if (footer != nullptr)
         {
-            printf(footer);
+            printf("%s", footer);
         }
     }
 #endif // DEBUG
@@ -3379,12 +3461,17 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             {
                 return nullptr;
             }
-            assert(genTypeSize(tree->TypeGet()) == curAssertion.GetOp2().GetSimdSize());
+            unsigned simdSize = genTypeSize(tree->TypeGet());
+#if defined(TARGET_ARM64)
+            if (tree->TypeIs(TYP_SIMD))
+            {
+                simdSize = sizeof(simdscalable_t);
+            }
+#endif // TARGET_ARM64
+            assert(simdSize == curAssertion.GetOp2().GetSimdSize());
 
             // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
-            newTree = vecCon;
+            newTree = gtNewVconNode(tree->TypeGet(), curAssertion.GetOp2().GetSimdConstant());
             break;
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -3658,6 +3745,12 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
     // does not support whole-local uses, such as GT_FIELD_LIST.
     if (tree->OperIs(GT_LCL_VAR) && varTypeIsSIMD(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
     {
+        return nullptr;
+    }
+
+    if (lclVarDsc->lvOnlyUsedOnSynchronousPath || copyVarDsc->lvOnlyUsedOnSynchronousPath)
+    {
+        // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
         return nullptr;
     }
 
@@ -4603,7 +4696,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             }
             else if (op1->TypeIs(TYP_LONG))
             {
-                printf("%lld\n", vnStore->ConstantValue<INT64>(vnCns));
+                printf("%lld\n", (long long)vnStore->ConstantValue<INT64>(vnCns));
             }
             else if (op1->TypeIs(TYP_DOUBLE))
             {
@@ -4622,12 +4715,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 }
                 else
                 {
-                    printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                    printf("%zd (gcref)\n",
+                           (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
                 }
             }
             else if (op1->TypeIs(TYP_BYREF))
             {
-                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                printf("%zd (byref)\n", (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
             }
             else
             {
@@ -5466,8 +5560,8 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            CallArg* castToCallArg = call->gtArgs.GetArgByIndex(0);
-            CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
+            CallArg* castToCallArg = call->gtArgs.GetUserArgByIndex(0);
+            CallArg* objCallArg    = call->gtArgs.GetUserArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
             ValueNum objVN         = optConservativeNormalVN(objArg);
@@ -5821,6 +5915,12 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
+
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            return nullptr;
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_EQ:
         case GT_NE:
@@ -6319,17 +6419,30 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
     return jumpDestOut;
 }
 
-// Callback data for the VN based constant prop visitor.
-struct VNAssertionPropVisitorInfo
+class VNAssertionPropVisitor final : public GenTreeVisitor<VNAssertionPropVisitor>
 {
-    Compiler*   m_compiler;
-    Statement*  stmt;
-    BasicBlock* block;
-    VNAssertionPropVisitorInfo(Compiler* pThis, BasicBlock* block, Statement* stmt)
-        : m_compiler(pThis)
-        , stmt(stmt)
-        , block(block)
+    BasicBlock* m_block;
+    Statement*  m_stmt;
+
+public:
+    enum
     {
+        DoPostOrder       = true,
+        UseExecutionOrder = true,
+    };
+
+    VNAssertionPropVisitor(Compiler* compiler, BasicBlock* block, Statement* stmt)
+        : GenTreeVisitor<VNAssertionPropVisitor>(compiler)
+        , m_block(block)
+        , m_stmt(stmt)
+    {
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_compiler->optVnNonNullPropCurStmt(m_block, m_stmt, *use);
+
+        return m_compiler->optVNBasedFoldCurStmt(m_block, m_stmt, user, *use);
     }
 };
 
@@ -6552,32 +6665,6 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
     }
 }
 
-//------------------------------------------------------------------------------
-// optVNAssertionPropCurStmtVisitor
-//    Unified Value Numbering based assertion propagation visitor.
-//
-// Assumption:
-//    This function is called as part of a post-order tree walk.
-//
-// Return Value:
-//    WALK_RESULTs.
-//
-// Description:
-//    An unified value numbering based assertion prop visitor that
-//    performs non-null and constant assertion propagation based on
-//    value numbers.
-//
-/* static */
-Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTree, fgWalkData* data)
-{
-    VNAssertionPropVisitorInfo* pData = (VNAssertionPropVisitorInfo*)data->pCallbackData;
-    Compiler*                   pThis = pData->m_compiler;
-
-    pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
-
-    return pThis->optVNBasedFoldCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
-}
-
 /*****************************************************************************
  *
  *   Perform VN based i.e., data flow based assertion prop first because
@@ -6603,8 +6690,8 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     // anything in assertion gen.
     optAssertionPropagatedCurrentStmt = false;
 
-    VNAssertionPropVisitorInfo data(this, block, stmt);
-    fgWalkTreePost(stmt->GetRootNodePointer(), Compiler::optVNAssertionPropCurStmtVisitor, &data);
+    VNAssertionPropVisitor visitor(this, block, stmt);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
     if (optAssertionPropagatedCurrentStmt)
     {
@@ -6719,10 +6806,6 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
         return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
     // Allocate the bits for the predicate sensitive dataflow analysis
     bbJtrueAssertionOut    = optInitAssertionDataflowFlags();

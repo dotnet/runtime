@@ -6,12 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.DynamicILBlobTable))]
 internal sealed partial class DynamicILBlobEntry : IData<DynamicILBlobEntry>
 {
-    [Field] public uint EntryMethodToken { get; }
-    [Field] public TargetPointer EntryIL { get; }
-
-    public DynamicILBlobEntry(uint entryMethodToken, TargetPointer entryIL)
-    {
-        EntryMethodToken = entryMethodToken;
-        EntryIL = entryIL;
-    }
+    [Field] public partial uint EntryMethodToken { get; }
+    [Field] public partial TargetPointer EntryIL { get; }
 }

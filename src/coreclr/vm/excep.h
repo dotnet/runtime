@@ -212,7 +212,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind);
 // in our .resources file.
 //==========================================================================
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName, Exception * pInnerException = NULL);
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName);
 
 //==========================================================================
 // Throw a decorated runtime exception.
@@ -238,13 +238,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
                                           LPCWSTR wszArg6 = NULL);
 
 #ifdef FEATURE_COMINTEROP
-
-enum tagGetErrorInfo
-{
-    kGetErrorInfo
-};
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo);
 
 //==========================================================================
 // Throw a runtime exception based on an HResult, check for error info

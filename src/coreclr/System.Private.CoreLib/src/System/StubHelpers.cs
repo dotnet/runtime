@@ -538,6 +538,7 @@ namespace System.StubHelpers
             ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
         private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
@@ -548,6 +549,7 @@ namespace System.StubHelpers
             return retObject!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToManaged")]
         private static partial void ConvertToManaged(IntPtr pSrcVariant, ObjectHandleOnStack retObject);
 
@@ -631,6 +633,7 @@ namespace System.StubHelpers
             return ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), itfMT, classMT, flags);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToNative")]
         private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag);
 
@@ -644,6 +647,7 @@ namespace System.StubHelpers
             return retObject;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToManaged")]
         private static partial void ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags, ObjectHandleOnStack retObject);
 
@@ -662,9 +666,11 @@ namespace System.StubHelpers
             return retObject!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown")]
         private static partial void GetObjectForComCallableWrapperIUnknown(IntPtr unk, ObjectHandleOnStack retObject);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ValidateComVisibilityForIUnknown")]
         internal static partial void ValidateComVisibilityForIUnknown(IntPtr unk);
     }  // class InterfaceMarshaler
@@ -684,6 +690,7 @@ namespace System.StubHelpers
             ConvertSpaceToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToNative")]
         private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
@@ -694,6 +701,7 @@ namespace System.StubHelpers
             ConvertContentsToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, ObjectHandleOnStack.Create(ref originalManagedObject));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToNative")]
         private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, ObjectHandleOnStack pOriginalManagedObject);
 
@@ -704,6 +712,7 @@ namespace System.StubHelpers
             pManagedHome = managedHome;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToManaged")]
         private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
@@ -713,6 +722,7 @@ namespace System.StubHelpers
             ConvertContentsToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToManaged")]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
@@ -721,8 +731,9 @@ namespace System.StubHelpers
         {
             ClearNative(pMarshalState, pNativeHome);
         }
-#pragma warning restore IDE0060
+#pragma warning restore IDE0060 // Remove unused parameter
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ClearNative")]
         private static partial void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome);
     }  // class MngdSafeArrayMarshaler
@@ -1408,7 +1419,6 @@ namespace System.StubHelpers
         private static void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
-            _ = ref cleanupWorkList;
             SpanHelpers.Memmove(ref *unmanaged, ref Unsafe.As<T, byte>(ref managed), (nuint)sizeof(T));
         }
 
@@ -1432,20 +1442,20 @@ namespace System.StubHelpers
         public static void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
-            _ = ref cleanupWorkList;
             SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref managed), ref *unmanaged, (nuint)sizeof(T));
         }
 
+        // This is the managed fallback body for an intrinsic. The unused parameters are used by
+        // the intrinsic expansion.
+#pragma warning disable IDE0060 // Remove unused parameter
         [Intrinsic]
         private static void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
-#nullable disable warnings // https://github.com/dotnet/roslyn/issues/82919
-            _ = ref managed;
-#nullable restore warnings
-            _ = unmanaged;
-            _ = ref cleanupWorkList;
+
+            // Blittable structs own no native resources, so there is nothing to free.
         }
+#pragma warning restore IDE0060 // Remove unused parameter
 
         public static void Free(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
@@ -2168,17 +2178,22 @@ namespace System.StubHelpers
 
     internal static partial class StubHelpers
     {
+        /// <safety>Runtime FCall that clears the thread's stored last-error slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateTarget(Delegate pThis);
+        internal static extern safe void ClearLastError();
 
+        /// <safety>Runtime FCall that captures the OS last-error into the thread's stored slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ClearLastError();
+        internal static extern safe void SetLastError();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetLastError();
-
+        /// <safety>QCall that throws an interop parameter exception selected by integer resource and parameter indices; it accesses no caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
-        internal static partial void ThrowInteropParamException(int resID, int paramIdx);
+        internal static safe partial void ThrowInteropParamException(int resID, int paramIdx);
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropException")]
+        internal static partial void ThrowInteropException(int exceptionKind, int resID);
 
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {
@@ -2204,18 +2219,13 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_COMINTEROP
-        internal static unsafe Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
+        internal static Exception GetCOMHRExceptionObject(int hr, RuntimeTypeHandle interfaceTypeHandle, IntPtr pUnk)
         {
-            Debug.Assert(pCPCMD != IntPtr.Zero);
-            MethodTable* interfaceType = GetComInterfaceFromMethodDesc(pCPCMD);
-            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeType(interfaceType);
-            Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
+            RuntimeType interfaceType = interfaceTypeHandle.GetRuntimeTypeChecked();
+            Exception ex = Marshal.GetExceptionForHR(hr, interfaceType.GUID, pUnk)!;
             ex.InternalPreserveStackTrace();
             return ex;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe MethodTable* GetComInterfaceFromMethodDesc(IntPtr pCPCMD);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -2238,6 +2248,7 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
         internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
 
@@ -2343,14 +2354,15 @@ namespace System.StubHelpers
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
+        private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMIPFromRCWSlow")]
-        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
+        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
 
-        internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+        internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, out bool pfNeedsRelease)
         {
-            IntPtr rcw = GetCOMIPFromRCW(objSrc, pCPCMD, out ppTarget);
+            IntPtr rcw = GetCOMIPFromRCW(objSrc, pInterfaceMT, comSlot, out ppTarget);
             if (rcw != IntPtr.Zero)
             {
                 pfNeedsRelease = false;
@@ -2359,11 +2371,11 @@ namespace System.StubHelpers
 
             // The slow path may create OLE TLS and then still resolve the interface via the RCW cache.
             // Let the slow path tell us whether it returned an owned pointer that requires cleanup.
-            return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget, out pfNeedsRelease);
+            return GetCOMIPFromRCWWorker(objSrc, pInterfaceMT, comSlot, out ppTarget, out pfNeedsRelease);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
-                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget, out pfNeedsRelease);
+            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, out bool pfNeedsRelease)
+                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pInterfaceMT, comSlot, out ppTarget, out pfNeedsRelease);
         }
 #endif // FEATURE_COMINTEROP
 
@@ -2371,9 +2383,11 @@ namespace System.StubHelpers
         //-------------------------------------------------------
         // Profiler helpers
         //-------------------------------------------------------
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
@@ -2394,6 +2408,7 @@ namespace System.StubHelpers
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateLayoutClassMarshalStubs")]
         internal static unsafe partial void CreateLayoutClassMarshalStubs(QCallTypeHandle th, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToUnmanaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToManaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pFree);
 
@@ -2507,24 +2522,30 @@ namespace System.StubHelpers
             throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
         }
 
+#if FEATURE_VARARGS
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaList")]
         internal static partial void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);
+#endif // FEATURE_VARARGS
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateObject")]
         private static partial void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD);
 
         internal static void ValidateObject(object obj, IntPtr pMD)
             => ValidateObject(ObjectHandleOnStack.Create(ref obj), pMD);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
@@ -2537,6 +2558,7 @@ namespace System.StubHelpers
             MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref o), count);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
         private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count);
 

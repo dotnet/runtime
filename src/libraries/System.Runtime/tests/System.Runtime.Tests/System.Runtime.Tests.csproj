@@ -86,6 +86,7 @@
     <Compile Include="System\Decimal128Tests.cs" />
     <Compile Include="System\Decimal32Tests.cs" />
     <Compile Include="System\Decimal64Tests.cs" />
+    <Compile Include="System\DecimalIeee754GenericSurface.cs" />
     <Compile Include="System\DecimalIeee754IntelTestData.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\ExperimentalAttributeTests.cs" />
     <Compile Include="System\NumberFormatTestHelper.cs" />
@@ -360,6 +361,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
+    <Compile Include="GB18030\StringTests.cs" />
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
       <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
@@ -387,4 +389,5 @@
                       Private="true"
                       SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

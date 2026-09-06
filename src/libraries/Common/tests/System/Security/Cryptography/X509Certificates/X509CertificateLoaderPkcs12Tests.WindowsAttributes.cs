@@ -198,11 +198,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 limits = new Pkcs12LoaderLimits(limits);
             }
 
-            X509Certificate2 cert = LoadPfxNoFile(
-                TestData.DuplicateAttributesPfx,
-                TestData.PlaceholderPw,
-                X509KeyStorageFlags.DefaultKeySet,
-                loaderLimits: limits);
+            X509Certificate2 cert = TestData.WithDuplicateAttributesPfx(limits, (bytes, limits) =>
+            {
+                return LoadPfxNoFile(
+                    bytes,
+                    TestData.PlaceholderPw,
+                    X509KeyStorageFlags.DefaultKeySet,
+                    loaderLimits: limits);
+            });
 
             using (cert)
             {

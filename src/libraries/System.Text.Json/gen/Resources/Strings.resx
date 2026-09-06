@@ -219,6 +219,36 @@
   <data name="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat" xml:space="preserve">
     <value>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</value>
   </data>
+  <data name="DerivedTypeIsNotSupportedTitle" xml:space="preserve">
+    <value>Derived type is not a supported polymorphic derived type.</value>
+  </data>
+  <data name="DerivedTypeIsNotSupportedMessageFormat" xml:space="preserve">
+    <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</value>
+  </data>
+  <data name="InferredDerivedTypeIsNotAccessibleTitle" xml:space="preserve">
+    <value>Inferred derived type is less accessible than the polymorphic base type.</value>
+  </data>
+  <data name="InferredDerivedTypeIsNotAccessibleMessageFormat" xml:space="preserve">
+    <value>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</value>
+  </data>
+  <data name="DerivedTypeDiscriminatorCollisionTitle" xml:space="preserve">
+    <value>Derived types produce a duplicate type discriminator.</value>
+  </data>
+  <data name="DerivedTypeDiscriminatorCollisionMessageFormat" xml:space="preserve">
+    <value>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</value>
+  </data>
+  <data name="InferClosedTypePolymorphismOnNonClosedTypeTitle" xml:space="preserve">
+    <value>Inferred closed type polymorphism is enabled on a type that is not a closed type.</value>
+  </data>
+  <data name="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat" xml:space="preserve">
+    <value>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</value>
+  </data>
+  <data name="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle" xml:space="preserve">
+    <value>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</value>
+  </data>
+  <data name="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat" xml:space="preserve">
+    <value>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</value>
+  </data>
   <data name="Polymorphism_OpenGeneric_Reason_NotAssignable" xml:space="preserve">
     <value>the derived type is not assignable to the base type</value>
   </data>

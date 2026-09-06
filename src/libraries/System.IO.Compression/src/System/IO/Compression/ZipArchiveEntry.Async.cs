@@ -37,7 +37,7 @@ public partial class ZipArchiveEntry
     /// <list type="bullet">
     /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
     /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
-    /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> reads directly from the archive. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="OpenAsync(CancellationToken)"/>).</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> provides a read-only stream over the entry's current content, including any modifications made in the current session. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="OpenAsync(CancellationToken)"/>).</description></item>
     /// </list>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
@@ -134,7 +134,12 @@ public partial class ZipArchiveEntry
                 }
                 return access switch
                 {
-                    FileAccess.Read => OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
+                    // Reads in Update mode must observe content written earlier in this session and
+                    // treat a newly created entry as empty. Only an unmodified entry that already
+                    // exists in the archive can be read directly without loading it into memory.
+                    FileAccess.Read => _storedUncompressedData is not null || !_originallyInArchive
+                        ? OpenInUpdateModeForReadAsync(cancellationToken)
+                        : OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
                     FileAccess.Write => usePassword
                         ? OpenInUpdateModeWithPasswordAsync(loadExistingContent: false, password, cancellationToken)
                         : CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken)),
@@ -172,7 +177,16 @@ public partial class ZipArchiveEntry
     /// </summary>
     internal async Task ReadEncryptionSaltIfNeededAsync(CancellationToken cancellationToken)
     {
-        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+        {
+            return;
+        }
+
+        // A corrupt central directory can point the local header offset past the end of the
+        // archive. Seeking there throws ArgumentOutOfRangeException on some streams (e.g.
+        // MemoryStream). Mirror the check in IsOpenableInitialVerifications and defer the error
+        // to when the entry is actually opened, same as for non AES encrypted entries.
+        if (_offsetOfLocalHeader > _archive.ArchiveStream.Length)
         {
             return;
         }
@@ -224,9 +238,9 @@ public partial class ZipArchiveEntry
 
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -321,6 +335,22 @@ public partial class ZipArchiveEntry
         return new WrappedStream(_storedUncompressedData, this,
             onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
             notifyEntryOnWrite: true);
+    }
+
+    // Returns a read-only view over the entry's current uncompressed buffer in Update mode.
+    // It reflects modifications made earlier in the current session (and is empty for a freshly created
+    // entry), unlike OpenInReadModeAsync which reads the original bytes directly from the archive. The stream
+    // shares the underlying buffer with the entry rather than copying it, so it is not isolated from later
+    // in-place writes; callers are expected to finish reading before reopening the entry for writing.
+    private async Task<Stream> OpenInUpdateModeForReadAsync(CancellationToken cancellationToken)
+    {
+        if (_currentlyOpenForWrite)
+        {
+            throw new IOException(SR.UpdateModeOneStream);
+        }
+
+        MemoryStream uncompressedData = await GetUncompressedDataAsync(cancellationToken).ConfigureAwait(false);
+        return new MemoryStream(uncompressedData.GetBuffer(), 0, (int)uncompressedData.Length, writable: false);
     }
 
     private async Task<MemoryStream> GetUncompressedDataAsync(CancellationToken cancellationToken)
@@ -507,9 +537,9 @@ public partial class ZipArchiveEntry
         {
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -551,9 +581,9 @@ public partial class ZipArchiveEntry
 
     private async Task<Stream> DecryptAndStoreForUpdateWithAesAsync(WinZipAesKeyMaterial aesKeys, CancellationToken cancellationToken)
     {
-        if (OperatingSystem.IsBrowser())
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
         {
-            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
         }
 
         await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
@@ -728,7 +758,7 @@ public partial class ZipArchiveEntry
 
                     ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                    ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                    Stream encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keys: _derivedZipCryptoKeyMaterial.Value,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -761,9 +791,9 @@ public partial class ZipArchiveEntry
                 else if (UseAesEncryption && _derivedAesKeyMaterial != null)
                 {
 
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
-                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                     }
                     // For AES, we need to:
                     // 1. Write header with CompressionMethod = Aes (99)
@@ -782,7 +812,7 @@ public partial class ZipArchiveEntry
                     // The AES extra field stores the real compression method
                     bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                    WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                    Stream encryptionStream = WinZipAesStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keyMaterial: _derivedAesKeyMaterial.Value,
                         totalStreamSize: -1,
@@ -849,7 +879,8 @@ public partial class ZipArchiveEntry
             }
             else // _compressedBytes path - copying unchanged entry data
             {
-                if (_uncompressedSize == 0)
+                bool emptyEncryptedEntry = _uncompressedSize == 0 && Encryption != ZipEncryptionMethod.None;
+                if (_uncompressedSize == 0 && !emptyEncryptedEntry)
                 {
                     // reset size to ensure proper central directory size header
                     _compressedSize = 0;
@@ -874,7 +905,7 @@ public partial class ZipArchiveEntry
                         Encryption = ZipEncryptionMethod.None;
                     }
 
-                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                     // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
                     // (because Encryption was temporarily set to None and the stream is seekable).
@@ -902,8 +933,8 @@ public partial class ZipArchiveEntry
                     CompressionMethod = savedCompressionMethod;
                 }
 
-                // according to ZIP specs, zero-byte files MUST NOT include file data
-                if (_uncompressedSize != 0)
+                // according to ZIP specs, zero-byte unencrypted files MUST NOT include file data
+                if (_uncompressedSize != 0 || emptyEncryptedEntry)
                 {
                     Debug.Assert(_compressedBytes != null);
                     foreach (byte[] compressedBytes in _compressedBytes)

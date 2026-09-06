@@ -119,7 +119,6 @@ jobs:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-11_0_100_Transport'], true),
-                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis'], true),
@@ -165,12 +164,12 @@ jobs:
       # does not work for some reason.
       pool:
         # Public Linux Build Pool
-        ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'openbsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), eq(variables['System.TeamProject'], 'public')) }}:
           name:  $(DncEngPublicBuildPool)
           demands: ImageOverride -equals build.azurelinux.3.amd64.open
 
         # Official Build Linux Pool
-        ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'openbsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
           demands: ImageOverride -equals build.azurelinux.3.amd64
           os: linux

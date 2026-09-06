@@ -36,7 +36,7 @@
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
-#include "eecontract.h"
+#include <contract.h>
 #include "stdinterfaces_internal.h"
 #include "interoputil.inl"
 
@@ -102,7 +102,7 @@ Unknown_QueryInterface_Internal(ComCallWrapper* pWrap, IUnknown* pUnk, REFIID ri
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    ComHolderPreemp<IUnknown> pDestItf;
+    ReleaseHolder<IUnknown> pDestItf;
 
     // Validate the arguments.
     if (!ppv)
@@ -424,6 +424,19 @@ Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
 
 
 // ---------------------------------------------------------------------------
+// Find the first COM visible IClassX starting at the root ComMethodTable and
+// walking up the hierarchy.
+static ComMethodTable* FindFirstComVisibleClassComMT(ComCallWrapperTemplate* pTemplate)
+{
+    WRAPPER_NO_CONTRACT;
+
+    ComMethodTable* pComMT = pTemplate->GetClassComMT();
+    while (pComMT && !pComMT->IsComVisible())
+        pComMT = pComMT->GetParentClassComMT();
+    return pComMT;
+}
+
+// ---------------------------------------------------------------------------
 //  Interface IProvideClassInfo
 // ---------------------------------------------------------------------------
 HRESULT __stdcall
@@ -456,11 +469,7 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
 
             // Find the first COM visible IClassX starting at ComMethodTable passed in and
             // walking up the hierarchy.
-            ComMethodTable *pComMT = NULL;
-            if (pTemplate->SupportsIClassX())
-            {
-                for (pComMT = pTemplate->GetClassComMT(); pComMT && !pComMT->IsComVisible(); pComMT = pComMT->GetParentClassComMT());
-            }
+            ComMethodTable *pComMT = FindFirstComVisibleClassComMT(pTemplate);
 
             // If the CLR part of the object is not visible then delegate the call to the
             // base COM object if it implements IProvideClassInfo.
@@ -637,7 +646,7 @@ static bool TryDeferToMscorlib(MethodTable* pClass, ITypeInfo** ppTI)
     // code to .NET 8+. Try to load the .NET Framework's TLB to support this scenario.
     if (pClass == CoreLibBinder::GetClass(CLASS__GUID))
     {
-        ComHolderPreemp<ITypeLib> pMscorlibTypeLib;
+        ReleaseHolder<ITypeLib> pMscorlibTypeLib;
         if (SUCCEEDED(::LoadRegTypeLib(s_MscorlibGuid, 2, 4, 0, &pMscorlibTypeLib)))
         {
             if (SUCCEEDED(pMscorlibTypeLib->GetTypeInfoOfGuid(s_GuidForSystemGuid, ppTI)))
@@ -655,21 +664,20 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
         DISABLED(NOTHROW);
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END;
+
+    GCX_PREEMP();
 
     GUID clsid;
     GUID ciid;
     ComMethodTable *pComMT              = NULL;
     MethodTable* pOriginalClass         = pClass;
     HRESULT                 hr          = S_OK;
-    ComHolderAnyMode<ITypeLib> pITLB;
-    ComHolderAnyMode<ITypeInfo> pTI;
-    ComHolderAnyMode<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
+    ReleaseHolder<ITypeLib> pITLB;
+    ReleaseHolder<ITypeInfo> pTI;
+    ReleaseHolder<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
     ComCallWrapperTemplate *pTemplate   = NULL;
-
-    GCX_PREEMP();
 
     // Get the typeinfo.
     if (bClassInfo || pClass->IsInterface() || pClass->IsValueType() || pClass->IsEnum())
@@ -686,14 +694,9 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                     EX_TRY
                     {
                         pTemplate = ComCallWrapperTemplate::GetTemplate(pClass);
-                        if (pTemplate->SupportsIClassX())
-                        {
-                            // Find the first COM visible IClassX starting at ComMethodTable passed in and
-                            // walking up the hierarchy.
-                            pComMT = pTemplate->GetClassComMT();
-                            while (pComMT && !pComMT->IsComVisible())
-                                pComMT = pComMT->GetParentClassComMT();
-                        }
+                        // Find the first COM visible IClassX starting at ComMethodTable passed in and
+                        // walking up the hierarchy.
+                        pComMT = FindFirstComVisibleClassComMT(pTemplate);
                     }
                     EX_CATCH
                     {
@@ -835,12 +838,12 @@ MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
     HRESULT hr;
 
     // Verify the associated TypeLib attribute
-    ComHolderPreemp<ITypeInfo> typeInfo;
+    ReleaseHolder<ITypeInfo> typeInfo;
     hr = recInfo->GetTypeInfo(&typeInfo);
     if (FAILED(hr))
         return NULL;
 
-    ComHolderPreemp<ITypeLib> typeLib;
+    ReleaseHolder<ITypeLib> typeLib;
     UINT index;
     hr = typeInfo->GetContainingTypeLib(&typeLib, &index);
     if (FAILED(hr))
@@ -916,7 +919,6 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(iface));
     }
     CONTRACTL_END;
@@ -928,7 +930,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
     {
         GCX_PREEMP();
         HRESULT hr = S_OK;
-        ComHolderPreemp<IErrorInfo> pErrorInfo;
+        ReleaseHolder<IErrorInfo> pErrorInfo;
 
         // See if we have any error info.  (Also this clears out the error info,
         // we want to do this whether it is a recent error or not.)
@@ -941,7 +943,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
         {
             // Make sure that the object we called follows the error info protocol,
             // otherwise the error may be stale, so we just throw it away.
-            ComHolderPreemp<ISupportErrorInfo> pSupport;
+            ReleaseHolder<ISupportErrorInfo> pSupport;
             hr = SafeQueryInterfacePreemp(iface, IID_ISupportErrorInfo, (IUnknown **) &pSupport);
             LogInteropQI(iface, IID_ISupportErrorInfo, hr, "ISupportErrorInfo");
             if (SUCCEEDED(hr))
@@ -1250,7 +1252,6 @@ Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(IsInProcCCWTearOff(pDisp));
         PRECONDITION(CheckPointer(rgszNames, NULL_OK));
@@ -1285,7 +1286,6 @@ Dispatch_Invoke
         THROWS; // InternalDispatchImpl_Invoke can throw if it encounters CE
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(IsInProcCCWTearOff(pDisp));
     }
@@ -2085,7 +2085,7 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
 
     // In case of CoreCLR, we always use the standard marshaller.
 
-    ComHolderPreemp<IUnknown> pMarshalerObj;
+    ReleaseHolder<IUnknown> pMarshalerObj;
     IfFailRet(CoCreateFreeThreadedMarshaler(NULL, &pMarshalerObj));
     return SafeQueryInterfacePreemp(pMarshalerObj, IID_IMarshal, (IUnknown**)ppMarshalRet);
 }
@@ -2130,7 +2130,7 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
         }
     }
 
-    ComHolderPreemp<IMarshal> pMsh;
+    ReleaseHolder<IMarshal> pMsh;
     hr = GetSpecialMarshaler(pMarsh, pSimpleWrap, dwDestContext, (IMarshal **)&pMsh);
     if (FAILED(hr))
         return hr;
@@ -2159,7 +2159,7 @@ HRESULT __stdcall Marshal_GetMarshalSizeMax (
 
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pMarsh);
 
-    ComHolderPreemp<IMarshal> pMsh;
+    ReleaseHolder<IMarshal> pMsh;
     HRESULT hr = GetSpecialMarshaler(pMarsh, pSimpleWrap, dwDestContext, (IMarshal **)&pMsh);
     if (FAILED(hr))
         return hr;
@@ -2200,7 +2200,7 @@ HRESULT __stdcall Marshal_MarshalInterface (
         }
     }
 
-    ComHolderPreemp<IMarshal> pMsh;
+    ReleaseHolder<IMarshal> pMsh;
     hr = GetSpecialMarshaler(pMarsh, pSimpleWrap, dwDestContext, (IMarshal **)&pMsh);
     if (FAILED(hr))
         return hr;
@@ -2360,7 +2360,7 @@ HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions(IUnknown* pUnk,
         return E_POINTER;
 
     // Make sure the CLR object implements the requested interface.
-    ComHolderPreemp<IUnknown> pItf;
+    ReleaseHolder<IUnknown> pItf;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, riid, (IUnknown**)&pItf);
     LogInteropQI(pUnk, riid, hr, "QI to for riid in GetInterfaceSafetyOptions");
     if (SUCCEEDED(hr))
@@ -2395,7 +2395,7 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
     CONTRACTL_END;
 
     // Make sure the CLR object implements the requested interface.
-    ComHolderPreemp<IUnknown> pItf;
+    ReleaseHolder<IUnknown> pItf;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, riid, (IUnknown**)&pItf);
     LogInteropQI(pUnk, riid, hr, "QI to for riid in SetInterfaceSafetyOptions");
     if (FAILED(hr))

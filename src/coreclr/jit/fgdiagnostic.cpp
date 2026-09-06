@@ -341,7 +341,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsIntOrI())
     {
-        fprintf(fgxFile, "%d", tree->AsIntCon()->IconValue());
+        fprintf(fgxFile, "%zd", tree->AsIntCon()->IconValue());
     }
     else if (tree->IsCnsFltOrDbl())
     {
@@ -2565,45 +2565,46 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
     }
 }
 
-//------------------------------------------------------------------------
-// fgStress64RsltMulCB: Callback to stress-test 64-bit result multiplication.
-//    Converts 'intOp1*intOp2' into 'int(long(nop(intOp1))*long(intOp2))'.
-//
-// Arguments:
-//    pTree - Pointer to the current tree node being visited.
-//    data  - Walk data containing the compiler context.
-//
-// Return Value:
-//    WALK_SKIP_SUBTREES if the tree was transformed; WALK_CONTINUE otherwise.
-//
-// static
-Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData* data)
+class Stress64RsltMulVisitor final : public GenTreeVisitor<Stress64RsltMulVisitor>
 {
-    GenTree*  tree  = *pTree;
-    Compiler* pComp = data->m_compiler;
-
-    if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
+public:
+    enum
     {
-        return WALK_CONTINUE;
+        DoPreOrder = true,
+    };
+
+    Stress64RsltMulVisitor(Compiler* compiler)
+        : GenTreeVisitor<Stress64RsltMulVisitor>(compiler)
+    {
     }
 
-    JITDUMP("STRESS_64RSLT_MUL before:\n")
-    DISPTREE(tree)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
 
-    tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->gtGetOp1(), false, TYP_LONG);
-    tree->AsOp()->gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->gtGetOp2(), false, TYP_LONG);
-    tree->gtType        = TYP_LONG;
-    *pTree              = pComp->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
+        if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
+        {
+            return fgWalkResult::WALK_CONTINUE;
+        }
 
-    // To ensure optNarrowTree() doesn't fold back to the original tree.
-    tree->gtGetOp1()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
-    tree->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+        JITDUMP("STRESS_64RSLT_MUL before:\n")
+        DISPTREE(tree)
 
-    JITDUMP("STRESS_64RSLT_MUL after:\n")
-    DISPTREE(*pTree)
+        tree->AsOp()->gtOp1 = m_compiler->gtNewCastNode(TYP_LONG, tree->gtGetOp1(), false, TYP_LONG);
+        tree->AsOp()->gtOp2 = m_compiler->gtNewCastNode(TYP_LONG, tree->gtGetOp2(), false, TYP_LONG);
+        tree->gtType        = TYP_LONG;
+        *use                = m_compiler->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
 
-    return WALK_SKIP_SUBTREES;
-}
+        // To ensure optNarrowTree() doesn't fold back to the original tree.
+        tree->gtGetOp1()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+        tree->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+
+        JITDUMP("STRESS_64RSLT_MUL after:\n")
+        DISPTREE(*use)
+
+        return fgWalkResult::WALK_SKIP_SUBTREES;
+    }
+};
 
 //------------------------------------------------------------------------
 // fgStress64RsltMul: Stress-test 64-bit result multiplications by walking
@@ -2616,7 +2617,15 @@ void Compiler::fgStress64RsltMul()
         return;
     }
 
-    fgWalkAllTreesPre(fgStress64RsltMulCB, (void*)this);
+    Stress64RsltMulVisitor visitor(this);
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+    }
 }
 
 // BBPredsChecker checks jumps from the block's predecessors to the block.
@@ -3328,97 +3337,16 @@ void Compiler::fgDebugCheckInitBB()
 }
 
 //------------------------------------------------------------------------
-// fgDebugCheckTypes: Validate node types used in the given tree
+// fgDebugCheckFlagsAndTypes: Validate node types, and the invariants related to
+//    the propagation and setting of tree, block and method flags.
 //
 // Arguments:
-//    tree - the tree to (recursively) check types for
-//
-void Compiler::fgDebugCheckTypes(GenTree* tree)
-{
-    struct NodeTypeValidator : GenTreeVisitor<NodeTypeValidator>
-    {
-        enum
-        {
-            DoPostOrder = true,
-        };
-
-        NodeTypeValidator(Compiler* comp)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
-        {
-            GenTree* node = *use;
-
-            // Validate types of nodes in the IR:
-            //
-            // * TYP_ULONG and TYP_UINT are not legal.
-            // * Small types are only legal for the following nodes:
-            //    * All kinds of indirections including GT_NULLCHECK
-            //    * All kinds of locals
-            //    * GT_COMMA wrapped around any of the above.
-            //
-            if (node->TypeIs(TYP_ULONG, TYP_UINT))
-            {
-                m_compiler->gtDispTree(node);
-                assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
-            }
-
-            switch (node->OperGet())
-            {
-                case GT_NOP:
-                case GT_JTRUE:
-                case GT_BOUNDS_CHECK:
-                    if (!node->TypeIs(TYP_VOID))
-                    {
-                        m_compiler->gtDispTree(node);
-                        assert(!"The tree is expected to be of TYP_VOID type");
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (varTypeIsSmall(node))
-            {
-                if (node->OperIs(GT_COMMA))
-                {
-                    // TODO: it's only allowed if its underlying effective node is also a small type.
-                    return WALK_CONTINUE;
-                }
-
-                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
-                {
-                    return WALK_CONTINUE;
-                }
-
-                m_compiler->gtDispTree(node);
-                assert(!"Unexpected small type in IR");
-            }
-
-            // TODO: validate types in GT_CAST nodes.
-            // Validate mismatched types in binopt's arguments, etc.
-            //
-            return WALK_CONTINUE;
-        }
-    };
-
-    NodeTypeValidator walker(this);
-    walker.WalkTree(&tree, nullptr);
-}
-
-//------------------------------------------------------------------------
-// fgDebugCheckFlags: Validate various invariants related to the propagation
-//                    and setting of tree, block, and method flags
-//
-// Arguments:
-//    tree - the tree to (recursively) check the flags for
+//    tree  - the tree to (recursively) check
 //    block - basic block containing the tree
 //
-void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
+void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
 {
+    fgDebugCheckType(tree);
     GenTreeFlags actualFlags   = tree->gtFlags & GTF_ALL_EFFECT;
     GenTreeFlags expectedFlags = GTF_EMPTY;
 
@@ -3449,7 +3377,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             assert((tree->gtFlags & GTF_VAR_DEF) != 0);
-            assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            if (!fgImplicitByRefLclFldsStale || !tree->OperIs(GT_STORE_LCL_FLD) ||
+                !lvaGetDesc(tree->AsLclFld())->TypeIs(TYP_BYREF) ||
+                !lvaIsImplicitByRefLocal(tree->AsLclFld()->GetLclNum()))
+            {
+                assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            }
             break;
 
         case GT_CATCH_ARG:
@@ -3462,8 +3395,13 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             break;
 
         case GT_QMARK:
-            assert(!op1->CanCSE());
+            assert(hasFlag(activePhaseChecks, PhaseChecks::CHECK_IR_RELAXED) || !op1->CanCSE());
             assert(op1->OperIsCompare() || op1->IsIntegralConst(0) || op1->IsIntegralConst(1));
+            break;
+
+        case GT_RET_EXPR:
+            // A RET_EXPR may be replaced by its linked call, so it must preserve the call side effect.
+            expectedFlags |= GTF_CALL;
             break;
 
         case GT_IND:
@@ -3585,13 +3523,73 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
     }
 
     tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-        fgDebugCheckFlags(operand, block);
+        fgDebugCheckFlagsAndTypes(operand, block);
         expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
         return GenTree::VisitResult::Continue;
     });
 
     fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckType: Validate the type of a single node
+//
+// Arguments:
+//    node - the node to check the type of
+//
+void Compiler::fgDebugCheckType(GenTree* node)
+{
+    // Validate types of nodes in the IR:
+    //
+    // * TYP_ULONG and TYP_UINT are not legal.
+    // * Small types are only legal for the following nodes:
+    //    * All kinds of indirections including GT_NULLCHECK
+    //    * All kinds of locals
+    //    * GT_COMMA wrapped around any of the above.
+    //
+    if (node->TypeIs(TYP_ULONG, TYP_UINT))
+    {
+        gtDispTree(node);
+        assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+    }
+
+    switch (node->OperGet())
+    {
+        case GT_NOP:
+        case GT_JTRUE:
+        case GT_BOUNDS_CHECK:
+            if (!node->TypeIs(TYP_VOID))
+            {
+                gtDispTree(node);
+                assert(!"The tree is expected to be of TYP_VOID type");
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    if (varTypeIsSmall(node))
+    {
+        if (node->OperIs(GT_COMMA))
+        {
+            // TODO: it's only allowed if its underlying effective node is also a small type.
+            return;
+        }
+
+        if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+        {
+            return;
+        }
+
+        gtDispTree(node);
+        assert(!"Unexpected small type in IR");
+    }
+
+    // TODO: validate types in GT_CAST nodes.
+    // Validate mismatched types in binopt's arguments, etc.
+    //
 }
 
 //------------------------------------------------------------------------------
@@ -3643,9 +3641,16 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
     }
     else if (actualFlags & ~expectedFlags)
     {
-        // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
+        // We can't/don't consider GTF_GLOB_REF as being "extra" flags
         //
-        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF;
+
+        // GTF_ORDER_SIDEEFF is stale if set on a node whose oper does not support it,
+        // and whose children do not have it set
+        if (tree->OperSupportsOrderingSideEffect())
+        {
+            flagsToCheck &= ~GTF_ORDER_SIDEEFF;
+        }
 
         if (tree->isIndir() && tree->AsIndir()->Addr()->IsIconHandle(GTF_ICON_FTN_ADDR))
         {
@@ -3653,19 +3658,30 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
             flagsToCheck &= ~GTF_IND_INVARIANT;
         }
 
-        if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
+        GenTreeFlags const extraFlags = actualFlags & ~expectedFlags & flagsToCheck;
+        if (extraFlags != 0)
         {
-            // Print the tree so we can see it in the log.
-            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
-            printf("\n");
-            gtDispTree(tree);
+            bool const isRelaxed = hasFlag(activePhaseChecks, PhaseChecks::CHECK_IR_RELAXED);
+            if (!isRelaxed || verbose)
+            {
+                // Print the tree so we can see it in the log.
+                printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+                Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
+                printf("\n");
+                gtDispTree(tree);
+            }
+
+            if (isRelaxed)
+            {
+                Metrics.IRExtraFlags += genCountBits(static_cast<uint32_t>(extraFlags));
+                return;
+            }
 
             noway_assert(!"Extra flags on tree");
 
             // Print the tree again so we can see it right after we hook up the debugger.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
         }
@@ -3683,12 +3699,6 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
 //
 void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 {
-    // LIR blocks are checked using BasicBlock::CheckLIR().
-    if (block->IsLIR())
-    {
-        LIR::AsRange(block).CheckLIR(this);
-        // TODO: return?
-    }
 
     assert(fgNodeThreading != NodeThreading::None);
 
@@ -3831,11 +3841,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             GenTree* node = *use;
             if (ShouldLink(node))
             {
-                if ((user != nullptr) && user->IsCall() &&
-                    (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
-                {
-                }
-                else
+                if ((user == nullptr) || !user->IsCall() || !IsDefinedByCall(user->AsCall(), node))
                 {
                     m_locals.Push(node);
                 }
@@ -3843,15 +3849,24 @@ void Compiler::fgDebugCheckLinkedLocals()
 
             if (node->IsCall())
             {
-                GenTree* defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
-                if (defined != nullptr)
-                {
-                    assert(ShouldLink(defined));
-                    m_locals.Push(defined);
-                }
+                auto linkDefs = [&](GenTree* def) {
+                    assert(ShouldLink(def));
+                    m_locals.Push(def);
+                    return GenTree::VisitResult::Continue;
+                };
+
+                node->VisitLocalDefNodes(m_compiler, linkDefs);
             }
 
             return WALK_CONTINUE;
+        }
+
+        bool IsDefinedByCall(GenTreeCall* call, GenTree* node)
+        {
+            auto defIsNode = [=](GenTree* def) {
+                return node == def ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+            };
+            return call->VisitLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
         }
     };
 
@@ -3921,10 +3936,7 @@ void Compiler::fgDebugCheckLinkedLocals()
 // fgDebugCheckLinks: Check the correctness of the links between statements
 //    and ordinary nodes within a statement.
 //
-// Arguments:
-//    morphTrees - if true, morph trees during the check
-//
-void Compiler::fgDebugCheckLinks(bool morphTrees)
+void Compiler::fgDebugCheckLinks()
 {
     if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
     {
@@ -3940,15 +3952,14 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     {
         if (block->IsLIR())
         {
-            LIR::AsRange(block).CheckLIR(this);
+            LIR::AsRange(block).CheckLIR(this, hasFlag(activePhaseChecks, PhaseChecks::CHECK_LIR_UNUSED_VALUES));
         }
         else
         {
-            fgDebugCheckStmtsList(block, morphTrees);
+            fgDebugCheckStmtsList(block);
         }
     }
 
-    fgDebugCheckNodesUniqueness();
     fgDebugCheckSsa();
 }
 
@@ -3961,12 +3972,11 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 //
 // Arguments:
 //    block  - the block to check statements in
-//    morphTrees - try to morph trees in the checker
 //
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
 
-void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
+void Compiler::fgDebugCheckStmtsList(BasicBlock* block)
 {
     for (Statement* const stmt : block->Statements())
     {
@@ -3996,8 +4006,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 
         // For each statement check that the exception flags are properly set
         noway_assert(stmt->GetRootNode());
-        fgDebugCheckFlags(stmt->GetRootNode(), block);
-        fgDebugCheckTypes(stmt->GetRootNode());
+        fgDebugCheckFlagsAndTypes(stmt->GetRootNode(), block);
 
         // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
         if (!block->KindIs(BBJ_RETURN))
@@ -4015,22 +4024,8 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
             assert(!(isReturn && isNotLastStmt) && "GT_RETURN node found that is not the last statement in the block");
         }
 
-        // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
-        // done by fgMorphTree()
-
-        if (morphTrees)
-        {
-            // If 'stmt' is removed from the block, start a new check for the current block,
-            // break the current check.
-            if (fgMorphBlockStmt(block, stmt DEBUGARG("test morphing")))
-            {
-                fgDebugCheckStmtsList(block, morphTrees);
-                break;
-            }
-        }
-
         // For each statement check that the nodes are threaded correctly - m_treeList.
-        if (fgNodeThreading != NodeThreading::None)
+        if ((fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR))
         {
             fgDebugCheckNodeLinks(block, stmt);
         }
@@ -4096,29 +4091,25 @@ void Compiler::fgDebugCheckBlockLinks()
 
 // UniquenessCheckWalker keeps data that is necessary to check
 // that each tree has its own unique id and they do not repeat.
-class UniquenessCheckWalker
+class UniquenessCheckWalker final : public GenTreeVisitor<UniquenessCheckWalker>
 {
 public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
     UniquenessCheckWalker(Compiler* comp)
-        : m_compiler(comp)
+        : GenTreeVisitor<UniquenessCheckWalker>(comp)
         , nodesVecTraits(comp->compGenTreeID, comp)
         , uniqueNodes(BitVecOps::MakeEmpty(&nodesVecTraits))
     {
     }
 
-    //------------------------------------------------------------------------
-    // fgMarkTreeId: Visit all subtrees in the tree and check gtTreeIDs.
-    //
-    // Arguments:
-    //    pTree     - Pointer to the tree to walk
-    //    fgWalkPre - the UniquenessCheckWalker instance
-    //
-    static Compiler::fgWalkResult MarkTreeId(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        UniquenessCheckWalker* walker   = static_cast<UniquenessCheckWalker*>(fgWalkPre->pCallbackData);
-        unsigned               gtTreeID = (*pTree)->gtTreeID;
-        walker->CheckTreeId(gtTreeID);
-        return Compiler::WALK_CONTINUE;
+        CheckTreeId((*use)->gtTreeID);
+        return fgWalkResult::WALK_CONTINUE;
     }
 
     //------------------------------------------------------------------------
@@ -4132,22 +4123,17 @@ public:
     //
     void CheckTreeId(unsigned gtTreeID)
     {
-        if (BitVecOps::IsMember(&nodesVecTraits, uniqueNodes, gtTreeID))
+        if (!BitVecOps::TryAddElemD(&nodesVecTraits, uniqueNodes, gtTreeID))
         {
             if (m_compiler->verbose)
             {
-                printf("Duplicate gtTreeID was found: %d\n", gtTreeID);
+                printf("Duplicate gtTreeID was found: %u\n", gtTreeID);
             }
             assert(!"Duplicate gtTreeID was found");
-        }
-        else
-        {
-            BitVecOps::AddElemD(&nodesVecTraits, uniqueNodes, gtTreeID);
         }
     }
 
 private:
-    Compiler*    m_compiler;
     BitVecTraits nodesVecTraits;
     BitVec       uniqueNodes;
 };
@@ -4168,12 +4154,21 @@ void Compiler::fgDebugCheckNodesUniqueness()
                 walker.CheckTreeId(i->gtTreeID);
             }
         }
+        else if (fgNodeThreading == NodeThreading::AllTrees)
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                for (GenTree* const tree : stmt->TreeList())
+                {
+                    walker.CheckTreeId(tree->gtTreeID);
+                }
+            }
+        }
         else
         {
             for (Statement* const stmt : block->Statements())
             {
-                GenTree* root = stmt->GetRootNode();
-                fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
+                walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
             }
         }
     }

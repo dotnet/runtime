@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.SyncBlockCache))]
 internal sealed partial class SyncBlockCache : IData<SyncBlockCache>
 {
-    [Field] public uint FreeSyncTableIndex { get; }
-    [Field] public TargetPointer CleanupBlockList { get; }
+    [Field] public partial uint FreeSyncTableIndex { get; }
+    [Field] public partial TargetPointer CleanupBlockList { get; }
 }

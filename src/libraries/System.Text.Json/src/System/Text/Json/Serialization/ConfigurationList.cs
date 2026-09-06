@@ -62,25 +62,16 @@ namespace System.Text.Json.Serialization
             OnCollectionModified();
         }
 
-        public bool Contains(TItem item)
-        {
-            return _list.Contains(item);
-        }
+        public bool Contains(TItem item) => _list.Contains(item);
 
         public void CopyTo(TItem[] array, int arrayIndex)
         {
             _list.CopyTo(array, arrayIndex);
         }
 
-        public List<TItem>.Enumerator GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
+        public List<TItem>.Enumerator GetEnumerator() => _list.GetEnumerator();
 
-        public int IndexOf(TItem item)
-        {
-            return _list.IndexOf(item);
-        }
+        public int IndexOf(TItem item) => _list.IndexOf(item);
 
         public void Insert(int index, TItem item)
         {

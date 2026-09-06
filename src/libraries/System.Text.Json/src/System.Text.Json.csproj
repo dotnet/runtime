@@ -21,6 +21,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)Polyfills\ReflectionPolyfills.cs" Link="Common\Polyfills\ReflectionPolyfills.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\ValueStringBuilder.cs" />
@@ -361,7 +362,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonTypeClassifierContext.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonTypeClassifierFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonTypeClassifierKind.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonUnionTypeStructuralClassifier.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonValueType.cs" />
+    <Compile Include="System\Text\Json\Serialization\ValueBitArray.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonUnionAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonUnionCaseInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Union\JsonUnionConverter.cs" />
@@ -392,9 +395,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)Polyfills\StopwatchPolyfills.cs" Link="Common\Polyfills\StopwatchPolyfills.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <!-- Dependencies for System.Collections.Generic.OrderedDictionary -->
-    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Collections\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs" Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs" Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs" Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
@@ -417,6 +420,10 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt128Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlySetOfTConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\Ieee754FloatingPointConverter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

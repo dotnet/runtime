@@ -12,7 +12,7 @@ internal static partial class Interop
         public struct LinkLayerAddressInfo
         {
             public int InterfaceIndex;
-            public InlineArray8<byte> AddressBytes;
+            public InlineArray12<byte> AddressBytes;
             public byte NumAddressBytes;
             private byte __padding; // For native struct-size padding. Does not contain useful data.
             public ushort HardwareType;
@@ -38,7 +38,7 @@ internal static partial class Interop
             public ushort HardwareType;
             public byte OperationalState;
             public byte NumAddressBytes;
-            public InlineArray8<byte> AddressBytes;
+            public InlineArray12<byte> AddressBytes;
             public byte SupportsMulticast;
             private InlineArray3<byte> __padding;
         }

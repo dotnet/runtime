@@ -10,7 +10,6 @@
     <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
     <WasmTestLogExitCode>true</WasmTestLogExitCode>
     <WasmTestAsyncFlushOnExit>true</WasmTestAsyncFlushOnExit>
-    <WasmTestForwardConsole>true</WasmTestForwardConsole>
     
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>

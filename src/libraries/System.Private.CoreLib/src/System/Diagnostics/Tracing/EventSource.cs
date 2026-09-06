@@ -2036,33 +2036,30 @@ namespace System.Diagnostics.Tracing
                             childActivityID = &relatedActivityId;
                     }
 
-                    if (metadata.EnabledForETW
+                    if (!SelfDescribingEvents)
+                    {
+                        if (metadata.EnabledForETW && !m_etwProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
+                            ThrowEventSourceException(metadata.Name);
+#if FEATURE_PERFTRACING
+                        if (metadata.EnabledForEventPipe && !m_eventPipeProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
+                            ThrowEventSourceException(metadata.Name);
+#endif // FEATURE_PERFTRACING
+                    }
+                    else if (metadata.EnabledForETW
 #if FEATURE_PERFTRACING
                             || metadata.EnabledForEventPipe
 #endif // FEATURE_PERFTRACING
                         )
                     {
-                        if (!SelfDescribingEvents)
+                        // TODO: activity ID support
+                        EventSourceOptions opt = new EventSourceOptions
                         {
-                            if (!m_etwProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
-                                ThrowEventSourceException(metadata.Name);
-#if FEATURE_PERFTRACING
-                            if (!m_eventPipeProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
-                                ThrowEventSourceException(metadata.Name);
-#endif // FEATURE_PERFTRACING
-                        }
-                        else
-                        {
-                            // TODO: activity ID support
-                            EventSourceOptions opt = new EventSourceOptions
-                            {
-                                Keywords = (EventKeywords)metadata.Descriptor.Keywords,
-                                Level = (EventLevel)metadata.Descriptor.Level,
-                                Opcode = (EventOpcode)metadata.Descriptor.Opcode
-                            };
+                            Keywords = (EventKeywords)metadata.Descriptor.Keywords,
+                            Level = (EventLevel)metadata.Descriptor.Level,
+                            Opcode = (EventOpcode)metadata.Descriptor.Opcode
+                        };
 
-                            WriteMultiMerge(metadata.Name, ref opt, metadata.TraceLoggingEventTypes, pActivityId, childActivityID, args);
-                        }
+                        WriteMultiMerge(metadata.Name, ref opt, metadata.TraceLoggingEventTypes, pActivityId, childActivityID, args);
                     }
 
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
@@ -3896,6 +3893,12 @@ namespace System.Diagnostics.Tracing
             // the FrameworkEventSource is being used, creating it on-demand will acquire the EventListener lock which can deadlock.
             // See https://github.com/dotnet/runtime/issues/126591. We avoid that by pre-creating the FrameworkEventSource here.
             _ = FrameworkEventSource.Log;
+            // MetricsEventSource.ParseSpecs uses string interpolation which calls SharedArrayPool<char>.Rent(), which accesses
+            // ArrayPoolEventSource.Log and can require ArrayPoolEventSource type initialization. ParseSpecs runs while holding
+            // EventListener.EventListenersLock (inside DoCommand), so if another thread is currently running ArrayPoolEventSource's
+            // type initializer (holding the type-init lock) and then tries to take EventListenersLock, a deadlock can occur.
+            // See https://github.com/dotnet/runtime/issues/119014. We avoid that by pre-creating ArrayPoolEventSource here.
+            _ = System.Buffers.ArrayPoolEventSource.Log;
 #if !TARGET_BROWSER
             _ = RuntimeEventSource.Log;
 #endif

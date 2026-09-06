@@ -218,7 +218,7 @@ namespace System
             if (value._upper > uint.MaxValue)
             {
                 // The default behavior of decimal conversions is to always throw on overflow
-                Number.ThrowOverflowException(SR.Overflow_Decimal);
+                Number.ThrowDecimalOverflowException();
             }
 
             uint hi32 = (uint)(value._upper);
@@ -1032,8 +1032,10 @@ namespace System
             return value < PowersOf10[(int)approx] ? approx - 1 : approx;
         }
 
-        // Lookup table for power-of-10 boundaries corrections
-        private static readonly UInt128[] PowersOf10 =
+        // Lookup table for the powers of ten representable in a UInt128 (10^0 through 10^38).
+        internal static ReadOnlySpan<UInt128> PowersOf10 => s_powersOf10;
+
+        private static readonly UInt128[] s_powersOf10 =
         [
             new UInt128(0, 1UL),
             new UInt128(0, 10UL),

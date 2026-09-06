@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.FramedMethodFrame))]
 internal partial class FramedMethodFrame : IData<FramedMethodFrame>
 {
-    [Field] public TargetPointer TransitionBlockPtr { get; }
-    [Field] public TargetPointer MethodDescPtr { get; }
+    [Field] public partial TargetPointer TransitionBlockPtr { get; }
+    [Field] public partial TargetPointer MethodDescPtr { get; }
 }

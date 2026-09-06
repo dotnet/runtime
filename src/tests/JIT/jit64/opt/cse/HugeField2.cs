@@ -1351,8 +1351,14 @@ namespace CseTest
     using System;
     public class Test_Main
     {
+        public static bool IsJitOptimizationStressSupported =>
+            !PlatformDetection.IsCoreCLR ||
+            !(Utilities.IsArm && TestLibrary.CoreClrConfigurationDetection.IsAnyJitOptimizationStress);
+
+        // This test generates a lot of code and exceeds ARM32 size limits under JIT stress.
+        // See https://github.com/dotnet/runtime/issues/88621.
         [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
-        [Fact]
+        [ConditionalFact(typeof(Test_Main), nameof(IsJitOptimizationStressSupported))]
         [OuterLoop]
         [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
@@ -12282,4 +12288,3 @@ namespace CseTest
         public int zz;
     }
 }
-

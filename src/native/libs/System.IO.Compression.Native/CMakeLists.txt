@@ -251,6 +251,10 @@ else ()
 
 endif ()
 
+if (TARGET System.IO.Compression.Native)
+    target_link_libraries(System.IO.Compression.Native PRIVATE minipal)
+endif()
+
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
 if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)

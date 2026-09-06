@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.AssemblyBinder))]
 internal sealed partial class AssemblyBinder : IData<AssemblyBinder>
 {
-    [Field] public ObjectHandle AssemblyLoadContext { get; }
+    [Field] public partial ObjectHandle AssemblyLoadContext { get; }
 }

@@ -122,14 +122,6 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
     return ALIGN_UP(parmSize, stackSlotSize);
 }
 
-//
-// JIT HELPERS.
-//
-// Create alias for optimized implementations of helpers provided on this platform
-//
-#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
-#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
-
 //**********************************************************************
 // Frames
 //**********************************************************************
