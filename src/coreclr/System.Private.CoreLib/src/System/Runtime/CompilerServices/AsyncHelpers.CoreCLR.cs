@@ -436,64 +436,30 @@ namespace System.Runtime.CompilerServices
             return default!;
         }
 
-        /// <summary>
-        /// Used by internal thunks that implement awaiting on ValueTask.
-        /// A ValueTask may wrap:
-        /// - Completed result   (we never await this)
-        /// - Task
-        /// - ValueTaskSource
-        /// Therefore, when we are awaiting a ValueTask completion we are really
-        /// awaiting a completion of an underlying Task or ValueTaskSource.
-        /// </summary>
-        /// <param name="valueTask">ValueTask whose completion we are awaiting.</param>
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentSuspend(ValueTask valueTask)
+        private static unsafe void TransparentSuspend(IValueTaskSource source, short token)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
-            Continuation nextCont;
-            object? obj = valueTask._obj;
-            if (obj is Task t)
+            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
+            if (vtsCont != null)
             {
-                RuntimeAsyncTaskContinuation? taskCont = state.CachedTaskContinuation;
-                if (taskCont != null)
-                {
-                    state.CachedTaskContinuation = null;
-                }
-                else
-                {
-                    taskCont = new RuntimeAsyncTaskContinuation();
-                }
-
-                taskCont.Initialize(t);
-                state.StackState->TaskContinuation = taskCont;
-                nextCont = taskCont;
+                state.CachedValueTaskSourceContinuation = null;
             }
             else
             {
-                ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
-                if (vtsCont != null)
-                {
-                    state.CachedValueTaskSourceContinuation = null;
-                }
-                else
-                {
-                    vtsCont = new ValueTaskSourceContinuation();
-                }
-
-                Debug.Assert(obj is IValueTaskSource);
-                vtsCont.Initialize(Unsafe.As<object, IValueTaskSource>(ref obj), valueTask._token);
-                state.StackState->ValueTaskSourceContinuation = vtsCont;
-                nextCont = vtsCont;
+                vtsCont = new ValueTaskSourceContinuation();
             }
 
-            sentinelContinuation.Next = nextCont;
+            vtsCont.Initialize(source, token);
 
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskSourceContinuation = vtsCont;
             state.CaptureContexts();
-            AsyncSuspend(nextCont);
+            AsyncSuspend(vtsCont);
         }
 
         [Intrinsic]
@@ -537,50 +503,27 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe T TransparentSuspend<T>(ValueTask<T> valueTask)
+        private static unsafe T TransparentSuspend<T>(IValueTaskSource<T> source, short token)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
-            Continuation nextCont;
-            object? obj = valueTask._obj;
-            if (obj is Task<T> t)
+            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
+            if (vtsCont != null)
             {
-                RuntimeAsyncTaskContinuation? taskCont = state.CachedTaskContinuation;
-                if (taskCont != null)
-                {
-                    state.CachedTaskContinuation = null;
-                }
-                else
-                {
-                    taskCont = new RuntimeAsyncTaskContinuation();
-                }
-
-                taskCont.Initialize<T>(t);
-                state.StackState->TaskContinuation = taskCont;
-                nextCont = taskCont;
+                state.CachedValueTaskSourceContinuation = null;
             }
             else
             {
-                ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
-                if (vtsCont != null)
-                {
-                    state.CachedValueTaskSourceContinuation = null;
-                }
-                else
-                {
-                    vtsCont = new ValueTaskSourceContinuation();
-                }
-
-                Debug.Assert(obj is IValueTaskSource<T>);
-                vtsCont.Initialize<T>(Unsafe.As<object, IValueTaskSource<T>>(ref obj), valueTask._token);
-                state.StackState->ValueTaskSourceContinuation = vtsCont;
-                nextCont = vtsCont;
+                vtsCont = new ValueTaskSourceContinuation();
             }
 
-            sentinelContinuation.Next = nextCont;
+            vtsCont.Initialize<T>(source, token);
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskSourceContinuation = vtsCont;
             state.CaptureContexts();
-            AsyncSuspend(nextCont);
+            AsyncSuspend(vtsCont);
             return default!;
         }
 
@@ -707,14 +650,35 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.Async)]
         private static void TransparentAwait(ValueTask task)
         {
-            if (!task.IsCompleted)
+            object? obj = task._obj;
+            if (obj == null)
             {
-                TailAwait();
-                TransparentSuspend(task);
                 return;
             }
 
-            task.ThrowIfCompletedUnsuccessfully();
+            if (obj is Task t)
+            {
+                if (!t.IsCompleted)
+                {
+                    TailAwait();
+                    TransparentSuspend(t);
+                    return;
+                }
+
+                TaskAwaiter.ValidateEnd(t);
+                return;
+            }
+
+            Debug.Assert(obj is IValueTaskSource);
+            IValueTaskSource vts = Unsafe.As<object, IValueTaskSource>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                TransparentSuspend(vts, task._token);
+                return;
+            }
+
+            vts.GetResult(task._token);
         }
 
         [BypassReadyToRun]
@@ -735,13 +699,33 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.Async)]
         private static T TransparentAwait<T>(ValueTask<T> task)
         {
-            if (!task.IsCompleted)
+            object? obj = task._obj;
+            if (obj == null)
             {
-                TailAwait();
-                return TransparentSuspend(task);
+                return task._result!;
             }
 
-            return task.Result;
+            if (obj is Task<T> t)
+            {
+                if (!t.IsCompleted)
+                {
+                    TailAwait();
+                    return TransparentSuspend(t);
+                }
+
+                TaskAwaiter.ValidateEnd(t);
+                return t.ResultOnSuccess;
+            }
+
+            Debug.Assert(obj is IValueTaskSource<T>);
+            IValueTaskSource<T> vts = Unsafe.As<object, IValueTaskSource<T>>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                return TransparentSuspend(vts, task._token);
+            }
+
+            return vts.GetResult(task._token);
         }
 
         // Represents execution of a chain of suspended and resuming runtime
