@@ -3,6 +3,8 @@
     <!-- Without process isolation, this support assembly gets copied to the merged wrapper folder -->
     <!-- where it subsequently crashes the LLVM AOT compiler. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- ildasm crashes on this assembly. See https://github.com/dotnet/runtime/issues/127576 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <OutputType>Library</OutputType>
     <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>

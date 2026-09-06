@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.CommandLine;
 using Xunit;
 
 namespace ILAssembler.Tests;
@@ -59,24 +60,35 @@ public class CommandLineTests
         "SUB",
     };
 
-    public static TheoryData<string> ModernValueOptions { get; } = new()
+    public static TheoryData<string> ModernValueOptions
     {
-        "--alignment",
-        "--aname",
-        "--base",
-        "--debug-mode",
-        "--flags",
-        "--include",
-        "--key",
-        "--mdv",
-        "--output",
-        "--ssver",
-        "--stack",
-        "--subsystem",
-        "-I",
-        "-k",
-        "-o",
-    };
+        get
+        {
+            TheoryData<string> options = new();
+            foreach (Option option in new IlasmRootCommand().Options)
+            {
+                if (option.Arity.MinimumNumberOfValues == 0)
+                {
+                    continue;
+                }
+
+                if (option.Name.StartsWith("-", StringComparison.Ordinal))
+                {
+                    options.Add(option.Name);
+                }
+
+                foreach (string alias in option.Aliases)
+                {
+                    if (alias.StartsWith("-", StringComparison.Ordinal))
+                    {
+                        options.Add(alias);
+                    }
+                }
+            }
+
+            return options;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(NativeValueOptions))]
@@ -306,6 +318,14 @@ public class CommandLineTests
         Assert.Equal(
             [option, "-DLL", "input.il"],
             NativeCommandLine.Normalize([option, "-DLL", "input.il"], allowSlashOptions: false));
+    }
+
+    [Fact]
+    public void BareOptionName_DoesNotPreserveNextArgument()
+    {
+        Assert.Equal(
+            ["output", "--dll", "input.il"],
+            NativeCommandLine.Normalize(["output", "-DLL", "input.il"], allowSlashOptions: false));
     }
 
     [Theory]

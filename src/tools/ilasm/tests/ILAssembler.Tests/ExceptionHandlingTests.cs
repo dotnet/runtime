@@ -196,5 +196,413 @@ namespace ILAssembler.Tests
             Assert.True(methodDef.RelativeVirtualAddress != 0);
         }
 
+        [Fact]
+        public void OffsetBasedCatchRegion_EmitsExactExceptionRegionBounds()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .maxstack 1
+                        .try 0 to 5 catch [mscorlib]System.Exception handler 5 to 8
+                        nop
+                        nop
+                        nop
+                        leave.s IL_8
+                    IL_5:
+                        pop
+                        leave.s IL_8
+                    IL_8:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .First(definition => reader.GetString(definition.Name) == "TestMethod");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var region = Assert.Single(body.ExceptionRegions);
+
+            Assert.Equal(ExceptionRegionKind.Catch, region.Kind);
+            Assert.Equal(0, region.TryOffset);
+            Assert.Equal(5, region.TryLength);
+            Assert.Equal(5, region.HandlerOffset);
+            Assert.Equal(3, region.HandlerLength);
+            Assert.Equal("Exception", reader.GetString(reader.GetTypeReference((TypeReferenceHandle)region.CatchType).Name));
+        }
+
+        [Fact]
+        public void OffsetBasedFinallyRegion_EmitsExactExceptionRegionBounds()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .maxstack 1
+                        .try 0 to 3 finally handler 3 to 4
+                        nop
+                        leave.s IL_4
+                    IL_3:
+                        endfinally
+                    IL_4:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .First(definition => reader.GetString(definition.Name) == "TestMethod");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var region = Assert.Single(body.ExceptionRegions);
+
+            Assert.Equal(ExceptionRegionKind.Finally, region.Kind);
+            Assert.Equal(0, region.TryOffset);
+            Assert.Equal(3, region.TryLength);
+            Assert.Equal(3, region.HandlerOffset);
+            Assert.Equal(1, region.HandlerLength);
+        }
+
+        [Fact]
+        public void FilterHandler_EmitsFilterExceptionRegion()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .maxstack 1
+                        .try
+                        {
+                            ldnull
+                            throw
+                        }
+                        filter
+                        {
+                            pop
+                            ldc.i4.1
+                            endfilter
+                        }
+                        {
+                            pop
+                            leave.s DONE
+                        }
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "TestMethod");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var region = Assert.Single(body.ExceptionRegions);
+
+            Assert.Equal(ExceptionRegionKind.Filter, region.Kind);
+            Assert.True(region.TryLength > 0);
+            Assert.True(region.FilterOffset >= 0);
+            Assert.True(region.HandlerOffset >= 0);
+            Assert.True(region.HandlerLength > 0);
+        }
+
+        [Fact]
+        public void FaultHandler_EmitsFaultExceptionRegion()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .maxstack 1
+                        .try
+                        {
+                            nop
+                            leave.s DONE
+                        }
+                        fault
+                        {
+                            endfinally
+                        }
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "TestMethod");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var region = Assert.Single(body.ExceptionRegions);
+
+            Assert.Equal(ExceptionRegionKind.Fault, region.Kind);
+            Assert.True(region.TryLength > 0);
+            Assert.True(region.HandlerOffset >= region.TryOffset + region.TryLength);
+            Assert.True(region.HandlerLength > 0);
+        }
+
+        [Fact]
+        public void CatchBlock_EmitsCatchExceptionRegion()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .maxstack 1
+                        .try
+                        {
+                            nop
+                            leave.s DONE
+                        }
+                        catch [mscorlib]System.Exception
+                        {
+                            pop
+                            leave.s DONE
+                        }
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .First(definition => reader.GetString(definition.Name) == "M");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var region = Assert.Single(body.ExceptionRegions);
+
+            Assert.Equal(ExceptionRegionKind.Catch, region.Kind);
+            Assert.True(region.TryLength > 0);
+            Assert.True(region.HandlerLength > 0);
+            Assert.Equal("Exception", reader.GetString(reader.GetTypeReference((TypeReferenceHandle)region.CatchType).Name));
+        }
+
+        [Fact]
+        public void FinallyBlock_EmitsFinallyExceptionRegion()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .maxstack 1
+                        .try
+                        {
+                            nop
+                            leave.s DONE
+                        }
+                        finally
+                        {
+                            endfinally
+                        }
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .First(definition => reader.GetString(definition.Name) == "M");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var region = Assert.Single(body.ExceptionRegions);
+
+            Assert.Equal(ExceptionRegionKind.Finally, region.Kind);
+            Assert.True(region.TryLength > 0);
+            Assert.True(region.HandlerLength > 0);
+        }
+
+        [Fact]
+        public void MultipleCatchClauses_ResolveCatchTypesBeforeTheirHandlerBodies()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .maxstack 1
+                        .try
+                        {
+                            leave.s DONE
+                        }
+                        catch [mscorlib]System.ArgumentException
+                        {
+                            castclass [mscorlib]System.IO.Stream
+                            pop
+                            leave.s DONE
+                        }
+                        catch [mscorlib]System.NotSupportedException
+                        {
+                            castclass [mscorlib]System.Text.StringBuilder
+                            pop
+                            leave.s DONE
+                        }
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Native ilasm resolves a catch type as soon as the clause is parsed, so each catch type
+            // precedes every type its handler body references.
+            string[] typeReferences = reader.TypeReferences
+                .Select(reader.GetTypeReference)
+                .Select(reference => reader.GetString(reference.Namespace) + "." + reader.GetString(reference.Name))
+                .ToArray();
+            AssertTypePrecedes("System.ArgumentException", "System.IO.Stream");
+            AssertTypePrecedes("System.NotSupportedException", "System.Text.StringBuilder");
+
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .First(definition => reader.GetString(definition.Name) == "M");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.Equal(2, body.ExceptionRegions.Length);
+            Assert.All(body.ExceptionRegions, region => Assert.Equal(ExceptionRegionKind.Catch, region.Kind));
+            Assert.Equal(
+                ["System.ArgumentException", "System.NotSupportedException"],
+                body.ExceptionRegions
+                    .Select(region => reader.GetTypeReference((TypeReferenceHandle)region.CatchType))
+                    .Select(reference => reader.GetString(reference.Namespace) + "." + reader.GetString(reference.Name))
+                    .ToArray());
+
+            void AssertTypePrecedes(string first, string second)
+            {
+                int firstIndex = Array.IndexOf(typeReferences, first);
+                int secondIndex = Array.IndexOf(typeReferences, second);
+                Assert.True(firstIndex >= 0, $"Type reference '{first}' was not emitted.");
+                Assert.True(secondIndex >= 0, $"Type reference '{second}' was not emitted.");
+                Assert.True(firstIndex < secondIndex, $"Type reference '{first}' should precede '{second}'.");
+            }
+        }
+
+        [Fact]
+        public void LabelBasedFilterRegion_EmitsExactExceptionRegionBounds()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .maxstack 1
+                        .try TRY_START to TRY_END filter FILTER_START handler HANDLER_START to HANDLER_END
+                    TRY_START:
+                        nop
+                        leave.s DONE
+                    TRY_END:
+                    FILTER_START:
+                        pop
+                        ldc.i4.1
+                        endfilter
+                    HANDLER_START:
+                        pop
+                        leave.s DONE
+                    HANDLER_END:
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
+            var region = Assert.Single(pe.GetMethodBody(method.RelativeVirtualAddress).ExceptionRegions);
+
+            Assert.Equal(ExceptionRegionKind.Filter, region.Kind);
+            Assert.Equal(0, region.TryOffset);
+            Assert.Equal(3, region.TryLength);
+            Assert.Equal(3, region.FilterOffset);
+            Assert.Equal(7, region.HandlerOffset);
+            Assert.Equal(3, region.HandlerLength);
+        }
+
+        [Fact]
+        public void NestedTryBlocks_EmitInnerRegionBeforeOuterRegion()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .maxstack 1
+                        .try
+                        {
+                            .try
+                            {
+                                nop
+                                leave.s INNER_DONE
+                            }
+                            catch [mscorlib]System.Exception
+                            {
+                                pop
+                                leave.s INNER_DONE
+                            }
+                        INNER_DONE:
+                            leave.s DONE
+                        }
+                        finally
+                        {
+                            endfinally
+                        }
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
+            ImmutableArray<ExceptionRegion> regions =
+                pe.GetMethodBody(method.RelativeVirtualAddress).ExceptionRegions;
+
+            Assert.Equal(2, regions.Length);
+            Assert.Equal(ExceptionRegionKind.Catch, regions[0].Kind);
+            Assert.Equal(ExceptionRegionKind.Finally, regions[1].Kind);
+            Assert.True(regions[0].TryOffset >= regions[1].TryOffset);
+            Assert.True(
+                regions[0].HandlerOffset + regions[0].HandlerLength <=
+                regions[1].TryOffset + regions[1].TryLength);
+        }
+
     }
 }

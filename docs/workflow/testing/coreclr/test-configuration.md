@@ -53,8 +53,12 @@ Therefore the managed portion of each test **must not contain**:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Exclude test from NativeAOT runs runs by adding the following to the csproj:
     * `<NativeAotIncompatible>true</NativeAotIncompatible>`
-* Exclude the test from ilasm round trip testing by adding the following to the csproj
+* Exclude the test from all ilasm round-trip testing by adding the following to the csproj. This also implies `ManagedIlasmRoundTripIncompatible`.
     * `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
+    * Shared-library projects emit a marker so merged runners can skip that assembly during all ilasm round trips.
+* Exclude the test only when round-trip testing with managed ilasm by adding the following to the csproj:
+    * `<ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>`
+    * Shared-library projects emit a marker so merged runners can skip only that assembly during managed ilasm round trips while preserving native ilasm coverage.
 * Exclude the test for unloadability (collectible assemblies) testing
     * `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 * If the test is specific for testing crossgen2, and should be compiled as such in all test modes
@@ -119,4 +123,3 @@ Unless tests are manually run on the command line to repro a problem, these para
 `testFilterString` is any string other that `-stripe`. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name).
 
 Either the -stripe <whichStripe> <totalStripes> parameter can be used or the TEST_HARNESS_STRIPE_TO_EXECUTE environment variable may be used to control striping. The TEST_HARNESS_STRIPE_TO_EXECUTE environment variable must be set to a string of the form `.<whichStripe>.<totalStripes>` if it is used. `<whichStripe>` is a 0 based index into the count of stripes, `<totalStripes>` is the total number of stripes.
-
