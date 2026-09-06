@@ -23,7 +23,7 @@ internal sealed class TransactionShim
     }
 
     public void Commit()
-        => Transaction.Commit(false, OletxXacttc.XACTTC_ASYNC, 0);
+        => Transaction.Commit(false, Interop.Xolehlp.OletxXacttc.XACTTC_ASYNC, 0);
 
     public void Abort()
         => Transaction.Abort(IntPtr.Zero, false, false);
