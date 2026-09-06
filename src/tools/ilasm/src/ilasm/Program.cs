@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Text;
 
 namespace ILAssembler;
 
@@ -72,16 +70,12 @@ internal sealed class Program
                 }
             }
 
-            // Concatenate all input files
-            var contentBuilder = new StringBuilder();
+            // Build individual SourceText for each input file
+            var documents = ImmutableArray.CreateBuilder<SourceText>(inputFiles.Length);
             foreach (string file in inputFiles)
             {
-                contentBuilder.AppendLine(File.ReadAllText(file));
+                documents.Add(new SourceText(File.ReadAllText(file), file));
             }
-            string content = contentBuilder.ToString();
-
-            // Use the first file as the primary document for source tracking
-            var document = new SourceText(content, inputFiles[0]);
 
             // Build options
             bool errorTolerant = Get(_command.ErrorTolerant);
@@ -89,6 +83,7 @@ internal sealed class Program
             {
                 NoAutoInherit = Get(_command.NoAutoInherit),
                 ErrorTolerant = errorTolerant,
+                IsDll = isDll,
             };
 
             // Apply PE header overrides from command line
@@ -166,6 +161,7 @@ internal sealed class Program
             options.KeyFile = Get(_command.KeyFile);
             options.Optimize = Get(_command.Optimize);
             options.Fold = Get(_command.Fold);
+            options.OutputFileName = Path.GetFileName(outputPath);
 
             // Set up include path for #include directive resolution
             string? includePath = Get(_command.IncludePath);
@@ -219,8 +215,8 @@ internal sealed class Program
 
             // Compile
             var compiler = new DocumentCompiler();
-            var (diagnostics, peBuilder) = compiler.Compile(
-                document,
+            var (diagnostics, compilationResult) = compiler.Compile(
+                documents.ToImmutable(),
                 LoadIncludedDocument,
                 LoadResource,
                 options);
@@ -241,7 +237,7 @@ internal sealed class Program
             }
 
             // In error-tolerant mode, continue even with errors
-            if (peBuilder is null)
+            if (compilationResult is null)
             {
                 Console.Error.WriteLine("***** FAILURE *****");
                 return 1;
@@ -256,7 +252,7 @@ internal sealed class Program
             // Write output
             using var outputStream = File.Create(outputPath);
             var blobBuilder = new BlobBuilder();
-            peBuilder.Serialize(blobBuilder);
+            compilationResult.Serialize(blobBuilder);
             blobBuilder.WriteContentTo(outputStream);
 
             if (hasErrors)
@@ -290,8 +286,21 @@ internal sealed class Program
 
     private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
 
-    private static int Main(string[] args) =>
-        new IlasmRootCommand()
-            .Parse(args)
+    private static int Main(string[] args)
+    {
+        string[] normalizedArgs;
+        try
+        {
+            normalizedArgs = NativeCommandLine.Normalize(args);
+        }
+        catch (ArgumentException e)
+        {
+            Console.Error.WriteLine($"Error: {e.Message}");
+            return 1;
+        }
+
+        return new IlasmRootCommand()
+            .Parse(normalizedArgs)
             .Invoke();
+    }
 }
