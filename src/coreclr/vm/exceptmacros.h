@@ -427,9 +427,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                             \
         }                                                                                   \
-        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::exception&)                             \
         {                                                                                   \
-            __pUnCException = Exception::GetOOMException();                                 \
+            __pUnCException = GetExceptionFromCxxException();                               \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
             __fExceptionCaught = true;                                                      \
         }                                                                                   \
