@@ -11,6 +11,13 @@ set(PRERELEASE 1)
 #----------------------------------------
 set(CLR_CMAKE_HOST_OS ${CMAKE_SYSTEM_NAME})
 string(TOLOWER ${CLR_CMAKE_HOST_OS} CLR_CMAKE_HOST_OS)
+# OpenHarmony uses the OHOS NDK CMake toolchain which sets
+# CMAKE_SYSTEM_NAME=OHOS. Its libc is musl-based, so treat it as a linux/musl target.
+if(CLR_CMAKE_HOST_OS STREQUAL ohos)
+    set(CLR_CMAKE_HOST_OS linux)
+    set(CLR_CMAKE_HOST_LINUX_MUSL 1)
+    set(CLR_CMAKE_HOST_OPENHARMONY 1)
+endif()
 if(CLR_CMAKE_HOST_OS STREQUAL linux)
     set(CLR_CMAKE_HOST_UNIX 1)
     if(CLR_CROSS_COMPONENTS_BUILD)
@@ -356,6 +363,10 @@ if(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
 endif(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
+
+if(CLR_CMAKE_HOST_OPENHARMONY)
+    set(CLR_CMAKE_TARGET_OPENHARMONY 1)
+endif()
 
 macro(set_cache_value)
   set(${ARGV0} ${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
