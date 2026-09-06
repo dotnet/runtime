@@ -588,6 +588,7 @@ namespace System.Xml
         public void WriteElementString(string? prefix, System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string? value) { }
         public void WriteElementString(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string? value) { }
         public virtual void WriteNode(System.Xml.XmlDictionaryReader reader, bool defattr) { }
+        public void WriteNode(System.Xml.XmlDictionaryReader reader, bool defattr, bool preserveNamespacesInScope) { }
         public override void WriteNode(System.Xml.XmlReader reader, bool defattr) { }
         public virtual void WriteQualifiedName(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri) { }
         public virtual void WriteStartAttribute(string? prefix, System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri) { }
