@@ -3,6 +3,7 @@
 
 using Xunit;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Caching;
 
 namespace System.Runtime.Caching.Tests
@@ -11,6 +12,7 @@ namespace System.Runtime.Caching.Tests
     public class AdditionalCacheTests
     {
         [Fact]
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "The test intentionally exercises MemoryCache, and ILLink.Descriptors.xml roots the configuration constructor required by this scenario.")]
         public void DisposedCacheTest()
         {
             var mc = new MemoryCache("my disposed cache 1");
