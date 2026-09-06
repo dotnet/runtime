@@ -129,6 +129,52 @@ public:
     friend struct ::cdac_data<PortableEntryPoint>;
 };
 
+class UnboxingStubPortableEntryPoint final
+{
+public:
+    Volatile<void*> _targetMethodDesc;
+    Volatile<void*> _targetEntryPoint;
+    PortableEntryPoint _entryPoint;
+
+    static UnboxingStubPortableEntryPoint* FromEntryPoint(PCODE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return reinterpret_cast<UnboxingStubPortableEntryPoint*>(
+            reinterpret_cast<BYTE*>(PCODEToPINSTR(addr)) - offsetof(UnboxingStubPortableEntryPoint, _entryPoint));
+    }
+
+    PortableEntryPoint* GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &_entryPoint;
+    }
+
+    void Init(MethodDesc* pMD)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _entryPoint.Init(pMD);
+        _targetMethodDesc = nullptr;
+        _targetEntryPoint = nullptr;
+    }
+
+    static void SetStubTargetAndActualCode(
+        PCODE addr,
+        MethodDesc* targetMethodDesc,
+        PCODE targetEntryPoint,
+        PCODE actualCode)
+    {
+        WRAPPER_NO_CONTRACT;
+        UnboxingStubPortableEntryPoint* entryPoint = FromEntryPoint(addr);
+        entryPoint->_targetMethodDesc = targetMethodDesc;
+        entryPoint->_targetEntryPoint = reinterpret_cast<void*>(PCODEToPINSTR(targetEntryPoint));
+        PortableEntryPoint::SetActualCode(addr, actualCode);
+    }
+};
+
+// Generated unboxing stubs access these fields at fixed negative offsets from the embedded entrypoint.
+static_assert(offsetof(UnboxingStubPortableEntryPoint, _targetEntryPoint) == TARGET_POINTER_SIZE);
+static_assert(offsetof(UnboxingStubPortableEntryPoint, _entryPoint) == 2 * TARGET_POINTER_SIZE);
+
 template<>
 struct cdac_data<PortableEntryPoint>
 {
