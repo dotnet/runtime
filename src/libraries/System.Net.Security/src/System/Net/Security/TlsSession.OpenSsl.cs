@@ -92,10 +92,7 @@ namespace System.Net.Security
             _pendingFdSocket = null;
 
             // Discard any managed pre-fetch bytes; ownership transfers to the native BIO now.
-            if (_socketInBuffer.ActiveLength > 0)
-            {
-                _socketInBuffer.Discard(_socketInBuffer.ActiveLength);
-            }
+            _socketInBuffer.DiscardAll();
 
             _useFdMode = true;
         }
