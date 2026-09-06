@@ -89,8 +89,8 @@ namespace System.Runtime.CompilerServices.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
 
-            // IsDynamicCodeCompiled on Mono interpreter always returns false
-            bool isDynamicCodeCompiled = PlatformDetection.IsMonoInterpreter ? false : isDynamicCodeSupported;
+            // The switch can disable dynamic code support, but it cannot enable compilation when the runtime does not provide it.
+            bool isDynamicCodeCompiled = RuntimeFeature.IsDynamicCodeCompiled && isDynamicCodeSupported;
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (isDynamicCodeSupportedString, isDynamicCodeCompiledString) =>
             {
