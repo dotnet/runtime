@@ -399,21 +399,31 @@ namespace System.Runtime.Serialization
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnDeserializing(context, classContract.BaseClassContract, obj);
-            if (classContract.OnDeserializing != null)
-            {
-                var contextArg = context.GetStreamingContext();
-                classContract.OnDeserializing.Invoke(obj, new object[] { contextArg });
-            }
+
+            InvokeDeserializationEventMethod(classContract.OnDeserializing, obj, context);
         }
 
         private static void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnDeserialized(context, classContract.BaseClassContract, obj);
-            if (classContract.OnDeserialized != null)
+
+            InvokeDeserializationEventMethod(classContract.OnDeserialized, obj, context);
+        }
+
+        private static void InvokeDeserializationEventMethod(MethodInfo? method, object obj, XmlObjectSerializerReadContext context)
+        {
+            if (method != null)
             {
-                var contextArg = context.GetStreamingContext();
-                classContract.OnDeserialized.Invoke(obj, new object[] { contextArg });
+                if (method.GetParameters()?.Length == 1)
+                {
+                    var contextArg = context.GetStreamingContext();
+                    method.Invoke(obj, new object[] { contextArg });
+                }
+                else
+                {
+                    method.Invoke(obj, Array.Empty<object>());
+                }
             }
         }
 
