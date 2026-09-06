@@ -650,22 +650,38 @@ namespace System.Net.Sockets
 
         private sealed class ConnectOperation : BufferMemorySendOperation
         {
+            // Set once the underlying connect() has completed successfully and we have
+            // started (possibly across multiple retries) sending any buffered data.
+            private bool _connected;
+
             public ConnectOperation(SocketAsyncContext context) : base(context) { }
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                bool result = SocketPal.TryCompleteConnect(context._socket, out ErrorCode);
-                context._socket.RegisterConnectResult(ErrorCode);
-
-                if (result && ErrorCode == SocketError.Success &&  Buffer.Length > 0)
+                if (!_connected)
                 {
-                    SocketError error = context.SendToAsync(Buffer, 0, Buffer.Length, SocketFlags.None, Memory<byte>.Empty, ref BytesTransferred, Callback!, default);
-                    if (error != SocketError.Success && error != SocketError.IOPending)
+                    bool result = SocketPal.TryCompleteConnect(context._socket, out ErrorCode);
+                    context._socket.RegisterConnectResult(ErrorCode);
+
+                    if (!result || ErrorCode != SocketError.Success || Buffer.Length == 0)
                     {
-                        context._socket.RegisterConnectResult(ErrorCode);
+                        return result;
                     }
+
+                    // Connect completed successfully and there is buffered data to send. Continue
+                    // sending it as part of this same operation (retrying as needed) so that this
+                    // operation -- and therefore the overall ConnectAsync call -- isn't reported as
+                    // complete until the buffered data has actually finished sending (or failed).
+                    _connected = true;
+                    Offset = 0;
+                    Count = Buffer.Length;
                 }
-                return result;
+
+                // Note: a failure here is a failure of the follow-up send, not of connect() itself
+                // (which already succeeded above), so it must not be reported via RegisterConnectResult
+                // -- doing so would incorrectly mark the connect itself as failed (LastConnectFailed),
+                // which affects unrelated behavior such as multi-connect handle replacement.
+                return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span, ref Offset, ref Count, SocketFlags.None, default, ref BytesTransferred, out ErrorCode);
             }
 
             public override void InvokeCallback(bool allowPooling)
@@ -674,17 +690,12 @@ namespace System.Net.Sockets
                 int bt = BytesTransferred;
                 Memory<byte> sa = SocketAddress;
                 SocketError ec = ErrorCode;
-                Memory<byte> buffer = Buffer;
 
-                if (buffer.Length == 0 || ec != SocketError.Success)
-                {
-                    AssociatedContext._socket.SetBlocking();
+                // DoTryComplete only reports this operation as complete once any buffered data has
+                // been fully sent (or has failed), so it is now safe to restore native blocking mode.
+                AssociatedContext._socket.SetBlocking();
 
-                    // Invoke callback only when we are completely done.
-                    // In case data were provided for Connect we may or may not send them all.
-                    // If we did not we will need follow-up with Send operation
-                    cb(bt, sa, SocketFlags.None, ec);
-                }
+                cb(bt, sa, SocketFlags.None, ec);
             }
         }
 
@@ -1582,7 +1593,15 @@ namespace System.Net.Sockets
 
                 if (errorCode == SocketError.Success && remains > 0)
                 {
-                    errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes, callback!, default);
+                    // If the buffered send doesn't complete synchronously, its own completion
+                    // (whenever that happens) is what determines when the whole connect+send
+                    // operation is done, so blocking mode must only be restored at that point.
+                    errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes,
+                        (bytesTransferred, sendSocketAddress, flags, sendErrorCode) =>
+                        {
+                            _socket.SetBlocking();
+                            callback!(bytesTransferred, sendSocketAddress, flags, sendErrorCode);
+                        }, default);
                 }
 
                 if (remains == 0 || errorCode != SocketError.IOPending)
@@ -1607,10 +1626,10 @@ namespace System.Net.Sockets
                     sentBytes += operation.BytesTransferred;
                 }
 
-                if (buffer.Length == 0 || operation.ErrorCode != SocketError.Success)
-                {
-                    _socket.SetBlocking();
-                }
+                // ConnectOperation.DoTryComplete only reports synchronous completion once the
+                // entire connect, including any buffered send, has finished, so it's safe to
+                // restore native blocking mode here unconditionally.
+                _socket.SetBlocking();
 
                 return operation.ErrorCode;
             }
