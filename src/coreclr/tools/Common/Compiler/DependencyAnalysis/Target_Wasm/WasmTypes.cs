@@ -10,6 +10,29 @@ using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.Wasm
 {
+    /// <summary>
+    /// Widely adopted WebAssembly implementation limits, enforced by the engines and tools we
+    /// target. A module violating one is rejected at instantiation, which for a ReadyToRun image
+    /// means the runtime silently interprets the whole assembly.
+    /// See https://webassembly.github.io/spec/js-api/#limits.
+    /// </summary>
+    public static class WasmLimits
+    {
+        /// <summary>Maximum number of parameters a function type may declare.</summary>
+        public const int MaxFunctionParams = 1000;
+
+        /// <summary>
+        /// Maximum number of results a function type may declare. ReadyToRun signatures have at
+        /// most one result today, so this cannot currently be approached.
+        /// </summary>
+        public const int MaxFunctionResults = 1000;
+
+        /// <summary>Returns true if <paramref name="funcType"/> cannot be emitted into a loadable module.</summary>
+        public static bool ExceedsLimits(in WasmFuncType funcType) =>
+            funcType.Params.Types.Length > MaxFunctionParams ||
+            funcType.Returns.Types.Length > MaxFunctionResults;
+    }
+
     // For now, we only encode Wasm numeric value types.
     // These are encoded as a single byte. However,
     // not all value types can be encoded this way.

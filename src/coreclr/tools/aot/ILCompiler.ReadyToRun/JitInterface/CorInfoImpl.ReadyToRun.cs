@@ -860,14 +860,22 @@ namespace Internal.JitInterface
                     }
                 }
 
-                // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
-                // interpreter can call into this R2R-compiled function.
-                if (_compilation.NodeFactory.Target.IsWasm && !MethodBeingCompiled.IsUnmanagedCallersOnly)
+                if (_compilation.NodeFactory.Target.IsWasm)
                 {
                     WasmSignature wasmSig = WasmLowering.GetSignature(MethodBeingCompiled);
-                    AddAdditionalDependency(
-                        _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
-                        "Interpreter-to-R2R thunk for compiled method");
+
+                    // Decline the method so it is left to the interpreter. Outside the
+                    // UnmanagedCallersOnly test below, since those also get a function type.
+                    ThrowIfExceedsWasmLimits(wasmSig, "signature");
+
+                    // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
+                    // interpreter can call into this R2R-compiled function.
+                    if (!MethodBeingCompiled.IsUnmanagedCallersOnly)
+                    {
+                        AddAdditionalDependency(
+                            _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
+                            "Interpreter-to-R2R thunk for compiled method");
+                    }
                 }
 
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
@@ -3733,8 +3741,35 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
         }
 
+        /// <summary>
+        /// Declines to ReadyToRun-compile the current method when its lowered wasm signature
+        /// exceeds an implementation limit, leaving it to the interpreter. <paramref name="what"/>
+        /// is a constant and the method is formatted only on failure, since this runs for every
+        /// wasm method and call site.
+        /// </summary>
+        private void ThrowIfExceedsWasmLimits(in WasmSignature signature, string what)
+        {
+            if (WasmLimits.ExceedsLimits(signature.FuncType))
+            {
+                throw new RequiresRuntimeJitException(
+                    $"wasm {what} for '{MethodBeingCompiled}' has {signature.FuncType.Params.Types.Length} parameters and " +
+                    $"{signature.FuncType.Returns.Types.Length} results, exceeding the wasm implementation limit of " +
+                    $"{WasmLimits.MaxFunctionParams} parameters / {WasmLimits.MaxFunctionResults} results");
+            }
+        }
         private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
         {
+            // types[0] is the return type; see WasmFuncType.FromCorInfoSignature. Checked before
+            // materializing the array, so an over-limit arity neither allocates nor reaches the
+            // narrowing cast below.
+            nuint paramCount = typesSize > 0 ? typesSize - 1 : 0;
+            if (paramCount > WasmLimits.MaxFunctionParams)
+            {
+                throw new RequiresRuntimeJitException(
+                    $"wasm call site in '{MethodBeingCompiled}' needs a function type with {paramCount} parameters, " +
+                    $"exceeding the wasm implementation limit of {WasmLimits.MaxFunctionParams}");
+            }
+
             CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
 
             WasmTypeNode typeNode = _compilation.NodeFactory.WasmTypeNode(typeArray);
@@ -3815,6 +3850,12 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
+                ThrowIfExceedsWasmLimits(wasmSig, "managed call site");
+
+                // This is the live wasm path for managed calls; recordCallSite is DEBUG-only and
+                // reached only from the xarch emitter. The delay-load import thunk is emitted only
+                // if a live method marks it, so declining the caller is what keeps it out of the
+                // image. See Import.OnMarked.
                 // Only create R2R-to-interpreter thunks for managed calls.
                 // Unmanaged calls don't go through the interpreter transition.
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))

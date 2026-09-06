@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 extern alias crossgen2;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
+using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -153,6 +155,100 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmWideSignatureModule()
+    {
+        var wasmWideSignatureModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmWideSignatureModule),
+            SourceResourceNames = ["Webcil/WasmWideSignatureModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmWideSignatureModule),
+            [
+                new(nameof(WasmWideSignatureModule), [new CrossgenAssembly(wasmWideSignatureModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+
+            // Must hold for the type section as a whole: an over-limit type left behind by a method
+            // that was not emitted is as fatal as one in use.
+            WasmR2RAssert.GetMaxWasmFunctionTypeArity(webcilReader, out int maxParams, out int maxResults);
+            Assert.InRange(maxParams, 0, WasmLimits.MaxFunctionParams);
+            Assert.InRange(maxResults, 0, WasmLimits.MaxFunctionResults);
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+
+            // The over-limit method is left to the interpreter.
+            Assert.DoesNotContain(methods, method =>
+                method.SignatureString.Contains("TooManyParameters", StringComparison.Ordinal));
+
+            // Declining costs only those methods, not the assembly's R2R coverage.
+            Assert.Contains(methods, method =>
+                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal));
+            Assert.Contains(methods, method =>
+                method.SignatureString.Contains("MultiplyIntegers", StringComparison.Ordinal));
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmCrossAssemblyWideSignatureModule()
+    {
+        var dependency = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmCrossAssemblyWideSignatureModule) + "Dependency",
+            SourceResourceNames = ["Webcil/WasmWideSignatureModule.cs"],
+        };
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmCrossAssemblyWideSignatureModule),
+            SourceResourceNames = ["Webcil/WasmCrossAssemblyWideSignatureModule.cs"],
+            References = [dependency],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmCrossAssemblyWideSignatureModule),
+            [
+                new(nameof(WasmCrossAssemblyWideSignatureModule),
+                [
+                    new CrossgenAssembly(input),
+                    new CrossgenAssembly(dependency)
+                    {
+                        Kind = Crossgen2InputKind.Reference,
+                        Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                ])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+
+            WasmR2RAssert.GetMaxWasmFunctionTypeArity(webcilReader, out int maxParams, out int maxResults);
+            Assert.InRange(maxParams, 0, WasmLimits.MaxFunctionParams);
+            Assert.InRange(maxResults, 0, WasmLimits.MaxFunctionResults);
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            Assert.DoesNotContain(methods, method =>
+                method.SignatureString.Contains("CallsExternalTooManyParameters", StringComparison.Ordinal));
+            Assert.Contains(methods, method =>
+                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal));
         }
     }
 
