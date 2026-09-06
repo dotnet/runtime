@@ -90,7 +90,9 @@ namespace System.Xml.Serialization
                         _arraySource = arraySource;
                     else
                         _arraySource = XmlSerializationReaderILGen.GetArraySource(mapping.TypeDesc, _arrayName, multiRef);
-                    _isArray = mapping.TypeDesc.IsArray;
+                    // A collection built from its complete contents accumulates into an array first, so from
+                    // here on it is read exactly like one.
+                    _isArray = mapping.TypeDesc.IsArray || mapping.TypeDesc.UsesCollectionBuilder;
                     _isList = !_isArray;
                     if (mapping.ChoiceIdentifier != null)
                     {
@@ -1312,7 +1314,7 @@ namespace System.Xml.Serialization
                     }
                     else if (m is ArrayMapping arrayMapping)
                     {
-                        if (arrayMapping.TypeDesc!.HasDefaultConstructor)
+                        if (arrayMapping.TypeDesc!.HasDefaultConstructor || arrayMapping.TypeDesc.UsesCollectionBuilder)
                         {
                             ilg.InitElseIf();
                             WriteQNameEqual("xsiType", arrayMapping.TypeName, arrayMapping.Namespace);
@@ -2208,10 +2210,31 @@ namespace System.Xml.Serialization
 
                     TypeDesc typeDesc = member.Mapping.TypeDesc!;
 
-                    if (member.Mapping.TypeDesc!.IsArray)
+                    if (member.Mapping.TypeDesc!.IsArray || typeDesc.UsesCollectionBuilder)
                     {
-                        WriteArrayLocalDecl(typeDesc.CSharpName,
-                                            a, "null", typeDesc);
+                        if (typeDesc.IsArray)
+                        {
+                            WriteArrayLocalDecl(typeDesc.CSharpName,
+                                                a, "null", typeDesc);
+                        }
+                        else
+                        {
+                            // The collection is created from the elements once they have all been read, so
+                            // they accumulate in an array of the element type in the meantime.
+                            WriteArrayLocalDecl($"{typeDesc.ArrayElementTypeDesc!.CSharpName}[]",
+                                                a, "null", typeDesc.ArrayElementTypeDesc);
+
+                            // The collection is also created up front, the way one that is populated in place
+                            // is, so that a member the document never mentions still comes back as an empty
+                            // collection rather than as null.
+                            if (!member.Mapping.ReadOnly && !member.Source.EndsWith('(') && !member.Source.EndsWith('{'))
+                            {
+                                WriteSourceBegin(member.Source);
+                                WriteBuildCollection(typeDesc, null);
+                                WriteSourceEnd(member.Source, typeDesc.Type!);
+                            }
+                        }
+
                         ilg.Ldc(0);
                         ilg.Stloc(typeof(int), c);
 
@@ -2707,7 +2730,7 @@ namespace System.Xml.Serialization
             {
                 init = $"soap = (System.Object[])EnsureArrayIndex(soap, {c}+2, typeof(System.Object)); ";
             }
-            if (typeDesc.IsArray)
+            if (typeDesc.IsArray || typeDesc.UsesCollectionBuilder)
             {
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
                 init = $"{init}{a} = ({arrayTypeFullName}[])EnsureArrayIndex({a}, {c}, {ReflectionAwareILGen.GetStringForTypeof(arrayTypeFullName)});";
@@ -2740,7 +2763,14 @@ namespace System.Xml.Serialization
                 {
                     TypeDesc typeDesc = member.Mapping.TypeDesc!;
 
-                    if (typeDesc.IsArray)
+                    // A collection built from its complete contents cannot be populated in place, so a member
+                    // with no setter has nowhere to put the collection that would be created. Leave whatever the
+                    // getter returns alone, which is how a get-only collection that cannot be added to has
+                    // always behaved.
+                    if (typeDesc.UsesCollectionBuilder && member.Mapping.ReadOnly)
+                        continue;
+
+                    if (typeDesc.IsArray || typeDesc.UsesCollectionBuilder)
                     {
                         WriteSourceBegin(member.Source);
 
@@ -2749,22 +2779,35 @@ namespace System.Xml.Serialization
                         string a = member.ArrayName;
                         string c = $"c{a}";
 
-                        MethodInfo XmlSerializationReader_ShrinkArray = typeof(XmlSerializationReader).GetMethod(
-                            "ShrinkArray",
-                            CodeGenerator.InstanceBindingFlags,
-                            new Type[] { typeof(Array), typeof(int), typeof(Type), typeof(bool) }
-                            )!;
-                        ilg.Ldarg(0);
-                        ilg.Ldloc(ilg.GetLocal(a));
-                        ilg.Ldloc(ilg.GetLocal(c));
-                        ilg.Ldc(typeDesc.ArrayElementTypeDesc!.Type!);
-                        ilg.Ldc(member.IsNullable);
-                        ilg.Call(XmlSerializationReader_ShrinkArray);
-                        ilg.ConvertValue(XmlSerializationReader_ShrinkArray.ReturnType, typeDesc.Type!);
+                        if (typeDesc.IsArray)
+                        {
+                            MethodInfo XmlSerializationReader_ShrinkArray = typeof(XmlSerializationReader).GetMethod(
+                                "ShrinkArray",
+                                CodeGenerator.InstanceBindingFlags,
+                                new Type[] { typeof(Array), typeof(int), typeof(Type), typeof(bool) }
+                                )!;
+                            ilg.Ldarg(0);
+                            ilg.Ldloc(ilg.GetLocal(a));
+                            ilg.Ldloc(ilg.GetLocal(c));
+                            ilg.Ldc(typeDesc.ArrayElementTypeDesc!.Type!);
+                            ilg.Ldc(member.IsNullable);
+                            ilg.Call(XmlSerializationReader_ShrinkArray);
+                            ilg.ConvertValue(XmlSerializationReader_ShrinkArray.ReturnType, typeDesc.Type!);
+                        }
+                        else
+                        {
+                            WriteBuildCollection(typeDesc, a);
+                        }
+
                         WriteSourceEnd(member.Source, typeDesc.Type!);
 
                         if (member.Mapping.ChoiceIdentifier != null)
                         {
+                            MethodInfo XmlSerializationReader_ShrinkArray = typeof(XmlSerializationReader).GetMethod(
+                                "ShrinkArray",
+                                CodeGenerator.InstanceBindingFlags,
+                                new Type[] { typeof(Array), typeof(int), typeof(Type), typeof(bool) }
+                                )!;
                             WriteSourceBegin(member.ChoiceSource!);
                             a = member.ChoiceArrayName;
                             c = $"c{a}";
@@ -2788,6 +2831,43 @@ namespace System.Xml.Serialization
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Emits the creation of a collection from the elements accumulated in the local named by
+        /// <paramref name="arrayName"/>, or an empty collection when <paramref name="arrayName"/> is null.
+        /// </summary>
+        private void WriteBuildCollection(TypeDesc typeDesc, string? arrayName)
+        {
+            CollectionBuilderInfo collectionBuilder = typeDesc.CollectionBuilder!;
+            Type elementType = typeDesc.ArrayElementTypeDesc!.Type!;
+
+            MethodInfo XmlSerializationReader_ShrinkArray = typeof(XmlSerializationReader).GetMethod(
+                "ShrinkArray",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(Array), typeof(int), typeof(Type), typeof(bool) }
+                )!;
+            ilg.Ldarg(0);
+            if (arrayName == null)
+            {
+                ilg.Load(null);
+                ilg.Ldc(0);
+            }
+            else
+            {
+                ilg.Ldloc(ilg.GetLocal(arrayName));
+                ilg.Ldloc(ilg.GetLocal($"c{arrayName}"));
+            }
+            ilg.Ldc(elementType);
+            // A collection built from its contents is never left null: a nil collection hydrates to an empty
+            // one, which is how a collection populated in place has always behaved.
+            ilg.Ldc(false);
+            ilg.Call(XmlSerializationReader_ShrinkArray);
+            ilg.ConvertValue(XmlSerializationReader_ShrinkArray.ReturnType, elementType.MakeArrayType());
+
+            ilg.Call(collectionBuilder.SpanConversion);
+            ilg.Call(collectionBuilder.SpanFactory);
+            ilg.ConvertValue(collectionBuilder.SpanFactory.ReturnType, typeDesc.Type!);
         }
 
         private void WriteSourceBeginTyped(string source)
@@ -3047,6 +3127,11 @@ namespace System.Xml.Serialization
 
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
+            // A collection that is created from its contents is always created, even when the element is nil,
+            // which is how a collection populated in place has always behaved. Collections that are value types
+            // are never nillable, so without this they would be left at their uninitialized default value.
+            bool alwaysCreate = isNullable || arrayMapping.TypeDesc!.UsesCollectionBuilder;
+
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                 "ReadNull",
                 CodeGenerator.InstanceBindingFlags,
@@ -3153,7 +3238,7 @@ namespace System.Xml.Serialization
 
             WriteMemberEnd(members, false);
 
-            if (isNullable)
+            if (alwaysCreate)
             {
                 ilg.ExitScope();    // if (!ReadNull()) { ExitScope
                 ilg.Else();         // } else { EnterScope
