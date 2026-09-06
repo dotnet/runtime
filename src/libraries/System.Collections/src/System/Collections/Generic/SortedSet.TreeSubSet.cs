@@ -21,12 +21,14 @@ namespace System.Collections.Generic
             // up to date -> _countVersion = _underlying.version
             // not up to date -> _countVersion < _underlying.version
             private int _countVersion;
+            // level of the subsets root from the underlying roots.
+            // Is up-to date if _countVersion = _underlying.version
+            private int _rootLevel;
             // these exist for unbounded collections
             // for instance, you could allow this subset to be defined for i > 10. The set will throw if
             // anything <= 10 is added, but there is no upper bound. These features Head(), Tail(), were punted
             // in the spec, and are not available, but the framework is there to make them available at some point.
             private readonly bool _lBoundActive, _uBoundActive;
-            // used to see if the count is out of date
 
 #if DEBUG
             internal override bool versionUpToDate()
@@ -43,7 +45,7 @@ namespace System.Collections.Generic
                 _max = Max;
                 _lBoundActive = lowerBoundActive;
                 _uBoundActive = upperBoundActive;
-                root = _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive); // root is first element within range
+                root = _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive, out _rootLevel); // root is first element within range
                 count = 0;
                 version = -1;
                 _countVersion = -1;
@@ -287,23 +289,6 @@ namespace System.Collections.Generic
                 return base.FindNode(item);
             }
 
-            // this does indexing in an inefficient way compared to the actual sortedset, but it saves a
-            // lot of space
-            internal override int InternalIndexOf(T item)
-            {
-                int count = -1;
-                foreach (T i in this)
-                {
-                    count++;
-                    if (Comparer.Compare(item, i) == 0)
-                        return count;
-                }
-#if DEBUG
-                Debug.Assert(this.versionUpToDate() && root == _underlying.FindRange(_min, _max));
-#endif
-                return -1;
-            }
-
             /// <summary>
             /// Checks whether this subset is out of date, and updates it if necessary.
             /// </summary>
@@ -315,7 +300,7 @@ namespace System.Collections.Generic
                 Debug.Assert(_underlying != null);
                 if (version != _underlying.version)
                 {
-                    root = _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive);
+                    root = _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive, out _rootLevel);
                     version = _underlying.version;
                 }
 
@@ -334,6 +319,11 @@ namespace System.Collections.Generic
             {
                 Debug.Assert(_underlying != null);
                 return _underlying.Count;
+            }
+
+            internal override int GetApproximateMaxHeight()
+            {
+                return Math.Max(_underlying.GetApproximateMaxHeight() - _rootLevel, 0);
             }
 
             // This passes functionality down to the underlying tree, clipping edges if necessary
