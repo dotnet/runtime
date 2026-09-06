@@ -8,10 +8,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
     <IsShipping>false</IsShipping>
+    <ContractProject>$(MSBuildThisFileDirectory)ref\ILAssembler.csproj</ContractProject>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="ref\**\*.cs" />
   </ItemGroup>
 
 </Project>
