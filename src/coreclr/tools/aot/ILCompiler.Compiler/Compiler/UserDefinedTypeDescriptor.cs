@@ -607,9 +607,12 @@ namespace ILCompiler
                 {
                     if (isCanonical)
                         continue;
-                    if (fieldDesc.IsThreadStatic && !hasThreadStatics)
-                        continue;
-                    if (fieldDesc.HasGCStaticBase)
+                    if (fieldDesc.IsThreadStatic)
+                    {
+                        if (!hasThreadStatics)
+                            continue;
+                    }
+                    else if (fieldDesc.HasGCStaticBase)
                     {
                         if (!hasGcStatics)
                             continue;

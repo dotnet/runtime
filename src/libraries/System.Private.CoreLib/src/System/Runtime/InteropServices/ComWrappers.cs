@@ -552,6 +552,7 @@ namespace System.Runtime.InteropServices
             private WeakGCHandle<object> _proxyHandleTrackingResurrection;
             private readonly bool _aggregatedManagedObjectWrapper;
             private readonly bool _uniqueInstance;
+            private volatile bool _registered;
 
             static NativeObjectWrapper()
             {
@@ -637,6 +638,22 @@ namespace System.Runtime.InteropServices
             internal WeakGCHandle<object> ProxyHandle => _proxyHandle;
             internal bool IsUniqueInstance => _uniqueInstance;
             internal bool IsAggregatedWithManagedObjectWrapper => _aggregatedManagedObjectWrapper;
+
+            /// <summary>
+            /// Whether the RCW this wrapper tracks can be resolved back to it yet.
+            /// </summary>
+            /// <remarks>
+            /// A wrapper is put in the RCW cache before it is registered in <see cref="s_nativeObjectWrapperTable"/>,
+            /// because that registration takes a lock covering every RCW in the process and the cache lock may not
+            /// be held across it. Until it has run, the RCW is in the cache but nothing can get from it back to
+            /// this wrapper, so it may not be handed out yet.
+            /// </remarks>
+            internal bool IsRegistered => _registered;
+
+            /// <summary>
+            /// Marks the RCW this wrapper tracks as resolvable back to it.
+            /// </summary>
+            internal void MarkRegistered() => _registered = true;
 
             public virtual void Release()
             {
@@ -808,14 +825,20 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = state.This.CreateManagedObjectWrapper(c, state.flags);
+                ManagedObjectWrapper* value = state.ComWrappers.CreateManagedObjectWrapper(c, state.Flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            }, new { This = this, flags });
+            }, new CreateManagedObjectWrapperState(this, flags));
 
             managedObjectWrapper.AddRef();
             RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper);
 
             return managedObjectWrapper.ComIp;
+        }
+
+        private readonly struct CreateManagedObjectWrapperState(ComWrappers comWrappers, CreateComInterfaceFlags flags)
+        {
+            public readonly ComWrappers ComWrappers = comWrappers;
+            public readonly CreateComInterfaceFlags Flags = flags;
         }
 
         private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
@@ -835,7 +858,12 @@ namespace System.Runtime.InteropServices
             List<ManagedObjectWrapperHolder> allWrappersForThisInstance = s_allManagedObjectWrapperTable.GetOrCreateValue(instance);
             lock (allWrappersForThisInstance)
             {
-                allWrappersForThisInstance.Add(wrapper);
+                // While this can be an O(n) search for an object that is exposed via N ComWrappers instances to native code
+                // in practice, N = 1 for the vast majority of scenarios.
+                if (!allWrappersForThisInstance.Contains(wrapper))
+                {
+                    allWrappersForThisInstance.Add(wrapper);
+                }
             }
         }
 
@@ -1134,7 +1162,15 @@ namespace System.Runtime.InteropServices
 
                 // If we have a live cached wrapper currently,
                 // return that.
-                if (_rcwCache.FindProxyForComInstance(identity) is object liveCachedWrapper)
+                //
+                // An entry goes into the cache before its wrapper is registered in 's_nativeObjectWrapperTable',
+                // because that registration takes a lock covering every RCW in the process and the cache lock may
+                // not be held across it. Handing out an entry in that window would give the caller an RCW that
+                // 'TryGetComInstance' cannot yet resolve, so it is skipped and treated as a miss instead. The
+                // creation path below then finds that same entry under the cache write lock and registers it
+                // before returning it, so this only costs one extra 'CreateObject' call in a rare race.
+                if (_rcwCache.FindProxyForComInstance(identity, out NativeObjectWrapper? cachedWrapper) is object liveCachedWrapper
+                    && cachedWrapper is { IsRegistered: true })
                 {
                     retValue = liveCachedWrapper;
                     return true;
@@ -1280,7 +1316,7 @@ namespace System.Runtime.InteropServices
             // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
             // as the entry is always the same pair.
             Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
-            Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
+            Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject, out _) == comProxy);
 
             // Add the input wrapper bound to the COM proxy, if there isn't one already. If another thread raced
             // against this one and this lost, we'd get the wrapper added from that thread instead.
@@ -1300,6 +1336,9 @@ namespace System.Runtime.InteropServices
             // TrackerObjectManager and we could end up missing a section of the object graph.
             // This cache deduplicates, so it is okay that the wrapper will be registered multiple times.
             AddWrapperToReferenceTrackerHandleCache(registeredWrapper);
+
+            // The RCW can now be resolved back to its wrapper, so it is safe for the cache to hand it out.
+            wrapper.MarkRegistered();
         }
 
         private static void AddWrapperToReferenceTrackerHandleCache(NativeObjectWrapper wrapper)
@@ -1390,10 +1429,11 @@ namespace System.Runtime.InteropServices
             /// Gets the current RCW proxy object for <paramref name="comPointer"/>, if it exists in the cache and is still alive.
             /// </summary>
             /// <param name="comPointer">The com instance we want to get the RCW for.</param>
+            /// <param name="wrapper">The <see cref="NativeObjectWrapper"/> owning the returned proxy object, if any.</param>
             /// <returns>The proxy object currently in the cache for <paramref name="comPointer"/>, if any.</returns>
-            public object? FindProxyForComInstance(IntPtr comPointer)
+            public object? FindProxyForComInstance(IntPtr comPointer, out NativeObjectWrapper? wrapper)
             {
-                return GetBucket(comPointer).FindProxyForComInstance(comPointer);
+                return GetBucket(comPointer).FindProxyForComInstance(comPointer, out wrapper);
             }
 
             /// <summary>
@@ -1488,7 +1528,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 /// <inheritdoc cref="RcwCache.FindProxyForComInstance"/>
-                public object? FindProxyForComInstance(IntPtr comPointer)
+                public object? FindProxyForComInstance(IntPtr comPointer, out NativeObjectWrapper? wrapper)
                 {
                     _lock.EnterReadLock();
                     try
@@ -1496,12 +1536,14 @@ namespace System.Runtime.InteropServices
                         if (!_cache.TryGetValue(comPointer, out WeakGCHandle<NativeObjectWrapper> existingHandle))
                         {
                             // No entry in the cache.
+                            wrapper = null;
                             return null;
                         }
                         if (existingHandle.TryGetTarget(out NativeObjectWrapper? cachedWrapper)
                             && cachedWrapper.ProxyHandle.TryGetTarget(out object? cachedProxy))
                         {
                             // The target exists and is still alive. Return it.
+                            wrapper = cachedWrapper;
                             return cachedProxy;
                         }
                         // The target was collected, so we need to remove the entry from the cache.
@@ -1533,6 +1575,7 @@ namespace System.Runtime.InteropServices
                         _lock.ExitWriteLock();
                     }
 
+                    wrapper = null;
                     return null;
                 }
 

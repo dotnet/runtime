@@ -31,6 +31,9 @@
     <PropertyGroup>
       <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
       <IncludeMibcFilesInReadyToRun Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">true</IncludeMibcFilesInReadyToRun>
+      <!-- TODO-WASM: crossgen2 crashes emitting embedded PGO data with cross-module R2R for wasm, and there is no
+           wasm PGO profile to gain from. Re-enable once https://github.com/dotnet/runtime/issues/132825 is fixed. -->
+      <IncludeMibcFilesInReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'"></IncludeMibcFilesInReadyToRun>
     </PropertyGroup>
     <ItemGroup>
       <PublishReadyToRunPgoFiles Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'" Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"/>

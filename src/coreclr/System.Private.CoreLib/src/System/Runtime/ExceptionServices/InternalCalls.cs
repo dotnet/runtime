@@ -16,18 +16,21 @@ namespace System.Runtime.ExceptionServices
     {
         [StackTraceHidden]
         [DebuggerHidden]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiInit")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, [MarshalAs(UnmanagedType.U1)] bool instructionFault, bool* fIsExceptionIntercepted);
 
         [StackTraceHidden]
         [DebuggerHidden]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiNext")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
 
         [StackTraceHidden]
         [DebuggerHidden]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFilterFunclet")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpCallFilterFunclet(
@@ -35,6 +38,7 @@ namespace System.Runtime.ExceptionServices
 
         [StackTraceHidden]
         [DebuggerHidden]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppendExceptionStackFrame")]
         internal static unsafe partial void RhpAppendExceptionStackFrame(ObjectHandleOnStack exceptionObj, IntPtr ip, UIntPtr sp, int flags, EH.ExInfo* exInfo);
 
@@ -47,6 +51,7 @@ namespace System.Runtime.ExceptionServices
 
         [StackTraceHidden]
         [DebuggerHidden]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumNext")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);

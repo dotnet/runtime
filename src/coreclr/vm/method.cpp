@@ -1105,6 +1105,31 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
+#ifndef DACCESS_COMPILE
+PCODE MethodDesc::GetNativeCodeVolatile()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+    if (HasNativeCodeSlot())
+    {
+        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
+        PCODE pCode = VolatileLoad(ppCode);
+
+#ifdef TARGET_ARM
+        if (pCode != (PCODE)NULL)
+            pCode |= THUMB_CODE;
+#endif
+        return pCode;
+    }
+
+    if (!HasStableEntryPoint() || HasPrecode())
+        return (PCODE)NULL;
+
+    return VolatileLoad(GetAddrOfSlot());
+}
+#endif
+
 PCODE MethodDesc::GetNativeCodeAnyVersion()
 {
     WRAPPER_NO_CONTRACT;
@@ -2979,6 +3004,15 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
     }
 
     MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
+
+#ifdef FEATURE_READYTORUN
+    // R2R disabled: no R2R code can call this method, so no R2R->interpreter thunk is needed.
+    if (!g_pConfig->ReadyToRun())
+    {
+        return;
+    }
+#endif
+
     void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
     if (pPortableEntryPointToInterpreter != nullptr)
     {
@@ -3000,7 +3034,12 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (!IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked())
+    bool installInterpreterThunk = !IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked();
+#ifdef FEATURE_READYTORUN
+    // With R2R disabled no R2R code exists to call this method, so don't install an R2R->interpreter thunk.
+    installInterpreterThunk = installInterpreterThunk && g_pConfig->ReadyToRun();
+#endif
+    if (installInterpreterThunk)
     {
         void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
         _ASSERTE(pPortableEntryPointToInterpreter != nullptr);

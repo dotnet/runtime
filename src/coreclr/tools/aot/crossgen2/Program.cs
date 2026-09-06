@@ -39,6 +39,7 @@ namespace ILCompiler
         private readonly bool _singleFileCompilation;
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
+        private readonly string _generatePortableCallHelpers;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -47,6 +48,7 @@ namespace ILCompiler
             _singleFileCompilation = Get(command.SingleFileCompilation);
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
+            _generatePortableCallHelpers = Get(command.GeneratePortableCallHelpers);
 
             if (Get(command.WaitForDebugger))
             {
@@ -68,7 +70,7 @@ namespace ILCompiler
 
         public int Run()
         {
-            if (_outputFilePath == null && !_outNearInput)
+            if (_outputFilePath == null && !_outNearInput && _generatePortableCallHelpers is null)
                 throw new CommandLineException(SR.MissingOutputFile);
 
             if (_singleFileCompilation && !_outNearInput)
@@ -78,7 +80,15 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
-            bool targetAllowsRuntimeCodeGeneration = GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
+
+            // The portable call-helpers generator is currently supported only for Wasm.
+            if (_generatePortableCallHelpers is not null
+                && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS is not (TargetOS.Browser or TargetOS.Wasi)))
+            {
+                throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
+            }
+            bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
+                ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
@@ -274,6 +284,18 @@ namespace ILCompiler
             string systemModuleName = Get(_command.SystemModuleName) ?? Helpers.DefaultSystemModule;
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
+
+            if (_generatePortableCallHelpers is not null)
+            {
+                return PortableCallHelpers.PortableCallHelpersGenerator.Run(typeSystemContext, new PortableCallHelpers.PortableCallHelpersGeneratorOptions
+                {
+                    OutputDirectory = _generatePortableCallHelpers,
+                    PInvokeModules = Get(_command.DirectPInvoke),
+                    // The normalized name, so that platform attributes match regardless of how
+                    // --targetos was spelled on the command line.
+                    TargetOS = targetOS.ToString().ToLowerInvariant(),
+                }, logger);
+            }
 
             if (_singleFileCompilation)
             {
@@ -660,6 +682,7 @@ namespace ILCompiler
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
                     nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
