@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException_UnionCannotCreateValue(typeToConvert);
             }
 
-            if (reader.TokenType is JsonTokenType.Null)
+            if (reader.TokenType is JsonTokenType.Null && reader.CurrentDepth == state.Current.OriginalDepth)
             {
                 Type? nullableCaseType = typeInfo.UnionNullableCaseType;
                 if (nullableCaseType is null)
