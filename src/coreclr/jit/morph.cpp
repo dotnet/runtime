@@ -580,7 +580,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // For these operations the lower 32 bits of the result only depends
             // upon the lower 32 bits of the operands.
             //
-            bool canPushCast = oper->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_NOT, GT_NEG);
+            bool canPushCast = oper->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_NEG);
 
             // For long LSH cast to int, there is a discontinuity in behavior
             // when the shift amount is 32 or larger.
@@ -8070,7 +8070,6 @@ DONE_MORPHING_CHILDREN:
             op2  = tree->gtGetOp2IfPresent();
             break;
 
-        case GT_NOT:
         case GT_NEG:
         {
             if (opts.OptimizationDisabled())
@@ -9553,8 +9552,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case GT_NOT:
+            case GT_XOR:
             {
+                assert(node->IsSimdBitwiseNot());
                 if (node->GetOperandCount() == 2)
                 {
                     // v1 ^ AllBitsSet
@@ -9648,9 +9648,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     node->ChangeHWIntrinsicId(subIntrinsic, op2, op1);
                     return fgMorphHWIntrinsicRequired(node);
                 }
-                else if (op1Oper == GT_NOT)
+                else if (op1Intrin->IsSimdBitwiseNot())
                 {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (!varTypeIsIntegral(simdBaseType))
                     {
                         break;
                     }
@@ -9670,7 +9670,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
-                    op1 = ExtractEffectiveOp(GT_NOT, op1Intrin, /* destroyNodes */ true);
+                    op1 = ExtractEffectiveOp(GT_XOR, op1Intrin, /* destroyNodes */ true);
 
                     DEBUG_DESTROY_NODE(op2);
                     DEBUG_DESTROY_NODE(node);
@@ -10033,9 +10033,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         // Transforms:
         // 1. ~(~v1) to v1
         // 2. ~(v1 cmp v2) to v1 cmp* v2
-        case GT_NOT:
+        case GT_XOR:
         {
-            GenTree* op1 = ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ false);
+            if (!node->IsSimdBitwiseNot())
+            {
+                break;
+            }
+
+            GenTree* op1 = ExtractEffectiveOp(GT_XOR, node, /* destroyNodes */ false);
 
             if (!op1->OperIsHWIntrinsic())
             {
@@ -10069,11 +10074,22 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             var_types      op1SimdBaseType = op1Intrin->GetSimdBaseType();
             unsigned       op1SimdSize     = op1Intrin->GetSimdSize();
 
-            if (op1Oper == GT_NOT)
+            if (op1IsScalar && (op1SimdSize > genTypeSize(op1SimdBaseType)))
             {
-                // The simdBaseTypes can differ for GT_NOT since its a bitwise operation
-                GenTree* result = ExtractEffectiveOp(GT_NOT, op1Intrin, /* destroyNodes */ true);
-                ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+                // Reversing a scalar comparison does not complement the copied or zeroed upper lanes.
+                break;
+            }
+
+            if (op1Intrin->IsSimdBitwiseNot())
+            {
+                // Complementation is independent of the vector element type.
+                GenTree* result = ExtractEffectiveOp(GT_XOR, op1Intrin, /* destroyNodes */ true);
+                ExtractEffectiveOp(GT_XOR, node, /* destroyNodes */ true);
+                if (cvtIntrin != nullptr)
+                {
+                    cvtIntrin->Op(1) = result;
+                    return cvtIntrin;
+                }
                 return result;
             }
 
@@ -10098,7 +10114,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (newId != NI_Illegal)
                 {
                     op1Intrin->ResetHWIntrinsicId(newId, cmpOp1, cmpOp2);
-                    ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+                    ExtractEffectiveOp(GT_XOR, node, /* destroyNodes */ true);
 #ifdef FEATURE_MASKED_HW_INTRINSICS
                     if (lookupType != op1RetType)
                     {
@@ -10129,7 +10145,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 switch (op1Intrinsic)
                 {
                     case NI_AVX_Compare:
-                    case NI_AVX_CompareScalar:
                     case NI_AVX512_CompareMask:
                     {
                         assert(op1Intrin->GetOperandCount() == 3);
@@ -10186,9 +10201,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (newMode != mode)
                         {
-                            ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
-                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(mode));
+                            ExtractEffectiveOp(GT_XOR, node, /* destroyNodes */ true);
+                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(newMode));
                             fgUpdateConstTreeValueNumber(cmpOp3);
+                            if (cvtIntrin != nullptr)
+                            {
+                                cvtIntrin->Op(1) = op1Intrin;
+                                return fgMorphHWIntrinsicRequired(cvtIntrin);
+                            }
                             return fgMorphHWIntrinsicRequired(op1Intrin);
                         }
                         break;
@@ -10379,8 +10399,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     assert(cns1->TypeIs(retType));
     assert(cns2->TypeIs(retType));
 
-    GenTree* res = gtNewSimdHWIntrinsicNode(retType, cns1, cns2, intrinsicId, simdBaseType, simdSize);
-    res          = gtFoldExprHWIntrinsic(res->AsHWIntrinsic());
+    GenTreeHWIntrinsic* constOp = gtNewSimdHWIntrinsicNode(retType, cns1, cns2, intrinsicId, simdBaseType, simdSize);
+    GenTree*            res     = gtFoldExprHWIntrinsic(constOp);
+
+    if (res == constOp)
+    {
+        return nullptr;
+    }
 
     assert(res == cns1);
     assert(res->OperIsConst());
@@ -10670,9 +10695,11 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         }
 
         // Fold (~x + 1) to -x.
-        if (op1->OperIs(GT_NOT) && op2->IsIntegralConst(1))
+        if (op1->IsBitwiseNot() && op2->IsIntegralConst(1))
         {
-            op1->SetOper(GT_NEG);
+            DEBUG_DESTROY_NODE(op1->gtGetOp2());
+            op1->AsOp()->gtOp2 = nullptr;
+            op1->ChangeOper(GT_NEG);
             op1->SetVNsFromNode(add);
             DEBUG_DESTROY_NODE(op2);
             DEBUG_DESTROY_NODE(add);
@@ -11074,14 +11101,12 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
         DEBUG_DESTROY_NODE(xorOp, op2);
         return op1;
     }
-    else if (op2->IsIntegralConst(-1))
+    else if (op2->IsIntegralConst(-1) && op1->IsBitwiseNot())
     {
-        /* "x ^ -1" is "~x" */
-        xorOp->ChangeOper(GT_NOT, GenTree::PRESERVE_VN);
-        xorOp->gtOp2 = nullptr;
-        DEBUG_DESTROY_NODE(op2);
-
-        return xorOp;
+        GenTree* result = op1->gtGetOp1();
+        DEBUG_DESTROY_NODE(op1->gtGetOp2());
+        DEBUG_DESTROY_NODE(op1, op2, xorOp);
+        return result;
     }
     else if (op2->IsIntegralConst(1) && op1->OperIsCompare())
     {
@@ -11680,6 +11705,8 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 //
 GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 {
+    gtNormalizeSimdBitwiseNot(tree);
+
     NamedIntrinsic intrinsic    = tree->GetHWIntrinsicId();
     var_types      retType      = tree->TypeGet();
     var_types      simdBaseType = tree->GetSimdBaseType();
@@ -11771,17 +11798,20 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     if (op1Type == TYP_MASK)
                     {
 #if defined(TARGET_XARCH)
-                        newNode = gtNewSimdHWIntrinsicNode(op1Type, op1, NI_AVX512_NotMask, simdBaseType, simdSize);
+                        GenTreeMskCon* mask = gtNewMskConNode(TYP_MASK);
+                        mask->gtSimdMaskVal = simdmask_t::AllBitsSet(64);
+                        mask->SetMorphed(this);
+                        fgUpdateConstTreeValueNumber(mask);
+                        newNode =
+                            gtNewSimdHWIntrinsicNode(op1Type, op1, mask, NI_AVX512_XorMask, simdBaseType, simdSize);
 #endif // TARGET_XARCH
                     }
                     else
 #endif // FEATURE_MASKED_HW_INTRINSICS
                     {
-                        newNode = gtNewSimdUnOpNode(GT_NOT, op1Type, op1, simdBaseType, simdSize);
-
-#if defined(TARGET_XARCH)
+                        newNode = gtNewSimdBinOpNode(GT_XOR, op1Type, op1, gtNewAllBitsSetConNode(op1Type),
+                                                     simdBaseType, simdSize);
                         newNode->AsHWIntrinsic()->Op(2)->SetMorphed(this);
-#endif // TARGET_XARCH
                     }
 
                     if (newNode != nullptr)
@@ -12028,23 +12058,11 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
 #if defined(TARGET_ARM64)
         // Transforms:
-        // 1. (v1 ^ AllBitsSet) to ~v1; on supported platforms
-        // 2. (v1 ^ -0.0) to -v1; for floating-point on supported platforms
+        // 1. (v1 ^ -0.0) to -v1; for floating-point on supported platforms
         case GT_XOR:
         {
             GenTree* op1 = tree->Op(1);
             GenTree* op2 = tree->Op(2);
-
-            if (op2->IsVectorAllBitsSet())
-            {
-                // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
-                op1 = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseType, simdSize);
-
-                DEBUG_DESTROY_NODE(op2);
-                DEBUG_DESTROY_NODE(tree);
-
-                return fgMorphHWIntrinsicRequired(op1->AsHWIntrinsic());
-            }
 
             if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
             {

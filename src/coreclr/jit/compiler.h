@@ -3806,6 +3806,8 @@ public:
                                var_types   simdBaseType,
                                unsigned    simdSize);
 
+    void gtNormalizeSimdBitwiseNot(GenTreeHWIntrinsic* node);
+
     GenTree* gtNewSimdWidenLowerNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 

@@ -2862,6 +2862,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
     {
+        gtNormalizeSimdBitwiseNot(retNode->AsHWIntrinsic());
         assert(!retNode->OperMayThrow(this) || ((retNode->gtFlags & GTF_EXCEPT) != 0));
         assert(!retNode->OperRequiresAsgFlag() || ((retNode->gtFlags & GTF_ASG) != 0));
         assert(!retNode->OperIsImplicitIndir() || ((retNode->gtFlags & GTF_GLOB_REF) != 0));
@@ -3187,7 +3188,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize));
+            op2 = gtFoldExpr(
+                gtNewSimdBinOpNode(GT_XOR, retType, op2, gtNewAllBitsSetConNode(retType), simdBaseType, simdSize));
             retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
             break;
         }
@@ -5713,7 +5715,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             op1     = impSIMDPopStack();
-            retNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdBinOpNode(GT_XOR, retType, op1, gtNewAllBitsSetConNode(retType), simdBaseType, simdSize);
             break;
         }
 

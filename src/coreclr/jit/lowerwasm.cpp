@@ -984,6 +984,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
+        case NI_PackedSimd_Xor:
+        {
+            if (node->IsSimdBitwiseNot())
+            {
+                BlockRange().Remove(node->Op(2));
+                node->ResetHWIntrinsicId(NI_PackedSimd_Not, node->Op(1));
+            }
+            break;
+        }
+
         case NI_PackedSimd_CompareLessThan:
         case NI_PackedSimd_CompareLessThanOrEqual:
         case NI_PackedSimd_CompareGreaterThan:

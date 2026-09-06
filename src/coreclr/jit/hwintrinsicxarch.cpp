@@ -1294,7 +1294,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                op1     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseType, simdSize));
+                op1 = gtFoldExpr(
+                    gtNewSimdBinOpNode(GT_XOR, retType, op1, gtNewAllBitsSetConNode(retType), simdBaseType, simdSize));
                 retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
             }
             else
@@ -1305,7 +1306,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-                op1     = gtFoldExpr(gtNewOperNode(GT_NOT, retType, op1));
+                op1     = gtFoldExpr(gtNewOperNode(GT_XOR, retType, op1, gtNewAllBitsSetConNode(retType)));
                 retNode = gtNewOperNode(GT_AND, retType, op1, op2);
             }
             break;

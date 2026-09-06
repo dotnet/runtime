@@ -199,7 +199,8 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     if (!varTypeIsIntegral(parentNode))
         return false;
 
-    if (parentNode->gtGetOp1()->isContained() || (parentNode->OperIsBinary() && parentNode->gtGetOp2()->isContained()))
+    if (parentNode->gtGetOp1()->isContained() ||
+        (parentNode->OperIsBinary() && parentNode->gtGetOp2()->isContained() && !parentNode->IsBitwiseNot()))
         return false;
 
     if (parentNode->OperMayOverflow() && parentNode->gtOverflow())
@@ -308,7 +309,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             }
         }
 
-        if (parentNode->OperIs(GT_NOT, GT_AND_NOT, GT_OR_NOT, GT_XOR_NOT))
+        if (parentNode->OperIs(GT_AND_NOT, GT_OR_NOT, GT_XOR_NOT))
         {
             if (IsInvariantInRange(childNode, parentNode))
             {
@@ -639,12 +640,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             GenTree* opNode  = nullptr;
             GenTree* notNode = nullptr;
-            if (binOp->gtGetOp1()->OperIs(GT_NOT))
+            if (binOp->gtGetOp1()->IsBitwiseNot() && !binOp->gtGetOp1()->gtSetFlags())
             {
                 notNode = binOp->gtGetOp1();
                 opNode  = binOp->gtGetOp2();
             }
-            else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+            else if (binOp->gtGetOp2()->IsBitwiseNot() && !binOp->gtGetOp2()->gtSetFlags())
             {
                 notNode = binOp->gtGetOp2();
                 opNode  = binOp->gtGetOp1();
@@ -653,9 +654,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             if (notNode != nullptr)
             {
                 binOp->gtOp1 = opNode;
-                binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+                binOp->gtOp2 = RemoveBitwiseNot(notNode);
                 binOp->ChangeOper(GT_AND_NOT);
-                BlockRange().Remove(notNode);
             }
         }
 
@@ -691,12 +691,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             GenTree* opNode  = nullptr;
             GenTree* notNode = nullptr;
-            if (binOp->gtGetOp1()->OperIs(GT_NOT))
+            if (binOp->gtGetOp1()->IsBitwiseNot() && !binOp->gtGetOp1()->gtSetFlags())
             {
                 notNode = binOp->gtGetOp1();
                 opNode  = binOp->gtGetOp2();
             }
-            else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+            else if (binOp->gtGetOp2()->IsBitwiseNot() && !binOp->gtGetOp2()->gtSetFlags())
             {
                 notNode = binOp->gtGetOp2();
                 opNode  = binOp->gtGetOp1();
@@ -705,7 +705,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             if (notNode != nullptr)
             {
                 binOp->gtOp1 = opNode;
-                binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+                binOp->gtOp2 = RemoveBitwiseNot(notNode);
                 if (binOp->OperIs(GT_OR))
                 {
                     binOp->ChangeOper(GT_OR_NOT);
@@ -714,7 +714,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 {
                     binOp->ChangeOper(GT_XOR_NOT);
                 }
-                BlockRange().Remove(notNode);
             }
         }
 #endif
@@ -1499,14 +1498,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
 
-                bool       op2IsScalar = false;
-                genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
-
-                if (op2Oper == GT_NOT)
+                if (op2Intrin->IsSimdBitwiseNot())
                 {
-                    assert(!op2IsScalar);
                     transform = true;
 
+                    if (op2Intrin->GetOperandCount() == 2)
+                    {
+                        BlockRange().Remove(op2Intrin->Op(2));
+                    }
                     op2 = op2Intrin->Op(1);
                     BlockRange().Remove(op2Intrin);
                 }
@@ -1516,14 +1515,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
 
-                bool       op1IsScalar = false;
-                genTreeOps op1Oper     = opIntrin->GetOperForHWIntrinsicId(&op1IsScalar);
-
-                if (op1Oper == GT_NOT)
+                if (opIntrin->IsSimdBitwiseNot())
                 {
-                    assert(!op1IsScalar);
                     transform = true;
 
+                    if (opIntrin->GetOperandCount() == 2)
+                    {
+                        BlockRange().Remove(opIntrin->Op(2));
+                    }
                     op1 = opIntrin->Op(1);
                     BlockRange().Remove(opIntrin);
 
@@ -1544,6 +1543,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
+            }
+            break;
+        }
+
+        case GT_XOR:
+        {
+            if (node->IsSimdBitwiseNot())
+            {
+                assert((intrinsicId == NI_AdvSimd_Xor) || (intrinsicId == NI_Sve_Xor));
+                assert(node->GetOperandCount() == 2);
+                BlockRange().Remove(node->Op(2));
+                intrinsicId = (intrinsicId == NI_AdvSimd_Xor) ? NI_AdvSimd_Not : NI_Sve_Not;
+                node->ResetHWIntrinsicId(intrinsicId, node->Op(1));
             }
             break;
         }
@@ -2794,6 +2806,19 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
+    if (node->IsBitwiseNot())
+    {
+        MakeSrcContained(node, op2);
+#ifdef TARGET_ARM64
+        if (m_compiler->opts.OptimizationEnabled() && op1->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
+            IsContainableUnaryOrBinaryOp(node, op1))
+        {
+            MakeSrcContained(node, op1);
+        }
+#endif
+        return;
+    }
+
     if (CheckImmedAndMakeContained(node, op2))
     {
         return;
@@ -3216,34 +3241,9 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
     }
 }
 
-//------------------------------------------------------------------------
-// ContainCheckNot : determine whether the source of a not should be contained.
-//
-// Arguments:
-//    notOp - pointer to the node
-//
-void Lowering::ContainCheckNot(GenTreeOp* notOp)
-{
-    if (notOp->isContained())
-        return;
-
-    if (!varTypeIsIntegral(notOp))
-        return;
-
-    if ((notOp->gtFlags & GTF_SET_FLAGS))
-        return;
-
-    GenTree* childNode = notOp->gtGetOp1();
-    if (m_compiler->opts.OptimizationEnabled() && childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
-        IsContainableUnaryOrBinaryOp(notOp, childNode))
-    {
-        MakeSrcContained(notOp, childNode);
-    }
-}
-
 //----------------------------------------------------------------------------------------------
 // TryLowerCselToCSOp: Try converting SELECT/SELECTCC to SELECT_?/SELECT_?CC. Conversion is possible only if
-// one of the operands of the select node is one of GT_NEG, GT_NOT or GT_ADD.
+// one of the operands of the select node is a negation, bitwise inversion or increment.
 //
 // Arguments:
 //     select - The select node that is now SELECT or SELECTCC
@@ -3267,10 +3267,10 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
         resultingOp            = GT_SELECT_NEG;
         shouldReverseCondition = trueVal->OperIs(GT_NEG);
     }
-    else if (trueVal->OperIs(GT_NOT) || falseVal->OperIs(GT_NOT))
+    else if (trueVal->IsBitwiseNot() || falseVal->IsBitwiseNot())
     {
         resultingOp            = GT_SELECT_INV;
-        shouldReverseCondition = trueVal->OperIs(GT_NOT);
+        shouldReverseCondition = trueVal->IsBitwiseNot();
     }
     else
     {
@@ -3295,12 +3295,12 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
 
     if (shouldReverseCondition && !cond->OperIsCompare() && select->OperIs(GT_SELECT))
     {
-        // Non-compare nodes add additional GT_NOT node after reversing.
+        // Reversing a non-compare condition requires an additional node.
         // This would remove gains from this optimisation so don't proceed.
         return;
     }
 
-    if (nodeToRemove->OperMayOverflow() && nodeToRemove->gtOverflow())
+    if ((nodeToRemove->OperMayOverflow() && nodeToRemove->gtOverflow()) || nodeToRemove->gtSetFlags())
     {
         return;
     }
@@ -3319,8 +3319,8 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
     }
 
     // Passed all checks, move on to block modification.
-    // If this is a Cinc candidate, we must remove the dangling second argument node.
-    if (resultingOp == GT_SELECT_INC)
+    // Remove the constant used by the increment or bitwise inversion.
+    if (resultingOp != GT_SELECT_NEG)
     {
         BlockRange().Remove(nodeToRemove->gtGetOp2());
         nodeToRemove->AsOp()->gtOp2 = nullptr;
@@ -3412,7 +3412,7 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
                     // Reverse the condition so that op2 will be selected
                     if (!cond->OperIsCompare())
                     {
-                        // Non-compare nodes add additional GT_NOT node after reversing.
+                        // Reversing a non-compare condition requires an additional node.
                         // This would remove gains from this optimisation so don't proceed.
                         return;
                     }

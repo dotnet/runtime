@@ -215,12 +215,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     {
         GenTree* opNode  = nullptr;
         GenTree* notNode = nullptr;
-        if (binOp->gtGetOp1()->OperIs(GT_NOT))
+        if (binOp->gtGetOp1()->IsBitwiseNot())
         {
             notNode = binOp->gtGetOp1();
             opNode  = binOp->gtGetOp2();
         }
-        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+        else if (binOp->gtGetOp2()->IsBitwiseNot())
         {
             notNode = binOp->gtGetOp2();
             opNode  = binOp->gtGetOp1();
@@ -229,9 +229,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         if (notNode != nullptr)
         {
             binOp->gtOp1 = opNode;
-            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+            binOp->gtOp2 = RemoveBitwiseNot(notNode);
             binOp->ChangeOper(GT_AND_NOT);
-            BlockRange().Remove(notNode);
         }
     }
 
@@ -598,6 +597,12 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
+    if (node->IsBitwiseNot())
+    {
+        MakeSrcContained(node, node->gtOp2);
+        return;
+    }
+
     // Check and make op2 contained (if it is a containable immediate)
     CheckImmedAndMakeContained(node, node->gtOp2);
 }

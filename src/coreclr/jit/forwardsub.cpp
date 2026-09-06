@@ -809,6 +809,18 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     unsigned const nodeLimit = 16;
     auto           countNode = [](GenTree* tree) -> unsigned {
+        // Discount the implicit all-ones operand so a complement has unary complexity.
+        if (tree->IsBitwiseNot())
+        {
+            return 0;
+        }
+#ifdef FEATURE_HW_INTRINSICS
+        if (tree->OperIsHWIntrinsic() && (tree->AsHWIntrinsic()->GetOperandCount() == 2) &&
+            tree->AsHWIntrinsic()->IsSimdBitwiseNot())
+        {
+            return 0;
+        }
+#endif // FEATURE_HW_INTRINSICS
         return 1;
     };
 

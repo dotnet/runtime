@@ -1715,18 +1715,16 @@ BAILOUT:
 }
 
 //------------------------------------------------------------------------
-// genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
+// genCodeForNeg: Produce code for a GT_NEG node.
 //
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+void CodeGen::genCodeForNeg(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_NEG, GT_NOT));
+    assert(tree->OperIs(GT_NEG));
 
     var_types targetType = tree->TypeGet();
-
-    assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
 
     regNumber targetReg = tree->GetRegNum();
 
@@ -1741,22 +1739,14 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
     regNumber operandReg = genConsumeReg(operand);
 
     emitAttr attr = emitActualTypeSize(tree);
-    if (tree->OperIs(GT_NEG))
+    if (varTypeIsFloating(targetType))
     {
-        if (varTypeIsFloating(targetType))
-        {
-            GetEmitter()->emitIns_R_R_R(targetType == TYP_DOUBLE ? INS_fsgnjn_d : INS_fsgnjn_s, attr, targetReg,
-                                        operandReg, operandReg);
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_R_R(attr == EA_4BYTE ? INS_subw : INS_sub, attr, targetReg, REG_R0, operandReg);
-        }
+        GetEmitter()->emitIns_R_R_R(targetType == TYP_DOUBLE ? INS_fsgnjn_d : INS_fsgnjn_s, attr, targetReg, operandReg,
+                                    operandReg);
     }
-    else if (tree->OperIs(GT_NOT))
+    else
     {
-        assert(!varTypeIsFloating(targetType));
-        GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, operandReg);
+        GetEmitter()->emitIns_R_R_R(attr == EA_4BYTE ? INS_subw : INS_sub, attr, targetReg, REG_R0, operandReg);
     }
 
     genProduceReg(tree);
@@ -3850,9 +3840,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProduceReg(treeNode);
             break;
 
-        case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode->AsOp());
+            genCodeForNeg(treeNode->AsOp());
             break;
 
         case GT_BSWAP:

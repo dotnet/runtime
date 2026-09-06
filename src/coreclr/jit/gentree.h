@@ -1582,8 +1582,7 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_AND, GT_OR, GT_XOR, GT_NOT, GT_NEG) ||
-               OperIsShiftOrRotate(gtOper);
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_AND, GT_OR, GT_XOR, GT_NEG) || OperIsShiftOrRotate(gtOper);
     }
     bool OperIsRMWMemOp() const
     {
@@ -1947,6 +1946,7 @@ public:
 #endif // DEBUG
 
     inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsBitwiseNot() const;
     inline bool IsFloatAllBitsSet() const;
     inline bool IsFloatNaN() const;
     inline bool IsFloatPositiveZero() const;
@@ -6740,6 +6740,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStoreOrBarrier() const;
     bool OperIsBroadcastScalar() const;
     bool OperIsBitwiseHWIntrinsic() const;
+    bool IsSimdBitwiseNot() const;
     bool OperIsEmbRoundingEnabled() const;
 
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const
@@ -7656,7 +7657,6 @@ struct GenTreeMskCon : public GenTree
 #endif // TARGET_ARM64
     };
 
-    void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize);
     void EvaluateBinaryInPlace(
         genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other);
 
@@ -9707,6 +9707,11 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
     }
 
     return false;
+}
+
+inline bool GenTree::IsBitwiseNot() const
+{
+    return OperIs(GT_XOR) && gtGetOp2()->IsIntegralConst(-1);
 }
 
 //-------------------------------------------------------------------

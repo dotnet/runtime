@@ -473,11 +473,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerNeg(node->AsOp());
 #endif
             break;
-        case GT_NOT:
-#ifdef TARGET_ARM64
-            ContainCheckNot(node->AsOp());
-#endif
-            break;
         case GT_SELECT:
             return LowerSelect(node->AsConditional());
 
@@ -4481,9 +4476,13 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
                 if (optimizeToNotAnd)
                 {
-                    GenTree* notNode   = m_compiler->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
-                    op1->AsOp()->gtOp1 = notNode;
-                    BlockRange().InsertAfter(andOp1, notNode);
+                    andOp1->ClearContained();
+                    // Keep the complement canonical even when the operand has a small type.
+                    GenTree* allBitsSet = m_compiler->gtNewAllBitsSetConNode(genActualType(andOp1));
+                    GenTree* notNode    = m_compiler->gtNewOperNode(GT_XOR, andOp1->TypeGet(), andOp1, allBitsSet);
+                    op1->AsOp()->gtOp1  = notNode;
+                    BlockRange().InsertAfter(andOp1, allBitsSet, notNode);
+                    ContainCheckBinary(notNode->AsOp());
                 }
 
                 cmpUse.ReplaceWith(op1);
@@ -4550,9 +4549,11 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             //
 
             andOp1->ClearContained();
-            GenTree* notNode               = m_compiler->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+            GenTree* allBitsSet            = m_compiler->gtNewAllBitsSetConNode(genActualType(andOp1));
+            GenTree* notNode               = m_compiler->gtNewOperNode(GT_XOR, andOp1->TypeGet(), andOp1, allBitsSet);
             cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
-            BlockRange().InsertAfter(andOp1, notNode);
+            BlockRange().InsertAfter(andOp1, allBitsSet, notNode);
+            ContainCheckBinary(notNode->AsOp());
             op2->BashToZeroConst(op2->TypeGet());
 
             andOp1   = notNode;
@@ -4859,7 +4860,8 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
 
 #ifdef TARGET_ARM64
-    if (trueVal->OperIs(GT_NOT, GT_NEG, GT_ADD) || falseVal->OperIs(GT_NOT, GT_NEG, GT_ADD))
+    if (trueVal->IsBitwiseNot() || trueVal->OperIs(GT_NEG, GT_ADD) || falseVal->IsBitwiseNot() ||
+        falseVal->OperIs(GT_NEG, GT_ADD))
     {
         TryLowerCselToCSOp(select, cond);
     }
@@ -8774,6 +8776,26 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 #endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
+// RemoveBitwiseNot: Remove a complement and its all-bits-set constant from LIR.
+//
+// Arguments:
+//    notNode - the complement node
+//
+// Returns:
+//    The operand, with containment cleared for its new user.
+//
+GenTree* Lowering::RemoveBitwiseNot(GenTree* notNode)
+{
+    assert(notNode->IsBitwiseNot());
+
+    GenTree* operand = notNode->gtGetOp1();
+    BlockRange().Remove(notNode->gtGetOp2());
+    BlockRange().Remove(notNode);
+    operand->ClearContained();
+    return operand;
+}
+
+//------------------------------------------------------------------------
 // TryFoldBinop: Try removing a binop node by constant folding.
 //
 // Parameters:
@@ -10116,7 +10138,8 @@ GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
 {
     assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
 
-    if (!binOp->TypeIs(TYP_INT, TYP_LONG))
+    // Keep complements available to their users instead of turning ~(1 << y) into BIT_INVERT(-1, y).
+    if (!binOp->TypeIs(TYP_INT, TYP_LONG) || binOp->IsBitwiseNot())
     {
         return nullptr;
     }
@@ -10124,13 +10147,13 @@ GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
     GenTree*& op1 = binOp->gtOp1;
     GenTree*& op2 = binOp->gtOp2;
 
-    bool isOp1Negated = op1->OperIs(GT_NOT);
-    bool isOp2Negated = op2->OperIs(GT_NOT);
+    bool isOp1Negated = op1->IsBitwiseNot();
+    bool isOp2Negated = op2->IsBitwiseNot();
 
     // For AND/`btr` the `1 << Y` must be negated (`~(1 << Y)`); for OR/XOR it must not be.
     const bool wantNegated = binOp->OperIs(GT_AND);
-    GenTree*   opp1        = isOp1Negated ? op1->AsUnOp()->gtGetOp1() : op1;
-    GenTree*   opp2        = isOp2Negated ? op2->AsUnOp()->gtGetOp1() : op2;
+    GenTree*   opp1        = isOp1Negated ? op1->gtGetOp1() : op1;
+    GenTree*   opp2        = isOp2Negated ? op2->gtGetOp1() : op2;
 
     bool isOp1SingleBit = (isOp1Negated == wantNegated) && opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1);
     bool isOp2SingleBit = (isOp2Negated == wantNegated) && opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1);
@@ -10148,7 +10171,7 @@ GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
     }
 
     GenTree* notNode = isOp2Negated ? op2 : nullptr;
-    GenTree* lshNode = (notNode != nullptr) ? op2->AsUnOp()->gtGetOp1() : op2;
+    GenTree* lshNode = (notNode != nullptr) ? op2->gtGetOp1() : op2;
 
     // The shifted value must match the width of the operation.
     if (!lshNode->TypeIs(binOp->TypeGet()))
@@ -10179,10 +10202,10 @@ GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
     DISPNODE(binOp);
 
     // Rewrite in place: op1 stays the value, op2 becomes the bit index. Drop the `1`, the shift, and
-    // the optional NOT.
+    // the optional complement and its constant.
     if (notNode != nullptr)
     {
-        BlockRange().Remove(notNode);
+        RemoveBitwiseNot(notNode);
     }
     BlockRange().Remove(lshNode->gtGetOp1());
     BlockRange().Remove(lshNode);

@@ -89,7 +89,6 @@ private:
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void      ContainCheckNeg(GenTreeOp* neg);
-    void      ContainCheckNot(GenTreeOp* notOp);
     void      TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
@@ -488,6 +487,7 @@ private:
     void     LowerShift(GenTreeOp* shift);
     void     TryRemoveShiftRotateMask(GenTreeOp* op);
     bool     TryFoldBinop(GenTreeOp* node);
+    GenTree* RemoveBitwiseNot(GenTree* notNode);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);

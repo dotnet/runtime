@@ -1135,15 +1135,24 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
 
-    GenTree*    op1 = treeNode->gtGetOp1();
-    GenTree*    op2 = treeNode->gtGetOp2();
-    instruction ins = genGetInsForOper(treeNode);
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2();
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
 
-    regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(treeNode), treeNode, op1, op2);
-    assert(r == targetReg);
+    if (treeNode->IsBitwiseNot())
+    {
+        assert(op2->isContained());
+        assert(!op1->isContained());
+        emit->emitIns_R_R(INS_not, emitActualTypeSize(treeNode), targetReg, op1->GetRegNum());
+    }
+    else
+    {
+        instruction ins = genGetInsForOper(treeNode);
+        regNumber   r   = emit->emitInsTernary(ins, emitActualTypeSize(treeNode), treeNode, op1, op2);
+        assert(r == targetReg);
+    }
 
     genProduceReg(treeNode);
 }
@@ -1740,18 +1749,14 @@ BAILOUT:
 }
 
 //------------------------------------------------------------------------
-// genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
+// genCodeForNeg: Produce code for a GT_NEG node.
 //
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+void CodeGen::genCodeForNeg(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_NEG, GT_NOT));
-
-    var_types targetType = tree->TypeGet();
-
-    assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
+    assert(tree->OperIs(GT_NEG));
 
     regNumber   targetReg = tree->GetRegNum();
     instruction ins       = genGetInsForOper(tree);
@@ -2385,10 +2390,6 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                     assert(attr == EA_4BYTE);
                     ins = INS_neg;
                 }
-                break;
-
-            case GT_NOT:
-                ins = INS_not;
                 break;
 
             case GT_AND:
@@ -4010,9 +4011,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProduceReg(treeNode);
             break;
 
-        case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode->AsOp());
+            genCodeForNeg(treeNode->AsOp());
             break;
 
         case GT_BSWAP:

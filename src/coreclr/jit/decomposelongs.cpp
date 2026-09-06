@@ -247,10 +247,6 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             nextNode = DecomposeInd(use);
             break;
 
-        case GT_NOT:
-            nextNode = DecomposeNot(use);
-            break;
-
         case GT_NEG:
             nextNode = DecomposeNeg(use);
             break;
@@ -1071,38 +1067,6 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
     Range().InsertAfter(indLow, addrBaseHigh, addrHigh, indHigh);
 
     return FinalizeDecomposition(use, indLow, indHigh, indHigh);
-}
-
-//------------------------------------------------------------------------
-// DecomposeNot: Decompose GT_NOT.
-//
-// Arguments:
-//    use - the LIR::Use object for the def that needs to be decomposed.
-//
-// Return Value:
-//    The next node to process.
-//
-GenTree* DecomposeLongs::DecomposeNot(LIR::Use& use)
-{
-    assert(use.IsInitialized());
-    assert(use.Def()->OperGet() == GT_NOT);
-
-    GenTree* tree   = use.Def();
-    GenTree* gtLong = tree->gtGetOp1();
-    noway_assert(gtLong->OperIs(GT_LONG));
-    GenTree* loOp1 = gtLong->gtGetOp1();
-    GenTree* hiOp1 = gtLong->gtGetOp2();
-
-    Range().Remove(gtLong);
-
-    GenTree* loResult       = tree;
-    loResult->gtType        = TYP_INT;
-    loResult->AsOp()->gtOp1 = loOp1;
-
-    GenTree* hiResult = new (m_compiler, GT_NOT) GenTreeOp(GT_NOT, TYP_INT, hiOp1, nullptr);
-    Range().InsertAfter(loResult, hiResult);
-
-    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------

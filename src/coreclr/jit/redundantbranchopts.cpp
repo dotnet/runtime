@@ -515,7 +515,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     // See if dominating compare is a compound comparison that might
     // tell us the value of the tree compare.
     //
-    // Look for {EQ,NE}({AND,OR,NOT}, 0)
+    // Look for {EQ,NE}({AND,OR}, 0)
     //
     genTreeOps const oper = genTreeOps(domFunc);
     if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
@@ -537,14 +537,14 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
     genTreeOps const predOper = genTreeOps(predFuncApp.GetFunc());
 
-    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR, GT_NOT))
+    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR))
     {
         return;
     }
 
-    // Dominating compare is {EQ,NE}({AND,OR,NOT}, 0).
+    // Dominating compare is {EQ,NE}({AND,OR}, 0).
     //
-    // See if one of {AND,OR,NOT} operands is related.
+    // See if one of {AND,OR} operands is related.
     //
     for (unsigned int i = 0; (i < predFuncApp.GetArity()) && !rii->canInfer; i++)
     {
@@ -580,24 +580,15 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->canInferFromTrue = (oper == GT_NE);
                     rii->reverseSense ^= (oper == GT_EQ);
                 }
-                else if (predOper == GT_OR)
+                else
                 {
+                    assert(predOper == GT_OR);
                     // NE(OR, 0) false ==> OR false ==> OR operands false
                     rii->canInferFromFalse = (oper == GT_NE);
                     // EQ(OR, 0) true ==> OR false ==> OR operands false
                     rii->canInferFromTrue = (oper == GT_EQ);
                     rii->reverseSense ^= (oper == GT_EQ);
                 }
-                else
-                {
-                    assert(predOper == GT_NOT);
-                    // NE(NOT(x), 0) ==> NOT(X)
-                    // EQ(NOT(x), 0) ==> X
-                    rii->canInferFromTrue  = true;
-                    rii->canInferFromFalse = true;
-                    rii->reverseSense ^= (oper == GT_NE);
-                }
-
                 JITDUMP("Inferring predicate value from %s\n", GenTree::OpName(predOper));
                 return;
             }

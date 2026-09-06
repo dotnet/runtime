@@ -885,7 +885,7 @@ void Rationalizer::RewriteHWIntrinsicToNonMask(GenTree** use, Compiler::GenTreeS
 
         case NI_AVX512_NotMask:
         {
-            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_NOT);
+            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_XOR);
             break;
         }
 
@@ -1173,9 +1173,15 @@ void Rationalizer::RewriteHWIntrinsicBitwiseOpToNonMask(GenTree** use, Compiler:
     RewriteHWIntrinsicToNonMask(&op1, parents);
     (void)parents.Pop();
 
-    if (node->GetOperandCount() == 1)
+    if (node->IsSimdBitwiseNot())
     {
-        assert(oper == GT_NOT);
+        assert(oper == GT_XOR);
+
+        if (node->GetOperandCount() == 2)
+        {
+            BlockRange().Remove(node->Op(2));
+            DEBUG_DESTROY_NODE(node->Op(2));
+        }
 
         GenTree* op2 = m_compiler->gtNewAllBitsSetConNode(simdType);
         BlockRange().InsertBefore(node, op2);
@@ -1240,7 +1246,8 @@ bool Rationalizer::ShouldRewriteToNonMaskHWIntrinsic(GenTree* node)
         {
             // binary bitwise operations should be optimized if both inputs can
             assert(hwNode->GetOperandCount() == 2);
-            return ShouldRewriteToNonMaskHWIntrinsic(hwNode->Op(1)) && ShouldRewriteToNonMaskHWIntrinsic(hwNode->Op(2));
+            return ShouldRewriteToNonMaskHWIntrinsic(hwNode->Op(1)) &&
+                   (hwNode->IsSimdBitwiseNot() || ShouldRewriteToNonMaskHWIntrinsic(hwNode->Op(2)));
         }
 
         case NI_AVX512_NotMask:

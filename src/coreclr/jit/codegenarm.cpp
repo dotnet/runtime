@@ -347,7 +347,14 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // The arithmetic node must be sitting in a register (since it's not contained)
     noway_assert(targetReg != REG_NA);
 
-    if ((oper == GT_ADD_LO || oper == GT_SUB_LO))
+    if (treeNode->IsBitwiseNot())
+    {
+        assert(op2->isContained());
+        assert(!op1->isContained());
+        insFlags flags = treeNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
+        emit->emitIns_R_R(INS_mvn, emitTypeSize(treeNode), targetReg, op1->GetRegNum(), flags);
+    }
+    else if ((oper == GT_ADD_LO || oper == GT_SUB_LO))
     {
         // During decomposition, all operands become reg
         assert(!op1->isContained() && !op2->isContained());
@@ -729,9 +736,6 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_NEG:
             ins = INS_rsb;
             break;
-        case GT_NOT:
-            ins = INS_NOT;
-            break;
         case GT_OR:
             ins = INS_OR;
             break;
@@ -776,18 +780,16 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 }
 
 //------------------------------------------------------------------------
-// genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
+// genCodeForNeg: Produce code for a GT_NEG node.
 //
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+void CodeGen::genCodeForNeg(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_NEG, GT_NOT));
+    assert(tree->OperIs(GT_NEG));
 
     var_types targetType = tree->TypeGet();
-
-    assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
 
     regNumber   targetReg = tree->GetRegNum();
     instruction ins       = genGetInsForOper(tree->OperGet(), targetType);

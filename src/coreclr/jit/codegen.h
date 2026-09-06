@@ -1194,7 +1194,7 @@ protected:
     void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
-    void genCodeForNegNot(GenTreeOp* tree);
+    void genCodeForNeg(GenTreeOp* tree);
     void genCodeForBswap(GenTree* tree);
     bool genCanOmitNormalizationForBswap16(GenTree* tree);
     void genCodeForLclVar(GenTreeLclVar* tree);

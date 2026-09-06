@@ -1924,7 +1924,6 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             return false; // Can't CSE a volatile LCL_VAR
 
         case GT_NEG:
-        case GT_NOT:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_BITCAST:
@@ -2616,9 +2615,10 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     features[19] = deMinimusAdj + log(max(deMinimis, cse->numLocalOccurrences * cse->csdUseWtCnt));
     features[20] = booleanScale * ((double)(blockSpread) / numBBs);
 
-    const bool isContainable = cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
-    features[21]             = booleanScale * isContainable;
-    features[22]             = booleanScale * (isContainable && isLowCost);
+    const bool isContainable =
+        cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_MUL, GT_LSH) || cse->csdTreeList.tslTree->IsBitwiseNot();
+    features[21] = booleanScale * isContainable;
+    features[22] = booleanScale * (isContainable && isLowCost);
 
     // LSRA "is live across call"
     //
@@ -3238,7 +3238,8 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     features[i++] = cse->csdIsSharedConst ? 1 : 0;
     features[i++] = isMakeCse ? 1 : 0;
     features[i++] = ((cse->csdTreeList.tslTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
-    features[i++] = cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH) ? 1 : 0;
+    features[i++] =
+        (cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_MUL, GT_LSH) || cse->csdTreeList.tslTree->IsBitwiseNot()) ? 1 : 0;
     features[i++] = cse->csdTreeList.tslTree->GetCostEx();
     features[i++] = cse->csdTreeList.tslTree->GetCostSz();
     features[i++] = cse->csdUseCount;

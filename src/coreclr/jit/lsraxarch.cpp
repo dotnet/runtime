@@ -429,11 +429,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
-        case GT_NOT:
-            srcCount = BuildOperandUses(tree->gtGetOp1());
-            BuildDef(tree);
-            break;
-
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:

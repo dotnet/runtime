@@ -196,9 +196,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProduceReg(treeNode);
             break;
 
-        case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode->AsOp());
+            genCodeForNeg(treeNode->AsOp());
             break;
 
 #if defined(TARGET_ARM64)

@@ -54,7 +54,6 @@ private:
     GenTree* DecomposeCall(LIR::Use& use);
     GenTree* DecomposeInd(LIR::Use& use);
     GenTree* DecomposeStoreInd(LIR::Use& use);
-    GenTree* DecomposeNot(LIR::Use& use);
     GenTree* DecomposeNeg(LIR::Use& use);
     GenTree* DecomposeArith(LIR::Use& use);
     GenTree* DecomposeShift(LIR::Use& use);

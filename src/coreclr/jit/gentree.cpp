@@ -7075,7 +7075,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     level++;
                     break;
 
-                case GT_NOT:
                 case GT_NEG:
 #if defined(TARGET_XARCH)
                     if (isflt)
@@ -7091,7 +7090,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     //
                     // Even in the integer case we want to prefer to
                     // evaluate the side without the GT_NEG node, all other things
-                    // being equal.  Also a GT_NOT requires a scratch register
+                    // being equal.
 
                     level++;
                     break;
@@ -7295,6 +7294,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costEx += 4;
                     }
 #endif //  TARGET_X86
+                }
+                break;
+
+            case GT_XOR:
+                if (tree->IsBitwiseNot() && !tree->gtSetFlags())
+                {
+                    includeOp2Cost = false;
+                    level++;
                 }
                 break;
 
@@ -12084,7 +12091,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
-        case GT_NOT:
         case GT_NEG:
         case GT_COPY:
         case GT_RELOAD:
@@ -15539,16 +15545,6 @@ GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
 
     switch (oper)
     {
-        case GT_NOT:
-        {
-            if (op1->OperIs(oper))
-            {
-                JITDUMP("Folding ~(~a) => a\n")
-                return op1->gtGetOp1();
-            }
-            break;
-        }
-
         case GT_NEG:
         {
             if (op1->OperIs(oper))
@@ -15593,6 +15589,12 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         // The atomic operations are exempted here because they are never computable statically; one of their arguments
         // is an address.
         return tree;
+    }
+
+    if (tree->IsBitwiseNot() && op1->IsBitwiseNot())
+    {
+        JITDUMP("Folding ~(~a) => a\n")
+        return op1->gtGetOp1();
     }
 
     if (op1->OperIsConst())
@@ -17551,12 +17553,6 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
 
     switch (oper)
     {
-        case GT_NOT:
-        {
-            iconVal = ~iconVal;
-            break;
-        }
-
         case GT_NEG:
         {
             iconVal = static_cast<int32_t>(0 - static_cast<uint32_t>(iconVal));
@@ -17713,12 +17709,6 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
 
     switch (oper)
     {
-        case GT_NOT:
-        {
-            lconVal = ~lconVal;
-            break;
-        }
-
         case GT_NEG:
         {
             lconVal = static_cast<int64_t>(0 - static_cast<uint64_t>(lconVal));
@@ -21023,27 +21013,7 @@ bool GenTreeVecCon::ContainsPositiveZero(var_types simdBaseType) const
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// GenTreeMskCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation
-//
-// Arguments:
-//    oper     - the operation to use in the evaluation
-//    scalar   - true if this is a scalar operation; otherwise, false
-//    baseType - the base type of the constant being checked
-//    simdSize - the size of the SIMD node the mask is for
-//
-void GenTreeMskCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize)
-{
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    simdmask_t result = {};
-    EvaluateUnaryMask(oper, scalar, baseType, simdSize, &result, gtSimdMaskVal);
-    gtSimdMaskVal = result;
-#else
-    unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
-}
-
-//------------------------------------------------------------------------
-// GenTreeMskCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation
+// GenTreeMskCon::EvaluateBinaryInPlace: Evaluates this constant using the given operation
 //
 // Arguments:
 //    oper     - the operation to use in the evaluation
@@ -22275,6 +22245,7 @@ bool GenTree::SupportsSettingZeroFlag()
 
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
     {
+        // A complement uses XOR instead of NOT when GTF_SET_FLAGS is requested.
         return true;
     }
 
@@ -23554,7 +23525,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             // and produce overall better codegen.
             assert(fgNodeThreading != NodeThreading::LIR);
 
-            op2 = gtNewSimdUnOpNode(GT_NOT, type, op2, simdBaseType, simdSize);
+            op2 = gtNewSimdBinOpNode(GT_XOR, type, op2, gtNewAllBitsSetConNode(type), simdBaseType, simdSize);
             return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseType, simdSize);
         }
 
@@ -24603,7 +24574,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         case GT_NE:
         {
             GenTree* result = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseType, simdSize);
-            return gtNewSimdUnOpNode(GT_NOT, type, result, simdBaseType, simdSize);
+            return gtNewSimdBinOpNode(GT_XOR, type, result, gtNewAllBitsSetConNode(type), simdBaseType, simdSize);
         }
 
         default:
@@ -30570,13 +30541,6 @@ GenTree* Compiler::gtNewSimdUnOpNode(
                 return gtNewSimdBinOpNode(GT_SUB, type, zero, op1, simdBaseType, simdSize);
             }
         }
-
-        case GT_NOT:
-        {
-            // op1 ^ AllBitsSet
-            GenTree* allBitsSet = gtNewAllBitsSetConNode(type);
-            return gtNewSimdBinOpNode(GT_XOR, type, op1, allBitsSet, simdBaseType, simdSize);
-        }
 #endif // TARGET_XARCH
 
         default:
@@ -30584,6 +30548,62 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             unreached();
         }
     }
+}
+
+//------------------------------------------------------------------------
+// gtNormalizeSimdBitwiseNot: Expand a native unary complement into binary XOR.
+//
+// Arguments:
+//    node - The intrinsic to normalize before folding or morphing.
+//
+void Compiler::gtNormalizeSimdBitwiseNot(GenTreeHWIntrinsic* node)
+{
+    if ((node->GetOperandCount() != 1) || !node->IsSimdBitwiseNot())
+    {
+        return;
+    }
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+    switch (node->GetHWIntrinsicId())
+    {
+#if defined(TARGET_XARCH)
+        case NI_AVX512_NotMask:
+            intrinsic = NI_AVX512_XorMask;
+            break;
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_Not:
+            intrinsic = NI_AdvSimd_Xor;
+            break;
+        case NI_Sve_Not:
+            intrinsic = NI_Sve_Xor;
+            break;
+#elif defined(TARGET_WASM)
+        case NI_PackedSimd_Not:
+            intrinsic = NI_PackedSimd_Xor;
+            break;
+#endif
+        default:
+            unreached();
+    }
+
+    GenTree* allBitsSet;
+#if defined(TARGET_XARCH)
+    if (node->TypeIs(TYP_MASK))
+    {
+        GenTreeMskCon* mask = gtNewMskConNode(TYP_MASK);
+        mask->gtSimdMaskVal = simdmask_t::AllBitsSet(64);
+        allBitsSet          = mask;
+    }
+    else
+#endif
+    {
+        allBitsSet = gtNewAllBitsSetConNode(node->TypeGet());
+    }
+
+    allBitsSet->SetMorphed(this);
+    fgUpdateConstTreeValueNumber(allBitsSet);
+    node->ResetHWIntrinsicId(intrinsic, this, node->Op(1), allBitsSet);
 }
 
 GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
@@ -31752,8 +31772,8 @@ bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
 //
 bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(genTreeOps oper)
 {
-    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_NOT) || (oper == GT_OR) || (oper == GT_OR_NOT) ||
-           (oper == GT_XOR) || (oper == GT_XOR_NOT);
+    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_OR) || (oper == GT_OR_NOT) || (oper == GT_XOR) ||
+           (oper == GT_XOR_NOT);
 }
 
 //------------------------------------------------------------------------
@@ -31766,7 +31786,40 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 {
     bool       isScalar = false;
     genTreeOps oper     = GetOperForHWIntrinsicId(&isScalar);
-    return OperIsBitwiseHWIntrinsic(oper);
+    return OperIsBitwiseHWIntrinsic(oper) || IsSimdBitwiseNot();
+}
+
+//------------------------------------------------------------------------
+// IsSimdBitwiseNot: Recognize vector or mask XOR with all ones, or a native
+// unary complement retained for instruction selection.
+//
+// Returns:
+//    True if the first operand is the value being complemented.
+//
+bool GenTreeHWIntrinsic::IsSimdBitwiseNot() const
+{
+    if (GetOperandCount() == 1)
+    {
+        switch (GetHWIntrinsicId())
+        {
+#if defined(TARGET_XARCH)
+            case NI_AVX512_NotMask:
+#elif defined(TARGET_ARM64)
+            case NI_AdvSimd_Not:
+            case NI_Sve_Not:
+#elif defined(TARGET_WASM)
+            case NI_PackedSimd_Not:
+#endif
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    bool isScalar = false;
+    return (GetOperandCount() == 2) && (GetOperForHWIntrinsicId(&isScalar) == GT_XOR) && !isScalar &&
+           (Op(2)->IsVectorAllBitsSet() || Op(2)->IsMaskAllBitsSet(GetSimdBaseType()));
 }
 
 //------------------------------------------------------------------------
@@ -32195,11 +32248,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
         {
             GenTree* op2 = Op(2);
 
-            if (op2->IsVectorAllBitsSet())
-            {
-                oper = GT_NOT;
-            }
-            else if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
+            if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
             {
                 oper = GT_NEG;
             }
@@ -32223,6 +32272,12 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
 genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar)
 {
     *isScalar = false;
+#ifdef TARGET_WASM
+    if (id == NI_PackedSimd_Xor)
+    {
+        return GT_XOR;
+    }
+#endif
 #ifndef TARGET_WASM
     switch (id)
     {
@@ -32247,7 +32302,9 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_Sve_Not:
 #endif
         {
-            return GT_NOT;
+            // A native unary intrinsic has no binary second operand. Normalize it
+            // before exposing XOR semantics to folding and other IR optimizations.
+            return GT_NONE;
         }
 
 #if defined(TARGET_XARCH)
@@ -32797,20 +32854,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
             }
 #elif defined(TARGET_WASM)
             id = NI_PackedSimd_Negate;
-#elif !defined(TARGET_XARCH)
-#error Unsupported platform
-#endif
-            break;
-        }
-
-        case GT_NOT:
-        {
-            assert(!isScalar);
-
-#if defined(TARGET_ARM64)
-            id = NI_AdvSimd_Not;
-#elif defined(TARGET_WASM)
-            id = NI_PackedSimd_Not;
 #elif !defined(TARGET_XARCH)
 #error Unsupported platform
 #endif
@@ -33980,7 +34023,7 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
         case NI_AVX2_Xor:
         case NI_AVX512_Xor:
         {
-            // We recognize this as GT_NOT which can enable other optimizations
+            // Keeping the complement constant visible enables other optimizations.
             assert(GetOperandCount() == 2);
             return vecCon->IsVectorAllBitsSet();
         }
@@ -34964,6 +35007,11 @@ bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, uns
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+    if (intrinsic->IsSimdBitwiseNot())
+    {
+        return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
+    }
+
 #if defined(TARGET_ARM64)
     // TODO-Arm64: Remove this once all AdvSimd compare intrinsics are annotated with
     // HW_Flag_ReturnsPerElementMask.
@@ -34990,12 +35038,6 @@ bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, uns
 
             return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize) &&
                    intrinsic->Op(2)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
-        }
-
-        case GT_NOT:
-        {
-            // We are a unary bitwise operation where the input is a per-element mask
-            return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
         }
 
         default:
@@ -35158,6 +35200,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     assert(!optValnumCSE_phase);
     assert(opts.Tier0OptimizationEnabled());
 
+    gtNormalizeSimdBitwiseNot(tree);
+
     NamedIntrinsic ni           = tree->GetHWIntrinsicId();
     var_types      retType      = tree->TypeGet();
     var_types      simdBaseType = tree->GetSimdBaseType();
@@ -35308,30 +35352,18 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         // that are dependent on tree height and similar. So we want to
         // fold the unnecessary back and forth conversions away where possible.
 
-        genTreeOps effectiveOper = oper;
-
         // We need both operands to be ConvertMaskToVector in
         // order to optimize this to a direct mask operation
 
         if (op1->OperIsConvertMaskToVector())
         {
-            assert((oper == GT_NOT) == (op2 == nullptr));
+            assert(op2 != nullptr);
+            bool isComplement = tree->IsSimdBitwiseNot();
 
-            if ((op2 != nullptr) && !op2->OperIsHWIntrinsic())
-            {
-                if ((oper == GT_XOR) && op2->IsVectorAllBitsSet())
-                {
-                    // We want to explicitly recognize op1 ^ AllBitsSet as
-                    // some platforms don't have direct support for ~op1
-
-                    effectiveOper = GT_NOT;
-                }
-            }
-
-            if ((effectiveOper == GT_NOT) || op2->OperIsConvertMaskToVector())
+            if (isComplement || op2->OperIsConvertMaskToVector())
             {
                 GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
-                GenTreeHWIntrinsic* cvtOp2 = (effectiveOper == GT_NOT) ? cvtOp1 : op2->AsHWIntrinsic();
+                GenTreeHWIntrinsic* cvtOp2 = isComplement ? cvtOp1 : op2->AsHWIntrinsic();
 
                 var_types op1SimdBaseType = cvtOp1->GetSimdBaseType();
                 var_types op2SimdBaseType = cvtOp2->GetSimdBaseType();
@@ -35343,17 +35375,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     NamedIntrinsic maskIntrinsicId = NI_Illegal;
 
-                    switch (effectiveOper)
+                    switch (oper)
                     {
                         case GT_AND:
                         {
                             maskIntrinsicId = NI_AVX512_AndMask;
-                            break;
-                        }
-
-                        case GT_NOT:
-                        {
-                            maskIntrinsicId = NI_AVX512_NotMask;
                             break;
                         }
 
@@ -35377,17 +35403,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     assert(maskIntrinsicId != NI_Illegal);
 
-                    if (effectiveOper == oper)
-                    {
-                        tree->ChangeHWIntrinsicId(maskIntrinsicId);
-                        tree->Op(1) = cvtOp1->Op(1);
-                    }
-                    else
-                    {
-                        assert(effectiveOper == GT_NOT);
-                        tree->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
-                        tree->gtFlags &= ~GTF_REVERSE_OPS;
-                    }
+                    tree->ChangeHWIntrinsicId(maskIntrinsicId);
+                    tree->Op(1) = cvtOp1->Op(1);
 
                     // The bitwise operation is likely normalized to int or uint, while
                     // the underlying convert ops may be a small type. We need to preserve
@@ -35398,7 +35415,15 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     tree->gtType = TYP_MASK;
                     DEBUG_DESTROY_NODE(op1);
 
-                    if (effectiveOper != GT_NOT)
+                    if (isComplement)
+                    {
+                        GenTreeMskCon* mask = gtNewMskConNode(TYP_MASK);
+                        mask->gtSimdMaskVal = simdmask_t::AllBitsSet(64);
+                        mask->SetMorphed(this);
+                        fgUpdateConstTreeValueNumber(mask);
+                        tree->Op(2) = mask;
+                    }
+                    else
                     {
                         tree->Op(2) = cvtOp2->Op(1);
                     }
@@ -35523,18 +35548,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         if (oper != GT_NONE)
         {
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-            if (varTypeIsMask(retType))
+            assert(!varTypeIsMask(retType));
+            if (!cnsNode->AsVecCon()->TryEvaluateUnaryInPlace(oper, isScalar, simdBaseType))
             {
-                cnsNode->AsMskCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType, simdSize);
-            }
-            else
-#endif
-            {
-                if (!cnsNode->AsVecCon()->TryEvaluateUnaryInPlace(oper, isScalar, simdBaseType))
-                {
-                    return tree;
-                }
+                return tree;
             }
             resultNode = cnsNode;
         }
@@ -35980,8 +35997,22 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             if (oper != GT_NONE)
             {
+#if defined(TARGET_ARM64)
+                if (retType == TYP_SIMD)
+                {
+                    simdscalable_t result;
+                    if (!otherNode->IsCnsVec() ||
+                        !TryEvaluateBinarySimdScalable(oper, isScalar, &result, cnsNode->AsVecCon()->gtSimdScalableVal,
+                                                       otherNode->AsVecCon()->gtSimdScalableVal))
+                    {
+                        return tree;
+                    }
+                    cnsNode->AsVecCon()->gtSimdScalableVal = result;
+                }
+                else
+#endif // TARGET_ARM64
 #if FEATURE_MASKED_HW_INTRINSICS
-                if (varTypeIsMask(retType))
+                    if (varTypeIsMask(retType))
                 {
                     if (varTypeIsMask(cnsNode))
                     {

@@ -368,7 +368,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_NEG:
-        case GT_NOT:
             BuildUse(tree->gtGetOp1());
             srcCount = 1;
             assert(dstCount == 1);

@@ -1021,8 +1021,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_NEG:
-        case GT_NOT:
-            genCodeForNegNot(treeNode->AsOp());
+            genCodeForNeg(treeNode->AsOp());
             break;
 
         case GT_IND:
@@ -2331,31 +2330,19 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForNegNot: Generate code for a neg/not
+// genCodeForNeg: Generate code for a negation
 //
 // Arguments:
-//    tree - neg/not tree node
+//    tree - negation tree node
 //
-void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+void CodeGen::genCodeForNeg(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_NEG, GT_NOT));
+    assert(tree->OperIs(GT_NEG));
     genConsumeOperands(tree);
 
     instruction ins;
     switch (PackOperAndType(tree->OperGet(), tree->TypeGet()))
     {
-        case PackOperAndType(GT_NOT, TYP_INT):
-            GetEmitter()->emitIns_I(INS_i32_const, emitTypeSize(tree), -1);
-            ins = INS_i32_xor;
-            break;
-        case PackOperAndType(GT_NOT, TYP_LONG):
-            GetEmitter()->emitIns_I(INS_i64_const, emitTypeSize(tree), -1);
-            ins = INS_i64_xor;
-            break;
-        case PackOperAndType(GT_NOT, TYP_FLOAT):
-        case PackOperAndType(GT_NOT, TYP_DOUBLE):
-            unreached();
-            break;
         case PackOperAndType(GT_NEG, TYP_INT):
         case PackOperAndType(GT_NEG, TYP_LONG):
             // We cannot easily emit i32.sub(0, x) here since x is already on the stack.

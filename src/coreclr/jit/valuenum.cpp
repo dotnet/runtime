@@ -559,9 +559,6 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0)
             case GT_NEG:
                 return -v0;
 
-            case GT_NOT:
-                return ~v0;
-
             case GT_BSWAP16:
             {
                 UINT16 v0_unsigned = UINT16(v0);
@@ -2691,19 +2688,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 if (TypeOfVN(actualSizeVN) == TYP_INT)
                 {
                     *resultVN = actualSizeVN;
-                }
-            }
-        }
-        else if (func == VNF_NOT)
-        {
-            VNFuncApp funcApp;
-            if (GetVNFunc(arg0VN, &funcApp))
-            {
-                // NOT(NOT(x)) ==> x
-                //
-                if (funcApp.FuncIs(VNF_NOT))
-                {
-                    *resultVN = funcApp.GetArg(0);
                 }
             }
         }
@@ -5038,7 +5022,6 @@ bool ValueNumStore::VNEvalCanFoldUnaryFunc(var_types typ, VNFunc func, ValueNum 
         switch (genTreeOps(func))
         {
             case GT_NEG:
-            case GT_NOT:
             case GT_BSWAP16:
             case GT_BSWAP:
                 return true;
@@ -5782,16 +5765,9 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 }
 
                 // x | ~x == ~0
-                //
-                // Skip when x is a relop: relops have boolean 0/1 values, so the
-                // result should be 1, not AllBitsSet. The relop-combination table
-                // below handles `relop | Reverse(relop)` and yields VNOneForType.
-                //
-                VNFuncApp  arg0Check;
-                const bool arg0IsRelop = GetVNFunc(arg0VN, &arg0Check) && VNFuncIsComparison(arg0Check.GetFunc());
-                if (!arg0IsRelop)
+                if (varTypeIsIntegral(typ))
                 {
-                    ValueNum arg0VNnot = VNForFunc(typ, VNF_NOT, arg0VN);
+                    ValueNum arg0VNnot = VNForFunc(typ, VNF_XOR, arg0VN, VNAllBitsForType(typ, 1));
                     if (arg0VNnot == arg1VN)
                     {
                         resultVN = VNAllBitsForType(typ, 1);
@@ -5859,6 +5835,23 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = ZeroVN;
                 }
+
+                // Handle `(x ^ AllBitsSet) ^ AllBitsSet == x`.
+                if (varTypeIsIntegral(typ) && (cnsVN == VNAllBitsForType(typ, 1)))
+                {
+                    VNFuncApp funcApp;
+                    if (GetVNFunc(opVN, &funcApp) && funcApp.FuncIs(VNF_XOR))
+                    {
+                        if (funcApp.GetArg(0) == cnsVN)
+                        {
+                            resultVN = funcApp.GetArg(1);
+                        }
+                        else if (funcApp.GetArg(1) == cnsVN)
+                        {
+                            resultVN = funcApp.GetArg(0);
+                        }
+                    }
+                }
                 break;
             }
 
@@ -5888,11 +5881,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 }
 
                 // x & ~x == 0
-                ValueNum arg0VNnot = VNForFunc(typ, VNF_NOT, arg0VN);
-                if (arg0VNnot == arg1VN)
+                if (varTypeIsIntegral(typ))
                 {
-                    resultVN = ZeroVN;
-                    break;
+                    ValueNum arg0VNnot = VNForFunc(typ, VNF_XOR, arg0VN, VNAllBitsForType(typ, 1));
+                    if (arg0VNnot == arg1VN)
+                    {
+                        resultVN = ZeroVN;
+                        break;
+                    }
                 }
 
                 // relop1(x,y) & relop2(x,y) ==> relop3(x,y) or 0/1
@@ -8446,10 +8442,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
     if (IsVNConstant(arg0VN))
     {
-        bool       isScalar = false;
-        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
-
-        if (oper != GT_NONE)
+        if (tree->IsSimdBitwiseNot())
         {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
             if (varTypeIsMask(type))
@@ -8464,10 +8457,34 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #endif // TARGET_ARM64
 
                 simdmask_t result = {};
-                EvaluateUnaryMask(oper, isScalar, baseType, simdSize, &result, arg0.fixed);
+                EvaluateBinaryMask(GT_XOR, false, baseType, simdSize, &result, arg0.fixed, simdmask_t::AllBitsSet(64));
                 return VNForSimdMaskCon(result);
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
+            ValueNum allBitsVN = VNAllBitsForType(type, 1);
+
+#if defined(TARGET_ARM64)
+            if (type == TYP_SIMD)
+            {
+                simdscalable_t result;
+                if (TryEvaluateBinarySimdScalable(GT_XOR, false, &result, GetConstantSimdScalable(arg0VN),
+                                                  GetConstantSimdScalable(allBitsVN)))
+                {
+                    return VNForSimdScalableCon(result);
+                }
+
+                return VNForFunc(type, func, arg0VN, resultTypeVN);
+            }
+#endif // TARGET_ARM64
+            return EvaluateBinarySimd(this, GT_XOR, false, type, baseType, arg0VN, allBitsVN);
+        }
+
+        bool       isScalar = false;
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+
+        if (oper != GT_NONE)
+        {
+            assert(!varTypeIsMask(type));
             return EvaluateUnarySimd(this, oper, isScalar, type, baseType, arg0VN);
         }
         else if (tree->OperIsConvertMaskToVector())
@@ -8954,6 +8971,21 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
+
+#if defined(TARGET_ARM64)
+            if (type == TYP_SIMD)
+            {
+                simdscalable_t result;
+                if ((oper == GT_XOR) &&
+                    TryEvaluateBinarySimdScalable(oper, isScalar, &result, GetConstantSimdScalable(arg0VN),
+                                                  GetConstantSimdScalable(arg1VN)))
+                {
+                    return VNForSimdScalableCon(result);
+                }
+
+                return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
+            }
+#endif // TARGET_ARM64
 
             if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
             {
@@ -10061,6 +10093,25 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
         return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
     }
 
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+    if (funcApp.GetArity() == 2)
+    {
+        switch (intrinsicId)
+        {
+#if defined(TARGET_ARM64)
+            case NI_AdvSimd_Not:
+            case NI_Sve_Not:
+#elif defined(TARGET_WASM)
+            case NI_PackedSimd_Not:
+#endif
+                return IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize);
+
+            default:
+                break;
+        }
+    }
+#endif // TARGET_ARM64 || TARGET_WASM
+
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
@@ -10090,12 +10141,6 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
 
             return IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize) &&
                    IsVectorPerElementMask(funcApp.GetArg(1), simdBaseType, simdSize);
-        }
-
-        case GT_NOT:
-        {
-            // We are an unary bitwise operation where the input is a per-element mask
-            return IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize);
         }
 
         default:

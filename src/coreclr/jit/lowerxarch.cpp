@@ -1418,6 +1418,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         node->gtType = TYP_SIMD16;
     }
 
+    if (node->TypeIs(TYP_MASK) && (node->GetOperandCount() == 2) && node->IsSimdBitwiseNot())
+    {
+        GenTree* allBitsSet = node->Op(2);
+        node->ResetHWIntrinsicId(NI_AVX512_NotMask, m_compiler, node->Op(1));
+        BlockRange().Remove(allBitsSet);
+    }
+
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     if (node->OperIsEmbRoundingEnabled())
@@ -1460,8 +1467,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         GenTree* op2 = node->Op(2);
         GenTree* op3 = nullptr;
 
-        // We want to specially recognize this pattern as GT_NOT
-        bool isOperNot = (oper == GT_XOR) && op2->IsVectorAllBitsSet();
+        bool isOperNot = node->IsSimdBitwiseNot();
 
         LIR::Use use;
         if (BlockRange().TryGetUse(node, &use))
@@ -6775,12 +6781,12 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 
     GenTree* opNode  = nullptr;
     GenTree* notNode = nullptr;
-    if (andNode->gtGetOp1()->OperIs(GT_NOT))
+    if (andNode->gtGetOp1()->IsBitwiseNot())
     {
         notNode = andNode->gtGetOp1();
         opNode  = andNode->gtGetOp2();
     }
-    else if (andNode->gtGetOp2()->OperIs(GT_NOT))
+    else if (andNode->gtGetOp2()->IsBitwiseNot())
     {
         notNode = andNode->gtGetOp2();
         opNode  = andNode->gtGetOp1();
@@ -6826,7 +6832,7 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 
     // note that parameter order for andn is ~y, x so these are purposefully reversed when creating the node
     GenTreeHWIntrinsic* andnNode =
-        m_compiler->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), notNode->AsUnOp()->gtGetOp1(), opNode, intrinsic);
+        m_compiler->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), notNode->gtGetOp1(), opNode, intrinsic);
 
     JITDUMP("Lower: optimize AND(X, NOT(Y)))\n");
     DISPNODE(andNode);
@@ -6837,7 +6843,7 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     use.ReplaceWith(andnNode);
 
     BlockRange().Remove(andNode);
-    BlockRange().Remove(notNode);
+    RemoveBitwiseNot(notNode);
 
     ContainCheckHWIntrinsic(andnNode);
 
@@ -7124,7 +7130,7 @@ bool Lowering::IsBinOpInRMWStoreInd(GenTree* tree)
 // Right now, we recognize few cases:
 //     a) The gtInd child is a lea/lclVar/lclVarAddr/constant
 //     b) BinOp is either add, sub, xor, or, and, shl, rsh, rsz.
-//     c) unaryOp is either not/neg
+//     c) unaryOp is neg.
 //
 // Implementation Note: The following routines need to be in sync for RMW memory op optimization
 // to be correct and functional.
@@ -7278,8 +7284,7 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTree* tree, GenTree** outIndirCandi
     }
     else if (GenTree::OperIsUnary(oper))
     {
-        // Nodes other than GT_NOT and GT_NEG are not yet supported.
-        if (oper != GT_NOT && oper != GT_NEG)
+        if (oper != GT_NEG)
         {
             storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_OPER);
             return false;

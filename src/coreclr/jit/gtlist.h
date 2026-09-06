@@ -66,7 +66,6 @@ GTNODE(CNS_MSK          , GenTreeMskCon      ,0,0,GTK_LEAF)
 //  Unary  operators (1 operand):
 //-----------------------------------------------------------------------------
 
-GTNODE(NOT              , GenTreeOp          ,0,0,GTK_UNOP)
 GTNODE(NOP              , GenTree            ,0,1,GTK_LEAF|DBK_NOCONTAIN)
 GTNODE(NEG              , GenTreeOp          ,0,0,GTK_UNOP)
 

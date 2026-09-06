@@ -560,21 +560,20 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 }
 
 //------------------------------------------------------------------------
-// genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
+// genCodeForNeg: Produce code for a GT_NEG node.
 //
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+void CodeGen::genCodeForNeg(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_NEG, GT_NOT));
+    assert(tree->OperIs(GT_NEG));
 
     regNumber targetReg  = tree->GetRegNum();
     var_types targetType = tree->TypeGet();
 
     if (varTypeIsFloating(targetType))
     {
-        assert(tree->OperIs(GT_NEG));
         genIntrinsicBitwiseOp(tree);
     }
     else
@@ -962,6 +961,15 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
+
+    if (treeNode->IsBitwiseNot() && !treeNode->gtSetFlags())
+    {
+        assert(op1->isUsedFromReg());
+        assert(op2->isContained());
+        emit->emitIns_BASE_R_R(INS_not, emitActualTypeSize(treeNode), targetReg, op1->GetRegNum());
+        genProduceReg(treeNode);
+        return;
+    }
 
     bool eligibleForNDD = false;
 
@@ -1891,9 +1899,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProduceReg(treeNode);
             break;
 
-        case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode->AsOp());
+            genCodeForNeg(treeNode->AsOp());
             break;
 
         case GT_BSWAP:
@@ -4540,9 +4547,6 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_NEG:
             ins = INS_neg;
             break;
-        case GT_NOT:
-            ins = INS_not;
-            break;
         case GT_OR:
             ins = INS_or;
             break;
@@ -5407,8 +5411,14 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         {
             if (dataIsUnary)
             {
-                // generate code for unary RMW memory ops like neg/not
+                // Generate code for a unary RMW memory negation.
                 GetEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(tree), tree);
+            }
+            else if (data->IsBitwiseNot() && !data->gtSetFlags())
+            {
+                assert(tree->IsRMWDstOp1());
+                assert(rmwSrc->isContained());
+                GetEmitter()->emitInsRMW(INS_not, emitTypeSize(tree), tree);
             }
             else
             {

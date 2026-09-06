@@ -430,7 +430,7 @@ static bool ElementsAreAllBitsSetOrZero(const simd_t* simdVal, var_types simdBas
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
-    return (oper == GT_LZCNT) || (oper == GT_NOT);
+    return oper == GT_LZCNT;
 }
 
 template <typename TBase>
@@ -441,11 +441,6 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
         case GT_NEG:
         {
             return static_cast<TBase>(0) - arg0;
-        }
-
-        case GT_NOT:
-        {
-            return ~arg0;
         }
 
         case GT_LZCNT:
@@ -510,135 +505,6 @@ TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
 {
     return EvaluateUnaryScalarSpecialized<TBase>(oper, arg0);
 }
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-template <typename TBase>
-void EvaluateUnaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0)
-{
-    uint32_t count = simdSize / sizeof(TBase);
-
-#if defined(TARGET_XARCH)
-    // For xarch we have count sequential bits, but an 8 count minimum
-
-    if (count < 8)
-    {
-        count = 8;
-    }
-    assert((count == 8) || (count == 16) || (count == 32) || (count == 64));
-
-    uint64_t bitMask = simdmask_t::GetBitMask(count);
-#elif defined(TARGET_ARM64)
-    // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits apart
-    uint64_t bitMask;
-
-    switch (sizeof(TBase))
-    {
-        case 1:
-        {
-            bitMask = 0xFFFFFFFFFFFFFFFF;
-            break;
-        }
-
-        case 2:
-        {
-            bitMask = 0x5555555555555555;
-            break;
-        }
-
-        case 4:
-        {
-            bitMask = 0x1111111111111111;
-            break;
-        }
-
-        case 8:
-        {
-            bitMask = 0x0101010101010101;
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-#else
-#error Unsupported platform
-#endif
-
-    uint64_t arg0Value = arg0.GetRawBits();
-
-    // We're only considering these bits
-    arg0Value &= bitMask;
-
-    uint64_t resultValue = 0;
-
-    switch (oper)
-    {
-        case GT_NOT:
-        {
-            resultValue = ~arg0Value;
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
-    resultValue &= bitMask;
-
-    if (resultValue == bitMask)
-    {
-        // Output is equivalent to AllBitsSet, so normalize
-        memset(&resultValue, 0xFF, sizeof(uint64_t));
-    }
-    memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
-}
-
-inline void EvaluateUnaryMask(
-    genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0)
-{
-    switch (baseType)
-    {
-        case TYP_FLOAT:
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            EvaluateUnaryMask<uint32_t>(oper, scalar, simdSize, result, arg0);
-            break;
-        }
-
-        case TYP_DOUBLE:
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            EvaluateUnaryMask<uint64_t>(oper, scalar, simdSize, result, arg0);
-            break;
-        }
-
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        {
-            EvaluateUnaryMask<uint8_t>(oper, scalar, simdSize, result, arg0);
-            break;
-        }
-
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            EvaluateUnaryMask<uint16_t>(oper, scalar, simdSize, result, arg0);
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-}
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 inline void EvaluateExtractMSB(simdmask_t* result, const TSimd& arg0)
@@ -2319,6 +2185,57 @@ struct simdscalable_t
 
 static_assert(sizeof(simd_t) >= sizeof(simdscalable_t));
 
+#if defined(TARGET_ARM64)
+inline bool TryEvaluateBinarySimdScalable(
+    genTreeOps oper, bool scalar, simdscalable_t* result, const simdscalable_t& arg0, const simdscalable_t& arg1)
+{
+    if ((oper != GT_XOR) || scalar)
+    {
+        return false;
+    }
+
+    if (arg0.IsZero() || arg1.IsZero())
+    {
+        *result = arg0.IsZero() ? arg1 : arg0;
+        return true;
+    }
+
+    const simdscalable_t* value;
+    if (arg1.IsAllBitsSet())
+    {
+        value = &arg0;
+    }
+    else if (arg0.IsAllBitsSet())
+    {
+        value = &arg1;
+    }
+    else
+    {
+        return false;
+    }
+
+    if (value->gtSimdScalableKind == SimdScalableScalar)
+    {
+        // Complementing the zero upper lanes cannot be represented as a scalar constant.
+        return false;
+    }
+
+    if ((value->gtSimdScalableKind == SimdScalableSequence) && varTypeIsFloating(value->gtSimdScalableBaseType))
+    {
+        return false;
+    }
+
+    uint64_t elementMask = SimdAllBitsSetForElementType(value->gtSimdScalableBaseType);
+    *result              = *value;
+    result->gtSimdScalableIndex ^= elementMask;
+    if (value->gtSimdScalableKind == SimdScalableSequence)
+    {
+        result->gtSimdScalableStep = (0 - value->gtSimdScalableStep) & elementMask;
+    }
+    return true;
+}
+#endif // TARGET_ARM64
+
 struct simdmaskscalable_t
 {
     var_types gtSimdMaskScalableBaseType;
@@ -2455,16 +2372,6 @@ bool TryEvaluateUnarySimdScalable(
             {
                 case GT_NEG:
                 {
-                    setResult(SimdScalableSequence, resultIndex, static_cast<TBase>(zero - step), result);
-                    return true;
-                }
-
-                case GT_NOT:
-                {
-                    if (varTypeIsFloating(baseType))
-                    {
-                        return false;
-                    }
                     setResult(SimdScalableSequence, resultIndex, static_cast<TBase>(zero - step), result);
                     return true;
                 }

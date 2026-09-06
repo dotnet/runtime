@@ -296,8 +296,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     GenTree*& op1 = binOp->gtOp1;
     GenTree*& op2 = binOp->gtOp2;
 
-    bool isOp1Negated = op1->OperIs(GT_NOT);
-    bool isOp2Negated = op2->OperIs(GT_NOT);
+    bool isOp1Negated = op1->IsBitwiseNot();
+    bool isOp2Negated = op2->IsBitwiseNot();
 
     ContainCheckBinary(binOp);
 
@@ -352,13 +352,11 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             if (isOp1Negated)
             {
-                BlockRange().Remove(op1);
-                op1 = op1->AsUnOp()->gtGetOp1();
+                op1 = RemoveBitwiseNot(op1);
             }
             if (isOp2Negated)
             {
-                BlockRange().Remove(op2);
-                op2 = op2->AsUnOp()->gtGetOp1();
+                op2 = RemoveBitwiseNot(op2);
             }
 
             if (isOp1Negated != isOp2Negated)
@@ -394,8 +392,9 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
                     binOp->ChangeOper(reverseOper);
 
-                    GenTreeUnOp* negation = m_compiler->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
-                    BlockRange().InsertAfter(binOp, negation);
+                    GenTree* allBitsSet = m_compiler->gtNewAllBitsSetConNode(binOp->TypeGet());
+                    GenTree* negation   = m_compiler->gtNewOperNode(GT_XOR, binOp->TypeGet(), binOp, allBitsSet);
+                    BlockRange().InsertAfter(binOp, allBitsSet, negation);
                     use.ReplaceWith(negation);
                 }
                 else

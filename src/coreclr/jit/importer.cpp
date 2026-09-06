@@ -7810,7 +7810,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impBashVarAddrsToI(op1, nullptr);
 
                 type = genActualType(op1->TypeGet());
-                op1  = gtNewOperNode(GT_NOT, type, op1);
+                op1  = gtNewOperNode(GT_XOR, type, op1, gtNewAllBitsSetConNode(type));
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);

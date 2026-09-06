@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// VN was simplifying NOT(relop(x,y)) to Reverse(relop)(x,y). GT_NOT is
-// bitwise complement, not logical negation: ~(x relop y) produces -1 or
+// VN was simplifying ~(relop(x,y)) to Reverse(relop)(x,y). Bitwise
+// complement is not logical negation: ~(x relop y) produces -1 or
 // -2 for a 0/1 relop result, while Reverse(relop)(x,y) produces 0 or 1,
 // so downstream uses comparing the value arithmetically (here `~v3 >= -1`)
 // folded the wrong way.
