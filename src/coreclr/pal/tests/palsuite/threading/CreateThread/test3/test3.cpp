@@ -59,7 +59,9 @@ PALTEST(threading_CreateThread_test3_paltest_createthread_test3, "threading/Crea
         if (0 == CloseHandle(hEvent_CreateThread_test3))
         {
             Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) during "
-                  "clean up.\nGetLastError returned '%u'.\n", hEvent_CreateThread_test3);
+                  "clean up.\nGetLastError returned '%u'.\n",
+                  hEvent_CreateThread_test3,
+                  GetLastError());
         }
         Fail("");
     } 
@@ -97,4 +99,3 @@ PALTEST(threading_CreateThread_test3_paltest_createthread_test3, "threading/Crea
     PAL_Terminate();
     return (PASS);
 }
-

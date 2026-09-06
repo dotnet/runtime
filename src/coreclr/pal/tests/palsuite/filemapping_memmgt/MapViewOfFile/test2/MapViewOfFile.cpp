@@ -154,6 +154,7 @@ PALTEST(filemapping_memmgt_MapViewOfFile_test2_paltest_mapviewoffile_test2, "fil
         Fail("");
     }
 
+    readString[dwBytesRead] = '\0';
     if (memcmp(buf, readString, strlen(readString)) != 0)
     {
         CloseHandle(hFile);
