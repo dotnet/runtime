@@ -15,6 +15,7 @@
 #include <palsuite.h>
 
 DWORD dwExitThreadTestParameter = 0;
+LONG completedThreadCount_ExitThread_test1 = 0;
 
 DWORD PALAPI ExitThreadTestThread( LPVOID lpParameter)
 {
@@ -22,6 +23,7 @@ DWORD PALAPI ExitThreadTestThread( LPVOID lpParameter)
 
     /* Save parameter for test */
     dwExitThreadTestParameter = (DWORD)(SIZE_T)lpParameter;
+    InterlockedIncrement(&completedThreadCount_ExitThread_test1);
 
     /* Call the ExitThread function */
     ExitThread(dwRet);
@@ -42,8 +44,6 @@ DWORD PALAPI ExitThreadTestThread( LPVOID lpParameter)
 BOOL ExitThreadTest()
 {
     BOOL bRet = FALSE;
-    DWORD dwRet = 0;
-
     LPSECURITY_ATTRIBUTES lpThreadAttributes = NULL;
     DWORD dwStackSize = 0;
     LPTHREAD_START_ROUTINE lpStartAddress =  &ExitThreadTestThread;
@@ -64,29 +64,22 @@ BOOL ExitThreadTest()
 
     if (hThread != NULL)
     {
-        dwRet = WaitForSingleObject(hThread,INFINITE);
+        WaitForThreadCompletion(&completedThreadCount_ExitThread_test1, 1);
 
-        if (dwRet != WAIT_OBJECT_0)
+        /* Check to ensure that the parameter set in the Thread
+           function is correct.
+        */
+        if (dwExitThreadTestParameter != (DWORD)(SIZE_T)lpParameter)
         {
-            Trace("ExitThreadTest:WaitForSingleObject failed "
-                   "(%x)\n",GetLastError());
+            Trace("ERROR: The parameter passed should have been "
+                   "%d but turned up as %d.",
+                   dwExitThreadTestParameter, lpParameter);
         }
         else
         {
-            /* Check to ensure that the parameter set in the Thread
-               function is correct.
-            */
-            if (dwExitThreadTestParameter != (DWORD)(SIZE_T)lpParameter)
-            {
-                Trace("ERROR: The parameter passed should have been "
-                       "%d but turned up as %d.",
-                       dwExitThreadTestParameter, lpParameter);
-            }
-            else
-            {
-                bRet = TRUE;
-            }
+            bRet = TRUE;
         }
+        CloseHandle(hThread);
     }
     else
     {

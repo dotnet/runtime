@@ -16,6 +16,7 @@
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+#include "CLREventBase.h"
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -752,7 +753,7 @@ ep_rt_wait_event_wait (
 	int32_t result;
 	EX_TRY
 	{
-		result = wait_event->event->Wait (timeout, alertable);
+		result = wait_event->event->Wait (timeout, alertable, false);
 	}
 	EX_CATCH
 	{
@@ -1123,7 +1124,7 @@ ep_rt_thread_sleep (uint64_t ns)
 	PAL_nanosleep (ns);
 #else  //TARGET_UNIX
 	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-	ClrSleepEx (static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS), FALSE);
+	minipal_sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
 #endif //TARGET_UNIX
 #endif // PERFTRACING_DISABLE_THREADS
 }

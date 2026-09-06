@@ -583,54 +583,6 @@ GetTempPathA(
 #endif
 
 PALIMPORT
-HANDLE
-PALAPI
-CreateEventW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN BOOL bManualReset,
-         IN BOOL bInitialState,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventExW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN LPCWSTR lpName,
-         IN DWORD dwFlags,
-         IN DWORD dwDesiredAccess);
-
-// CreateEventExW: dwFlags
-#define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
-#define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
-
-#define CreateEvent CreateEventW
-
-PALIMPORT
-BOOL
-PALAPI
-SetEvent(
-     IN HANDLE hEvent);
-
-PALIMPORT
-BOOL
-PALAPI
-ResetEvent(
-       IN HANDLE hEvent);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenEventW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-#ifdef UNICODE
-#define OpenEvent OpenEventW
-#endif
-
-PALIMPORT
 DWORD
 PALAPI
 GetCurrentProcessId();
@@ -687,31 +639,6 @@ TerminateProcess(
 
 #define INFINITE 0xFFFFFFFF // Infinite timeout
 
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObject(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObjectEx(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds,
-            IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjectsEx(
-             IN DWORD nCount,
-             IN CONST HANDLE *lpHandles,
-             IN BOOL bWaitAll,
-             IN DWORD dwMilliseconds,
-             IN BOOL bAlertable);
-
 #define DUPLICATE_CLOSE_SOURCE      0x00000001
 #define DUPLICATE_SAME_ACCESS       0x00000002
 
@@ -726,19 +653,6 @@ DuplicateHandle(
         IN DWORD dwDesiredAccess,
         IN BOOL bInheritHandle,
         IN DWORD dwOptions);
-
-PALIMPORT
-VOID
-PALAPI
-Sleep(
-      IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-SleepEx(
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
 
 PALIMPORT
 BOOL
@@ -2643,9 +2557,6 @@ typedef struct _RUNTIME_FUNCTION {
 #define SYNCHRONIZE               (0x00100000L)
 #define READ_CONTROL              (0x00020000L)
 #define MAXIMUM_ALLOWED           (0x02000000L)
-
-#define EVENT_MODIFY_STATE        (0x0002)
-#define EVENT_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
 
 #define MUTANT_QUERY_STATE        (0x0001)
 #define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)

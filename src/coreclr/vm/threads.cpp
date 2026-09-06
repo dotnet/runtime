@@ -6,6 +6,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "frames.h"
 #include "threads.h"
@@ -897,7 +898,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     {
         // Another thread is using the handle now.
         // We can not call __SwitchToThread since we can not go back to host.
-        ClrSleepEx(10, FALSE);
+        minipal_sleep(10);
     }
     if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {
@@ -1659,18 +1660,29 @@ BOOL Thread::AllocHandles()
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(!m_DebugSuspendEvent.IsValid());
+#ifdef TARGET_UNIX
+    _ASSERTE(!m_ThreadExitedEvent.IsValid());
+#endif // TARGET_UNIX
 
     BOOL fOK = TRUE;
     EX_TRY {
         // create a manual reset event for getting the thread to a safe point
         m_DebugSuspendEvent.CreateManualEvent(FALSE);
+#ifdef TARGET_UNIX
+        m_ThreadExitedEvent.CreateManualEvent(FALSE);
+#endif // TARGET_UNIX
     }
     EX_CATCH {
         fOK = FALSE;
 
-        if (!m_DebugSuspendEvent.IsValid()) {
+        if (m_DebugSuspendEvent.IsValid()) {
             m_DebugSuspendEvent.CloseEvent();
         }
+#ifdef TARGET_UNIX
+        if (m_ThreadExitedEvent.IsValid()) {
+            m_ThreadExitedEvent.CloseEvent();
+        }
+#endif // TARGET_UNIX
 
         RethrowTerminalExceptions();
     }
@@ -2371,6 +2383,13 @@ Thread::~Thread()
         m_DebugSuspendEvent.CloseEvent();
     }
 
+#ifdef TARGET_UNIX
+    if (m_ThreadExitedEvent.IsValid())
+    {
+        m_ThreadExitedEvent.CloseEvent();
+    }
+#endif // TARGET_UNIX
+
     if (m_OSContext)
         delete m_OSContext;
 
@@ -3002,7 +3021,12 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WINDOWS
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+#else
+    _ASSERTE(!"Reentrant waits are only supported on Windows");
+    return WAIT_FAILED;
+#endif
 }
 
 DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
@@ -3015,8 +3039,10 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
     CONTRACTL_END;
 
 #ifdef TARGET_UNIX
-    return WaitForSingleObjectEx(handle, timeout, mode == WaitMode_Alertable);
+    _ASSERTE(handle == GetThreadHandle());
+    return m_ThreadExitedEvent.Wait(timeout, (mode & WaitMode_Alertable) != 0);
 #else
+
     ULONGLONG dwStart = 0, dwEnd;
     if (timeout != INFINITE)
     {
@@ -3050,6 +3076,7 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
 }
 
 
+#ifdef TARGET_WINDOWS
 //--------------------------------------------------------------------
 // Do appropriate wait based on apartment state (STA or MTA)
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
@@ -3072,6 +3099,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
 
     return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
 }
+#endif // TARGET_WINDOWS
 
 #ifdef TARGET_WINDOWS
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
@@ -4412,7 +4440,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     BOOL fLoop = TRUE;
     EX_TRY
     {
-        *pStatus = pEvent->Wait(timeout, fAlertable);
+        *pStatus = pEvent->Wait(timeout, fAlertable, false);
         fLoop = FALSE;
     }
     EX_CATCH

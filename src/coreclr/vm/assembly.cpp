@@ -12,6 +12,7 @@
 ===========================================================*/
 
 #include "common.h"
+#include <minipal/time.h>
 
 #include <stdlib.h>
 
@@ -1282,7 +1283,7 @@ static void RunMainPost()
     //
     if (dwSecondsToSleep != 0)
     {
-        ClrSleepEx(dwSecondsToSleep * 1000, FALSE);
+        minipal_sleep(dwSecondsToSleep * 1000);
     }
 }
 
