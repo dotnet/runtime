@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Configuration
     public class ConfigurationRoot : IConfigurationRoot, IDisposable
     {
         private readonly IList<IConfigurationProvider> _providers;
+        private readonly ReferenceResolutionEngine? _engine;
         private readonly List<IDisposable> _changeTokenRegistrations;
         private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
 
@@ -25,10 +26,16 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="providers">The <see cref="IConfigurationProvider"/>s for this configuration.</param>
         public ConfigurationRoot(IList<IConfigurationProvider> providers)
+            : this(providers, engine: null)
+        {
+        }
+
+        internal ConfigurationRoot(IList<IConfigurationProvider> providers, ReferenceResolutionEngine? engine)
         {
             ArgumentNullException.ThrowIfNull(providers);
 
             _providers = providers;
+            _engine = engine;
             _changeTokenRegistrations = new List<IDisposable>(providers.Count);
             foreach (IConfigurationProvider p in providers)
             {
@@ -42,6 +49,8 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public IEnumerable<IConfigurationProvider> Providers => _providers;
 
+        internal ReferenceResolutionEngine? Engine => _engine;
+
         /// <summary>
         /// Gets or sets the value corresponding to a configuration key.
         /// </summary>
@@ -49,7 +58,15 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration value.</returns>
         public string? this[string key]
         {
-            get => GetConfiguration(_providers, key);
+            get
+            {
+                if (_engine is not null)
+                {
+                    return _engine.TryGet(key, out string? resolved) ? resolved : null;
+                }
+
+                return GetConfiguration(_providers, key);
+            }
             set => SetConfiguration(_providers, key, value);
         }
 
@@ -86,6 +103,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 provider.Load();
             }
+            _engine?.Invalidate();
             RaiseChanged();
         }
 
@@ -109,6 +127,8 @@ namespace Microsoft.Extensions.Configuration
             {
                 (provider as IDisposable)?.Dispose();
             }
+
+            _engine?.Dispose();
         }
 
         internal static string? GetConfiguration(IList<IConfigurationProvider> providers, string key)

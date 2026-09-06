@@ -42,6 +42,18 @@ namespace Microsoft.Extensions.Configuration
 
         internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
         {
+            ReferenceResolutionEngine? engine = (root as ConfigurationRoot)?.Engine ?? (root as ConfigurationManager)?.Engine;
+            if (engine is not null)
+            {
+                if (engine.TryGet(key, out value))
+                {
+                    return true;
+                }
+
+                value = null;
+                return false;
+            }
+
             // common cases Providers is IList<IConfigurationProvider> in ConfigurationRoot
             IList<IConfigurationProvider> providers = root.Providers is IList<IConfigurationProvider> list
                 ? list

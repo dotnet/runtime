@@ -107,6 +107,10 @@ namespace Microsoft.Extensions.Configuration
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? initialData) { throw null; }
     }
+    public static partial class ConfigurationBuilderExtensions
+    {
+        public static Microsoft.Extensions.Configuration.IConfigurationBuilder AllowExpansions(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder, bool allow = true) { throw null; }
+    }
     public abstract partial class StreamConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
     {
         public StreamConfigurationProvider(Microsoft.Extensions.Configuration.StreamConfigurationSource source) { }
