@@ -2208,16 +2208,18 @@ namespace System
                 {
                     Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
                     Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
-                    ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector512<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
+                        ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
-                return;
             }
             else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
             {
@@ -2303,19 +2305,23 @@ namespace System
                 {
                     Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
                     Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector256<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
-                return;
             }
-            else if (Vector128.IsHardwareAccelerated)
+            else if (remaining.Length >= Vector128<ushort>.Count*2)
             {
+                Debug.Assert(Vector128.IsHardwareAccelerated);
+
                 Vector128<ushort> v1 = Vector128.Create((ushort)c);
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
                 Vector128<ushort> v3 = Vector128.Create((ushort)c3);
@@ -2371,7 +2377,7 @@ namespace System
                     }
                 }
 
-                while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count)
+                while (remaining.Length >= Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector = Vector128.Create(remaining);
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
@@ -2398,19 +2404,23 @@ namespace System
                 {
                     Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector128<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
-                return;
             }
-
-            Debug.Fail("We should not be able to reach this point of MakeSeparatorListVectorized.");
+            else
+            {
+                Debug.Fail("Expected remaining.Length >= Vector128<ushort>.Count*2");
+            }
         }
 
         /// <summary>
