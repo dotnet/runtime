@@ -595,6 +595,18 @@ PhaseStatus Compiler::fgImport()
         INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
+    // A non-async method must not contain calls using the async calling
+    // convention unless it explicitly handles the continuation itself. The
+    // only methods allowed to do this are infrastructure helpers such as async
+    // thunks and resumption stubs, which the runtime generates and which
+    // arrange for suspension/resumption via the AsyncHelpers.AsyncCallContinuation
+    // intrinsic. Any other such call is invalid IL and would otherwise result
+    // in undefined behavior at runtime.
+    if (compHasAsyncCallInNonAsync && !info.compUsesAsyncContinuation)
+    {
+        BADCODE("Call to an async method is not allowed in a non-async caller");
+    }
+
     fgImportDone = true;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
