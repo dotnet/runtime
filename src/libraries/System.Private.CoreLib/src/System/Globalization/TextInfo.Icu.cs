@@ -14,7 +14,20 @@ namespace System.Globalization
         {
             Debug.Assert(localeName != null);
 
-            return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
+            // ICU applies the Turkish dotted/dotless "i" casing rules to the "tr" and "az"
+            // languages. This is determined from the locale name rather than by probing the
+            // collation tailoring, because some platforms (notably Android, which uses the
+            // system ICU) do not ship the collation data that probe relies on, which would
+            // silently fall back to non-Turkish casing.
+            ReadOnlySpan<char> language = localeName.AsSpan();
+            int separatorIndex = language.IndexOfAny('-', '_');
+            if (separatorIndex >= 0)
+            {
+                language = language.Slice(0, separatorIndex);
+            }
+
+            return language.Equals("tr", StringComparison.OrdinalIgnoreCase) ||
+                   language.Equals("az", StringComparison.OrdinalIgnoreCase);
         }
 
         internal unsafe void IcuChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
