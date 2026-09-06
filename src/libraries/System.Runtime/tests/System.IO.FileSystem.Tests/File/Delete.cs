@@ -184,9 +184,9 @@ namespace System.IO.Tests
             Assert.False(testFile.Exists);
         }
 
-        [Theory,
-            InlineData(":bar"),
-            InlineData(":bar:$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData(":bar")]
+        [InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsDeleteAlternateDataStream(string streamName)
         {

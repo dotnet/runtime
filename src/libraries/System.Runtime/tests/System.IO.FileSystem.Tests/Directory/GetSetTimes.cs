@@ -30,18 +30,21 @@ namespace System.IO.Tests
                     ((path) => Directory.GetCreationTimeUtc(path)),
                     DateTimeKind.Utc);
             }
-            yield return TimeFunction.Create(
-                ((path, time) => Directory.SetLastAccessTime(path, time)),
-                ((path) => Directory.GetLastAccessTime(path)),
-                DateTimeKind.Local);
-            yield return TimeFunction.Create(
-                ((path, time) => Directory.SetLastAccessTimeUtc(path, time)),
-                ((path) => Directory.GetLastAccessTimeUtc(path)),
-                DateTimeKind.Unspecified);
-            yield return TimeFunction.Create(
-                ((path, time) => Directory.SetLastAccessTimeUtc(path, time)),
-                ((path) => Directory.GetLastAccessTimeUtc(path)),
-                DateTimeKind.Utc);
+            if (TempPathSupportsPreciseLastAccessTime)
+            {
+                yield return TimeFunction.Create(
+                    ((path, time) => Directory.SetLastAccessTime(path, time)),
+                    ((path) => Directory.GetLastAccessTime(path)),
+                    DateTimeKind.Local);
+                yield return TimeFunction.Create(
+                    ((path, time) => Directory.SetLastAccessTimeUtc(path, time)),
+                    ((path) => Directory.GetLastAccessTimeUtc(path)),
+                    DateTimeKind.Unspecified);
+                yield return TimeFunction.Create(
+                    ((path, time) => Directory.SetLastAccessTimeUtc(path, time)),
+                    ((path) => Directory.GetLastAccessTimeUtc(path)),
+                    DateTimeKind.Utc);
+            }
             yield return TimeFunction.Create(
                 ((path, time) => Directory.SetLastWriteTime(path, time)),
                 ((path) => Directory.GetLastWriteTime(path)),
