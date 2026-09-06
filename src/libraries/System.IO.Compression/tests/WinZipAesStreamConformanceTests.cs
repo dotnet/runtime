@@ -78,7 +78,7 @@ namespace System.IO.Compression.Tests
             s_createMethod = winZipAesStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool) },
+                new[] { typeof(Stream), winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool), typeof(bool) },
                 null)!;
         }
 
@@ -94,7 +94,7 @@ namespace System.IO.Compression.Tests
 
             var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                ms, keyMaterial, -1L, true, false
+                ms, keyMaterial, -1L, true, false, false
             })!;
 
             if (initialData != null && initialData.Length > 0)
@@ -116,7 +116,7 @@ namespace System.IO.Compression.Tests
             using var encryptedMs = new MemoryStream();
             using (var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                encryptedMs, encryptKeyMaterial, -1L, true, true
+                encryptedMs, encryptKeyMaterial, -1L, true, true, false
             })!)
             {
                 encryptStream.Write(plaintext);
@@ -133,7 +133,7 @@ namespace System.IO.Compression.Tests
             var ms = new MemoryStream(encryptedData);
             var decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                ms, decryptKeyMaterial, (long)encryptedData.Length, false, false
+                ms, decryptKeyMaterial, (long)encryptedData.Length, false, false, false
             })!;
 
             return Task.FromResult<Stream?>(decryptStream);
