@@ -117,6 +117,9 @@ ICALL_TYPE(SAFESTRMARSHAL, "Mono.SafeStringMarshal", SAFESTRMARSHAL_1)
 NOHANDLES(ICALL(SAFESTRMARSHAL_1, "GFree", ves_icall_Mono_SafeStringMarshal_GFree))
 NOHANDLES(ICALL(SAFESTRMARSHAL_2, "StringToUtf8_icall", ves_icall_Mono_SafeStringMarshal_StringToUtf8))
 
+ICALL_TYPE(APPCONTEXT, "System.AppContext", APPCONTEXT_1)
+HANDLES(APPCONTEXT_1, "TryGetHostPropertyValue", ves_icall_System_AppContext_TryGetHostPropertyValue, MonoBoolean, 2, (MonoString, MonoStringOut))
+
 ICALL_TYPE(ARGI, "System.ArgIterator", ARGI_1)
 NOHANDLES(ICALL(ARGI_1, "IntGetNextArg",         ves_icall_System_ArgIterator_IntGetNextArg))
 NOHANDLES(ICALL(ARGI_2, "IntGetNextArgType",     ves_icall_System_ArgIterator_IntGetNextArgType))
