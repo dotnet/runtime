@@ -49,6 +49,9 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeNam
                                                           int32_t valueLength,
                                                           const UChar* uiLocaleName);
 #if defined(APPLE_HYBRID_GLOBALIZATION)
-PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName);
+PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(
+    const char* localeName,
+    LocaleStringData localeStringData,
+    const char* currentUILocaleName,
+    int32_t useUserOverride);
 #endif  
-
