@@ -21,6 +21,7 @@ namespace Internal.NativeCrypto
         internal static class AlgorithmName
         {
             public const string CompositeMLDsa = "Composite-ML-DSA";    // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
+            public const string CompositeMLKem = "Composite-ML-KEM";    // BCRYPT_COMPOSITE_MLKEM_ALGORITHM
             public const string DSA = "DSA";                            // BCRYPT_DSA_ALGORITHM
             public const string ECDH = "ECDH";                          // BCRYPT_ECDH_ALGORITHM
             public const string ECDHP256 = "ECDH_P256";                 // BCRYPT_ECDH_P256_ALGORITHM

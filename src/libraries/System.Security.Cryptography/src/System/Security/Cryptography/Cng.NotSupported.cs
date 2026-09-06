@@ -491,6 +491,30 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
     }
 
+    public sealed partial class CompositeMLKemCng : CompositeMLKem
+    {
+        private static partial CompositeMLKemAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        public partial CngKey GetKey() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportDecapsulationKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportEncapsulationKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+    }
+
     public sealed partial class X25519DiffieHellmanCng : X25519DiffieHellman
     {
         public partial X25519DiffieHellmanCng(CngKey key)

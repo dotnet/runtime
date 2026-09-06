@@ -338,6 +338,8 @@ namespace System.Security.Cryptography
         public string Algorithm { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithm CompositeMLDsa { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithm CompositeMLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellman { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellmanP256 { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellmanP384 { get { throw null; } }
@@ -369,6 +371,8 @@ namespace System.Security.Cryptography
         public string AlgorithmGroup { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithmGroup CompositeMLDsa { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithmGroup CompositeMLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup DiffieHellman { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup Dsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup ECDiffieHellman { get { throw null; } }
@@ -754,6 +758,18 @@ namespace System.Security.Cryptography
         public static bool operator ==(System.Security.Cryptography.CompositeMLKemAlgorithm? left, System.Security.Cryptography.CompositeMLKemAlgorithm? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.CompositeMLKemAlgorithm? left, System.Security.Cryptography.CompositeMLKemAlgorithm? right) { throw null; }
         public override string ToString() { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class CompositeMLKemCng : System.Security.Cryptography.CompositeMLKem
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public CompositeMLKemCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.CompositeMLKemAlgorithm)) { }
+        protected override void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override int ExportDecapsulationKeyCore(System.Span<byte> destination) { throw null; }
+        protected override int ExportEncapsulationKeyCore(System.Span<byte> destination) { throw null; }
+        public System.Security.Cryptography.CngKey GetKey() { throw null; }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial class CryptoConfig
     {
