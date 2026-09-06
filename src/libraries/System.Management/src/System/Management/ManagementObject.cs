@@ -904,6 +904,9 @@ namespace System.Management
                     o.Context,
                     this);
 
+                if (sink == null)
+                    throw new InvalidOperationException("Unable to get WmiGetEventSink"); 
+
                 // If someone has registered for progress, make sure we flag it
                 if (watcher.HaveListenersForProgress)
                     o.SendStatus = true;
