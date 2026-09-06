@@ -75,6 +75,8 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc*
 extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee, QCallExceptionStatus* qcallError);
 
+extern "C" CLR_BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* handler);
+
 //
 // Buffer
 //
