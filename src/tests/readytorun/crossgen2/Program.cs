@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using TestLibrary;
 using Xunit;
 
 internal class ClassWithStatic
@@ -2271,7 +2272,11 @@ public class Program
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
-        RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        // ActiveIssue https://github.com/dotnet/runtime/issues/133307
+        if (!PlatformDetection.IsWasm || !PlatformDetection.IsReadyToRunCompiled)
+        {
+            RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        }
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
         RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());
