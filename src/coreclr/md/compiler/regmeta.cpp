@@ -40,8 +40,8 @@ RegMeta::RegMeta() :
 #ifdef FEATURE_METADATA_INTERNAL_APIS
     m_pInternalImport(NULL),
 #endif
-    m_pSemReadWrite(NULL),
-    m_fOwnSem(false),
+    m_pReadWriteLock(NULL),
+    m_fOwnLock(false),
     m_bRemap(false),
     m_bSaveOptimized(false),
     m_hasOptimizedRefToDef(false),
@@ -95,7 +95,7 @@ RegMeta::~RegMeta()
             {   // Do nothing on error
             }
             m_pInternalImport = NULL;
-            m_fOwnSem = false;
+            m_fOwnLock = false;
         }
 #endif //FEATURE_METADATA_INTERNAL_APIS
 
@@ -108,8 +108,8 @@ RegMeta::~RegMeta()
         m_pFreeThreadedMarshaler = NULL;
     }
 
-    if (m_pSemReadWrite && m_fOwnSem)
-        delete m_pSemReadWrite;
+    if (m_pReadWriteLock && m_fOwnLock)
+        DestroyMDReadWriteLock(m_pReadWriteLock);
 
     // If this RegMeta is a wrapper on an external StgDB, release it.
     if (IsOfExternalStgDB(m_OpenFlags))
@@ -246,12 +246,10 @@ RegMeta::CreateNewMD()
 
     if (IsThreadSafetyOn())
     {
-        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
+        IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+        m_fOwnLock = true;
 
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_EnableLockCheck();)
     }
 
 ErrExit:
@@ -292,12 +290,10 @@ RegMeta::CreateNewPortablePdbMD()
 
     if (IsThreadSafetyOn())
     {
-        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
+        IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+        m_fOwnLock = true;
 
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_EnableLockCheck();)
     }
 
 ErrExit:
@@ -349,12 +345,13 @@ HRESULT RegMeta::OpenExistingMD(
 
     if (IsThreadSafetyOn())
     {
-        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
+        if (m_pReadWriteLock == NULL)
+        {
+            IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+            m_fOwnLock = true;
+        }
 
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_EnableLockCheck();)
     }
 
     if (!IsOfReOpen(dwOpenFlags))
@@ -447,7 +444,7 @@ HRESULT RegMeta::SetCachedInternalInterface(IUnknown *pUnk)
     {
         // Internal interface is going away before the public interface. Take ownership on the
         // reader writer lock.
-        m_fOwnSem = true;
+        m_fOwnLock = true;
         m_pInternalImport = NULL;
     }
     return hr;
@@ -1336,6 +1333,7 @@ ErrExit:
             // of the APIs were ever called then we can safely delete.
             CLiteWeightStgdbRW* pStgdb = m_pStgdbFreeList;
             m_pStgdbFreeList = m_pStgdbFreeList->m_pNextStgdb;
+            INDEBUG(lockHolder.Debug_DetachMiniMd();)
             delete pStgdb;
         }
 
@@ -1420,7 +1418,7 @@ HRESULT RegMeta::GetIMDInternalImport(
     if (this->IsThreadSafetyOn())
     {
         _ASSERTE( this->GetReaderWriterLock() );
-        IfFailGo(this->GetReaderWriterLock()->LockWrite());
+        IfFailGo(AcquireMDWriteLock(this->GetReaderWriterLock() COMMA_INDEBUG(this->GetMiniMd())));
         isLockedForWrite = true;
     }
 
@@ -1449,7 +1447,7 @@ HRESULT RegMeta::GetIMDInternalImport(
 
 ErrExit:
     if (isLockedForWrite == true)
-        this->GetReaderWriterLock()->UnlockWrite();
+        ReleaseMDWriteLock(this->GetReaderWriterLock() COMMA_INDEBUG(this->GetMiniMd()));
     if (pIUnkInternal)
         pIUnkInternal->Release();
     if (pInternalRW)

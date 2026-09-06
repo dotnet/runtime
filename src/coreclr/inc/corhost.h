@@ -17,9 +17,6 @@
 
 
 #include "windows.h" // worth to include before mscoree.h so we are guaranteed to pick few definitions
-#ifdef CreateSemaphore
-#undef CreateSemaphore
-#endif
 
 #include "mscoree.h"
 
