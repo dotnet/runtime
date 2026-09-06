@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 
+using Internal.Metadata.NativeFormat;
+
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //
@@ -21,24 +23,47 @@ namespace System.Reflection.Runtime.ParameterInfos
         }
 
         public abstract override ParameterAttributes Attributes { get; }
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override object DefaultValue { get; }
         public abstract override object RawDefaultValue { get; }
 
-        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object));
+        public sealed override object[] GetCustomAttributes(bool inherit)
+        {
+            if (GetMetadataReader() is null)
+                return [];
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
+        }
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            if (GetMetadataReader() is null)
+                return RuntimeCustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.IsDefined(this, attributeType);
+
+            if (GetMetadataReader() is null)
+                return false;
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
         }
 
         public sealed override bool Equals(object obj)

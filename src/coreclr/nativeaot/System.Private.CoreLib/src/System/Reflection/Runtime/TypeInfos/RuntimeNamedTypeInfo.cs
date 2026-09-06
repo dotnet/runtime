@@ -4,7 +4,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Runtime.InteropServices;
 
@@ -28,24 +27,6 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return IsGenericTypeDefinition;
-            }
-        }
-
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in TrueCustomAttributes)
-                    yield return cad;
-
-                TypeAttributes attributes = Attributes;
-                if (0 != (attributes & TypeAttributes.Import))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(ComImportAttribute), null);
-
-#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
-                if (0 != (attributes & TypeAttributes.Serializable))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(SerializableAttribute), null);
-#pragma warning restore SYSLIB0050
             }
         }
 
@@ -151,8 +132,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 };
             }
         }
-
-        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
 
         //
         // Returns the anchoring typedef that declares the members that this type wants returned by the Declared*** properties.

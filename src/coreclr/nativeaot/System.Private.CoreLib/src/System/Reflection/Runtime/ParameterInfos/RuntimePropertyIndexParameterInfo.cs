@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.PropertyInfos;
 
+using Internal.Metadata.NativeFormat;
+
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //
@@ -29,13 +31,9 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return _backingParameter.CustomAttributes;
-            }
-        }
+        internal sealed override MetadataReader? GetMetadataReader() => _backingParameter.GetMetadataReader();
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _backingParameter.GetCustomAttributeHandles();
 
         public sealed override object DefaultValue
         {

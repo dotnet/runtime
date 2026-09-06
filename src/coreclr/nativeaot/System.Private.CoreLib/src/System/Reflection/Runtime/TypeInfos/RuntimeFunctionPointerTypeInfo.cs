@@ -34,7 +34,6 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         public override Assembly Assembly => typeof(object).Assembly;
-        public override IEnumerable<CustomAttributeData> CustomAttributes => Array.Empty<CustomAttributeData>();
         public override Type[] GetFunctionPointerCallingConventions() => [];
 
         public override bool ContainsGenericParameters
