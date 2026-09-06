@@ -20,7 +20,7 @@ using TestCertificates = System.Net.Test.Common.Configuration.Certificates;
 
 namespace System.Net.Security.Tests
 {
-    [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD | TestPlatforms.Windows | TestPlatforms.OSX)]
+    [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD | TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.Android)]
     public class TlsSessionTests
     {
         private const int CipherBufSize = 32 * 1024;
@@ -833,8 +833,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not expose the TLS exporter required to compute tls-server-end-point channel binding here.")]
+        [ConditionalFact(typeof(TestConfiguration), nameof(TestConfiguration.SupportsUniqueChannelBinding))]
         public async Task ServerSession_ChannelBinding_MatchesSslStreamClient()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
@@ -1783,8 +1782,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake renegotiation.")]
+        [ConditionalFact(typeof(TestConfiguration), nameof(TestConfiguration.SupportsRenegotiation))]
         public async Task ServerSession_RequestClientCertificate_Tls12_ProducesHandshakeBytes()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
