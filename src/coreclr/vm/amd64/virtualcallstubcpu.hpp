@@ -124,37 +124,88 @@ a DispatchStubLong which is bigger but is a full 64-bit jump. */
 
 /*DispatchStubShort*********************************************************************************
 This is the logical continuation of DispatchStub for the case when the failure target is within
-a rel32 jump (DISPL). */
+a rel32 jump (DISPL). Uses a union to handle both legacy and APX encodings. */
 struct DispatchStubShort
 {
     friend struct DispatchHolder;
     friend struct DispatchStub;
 
     static BOOL isShortStub(LPCBYTE pCode);
-    inline PCODE implTarget() const { LIMITED_METHOD_CONTRACT;  return (PCODE) _implTarget; }
+
+    inline BOOL isJmpAbsEncoding() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        const BYTE *bytes = reinterpret_cast<const BYTE *>(this);
+        // APX encoding starts with 0x0F 0x85 (jne near). Legacy starts with 0x48 0xB8 (mov rax, imm64).
+        return bytes[0] == 0x0F && bytes[1] == 0x85;
+    }
+
+    inline PCODE implTarget() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return isJmpAbsEncoding() ? (PCODE)_apx._implTarget : (PCODE)_legacy._implTarget;
+    }
 
     inline TADDR implTargetSlot() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (TADDR)&_implTarget;
+        return isJmpAbsEncoding() ? (TADDR)&_apx._implTarget : (TADDR)&_legacy._implTarget;
     }
 
-    inline PCODE failTarget() const { LIMITED_METHOD_CONTRACT;  return (PCODE) &_failDispl + sizeof(DISPL) + _failDispl; }
+    inline PCODE failTarget() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (isJmpAbsEncoding())
+        {
+            // APX: displacement base is after the jne near instruction
+            return (PCODE)&_apx.nop + _apx._failDispl;
+        }
+        else
+        {
+            // Legacy: displacement base after the jne instruction
+            return (PCODE)&_legacy._failDispl + sizeof(DISPL) + _legacy._failDispl;
+        }
+    }
 
 private:
-    BYTE    part1 [2];            // 48 B8                    mov    rax,
-    size_t  _implTarget;          // xx xx xx xx xx xx xx xx              64-bit address
-    BYTE    part2[2];             // 0f 85                    jne
-    DISPL   _failDispl;           // xx xx xx xx                     failEntry         ;must be forward jmp for perf reasons
-    BYTE    part3 [2];            // FF E0                    jmp    rax
+    union
+    {
+        // Legacy encoding (18 bytes): mov rax, imm64; jne; jmp rax
+        struct
+        {
+            BYTE    part1[2];         // 48 B8                    mov    rax,
+            size_t  _implTarget;      // xx xx xx xx xx xx xx xx              64-bit address
+            BYTE    part2[2];         // 0f 85                    jne
+            DISPL   _failDispl;       // xx xx xx xx                     failEntry
+            BYTE    part3[2];         // FF E0                    jmp    rax
+        } _legacy;
+
+        // APX encoding (18 bytes): jne near; nop; jmpabs
+        struct
+        {
+            BYTE    part1[2];         // 0F 85                    jne near
+            DISPL   _failDispl;       // xx xx xx xx                     4-byte displacement
+            BYTE    nop;              // 90                       nop
+            BYTE    jmpabsPrefix[3];  // D5 00 A1                 JMPABS prefix
+            size_t  _implTarget;      // xx xx xx xx xx xx xx xx              64-bit address at offset 10
+        } _apx;
+
+        // Raw bytes for detection and access
+        BYTE _bytes[18];
+    };
 };
 
-#define DispatchStubShort_offsetof_failDisplBase (offsetof(DispatchStubLong, _failDispl) + sizeof(DISPL))
+#define DispatchStubShort_offsetof_failDisplBase (offsetof(DispatchStubShort, _legacy._failDispl) + sizeof(DISPL))
 
 inline BOOL DispatchStubShort::isShortStub(LPCBYTE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-    return reinterpret_cast<DispatchStubShort const *>(pCode)->part2[0] == 0x0f;
+    // APX encoding: starts with 0x0F 0x85 (jne near) at byte 0
+    if (pCode[0] == 0x0F && pCode[1] == 0x85)
+        return TRUE;
+
+    // Legacy encoding: check for jne near instruction at expected offset
+    return reinterpret_cast<DispatchStubShort const *>(pCode)->_legacy.part2[0] == 0x0F;
 }
 
 
@@ -324,9 +375,24 @@ struct DispatchHolder
     static BOOL CanShortJumpDispatchStubReachFailTarget(PCODE failTarget, LPCBYTE stubMemory)
     {
         STATIC_CONTRACT_WRAPPER;
-        LPCBYTE pFrom = stubMemory + sizeof(DispatchStub) + DispatchStubShort_offsetof_failDisplBase;
-        size_t cbRelJump = failTarget - (PCODE)pFrom;
-        return FitsInI4(cbRelJump);
+
+        // Both encodings use a rel32 jump for the fail target.
+        // For legacy: failDispl base is after the jne instruction
+        // For APX: displacement base is at byte 6 (the nop byte)
+        if (IsJmpAbsAvailable())
+        {
+            // APX: jne near at bytes 0-5, displacement base at byte 6 (nop)
+            LPCBYTE pFrom = stubMemory + sizeof(DispatchStub) + offsetof(DispatchStubShort, _apx.nop);
+            size_t cbRelJump = failTarget - (PCODE)pFrom;
+            return FitsInI4(cbRelJump);
+        }
+        else
+        {
+            // Legacy encoding
+            LPCBYTE pFrom = stubMemory + sizeof(DispatchStub) + DispatchStubShort_offsetof_failDisplBase;
+            size_t cbRelJump = failTarget - (PCODE)pFrom;
+            return FitsInI4(cbRelJump);
+        }
     }
 
     DispatchStub* stub()      { LIMITED_METHOD_CONTRACT;  return reinterpret_cast<DispatchStub *>(this); }
@@ -590,7 +656,8 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
 void DispatchHolder::InitializeStatic()
 {
     // Check that _implTarget is aligned in the DispatchStub for backpatching
-    static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _implTarget)) % sizeof(void *)) == 0);
+    static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _legacy._implTarget)) % sizeof(void *)) == 0);
+    static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _apx._implTarget)) % sizeof(void *)) == 0);
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _implTarget)) % sizeof(void *)) == 0);
 
     static_assert(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
@@ -606,15 +673,15 @@ void DispatchHolder::InitializeStatic()
     dispatchInit.part1 [2]            = (X64_INSTR_CMP_IND_THIS_REG_RAX >> 16) & 0xff;
     dispatchInit.nopOp                = 0x90;
 
-    // Short dispatch stub initialization
-    dispatchShortInit.part1 [0]       = 0x48;
-    dispatchShortInit.part1 [1]       = 0xb8;
-    dispatchShortInit._implTarget     = 0xcccccccccccccccc;
-    dispatchShortInit.part2 [0]       = 0x0F;
-    dispatchShortInit.part2 [1]       = 0x85;
-    dispatchShortInit._failDispl      = 0xcccccccc;
-    dispatchShortInit.part3 [0]       = 0xFF;
-    dispatchShortInit.part3 [1]       = 0xE0;
+    // Short dispatch stub initialization (legacy encoding)
+    dispatchShortInit._legacy.part1 [0]       = 0x48;
+    dispatchShortInit._legacy.part1 [1]       = 0xb8;
+    dispatchShortInit._legacy._implTarget     = 0xcccccccccccccccc;
+    dispatchShortInit._legacy.part2 [0]       = 0x0F;
+    dispatchShortInit._legacy.part2 [1]       = 0x85;
+    dispatchShortInit._legacy._failDispl      = 0xcccccccc;
+    dispatchShortInit._legacy.part3 [0]       = 0xFF;
+    dispatchShortInit._legacy.part3 [1]       = 0xE0;
 
     // Long dispatch stub initialization
     dispatchLongInit.part1 [0]        = 0x48;
@@ -656,12 +723,41 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
         // initialize the static data
         *shortStubRW = dispatchShortInit;
 
-        // fill in the dynamic data
-        size_t displ = (failTarget - ((PCODE) &shortStubRX->_failDispl + sizeof(DISPL)));
-        CONSISTENCY_CHECK(FitsInI4(displ));
-        shortStubRW->_failDispl   = (DISPL) displ;
-        shortStubRW->_implTarget  = (size_t) implTarget;
-        CONSISTENCY_CHECK((PCODE)&shortStubRX->_failDispl + sizeof(DISPL) + shortStubRX->_failDispl == failTarget);
+#if defined(TARGET_AMD64)
+        if (IsJmpAbsAvailable())
+        {
+            // JMPABS encoding (18 bytes): jne near; nop; jmpabs
+            // 0-1:   0x0F 0x85 (jne near)
+            // 2-5:   4-byte displacement
+            // 6:     nop (0x90)
+            // 7-9:   JMPABS prefix (D5 00 A1)
+            // 10-17: 8-byte implTarget address
+
+            // Encode jne near failTarget
+            shortStubRW->_apx.part1[0] = 0x0F;
+            shortStubRW->_apx.part1[1] = 0x85;
+
+            // Calculate displacement from offset 6 (the nop byte, which is the instruction after jne)
+            size_t displ = failTarget - ((PCODE)&shortStubRX->_apx.nop);
+            CONSISTENCY_CHECK(FitsInI4(displ));
+            shortStubRW->_apx._failDispl = (DISPL)displ;
+
+            // NOP padding
+            shortStubRW->_apx.nop = 0x90;
+
+            // JMPABS to implTarget
+            emitJmpAbsJump((LPBYTE)&shortStubRX->_apx.jmpabsPrefix, (LPBYTE)&shortStubRW->_apx.jmpabsPrefix, (LPVOID)implTarget);
+        }
+        else
+#endif
+        {
+            // Legacy encoding: fill in the dynamic data
+            size_t displ = (failTarget - ((PCODE)&shortStubRX->_legacy._failDispl + sizeof(DISPL)));
+            CONSISTENCY_CHECK(FitsInI4(displ));
+            shortStubRW->_legacy._failDispl   = (DISPL)displ;
+            shortStubRW->_legacy._implTarget  = (size_t)implTarget;
+            CONSISTENCY_CHECK((PCODE)&shortStubRX->_legacy._failDispl + sizeof(DISPL) + shortStubRW->_legacy._failDispl == failTarget);
+        }
     }
     else
     {
