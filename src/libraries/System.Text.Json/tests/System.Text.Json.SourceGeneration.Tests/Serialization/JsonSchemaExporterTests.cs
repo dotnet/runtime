@@ -113,6 +113,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoWithStructFollowedByNullableStruct))]
         [JsonSerializable(typeof(PocoWithNullableStructFollowedByStruct))]
         [JsonSerializable(typeof(PocoWithExtensionDataProperty))]
+        [JsonSerializable(typeof(PocoWithReadOnlyProperties))]
         [JsonSerializable(typeof(PocoDisallowingUnmappedMembers))]
         [JsonSerializable(typeof(PocoWithNullableAnnotationAttributes))]
         [JsonSerializable(typeof(PocoWithNullableAnnotationAttributesOnConstructorParams))]
