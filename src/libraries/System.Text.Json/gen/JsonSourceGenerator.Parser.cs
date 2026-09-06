@@ -1217,9 +1217,8 @@ namespace System.Text.Json.SourceGeneration
                     };
                 }
 
-                // Union types: when the type is recognized as a union, enqueue all case
-                // types (constructor parameter types) for metadata generation.
-                if (isUnionType)
+                // Union types handled by the built-in converter need metadata for all case types.
+                if (isUnionType && !foundJsonConverterAttribute)
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified, ref experimentalIds);
                 }
