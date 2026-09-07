@@ -161,9 +161,9 @@ For each result, read the body + latest comments through the `github` MCP (NOT `
 
 ### Step 3 — Existing-artifact dedup (search live GitHub, every KBE)
 
-Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing each visible `Linked KBE:` field, then resolve checks 1–3 against that map. Use the `github` MCP search tools:
+Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing both its `head.ref` branch and each visible `Linked KBE:` field. Every `[ci-fix]` PR MUST use a `ci-fix/<kbe>-...` head branch, making the branch prefix a deterministic, punctuation-free dedup key. Resolve checks 1–3 against that map. Use the `github` MCP search tools:
 
-1. **Open fix PR already exists** — `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
+1. **Open fix PR already exists** — first check the enumerated `[ci-fix]` PR map for any open PR whose `head.ref` starts with `ci-fix/<kbe>-`. This prefix match is authoritative: if found, skip immediately even when title/body search misses. Otherwise fall back to `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
 2. **Merged fix PR exists** — `repo:dotnet/runtime is:pr is:merged "Linked KBE: #<kbe>"`. If found, the KBE is likely already fixed -> `-> skipped: fix PR #<n> already merged; KBE may be stale`.
 3. **Closed-unmerged fix PR within 30d** — `repo:dotnet/runtime is:pr is:closed -is:merged "Linked KBE: #<kbe>" closed:>=<today-30d>`. If found, do NOT re-open the same fix unless you have a clearly different change. Record `-> skipped: prior fix PR #<n> closed without merge within 30d`.
 4. **A human (non-`[ci-fix]`) PR already references the KBE** — `repo:dotnet/runtime is:pr is:open "#<kbe>"`. If a maintainer is already fixing it -> `-> skipped: human PR #<n> already addressing`.
@@ -248,7 +248,7 @@ Once you have a candidate diff, classify it:
 
 #### Step 5.3 — Emit a confident fix PR (Branch FIX)
 
-Branch from `origin/main`. Stage only the files you change with `git add <specific path>` (never `git add -A`); verify with `git diff --name-only --cached`.
+Branch from `origin/main` using a `ci-fix/<kbe>-<slug>-<hash>` head-branch name (numeric KBE id first). Stage only the files you change with `git add <specific path>` (never `git add -A`); verify with `git diff --name-only --cached`.
 
 **Validation contract.** Build-validate the change. For libraries: `dotnet build` the affected test project (and run the single failing test if feasible). Record the exact command and its result. If you ultimately cannot validate within the environment, this is no longer a confident fix — drop to Branch HELP (Step 5.4).
 
@@ -258,7 +258,7 @@ Emit one `create_pull_request` using the Fix-PR template (Templates section). Th
 
 You have a real candidate change but cannot stand fully behind it. Open it anyway so reviewers have something concrete to react to, instead of a bare comment.
 
-Branch from `origin/main`. Stage only the files you change with `git add <specific path>`; verify with `git diff --name-only --cached`. The diff MUST be a genuine attempt at the fix — **never** a test-disable, `[ActiveIssue]`, or csproj exclusion (that is muting, Hard rule 3).
+Branch from `origin/main` using a `ci-fix/<kbe>-<slug>-<hash>` head-branch name (numeric KBE id first). Stage only the files you change with `git add <specific path>`; verify with `git diff --name-only --cached`. The diff MUST be a genuine attempt at the fix — **never** a test-disable, `[ActiveIssue]`, or csproj exclusion (that is muting, Hard rule 3).
 
 Run whatever validation you can and record the exact command + result (including "not run because <reason>"). Emit one `create_pull_request` using the Help-wanted-PR template. The title MUST make the ask visible (e.g. `[ci-fix] Needs review: <short description> (refs #<kbe>)`). The body MUST link the KBE (`Linked KBE: #<n>`), carry `Artifact kind: help`, state exactly what is unverified, and loop in the likely author + area owners under a non-accusatory "Help wanted" heading (Step 6 mention rules apply). Keep it draft.
 

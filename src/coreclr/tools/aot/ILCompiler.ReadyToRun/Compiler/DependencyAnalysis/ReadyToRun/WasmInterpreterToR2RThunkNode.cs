@@ -157,17 +157,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             List<WasmExpr> expressions = new List<WasmExpr>();
 
             // Save the current stack pointer global
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             expressions.Add(Local.Set(localSavedSp));
 
             // Allocate frame space: sp -= FrameSize
             expressions.Add(Local.Get(localSavedSp));
             expressions.Add(I32.Const(FrameSize));
             expressions.Add(I32.Sub);
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // Write TERMINATE_R2R_STACK_WALK (1) into the framePointer at new SP
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             expressions.Add(I32.Const(TerminateR2RStackWalk));
             expressions.Add(I32.Store(0));
 
@@ -185,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Param 0: $sp — pointer to the framePointer on the shadow stack
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             targetParamIndex++;
 
             // If the method has a 'this' pointer, load it from pArgs at offset 0
@@ -318,7 +318,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Restore the stack pointer global
             expressions.Add(Local.Get(localSavedSp));
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 sigForInterpToR2RThunks.FuncType,

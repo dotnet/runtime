@@ -870,7 +870,6 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     m_pOwner = pOwner;

@@ -165,7 +165,6 @@ namespace Internal.JitInterface
                 s_callbacks.embedGenericHandle = &_embedGenericHandle;
                 s_callbacks.getLocationOfThisType = &_getLocationOfThisType;
                 s_callbacks.getAddressOfPInvokeTarget = &_getAddressOfPInvokeTarget;
-                s_callbacks.GetCookieForPInvokeCalliSig = &_GetCookieForPInvokeCalliSig;
                 s_callbacks.GetCookieForInterpreterCalliSig = &_GetCookieForInterpreterCalliSig;
                 s_callbacks.getJustMyCodeHandle = &_getJustMyCodeHandle;
                 s_callbacks.GetProfilingHandle = &_GetProfilingHandle;
@@ -351,7 +350,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void> embedGenericHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP_KIND*, void> getLocationOfThisType;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, void> getAddressOfPInvokeTarget;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void**, void*> GetCookieForPInvokeCalliSig;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void*> GetCookieForInterpreterCalliSig;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_JUST_MY_CODE_HANDLE_**, CORINFO_JUST_MY_CODE_HANDLE_*> getJustMyCodeHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, bool*, void**, bool*, void> GetProfilingHandle;
@@ -2530,21 +2528,6 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static void* _GetCookieForPInvokeCalliSig(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.GetCookieForPInvokeCalliSig(szMetaSig, ref *ppIndirection);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
             }
         }
 

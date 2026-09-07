@@ -1994,7 +1994,6 @@ DWORD ILStubLinker::NewLocal(CorElementType typ)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2032,7 +2031,6 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pLoc));
     }
     CONTRACTL_END;
@@ -2516,7 +2514,6 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 

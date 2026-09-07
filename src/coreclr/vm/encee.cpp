@@ -43,7 +43,6 @@ EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, PEAssembly *pP
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -65,7 +64,6 @@ void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szNa
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1735,7 +1733,6 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
     {
         NOTHROW;
         if (m_flags & FixUpEncFields) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -1763,7 +1760,6 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
         // if we get an OOM during fixup, the field will just not get fixed up
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             pFD->Fixup(pFD->GetMemberDef());
         }
         EX_CATCH
@@ -1791,7 +1787,6 @@ int EncApproxFieldDescIterator::Count()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -1825,7 +1820,6 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END

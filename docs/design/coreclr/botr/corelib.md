@@ -77,29 +77,29 @@ QCalls should be implemented with a C-style method signature. This makes it easi
 Do not replicate the comments into your actual QCall implementation. This is for illustrative purposes.
 
 ```CSharp
-class Foo
+partial class Foo
 {
-    // All QCalls should have the following DllImport attribute
-    [DllImport(RuntimeHelpers.QCall, EntryPoint = "Foo_BarInternal", CharSet = CharSet.Unicode)]
-
-    // QCalls should always be static extern.
-    private static extern bool BarInternal(int flags, string inString, StringHandleOnStack retString);
+    // QCalls that use BEGIN_QCALL must use the hidden last parameter error handler.
+    [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+    [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Foo_BarInternal", StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool BarInternal(int flags, string inString, StringHandleOnStack retString);
 
     // Many QCalls have a thin managed wrapper around them to perform
     // as much work prior to the transition as possible. An example would be
     // argument validation which is easier in managed than native code.
-    public string Bar(int flags)
+    public string Bar(int flags, string inString)
     {
         if (flags != 0)
             throw new ArgumentException("Invalid flags");
 
-        string retString = null;
+        string? retString = null;
         // The strings are returned from QCalls by taking address
-        // of a local variable using StringHandleOnStack
-        if (!BarInternal(flags, this.Id, new StringHandleOnStack(ref retString)))
+        // of a local variable using StringHandleOnStack.
+        if (!BarInternal(flags, inString, new StringHandleOnStack(ref retString)))
             FatalError();
 
-        return retString;
+        return retString!;
     }
 }
 ```
@@ -114,7 +114,8 @@ The QCall entrypoint has to be registered in tables in [vm\qcallentrypoints.cpp]
 
 ```C++
 // All QCalls should be free functions and tagged with QCALLTYPE and extern "C"
-extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
+extern "C" BOOL QCALLTYPE Foo_BarInternal(
+    int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     // All QCalls should have QCALL_CONTRACT.
     // It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
@@ -132,7 +133,7 @@ extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::S
     BOOL retVal = FALSE;
 
     // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro.
-    // It is necessary for exception handling.
+    // It initializes qcallError and captures exceptions for the managed error handler.
     BEGIN_QCALL;
 
     // Argument validation would ideally be in managed, but in some cases
@@ -157,6 +158,9 @@ extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::S
     return retVal;
 }
 ```
+
+QCalls that return before entering `BEGIN_QCALL`, including no-op fast paths and code excluded
+by platform conditionals, must explicitly set `*qcallError = 0` before returning.
 
 ## FCall functional behavior
 

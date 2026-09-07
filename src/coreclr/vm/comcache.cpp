@@ -125,7 +125,6 @@ STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(return NULL);
         PRECONDITION(CheckPointer(ppBuf, NULL_OK));
         PRECONDITION(CheckPointer(ppBuf, NULL_OK));
     }
@@ -342,7 +341,6 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pCtxCookie));
     }
     CONTRACTL_END;
@@ -1214,7 +1212,6 @@ VOID CtxEntry::Init()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
 
         // Make sure COM has been started
         PRECONDITION(g_fComStarted == TRUE);

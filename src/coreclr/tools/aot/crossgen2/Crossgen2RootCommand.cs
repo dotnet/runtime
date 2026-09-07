@@ -44,6 +44,8 @@ namespace ILCompiler
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
         public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
+        public Option<bool?> GenerateUnboxingStubs { get; } =
+            new("--generate-unboxing-stubs") { Description = SR.GenerateUnboxingStubsOption };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
         public Option<bool> InputBubble { get; } =
@@ -94,10 +96,16 @@ namespace ILCompiler
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public Option<string> TargetOS { get; } =
             new("--targetos") { Description = SR.TargetOSOption };
+        public Option<bool?> TargetAllowsRuntimeCodeGeneration { get; } =
+            new("--target-allows-runtime-code-generation") { Description = SR.TargetAllowsRuntimeCodeGenerationOption };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -174,6 +182,7 @@ namespace ILCompiler
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
             Options.Add(EnableCachedInterfaceDispatchSupport);
+            Options.Add(GenerateUnboxingStubs);
             Options.Add(TypeValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
@@ -199,8 +208,11 @@ namespace ILCompiler
             Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);
             Options.Add(TargetOS);
+            Options.Add(TargetAllowsRuntimeCodeGeneration);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);

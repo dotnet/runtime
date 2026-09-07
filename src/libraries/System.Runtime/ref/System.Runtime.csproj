@@ -6,8 +6,6 @@
     <!-- disable warnings about obsolete APIs,
         Type has no accessible constructors which use only CLS-compliant types -->
     <NoWarn>$(NoWarn);0809;0618;CS3015</NoWarn>
-    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
-    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <Features>$(Features);updated-memory-safety-rules</Features>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>

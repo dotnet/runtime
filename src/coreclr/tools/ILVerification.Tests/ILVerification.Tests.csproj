@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="ILMethodTester.cs" />
+    <Compile Include="ILMetadataReferenceTester.cs" />
     <Compile Include="ILTypeVerificationTester.cs" />
     <Compile Include="TestDataLoader.cs" />
     <Compile Include="JsonContext.cs" />
@@ -20,6 +21,10 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Tests\%(Filename).dll</TargetPath>
+    </ProjectReference>
+
+    <ProjectReference Update="ILTests\ValidMetadataReferenceModule.ilproj">
+      <TargetPath>Tests\%(Filename).netmodule</TargetPath>
     </ProjectReference>
   </ItemGroup>
 </Project>

@@ -330,7 +330,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             expressions.Add(Local.Get(0)); // The address of the args is passed as the first argument
             expressions.Add(Local.Get(portableEntrypointLocalIndex)); // The address of the portable entrypoint is passed as the second
-            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // The module base address is passed as the third argument
+            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex)); // The module base address is passed as the third argument
 
             // Pass the RVA of the Module fixup as the fourth argument
             // i32.const (RVA of Module fixup)
@@ -338,7 +338,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Load the helper function address and dispatch
             // global.get {module base}
-            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
+            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
             expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime. This avoids the need to emit a runtime relocation for the helper cell.
             // call_indirect (i32, i32, i32, i32) -> (i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));

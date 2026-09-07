@@ -321,7 +321,6 @@ PTR_Module MethodTable::GetModuleIfLoaded()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -667,7 +666,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3870,7 +3868,6 @@ void MethodTable::CheckRunClassInitThrowing()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(IsFullyLoaded());
     }
     CONTRACTL_END;
@@ -3898,7 +3895,6 @@ void MethodTable::EnsureStaticDataAllocated()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3926,7 +3922,6 @@ bool MethodTable::IsClassInitedOrPreinited()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3944,7 +3939,6 @@ bool MethodTable::IsInitedIfStaticDataAllocated()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -4128,7 +4122,6 @@ OBJECTREF MethodTable::GetManagedClassObject()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         //REENTRANT
     }
     CONTRACTL_END;
@@ -7396,7 +7389,6 @@ void MethodTable::MethodIterator::Init(MethodTable *pMTDecl, MethodTable *pMTImp
     CONTRACTL {
         THROWS;
         WRAPPER(GC_TRIGGERS);
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMTDecl));
         PRECONDITION(CheckPointer(pMTImpl));
     } CONTRACTL_END;
@@ -7803,7 +7795,6 @@ BOOL MethodTable::ContainsGenericMethodVariables()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -8678,7 +8669,6 @@ LPCWSTR MethodTable::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 

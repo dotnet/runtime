@@ -11481,6 +11481,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 DecodeBinary(System.UInt128 x) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Decimal128 DecodeDecimal(System.UInt128 x) { throw null; }
+        public static System.Numerics.Decimal128 DegreesToRadians(System.Numerics.Decimal128 degrees) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.UInt128 EncodeBinary(System.Numerics.Decimal128 x) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -11623,6 +11624,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal128 Pow(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 Quantize(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
+        public static System.Numerics.Decimal128 RadiansToDegrees(System.Numerics.Decimal128 radians) { throw null; }
         public static System.Numerics.Decimal128 ReciprocalEstimate(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 ReciprocalSqrtEstimate(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 RootN(System.Numerics.Decimal128 x, int n) { throw null; }
@@ -11731,6 +11733,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 DecodeBinary(uint x) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Decimal32 DecodeDecimal(uint x) { throw null; }
+        public static System.Numerics.Decimal32 DegreesToRadians(System.Numerics.Decimal32 degrees) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint EncodeBinary(System.Numerics.Decimal32 x) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -11877,6 +11880,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Pow(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 Quantize(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
+        public static System.Numerics.Decimal32 RadiansToDegrees(System.Numerics.Decimal32 radians) { throw null; }
         public static System.Numerics.Decimal32 ReciprocalEstimate(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 ReciprocalSqrtEstimate(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 RootN(System.Numerics.Decimal32 x, int n) { throw null; }
@@ -11985,6 +11989,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 DecodeBinary(ulong x) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Decimal64 DecodeDecimal(ulong x) { throw null; }
+        public static System.Numerics.Decimal64 DegreesToRadians(System.Numerics.Decimal64 degrees) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong EncodeBinary(System.Numerics.Decimal64 x) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -12129,6 +12134,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal64 Pow(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 Quantize(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
+        public static System.Numerics.Decimal64 RadiansToDegrees(System.Numerics.Decimal64 radians) { throw null; }
         public static System.Numerics.Decimal64 ReciprocalEstimate(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 ReciprocalSqrtEstimate(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 RootN(System.Numerics.Decimal64 x, int n) { throw null; }

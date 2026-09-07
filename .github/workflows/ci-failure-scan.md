@@ -52,7 +52,7 @@ checkout:
 safe-outputs:
   create-issue:
     max: 5
-    labels: [agentic-workflows]
+    labels: [agentic-workflows, "Known Build Error"]
     allowed-labels: ["Known Build Error", "blocking-clean-ci", "blocking-clean-ci-optional"]
 
 timeout-minutes: 90
@@ -80,7 +80,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 
 1. **All writes via `safe-outputs`.** No `issues: write`, no `contents: write`. Don't try to use `gh` to write. The only output is `create_issue`.
 2. **Cap per run: 5 `create_issue`.** On cap, record `-> skipped: cap reached` and move on.
-3. **Labels: only `Known Build Error` plus exactly one of `blocking-clean-ci` / `blocking-clean-ci-optional` on KBEs.** Pick the blocking label per [KBE label selection](#kbe-label-selection). Every other label (`area-*`, `os-*`, `arch-*`, `disabled-test`, ...) is dropped by `allowed-labels`. Area triage is delegated to `dotnet/issue-labeler` (`.github/workflows/labeler-predict-issues.yml`); never propose area labels yourself.
+3. **Labels: `Known Build Error` is applied automatically; add exactly one of `blocking-clean-ci` / `blocking-clean-ci-optional`.** Pick the blocking label per [KBE label selection](#kbe-label-selection). Every other label (`area-*`, `os-*`, `arch-*`, `disabled-test`, ...) is dropped by `allowed-labels`. Area triage is delegated to `dotnet/issue-labeler` (`.github/workflows/labeler-predict-issues.yml`); never propose area labels yourself.
 4. **One area path per issue.** Title each KBE around a single failure shape (assertion text or test family), not a list of pipelines. If a root cause spans multiple area paths, file one KBE per area and cross-link with `Related: dotnet/runtime#<n>`.
 5. **No `Mute` / `Muting` in titles.** Use `Skip`, `Disable`, `Suppress`, or `Exclude` when a title must describe a mitigation; prefer describing the failure itself.
 6. **Every issue title starts with `[ci-scan] `.**
@@ -109,8 +109,9 @@ Walk the steps in order. Do not skip. Stop at Step 6.
 
 Read once at start:
 
+- `.github/skills/create-kbe/SKILL.md` — the repo-level skill for creating a `Known Build Error` issue from an actionable failure
 - `.github/workflows/shared/create-kbe.instructions.md`
-- In that shared file, load these exact sections and apply them when referenced below:
+- In those instructions, load these exact sections and apply them when referenced below:
   - `<a id="shared-kbe-rules"></a>` / `## Shared rules`
   - `<a id="search-existing-kbe"></a>` / `## Search for an existing KBE`
   - `<a id="search-area-team-tracker"></a>` / `## Search for an area-team tracker`

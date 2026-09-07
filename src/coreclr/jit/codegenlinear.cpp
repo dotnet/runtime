@@ -247,8 +247,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     JITDUMPEXEC(block->dspBlockHeader(true, true));
     JITDUMPEXEC(m_compiler->fgDispBBLiveness(block));
 
-    assert(LIR::AsRange(block).CheckLIR(m_compiler));
-
     // Figure out which registers hold variables on entry to this block
 
     regSet.ClearMaskVars();

@@ -2594,6 +2594,33 @@ namespace System.Numerics.Tests
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
         }
 
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones the bulk data cannot reach: zero, the subnormal range
+        // on either side of the conversion, and an overflow.
+        [Theory]
+        [InlineData(0x0000, 0x0000, 0x0000)] // 0
+        [InlineData(0x0001, 0x0000, 0x0039)] // Epsilon
+        [InlineData(0x0040, 0x0001, 0x02E5)] // 0x1p-133
+        [InlineData(0x0080, 0x0002, 0x0365)] // MinNormal
+        [InlineData(0x3F80, 0x3C8F, 0x4265)] // One
+        [InlineData(0x7F7F, 0x7C8E, 0x7F80)] // MaxValue, overflows for RadiansToDegrees
+        [InlineData(0x7F80, 0x7F80, 0x7F80)] // PositiveInfinity
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ushort valueBits, ushort degreesToRadiansBits, ushort radiansToDegreesBits)
+        {
+            const ushort SignMask = 0x8000;
+
+            BFloat16 value = BitConverter.UInt16BitsToBFloat16(valueBits);
+
+            AssertEqual(BitConverter.UInt16BitsToBFloat16(degreesToRadiansBits), BFloat16.DegreesToRadians(value));
+            AssertEqual(BitConverter.UInt16BitsToBFloat16(radiansToDegreesBits), BFloat16.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            BFloat16 negativeValue = BitConverter.UInt16BitsToBFloat16((ushort)(valueBits ^ SignMask));
+
+            AssertEqual(BitConverter.UInt16BitsToBFloat16((ushort)(degreesToRadiansBits ^ SignMask)), BFloat16.DegreesToRadians(negativeValue));
+            AssertEqual(BitConverter.UInt16BitsToBFloat16((ushort)(radiansToDegreesBits ^ SignMask)), BFloat16.RadiansToDegrees(negativeValue));
+        }
+
         [Theory]
         [InlineData(float.PositiveInfinity, int.MaxValue)]
         [InlineData(float.NaN, int.MaxValue)]

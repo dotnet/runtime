@@ -297,7 +297,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pZapSigContext));
         PRECONDITION(CheckPointer(pZapSigContext->pModuleContext));
@@ -547,7 +546,6 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pTypeHnd));
         PRECONDITION(CheckPointer(typeHnd2));
     }
@@ -630,7 +628,6 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 

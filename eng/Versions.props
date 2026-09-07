@@ -128,7 +128,7 @@
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>
     <TraceEventVersion>3.1.28</TraceEventVersion>
-    <MicrosoftDiagnosticsNetCoreClientVersion>0.2.740901</MicrosoftDiagnosticsNetCoreClientVersion>
+    <MicrosoftDiagnosticsNetCoreClientVersion>0.2.741601</MicrosoftDiagnosticsNetCoreClientVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
@@ -161,6 +161,8 @@
     <CompilerPlatformTestingDiffPlexVersion>1.7.2</CompilerPlatformTestingDiffPlexVersion>
     <CompilerPlatformTestingMicrosoftVisualBasicVersion>10.2.0</CompilerPlatformTestingMicrosoftVisualBasicVersion>
     <CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>17.0.46</CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>
+    <!-- TODO: this package was removed in arcade, we should remove it too -->
+    <MicrosoftDotNetXUnitAssertVersion>3.2.2-beta.26257.113</MicrosoftDotNetXUnitAssertVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->

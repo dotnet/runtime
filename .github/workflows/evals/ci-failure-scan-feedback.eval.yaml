@@ -59,6 +59,12 @@ stimuli:
 
       Keep the output specific, actionable, and verifiable next period. Keep scratch under /tmp.
 
+    rubric:
+      - |
+       The feedback in `./out/feedback.md` is constructive. It is grounded in the real scanner and fixer signals with at least one quantified observation, identifies a concrete miss, and turns that into a specific, actionable next step. That next step is either a single prompt edit that quotes the triggering maintainer comment or close reason and targets one of the allowed workflow or instruction files, or an explicit, justified statement that no edit is warranted. It is not vague or a generic status recap, does not invent signals, and does not propose an edit outside the allowed files.
+      - |
+       If `./out/feedback.md` proposes a prompt edit, that edit quotes and is driven by a real maintainer comment or close reason the agent gathered, and is restricted to `.github/workflows/ci-failure-scan.md`, `.github/workflows/ci-failure-fix.md`, or `.github/workflows/shared/create-kbe.instructions.md`. If it proposes no edit, it explicitly justifies why none is warranted.
+
     graders:
       - type: file-matches
         config:
@@ -69,26 +75,18 @@ stimuli:
         name: scanned-scan-issues
         config:
           required:
-            - name: '^bash$'
+            - name: '^(bash|powershell)$'
               command: 'gh (search|issue).*ci-scan'
 
       - type: tool-calls
         name: scanned-fix-prs
         config:
           required:
-            - name: '^bash$'
+            - name: '^(bash|powershell)$'
               command: 'gh (search|pr).*ci-fix'
 
       - type: prompt
         name: is-constructive
         config:
           scoring: binary
-          prompt: |
-            Read ./out/feedback.md. Pass only if the feedback is constructive. It must be grounded in the real scanner and fixer signals with at least one quantified observation, it must identify a concrete miss, and it must turn that into a specific, actionable next step. That next step is either a single prompt edit that quotes the triggering maintainer comment or close reason and targets one of the allowed workflow or instruction files, or an explicit, justified statement that no edit is warranted. Fail if it is vague, ungrounded, invents a signal not present in the data it gathered, proposes an edit to a file outside the allowed set, or is a generic status recap with no actionable conclusion.
-
-      - type: prompt
-        name: edit-is-grounded
-        config:
-          scoring: binary
-          prompt: |
-            Read ./out/feedback.md. If it proposes a prompt edit, pass only if that edit quotes and is driven by a real maintainer comment or close reason it gathered, and is restricted to `.github/workflows/ci-failure-scan.md`, `.github/workflows/ci-failure-fix.md`, or `.github/workflows/shared/create-kbe.instructions.md`. If it proposes no edit, pass only if it explicitly justifies why none is warranted. Otherwise fail.
+          evidence: [trajectory, diff]

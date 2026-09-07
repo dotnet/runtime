@@ -56,15 +56,16 @@ using std::min;
 
 //-----------------------------------------------------------------------------------------------------------
 
-#include "stdmacros.h"
-
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:0xCCCCCCCCCCCCCCCCLL))
 
+#include <contract.h>
 #include "switches.h"
 #include "holder.h"
 #include "classnames.h"
 #include "util.hpp"
 #include "corpriv.h"
+
+#include <stdmacros.h>
 
 #include <daccess.h>
 
@@ -210,7 +211,6 @@ namespace Loader
 #include "cgensys.h"
 #include "ceemain.h"
 #include "hash.h"
-#include "eecontract.h"
 #include "pedecoder.h"
 #include "sstring.h"
 #include "slist.h"

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Resources;
 using Internal.IL;
@@ -50,6 +51,11 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader)
+            => Verify(peReader, Array.Empty<VerificationResult>());
+
+        internal IEnumerable<VerificationResult> Verify(
+            PEReader peReader,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             if (peReader == null)
             {
@@ -65,7 +71,7 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                results = VerifyMethods(module, module.MetadataReader.MethodDefinitions);
+                results = VerifyMethods(module, module.MetadataReader.MethodDefinitions, metadataErrors);
             }
             catch (VerifierException e)
             {
@@ -79,6 +85,13 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
+            => Verify(peReader, typeHandle, verifyMethods, Array.Empty<VerificationResult>());
+
+        internal IEnumerable<VerificationResult> Verify(
+            PEReader peReader,
+            TypeDefinitionHandle typeHandle,
+            bool verifyMethods,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             if (peReader == null)
             {
@@ -101,12 +114,12 @@ namespace ILVerify
                 EcmaModule module = GetModule(peReader);
                 MetadataReader metadataReader = peReader.GetMetadataReader();
 
-                results = VerifyType(module, typeHandle);
+                results = VerifyType(module, typeHandle, metadataErrors);
 
                 if (verifyMethods)
                 {
                     TypeDefinition typeDef = metadataReader.GetTypeDefinition(typeHandle);
-                    results = results.Union(VerifyMethods(module, typeDef.GetMethods()));
+                    results = results.Union(VerifyMethods(module, typeDef.GetMethods(), metadataErrors));
                 }
             }
             catch (VerifierException e)
@@ -121,6 +134,12 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, MethodDefinitionHandle methodHandle)
+            => Verify(peReader, methodHandle, Array.Empty<VerificationResult>());
+
+        internal IEnumerable<VerificationResult> Verify(
+            PEReader peReader,
+            MethodDefinitionHandle methodHandle,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             if (peReader == null)
             {
@@ -141,7 +160,7 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                results = VerifyMethods(module, new[] { methodHandle });
+                results = VerifyMethods(module, new[] { methodHandle }, metadataErrors);
             }
             catch (VerifierException e)
             {
@@ -154,7 +173,190 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)
+        internal IEnumerable<VerificationResult> VerifyMetadataReferences(PEReader peReader)
+        {
+            EcmaModule module = GetModule(peReader);
+            MetadataReader reader = module.MetadataReader;
+
+            foreach (EntityHandle handle in EnumerateReferenceHandles(reader))
+            {
+                VerificationResult result = TryResolveMetadataHandle(module, handle);
+                if (result != null)
+                {
+                    yield return result;
+                }
+            }
+        }
+
+        private static IEnumerable<EntityHandle> EnumerateReferenceHandles(MetadataReader reader)
+        {
+            foreach (AssemblyReferenceHandle handle in reader.AssemblyReferences)
+            {
+                yield return handle;
+            }
+
+            // ModuleRef is also used as ImplMap.ImportScope to store unmanaged library names for
+            // P/Invoke. Do not try to resolve those entries as managed netmodules.
+            HashSet<ModuleReferenceHandle> pInvokeModuleReferences = GetPInvokeModuleReferences(reader);
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.ModuleRef);
+                 row++)
+            {
+                ModuleReferenceHandle handle = MetadataTokens.ModuleReferenceHandle(row);
+                if (!pInvokeModuleReferences.Contains(handle))
+                {
+                    yield return handle;
+                }
+            }
+
+            foreach (TypeReferenceHandle handle in reader.TypeReferences)
+            {
+                yield return handle;
+            }
+
+            foreach (MemberReferenceHandle handle in reader.MemberReferences)
+            {
+                yield return handle;
+            }
+
+            foreach (ExportedTypeHandle handle in reader.ExportedTypes)
+            {
+                yield return handle;
+            }
+
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.TypeSpec);
+                 row++)
+            {
+                yield return MetadataTokens.TypeSpecificationHandle(row);
+            }
+
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.MethodSpec);
+                 row++)
+            {
+                yield return MetadataTokens.MethodSpecificationHandle(row);
+            }
+
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.StandAloneSig);
+                 row++)
+            {
+                yield return MetadataTokens.StandaloneSignatureHandle(row);
+            }
+        }
+
+        private static HashSet<ModuleReferenceHandle> GetPInvokeModuleReferences(MetadataReader reader)
+        {
+            var moduleReferences = new HashSet<ModuleReferenceHandle>();
+
+            foreach (MethodDefinitionHandle handle in reader.MethodDefinitions)
+            {
+                ModuleReferenceHandle module = reader.GetMethodDefinition(handle).GetImport().Module;
+                if (!module.IsNil)
+                {
+                    moduleReferences.Add(module);
+                }
+            }
+
+            return moduleReferences;
+        }
+
+        private static VerificationResult TryResolveMetadataHandle(EcmaModule module, EntityHandle handle)
+        {
+            try
+            {
+                if (handle.Kind == HandleKind.StandaloneSignature)
+                {
+                    ResolveStandaloneSignature(module, (StandaloneSignatureHandle)handle);
+                }
+                else
+                {
+                    module.GetObject(handle);
+                }
+
+                return null;
+            }
+            catch (TypeSystemException e)
+            {
+                return createVerificationResult(
+                    e.Message,
+                    e.StringID,
+                    exceptionArguments: e.Arguments);
+            }
+            catch (BadImageFormatException e)
+            {
+                return createVerificationResult(e.Message);
+            }
+            catch (InvalidProgramException e)
+            {
+                return createVerificationResult(e.Message);
+            }
+            catch (VerifierException e)
+            {
+                return createVerificationResult(e.Message, code: e.Code);
+            }
+            catch (NotImplementedException e)
+            {
+                return new VerificationResult
+                {
+                    Code = VerifierError.TokenResolve,
+                    MetadataHandle = handle,
+                    ErrorArguments = Array.Empty<ErrorArgument>(),
+                    Message = $"Unable to validate metadata reference ({handle.Kind}) because this metadata form is not supported: {e.Message}"
+                };
+            }
+
+            VerificationResult createVerificationResult(
+                string message,
+                ExceptionStringID? exceptionID = null,
+                VerifierError code = VerifierError.None,
+                IReadOnlyList<string> exceptionArguments = null)
+            {
+                if (code == VerifierError.None && exceptionID == null)
+                {
+                    code = VerifierError.TokenResolve;
+                }
+
+                return new VerificationResult
+                {
+                    Code = code,
+                    ExceptionID = exceptionID,
+                    MetadataHandle = handle,
+                    ErrorArguments = exceptionArguments == null ? Array.Empty<ErrorArgument>()
+                        : new[]
+                        {
+                            new ErrorArgument(nameof(TypeSystemException.Arguments),
+                                exceptionArguments.ToArray())
+                        },
+                    Message = $"Unable to resolve metadata reference ({handle.Kind}): {message}"
+                };
+            }
+        }
+
+        private static void ResolveStandaloneSignature(EcmaModule module, StandaloneSignatureHandle handle)
+        {
+            MetadataReader reader = module.MetadataReader;
+            StandaloneSignature signature = reader.GetStandaloneSignature(handle);
+
+            if (signature.GetKind() == StandaloneSignatureKind.LocalVariables)
+            {
+                // Local-variable signature
+                var parser = new EcmaSignatureParser(module, reader.GetBlobReader(signature.Signature), NotFoundBehavior.Throw);
+                parser.ParseLocalsSignature();
+            }
+            else
+            {
+                // Method signature (calli)
+                module.GetObject(handle);
+            }
+        }
+
+
+        private IEnumerable<VerificationResult> VerifyMethods(
+            EcmaModule module,
+            IEnumerable<MethodDefinitionHandle> methodHandles,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             foreach (var methodHandle in methodHandles)
             {
@@ -163,7 +365,7 @@ namespace ILVerify
 
                 if (methodIL != null)
                 {
-                    var results = VerifyMethod(module, methodIL, methodHandle);
+                    var results = VerifyMethod(module, methodIL, methodHandle, metadataErrors);
                     foreach (var result in results)
                     {
                         yield return result;
@@ -172,7 +374,11 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, MethodIL methodIL, MethodDefinitionHandle methodHandle)
+        private IEnumerable<VerificationResult> VerifyMethod(
+            EcmaModule module,
+            MethodIL methodIL,
+            MethodDefinitionHandle methodHandle,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             var builder = new ArrayBuilder<VerificationResult>();
             MethodDesc method = methodIL.OwningMethod;
@@ -235,7 +441,10 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                reportTypeSystemException(e);
+                if (!IsDuplicateMetadataResolutionError(e, metadataErrors))
+                {
+                    reportTypeSystemException(e);
+                }
             }
 
             return builder.ToArray();
@@ -260,7 +469,10 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyType(EcmaModule module, TypeDefinitionHandle typeHandle)
+        private IEnumerable<VerificationResult> VerifyType(
+            EcmaModule module,
+            TypeDefinitionHandle typeHandle,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             var builder = new ArrayBuilder<VerificationResult>();
 
@@ -313,7 +525,10 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                reportException(e);
+                if (!IsDuplicateMetadataResolutionError(e, metadataErrors))
+                {
+                    reportException(e);
+                }
             }
 
             return builder.ToArray();
@@ -327,6 +542,44 @@ namespace ILVerify
                 });
             }
         }
+
+        private static bool IsDuplicateMetadataResolutionError(
+            TypeSystemException exception,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
+        {
+            if (!CanDeduplicateMetadataResolutionException(exception.StringID))
+            {
+                return false;
+            }
+
+            foreach (VerificationResult metadataError in metadataErrors)
+            {
+                if (metadataError.ExceptionID == exception.StringID &&
+                    metadataError.Message.EndsWith(exception.Message, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool CanDeduplicateMetadataResolutionException(ExceptionStringID exceptionID)
+            => exceptionID is ExceptionStringID.ClassLoadGeneral
+                or ExceptionStringID.ClassLoadExplicitGeneric
+                or ExceptionStringID.ClassLoadBadFormat
+                or ExceptionStringID.ClassLoadExplicitLayout
+                or ExceptionStringID.ClassLoadValueClassTooLarge
+                or ExceptionStringID.ClassLoadRankTooLarge
+                or ExceptionStringID.ClassLoadInlineArrayFieldCount
+                or ExceptionStringID.ClassLoadInlineArrayLength
+                or ExceptionStringID.ClassLoadInlineArrayExplicit
+                or ExceptionStringID.ClassLoadInlineArrayExplicitSize
+
+                or ExceptionStringID.MissingMethod
+                or ExceptionStringID.MissingField
+
+                or ExceptionStringID.FileLoadErrorGeneric;
 
         private void ThrowMissingSystemModule()
         {

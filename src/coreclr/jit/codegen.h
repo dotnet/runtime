@@ -220,6 +220,8 @@ protected:
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
+    void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
+    void                       genEmitLocalGet(regNumber reg, var_types expectedType);
     void                       genEmitNullCheck(regNumber reg);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
@@ -1011,6 +1013,7 @@ protected:
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void ClearUnusedMaskBits(regNumber maskReg, uint32_t count);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);

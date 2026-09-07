@@ -277,6 +277,13 @@ namespace Microsoft.Interop
 
             if (context.Direction == MarshalDirection.ManagedToUnmanaged)
             {
+                if (info.IsErrorHandlingPosition)
+                {
+                    return info.RefKind == RefKind.Ref
+                        ? MarshalDirection.Bidirectional
+                        : MarshalDirection.UnmanagedToManaged;
+                }
+
                 if (info.IsManagedReturnPosition)
                 {
                     return MarshalDirection.UnmanagedToManaged;

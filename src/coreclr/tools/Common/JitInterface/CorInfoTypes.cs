@@ -431,7 +431,6 @@ namespace Internal.JitInterface
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
-        // unused = 0x04,
         CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
@@ -549,6 +548,7 @@ namespace Internal.JitInterface
         CLASSID_STRING,
         CLASSID_ARGUMENT_HANDLE,
         CLASSID_RUNTIME_TYPE,
+        CLASSID_NUMERICS_VECTORT,
     }
     public enum CorInfoInline
     {
@@ -854,6 +854,7 @@ namespace Internal.JitInterface
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
         CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
         CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80, // can be applied to VALUECLASS to indicate 'needs helper to copy'
+        CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
     };
 
     public struct CORINFO_HELPER_ARG

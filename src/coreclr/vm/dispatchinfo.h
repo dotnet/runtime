@@ -262,25 +262,6 @@ public:
     // Helper method that invokes the member with the specified DISPID.
     HRESULT                 InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr);
 
-    void                    InvokeMemberDebuggerWrapper(DispatchMemberInfo*   pDispMemberInfo,
-                                               InvokeObjects*        pObjs,
-                                               int                   NumParams,
-                                               int                   NumArgs,
-                                               int                   NumNamedArgs,
-                                               int&                  NumByrefArgs,
-                                               int&                  iSrcArg,
-                                               DISPID                id,
-                                               DISPPARAMS*           pdp,
-                                               VARIANT*              pVarRes,
-                                               WORD                  wFlags,
-                                               LCID                  lcid,
-                                               DISPID*               pSrcArgNames,
-                                               VARIANT*              pSrcArgs,
-                                               OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle,
-                                               int*                  pManagedMethodParamIndexMap,
-                                               VARIANT**             aByrefArgOleVariant,
-                                               Frame *               pFrame);
-
     void                    InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                                                InvokeObjects*        pObjs,
                                                int                   NumParams,

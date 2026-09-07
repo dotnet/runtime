@@ -1860,6 +1860,7 @@ namespace System.Reflection
             return result != 0;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
         private static partial void CreateCustomAttributeInstance(
             QCallModule pModule,
@@ -1889,6 +1890,7 @@ namespace System.Reflection
             return result!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreatePropertyOrFieldData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void CreatePropertyOrFieldData(
             QCallModule pModule,
