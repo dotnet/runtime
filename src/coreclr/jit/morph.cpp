@@ -8631,14 +8631,32 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         // Check for two consecutive casts, we may be able to discard the intermediate one.
         if (opts.OptimizationEnabled() && src->OperIs(GT_CAST) && !src->gtOverflow())
         {
+            GenTreeCast* srcCast   = src->AsCast();
+            GenTree*     srcCastOp = srcCast->CastOp();
+
+            // CAST(T <- CAST(U <- X)) can be replaced by X if both casts
+            // preserve X's range and the final type is the same as X's type.
+            if (cast->TypeIs(srcCastOp->TypeGet()))
+            {
+                IntegralRange operandRange = IntegralRange::ForNode(srcCastOp, this);
+                IntegralRange srcCastRange = IntegralRange::ForCastOutput(srcCast, operandRange);
+                IntegralRange dstRange     = IntegralRange::ForCastOutput(cast, srcCastRange);
+
+                if (srcCastRange.Equals(operandRange) && dstRange.Equals(operandRange))
+                {
+                    DEBUG_DESTROY_NODE(cast, srcCast);
+                    return srcCastOp;
+                }
+            }
+
             var_types dstCastToType = castToType;
-            var_types srcCastToType = src->AsCast()->CastToType();
+            var_types srcCastToType = srcCast->CastToType();
 
             // CAST(ubyte <- CAST(short <- X)): CAST(ubyte <- X).
             // CAST(ushort <- CAST(short <- X)): CAST(ushort <- X).
             if (varTypeIsSmall(srcCastToType) && (genTypeSize(dstCastToType) <= genTypeSize(srcCastToType)))
             {
-                cast->CastOp() = src->AsCast()->CastOp();
+                cast->CastOp() = srcCastOp;
                 DEBUG_DESTROY_NODE(src);
             }
         }
