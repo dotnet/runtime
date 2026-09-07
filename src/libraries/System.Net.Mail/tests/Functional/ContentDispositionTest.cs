@@ -349,6 +349,7 @@ namespace System.Net.Mime.Tests
         [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
+        [InlineData("=?utf-8?Q?foo\"bar?=")]
         [InlineData("=?utf-8?B?Zm9v?=trailing")]
         public static void FileName_Set_InjectionPayload_IsEscapedAndNotInjected(string injection)
         {
