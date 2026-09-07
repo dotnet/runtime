@@ -74,7 +74,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public static Hpke DeriveKey(HpkeSuite suite, byte[] ikm)
         {
-            ArgumentNullException.ThrowIfNull(suite);
             ArgumentNullException.ThrowIfNull(ikm);
             return DeriveKey(suite, new ReadOnlySpan<byte>(ikm));
         }
@@ -100,6 +99,7 @@ namespace System.Security.Cryptography
         public static Hpke DeriveKey(HpkeSuite suite, ReadOnlySpan<byte> ikm)
         {
             ArgumentNullException.ThrowIfNull(suite);
+            ThrowIfNotSupported(suite);
             return HpkeImplementation.DeriveKeyImpl(suite, ikm);
         }
 
@@ -121,8 +121,82 @@ namespace System.Security.Cryptography
         public static Hpke GenerateKey(HpkeSuite suite)
         {
             ArgumentNullException.ThrowIfNull(suite);
+            ThrowIfNotSupported(suite);
             return HpkeImplementation.GenerateKeyImpl(suite);
         }
+
+        /// <summary>
+        ///   Exports the decapsulation key.
+        /// </summary>
+        /// <returns>
+        ///   The decapsulation key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, or an error occurred while exporting the key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public byte[] ExportDecapsulationKey()
+        {
+            ThrowIfDisposed();
+            byte[] key = new byte[Suite.DecapsulationKeySizeInBytes];
+
+            try
+            {
+                ExportDecapsulationKeyCore(key);
+                return key;
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(key);
+                throw;
+            }
+        }
+
+        /// <summary>
+        ///   Exports the decapsulation key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the decapsulation key.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination" /> is not exactly
+        ///   <see cref="HpkeSuite.DecapsulationKeySizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, or an error occurred while exporting the key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public void ExportDecapsulationKey(Span<byte> destination)
+        {
+            if (destination.Length != Suite.DecapsulationKeySizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.DecapsulationKeySizeInBytes),
+                    nameof(destination));
+            }
+
+            ThrowIfDisposed();
+            ExportDecapsulationKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the decapsulation key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the decapsulation key.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, or an error occurred while exporting the key.
+        /// </exception>
+        /// <remarks>
+        ///   <paramref name="destination" /> is exactly
+        ///   <see cref="HpkeSuite.DecapsulationKeySizeInBytes" /> bytes long.
+        /// </remarks>
+        protected abstract void ExportDecapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
         ///   Releases all resources used by the <see cref="Hpke" /> class.
@@ -148,5 +222,15 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing)
         {
         }
+
+        private static void ThrowIfNotSupported(HpkeSuite suite)
+        {
+            if (!IsSupported(suite))
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
+        private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
     }
 }

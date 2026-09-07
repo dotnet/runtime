@@ -19,11 +19,6 @@ namespace System.Security.Cryptography
 
         internal static HpkeImplementation DeriveKeyImpl(HpkeSuite suite, ReadOnlySpan<byte> ikm)
         {
-            if (!IsSupportedImpl(suite))
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             HpkeManagedKemAdapter adapter = HpkeManagedKemAdapter.Create(suite);
 
             try
@@ -40,11 +35,6 @@ namespace System.Security.Cryptography
 
         internal static HpkeImplementation GenerateKeyImpl(HpkeSuite suite)
         {
-            if (!IsSupportedImpl(suite))
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             HpkeManagedKemAdapter adapter = HpkeManagedKemAdapter.Create(suite);
 
             try
@@ -58,6 +48,9 @@ namespace System.Security.Cryptography
                 throw;
             }
         }
+
+        protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>
+            _adapter.ExportDecapsulationKey(destination);
 
         protected override void Dispose(bool disposing)
         {

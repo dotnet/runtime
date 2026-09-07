@@ -41,6 +41,14 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal override void ExportDecapsulationKey(Span<byte> destination)
+        {
+            Debug.Assert(_x25519 is not null);
+            Debug.Assert(destination.Length == Suite.DecapsulationKeySizeInBytes);
+
+            _x25519.ExportPrivateKey(destination);
+        }
+
         public override void Dispose() => _x25519?.Dispose();
     }
 }

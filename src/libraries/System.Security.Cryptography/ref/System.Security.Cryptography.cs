@@ -1897,6 +1897,9 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.Hpke DeriveKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> ikm) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] ExportDecapsulationKey() { throw null; }
+        public void ExportDecapsulationKey(System.Span<byte> destination) { }
+        protected abstract void ExportDecapsulationKeyCore(System.Span<byte> destination);
         public static System.Security.Cryptography.Hpke GenerateKey(System.Security.Cryptography.HpkeSuite suite) { throw null; }
         public static bool IsSupported(System.Security.Cryptography.HpkeSuite suite) { throw null; }
     }

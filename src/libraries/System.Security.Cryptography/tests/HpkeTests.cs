@@ -70,11 +70,12 @@ namespace System.Security.Cryptography.Tests
                 using (Hpke keyFromArray = Hpke.DeriveKey(suite, ikm))
                 using (Hpke keyFromSpan = Hpke.DeriveKey(suite, ikm.AsSpan()))
                 {
-                    byte[] arrayPrivateKey = ExportPrivateKey(keyFromArray, kem);
-                    byte[] spanPrivateKey = ExportPrivateKey(keyFromSpan, kem);
+                    byte[] arrayPrivateKey = keyFromArray.ExportDecapsulationKey();
+                    byte[] spanPrivateKey = new byte[suite.DecapsulationKeySizeInBytes];
 
                     try
                     {
+                        keyFromSpan.ExportDecapsulationKey(spanPrivateKey);
                         Assert.Equal(expectedPrivateKey, arrayPrivateKey);
                         Assert.Equal(Convert.FromHexString(publicKeyHex), ExportPublicKey(keyFromArray, kem));
                         Assert.Equal(arrayPrivateKey, spanPrivateKey);
@@ -114,20 +115,16 @@ namespace System.Security.Cryptography.Tests
             {
                 Assert.Same(suite, key.Suite);
 
-                FieldInfo adapterField = key.GetType().GetField(
-                    "_adapter",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.NotNull(adapterField);
+                byte[] privateKey = key.ExportDecapsulationKey();
 
-                object adapter = adapterField.GetValue(key);
-                Assert.NotNull(adapter);
-
-                string keyFieldName = kem == HpkeKem.DHKEM_X25519_HKDF_SHA256 ? "_x25519" : "_ecdh";
-                FieldInfo keyField = adapter.GetType().GetField(
-                    keyFieldName,
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.NotNull(keyField);
-                Assert.NotNull(keyField.GetValue(adapter));
+                try
+                {
+                    Assert.Equal(suite.DecapsulationKeySizeInBytes, privateKey.Length);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(privateKey);
+                }
             }
             finally
             {
@@ -135,6 +132,59 @@ namespace System.Security.Cryptography.Tests
             }
 
             key.Dispose();
+        }
+
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
+        public static void ExportDecapsulationKey_BufferAndLifetime(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            using (Hpke key = Hpke.GenerateKey(suite))
+            {
+                int keySize = suite.DecapsulationKeySizeInBytes;
+                byte[] buffer = new byte[keySize + 2];
+                byte[] exported = key.ExportDecapsulationKey();
+
+                try
+                {
+                    buffer.AsSpan().Fill(0xA5);
+                    key.ExportDecapsulationKey(buffer.AsSpan(1, keySize));
+                    AssertExtensions.SequenceEqual(exported.AsSpan(), buffer.AsSpan(1, keySize));
+                    Assert.Equal(0xA5, buffer[0]);
+                    Assert.Equal(0xA5, buffer[^1]);
+
+                    exported.AsSpan().Clear();
+                    key.ExportDecapsulationKey(exported);
+                    AssertExtensions.SequenceEqual(exported.AsSpan(), buffer.AsSpan(1, keySize));
+
+                    AssertExtensions.Throws<ArgumentException>(
+                        "destination", () => key.ExportDecapsulationKey(Span<byte>.Empty));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "destination", () => key.ExportDecapsulationKey(buffer.AsSpan(0, keySize - 1)));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "destination", () => key.ExportDecapsulationKey(buffer.AsSpan(0, keySize + 1)));
+                    AssertExtensions.SequenceEqual(exported.AsSpan(), buffer.AsSpan(1, keySize));
+
+                    key.Dispose();
+                    Assert.Throws<ObjectDisposedException>(() => key.ExportDecapsulationKey());
+                    Assert.Throws<ObjectDisposedException>(() => key.ExportDecapsulationKey(exported));
+                    AssertExtensions.SequenceEqual(exported.AsSpan(), buffer.AsSpan(1, keySize));
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                    CryptographicOperations.ZeroMemory(buffer);
+                }
+            }
         }
 
         private static object GetAdapter(Hpke key)
@@ -147,27 +197,6 @@ namespace System.Security.Cryptography.Tests
             object adapter = adapterField.GetValue(key);
             Assert.NotNull(adapter);
             return adapter;
-        }
-
-        private static byte[] ExportPrivateKey(Hpke key, HpkeKem kem)
-        {
-            object adapter = GetAdapter(key);
-            string keyFieldName = kem == HpkeKem.DHKEM_X25519_HKDF_SHA256 ? "_x25519" : "_ecdh";
-            object implementation = GetImplementation(adapter, keyFieldName);
-
-            if (kem == HpkeKem.DHKEM_X25519_HKDF_SHA256)
-            {
-                return (byte[])implementation.GetType().GetMethod(
-                    nameof(X25519DiffieHellman.ExportPrivateKey),
-                    Type.EmptyTypes).Invoke(
-                    implementation,
-                    parameters: null);
-            }
-
-            ECParameters parameters = (ECParameters)implementation.GetType()
-                .GetMethod(nameof(ECDiffieHellman.ExportParameters))
-                .Invoke(implementation, new object[] { true });
-            return parameters.D;
         }
 
         private static byte[] ExportPublicKey(Hpke key, HpkeKem kem)

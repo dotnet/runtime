@@ -109,6 +109,25 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal override void ExportDecapsulationKey(Span<byte> destination)
+        {
+            Debug.Assert(_ecdh is not null);
+            Debug.Assert(destination.Length == Suite.DecapsulationKeySizeInBytes);
+
+            ECParameters parameters = _ecdh.ExportParameters(includePrivateParameters: true);
+            Debug.Assert(parameters.D is not null);
+
+            using (PinAndClear.Track(parameters.D))
+            {
+                if (parameters.D.Length != destination.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                parameters.D.AsSpan().CopyTo(destination);
+            }
+        }
+
         public override void Dispose() => _ecdh?.Dispose();
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
