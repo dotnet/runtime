@@ -85,6 +85,12 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmFrameworkCopyToOutputDirectory>Never</_WasmFrameworkCopyToOutputDirectory>
     </PropertyGroup>
+    <!-- Items injected after ILLink carry their own CopyToOutputDirectory (the xharness runner set added by
+         AddTestRunnersToReferenceCopyLocalPaths from $(WasmTestRunnerDir)), which the property above cannot
+         override, so their untrimmed copies would still shadow the trimmed closure in the served bundle. -->
+    <ItemGroup>
+      <ReferenceCopyLocalPaths CopyToOutputDirectory="Never" />
+    </ItemGroup>
   </Target>
 
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
@@ -139,6 +145,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ReferenceCopyLocalPaths Remove="@(_WasmTrimmedClosureRedirect)" />
       <ReferenceCopyLocalPaths Include="@(_WasmTrimmedClosureRedirect->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
                                RelativePath="%(FileName)%(Extension)" />
+      <!-- The project's own assembly does not travel through ReferenceCopyLocalPaths: _ComputeWasmBuildCandidates
+           serves it from @(IntermediateAssembly), i.e. the UNTRIMMED compile output. Shipping that against the
+           trimmed framework mismatches the two (e.g. the JSExport-generated call to RuntimeInformation.OSArchitecture
+           survives in the untrimmed assembly while ILLink dropped the property from the trimmed CoreLib, giving a
+           MissingMethodException at run time). @(WasmAssembliesFinal) is the SDK's designed override for exactly
+           this: an entry whose file name matches IntermediateAssembly becomes the served project assembly. -->
+      <WasmAssembliesFinal Include="@(IntermediateAssembly->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
+                           Condition="Exists('$(_WasmTrimmedClosureDir)%(IntermediateAssembly.FileName).dll')" />
     </ItemGroup>
   </Target>
 
