@@ -24,6 +24,11 @@
 
     <!-- Remove when PublishReadyToRun becomes default https://github.com/dotnet/runtime/issues/132466 -->
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</PublishReadyToRun>
+    <!-- 
+    <WasmBuildNative>true</WasmBuildNative>
+  <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+  <WasmNativeStrip>false</WasmNativeStrip>
+    -->
 
   </PropertyGroup>
 

@@ -253,15 +253,21 @@ Copyright (c) .NET Foundation. All rights reserved.
        image from PrebuiltR2RDirectory (= _WasmPublishR2RDir) keyed on that .dll, the same mechanism the dev-loop
        build uses for pack R2R. Using the compile list (not a link dir) covers both trimmed (IL from the linker) and
        untrimmed (IL from the pack) uniformly. DependsOnTargets=CreateReadyToRunImages so it runs after that target's
-       .dll -> .wasm replacement; BeforeTargets=ProcessPublishFilesForWasm so it runs wherever that target assembles
-       a managed bundle: both the outer `dotnet publish` and the nested publish of the WasmBuildOnlyAfterPublish
-       library-test flow (where the nested publish, not the outer build, produces the served bundle). It is a no-op
-       where ProcessPublishFilesForWasm does not run (e.g. the Blazor outer publish's nested relink-only pass).
+       .dll -> .wasm replacement.
+       Two BeforeTargets, because two different targets consume the list depending on the flow:
+       ProcessPublishFilesForWasm for a plain publish, and _GatherWasmFilesToPublish when a native relink is in
+       play. The relink runs the trimming and crossgen inside WasmNestedPublishApp, where
+       ProcessPublishFilesForWasm is skipped ('$(WasmBuildingForNestedPublish)' != 'true'); there
+       _GatherWasmFilesToPublish derives WasmAssembliesToBundle -> WasmAssembliesFinal from
+       ResolvedFileToPublish, keeping only .dll, and ProcessPublishFilesForWasm in the OUTER pass then publishes
+       from WasmAssembliesFinal instead of ResolvedFileToPublish. Without routing in the nested pass every
+       crossgen'd assembly is still named .wasm at that point and silently drops out of the bundle - observed as
+       a publish that exits 0 with only the uncompiled facades staged and no System.Private.CoreLib.
        See dotnet/runtime#121257. -->
   <Target Name="_WasmCoreClrRoutePerAppR2RToFramework"
           Condition="'$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRun)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories;CreateReadyToRunImages"
-          BeforeTargets="ProcessPublishFilesForWasm">
+          BeforeTargets="ProcessPublishFilesForWasm;_GatherWasmFilesToPublish">
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
       <ResolvedFileToPublish Include="@(_ReadyToRunCompileList)"
