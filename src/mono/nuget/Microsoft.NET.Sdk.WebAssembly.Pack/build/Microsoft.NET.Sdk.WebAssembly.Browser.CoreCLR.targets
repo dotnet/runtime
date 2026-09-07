@@ -146,7 +146,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Lines" ItemName="_WasmCoreClrPreviousMode" />
     </ReadLinesFromFile>
     <ItemGroup Condition="'@(_WasmCoreClrPreviousMode)' != '' and '@(_WasmCoreClrPreviousMode)' != '$(_WasmCoreClrMode)'">
-      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)R2R\*.wasm" />
+      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)R2R\*.wasm;$(IntermediateOutputPath)R2R\*.dll" />
       <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)webcil\**\*.wasm" />
       <!-- Just the link outputs, not the .o files: the emcc link rsp is an Input to the link target, so only
            that step has to re-run for a native flag change. -->
@@ -321,7 +321,8 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="_CreateR2RImages">
     <ItemGroup>
       <_ReadyToRunCompilerInputs Include="@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference)" />
-      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
+      <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
+      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
     </ItemGroup>
   </Target>
@@ -335,7 +336,9 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           AfterTargets="_CreateR2RImages">
     <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
-      <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm"
+      <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the
+           R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. -->
+      <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm;$(_WasmPublishR2RDir)*.dll"
                            Exclude="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
     </ItemGroup>
     <Delete Files="@(_WasmStalePerAppR2R)" />

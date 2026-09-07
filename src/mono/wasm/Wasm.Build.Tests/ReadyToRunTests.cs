@@ -70,8 +70,8 @@ namespace Wasm.Build.Tests
 
         private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink)
         {
-            // Publish runs per-app crossgen2: trimmed => per-app R2R closure incl. a trimmed CoreLib;
-            // untrimmed => the runtime-pack R2R CoreLib. nativeRelink also relinks dotnet.native.wasm.
+            // Publish runs per-app crossgen2 for the whole closure, trimmed or not: even the untrimmed CoreLib
+            // is a per-app image, not the runtime pack's. nativeRelink also relinks dotnet.native.wasm.
             string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}";
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
                 extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>");
