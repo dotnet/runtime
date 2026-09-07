@@ -4,6 +4,8 @@
 
 System.Net.ServerSentEvents provides the `SseParser` type, which exposes factory methods for creating parsers for the events in a stream of server-sent events (SSE).
 
+When parsing data from untrusted sources, configure `SseParserOptions.MaxBufferSize` to a bounded value so the parser does not buffer arbitrarily large event payloads.
+
 ## Key Features
 
 <!-- The key features of this package -->
