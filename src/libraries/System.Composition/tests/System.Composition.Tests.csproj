@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <RootNamespace>System.Composition.Lightweight.UnitTests</RootNamespace>
+    <PublishTrimmed Condition="'$(TargetOS)' == 'browser'">false</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActivationEventOrderingTests.cs" />
