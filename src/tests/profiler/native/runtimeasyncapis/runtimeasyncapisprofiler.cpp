@@ -89,6 +89,7 @@ HRESULT RuntimeAsyncApisProfiler::JITCompilationFinished(
 HRESULT RuntimeAsyncApisProfiler::JITCachedFunctionSearchStarted(
     FunctionID functionId, BOOL* pbUseCachedFunction)
 {
+    *pbUseCachedFunction = TRUE;
     SHUTDOWNGUARD();
 
     if (IsTarget(functionId))
