@@ -42,6 +42,9 @@
         ;; Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
 
+        ;; Prefetch the MethodTable slot of the next object to be allocated.
+        prfm        pstl1keep, [x2]
+
         ;; Set the new object's MethodTable pointer.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
 

@@ -35,6 +35,9 @@ LEAF_ENTRY RhpNewFast, _TEXT
         ;; Calculate the new alloc pointer to account for the allocation.
         add         r8, rax
 
+        ;; Prefetch the MethodTable slot of the next object to be allocated.
+        prefetchw   [r8]
+
         ;; Set the new object's MethodTable pointer
         mov         [rax + OFFSETOF__Object__m_pEEType], rcx
 
