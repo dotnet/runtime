@@ -18,11 +18,11 @@ namespace Microsoft.Extensions.Configuration
 
         public abstract IFileProvider GetOrCreate();
 
-        public abstract void Acquire();
+        public virtual void Acquire() { }
 
-        public abstract void Release();
+        public virtual void Release() { }
 
-        public abstract void DiscardIfIdle();
+        public virtual void DiscardIfIdle() { }
 
         private sealed class BorrowedFileProviderHandle : FileProviderHandle
         {
@@ -36,12 +36,6 @@ namespace Microsoft.Extensions.Configuration
             public override IFileProvider Current => _fileProvider;
 
             public override IFileProvider GetOrCreate() => _fileProvider;
-
-            public override void Acquire() { }
-
-            public override void Release() { }
-
-            public override void DiscardIfIdle() { }
         }
 
         private sealed class OwnedFileProviderHandle : FileProviderHandle
