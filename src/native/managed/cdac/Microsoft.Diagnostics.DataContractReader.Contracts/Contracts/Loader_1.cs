@@ -788,10 +788,12 @@ internal readonly struct Loader_1 : ILoader
         {
             [LoaderAllocatorHeapType.LowFrequencyHeap] = loaderAllocator.LowFrequencyHeap,
             [LoaderAllocatorHeapType.HighFrequencyHeap] = loaderAllocator.HighFrequencyHeap,
-            [LoaderAllocatorHeapType.MethodTableHeap] = loaderAllocator.MethodTableHeap,
             [LoaderAllocatorHeapType.StaticsHeap] = loaderAllocator.StaticsHeap,
             [LoaderAllocatorHeapType.ExecutableHeap] = loaderAllocator.ExecutableHeap,
         };
+
+        if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.MethodTableHeap)))
+            heaps[LoaderAllocatorHeapType.MethodTableHeap] = loaderAllocator.MethodTableHeap!.Value;
 
         if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.FixupPrecodeHeap)))
             heaps[LoaderAllocatorHeapType.FixupPrecodeHeap] = loaderAllocator.FixupPrecodeHeap!.Value;

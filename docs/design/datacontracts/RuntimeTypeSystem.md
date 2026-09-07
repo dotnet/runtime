@@ -581,7 +581,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
 | `LoaderAllocator` | `IsCollectible` | `uint8` | Non-zero if the LoaderAllocator is collectible. |
 | `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
-| `LoaderAllocator` | `MethodTableHeap` | `pointer` | Heap containing MethodTables and their attached GC descriptors and metadata |
+| `LoaderAllocator` | `MethodTableHeap` | `pointer` | Heap containing MethodTables and their attached GC descriptors and metadata (optional, absent in earlier .NET 11 builds) |
 | `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
 | `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
 | `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |

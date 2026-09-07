@@ -8,7 +8,7 @@ internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 {
     [Field] public partial uint ReferenceCount { get; }
     [Field] public partial TargetPointer HighFrequencyHeap { get; }
-    [Field] public partial TargetPointer MethodTableHeap { get; }
+    [Field] public partial TargetPointer? MethodTableHeap { get; }
     [Field] public partial TargetPointer LowFrequencyHeap { get; }
     [Field] public partial TargetPointer StaticsHeap { get; }
     [Field] public partial TargetPointer ExecutableHeap { get; }
