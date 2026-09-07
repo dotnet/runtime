@@ -5936,6 +5936,8 @@ struct GenTreeCall final : public GenTree
 
     CorInfoHelpFunc GetHelperNum() const;
 
+    ExceptionSetFlags CallExceptions() const;
+
     bool AreArgsComplete() const;
 
     CorInfoCallConvExtension GetUnmanagedCallConv() const
@@ -7424,6 +7426,12 @@ struct GenTreeVecCon : public GenTree
     bool IsNaN(var_types simdBaseType) const;
 
     bool IsNegativeZero(var_types simdBaseType) const;
+
+    bool ContainsNaN(var_types simdBaseType) const;
+
+    bool ContainsNegativeZero(var_types simdBaseType) const;
+
+    bool ContainsPositiveZero(var_types simdBaseType) const;
 
     bool IsZero() const
     {

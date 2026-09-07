@@ -1517,9 +1517,10 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
     CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
-    CHECK_LINKED_LOCALS = 1 << 8,  // check linked list of locals
-    CHECK_FG_INIT_BLOCK = 1 << 9,  // flow graph has an init block
+    CHECK_LINKED_LOCALS    = 1 << 8,  // check linked list of locals
+    CHECK_FG_INIT_BLOCK    = 1 << 9,  // flow graph has an init block
     CHECK_LIR_UNUSED_VALUES = 1 << 10, // LIR values with no user are marked as unused
+    CHECK_IR_RELAXED       = 1 << 11, // allow and count extra IR flags
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -6118,6 +6119,12 @@ public:
 
     bool fgGlobalMorphDone = false;
 
+#ifdef DEBUG
+    // Retyping implicit byref parameters temporarily leaves existing local field
+    // accesses described using their pre-retyping struct types.
+    bool fgImplicitByRefLclFldsStale = false;
+#endif
+
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
 
@@ -8238,6 +8245,8 @@ public:
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
+    bool canKeepNonInlineableGdvCandidate(GenTreeCall* call);
+
     int getGDVMaxTypeChecks()
     {
         int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
@@ -8709,7 +8718,10 @@ public:
 
         bool IsConstantInt32Assertion() const
         {
-            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
+            // Note the O2K_CONST_INT payload is an ssize_t, so it may hold a TYP_LONG constant that
+            // does not fit into an int32. Callers assume an int32-sized constant, so require that here.
+            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) &&
+                   FitsIn<int>(GetOp2().GetIntConstant());
         }
 
         bool CanPropLclVar() const
@@ -9827,6 +9839,47 @@ public:
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
+
+    template <typename Functor>
+    bool eeRunFunctorWithErrorTrap(Functor f)
+    {
+        return eeRunWithErrorTrap<Functor>(
+            [](Functor* pf) {
+            (*pf)();
+        },
+            &f);
+    }
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // eeRunExtraSuperPmiQueries: make JIT-EE queries whose only purpose is to enrich
+    //    the recorded SuperPMI method context (see JitConfig.EnableExtraSuperPmiQueries).
+    //
+    // Type parameters:
+    //    Functor - callable that makes the queries
+    //
+    // Arguments:
+    //    f - the functor
+    //
+    // Notes:
+    //    Extra queries must be observationally inert: enabling them must not change what
+    //    the JIT compiles. That is not automatic, because the EE may fail a query that the
+    //    JIT would never have made on its own. An AOT compiler in particular throws for a
+    //    handle it cannot embed, such as a type outside the current version bubble, and an
+    //    escaping exception would abort the enclosing inline or method. The collection
+    //    would then import less IL than a later replay does, and the context it recorded
+    //    would be missing the data that replay goes on to ask for.
+    //
+    //    Wrap only EE queries. JIT work must stay outside, because the trap does not
+    //    discriminate by origin: a noway_assert, NOMEM or assert raised inside the functor
+    //    would be quietly absorbed instead of failing the method.
+    //
+    template <typename Functor>
+    void eeRunExtraSuperPmiQueries(Functor f)
+    {
+        eeRunFunctorWithErrorTrap(f);
+    }
+#endif // DEBUG
 
     // Utility functions
 

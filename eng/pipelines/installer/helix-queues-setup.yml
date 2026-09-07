@@ -22,11 +22,11 @@ steps:
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
-      - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:2ac4e961986424981bcbeb590b61c6db413bf7565d310c5e7ab13dfbedb2ee9d
+      - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:abc10e0395717f1d7dc92ac6c684ceb3a64d863f5679ed24fcee4d54e8622537
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
-      - (Ubuntu.2604.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:ac542cac1050e11d09d20d61994c24553a9c1e0925c6865c1d741520ae7ac27e
+      - (Ubuntu.2604.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:f75ca9a6b931e339b6232ffb1bb20c3968bc12495d8ea8cf5f8a24a16f110920
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:

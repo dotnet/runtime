@@ -1,12 +1,12 @@
 <!--
   The framework P/Invoke modules that CoreCLR resolves without dynamic loading on WebAssembly.
 
-  ManagedToNativeGenerator emits a direct-call entry for every [DllImport] whose module name is on
-  this list and nothing for the rest, so two builds have to agree on it:
+  The portable call-helpers generator emits a direct-call entry for every [DllImport] whose module
+  name is on this list and nothing for the rest, so two builds have to agree on it:
 
-    * src/tasks/WasmAppBuilder/WasmAppBuilder.csproj generates the checked-in call tables under
-      src/coreclr/vm/wasm from it (see generate-coreclr-helpers.md). They are compiled into
-      coreclr_gen_static, which the product's corerun links.
+    * src/coreclr/vm/wasm/generate-coreclr-helpers.proj imports this list to regenerate the
+      checked-in call tables under src/coreclr/vm/wasm (see generate-coreclr-helpers.md). They are
+      compiled into coreclr_gen_static, which the product's corerun links.
     * src/tests/Common/CLRTest.WasmCorerun.targets leaves coreclr_gen_static out when it links a
       test-specific corerun, and regenerates equivalent tables in its place. Those have to cover
       the same modules: one missing here surfaces as a DllNotFoundException at run time, inside
