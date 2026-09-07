@@ -258,7 +258,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal("foo bar foo bar foo bar foo bar foo bar foo bar foo bar fo", a.Name);
             Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
-            // 76 charcters => RFC 2047 violation, not processed as encoded word
+            // 76 characters => RFC 2047 violation, not processed as encoded word
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?=");
             Assert.Equal("=?ISO-8859-1?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?=", a.Name);
             Assert.Null(a.NameEncoding);
