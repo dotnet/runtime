@@ -38,6 +38,8 @@ namespace System
 
     internal sealed partial class RuntimeType : TypeInfo, ICloneable
     {
+        #region Definitions
+
         internal enum MemberListType
         {
             All,
@@ -1685,6 +1687,7 @@ namespace System
 
             #endregion
         }
+        #endregion
 
         #region Static Members
 
