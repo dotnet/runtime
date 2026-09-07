@@ -46,9 +46,13 @@ enum class CallerGCMode
 // Non-CPU-specific helper functions called by the CPU-dependent code
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 
+#ifdef FEATURE_VARARGS
 extern "C" void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie* pVASigCookie, MethodDesc* pMD);
 extern "C" void STDCALL VarargPInvokeStub(void);
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
 extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void);
+#endif // !TARGET_X86 && !TARGET_ARM64
+#endif // FEATURE_VARARGS
 
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);

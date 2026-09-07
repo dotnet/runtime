@@ -2056,6 +2056,62 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void ClosedTypeInference_NestedGenericHierarchy_CompilesSuccessfully()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+                    [JsonSerializable(typeof(Root<List<int[]>>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public closed abstract class Root<T> { }
+                    public closed abstract class Middle<T> : Root<List<T>> { }
+                    public sealed class Leaf<T> : Middle<T[]> { }
+                }
+                """;
+
+            Compilation compilation = CreateCompilationWithClosedTypes(source, "Root", "Middle");
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void ClosedTypeInference_SerializationMode_ProducesSYSLIB1039()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+                    [JsonSerializable(
+                        typeof(ClosedBase),
+                        GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public closed abstract class ClosedBase { }
+                    public sealed class ClosedDerived : ClosedBase { }
+                }
+                """;
+
+            Compilation compilation = CreateCompilationWithClosedType(source, "ClosedBase");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1039", diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
         public void ClosedTypeInference_ConstraintViolation_ProducesSYSLIB1229()
         {
             string source = """
@@ -2197,6 +2253,37 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CreateCompilationWithClosedType(source, "InaccessibleBase");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1241", diagnostic.Id);
+            Assert.Contains("InaccessibleDerived", diagnostic.GetMessage());
+            Assert.Contains("InaccessibleBase", diagnostic.GetMessage());
+        }
+
+        [Fact]
+        public void ClosedTypeInference_NestedInaccessibleDerivedType_ProducesSYSLIB1241()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+                    [JsonSerializable(typeof(InaccessibleBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public closed abstract class InaccessibleBase { }
+                    public closed abstract class InaccessibleMiddle : InaccessibleBase { }
+                    internal sealed class InaccessibleDerived : InaccessibleMiddle { }
+                }
+                """;
+
+            Compilation compilation =
+                CreateCompilationWithClosedTypes(source, "InaccessibleBase", "InaccessibleMiddle");
             JsonSourceGeneratorResult result =
                 CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
@@ -2438,6 +2525,46 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void ClosedTypeInference_NestedDerivedTypeDiscriminatorCollision_ProducesSYSLIB1242()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+                    [JsonSerializable(typeof(CollisionBase))]
+                    [JsonSerializable(typeof(CollisionA.Node), TypeInfoPropertyName = "CollisionANode")]
+                    [JsonSerializable(typeof(CollisionB.Node), TypeInfoPropertyName = "CollisionBNode")]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public closed abstract class CollisionBase { }
+                    public static class CollisionA
+                    {
+                        public sealed class Node : CollisionBase { }
+                    }
+                    public closed abstract class CollisionMiddle : CollisionBase { }
+                    public static class CollisionB
+                    {
+                        public sealed class Node : CollisionMiddle { }
+                    }
+                }
+                """;
+
+            Compilation compilation =
+                CreateCompilationWithClosedTypes(source, "CollisionBase", "CollisionMiddle");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1242", diagnostic.Id);
+            Assert.Contains("Node", diagnostic.GetMessage());
+            Assert.Contains("CollisionBase", diagnostic.GetMessage());
+        }
+
+        [Fact]
         public void ClosedTypeInference_GenericDerivedTypesWithSameNameDifferentArities_ProduceSYSLIB1242()
         {
             string source = """
@@ -2507,6 +2634,48 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return compilation.ReplaceSyntaxTree(
                 syntaxTree,
                 syntaxTree.WithRootAndOptions(updatedRoot, syntaxTree.Options));
+        }
+
+        private static Compilation CreateCompilationWithClosedTypes(string source, params string[] closedTypeNames)
+        {
+            const string ClosedModifier = "closed";
+            const string BinderCompatibleModifier = "partial";
+
+            foreach (string closedTypeName in closedTypeNames)
+            {
+                string closedDeclaration = $"{ClosedModifier} abstract class {closedTypeName}";
+                Assert.Contains(closedDeclaration, source);
+                source = source.Replace(
+                    closedDeclaration,
+                    $"abstract {BinderCompatibleModifier} class {closedTypeName}");
+            }
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            SyntaxTree syntaxTree = compilation.SyntaxTrees.First();
+            SyntaxNode root = syntaxTree.GetRoot();
+
+            foreach (string closedTypeName in closedTypeNames)
+            {
+                ClassDeclarationSyntax declaration = root
+                    .DescendantNodes()
+                    .OfType<ClassDeclarationSyntax>()
+                    .Single(declaration => declaration.Identifier.ValueText == closedTypeName);
+                SyntaxToken partialModifier =
+                    declaration.Modifiers.Single(modifier => modifier.IsKind(SyntaxKind.PartialKeyword));
+                SyntaxToken closedModifier = SyntaxFactory.Token(
+                    partialModifier.LeadingTrivia,
+                    SyntaxKind.PartialKeyword,
+                    ClosedModifier,
+                    ClosedModifier,
+                    partialModifier.TrailingTrivia);
+                root = root.ReplaceNode(
+                    declaration,
+                    declaration.WithModifiers(declaration.Modifiers.Replace(partialModifier, closedModifier)));
+            }
+
+            return compilation.ReplaceSyntaxTree(
+                syntaxTree,
+                syntaxTree.WithRootAndOptions(root, syntaxTree.Options));
         }
     }
 }

@@ -1105,6 +1105,31 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
+#ifndef DACCESS_COMPILE
+PCODE MethodDesc::GetNativeCodeVolatile()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+    if (HasNativeCodeSlot())
+    {
+        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
+        PCODE pCode = VolatileLoad(ppCode);
+
+#ifdef TARGET_ARM
+        if (pCode != (PCODE)NULL)
+            pCode |= THUMB_CODE;
+#endif
+        return pCode;
+    }
+
+    if (!HasStableEntryPoint() || HasPrecode())
+        return (PCODE)NULL;
+
+    return VolatileLoad(GetAddrOfSlot());
+}
+#endif
+
 PCODE MethodDesc::GetNativeCodeAnyVersion()
 {
     WRAPPER_NO_CONTRACT;
@@ -2638,24 +2663,6 @@ MethodImpl *MethodDesc::GetMethodImpl()
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
-BOOL MethodDesc::RequiresMDContextArg()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Interop marshaling is implemented using shared stubs
-    if (IsCLRToCOMCall())
-        return TRUE;
-
-    // Interop marshalling of varargs needs MethodDesc calling convention
-    // to support ldftn <PInvoke method with varargs>. It is not possible
-    // to smuggle the MethodDesc* via vararg cookie in this case.
-    if (IsPInvoke() && IsVarArg())
-        return TRUE;
-
-    return FALSE;
-}
-
-//*******************************************************************************
 BOOL MethodDesc::RequiresStableEntryPoint()
 {
     BYTE bFlags4 = VolatileLoadWithoutBarrier(&m_bFlags4);
@@ -2733,8 +2740,8 @@ BOOL MethodDesc::MayHaveNativeCode()
     case mcInstantiated:    // IsIL() case. Handled below.
         break;
 #ifdef FEATURE_COMINTEROP
-    case mcComInterop:      // Generated stub. No native code.
-        return FALSE;
+    case mcComInterop:      // CLR->COM calls are backed by transient IL.
+        return TRUE;
 #endif // FEATURE_COMINTEROP
     case mcDynamic:         // LCG or stub-as-il.
         return TRUE;
@@ -2997,6 +3004,15 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
     }
 
     MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
+
+#ifdef FEATURE_READYTORUN
+    // R2R disabled: no R2R code can call this method, so no R2R->interpreter thunk is needed.
+    if (!g_pConfig->ReadyToRun())
+    {
+        return;
+    }
+#endif
+
     void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
     if (pPortableEntryPointToInterpreter != nullptr)
     {
@@ -3018,7 +3034,12 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (!IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked())
+    bool installInterpreterThunk = !IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked();
+#ifdef FEATURE_READYTORUN
+    // With R2R disabled no R2R code exists to call this method, so don't install an R2R->interpreter thunk.
+    installInterpreterThunk = installInterpreterThunk && g_pConfig->ReadyToRun();
+#endif
+    if (installInterpreterThunk)
     {
         void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
         _ASSERTE(pPortableEntryPointToInterpreter != nullptr);
@@ -3216,7 +3237,10 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen()) &&
 
         // Tiering P/Invoke methods is not supported currently
-        !IsPInvoke()
+        !IsPInvoke() &&
+
+        // Tiering CLR->COM methods is not supported currently
+        !IsCLRToCOMCall()
         )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
@@ -4183,16 +4207,23 @@ PrecodeType MethodDesc::GetPrecodeType()
     PrecodeType precodeType = PRECODE_INVALID;
 
 #ifdef HAS_FIXUP_PRECODE
-    if (!RequiresMDContextArg())
+    // Interop marshalling of varargs needs the MethodDesc calling convention to
+    // support ldftn <PInvoke method with varargs>. It is not possible to smuggle
+    // the MethodDesc* via the vararg cookie in this case.
+#ifdef FEATURE_VARARGS
+    if (IsPInvoke() && IsVarArg())
+    {
+        precodeType = PRECODE_STUB;
+    }
+    else
+#endif // FEATURE_VARARGS
     {
         // Use the more efficient fixup precode if possible
         precodeType = PRECODE_FIXUP;
     }
-    else
+#else // !HAS_FIXUP_PRECODE
+    precodeType = PRECODE_STUB;
 #endif // HAS_FIXUP_PRECODE
-    {
-        precodeType = PRECODE_STUB;
-    }
 
     return precodeType;
 }

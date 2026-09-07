@@ -43,6 +43,10 @@ Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
 these variations in order, scanning the first ~10 results of each. GitHub
 best-match ranking can place noisier hits above the correct one.
 
+For every `search_issues` call in this flow, include `user` in the requested
+`fields`, even when the author is not otherwise needed. The integrity gateway
+uses `user.login` to recognize trusted bots before filtering search results.
+
 1. Full `[FAIL]` line.
 2. Assertion text.
 3. Exception class + test name.

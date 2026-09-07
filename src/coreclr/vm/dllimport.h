@@ -10,6 +10,7 @@
 #include "util.hpp"
 
 struct PInvokeStaticSigInfo;
+class ILStubResolver;
 
 // This structure groups together data that describe the signature for which a marshaling stub is being generated.
 struct StubSigDesc
@@ -141,6 +142,12 @@ public:
                     DynamicResolver** ppResolver);
 
 #ifdef FEATURE_COMINTEROP
+    // Generates the marshalling IL for a CLR->COM call into the supplied resolver.
+    static COR_ILMETHOD_DECODER* CreateCLRToCOMMarshallingIL(
+                    MethodDesc*        pMD,
+                    DWORD              dwStubFlags, // PInvokeStubFlags
+                    ILStubResolver*    pResolver);
+
     static MethodDesc* CreateFieldAccessILStub(
                     PCCOR_SIGNATURE    szMetaSig,
                     DWORD              cbMetaSigSize,
@@ -479,12 +486,12 @@ public:
     void    EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwPinnedLocal);
     void    LoadCleanupWorkList(ILCodeStream* pcsEmit);
 #ifdef PROFILING_SUPPORTED
-    DWORD   EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEmit, DWORD dwStubFlags);
+    DWORD   EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwStubFlags);
     void    EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit, DWORD dwStubFlags, DWORD dwMethodDescLocalNum);
 #endif
 #ifdef VERIFY_HEAP
-    void    EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNum, bool fIsByref, DWORD dwStubFlags);
-    void    EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStubFlags);
+    void    EmitValidateLocal(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwLocalNum, bool fIsByref, DWORD dwStubFlags);
+    void    EmitObjectValidation(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwStubFlags);
 #endif // VERIFY_HEAP
     void    EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubFlags);
     void    GenerateInteropParamException(ILCodeStream* pcsEmit);

@@ -76,8 +76,17 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="name">The name to include in the formatted string.</param>
         /// <returns>A localized string to describe the minimum acceptable length.</returns>
         public override string FormatErrorMessage(string name) =>
-            // An error occurred, so we know the value is less than the minimum
-            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, MinimumLength, MaximumLength);
+            FormatMessage(ErrorMessageString, name);
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" />, <c>{1}</c> is replaced with
+        /// <see cref="MinimumLength" />, and <c>{2}</c> is replaced with <see cref="MaximumLength" />.
+        /// </remarks>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            return string.Format(CultureInfo.CurrentCulture, format, name, MinimumLength, MaximumLength);
+        }
 
         /// <summary>
         ///     Checks that Length has a legal value.

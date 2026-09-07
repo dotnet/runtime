@@ -4772,7 +4772,7 @@ void emitter::emitDispInsName(
         default:
         {
             printf("CODE: %#x\n", code);
-            printf("MajorOpcode: %d\n", GetMajorOpcode(code));
+            printf("MajorOpcode: %d\n", static_cast<int>(GetMajorOpcode(code)));
             NO_WAY("illegal ins within emitDisInsName!");
         }
     }

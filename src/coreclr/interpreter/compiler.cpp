@@ -1180,13 +1180,7 @@ void ValidateEmittedSequenceTermination(InterpInst *lastIns)
         return;
 
     if (InterpOpIsUncondBranch(lastIns->opcode) ||
-        (lastIns->opcode == INTOP_RET) ||
-        (lastIns->opcode == INTOP_RET_I1) ||
-        (lastIns->opcode == INTOP_RET_U1) ||
-        (lastIns->opcode == INTOP_RET_I2) ||
-        (lastIns->opcode == INTOP_RET_U2) ||
-        (lastIns->opcode == INTOP_RET_VOID) ||
-        (lastIns->opcode == INTOP_RET_VT) ||
+        InterpOpIsReturn(lastIns->opcode) ||
         (lastIns->opcode == INTOP_THROW) ||
         (lastIns->opcode == INTOP_THROW_PNSE) ||
         (lastIns->opcode == INTOP_CALL_TAIL) ||
@@ -2279,6 +2273,31 @@ InterpCompiler::~InterpCompiler()
     m_compHnd->freeArray(m_pILToNativeMap);
 }
 
+void InterpCompiler::FixLocallocRet()
+{
+    assert(m_hasLocalloc);
+
+    for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
+    {
+        for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
+        {
+            // Small integer returns always take the cleanup path in the execution loop.
+            switch (ins->opcode)
+            {
+                case INTOP_RET:
+                    ins->opcode = INTOP_RET_LOCALLOC;
+                    break;
+                case INTOP_RET_VOID:
+                    ins->opcode = INTOP_RET_VOID_LOCALLOC;
+                    break;
+                case INTOP_RET_VT:
+                    ins->opcode = INTOP_RET_VT_LOCALLOC;
+                    break;
+            }
+        }
+    }
+}
+
 bool InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
@@ -2326,6 +2345,9 @@ bool InterpCompiler::CompileMethod()
         INTERP_DUMP("Retrying compilation due to %s\n", m_pRetryData->GetReasonString());
         return false;
     }
+
+    if (m_hasLocalloc)
+        FixLocallocRet();
 
 #ifdef DEBUG
     if (IsInterpDumpActive())
@@ -11056,8 +11078,7 @@ retry_emit:
                         m_pLastNewIns->SetSVar(typedByRefVar);
                         m_pLastNewIns->SetDVar(classHandleVar);
 
-                        AddIns(INTOP_CALL_HELPER_P_S);
-                        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
+                        AddIns(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE);
                         m_pLastNewIns->SetSVar(classHandleVar);
                         PushInterpType(InterpTypeVT, m_compHnd->getBuiltinClass(CLASSID_TYPE_HANDLE));
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
@@ -11165,6 +11186,7 @@ retry_emit:
                             // Localloc inside a funclet is not allowed
                             BADCODE("CEE_LOCALLOC inside funclet");
                         }
+                        m_hasLocalloc = true;
 #if TARGET_64BIT
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].GetStackType() == StackTypeI4)
@@ -11806,7 +11828,8 @@ retry_emit:
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
 
                 // see jit/importer.cpp CEE_LDTOKEN
-                CorInfoHelpFunc helper;
+                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
+                CorInfoHelpFunc       helper = CORINFO_HELP_UNDEF;
                 if (resolvedToken.hField)
                 {
                     helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
@@ -11819,7 +11842,11 @@ retry_emit:
                 else if (resolvedToken.hClass)
                 {
                     DeclarePointerIsClass(resolvedToken.hClass);
-                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    int32_t typeVar = EmitGenericHandleAsVar(embedInfo);
+                    PushInterpType(InterpTypeVT, clsHnd);
+                    AddIns(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE);
+                    m_pLastNewIns->SetSVar(typeVar);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }
                 else
                 {
@@ -11827,8 +11854,11 @@ retry_emit:
                     assert(!"Token not resolved or resolved to unexpected type");
                 }
 
-                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
-                EmitPushHelperCall(helper, embedInfo, StackTypeVT, clsHnd);
+                if (helper != CORINFO_HELP_UNDEF)
+                {
+                    EmitPushHelperCall(helper, embedInfo, StackTypeVT, clsHnd);
+                }
+
                 m_ip += 5;
                 break;
             }

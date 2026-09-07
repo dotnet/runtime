@@ -2205,10 +2205,19 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
-    // These operators don't overflow.
+    // These operators don't overflow themselves, but their ranges are derived from the operands'
+    // ranges, so an overflow in an operand's def chain still invalidates the result.
     else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG))
     {
         overflows = false;
+        for (GenTree* operand : expr->Operands())
+        {
+            if (!GetSearchPath()->Lookup(operand) && ComputeDoesOverflow(block, operand, range))
+            {
+                overflows = true;
+                break;
+            }
+        }
     }
     else if (expr->OperIs(GT_XOR) && vnStore->IsVNLog2(m_compiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
     {
