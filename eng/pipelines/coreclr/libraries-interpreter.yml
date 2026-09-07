@@ -69,5 +69,3 @@ extends:
                   extraHelixArguments: /maxcpucount:10
                   testRunNamePrefixSuffix: NoDynamicCodeCompiled
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-                  scenarios:
-                  - interpmode1
