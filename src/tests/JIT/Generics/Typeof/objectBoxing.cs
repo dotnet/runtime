@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Typeof_objectBoxing;
+
 /* unboxing where a parameter is types as object and then is unboxed to its scalar type 
  */
 using System;
@@ -351,6 +353,7 @@ public class mainMethod
         Console.WriteLine("-----------{0}", i++);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

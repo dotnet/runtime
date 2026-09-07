@@ -72,11 +72,11 @@
 
         <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\**"
+          Include="$(WasmAppBuilderDir)**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\MonoTargetsTasks\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\publish\**"
+          Include="$(MonoTargetsTasksDir)publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal

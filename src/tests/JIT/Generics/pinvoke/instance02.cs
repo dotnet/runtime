@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Generics_pinvoke_instance02;
+
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -40,6 +42,8 @@ public class Test_instance02
         }
     }
 
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -61,5 +65,4 @@ public class Test_instance02
         }
     }
 }
-
 

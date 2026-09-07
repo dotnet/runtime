@@ -38,7 +38,7 @@ public unsafe class DacDbiImplTests
             builder.AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion));
             configure(loader, builder);
         });
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
         return (dacDbi, target);
     }
 
@@ -50,7 +50,7 @@ public unsafe class DacDbiImplTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(mockThread)
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
 
         int hr = dacDbi.IsThreadSuspendedOrHijacked(0, null);
 
@@ -70,7 +70,7 @@ public unsafe class DacDbiImplTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(mockThread)
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         Interop.BOOL result = Interop.BOOL.TRUE;
 
         int hr = dacDbi.IsThreadSuspendedOrHijacked(ThreadAddress, &result);
@@ -84,7 +84,7 @@ public unsafe class DacDbiImplTests
     {
         MockTarget.Architecture architecture = new() { IsLittleEndian = true, Is64Bit = true };
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture).Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
 
         Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.TRUE));
         Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.FALSE));
@@ -327,7 +327,7 @@ public unsafe class DacDbiImplTests
             .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(mockLoader)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithExceptionMT(
@@ -340,7 +340,7 @@ public unsafe class DacDbiImplTests
         builder.AddMockContract(mockObject);
         builder.AddMockContract(mockRts);
         var target = builder.Build();
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
         return (dacDbi, target);
     }
 
@@ -629,13 +629,12 @@ public unsafe class DacDbiImplTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ResolveTypeReference_TypeRef_NotCached_ReturnsClassNotLoaded(MockTarget.Architecture arch)
     {
-        const ulong refAsmPtr = 0x100, refManifest = 0x9001;
+        const ulong refAsmPtr = 0x100;
         ModuleHandle refHandle = Mod(0x1000);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        SetupTypeRefCacheMiss(loader);
+        SetupTypeRefCacheMiss(loader, refHandle);
 
         Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
         ecma.Setup(e => e.GetMetadata(refHandle)).Returns((MetadataReader?)null);
@@ -682,29 +681,22 @@ public unsafe class DacDbiImplTests
             MetadataTokens.FieldDefinitionHandle(1),
             MetadataTokens.MethodDefinitionHandle(1));
 
-    private static ModuleLookupTables Tables(ulong manifestModuleReferences)
-        => new ModuleLookupTables(
-            FieldDefToDesc: TargetPointer.Null,
-            ManifestModuleReferences: Ptr(manifestModuleReferences),
-            MemberRefToDesc: TargetPointer.Null,
-            MethodDefToDesc: TargetPointer.Null,
-            TypeDefToMethodTable: TargetPointer.Null,
-            TypeRefToMethodTable: TargetPointer.Null,
-            MethodDefToILCodeVersioningState: TargetPointer.Null,
-            TableDataOffset: 0);
-
-    private static void SetupLookupMap(Mock<ILoader> loader, ulong table, uint token, ulong result)
+    private static void SetupLookupMap(Mock<ILoader> loader, ModuleHandle module, ModuleLookupMapKind kind, uint token, ulong result)
     {
         TargetNUInt flags = default;
-        loader.Setup(l => l.GetModuleLookupMapElement(Ptr(table), token, out flags)).Returns(Ptr(result));
+        loader.Setup(l => l.GetModuleLookupMapElement(module, kind, token, out flags)).Returns(Ptr(result));
     }
 
-    private static void SetupTypeRefCacheMiss(Mock<ILoader> loader)
+    private static void SetupTypeRefCacheMiss(Mock<ILoader> loader, ModuleHandle module)
     {
-        // The referencing module's TypeRef->MethodTable cache is empty (TypeRefToMethodTable == Null),
-        // so every Tier 1 lookup on the Null table misses.
+        // The referencing module's TypeRef->MethodTable cache misses.
         TargetNUInt flags = default;
-        loader.Setup(l => l.GetModuleLookupMapElement(TargetPointer.Null, It.IsAny<uint>(), out flags)).Returns(TargetPointer.Null);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                module,
+                ModuleLookupMapKind.TypeRefToMethodTable,
+                It.IsAny<uint>(),
+                out flags))
+            .Returns(TargetPointer.Null);
     }
 
     private static DacDbiImpl CreateDacDbiWithMockContracts(MockTarget.Architecture arch, Mock<ILoader> loader, Mock<IEcmaMetadata> ecma)
@@ -714,7 +706,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(loader)
             .AddMockContract(ecma)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -731,14 +723,13 @@ public unsafe class DacDbiImplTests
         // Target module: TypeDef "NS.Foo" (row 2 -> token 0x02000002).
         var (targetReader, targetProvider) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Foo"));
 
-        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, refManifest = 0x9001, targetModPtr = 0x4000;
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, targetModPtr = 0x4000;
         ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        SetupTypeRefCacheMiss(loader);
-        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, targetModPtr);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, targetModPtr);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
         loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
 
@@ -782,16 +773,14 @@ public unsafe class DacDbiImplTests
         var (readerB, providerB) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Bar"));
 
         const ulong refAsmPtr = 0x100, asmBPtr = 0x300;
-        const ulong refManifest = 0x9001, manifestA = 0x9002, modAPtr = 0x4000, modBPtr = 0x5000;
+        const ulong modAPtr = 0x4000, modBPtr = 0x5000;
         ModuleHandle refHandle = Mod(0x1000), handleA = Mod(0x2000), handleB = Mod(0x3000);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        loader.Setup(l => l.GetLookupTables(handleA)).Returns(Tables(manifestA));
-        SetupTypeRefCacheMiss(loader);
-        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, modAPtr);
-        SetupLookupMap(loader, manifestA, MdtAssemblyRef | 1, modBPtr);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, modAPtr);
+        SetupLookupMap(loader, handleA, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, modBPtr);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modAPtr))).Returns(handleA);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modBPtr))).Returns(handleB);
         loader.Setup(l => l.GetAssembly(handleB)).Returns(Ptr(asmBPtr));
@@ -840,15 +829,14 @@ public unsafe class DacDbiImplTests
             mb.AddNestedType(inner, outer);
         });
 
-        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, refManifest = 0x9001, targetModPtr = 0x4000;
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, targetModPtr = 0x4000;
         ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
         uint innerToken = (uint)MetadataTokens.GetToken(innerRefHandle);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        SetupTypeRefCacheMiss(loader);
-        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, targetModPtr);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, targetModPtr);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
         loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
 
@@ -924,7 +912,7 @@ public unsafe class DacDbiImplTests
             .AddContract<IRuntimeInfo>(version: "c1")
             .AddMockContract(mockThread)
             .Build();
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
 
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
         ctx.RawContextFlags = 0;
@@ -961,7 +949,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockThread)
             .Build();
 
-        return (new DacDbiImpl(target, legacyObj: null), target);
+        return (new DacDbiImpl(target, legacyObj: null, new()), target);
     }
 
     private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
@@ -992,7 +980,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(codeVersions)
             .AddMockContract(new Mock<IPlatformMetadata>())
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -1011,10 +999,13 @@ public unsafe class DacDbiImplTests
 
         var loader = new Mock<ILoader>();
         ModuleHandle moduleHandle = new(module);
-        ModuleLookupTables lookupTables = new() { MethodDefToDesc = new TargetPointer(0x2100) };
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(new TargetPointer(Assembly))).Returns(moduleHandle);
-        loader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
-        loader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, MethodToken, out It.Ref<TargetNUInt>.IsAny)).Returns(methodDesc);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                MethodToken,
+                out It.Ref<TargetNUInt>.IsAny))
+            .Returns(methodDesc);
 
         MethodDescHandle methodDescHandle = new(methodDesc);
         MethodDescHandle asyncVariantHandle = new(asyncVariant);
@@ -1068,12 +1059,15 @@ public unsafe class DacDbiImplTests
         TargetPointer module = new(0x2000);
         TargetPointer methodDesc = new(0x3000);
         ModuleHandle moduleHandle = new(module);
-        ModuleLookupTables lookupTables = new() { MethodDefToDesc = new TargetPointer(0x2100) };
 
         var loader = new Mock<ILoader>();
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(new TargetPointer(Assembly))).Returns(moduleHandle);
-        loader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
-        loader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, MethodToken, out It.Ref<TargetNUInt>.IsAny)).Returns(methodDesc);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                MethodToken,
+                out It.Ref<TargetNUInt>.IsAny))
+            .Returns(methodDesc);
 
         MethodDescHandle methodDescHandle = new(methodDesc);
         var rts = new Mock<IRuntimeTypeSystem>();
@@ -1240,17 +1234,19 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockCodeVersions)
             .AddMockContract(mockReJIT)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     private static Mock<ILoader> SetupMockLoader(TargetPointer modulePtr, uint methodTk, TargetPointer methodDesc)
     {
         var mockLoader = new Mock<ILoader>();
         var moduleHandle = new Contracts.ModuleHandle(modulePtr);
-        var lookupTables = new ModuleLookupTables { MethodDefToDesc = new TargetPointer(0x4000) };
         mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(modulePtr)).Returns(moduleHandle);
-        mockLoader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
-        mockLoader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out It.Ref<TargetNUInt>.IsAny))
+        mockLoader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                methodTk,
+                out It.Ref<TargetNUInt>.IsAny))
             .Returns(methodDesc);
         return mockLoader;
     }
@@ -1409,7 +1405,7 @@ public unsafe class DacDbiImplTests
             builder.AddMockContract(mockThread);
         }
 
-        var dacDbi = new DacDbiImpl(builder.Build(), legacyObj: null);
+        var dacDbi = new DacDbiImpl(builder.Build(), legacyObj: null, new());
 
         DacDbiMonitorLockInfo result;
         int hr = dacDbi.GetThreadOwningMonitorLock(ObjectAddr, &result);
@@ -1470,7 +1466,7 @@ public unsafe class DacDbiImplTests
             .AddContract<IThread>(version: "c1")
             .AddContract<IStackWalk>(version: "c1");
         TestPlaceholderTarget target = targetBuilder.Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         return (dacDbi, thread, frameBuilder);
     }
 
@@ -1594,7 +1590,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(gcInfo)
             .AddMockContract(new Mock<ILoader>())
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         StackWalkHandleData handleData = new(stackWalk.Object, default);
         handleData.Reset([], isFirst: true);
         nuint stackWalkHandle = handleData.GetHandle();
@@ -1832,7 +1828,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockLoader)
             .AddMockContract(mockEcmaMetadata)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -1919,7 +1915,7 @@ public unsafe class DacDbiImplTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void HasReadWriteMetadata_NullOutput_ReturnsError(MockTarget.Architecture arch)
     {
-        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null);
+        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null, new());
 
         int hr = dacDbi.HasReadWriteMetadata(0x1000, null);
 
@@ -1958,7 +1954,7 @@ public unsafe class DacDbiImplTests
             .AddTypes(types)
             .AddContract<IEcmaMetadata>(version: "c1")
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         Interop.BOOL result = Interop.BOOL.TRUE;
 
         int hr = dacDbi.HasReadWriteMetadata(readOnlyPEAssembly.Address, &result);

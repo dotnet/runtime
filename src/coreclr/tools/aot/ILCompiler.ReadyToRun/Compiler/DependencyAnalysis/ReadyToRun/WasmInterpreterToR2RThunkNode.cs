@@ -157,17 +157,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             List<WasmExpr> expressions = new List<WasmExpr>();
 
             // Save the current stack pointer global
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             expressions.Add(Local.Set(localSavedSp));
 
             // Allocate frame space: sp -= FrameSize
             expressions.Add(Local.Get(localSavedSp));
             expressions.Add(I32.Const(FrameSize));
             expressions.Add(I32.Sub);
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // Write TERMINATE_R2R_STACK_WALK (1) into the framePointer at new SP
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             expressions.Add(I32.Const(TerminateR2RStackWalk));
             expressions.Add(I32.Store(0));
 
@@ -185,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Param 0: $sp — pointer to the framePointer on the shadow stack
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             targetParamIndex++;
 
             // If the method has a 'this' pointer, load it from pArgs at offset 0
@@ -222,7 +222,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
 
-                if (isIndirectStructArg[i])
+                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm parameters — load each slot.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(LocalPArgs));
+                        ulong slotOffset = (ulong)(interpOffsets[i] + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Load(slotOffset) : V128.Load(slotOffset));
+                        targetParamIndex++;
+                    }
+                }
+                else if (isIndirectStructArg[i])
                 {
                     // Byreference struct — pass a pointer into the incoming pArgs buffer
                     expressions.Add(Local.Get(LocalPArgs));
@@ -301,28 +313,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // For struct returns via retbuf: the R2R function has already written the struct
-            // into pRet. Zero-pad to the appropriate alignment boundary.
-            if (hasRetBuffArg)
-            {
-                TypeDesc returnType = methodSignature.ReturnType;
-                int structSize = returnType.GetElementSize().AsInt;
-                int alignment = structSize <= 4 ? 4 : 8;
-                int padding = AlignmentHelper.AlignUp(structSize, alignment) - structSize;
-                if (padding > 0)
-                {
-                    expressions.Add(Local.Get(LocalPRet));
-                    expressions.Add(I32.Const(structSize));
-                    expressions.Add(I32.Add);
-                    expressions.Add(I32.Const(0));
-                    expressions.Add(I32.Const(padding));
-                    expressions.Add(Memory.Fill());
-                }
-            }
+            // For struct returns via retbuf the R2R function has already written the struct into
+            // pRet, and there is nothing more to do.
 
             // Restore the stack pointer global
             expressions.Add(Local.Get(localSavedSp));
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 sigForInterpToR2RThunks.FuncType,

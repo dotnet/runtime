@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -547,8 +548,8 @@ namespace System.Runtime.InteropServices
             private ComWrappers _comWrappers;
             private IntPtr _externalComObject;
             private IntPtr _inner;
-            private GCHandle _proxyHandle;
-            private GCHandle _proxyHandleTrackingResurrection;
+            private WeakGCHandle<object> _proxyHandle;
+            private WeakGCHandle<object> _proxyHandleTrackingResurrection;
             private readonly bool _aggregatedManagedObjectWrapper;
             private readonly bool _uniqueInstance;
 
@@ -593,14 +594,31 @@ namespace System.Runtime.InteropServices
                 _inner = inner;
                 _comWrappers = comWrappers;
                 _uniqueInstance = flags.HasFlag(CreateObjectFlags.UniqueInstance);
-                _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
 
-                // We have a separate handle tracking resurrection as we want to make sure
-                // we clean up the NativeObjectWrapper only after the RCW has been finalized
-                // due to it can access the native object in the finalizer. At the same time,
-                // we want other callers which are using ProxyHandle such as the reference tracker runtime
-                // to see the object as not alive once it is eligible for finalization.
-                _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
+                // The wrapper's finalizer must not release anything while the RCW is still able to observe the
+                // native object, which is why a handle that tracks resurrection is needed: unlike a plain weak
+                // handle, it stays set until the RCW has actually been collected, rather than merely becoming
+                // unreachable. Callers such as the reference tracker runtime want the opposite, and need to see
+                // the RCW as gone as soon as it is eligible for finalization, which is what 'ProxyHandle' is for.
+                //
+                // Those two only disagree while the RCW is unreachable but not yet collected. An RCW that has
+                // no finalizer is never in that state on its own account, so a single handle can serve both
+                // purposes, halving the handles every such RCW costs. It can still be put in that state by
+                // something else's finalizer holding on to it, and then resurrecting it, and in that case having
+                // the one handle track resurrection is what keeps this wrapper from tearing down state the
+                // resurrected RCW still needs. Reporting such an RCW as alive is also the honest answer, as it
+                // may well be about to become reachable again.
+                //
+                // An RCW that does have a finalizer, whether its own or an inherited one, does reach that state
+                // on its own, and there the two meanings genuinely differ, so it pays for both handles.
+                bool proxyHasFinalizer = RuntimeHelpers.ObjectHasFinalizer(comProxy);
+
+                _proxyHandle = new WeakGCHandle<object>(comProxy, trackResurrection: !proxyHasFinalizer);
+
+                if (proxyHasFinalizer)
+                {
+                    _proxyHandleTrackingResurrection = new WeakGCHandle<object>(comProxy, trackResurrection: true);
+                }
 
                 // If this is an aggregation scenario and the identity object
                 // is a managed object wrapper, we need to call Release() to
@@ -616,7 +634,7 @@ namespace System.Runtime.InteropServices
 
             internal IntPtr ExternalComObject => _externalComObject;
             internal ComWrappers ComWrappers => _comWrappers;
-            internal GCHandle ProxyHandle => _proxyHandle;
+            internal WeakGCHandle<object> ProxyHandle => _proxyHandle;
             internal bool IsUniqueInstance => _uniqueInstance;
             internal bool IsAggregatedWithManagedObjectWrapper => _aggregatedManagedObjectWrapper;
 
@@ -628,15 +646,8 @@ namespace System.Runtime.InteropServices
                     _comWrappers = null!;
                 }
 
-                if (_proxyHandle.IsAllocated)
-                {
-                    _proxyHandle.Free();
-                }
-
-                if (_proxyHandleTrackingResurrection.IsAllocated)
-                {
-                    _proxyHandleTrackingResurrection.Free();
-                }
+                _proxyHandle.Dispose();
+                _proxyHandleTrackingResurrection.Dispose();
 
                 // If the inner was supplied, we need to release our reference.
                 if (_inner != IntPtr.Zero)
@@ -650,7 +661,15 @@ namespace System.Runtime.InteropServices
 
             ~NativeObjectWrapper()
             {
-                if (_proxyHandleTrackingResurrection.IsAllocated && _proxyHandleTrackingResurrection.Target != null)
+                // When the RCW has no finalizer, no second handle was allocated and the proxy handle is
+                // the one tracking resurrection, so it answers this question just as well. Neither is allocated
+                // once this wrapper has been released, which happens eagerly when one loses a registration race,
+                // and then there is nothing left to keep alive for.
+                WeakGCHandle<object> resurrectionHandle = _proxyHandleTrackingResurrection.IsAllocated
+                    ? _proxyHandleTrackingResurrection
+                    : _proxyHandle;
+
+                if (resurrectionHandle.IsAllocated && resurrectionHandle.TryGetTarget(out _))
                 {
                     // The RCW object has not been fully collected, so it still
                     // can make calls on the native object in its finalizer.
@@ -789,14 +808,20 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = state.This.CreateManagedObjectWrapper(c, state.flags);
+                ManagedObjectWrapper* value = state.ComWrappers.CreateManagedObjectWrapper(c, state.Flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            }, new { This = this, flags });
+            }, new CreateManagedObjectWrapperState(this, flags));
 
             managedObjectWrapper.AddRef();
             RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper);
 
             return managedObjectWrapper.ComIp;
+        }
+
+        private readonly struct CreateManagedObjectWrapperState(ComWrappers comWrappers, CreateComInterfaceFlags flags)
+        {
+            public readonly ComWrappers ComWrappers = comWrappers;
+            public readonly CreateComInterfaceFlags Flags = flags;
         }
 
         private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
@@ -1260,7 +1285,7 @@ namespace System.Runtime.InteropServices
             // for the same COM instance, but in that case we'll be passed the same NativeObjectWrapper instance
             // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
             // as the entry is always the same pair.
-            Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+            Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
             Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
 
             // Add the input wrapper bound to the COM proxy, if there isn't one already. If another thread raced
@@ -1296,10 +1321,64 @@ namespace System.Runtime.InteropServices
             _rcwCache.RemoveAll(wrappers);
         }
 
-        private sealed class RcwCache
+        /// <summary>
+        /// The cache mapping COM instances to the <see cref="NativeObjectWrapper"/> objects tracking their RCWs.
+        /// </summary>
+        /// <remarks>
+        /// The cache is partitioned into several independent buckets, each with its own lock, so that operations on
+        /// COM instances that map to different buckets don't contend with one another. Reducing that contention is
+        /// important because the cache is consulted on essentially every transition from native to managed code, and
+        /// because the finalizer thread concurrently takes write locks to remove entries for collected RCWs.
+        /// </remarks>
+        private readonly struct RcwCache
         {
-            private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
-            private readonly Dictionary<IntPtr, GCHandle> _cache = [];
+            /// <summary>
+            /// The most buckets to partition the cache into, regardless of how many processors there are.
+            /// </summary>
+            private const int MaxBucketCount = 16;
+
+            private readonly Bucket[] _buckets;
+
+            public RcwCache()
+            {
+                // Use as many buckets as there are processors, matching the default concurrency level of
+                // 'ConcurrentDictionary', up to the cap above. The count is rounded up to a power of two so that
+                // the bucket for a given COM instance can be selected with a mask rather than a division.
+                uint bucketCount = BitOperations.RoundUpToPowerOf2((uint)Math.Min(Environment.ProcessorCount, MaxBucketCount));
+                Bucket[] buckets = new Bucket[bucketCount];
+
+                for (int i = 0; i < buckets.Length; i++)
+                {
+                    buckets[i] = new Bucket();
+                }
+
+                _buckets = buckets;
+            }
+
+            /// <summary>
+            /// Gets the bucket owning the entries for a given COM instance.
+            /// </summary>
+            /// <param name="comPointer">The com instance to get the bucket for.</param>
+            /// <returns>The bucket owning the entries for <paramref name="comPointer"/>.</returns>
+            private unsafe ref readonly Bucket GetBucket(IntPtr comPointer)
+            {
+                Bucket[] buckets = _buckets;
+
+                // COM instances are always at least pointer aligned, and in practice more than that. Their low
+                // bits are therefore constant and can't be used to select a bucket directly. Multiplying by a
+                // large odd constant (2 raised to the width of a pointer, divided by the golden ratio) mixes
+                // every input bit into the high half of the product, which is then masked to produce the index.
+                // The whole sequence lowers to a multiply, a shift and a mask, which is negligible next to the
+                // lookup that follows.
+                uint hash = sizeof(nint) == 8
+                    ? (uint)(((ulong)(nuint)comPointer * 0x9E3779B97F4A7C15) >> 32)
+                    : ((uint)(nuint)comPointer * 0x9E3779B9) >> 16;
+
+                uint index = hash & (uint)(buckets.Length - 1);
+
+                // Return the bucket by reference, so that it's addressed in place in the array rather than copied
+                return ref buckets[index];
+            }
 
             /// <summary>
             /// Gets the current RCW proxy object for <paramref name="comPointer"/> if it exists in the cache or inserts a new entry with <paramref name="comProxy"/>.
@@ -1310,139 +1389,182 @@ namespace System.Runtime.InteropServices
             /// <returns>The proxy object currently in the cache for <paramref name="comPointer"/> or the proxy object owned by <paramref name="wrapper"/> if no entry exists and the corresponding native wrapper.</returns>
             public (NativeObjectWrapper actualWrapper, object actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
             {
-                _lock.EnterWriteLock();
-                try
-                {
-                    Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
-                    ref GCHandle rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
-                    if (!exists)
-                    {
-                        // Someone else didn't beat us to adding the entry to the cache.
-                        // Add our entry here.
-                        rcwEntry = GCHandle.Alloc(wrapper, GCHandleType.Weak);
-                    }
-                    else if (rcwEntry.Target is not (NativeObjectWrapper cachedWrapper))
-                    {
-                        Debug.Assert(rcwEntry.IsAllocated);
-                        // The target was collected, so we need to update the cache entry.
-                        rcwEntry.Target = wrapper;
-                    }
-                    else
-                    {
-                        object? existingProxy = cachedWrapper.ProxyHandle.Target;
-                        // The target NativeObjectWrapper was not collected, but we need to make sure
-                        // that the proxy object is still alive.
-                        if (existingProxy is not null)
-                        {
-                            // The existing proxy object is still alive, we will use that.
-                            return (cachedWrapper, existingProxy);
-                        }
-
-                        // The proxy object was collected, so we need to update the cache entry.
-                        rcwEntry.Target = wrapper;
-                    }
-
-                    // We either added an entry to the cache or updated an existing entry that was dead.
-                    // Return our target object.
-                    return (wrapper, comProxy);
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
+                return GetBucket(comPointer).GetOrAddProxyForComInstance(comPointer, wrapper, comProxy);
             }
 
+            /// <summary>
+            /// Gets the current RCW proxy object for <paramref name="comPointer"/>, if it exists in the cache and is still alive.
+            /// </summary>
+            /// <param name="comPointer">The com instance we want to get the RCW for.</param>
+            /// <returns>The proxy object currently in the cache for <paramref name="comPointer"/>, if any.</returns>
             public object? FindProxyForComInstance(IntPtr comPointer)
             {
-                _lock.EnterReadLock();
-                try
-                {
-                    if (!_cache.TryGetValue(comPointer, out GCHandle existingHandle))
-                    {
-                        // No entry in the cache.
-                        return null;
-                    }
-                    if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
-                    {
-                        // The target exists and is still alive. Return it.
-                        return cachedProxy;
-                    }
-                    // The target was collected, so we need to remove the entry from the cache.
-                    // We'll do this in a write lock after we exit the read lock.
-                    // We don't use an upgradeable lock here as only one thread can hold an upgradeable lock at a time,
-                    // effectively eliminating the benefit of using a reader-writer lock.
-                }
-                finally
-                {
-                    _lock.ExitReadLock();
-                }
-
-                _lock.EnterWriteLock();
-                try
-                {
-                    // Someone else could have removed the entry or added a new one in the time
-                    // between us releasing the read lock and acquiring the write lock.
-                    if (_cache.TryGetValue(comPointer, out GCHandle existingHandle)
-                        && existingHandle.Target is null)
-                    {
-                        // There's still a dead entry in the cache,
-                        // remove it.
-                        _cache.Remove(comPointer);
-                        existingHandle.Free();
-                    }
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
-
-                return null;
+                return GetBucket(comPointer).FindProxyForComInstance(comPointer);
             }
 
+            /// <summary>
+            /// Removes the entry associating <paramref name="comPointer"/> with <paramref name="wrapper"/>, if present.
+            /// </summary>
+            /// <param name="comPointer">The com instance to remove the entry for.</param>
+            /// <param name="wrapper">The <see cref="NativeObjectWrapper"/> that is expected to be in the cache.</param>
             public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)
             {
-                _lock.EnterWriteLock();
-                try
-                {
-                    Remove_Locked(comPointer, wrapper);
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
+                GetBucket(comPointer).Remove(comPointer, wrapper);
             }
 
+            /// <summary>
+            /// Removes the entries for all input <see cref="NativeObjectWrapper"/> objects, if present.
+            /// </summary>
+            /// <param name="wrappers">The <see cref="NativeObjectWrapper"/> objects to remove the entries for.</param>
             public void RemoveAll(IEnumerable<NativeObjectWrapper> wrappers)
             {
-                _lock.EnterWriteLock();
-                try
+                // The wrappers can span multiple buckets, so they're removed one at a time. This is only used when
+                // tearing down an apartment, so the extra lock acquisitions don't matter. Note that entries are not
+                // removed atomically as a batch anymore, but that was never something callers could rely on: the
+                // cache is only ever observed one entry at a time.
+                foreach (NativeObjectWrapper wrapper in wrappers)
                 {
-                    foreach (NativeObjectWrapper wrapper in wrappers)
-                    {
-                        Remove_Locked(wrapper.ExternalComObject, wrapper);
-                    }
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
+                    IntPtr comPointer = wrapper.ExternalComObject;
+
+                    GetBucket(comPointer).Remove(comPointer, wrapper);
                 }
             }
 
-            private void Remove_Locked(IntPtr comPointer, NativeObjectWrapper wrapper)
+            /// <summary>
+            /// A single partition of the RCW cache, holding the entries for all COM instances that map to it.
+            /// </summary>
+            /// <remarks>
+            /// This is a struct so that buckets are stored inline in the containing array. That saves a dereference
+            /// on each lookup, and lets several buckets share a cache line. There is no false sharing to worry about,
+            /// as the fields are only ever read: all mutable state lives in the referenced lock and dictionary.
+            /// </remarks>
+            private readonly struct Bucket
             {
-                Debug.Assert(_lock.IsWriteLockHeld);
-                // This method is used in a scenario where we already have a lock on the cache, so we can skip acquiring the lock again.
-                // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
-                // in the time between the GC cleared the contents of the GC handle but before the
-                // NativeObjectWrapper finalizer ran.
-                // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
-                // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
-                if (_cache.TryGetValue(comPointer, out GCHandle cachedRef)
-                    && (wrapper == cachedRef.Target
-                        || cachedRef.Target is null))
+                private readonly ReaderWriterLockSlim _lock;
+                private readonly Dictionary<IntPtr, WeakGCHandle<NativeObjectWrapper>> _cache;
+
+                public Bucket()
                 {
-                    _cache.Remove(comPointer);
-                    cachedRef.Free();
+                    _lock = new ReaderWriterLockSlim();
+                    _cache = [];
+                }
+
+                /// <inheritdoc cref="RcwCache.GetOrAddProxyForComInstance"/>
+                public (NativeObjectWrapper actualWrapper, object actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
+                {
+                    _lock.EnterWriteLock();
+                    try
+                    {
+                        Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
+                        ref WeakGCHandle<NativeObjectWrapper> rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
+                        if (!exists)
+                        {
+                            // Someone else didn't beat us to adding the entry to the cache.
+                            // Add our entry here.
+                            rcwEntry = new WeakGCHandle<NativeObjectWrapper>(wrapper);
+                        }
+                        else if (!rcwEntry.TryGetTarget(out NativeObjectWrapper? cachedWrapper))
+                        {
+                            Debug.Assert(rcwEntry.IsAllocated);
+                            // The target was collected, so we need to update the cache entry.
+                            rcwEntry.SetTarget(wrapper);
+                        }
+                        else
+                        {
+                            // The target NativeObjectWrapper was not collected, but we need to make sure
+                            // that the proxy object is still alive.
+                            if (cachedWrapper.ProxyHandle.TryGetTarget(out object? existingProxy))
+                            {
+                                // The existing proxy object is still alive, we will use that.
+                                return (cachedWrapper, existingProxy);
+                            }
+
+                            // The proxy object was collected, so we need to update the cache entry.
+                            rcwEntry.SetTarget(wrapper);
+                        }
+
+                        // We either added an entry to the cache or updated an existing entry that was dead.
+                        // Return our target object.
+                        return (wrapper, comProxy);
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
+                }
+
+                /// <inheritdoc cref="RcwCache.FindProxyForComInstance"/>
+                public object? FindProxyForComInstance(IntPtr comPointer)
+                {
+                    _lock.EnterReadLock();
+                    try
+                    {
+                        if (!_cache.TryGetValue(comPointer, out WeakGCHandle<NativeObjectWrapper> existingHandle))
+                        {
+                            // No entry in the cache.
+                            return null;
+                        }
+                        if (existingHandle.TryGetTarget(out NativeObjectWrapper? cachedWrapper)
+                            && cachedWrapper.ProxyHandle.TryGetTarget(out object? cachedProxy))
+                        {
+                            // The target exists and is still alive. Return it.
+                            return cachedProxy;
+                        }
+                        // The target was collected, so we need to remove the entry from the cache.
+                        // We'll do this in a write lock after we exit the read lock.
+                        // We don't use an upgradeable lock here as only one thread can hold an upgradeable lock at a time,
+                        // effectively eliminating the benefit of using a reader-writer lock.
+                    }
+                    finally
+                    {
+                        _lock.ExitReadLock();
+                    }
+
+                    _lock.EnterWriteLock();
+                    try
+                    {
+                        // Someone else could have removed the entry or added a new one in the time
+                        // between us releasing the read lock and acquiring the write lock.
+                        if (_cache.TryGetValue(comPointer, out WeakGCHandle<NativeObjectWrapper> existingHandle)
+                            && !existingHandle.TryGetTarget(out _))
+                        {
+                            // There's still a dead entry in the cache,
+                            // remove it.
+                            _cache.Remove(comPointer);
+                            existingHandle.Dispose();
+                        }
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
+
+                    return null;
+                }
+
+                /// <inheritdoc cref="RcwCache.Remove"/>
+                public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)
+                {
+                    _lock.EnterWriteLock();
+                    try
+                    {
+                        // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
+                        // in the time between the GC cleared the contents of the GC handle but before the
+                        // NativeObjectWrapper finalizer ran.
+                        // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
+                        // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
+                        if (_cache.TryGetValue(comPointer, out WeakGCHandle<NativeObjectWrapper> cachedRef)
+                            && (!cachedRef.TryGetTarget(out NativeObjectWrapper? cachedWrapper)
+                                || cachedWrapper == wrapper))
+                        {
+                            _cache.Remove(comPointer);
+                            cachedRef.Dispose();
+                        }
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
                 }
             }
         }

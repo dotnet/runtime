@@ -54,7 +54,10 @@ namespace System.Net.Http
         internal uint _lastSeenHttp3MaxHeaderListSize;
 
         // Same as the above, but for SETTINGS_MAX_CONCURRENT_STREAMS.
-        internal uint _lastSeenHttp2MaxConcurrentStreams = Http2Connection.InitialMaxConcurrentStreams;
+        // Unlike the values above, this one starts out at SocketsHttpHandler.InitialHttp2MaxConcurrentStreams,
+        // and we only ever memorize server-advertised values that are lower than that. That is, the setting
+        // acts as the upper bound for what every new connection starts with.
+        internal uint _lastSeenHttp2MaxConcurrentStreams;
 
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
@@ -85,6 +88,7 @@ namespace System.Net.Http
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
             _telemetryServerAddress = telemetryServerAddress;
+            _lastSeenHttp2MaxConcurrentStreams = (uint)Settings._initialHttp2MaxConcurrentStreams;
 
             // The only case where 'host' will not be set is if this is a Proxy connection pool. In that case the
             // connection targets the proxy itself, so use the proxy's host and port for the origin authority.
@@ -1102,7 +1106,9 @@ namespace System.Net.Http
                 // if a pool was used since the last time we cleaned up, give it another chance. New pools
                 // start out saying they've recently been used, to give them a bit of breathing room and time
                 // for the initial collection to be added to it.
-                if (!_usedSinceLastCleanup && _associatedHttp11ConnectionCount == 0 && _associatedHttp2ConnectionCount == 0)
+                if (!_usedSinceLastCleanup && _associatedHttp11ConnectionCount == 0 && _associatedHttp2ConnectionCount == 0 &&
+                    // An HTTP/2 connection may still be draining requests (e.g. after a GOAWAY frame) and need heart beats.
+                    (_http2ConnectionsForHeartBeat?.Count ?? 0) == 0)
                 {
                     _disposed = true;
                     return true; // Pool is disposed of.  It should be removed.

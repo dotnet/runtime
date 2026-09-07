@@ -10,7 +10,6 @@ internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
     [Field] public partial TargetPointer HighFrequencyHeap { get; }
     [Field] public partial TargetPointer LowFrequencyHeap { get; }
     [Field] public partial TargetPointer StaticsHeap { get; }
-    [Field] public partial TargetPointer StubHeap { get; }
     [Field] public partial TargetPointer ExecutableHeap { get; }
     [Field] public partial TargetPointer? FixupPrecodeHeap { get; }
     [Field] public partial TargetPointer? NewStubPrecodeHeap { get; }

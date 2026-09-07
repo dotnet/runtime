@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Fields_instance_assignment_struct01;
+
 using System;
 using Xunit;
 
@@ -49,6 +51,7 @@ public class Test_instance_assignment_struct01
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

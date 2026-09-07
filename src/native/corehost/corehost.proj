@@ -207,6 +207,16 @@
     <Copy SourceFiles="@(_MicrosoftNetCoreAppRuntimePackNativeDirFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
+
+    <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets),
+         installed into the host sharedFramework by the browserhost CMakeLists. Kept in sync with the
+         runtime-pack harvest in eng/liveBuilds.targets. -->
+    <Copy SourceFiles="$(HostSharedFrameworkDir)include\callhelpers.hpp"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(HostSharedFrameworkDir)include\minipal\entrypoints.h;$(HostSharedFrameworkDir)include\minipal\utils.h"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\minipal"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- WASI CoreCLR: stage libWasiHost.a into the runtime pack native dir for the per-app relink,

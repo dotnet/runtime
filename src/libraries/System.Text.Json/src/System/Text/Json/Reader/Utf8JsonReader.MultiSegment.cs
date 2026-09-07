@@ -1174,7 +1174,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
+                if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
                 {
                     RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
@@ -1200,7 +1200,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte is not ((byte)'E' or (byte)'e'))
+                if (nextByte != 'E' && nextByte != 'e')
                 {
                     RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
@@ -1341,7 +1341,7 @@ namespace System.Text.Json
                 }
             }
             nextByte = data[i];
-            if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
+            if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
             {
                 RollBackState(rollBackState, isError: true);
                 ThrowHelper.ThrowJsonReaderException(ref this,
@@ -1490,7 +1490,7 @@ namespace System.Text.Json
             }
 
             byte nextByte = data[i];
-            if (nextByte is (byte)'+' or (byte)'-')
+            if (nextByte == '+' || nextByte == '-')
             {
                 i++;
                 _bytePositionInLine++;
@@ -2264,7 +2264,7 @@ namespace System.Text.Json
             }
 
             byte marker = localBuffer[0];
-            if (marker is not (JsonConstants.Slash or JsonConstants.Asterisk))
+            if (marker != JsonConstants.Slash && marker != JsonConstants.Asterisk)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAtStartOfComment, marker);
             }

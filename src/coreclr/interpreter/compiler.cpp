@@ -5569,10 +5569,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     }
                 }
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
-
-                // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
-                //  the process of initializing the result may trample the args.
-                m_pVars[dVar].noCallArgs = true;
             }
             else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
             {
@@ -5598,14 +5594,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             else if (isCalli)
             {
                 EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig);
-                if (((m_pLastNewIns->data[1] & (int32_t)CalliFlags::PInvoke) != 0)
-                    && m_pVars[dVar].interpType == InterpTypeVT)
-                {
-                    // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
-                    // some native ABI's such as the SysV ABI on Linux/x64 and the ARM64 abi assume the return buffer returns are non-aliasing
-                    // with the call arguments. The managed calling convention does not have this restriction.
-                    m_pVars[dVar].noCallArgs = true;
-                }
             }
             else
             {
@@ -5634,14 +5622,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 else
                 {
                     opcode = (isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL;
-
-                    if (opcode == INTOP_CALL_PINVOKE && m_pVars[dVar].interpType == InterpTypeVT)
-                    {
-                        // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
-                        // some native ABI's such as the SysV ABI on Linux/x64 and the ARM64 abi assume the return buffer returns are non-aliasing
-                        // with the call arguments. The managed calling convention does not have this restriction.
-                        m_pVars[dVar].noCallArgs = true;
-                    }
                 }
 
                 if (callInfo.nullInstanceCheck)
@@ -5727,7 +5707,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
             EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
 
-            // These calli calls cannot be pinvoke calls. (If we want to add that, we need to set the noCallArgs flag)
+            // These calli calls cannot be pinvoke calls.
             assert(!((m_pLastNewIns->data[1] & (int32_t)CalliFlags::PInvoke) != 0));
             break;
         }
@@ -7486,9 +7466,6 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     }
 
     m_pLastNewIns->data[0] = GetDataItemIndex(peepInfo->alternateCtor);
-    // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
-    //  the process of initializing the result may trample the args.
-    m_pVars[newObjDVar].noCallArgs = true;
     m_pLastNewIns->SetDVar(newObjDVar);
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
@@ -10984,8 +10961,7 @@ retry_emit:
                         m_pLastNewIns->SetSVar(typedByRefVar);
                         m_pLastNewIns->SetDVar(classHandleVar);
 
-                        AddIns(INTOP_CALL_HELPER_P_S);
-                        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
+                        AddIns(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE);
                         m_pLastNewIns->SetSVar(classHandleVar);
                         PushInterpType(InterpTypeVT, m_compHnd->getBuiltinClass(CLASSID_TYPE_HANDLE));
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
@@ -11734,7 +11710,8 @@ retry_emit:
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
 
                 // see jit/importer.cpp CEE_LDTOKEN
-                CorInfoHelpFunc helper;
+                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
+                CorInfoHelpFunc       helper = CORINFO_HELP_UNDEF;
                 if (resolvedToken.hField)
                 {
                     helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
@@ -11747,7 +11724,11 @@ retry_emit:
                 else if (resolvedToken.hClass)
                 {
                     DeclarePointerIsClass(resolvedToken.hClass);
-                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    int32_t typeVar = EmitGenericHandleAsVar(embedInfo);
+                    PushInterpType(InterpTypeVT, clsHnd);
+                    AddIns(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE);
+                    m_pLastNewIns->SetSVar(typeVar);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }
                 else
                 {
@@ -11755,8 +11736,11 @@ retry_emit:
                     assert(!"Token not resolved or resolved to unexpected type");
                 }
 
-                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
-                EmitPushHelperCall(helper, embedInfo, StackTypeVT, clsHnd);
+                if (helper != CORINFO_HELP_UNDEF)
+                {
+                    EmitPushHelperCall(helper, embedInfo, StackTypeVT, clsHnd);
+                }
+
                 m_ip += 5;
                 break;
             }

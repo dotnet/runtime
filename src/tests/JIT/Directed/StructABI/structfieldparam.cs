@@ -10,7 +10,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
-namespace structfieldparam
+namespace JitTest_Directed_StructABI_structfieldparam
 {
 
     struct Inner1

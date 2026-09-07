@@ -12707,7 +12707,7 @@ void emitter::emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm)
 void emitter::emitDispSveReg(regNumber reg, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitSveRegName(reg));
+    printf("%s", emitSveRegName(reg));
 
     if (addComma)
         emitDispComma();
@@ -12719,7 +12719,7 @@ void emitter::emitDispSveReg(regNumber reg, bool addComma)
 void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitSveRegName(reg));
+    printf("%s", emitSveRegName(reg));
 
     if (opt != INS_OPTS_NONE)
     {
@@ -12737,7 +12737,7 @@ void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 void emitter::emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitSveRegName(reg));
+    printf("%s", emitSveRegName(reg));
     emitDispElementIndex(index, addComma);
 }
 
@@ -12821,7 +12821,7 @@ const char* emitter::emitPredicateRegName(regNumber reg, PredicateType ptype)
 void emitter::emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma)
 {
     assert(isPredicateRegister(reg));
-    printf(emitPredicateRegName(reg, ptype));
+    printf("%s", emitPredicateRegName(reg, ptype));
 
     if (ptype == PREDICATE_MERGE)
     {

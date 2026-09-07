@@ -329,7 +329,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
-                public unsafe class C
+                public class C
                 {
                     public static unsafe int M1() => 0;
 
@@ -343,7 +343,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 using System.Diagnostics.CodeAnalysis;
 
-                public unsafe class C
+                public class C
                 {
                     public static unsafe int M1() => 0;
 

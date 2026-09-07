@@ -68,7 +68,6 @@ namespace
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM(););
         }
         CONTRACTL_END;
 
@@ -204,12 +203,11 @@ void Assembly::Init(AllocMemTracker *pamTracker)
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
         //Cannot fail after this point.
 
         InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 
-        return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
+        return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW expires
     }
 }
 
@@ -219,7 +217,6 @@ Assembly::~Assembly()
     {
         NOTHROW;
         GC_TRIGGERS;
-        DISABLED(FORBID_FAULT); //Must clean up some profiler stuff
     }
     CONTRACTL_END
 
@@ -278,7 +275,6 @@ void Assembly::StartUnload()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackAssemblyLoads())
@@ -375,7 +371,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -518,7 +513,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
 
         // Cannot fail after this point
 
@@ -557,13 +551,6 @@ PTR_LoaderHeap Assembly::GetHighFrequencyHeap()
 }
 
 
-PTR_LoaderHeap Assembly::GetStubHeap()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetLoaderAllocator()->GetStubHeap();
-}
-
 Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                                            Loader::LoadFlag loadFlag,
                                            mdTypeDef mdNested,
@@ -573,7 +560,6 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -700,7 +686,6 @@ Module * Assembly::FindModuleByTypeRef(
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
 
         MODE_ANY;
 
@@ -895,7 +880,6 @@ void Assembly::CacheFriendAssemblyInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -919,7 +903,6 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1050,7 +1033,6 @@ void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1074,7 +1056,6 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
 
         PRECONDITION(CheckPointer(pType));
     }
@@ -1285,7 +1266,6 @@ static void RunMainPost()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(GetThreadNULLOk()));
     }
     CONTRACTL_END
@@ -1313,7 +1293,6 @@ void RunManagedStartup()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1330,7 +1309,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool captureException
         GC_TRIGGERS;
         MODE_ANY;
         ENTRY_POINT;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1416,7 +1394,6 @@ MethodDesc* Assembly::GetEntryPoint()
     CONTRACTL
     {
         THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
 
         // Can return NULL if no entry point.
@@ -1513,7 +1490,6 @@ OBJECTREF Assembly::GetExposedObject()
     {
         GC_TRIGGERS;
         THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -1608,7 +1584,6 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1630,7 +1605,6 @@ ITypeLib* Assembly::GetTypeLib()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1647,7 +1621,6 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pNew));
     }
     CONTRACTL_END
@@ -1673,7 +1646,6 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(refedAssembly));
         PRECONDITION(CheckPointer(pAssemEmitter, NULL_NOT_OK));
     }
@@ -1710,7 +1682,6 @@ void Assembly::AddType(
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1737,7 +1708,6 @@ void Assembly::AddExportedType(mdExportedType cl)
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2337,7 +2307,6 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
         THROWS;
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2361,7 +2330,6 @@ HRESULT Assembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pdwFlags));
     }
     CONTRACTL_END;

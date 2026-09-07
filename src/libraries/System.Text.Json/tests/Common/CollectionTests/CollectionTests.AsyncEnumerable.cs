@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task WriteAsyncEnumerable_CancellationToken_IsPassedToAsyncEnumerator()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/79556
-            using var utf8Stream = new Utf8MemoryStream(ignoreCancellationTokenOnWriteAsync: true);
+            using var utf8Stream = new Utf8MemoryStream(ignoreCancellationTokenOnIO: true);
             using var cts = new CancellationTokenSource();
 
             IAsyncEnumerable<int> value = CreateEnumerable();

@@ -3986,6 +3986,20 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     JITDUMP("** Seeing if we can clone to guarantee non-escape under V%02u\n", info->m_local);
     BasicBlock* const allocBlock = info->m_allocBlock;
 
+    // Cloning redirects the allocation block's sole outgoing edge to the fast path,
+    // so the allocation block must be a block kind that has a single target.
+    //
+    // If the allocation block ends in a conditional (say the def of the enumerator var
+    // is in the allocation block, and is followed by a GDV guard), we can't simply
+    // redirect, so bail out.
+    //
+    if (!allocBlock->HasTarget())
+    {
+        JITDUMP("allocation block " FMT_BB " is a %s, and so has no unique target edge\n", allocBlock->bbNum,
+                bbKindNames[allocBlock->GetKind()]);
+        return false;
+    }
+
     // The allocation site must not be in a loop (stack allocation limitation)
     //
     // Note if we can prove non-escape but can't stack allocate, we might be
@@ -4149,7 +4163,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
     // -1 here since we won't need to clone the allocation site itself.
     //
-    JITDUMP("allocation side cloning: %u blocks\n", visited->size() - 1);
+    JITDUMP("allocation side cloning: %zu blocks\n", visited->size() - 1);
 
     // The allocationBlock should not dominate the defBlock.
     // (if it does, optimization does not require cloning, as
@@ -4412,7 +4426,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
         }
     }
 
-    JITDUMP("total cloning including all enumerator uses: %u blocks\n", visited->size() - 1);
+    JITDUMP("total cloning including all enumerator uses: %zu blocks\n", visited->size() - 1);
     unsigned numberOfEHRegionsToClone = 0;
 
     // Now expand the clone block set to include any try regions that need cloning.

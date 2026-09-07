@@ -7,7 +7,7 @@
     <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.proj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetsMobile)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true' ">
     <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
   </ItemGroup>

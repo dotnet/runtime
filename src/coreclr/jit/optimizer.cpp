@@ -3684,7 +3684,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
                 printTreeID(origExpr);
                 printf(" was declared as hoistable from loop at nesting depth %d; actually hoisted from loop at depth "
                        "%d.\n",
-                       tlAndN.m_num, depth);
+                       (int)tlAndN.m_num, (int)depth);
                 assert(false);
             }
             else
@@ -5964,7 +5964,9 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && isEntire &&
+                        // For async methods we may skip an explicit init through the resumption path
+                        //
+                        if (!removedExplicitZeroInit && isEntire && !compIsAsync() &&
                             (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->IsLiveInOutOfHandler())))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later

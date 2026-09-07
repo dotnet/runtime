@@ -557,6 +557,9 @@ public unsafe partial interface IDacDbiInterface
     int FlushCache();
 
     [PreserveSig]
+    int Destroy();
+
+    [PreserveSig]
     int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts);
 
     [PreserveSig]

@@ -411,7 +411,6 @@ struct InterpVar
     InterpInst *call = nullptr;
 
     unsigned int callArgs : 1; // Var used as argument to a call
-    unsigned int noCallArgs : 1; // Var can't be used as argument to a call, needs to be copied to temp
     unsigned int global : 1; // Dedicated stack offset throughout method execution
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
@@ -427,7 +426,6 @@ struct InterpVar
         bbIndex = -1;
 
         callArgs = false;
-        noCallArgs = false;
         global = false;
         ILGlobal = false;
         alive = false;

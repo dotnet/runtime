@@ -356,7 +356,7 @@ public:
     InfoAccessType repConstructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue);
 
     void recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result);
-    void dmpConvertPInvokeCalliToCall(DLD key, DWORDLONG value);
+    void dmpConvertPInvokeCalliToCall(DLD key, DLDL value);
     bool repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert);
 
     void recEmptyStringLiteral(void** ppValue, InfoAccessType result);
@@ -567,6 +567,20 @@ public:
     void dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value);
     CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
 
+    void recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                              bool isUnsafe,
+                                              CORINFO_CONTEXT_HANDLE* contextHandle,
+                                              CORINFO_LOOKUP* instArg,
+                                              CORINFO_METHOD_HANDLE methHnd);
+    void dmpGetAwaitAwaiterInContinuationCall(const Agnostic_GetAwaitAwaiterInContinuationCall& key,
+                                              Agnostic_GetAwaitReturnCallResult& value);
+    CORINFO_METHOD_HANDLE repGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                                              bool isUnsafe,
+                                                              CORINFO_CONTEXT_HANDLE* contextHandle,
+                                                              CORINFO_LOOKUP* instArg);
+
     void recGetWasmWellKnownGlobals(const CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals);
     void dmpGetWasmWellKnownGlobals(DWORD key, const Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS& value);
     void repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
@@ -742,10 +756,6 @@ public:
     void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result);
     void dmpIsEnum(DWORDLONG key, DLD value);
     TypeCompareState repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
-
-    void recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result);
-    void dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value);
-    LPVOID repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
 
     LPVOID repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
     void recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result);
@@ -1229,6 +1239,7 @@ enum mcPackets
     Packet_GetAddressAlignment = 239,
     Packet_GetWasmWellKnownGlobals = 240,
     Packet_CanValueClassInstancePointerEscape = 241,
+    Packet_GetAwaitAwaiterInContinuationCall = 242,
 };
 
 void SetDebugDumpVariables();

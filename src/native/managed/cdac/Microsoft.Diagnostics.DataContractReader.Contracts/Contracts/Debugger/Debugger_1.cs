@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -10,7 +11,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct Debugger_1 : IDebugger
+internal sealed class Debugger_1 : IDebugger
 {
     private enum DebuggerControlFlag_1 : uint
     {
@@ -20,10 +21,16 @@ internal readonly struct Debugger_1 : IDebugger
     private const uint UnhandledExceptionHijackIndex = 0;
 
     private readonly Target _target;
+    private Dictionary<TargetPointer, byte>? _patches;
 
     internal Debugger_1(Target target)
     {
         _target = target;
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _patches = null;
     }
 
     private bool TryGetDebuggerAddress(out TargetPointer debuggerAddress)
@@ -154,6 +161,55 @@ internal readonly struct Debugger_1 : IDebugger
             }
         }
         return HijackKind.None;
+    }
+
+    byte IDebugger.ReadInstructionByte(TargetPointer address)
+    {
+        try
+        {
+            Dictionary<TargetPointer, byte> patches = GetPatches();
+            if (patches.TryGetValue(address, out byte opcode))
+            {
+                return opcode;
+            }
+        }
+        catch (VirtualReadException)
+        {
+            // Patch metadata is optional. Fall back to reading the instruction directly.
+        }
+
+        return _target.Read<byte>(address);
+    }
+
+    private Dictionary<TargetPointer, byte> GetPatches() => _patches ??= ReadPatches();
+
+    private Dictionary<TargetPointer, byte> ReadPatches()
+    {
+        if (!_target.TryReadGlobalPointer(Constants.Globals.DebuggerPatchTable, out TargetPointer? patchTablePointerAddress))
+            return [];
+
+        TargetPointer patchTableAddress = _target.ReadPointer(patchTablePointerAddress.Value);
+        if (patchTableAddress == TargetPointer.Null)
+            return [];
+
+        Data.DebuggerPatchTable patchTable = _target.ProcessedData.GetOrAdd<Data.DebuggerPatchTable>(patchTableAddress);
+        if (patchTable.Entries == TargetPointer.Null)
+            return [];
+
+        Dictionary<TargetPointer, byte> patches = [];
+        uint patchSize = Data.DebuggerControllerPatch.GetSize(_target);
+
+        for (uint i = 0; i < patchTable.Count; i++)
+        {
+            TargetPointer patchAddress = patchTable.Entries + ((ulong)i * patchSize);
+            Data.DebuggerControllerPatch patch = _target.ProcessedData.GetOrAdd<Data.DebuggerControllerPatch>(patchAddress);
+            if (patch.CodeAddress != TargetPointer.Null && patch.Opcode.Value != 0)
+            {
+                patches[patch.CodeAddress] = (byte)patch.Opcode.Value;
+            }
+        }
+
+        return patches;
     }
 
     private TargetPointer GetHijackAddress()

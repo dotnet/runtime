@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public Task ProjectWithNativeReference_AOT(Configuration config, bool aot) =>
             ProjectWithNativeReferenceCore(config, aot);
 
@@ -59,7 +59,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
         public Task ProjectUsingSkiaSharp_AOT(Configuration config, bool aot) =>
             ProjectUsingSkiaSharpCore(config, aot);
@@ -87,7 +87,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public Task ProjectUsingBrowserNativeCrypto_AOT(Configuration config, bool aot) =>
             ProjectUsingBrowserNativeCryptoCore(config, aot);
 
@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public Task ProjectWithNativeLibrary_AOT(Configuration config, bool aot) =>
             ProjectWithNativeLibraryCore(config, aot);
 

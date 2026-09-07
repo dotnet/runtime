@@ -40,23 +40,10 @@ internal enum MemberKind
     Field,
     FieldAddress,
     InstanceDataStart,
+    CustomInit,
     StaticAddress,
     StaticReference,
     ThreadStaticAddress,
-}
-
-/// <summary>
-/// The setter a generated <c>[Field]</c> property exposes. A field is either
-/// read-only, privately settable (populated internally, e.g. by <c>OnInit</c>
-/// or a hand-written constructor), or writable (a <c>Write{Name}</c> method
-/// writes the value back to the target). A <c>[Field]</c> never exposes a
-/// public setter -- mutation always goes through <c>Write{Name}</c>.
-/// </summary>
-internal enum SetterKind
-{
-    None,
-    Private,
-    Writable,
 }
 
 /// <summary>
@@ -75,9 +62,10 @@ internal sealed record MemberModel(
     bool IsNullable,
     int? RawOffset,
     bool LittleEndian,
-    SetterKind Setter,
+    bool Writable,
     string? BoolUnderlyingType,
-    EquatableArray<string> Names) : IEquatable<MemberModel>;
+    EquatableArray<string> Names,
+    string? CustomInitializerName = null) : IEquatable<MemberModel>;
 
 /// <summary>
 /// A <c>[CdacType]</c>-annotated class to be emitted.

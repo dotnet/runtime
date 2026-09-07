@@ -176,6 +176,16 @@ Tests that depend on the framework itself being compiled with non-default settin
 (e.g., `UseSystemResourceKeys`) must run in a process whose runtime matches those
 settings.
 
+### 30. Project sets `<CLRTestExitCode>` to a non-default value
+
+`CLRTestExitCode` is checked by the test wrapper script at the process level. Tests
+that expect a specific non-default exit code (e.g., a crash exit code such as
+`COR_E_EXECUTIONENGINE`) must not use XUnit-level skip attributes like
+`[SkipOnCoreClr]` for any of their skip conditions, because an XUnit-level skip
+returns exit code 100, which conflicts with the expected custom exit code. All skip
+logic for such tests must use process-level mechanisms (e.g., `GCStressIncompatible`,
+`JitOptimizationSensitive`).
+
 ## Summary of Project-File-Based Triggers
 
 If the project file contains **any** of the following MSBuild properties or items, set
@@ -202,6 +212,7 @@ If the project file contains **any** of the following MSBuild properties or item
 | `CrossGenTest` (set to `false`) | Crossgen skip needed |
 | `AppManifest` | Per-process manifest |
 | `IlcMultiModule` | Incompatible build mode |
+| `CLRTestExitCode` (non-default value) | Custom exit code; XUnit-level skips return 100 and conflict with the expected code |
 
 ## Summary of Source-Code-Based Triggers
 

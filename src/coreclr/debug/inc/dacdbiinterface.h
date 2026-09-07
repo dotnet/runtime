@@ -188,6 +188,10 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE FlushCache() = 0;
 
+    // Release cDAC-owned wrappers for caller-owned COM objects before DBI
+    // destroys those objects and unloads the DAC module.
+    virtual HRESULT STDMETHODCALLTYPE Destroy() = 0;
+
     //
     // Control DAC's checking of the target's consistency. Specifically, if this is disabled then
     // ASSERTs in VM code are ignored. The default is disabled, since DAC should do it's best to
@@ -1689,7 +1693,7 @@ public:
     //     output: pIsValidRef      - FALSE if the object reference is bad
     //             pObjSize         - size of the object in bytes
     //             pObjOffsetToVars - byte offset from the object base to the first field
-    //             pObjTypeData     - expanded type information for the object
+    //     in/out: pObjTypeData     - expanded type information for the object
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidRef, OUT UINT * pObjSize, OUT UINT * pObjOffsetToVars, OUT DebuggerIPCE_ExpandedTypeData * pObjTypeData) = 0;
 
