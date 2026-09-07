@@ -3,7 +3,6 @@
     <CLRTestPriority>0</CLRTestPriority>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <NativeAotIncompatible>true</NativeAotIncompatible>
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux' or '$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
