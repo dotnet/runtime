@@ -982,6 +982,64 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.False(sectionExists);
         }
 
+        [Fact]
+        public void BuilderDisposesProvidersWhenBuildingSourceFails()
+        {
+            var provider = new DisposableConfigurationProvider();
+            var builder = new ConfigurationBuilder()
+                .Add(provider)
+                .Add(new ThrowingConfigurationSource());
+
+            Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+            Assert.True(provider.IsDisposed);
+        }
+
+        [Fact]
+        public void BuilderDisposesProvidersWhenLoadingFails()
+        {
+            var provider1 = new DisposableConfigurationProvider();
+            var provider2 = new DisposableConfigurationProvider(throwOnLoad: true);
+            var builder = new ConfigurationBuilder()
+                .Add(provider1)
+                .Add(provider2);
+
+            Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+            Assert.True(provider1.IsDisposed);
+            Assert.True(provider2.IsDisposed);
+        }
+
+        private sealed class DisposableConfigurationProvider : ConfigurationProvider, IConfigurationSource, IDisposable
+        {
+            private readonly bool _throwOnLoad;
+
+            public DisposableConfigurationProvider(bool throwOnLoad = false)
+            {
+                _throwOnLoad = throwOnLoad;
+            }
+
+            public bool IsDisposed { get; private set; }
+
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => this;
+
+            public override void Load()
+            {
+                if (_throwOnLoad)
+                {
+                    throw new InvalidOperationException("Loading failed.");
+                }
+            }
+
+            public void Dispose() => IsDisposed = true;
+        }
+
+        private sealed class ThrowingConfigurationSource : IConfigurationSource
+        {
+            public IConfigurationProvider Build(IConfigurationBuilder builder) =>
+                throw new InvalidOperationException("Building failed.");
+        }
+
         internal class NullReloadTokenConfigSource : IConfigurationSource, IConfigurationProvider
         {
             public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath) => throw new NotImplementedException();

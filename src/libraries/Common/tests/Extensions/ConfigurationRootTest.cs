@@ -39,6 +39,22 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider5.IsDisposed);
         }
 
+        [Fact]
+        public void RootDoesNotDisposeProvidersWhenLoadingFails()
+        {
+            var provider1 = new DisposableTestConfigurationProvider("foo", "foo-value");
+            var provider2 = new DisposableTestConfigurationProvider("bar", "bar-value", throwOnLoad: true);
+
+            Assert.Throws<InvalidOperationException>(
+                () => new ConfigurationRoot(new IConfigurationProvider[] { provider1, provider2 }));
+
+            Assert.False(provider1.IsDisposed);
+            Assert.False(provider2.IsDisposed);
+
+            provider1.Dispose();
+            provider2.Dispose();
+        }
+
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void RootDisposesChangeTokenRegistrations()
@@ -131,10 +147,23 @@ namespace Microsoft.Extensions.Configuration.Test
 
         private class DisposableTestConfigurationProvider : ConfigurationProvider, IDisposable
         {
+            private readonly bool _throwOnLoad;
+
             public bool IsDisposed { get; set; }
 
-            public DisposableTestConfigurationProvider(string key, string value)
-                => Data.Add(key, value);
+            public DisposableTestConfigurationProvider(string key, string value, bool throwOnLoad = false)
+            {
+                _throwOnLoad = throwOnLoad;
+                Data.Add(key, value);
+            }
+
+            public override void Load()
+            {
+                if (_throwOnLoad)
+                {
+                    throw new InvalidOperationException("Loading failed.");
+                }
+            }
 
             public void Dispose()
                 => IsDisposed = true;

@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.Configuration.UserSecrets;
-using Microsoft.Extensions.FileProviders;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -180,10 +179,9 @@ namespace Microsoft.Extensions.Configuration
             }
 
             string? directoryPath = Path.GetDirectoryName(secretPath);
-            PhysicalFileProvider? fileProvider = Directory.Exists(directoryPath)
-                ? new PhysicalFileProvider(directoryPath)
-                : null;
-            return configuration.AddJsonFile(fileProvider, PathHelper.SecretsFileName, optional, reloadOnChange);
+            return Directory.Exists(directoryPath)
+                ? configuration.AddJsonFile(secretPath, optional, reloadOnChange)
+                : configuration.AddJsonFile(PathHelper.SecretsFileName, optional, reloadOnChange);
         }
     }
 }

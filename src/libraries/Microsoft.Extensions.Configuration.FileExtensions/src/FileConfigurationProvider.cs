@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.FileProviders.Physical;
@@ -19,6 +20,7 @@ namespace Microsoft.Extensions.Configuration
     public abstract class FileConfigurationProvider : ConfigurationProvider, IDisposable
     {
         private readonly IDisposable? _changeTokenRegistration;
+        private FileProviderHandle? _fileProvider;
 
         /// <summary>
         /// Initializes a new instance with the specified source.
@@ -29,28 +31,39 @@ namespace Microsoft.Extensions.Configuration
             ArgumentNullException.ThrowIfNull(source);
 
             Source = source;
+            FileProviderHandle? fileProvider = source.AcquireFileProvider();
 
-            if (Source.ReloadOnChange && Source.FileProvider != null)
+            try
             {
-                _changeTokenRegistration = ChangeToken.OnChange(
-                    () => Source.FileProvider.Watch(Source.Path!),
-                    async () =>
-                    {
-                        await Task.Delay(Source.ReloadDelay).ConfigureAwait(false);
-                        try
+                if (Source.ReloadOnChange && Source.FileProvider is not null)
+                {
+                    _changeTokenRegistration = ChangeToken.OnChange(
+                        () => Source.FileProvider.Watch(Source.Path!),
+                        async () =>
                         {
-                            Load(reload: true);
-                        }
-                        catch
-                        {
-                            // Load already surfaces reload failures through the
-                            // FileConfigurationSource.OnLoadException callback. Any exception that
-                            // escapes here is usually swallowed by OnChange or by the FileProvider,
-                            // so swallow it here instead, to make it clear this is the intended behavior
-                            // and to make it more consistent.
-                        }
-                    });
+                            await Task.Delay(Source.ReloadDelay).ConfigureAwait(false);
+                            try
+                            {
+                                Load(reload: true);
+                            }
+                            catch
+                            {
+                                // Load already surfaces reload failures through the
+                                // FileConfigurationSource.OnLoadException callback. Any exception that
+                                // escapes here is usually swallowed by OnChange or by the FileProvider,
+                                // so swallow it here instead, to make it clear this is the intended behavior
+                                // and to make it more consistent.
+                            }
+                        });
+                }
             }
+            catch
+            {
+                fileProvider?.Release();
+                throw;
+            }
+
+            _fileProvider = fileProvider;
         }
 
         /// <summary>
@@ -180,7 +193,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Loads the contents of the file at <see cref="Path"/>.
+        /// Loads the contents of the file at <see cref="FileConfigurationSource.Path"/>.
         /// </summary>
         /// <exception cref="DirectoryNotFoundException">Optional is <c>false</c> on the source and a
         /// directory cannot be found at the specified Path.</exception>
@@ -236,7 +249,14 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="disposing"><c>true</c> if invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
-            _changeTokenRegistration?.Dispose();
+            try
+            {
+                _changeTokenRegistration?.Dispose();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _fileProvider, null)?.Release();
+            }
         }
     }
 }

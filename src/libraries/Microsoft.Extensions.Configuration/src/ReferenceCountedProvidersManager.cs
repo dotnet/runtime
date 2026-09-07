@@ -20,8 +20,8 @@ namespace Microsoft.Extensions.Configuration
 
         public ReferenceCountedProviders GetReference()
         {
-            // Lock to ensure oldRefCountedProviders.Dispose() in ReplaceProviders() or Dispose() doesn't decrement ref count to zero
-            // before calling _refCountedProviders.AddReference().
+            // Lock to ensure disposing the providers returned by ReplaceProviders() or Dispose() doesn't decrement the ref count
+            // to zero before calling _refCountedProviders.AddReference().
             lock (_replaceProvidersLock)
             {
                 if (_disposed)
@@ -38,7 +38,8 @@ namespace Microsoft.Extensions.Configuration
         }
 
         // Providers should never be concurrently modified. Reading during modification is allowed.
-        public void ReplaceProviders(List<IConfigurationProvider> providers)
+        // The caller must dispose the returned providers outside any locks.
+        public ReferenceCountedProviders ReplaceProviders(List<IConfigurationProvider> providers)
         {
             ReferenceCountedProviders oldRefCountedProviders = _refCountedProviders;
 
@@ -52,10 +53,7 @@ namespace Microsoft.Extensions.Configuration
                 _refCountedProviders = ReferenceCountedProviders.Create(providers);
             }
 
-            // Decrement the reference count to the old providers. If they are being concurrently read from
-            // the actual disposal of the old providers will be delayed until the final reference is released.
-            // Never dispose ReferenceCountedProviders with a lock because this may call into user code.
-            oldRefCountedProviders.Dispose();
+            return oldRefCountedProviders;
         }
 
         public void AddProvider(IConfigurationProvider provider)

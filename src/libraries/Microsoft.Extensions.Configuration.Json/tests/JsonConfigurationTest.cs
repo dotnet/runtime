@@ -230,7 +230,7 @@ namespace Microsoft.Extensions.Configuration
 
             IConfigurationBuilder builder = new ConfigurationManager();
 
-            builder.AddJsonFile(filePath, optional: false);
+            builder.AddJsonFile(filePath, optional: false, reloadOnChange: true);
 
             FileConfigurationSource fileConfigurationSource = (FileConfigurationSource)builder.Sources.Last();
             PhysicalFileProvider fileProvider = (PhysicalFileProvider)fileConfigurationSource.FileProvider;
@@ -238,7 +238,10 @@ namespace Microsoft.Extensions.Configuration
             Assert.False(GetIsDisposed(fileProvider));
 
             builder.Properties.Add("simplest", "repro");
+            Assert.False(GetIsDisposed(fileProvider));
 
+            // A second rebuild used to call Watch on the instance disposed by the first one.
+            builder.Properties.Add("second", "repro");
             Assert.False(GetIsDisposed(fileProvider));
 
             fileProvider.Dispose();
