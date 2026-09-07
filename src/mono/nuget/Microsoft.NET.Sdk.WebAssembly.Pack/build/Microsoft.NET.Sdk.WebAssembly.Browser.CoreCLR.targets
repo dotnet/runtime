@@ -72,6 +72,21 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="PublishReadyToRun=true for CoreCLR browser-wasm requires a wasm-capable crossgen2, but none was resolved. Set Crossgen2InBuildDir to an in-build crossgen2 directory (or provide a ResolvedCrossgen2Pack) until wasm crossgen2 support flows through the base SDK (dotnet/sdk#55785)." />
   </Target>
 
+  <!-- The nested publish shares $(OutDir) with the outer build, and its build-phase webcil conversion
+       (_ConvertBuildDllsToWebcil) necessarily runs before ILLink and crossgen, so it stages the UNTRIMMED
+       framework. When the consumer copies framework assets to the output directory (library tests set
+       _WasmFrameworkCopyToOutputDirectory, because they are served from bin/ by a plain file server rather
+       than the static web assets middleware), that untrimmed IL set lands in the served _framework beside the
+       outer build's trimmed R2R set: two fingerprinted copies of every trimmed assembly and a mixed version
+       bubble the runtime MVID check rejects. Only the outer build should populate the served directory. -->
+  <Target Name="_WasmCoreClrSuppressNestedPublishAssetCopy"
+          Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
+          BeforeTargets="_ComputeWasmBuildCandidates">
+    <PropertyGroup>
+      <_WasmFrameworkCopyToOutputDirectory>Never</_WasmFrameworkCopyToOutputDirectory>
+    </PropertyGroup>
+  </Target>
+
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
        loose in bin/; the managed .dll stays and ConvertDllsToWebcil stages the image. The _WasmRuntimePackR2RDir
        check stays at the item level: it is computed by the DependsOnTargets below, so it can't gate the target. -->
@@ -147,10 +162,13 @@ Copyright (c) .NET Foundation. All rights reserved.
        image from PrebuiltR2RDirectory (= _WasmPublishR2RDir) keyed on that .dll, the same mechanism the dev-loop
        build uses for pack R2R. Using the compile list (not a link dir) covers both trimmed (IL from the linker) and
        untrimmed (IL from the pack) uniformly. DependsOnTargets=CreateReadyToRunImages so it runs after that target's
-       .dll -> .wasm replacement; runs in the outer publish (WasmBuildingForNestedPublish != true) where
-       ProcessPublishFilesForWasm assembles the served bundle. See dotnet/runtime#121257. -->
+       .dll -> .wasm replacement; BeforeTargets=ProcessPublishFilesForWasm so it runs wherever that target assembles
+       a managed bundle: both the outer `dotnet publish` and the nested publish of the WasmBuildOnlyAfterPublish
+       library-test flow (where the nested publish, not the outer build, produces the served bundle). It is a no-op
+       where ProcessPublishFilesForWasm does not run (e.g. the Blazor outer publish's nested relink-only pass).
+       See dotnet/runtime#121257. -->
   <Target Name="_WasmCoreClrRoutePerAppR2RToFramework"
-          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRun)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRun)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories;CreateReadyToRunImages"
           BeforeTargets="ProcessPublishFilesForWasm">
     <ItemGroup>
