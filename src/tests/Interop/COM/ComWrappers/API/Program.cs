@@ -1660,12 +1660,9 @@ namespace ComWrappersTests
             // the cache holds that handle, so the entry dies here rather than after finalization.
             Assert.False(first.TryGetTarget(out _));
 
+            // Verify the replacement is usable before the helper abandons its strong reference.
+            // Once only the weak reference remains, a GC may collect the wrapper at any time.
             WeakReference<object> second = CreateAndAbandonWrapper(cw, comWrapper);
-
-            // The dead entry did not prevent a new RCW being created and cached for the same instance.
-            // Checked in a separate frame so that the strong reference it needs does not outlive it and
-            // keep the RCW alive through the collection below.
-            AssertUsableAndDrop(second);
 
             // Now let the wrapper finalizers run, which is what removes entries, and check the cache is
             // still able to hand out a working RCW afterwards.
@@ -1689,25 +1686,23 @@ namespace ComWrappersTests
 
             Marshal.Release(comWrapper);
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static void AssertUsableAndDrop(WeakReference<object> reference)
-            {
-                Assert.True(reference.TryGetTarget(out object? target));
-                Assert.True(ComWrappers.TryGetComInstance(target, out IntPtr unknown));
-
-                Marshal.Release(unknown);
-            }
-
             // This wrapper type releases the interface pointer its constructor took by hand rather than
             // from a finalizer, so it is released here before the wrapper is dropped.
             [MethodImpl(MethodImplOptions.NoInlining)]
             static WeakReference<object> CreateAndAbandonWrapper(ComWrappers cw, IntPtr comWrapper)
             {
                 var wrapper = (ManualReleaseITestObjectWrapper)cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
+                var reference = new WeakReference<object>(wrapper);
+
+                Assert.True(reference.TryGetTarget(out object? target));
+                Assert.True(ComWrappers.TryGetComInstance(target, out IntPtr unknown));
+                Marshal.Release(unknown);
 
                 wrapper.FinalRelease();
 
-                return new WeakReference<object>(wrapper);
+                GC.KeepAlive(wrapper);
+
+                return reference;
             }
         }
 
