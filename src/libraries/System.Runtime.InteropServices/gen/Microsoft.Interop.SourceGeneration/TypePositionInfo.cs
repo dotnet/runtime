@@ -48,11 +48,12 @@ namespace Microsoft.Interop
     {
         public const int UnsetIndex = int.MinValue;
         public const int ReturnIndex = UnsetIndex + 1;
-        public const int ExceptionIndex = UnsetIndex + 2;
+        public const int ErrorIndex = UnsetIndex + 2;
+        public const int ExceptionIndex = ErrorIndex;
 
         public static bool IsSpecialIndex(int index)
         {
-            return index is UnsetIndex or ReturnIndex or ExceptionIndex;
+            return index is UnsetIndex or ReturnIndex or ErrorIndex;
         }
 
         public static int IncrementIndex(int index)
@@ -72,7 +73,8 @@ namespace Microsoft.Interop
 
         public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => NativeIndex == ReturnIndex; }
-        public bool IsManagedExceptionPosition { get => ManagedIndex == ExceptionIndex; }
+        public bool IsErrorHandlingPosition { get; init; }
+        public bool IsManagedIdentifierSynthetic => IsSpecialIndex(ManagedIndex);
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;
@@ -102,7 +104,7 @@ namespace Microsoft.Interop
             if (info.ManagedIndex is UnsetIndex)
                 return Location.None;
 
-            if (info.ManagedIndex is ReturnIndex or ExceptionIndex)
+            if (info.ManagedIndex is ReturnIndex or ErrorIndex)
                 return methodSymbol.Locations[0];
 
             return methodSymbol.Parameters[info.ManagedIndex].Locations[0];
@@ -125,9 +127,24 @@ namespace Microsoft.Interop
                 {
                     marshalKind |= ByValueContentsMarshalKind.In;
                 }
+
             }
 
             return marshalKind;
         }
     }
+
+    public enum ErrorHandlingLocation
+    {
+        None = -1,
+        ReturnValue = 0,
+        LastParameter = 1,
+        HiddenReturnValue = 2,
+        HiddenLastParameter = 3,
+    }
+
+    public sealed record ErrorHandlingInfo(
+        ManagedTypeInfo ManagedType,
+        MarshallingInfo MarshallingInfo,
+        ErrorHandlingLocation Location);
 }

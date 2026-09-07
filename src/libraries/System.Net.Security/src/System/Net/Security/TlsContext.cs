@@ -19,13 +19,23 @@ namespace System.Net.Security
     /// allocated lazily on the first handshake call.
     /// </para>
     /// <para>
-    /// Lifetime: it is safe to dispose the <see cref="TlsContext"/> while
-    /// <see cref="TlsSession"/> instances created from it are still in use.
-    /// The underlying native TLS context (e.g. OpenSSL <c>SSL_CTX</c>, SChannel
-    /// credentials handle) is reference-counted at the native layer, so each
-    /// live session keeps it alive until the session itself is disposed.
-    /// After the context is disposed, however, attempts to create new sessions
-    /// from it throw <see cref="ObjectDisposedException"/>.
+    /// Ownership: the <see cref="TlsContext"/> retains any
+    /// <see cref="SslStreamCertificateContext"/> it built internally &#8212; i.e.
+    /// when the caller supplied a raw <see cref="System.Security.Cryptography.X509Certificates.X509Certificate2"/>
+    /// via <see cref="SslServerAuthenticationOptions.ServerCertificate"/> rather
+    /// than a prebuilt <see cref="SslStreamCertificateContext"/>. A prebuilt
+    /// certificate context passed via <see cref="SslServerAuthenticationOptions.ServerCertificateContext"/>
+    /// remains owned by the caller.
+    /// </para>
+    /// <para>
+    /// Lifetime: callers must keep the <see cref="TlsContext"/> alive for as long
+    /// as any <see cref="TlsSession"/> derived from it is still in use. Native
+    /// handles (OpenSSL <c>SSL_CTX</c>, SChannel credentials) are ref-counted at
+    /// the native layer and stay valid for each live session, but the managed
+    /// certificate chain retained by the context is not, mirroring the ownership
+    /// model used by <see cref="SslStream"/>. After the context is disposed,
+    /// attempts to create new sessions from it throw
+    /// <see cref="ObjectDisposedException"/>.
     /// </para>
     /// </remarks>
     [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]

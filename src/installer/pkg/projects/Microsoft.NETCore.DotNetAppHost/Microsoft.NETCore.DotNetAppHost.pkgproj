@@ -9,6 +9,7 @@
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
+    <NativeBinary Include="$(DotNetHostBinDir)/host_error_codes.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
   </ItemGroup>
   <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetsLinuxBionic)' != 'true'">

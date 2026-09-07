@@ -239,6 +239,33 @@ public sealed class InstanceDataStartAttribute : Attribute
 }
 
 /// <summary>
+/// Marks a property whose value is computed by an author-provided initializer
+/// rather than a declarative descriptor read. The generator emits a lazy getter
+/// (computed once on first access, then memoized) that calls the named partial
+/// method, which the author must implement with the signature
+/// <c>T MethodName(Target target, TargetPointer address)</c>. Use for reads the
+/// declarative attributes can't express: conditional reads, bitmask cleanup,
+/// cross-descriptor reads, variable-count loops, etc. The property must be
+/// declared <c>partial</c> and get-only; the computation stays lazy (deferred to
+/// first access).
+/// </summary>
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+public sealed class CustomInitAttribute : Attribute
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CustomInitAttribute"/> class.
+    /// </summary>
+    /// <param name="methodName">The name of the initializer method.</param>
+    public CustomInitAttribute(string methodName)
+    {
+        MethodName = methodName;
+    }
+
+    /// <summary>Gets the name of the initializer method.</summary>
+    public string MethodName { get; }
+}
+
+/// <summary>
 /// Marks a static partial method as a static-field-address accessor. Method
 /// must return <c>TargetPointer</c> and take a <c>Target</c> parameter.
 /// </summary>

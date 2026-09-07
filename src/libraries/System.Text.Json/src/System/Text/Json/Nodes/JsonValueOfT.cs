@@ -104,6 +104,13 @@ namespace System.Text.Json.Nodes
                 return JsonValueKind.Number;
             }
 #endif
+#if NET11_0_OR_GREATER
+            if (type == typeof(System.Numerics.BFloat16) || type == typeof(System.Numerics.Decimal32) ||
+                type == typeof(System.Numerics.Decimal64) || type == typeof(System.Numerics.Decimal128))
+            {
+                return JsonValueKind.Number;
+            }
+#endif
             return Type.GetTypeCode(type) switch
             {
                 TypeCode.Boolean => JsonValueKind.Undefined, // Can vary dependending on value.

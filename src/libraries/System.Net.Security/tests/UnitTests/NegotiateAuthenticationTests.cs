@@ -222,6 +222,33 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
+        public void NtlmMutualAuthentication()
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            using NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.Sign,
+                    RequireMutualAuthentication = true
+                });
+
+            byte[]? negotiateBlob = ntAuth.GetOutgoingBlob((byte[]?)null, out NegotiateAuthenticationStatusCode statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            Assert.NotNull(negotiateBlob);
+
+            byte[]? challengeBlob = fakeNtlmServer.GetOutgoingBlob(negotiateBlob);
+            Assert.NotNull(challengeBlob);
+
+            byte[]? authenticateBlob = ntAuth.GetOutgoingBlob(challengeBlob, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.SecurityQosFailed, statusCode);
+            Assert.NotNull(authenticateBlob);
+            Assert.False(ntAuth.IsMutuallyAuthenticated);
+        }
+
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmIncorrectExchangeTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);

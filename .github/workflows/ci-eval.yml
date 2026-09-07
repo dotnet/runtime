@@ -299,6 +299,8 @@ jobs:
               secrets.COPILOT_GITHUB_TOKEN
             }}
           GH_TOKEN: ${{ github.token }}
+          # The GitHub MCP server reads this name from its Docker container.
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ github.token }}
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
           workdir="$RUNNER_TEMP/vally"

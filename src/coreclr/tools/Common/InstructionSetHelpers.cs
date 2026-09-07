@@ -87,12 +87,6 @@ namespace System.CommandLine
                 {
                     // We require armv8-a everywhere
                     instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
-
-                    if (targetOS == TargetOS.Windows)
-                    {
-                        // However, Windows also requires LSE
-                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
-                    }
                 }
             }
             else if (targetArchitecture == TargetArchitecture.Wasm32)

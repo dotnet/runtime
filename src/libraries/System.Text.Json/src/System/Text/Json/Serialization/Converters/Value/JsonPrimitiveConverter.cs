@@ -34,7 +34,11 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(schemaType is JsonSchemaType.Integer or JsonSchemaType.Number);
             Debug.Assert(!isIeeeFloatingPoint || schemaType is JsonSchemaType.Number);
-#if NET
+#if NET11_0_OR_GREATER
+            Debug.Assert(isIeeeFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half) ||
+                typeof(T) == typeof(System.Numerics.BFloat16) || typeof(T) == typeof(System.Numerics.Decimal32) ||
+                typeof(T) == typeof(System.Numerics.Decimal64) || typeof(T) == typeof(System.Numerics.Decimal128)));
+#elif NET
             Debug.Assert(isIeeeFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half)));
 #endif
             string? pattern = null;

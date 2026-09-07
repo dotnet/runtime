@@ -38,7 +38,6 @@ void emitIns_Lane(instruction ins, uint8_t laneIdx);
 void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx);
 
 void emitImageBase();
-void emitImageBaseGlobal();
 void emitAddressConstant(void* address);
 void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
 void emitDataOffsetConstant(UNATIVE_OFFSET dataOffs);

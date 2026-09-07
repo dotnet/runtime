@@ -1200,5 +1200,92 @@ namespace System.Tests
                 }
             }
         }
+
+        private sealed class GcRootBox
+        {
+            public int Value;
+            public GcRootBox Self;
+            public byte[] Payload;
+
+            public GcRootBox(int v)
+            {
+                Value = v;
+                Self = this;
+                Payload = new byte[16];
+                Payload[0] = (byte)v;
+            }
+
+            public bool IsIntact(int expected) =>
+                Value == expected && ReferenceEquals(Self, this) && Payload is not null && Payload[0] == (byte)expected;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static GcRootBox MakeGcRootBox(int v) => new GcRootBox(v);
+
+        // Taking the address forces the caller's local to be an address-taken variable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void TouchGcRootBox(ref GcRootBox b)
+        {
+            if (b is null)
+            {
+                throw new InvalidOperationException();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CollectAndScribble()
+        {
+            GC.Collect();
+            // Refill the just-vacated nursery space so a stale reference reads different bytes.
+            byte[] scribble = new byte[64];
+            scribble[0] = 1;
+            GC.KeepAlive(scribble);
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/130592. On the Mono wasm
+        // LLVM-AOT backend a ref OP_MOVE alias of an address-taken local is not reported as a
+        // precise root, so when the GC relocates the object the alias keeps the pre-move address
+        // and silently reads whatever later reuses that memory. The invariant -- every live
+        // reference to an object denotes the same object after a collection -- holds on every
+        // runtime, so this only has teeth on wasm AOT (it must be in the browser Mono smoke set
+        // to run there).
+        [Fact]
+        public static async Task MovedAliasOfAddressTakenLocalIsRootedAcrossGC()
+        {
+            // Resume on a shallow stack: under a deep caller frame a stale copy of the reference
+            // is often found by the conservative stack scan, which pins the object and hides the bug.
+            await Task.Yield();
+            RunMovedAliasLoop();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void RunMovedAliasLoop()
+        {
+            // A heap slot is always fixed up when the GC relocates the object, so it is the
+            // ground truth to compare the stack alias against.
+            GcRootBox[] witness = new GcRootBox[1];
+
+            GcRootBox cur = MakeGcRootBox(0);
+            TouchGcRootBox(ref cur);
+
+            for (int i = 1; i <= 128; i++)
+            {
+                GcRootBox alias = cur;      // ref MOVE; sole remaining stack reference to box (i - 1)
+                witness[0] = cur;
+                cur = MakeGcRootBox(i);     // overwrites cur's stack slot
+                TouchGcRootBox(ref cur);
+                CollectAndScribble();
+
+                if (!ReferenceEquals(alias, witness[0]))
+                {
+                    Assert.Fail($"live local was not updated when the GC relocated the object at iteration {i}");
+                }
+                if (!alias.IsIntact(i - 1))
+                {
+                    Assert.Fail($"object referenced by a live local was lost across GC at iteration {i} (read Value={alias.Value})");
+                }
+                GC.KeepAlive(alias);
+            }
+        }
     }
 }

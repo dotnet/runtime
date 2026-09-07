@@ -102,22 +102,23 @@ public:
     }
 
     //-------------------------------------------------------------------
-    // SequenceCall: Post-process a call that may define a local.
+    // SequenceCall: Post-process a call that may define locals.
     //
     // Arguments:
     //     call - the call
     //
     // Remarks:
-    //     calls may also define a local that we would like to see
-    //     after all other operands of the call have been evaluated.
+    //     calls may also define locals that we would like to see after all
+    //     other operands of the call have been evaluated.
     //
     void SequenceCall(GenTreeCall* call)
     {
-        if (call->IsOptimizingRetBufAsLocal())
-        {
-            // Correct the point at which the definition of the retbuf local appears.
-            MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
-        }
+        auto moveToEnd = [&](GenTreeLclVarCommon* def) {
+            MoveNodeToEnd(def);
+            return GenTree::VisitResult::Continue;
+        };
+
+        call->VisitLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------
@@ -864,9 +865,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     };
 
     ArrayStack<Value>               m_valueStack;
-    bool                            m_stmtModified    = false;
-    bool                            m_madeChanges     = false;
-    bool                            m_propagatedAddrs = false;
+    bool                            m_stmtModified            = false;
+    bool                            m_stmtSideEffectsModified = false;
+    bool                            m_madeChanges             = false;
+    bool                            m_propagatedAddrs         = false;
     LocalSequencer*                 m_sequencer;
     LocalEqualsLocalAddrAssertions* m_lclAddrAssertions;
 
@@ -906,7 +908,8 @@ public:
         }
 #endif // DEBUG
 
-        m_stmtModified = false;
+        m_stmtModified            = false;
+        m_stmtSideEffectsModified = false;
 
         if (m_sequencer != nullptr)
         {
@@ -920,6 +923,11 @@ public:
 
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
+
+        if (m_stmtSideEffectsModified)
+        {
+            m_compiler->gtUpdateStmtSideEffects(stmt);
+        }
 
         if (m_sequencer != nullptr)
         {
@@ -1492,37 +1500,54 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        GenTreeFlags defFlag    = GTF_EMPTY;
+        GenTreeFlags defFlags   = GTF_EMPTY;
         GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
         bool         escapeAddr = true;
-        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
-            m_compiler->IsValidLclAddr(lclNum, val.Offset()))
+        if ((callUser != nullptr) && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
-            // We will only attempt this optimization for locals that do not
-            // later turn into indirections.
-            bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
-                (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
-#ifdef TARGET_X86
-            if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
+            unsigned defSize = UINT_MAX;
+            if (callUser->gtArgs.HasRetBuffer() && (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
-                isSuitableLocal = false;
-            }
+                // We will only attempt this optimization for locals that do not
+                // later turn into indirections.
+                bool isSuitableLocal =
+                    m_compiler->opts.compJitOptimizeStructHiddenBuffer && varTypeIsStruct(varDsc) &&
+                    !m_compiler->lvaIsUnknownSizeLocal(lclNum) && !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
+                    (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
+#ifdef TARGET_X86
+                if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
+                {
+                    isSuitableLocal = false;
+                }
 #endif // TARGET_X86
 
-            if (isSuitableLocal && callUser->gtArgs.HasRetBuffer() &&
-                (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
-            {
-                m_compiler->lvaSetHiddenBufferStructArg(lclNum);
-                escapeAddr = false;
-                callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                defFlag = GTF_VAR_DEF;
-
-                unsigned storeSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
-
-                if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(storeSize)))
+                if (isSuitableLocal)
                 {
-                    defFlag |= GTF_VAR_USEASG;
+                    m_compiler->lvaSetHiddenBufferStructArg(lclNum);
+                    callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                    defSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+                }
+            }
+            else if (callUser->IsAsync())
+            {
+                CallArg* asyncResumedDef = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+                if ((asyncResumedDef != nullptr) && (val.Node() == asyncResumedDef->GetNode()))
+                {
+                    defSize = TARGET_POINTER_SIZE;
+                }
+            }
+
+            if (defSize != UINT_MAX)
+            {
+                INDEBUG(varDsc->SetDefinedViaAddress(true));
+                escapeAddr = false;
+                defFlags   = GTF_VAR_DEF;
+                m_stmtSideEffectsModified |= (callUser->gtFlags & GTF_ASG) == 0;
+                callUser->gtFlags |= GTF_ASG;
+
+                if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(defSize)))
+                {
+                    defFlags |= GTF_VAR_USEASG;
                 }
             }
         }
@@ -1557,7 +1582,7 @@ private:
 #endif // TARGET_64BIT
 
         MorphLocalAddress(val.Node(), lclNum, val.Offset());
-        val.Node()->gtFlags |= defFlag;
+        val.Node()->gtFlags |= defFlags;
 
         INDEBUG(val.Consume();)
     }
@@ -1605,6 +1630,7 @@ private:
 
             MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
             node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
+            m_stmtSideEffectsModified = true;
         }
         else
         {
@@ -1912,8 +1938,9 @@ private:
             }
         }
 
-        lclNode->gtFlags = lclNodeFlags;
-        m_stmtModified   = true;
+        lclNode->gtFlags          = lclNodeFlags;
+        m_stmtModified            = true;
+        m_stmtSideEffectsModified = true;
     }
 
     //------------------------------------------------------------------------

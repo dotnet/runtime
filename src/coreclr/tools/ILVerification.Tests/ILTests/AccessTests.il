@@ -264,7 +264,7 @@
 
     .method public hidebysig instance void Call.GenericMethodWithPrivateNestedClass_Invalid_MethodAccess() cil managed
     {
-        call      void class SimpleClass::GenericMethod<class SimpleClass/PrivateNestedClass>()
+        call      void SimpleClass::GenericMethod<class SimpleClass/PrivateNestedClass>()
         ret
     }
 

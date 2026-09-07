@@ -343,10 +343,11 @@
         ret
     }
 
-    .method public static void Casting.BoxByRefInt_Invalid_BoxByRef.ExpectedValClassObjRefVariable(int32& i) cil managed
+    .method public static void Casting.BoxPointer_Invalid_ExpectedValClassObjRefVariable() cil managed
     {
-        ldarg.0
-        box     int32&
+        ldc.i4.0
+        conv.u
+        box     int32*
         pop
         ret
     }

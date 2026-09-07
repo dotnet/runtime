@@ -308,13 +308,12 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector<%s>\n", varTypeName(simdBaseType));
-                        size = getVectorTByteLength();
+                        size = getCompileTimeVectorTByteLength();
 
                         if (size == 0)
                         {
                             return TYP_UNDEF;
                         }
-
                         // Vector<T>'s length is target-dependent, so under a cross-targeting altjit (e.g.
                         // SuperPMI replaying a context captured for a target with a different Vector<T>
                         // length) our size can disagree with the VM's. Treat it as a regular struct then,

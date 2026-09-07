@@ -36,8 +36,8 @@ namespace System.Threading
     ///     interruptible
     ///   - <see cref="LowLevelLock"/> is used for the process-wide lock <see cref="s_lock"/>
     ///   - <see cref="LowLevelMonitor"/> is the main system dependency of the wait subsystem, and all waits are done through
-    ///     it. It is backed by a C++ equivalent in CoreLib.Native's pal_threading.*, which wraps a pthread mutex/condition
-    ///     pair. Each thread has an instance in <see cref="ThreadWaitInfo._waitMonitor"/>, which is used to synchronize the
+    ///   it. It is backed by a native implementation in System.Native that uses a minipal mutex/condition pair.
+    ///   Each thread has an instance in <see cref="ThreadWaitInfo._waitMonitor"/>, which is used to synchronize the
     ///     thread's wait state and for waiting. <see cref="LowLevelLock"/> also uses an instance of
     ///     <see cref="LowLevelMonitor"/> for waiting.
     ///
@@ -107,7 +107,7 @@ namespace System.Threading
     ///   - Most of the wait subsystem is written in C#, so there is no initially required p/invoke
     ///   - <see cref="LowLevelLock"/>, used by the process-wide lock <see cref="s_lock"/>, uses interlocked operations to
     ///     acquire and release the lock when there is no need to wait or to release a waiter. This is significantly faster than
-    ///     using <see cref="LowLevelMonitor"/> as a lock, which uses pthread mutex functionality through p/invoke. The lock is
+    ///     using <see cref="LowLevelMonitor"/> as a lock, which uses native synchronization through p/invoke. The lock is
     ///     typically not held for very long, especially since allocations inside the lock will be rare.
     ///   - Since <see cref="s_lock"/> provides mutual exclusion for the states of all <see cref="WaitableObject"/>s in the
     ///     process, any operation that does not involve waiting or releasing a wait can occur with minimal p/invokes

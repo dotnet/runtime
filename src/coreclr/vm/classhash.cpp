@@ -75,7 +75,6 @@ EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, 
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
 
     }
@@ -99,7 +98,6 @@ EEClassHashEntry_t *EEClassHashTable::AllocNewEntry(AllocMemTracker *pamTracker)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
 
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
@@ -120,7 +118,6 @@ VOID EEClassHashTable::UncompressModuleAndNonExportClassDef(HashDatum Data, Modu
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -143,7 +140,6 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pCL));
@@ -176,7 +172,6 @@ mdToken EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -223,7 +218,6 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         THROWS;
         WRAPPER(MODE_ANY);
         WRAPPER(GC_TRIGGERS);
-        if (IsCaseInsensitiveTable()) INJECT_FAULT(COMPlusThrowOM();); else WRAPPER(FORBID_FAULT);
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -299,7 +293,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         else
         {
 #ifndef DACCESS_COMPILE
-            CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+            CONTRACT_VIOLATION(ThrowsViolation);
             ConstructKeyFromDataCaseInsensitive(pCallback, pszNameSpace, pszName);
 #else
             DacNotImpl();
@@ -324,7 +318,6 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueUsingPreallocatedEntry(EEClassH
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
 
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
     }
@@ -372,7 +365,6 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
     {
         if (IsCaseInsensitiveTable()) THROWS; else NOTHROW;
         if (IsCaseInsensitiveTable()) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (IsCaseInsensitiveTable()) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -439,7 +431,6 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
 
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
     }
@@ -487,7 +478,6 @@ BOOL CompareNestedEntryWithExportedType(IMDInternalImport *  pImport,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -561,7 +551,6 @@ BOOL CompareNestedEntryWithTypeDef(IMDInternalImport *  pImport,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -617,7 +606,6 @@ BOOL CompareNestedEntryWithTypeRef(IMDInternalImport *  pImport,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -677,7 +665,6 @@ BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdE
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         GC_NOTRIGGER;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -715,7 +702,6 @@ BOOL EEClassHashTable::IsNested(const NameHandle* pName, mdToken *mdEncloser)
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         GC_NOTRIGGER;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;
     }

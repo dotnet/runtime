@@ -187,8 +187,15 @@ namespace ILCompiler.DependencyAnalysis
                     _ => throw new UnreachableException()
                 };
 
-                using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
-                objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
+                long outputFileSize;
+                // Close and flush the output stream before generating symbol files (PDB / PerfMap),
+                // which read the finished image back from disk. Leaving the stream open here would
+                // let the PDB writer observe an incomplete file (e.g. a zeroed CodeView/RSDS GUID).
+                using (FileStream stream = new FileStream(_objectFilePath, FileMode.Create))
+                {
+                    objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
+                    outputFileSize = stream.Length;
+                }
 
                 if (_outputInfoBuilder is not null)
                 {
@@ -198,7 +205,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_mapFileBuilder != null)
                 {
-                    _mapFileBuilder.SetFileSize(stream.Length);
+                    _mapFileBuilder.SetFileSize(outputFileSize);
                 }
 
                 if (_outputInfoBuilder is not null)
@@ -302,7 +309,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private WasmObjectWriter CreateWasmObjectWriter()
         {
-            return new WasmObjectWriter(_nodeFactory, ObjectWritingOptions.None,  _outputInfoBuilder);
+            return new WebCilObjectWriter(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder);
         }
 
         public static void EmitObject(

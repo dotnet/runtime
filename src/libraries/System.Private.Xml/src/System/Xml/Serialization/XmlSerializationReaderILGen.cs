@@ -2960,6 +2960,91 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {source}");
         }
 
+        // Emits IL that walks the attributes on the current element and raises the
+        // UnknownNode/UnknownAttribute events for any non-namespace attribute. This mirrors the
+        // attribute handling that already happens for elements mapped to structs (via WriteAttributes),
+        // so that unknown attributes on elements mapped to primitives, arrays, and collections are
+        // surfaced consistently.
+        private void WriteHandleUnknownAttributes()
+        {
+            MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                "get_Reader",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_get_HasAttributes = typeof(XmlReader).GetMethod(
+                "get_HasAttributes",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_MoveToNextAttribute = typeof(XmlReader).GetMethod(
+                "MoveToNextAttribute",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_get_Name = typeof(XmlReader).GetMethod(
+                "get_Name",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlSerializationReader_IsXmlnsAttribute = typeof(XmlSerializationReader).GetMethod(
+                "IsXmlnsAttribute",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(string) }
+                )!;
+            MethodInfo XmlSerializationReader_UnknownNode = typeof(XmlSerializationReader).GetMethod(
+                "UnknownNode",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(object) }
+                )!;
+            MethodInfo XmlReader_MoveToElement = typeof(XmlReader).GetMethod(
+                "MoveToElement",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+
+            ilg.Ldarg(0);
+            ilg.Call(XmlSerializationReader_get_Reader);
+            ilg.Call(XmlReader_get_HasAttributes);
+            ilg.If();
+            {
+                // while (Reader.MoveToNextAttribute()) {
+                //     if (!IsXmlnsAttribute(Reader.Name)) {
+                //         UnknownNode(null);
+                //     }
+                // }
+                ilg.WhileBegin();
+                ilg.Ldarg(0);
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlReader_get_Name);
+                ilg.Call(XmlSerializationReader_IsXmlnsAttribute);
+                ilg.Ldc(false);
+                ilg.If(Cmp.EqualTo);
+                {
+                    ilg.Ldarg(0);
+                    ilg.Load(null);
+                    ilg.Call(XmlSerializationReader_UnknownNode);
+                }
+                ilg.EndIf();
+                ilg.WhileBeginCondition();
+                {
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_MoveToNextAttribute);
+                }
+                ilg.WhileEndCondition();
+                ilg.WhileEnd();
+
+                // Reader.MoveToElement();
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlReader_MoveToElement);
+                ilg.Pop();
+            }
+            ilg.EndIf();
+        }
+
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
@@ -2971,6 +3056,11 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationReader_ReadNull);
             ilg.IfNot();    // if (!ReadNull()) { // EnterScope
             ilg.EnterScope();
+
+            if (!arrayMapping.IsSoap)
+            {
+                WriteHandleUnknownAttributes();
+            }
 
             MemberMapping memberMapping = new MemberMapping();
             memberMapping.Elements = arrayMapping.Elements;
@@ -3132,6 +3222,10 @@ namespace System.Xml.Serialization
                     WriteSourceEnd(source, element.Mapping.TypeDesc.Type!);
                     ilg.Else();
                     doEndIf = true;
+                }
+                if (!element.Mapping.IsSoap)
+                {
+                    WriteHandleUnknownAttributes();
                 }
                 if (element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
                 {

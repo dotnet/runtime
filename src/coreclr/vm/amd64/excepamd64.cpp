@@ -194,7 +194,7 @@ RtlVirtualUnwind_Worker (
     // that the debugger is attched when we get here.
     _ASSERTE(CORDebuggerAttached());
 
-    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));
+    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=%p\n", (void*)ControlPc));
 
     BOOL     InEpilogue = FALSE;
     BOOL     HasManagedBreakpoint = FALSE;
@@ -402,7 +402,7 @@ RtlVirtualUnwind_Worker (
 
     if (InEpilogue && HasUnmanagedBreakpoint)
     {
-        STRESS_LOG1(LF_CORDB, LL_ERROR, "RtlVirtualUnwind is about to fail b/c the ControlPc (0x%p) is in the epilog of a function which has a 0xCC in its epilog.", ControlPc);
+        STRESS_LOG1(LF_CORDB, LL_ERROR, "RtlVirtualUnwind is about to fail b/c the ControlPc (0x%p) is in the epilog of a function which has a 0xCC in its epilog.", (void*)ControlPc);
         _ASSERTE(!"RtlVirtualUnwind is about to fail b/c you are unwinding through\n"
                   "the epilogue of a function and have a 0xCC in the codestream. This is\n"
                   "probably caused by having set that breakpoint yourself in the debugger,\n"
@@ -417,13 +417,9 @@ RtlVirtualUnwind_Worker (
     {
         // InEpilogue && HasManagedBreakpoint, this means we have to make the fake code buffer
 
-        // We explicitly handle the case where the new below can't allocate, but we're still
-        // getting an assert from inside new b/c we can be called within a FAULT_FORBID scope.
-        //
         // If new does fail we will still end up crashing, but the debugger doesn't have to
         // be OOM hardened in Whidbey and this is a debugger only code path so we're ok in
         // that department.
-        FAULT_NOT_FATAL();
 
         LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: Function has >1 managed bp in the epilogue, and we are in the epilogue, need a code buffer for RtlVirtualUnwind\n"));
 
@@ -603,7 +599,7 @@ AdjustContextForVirtualStub(
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
     {
-        isVirtualStubNullCheck = true; 
+        isVirtualStubNullCheck = true;
     }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH

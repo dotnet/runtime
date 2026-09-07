@@ -18,6 +18,8 @@
     <Compile Include="..\DI.Specification.Tests\**\*.cs" />
     <Compile Include="$(CommonPath)..\tests\Extensions\SingleThreadedSynchronizationContext.cs"
              Link="Shared\SingleThreadedSynchronizationContext.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Shared\TaskTimeoutExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

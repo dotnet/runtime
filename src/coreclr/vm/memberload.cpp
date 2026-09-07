@@ -727,7 +727,6 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -903,7 +902,6 @@ MemberLoader::GetMethodDescFromMethodDef(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(MethodDef) == mdtMethodDef);
     }
@@ -943,7 +941,6 @@ FieldDesc* MemberLoader::GetFieldDescFromMemberDefOrRef(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1040,7 +1037,6 @@ static BOOL CompareMethodSigWithCorrectSubstitution(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -1083,7 +1079,6 @@ MemberLoader::FindMethod(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -1251,7 +1246,6 @@ MemberLoader::FindMethod(MethodTable * pMT, LPCUTF8 pwzName, LPHARDCODEDMETASIG 
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -1267,7 +1261,6 @@ MemberLoader::FindMethod(MethodTable * pMT, mdMethodDef mb)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -1294,7 +1287,6 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(!pMT->IsArray());
         MODE_ANY;
     } CONTRACTL_END;
@@ -1380,7 +1372,6 @@ MemberLoader::FindPropertyMethod(MethodTable * pMT, LPCUTF8 pszName, EnumPropert
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(Method < 2);
     } CONTRACTL_END;
@@ -1408,7 +1399,6 @@ MemberLoader::FindEventMethod(MethodTable * pMT, LPCUTF8 pszName, EnumEventMetho
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(Method < 3);
     } CONTRACTL_END;
@@ -1438,7 +1428,6 @@ MemberLoader::FindConstructor(MethodTable * pMT, LPHARDCODEDMETASIG pwzSignature
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1456,7 +1445,6 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1514,7 +1502,6 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END

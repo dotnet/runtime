@@ -22,6 +22,8 @@ internal static class CdacSymbols
         "Microsoft.Diagnostics.DataContractReader.Contracts.CoreCLRContracts";
     public const string IDataMetadataName =
         "Microsoft.Diagnostics.DataContractReader.Data.IData`1";
+    public const string GeneratedLayoutSetMetadataName =
+        "Microsoft.Diagnostics.DataContractReader.Generated.LayoutSet";
     public const string TargetMetadataName =
         "Microsoft.Diagnostics.DataContractReader.Target";
 
@@ -29,11 +31,15 @@ internal static class CdacSymbols
         "Microsoft.Diagnostics.DataContractReader.CdacTypeAttribute";
     public const string DataDescriptorDependencyAttributeMetadataName =
         "Microsoft.Diagnostics.DataContractReader.DataDescriptorDependencyAttribute";
+    public const string CustomInitAttributeMetadataName =
+        "Microsoft.Diagnostics.DataContractReader.CustomInitAttribute";
     public const string UsesDataDescriptorTypeSizeAttributeMetadataName =
         "Microsoft.Diagnostics.DataContractReader.UsesDataDescriptorTypeSizeAttribute";
     public const string StaticReferenceAttributeMetadataName =
         "Microsoft.Diagnostics.DataContractReader.StaticReferenceAttribute";
     public const string ContractRegistrationMethodName = "Register";
+    public const string GetContractMethodName = "GetContract";
+    public const string TryGetContractMethodName = "TryGetContract";
     public const string ReadGlobalMethodName = "ReadGlobal";
     public const string TryReadGlobalMethodName = "TryReadGlobal";
     public const string ReadGlobalPointerMethodName = "ReadGlobalPointer";

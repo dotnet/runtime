@@ -86,8 +86,7 @@ namespace BINDER_SPACE
 
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
-                                  /* in */ SString &sAppPaths,
-                                  /* in */ BOOL     fAcquireLock);
+                                  /* in */ SString &sAppPaths);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();

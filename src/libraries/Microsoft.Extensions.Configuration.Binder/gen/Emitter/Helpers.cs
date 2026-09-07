@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -247,6 +248,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool useThrowIfNullMethod, bool voidReturn = false)
             {
+                EmitCheckForNullArgument(paramName, useThrowIfNullMethod, voidReturn);
+                _writer.WriteLine();
+            }
+
+            private void EmitCheckForNullArgument(string paramName, bool useThrowIfNullMethod, bool voidReturn = false)
+            {
                 if (voidReturn)
                 {
                     _writer.WriteLine($$"""
@@ -269,14 +276,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     _writer.WriteLine(throwIfNullExpr);
                 }
-
-                _writer.WriteLine();
             }
 
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
             private static string GetInitializeMethodDisplayString(ObjectSpec type) =>
                 $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.IdentifierCompatibleSubstring}";
+
+            /// <summary>
+            /// Prefixes an identifier with "@" when it would otherwise be parsed as a C# keyword.
+            /// </summary>
+            private static string EscapeIdentifier(string identifier)
+                => SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
+                    ? "@" + identifier
+                    : identifier;
         }
     }
 }

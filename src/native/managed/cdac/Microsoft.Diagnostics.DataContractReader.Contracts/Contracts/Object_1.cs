@@ -50,7 +50,8 @@ internal readonly struct Object_1 : IObject
         if (str.StringLength == 0)
             return string.Empty;
 
-        Span<byte> span = stackalloc byte[(int)str.StringLength * sizeof(char)];
+        byte[] bytes = new byte[checked((int)str.StringLength * sizeof(char))];
+        Span<byte> span = bytes;
         _target.ReadBuffer(str.FirstChar, span);
         return new string(MemoryMarshal.Cast<byte, char>(span));
     }
@@ -68,7 +69,7 @@ internal readonly struct Object_1 : IObject
         offsetToFirstChar = (uint)(str.FirstChar.Value - address.Value);
     }
 
-    public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
+    public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues)
     {
         TargetPointer mt = GetMethodTableAddress(address);
         if (mt == TargetPointer.Null)
@@ -99,6 +100,24 @@ internal readonly struct Object_1 : IObject
             // Single-dimensional, zero-based - doesn't have bounds
             boundsStart = address + (ulong)Data.Array.GetNumComponentsOffset(_target);
             lowerBounds = _target.ReadGlobalPointer(Constants.Globals.ArrayBoundsZero);
+        }
+
+        int rankValue = checked((int)rank);
+        dimensionLengths = new uint[rankValue];
+        lowerBoundsValues = new int[rankValue];
+        if (corType == CorElementType.Array)
+        {
+            for (int i = 0; i < rankValue; i++)
+            {
+                ulong offset = (ulong)(i * sizeof(int));
+                dimensionLengths[i] = _target.Read<uint>(boundsStart + offset);
+                lowerBoundsValues[i] = _target.Read<int>(lowerBounds + offset);
+            }
+        }
+        else
+        {
+            Debug.Assert(rankValue == 1);
+            dimensionLengths[0] = count;
         }
 
         // Sync block is before `this` pointer, so substract the object header size

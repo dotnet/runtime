@@ -73,6 +73,8 @@ namespace System.Net.Http
         // Http2 flow control settings:
         internal int _initialHttp2StreamWindowSize = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
 
+        internal int _initialHttp2MaxConcurrentStreams = HttpHandlerDefaults.DefaultInitialHttp2MaxConcurrentStreams;
+
         internal ClientCertificateOption _clientCertificateOptions;
 
         public HttpConnectionSettings()
@@ -130,6 +132,7 @@ namespace System.Net.Http
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _shouldEvictConnection = _shouldEvictConnection,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
+                _initialHttp2MaxConcurrentStreams = _initialHttp2MaxConcurrentStreams,
                 _activityHeadersPropagator = _activityHeadersPropagator,
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,

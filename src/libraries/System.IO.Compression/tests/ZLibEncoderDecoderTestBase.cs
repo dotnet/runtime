@@ -9,7 +9,7 @@ namespace System.IO.Compression
     public abstract class ZLibEncoderDecoderTestBase : EncoderDecoderTestBase
     {
         protected override bool SupportsDictionaries => false;
-        protected override bool SupportsReset => false;
+        protected override bool SupportsReset => true;
 
         protected override string WindowLogParamName => "windowLog2";
         protected override string InputLengthParamName => "inputLength";

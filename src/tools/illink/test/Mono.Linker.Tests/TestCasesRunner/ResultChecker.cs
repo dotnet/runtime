@@ -915,6 +915,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new();
             List<string> missingMessageWarnings = [];
             List<string> unexpectedMessageWarnings = [];
+
+            // A warning may be reported on a member which the trimmer then removed. Cecil detaches a
+            // removed member from its declaring type, so reading the member's names now would give a
+            // FullName without the namespace or declaring type, which no member of the original
+            // assembly matches. Use the names the logger recorded when the message was logged.
+            TrimmingTestLogger.OriginNames? OriginNames(MessageContainer message) => logger.GetOriginNames(message);
             foreach (var attrProvider in GetAttributeProviders(original))
             {
                 if (attrProvider is MethodDefinition attrMethod &&
@@ -1070,9 +1076,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                     if (loggedMessage.Origin?.Provider is not IMemberDefinition memberDefinition)
                                         continue;
 
+                                    var originNames = OriginNames(loggedMessage);
+                                    string actualMemberName = originNames?.Name ?? memberDefinition.Name;
+                                    string actualDeclaringTypeFullName = originNames?.DeclaringTypeFullName ?? memberDefinition.DeclaringType?.FullName;
+                                    string actualDeclaringTypeName = originNames?.DeclaringTypeName ?? memberDefinition.DeclaringType?.Name;
+
                                     if (attrProvider is IMemberDefinition expectedMember)
                                     {
-                                        string actualName = memberDefinition.DeclaringType.FullName + "." + memberDefinition.Name;
+                                        string actualName = actualDeclaringTypeFullName + "." + actualMemberName;
 
                                         if (actualName.StartsWith(expectedMember.DeclaringType.FullName) &&
                                             (actualName.Contains("<" + expectedMember.Name + ">") ||
@@ -1087,21 +1098,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                             continue;
                                         if (actualName.StartsWith(expectedMember.DeclaringType.FullName))
                                         {
-                                            if (memberDefinition.Name == ".cctor" &&
+                                            if (actualMemberName == ".cctor" &&
                                                 (expectedMember is FieldDefinition || expectedMember is PropertyDefinition))
                                             {
                                                 expectedWarningFound = true;
                                                 unmatchedMessages.Remove(loggedMessage);
                                                 break;
                                             }
-                                            if (memberDefinition.Name == ".ctor" &&
-                                                (expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName))
+                                            if (actualMemberName == ".ctor" &&
+                                                (expectedMember is FieldDefinition || expectedMember is PropertyDefinition || actualDeclaringTypeFullName == expectedMember.FullName))
                                             {
                                                 expectedWarningFound = true;
                                                 unmatchedMessages.Remove(loggedMessage);
                                                 break;
                                             }
-                                            if (memberDefinition.DeclaringType.Name.StartsWith("<G>") && memberDefinition.Name == expectedMember.Name)
+                                            if (actualDeclaringTypeName?.StartsWith("<G>") == true && actualMemberName == expectedMember.Name)
                                             {
                                                 expectedWarningFound = true;
                                                 unmatchedMessages.Remove(loggedMessage);
@@ -1112,8 +1123,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                     else if (attrProvider is AssemblyDefinition expectedAssembly)
                                     {
                                         // Allow assembly-level attributes to match warnings from compiler-generated Main
-                                        if (memberDefinition.Name == "<Main>$" &&
-                                            memberDefinition.DeclaringType.FullName == "Program" &&
+                                        if (actualMemberName == "<Main>$" &&
+                                            actualDeclaringTypeFullName == "Program" &&
                                             memberDefinition.DeclaringType.Module.Assembly.Name.Name == expectedAssembly.Name.Name)
                                         {
                                             expectedWarningFound = true;
@@ -1187,7 +1198,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         continue;
 
                     // This is a hacky way to say anything in the "subtree" of the attrProvider
-                    if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.Provider is IMemberDefinition member) && member.FullName.Contains(attrMember.FullName) != true)
+                    if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.Provider is IMemberDefinition member)
+                        && (OriginNames(mc)?.FullName ?? member.FullName).Contains(attrMember.FullName) != true)
                         continue;
 
                     unexpectedMessageWarnings.Add($"Unexpected warning found: {mc}");
@@ -1197,7 +1209,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (missingMessageWarnings.Any())
             {
                 missingMessageWarnings.Add("Unmatched Messages:" + Environment.NewLine);
-                missingMessageWarnings.AddRange(unmatchedMessages.Select(m => m.ToString()));
+                missingMessageWarnings.AddRange(unmatchedMessages.Select(m =>
+                {
+                    // A message whose origin member was removed by the trimmer renders without its
+                    // namespace or declaring type, so also show the name the member had when the
+                    // message was logged.
+                    var names = OriginNames(m);
+                    return names is null || m.ToString().Contains(names.Value.DeclaringTypeFullName ?? string.Empty)
+                        ? m.ToString()
+                        : $"{m} (origin was removed by the trimmer: {names.Value.FullName})";
+                }));
                 // Uncomment to show all messages when diagnosing test infrastructure issues
                 // missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
                 // missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
@@ -1228,7 +1249,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 if (expectedOriginProvider is not IMemberDefinition expectedOriginMember)
                     return false;
 
-                return actualMember.FullName == expectedOriginMember.FullName;
+                return (OriginNames(mc)?.FullName ?? actualMember.FullName) == expectedOriginMember.FullName;
             }
         }
 

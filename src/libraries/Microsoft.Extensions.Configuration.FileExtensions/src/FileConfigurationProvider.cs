@@ -8,6 +8,7 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -75,13 +76,19 @@ namespace Microsoft.Extensions.Configuration
 
             static Stream OpenRead(IFileInfo fileInfo)
             {
-                if (fileInfo.PhysicalPath != null)
+                // The type is compared exactly because a derived type could hide
+                // CreateReadStream. Deliberately checking the file info rather than the file provider
+                // keeps this path available to providers that delegate to a PhysicalFileProvider and
+                // surface its PhysicalFileInfo unchanged, as a composite file provider does.
+                if (fileInfo.GetType() == typeof(PhysicalFileInfo))
                 {
+                    var physicalFileInfo = (PhysicalFileInfo)fileInfo;
+
                     // The default physical file info assumes asynchronous IO which results in unnecessary overhead
                     // especially since the configuration system is synchronous. This uses the same settings
                     // and disables async IO.
                     return new FileStream(
-                        fileInfo.PhysicalPath,
+                        physicalFileInfo.PhysicalPath,
                         FileMode.Open,
                         FileAccess.Read,
                         FileShare.ReadWrite,

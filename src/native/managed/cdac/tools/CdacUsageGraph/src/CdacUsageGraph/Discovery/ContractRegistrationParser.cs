@@ -16,7 +16,9 @@ namespace CdacUsageGraph.Discovery;
 /// </summary>
 internal static class ContractRegistrationParser
 {
-    public static IReadOnlyList<ContractRegistration> Parse(CSharpCompilation compilation)
+    public static IReadOnlyList<ContractRegistration> Parse(
+        CSharpCompilation compilation,
+        string contractRegistrationTypeName)
     {
         SymbolEqualityComparer comparer = SymbolEqualityComparer.Default;
         List<ContractRegistration> registrations = new List<ContractRegistration>();
@@ -26,7 +28,7 @@ internal static class ContractRegistrationParser
             CdacSymbols.IContractMetadataName);
 
         INamedTypeSymbol? coreContracts = compilation.GetTypeByMetadataName(
-            CdacSymbols.CoreCLRContractsMetadataName);
+            contractRegistrationTypeName);
         if (coreContracts is not null && contractRegistry is not null && iContract is not null)
         {
             foreach (IMethodSymbol reg in coreContracts.GetMembers().OfType<IMethodSymbol>())
@@ -75,6 +77,22 @@ internal static class ContractRegistrationParser
                                 iface,
                                 impl,
                                 constructor));
+                        }
+                    }
+
+                    foreach (IDefaultValueOperation defaultValue in inv.Descendants().OfType<IDefaultValueOperation>())
+                    {
+                        if (defaultValue.Type is INamedTypeSymbol impl &&
+                            comparer.Equals(impl.ContainingAssembly, compilation.Assembly) &&
+                            compilation.IsAssignableTo(impl, iface) &&
+                            compilation.IsAssignableTo(impl, iContract))
+                        {
+                            registrations.Add(new ContractRegistration(
+                                new ContractVersion(new ContractInterface(iface.Name), version),
+                                iface,
+                                impl,
+                                impl.InstanceConstructors.Single(
+                                    candidate => candidate.Parameters.Length == 0)));
                         }
                     }
                 }

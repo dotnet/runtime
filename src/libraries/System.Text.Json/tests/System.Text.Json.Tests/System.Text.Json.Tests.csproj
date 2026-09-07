@@ -275,6 +275,11 @@
     <Compile Include="Serialization\ConvertersForUnsupportedTypesFunctionalTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="..\Common\Ieee754NumericConverterTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\Ieee754NumericConverterTests.cs" />
+    <Compile Include="Serialization\Ieee754NumericConverterTests.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,8 +10,11 @@ using System.Linq;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
     // Visitor which tracks the values of locals in a block. It provides extension points that get called
@@ -44,9 +48,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private readonly ControlFlowGraph ControlFlowGraph;
 
+        private readonly SemanticModel _semanticModel;
+
         protected TValue TopValue => LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Top;
 
         private readonly ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures;
+
+        private readonly ImmutableHashSet<CaptureId> _deconstructionLValueFlowCaptures;
 
         public InterproceduralState<TValue, TValueLattice> InterproceduralState;
 
@@ -69,7 +77,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             InterproceduralStateLattice = default;
             OwningSymbol = owningSymbol;
             ControlFlowGraph = cfg;
+            _semanticModel = cfg.OriginalOperation.SemanticModel ??
+                compilation.GetSemanticModel(cfg.OriginalOperation.Syntax.SyntaxTree);
             this.lValueFlowCaptures = lValueFlowCaptures;
+            _deconstructionLValueFlowCaptures = cfg
+                .DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference)
+                .Where(reference => reference.IsInLeftOfDeconstructionAssignment(out _))
+                .Select(reference => reference.Id)
+                .ToImmutableHashSet();
             InterproceduralState = interproceduralState;
         }
 
@@ -132,6 +147,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public abstract TValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in TContext context);
 
         public abstract TValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in TContext context);
+
+        public abstract TValue GetTupleElementValue(IFieldSymbol tupleElement);
+
+        // Returns the value produced by applying a user-defined conversion operator to a value.
+        // The deconstruction path needs this because there the conversion is described by the
+        // DeconstructionInfo rather than by a conversion operation in the tree.
+        public abstract TValue GetConversionValue(IMethodSymbol conversionOperator, TValue operandValue);
 
         public abstract TValue GetParameterTargetValue(IParameterSymbol parameter);
 
@@ -255,16 +277,48 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             bool merge
         )
         {
+            return ProcessSingleTargetAssignment(targetOperation, valueOperation, precomputedValue: null, assignmentOperation, state, merge);
+        }
+
+        private TValue ProcessSingleTargetAssignment(
+            IOperation targetOperation,
+            TValue value,
+            IOperation assignmentOperation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            bool merge,
+            IReadOnlyDictionary<IOperation, TValue>? savedTargetValues = null
+        )
+        {
+            return ProcessSingleTargetAssignment(
+                targetOperation,
+                valueOperation: null,
+                precomputedValue: value,
+                assignmentOperation,
+                state,
+                merge,
+                savedTargetValues);
+        }
+
+        private TValue ProcessSingleTargetAssignment(
+            IOperation targetOperation,
+            IOperation? valueOperation,
+            TValue? precomputedValue,
+            IOperation assignmentOperation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            bool merge,
+            IReadOnlyDictionary<IOperation, TValue>? savedTargetValues = null
+        )
+        {
             switch (targetOperation)
             {
                 case IFieldReferenceOperation fieldRef:
                 {
                     // Visit the instance to ensure that method calls or other operations
                     // used as the instance are properly analyzed for diagnostics.
-                    Visit(fieldRef.Instance, state);
+                    VisitTargetSubExpression(fieldRef.Instance, state, savedTargetValues);
                     var current = state.Current;
                     TValue targetValue = GetFieldTargetValue(fieldRef, in current.Context);
-                    TValue value = Visit(valueOperation, state);
+                    TValue value = GetAssignmentValue();
                     HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                     return value;
                 }
@@ -272,7 +326,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 {
                     var current = state.Current;
                     TValue targetValue = GetParameterTargetValue(parameterRef.Parameter);
-                    TValue value = Visit(valueOperation, state);
+                    TValue value = GetAssignmentValue();
                     HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                     return value;
                 }
@@ -284,8 +338,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // Avoid visiting the property reference because for captured properties, we can't
                     // correctly detect whether it is used for reading or writing inside of VisitPropertyReference.
                     // https://github.com/dotnet/roslyn/issues/25057
-                    TValue instanceValue = Visit(propertyRef.Instance, state);
-                    TValue value = Visit(valueOperation, state);
+                    TValue instanceValue = VisitTargetSubExpression(propertyRef.Instance, state, savedTargetValues);
+                    TValue value = GetAssignmentValue();
                     IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod();
 
                     if (setMethod == null ||
@@ -334,15 +388,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // Handles assignment to an event like 'Event = Handler;', which is a write to the underlying field,
                     // not a call to an event accessor method. There is no Roslyn API to access the field,
                     // so just visit the instance and the value. https://github.com/dotnet/roslyn/issues/40103
-                    Visit(eventRef.Instance, state);
-                    return Visit(valueOperation, state);
+                    VisitTargetSubExpression(eventRef.Instance, state, savedTargetValues);
+                    return GetAssignmentValue();
                 }
                 case IImplicitIndexerReferenceOperation indexerRef:
                 {
                     // An implicit reference to an indexer where the argument is a System.Index
-                    TValue instanceValue = Visit(indexerRef.Instance, state);
-                    TValue indexArgumentValue = Visit(indexerRef.Argument, state);
-                    TValue value = Visit(valueOperation, state);
+                    TValue instanceValue = VisitTargetSubExpression(indexerRef.Instance, state, savedTargetValues);
+                    TValue indexArgumentValue = VisitTargetSubExpression(indexerRef.Argument, state, savedTargetValues);
+                    TValue value = GetAssignmentValue();
 
                     var property = (IPropertySymbol)indexerRef.IndexerSymbol;
 
@@ -365,7 +419,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // TODO: when setting a property in an attribute, target is an IPropertyReference.
                 case ILocalReferenceOperation localRef:
                 {
-                    TValue value = Visit(valueOperation, state);
+                    TValue value = GetAssignmentValue();
                     SetLocal(localRef.Local, value, state, merge);
                     return value;
                 }
@@ -373,7 +427,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 {
                     if (declPattern.DeclaredSymbol is not ILocalSymbol declaredSymbol)
                         break;
-                    var value = Visit(valueOperation, state);
+                    TValue value = GetAssignmentValue();
                     SetLocal(declaredSymbol, value, state, merge);
                     return value;
                 }
@@ -382,17 +436,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     if (arrayElementRef.Indices.Length != 1)
                         break;
 
-                    TValue arrayRef = Visit(arrayElementRef.ArrayReference, state);
-                    TValue index = Visit(arrayElementRef.Indices[0], state);
-                    TValue value = Visit(valueOperation, state);
+                    TValue arrayRef = VisitTargetSubExpression(arrayElementRef.ArrayReference, state, savedTargetValues);
+                    TValue index = VisitTargetSubExpression(arrayElementRef.Indices[0], state, savedTargetValues);
+                    TValue value = GetAssignmentValue();
                     HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
                 }
                 case IInlineArrayAccessOperation inlineArrayAccess:
                 {
-                    TValue arrayRef = Visit(inlineArrayAccess.Instance, state);
-                    TValue index = Visit(inlineArrayAccess.Argument, state);
-                    TValue value = Visit(valueOperation, state);
+                    TValue arrayRef = VisitTargetSubExpression(inlineArrayAccess.Instance, state, savedTargetValues);
+                    TValue index = VisitTargetSubExpression(inlineArrayAccess.Argument, state, savedTargetValues);
+                    TValue value = GetAssignmentValue();
                     HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
                 }
@@ -424,7 +478,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     UnexpectedOperationHandler.Handle(targetOperation);
                     break;
             }
-            return Visit(valueOperation, state);
+            return GetAssignmentValue();
+
+            TValue GetAssignmentValue()
+            {
+                if (precomputedValue.HasValue)
+                    return precomputedValue.Value;
+
+                Debug.Assert(valueOperation is not null);
+                return valueOperation is null ? TopValue : Visit(valueOperation, state);
+            }
         }
 
         public override TValue VisitSimpleAssignment(ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -518,6 +581,465 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return value;
         }
 
+        private TValue ProcessAssignment(
+            IOperation targetOperation,
+            TValue value,
+            IOperation assignmentOperation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            IReadOnlyDictionary<IOperation, TValue> savedTargetValues)
+        {
+            if (targetOperation is not IFlowCaptureReferenceOperation flowCaptureReference)
+                return ProcessSingleTargetAssignment(targetOperation, value, assignmentOperation, state, merge: false, savedTargetValues);
+
+            Debug.Assert(IsLValueFlowCapture(flowCaptureReference.Id));
+
+            var capturedReferences = state.Current.LocalState.CapturedReferences.Get(flowCaptureReference.Id);
+            Debug.Assert(!capturedReferences.IsUnknown());
+            if (!capturedReferences.HasMultipleValues)
+            {
+                var enumerator = capturedReferences.GetKnownValues().GetEnumerator();
+                enumerator.MoveNext();
+                return ProcessSingleTargetAssignment(enumerator.Current.Reference, value, assignmentOperation, state, merge: false, savedTargetValues);
+            }
+
+            TValue result = TopValue;
+            foreach (var capturedReference in capturedReferences.GetKnownValues())
+            {
+                TValue singleValue = ProcessSingleTargetAssignment(capturedReference.Reference, value, assignmentOperation, state, merge: true, savedTargetValues);
+                result = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet(result, singleValue);
+            }
+
+            return result;
+        }
+
+        public override TValue VisitDeconstructionAssignment(
+            IDeconstructionAssignmentOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            DeconstructionInfo deconstructionInfo;
+            if (operation.Syntax is AssignmentExpressionSyntax assignmentSyntax)
+            {
+                deconstructionInfo = _semanticModel.GetDeconstructionInfo(assignmentSyntax);
+            }
+            else if (operation.Syntax.FirstAncestorOrSelf<ForEachVariableStatementSyntax>() is ForEachVariableStatementSyntax foreachSyntax)
+            {
+                deconstructionInfo = _semanticModel.GetDeconstructionInfo(foreachSyntax);
+            }
+            else
+            {
+                UnexpectedOperationHandler.Handle(operation);
+                return Visit(operation.Value, state);
+            }
+
+            var savedTargetValues = new Dictionary<IOperation, TValue>();
+
+            // Identify target locations before evaluating the source, then reuse those values
+            // when writing instead of evaluating their sub-expressions again.
+            VisitDeconstructionTargetSideEffects(operation.Target, state, savedTargetValues);
+
+            ITypeSymbol? sourceType = operation.Value.Type;
+            IOperation source = UnwrapDeconstructionSource(operation.Value);
+            bool sourceValueIsKnown = source is not ITupleOperation;
+            TValue sourceValue = sourceValueIsKnown ? Visit(source, state) : TopValue;
+
+            // Deconstruction evaluates all source values before assigning any target. Keeping these
+            // phases separate is required for assignments such as (first, second) = (second, first).
+            DeconstructionValue deconstructionValue = EvaluateDeconstruction(
+                operation.Target,
+                source,
+                sourceType,
+                sourceValue,
+                sourceValueIsKnown,
+                deconstructionInfo,
+                operation,
+                state);
+            if (deconstructionValue.DoesNotReturn)
+            {
+                state.Current = LocalStateAndContextLattice.Top;
+                return sourceValue;
+            }
+
+            AssignDeconstruction(
+                operation.Target,
+                deconstructionValue,
+                operation,
+                state,
+                savedTargetValues);
+
+            return sourceValue;
+        }
+
+        private readonly struct DeconstructionValue
+        {
+            public TValue Value { get; }
+
+            public ImmutableArray<DeconstructionValue> Nested { get; }
+
+            public bool IsInvalid { get; }
+
+            public bool DoesNotReturn { get; }
+
+            public DeconstructionValue(TValue value)
+            {
+                Value = value;
+                Nested = default;
+                IsInvalid = false;
+                DoesNotReturn = false;
+            }
+
+            public DeconstructionValue(ImmutableArray<DeconstructionValue> nested)
+            {
+                Value = default;
+                Nested = nested;
+                IsInvalid = false;
+                DoesNotReturn = false;
+            }
+
+            private DeconstructionValue(bool isInvalid, bool doesNotReturn)
+            {
+                Value = default;
+                Nested = default;
+                IsInvalid = isInvalid;
+                DoesNotReturn = doesNotReturn;
+            }
+
+            public static DeconstructionValue Invalid => new(isInvalid: true, doesNotReturn: false);
+
+            public static DeconstructionValue NonReturning => new(isInvalid: false, doesNotReturn: true);
+        }
+
+        private DeconstructionValue EvaluateDeconstruction(
+            IOperation target,
+            IOperation? source,
+            ITypeSymbol? sourceType,
+            TValue sourceValue,
+            bool sourceValueIsKnown,
+            DeconstructionInfo deconstructionInfo,
+            IDeconstructionAssignmentOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            target = UnwrapDeconstructionTarget(target);
+
+            if (deconstructionInfo.Nested.IsDefaultOrEmpty)
+            {
+                if (target is ITupleOperation)
+                {
+                    UnexpectedOperationHandler.Handle(target);
+                    return DeconstructionValue.Invalid;
+                }
+
+                sourceValue = GetDeconstructionSourceValue(source, sourceValue, sourceValueIsKnown, state);
+                return new DeconstructionValue(
+                    deconstructionInfo.Conversion is { MethodSymbol: IMethodSymbol conversionOperator }
+                        ? GetConversionValue(conversionOperator, sourceValue)
+                        : sourceValue);
+            }
+
+            if (target is not ITupleOperation targetTuple ||
+                targetTuple.Elements.Length != deconstructionInfo.Nested.Length)
+            {
+                UnexpectedOperationHandler.Handle(target);
+                return DeconstructionValue.Invalid;
+            }
+
+            if (deconstructionInfo.Method is IMethodSymbol deconstructMethod)
+            {
+                sourceValue = GetDeconstructionSourceValue(source, sourceValue, sourceValueIsKnown, state);
+                bool isExtensionMethod = deconstructMethod.IsExtensionMethod;
+                bool hasReceiverArgument = isExtensionMethod || deconstructMethod.HasExtensionParameterOnType();
+                int outputParameterOffset = isExtensionMethod ? 1 : 0;
+                int metadataParameterCount = deconstructMethod.GetMetadataParametersCount();
+                if (metadataParameterCount != targetTuple.Elements.Length + (hasReceiverArgument ? 1 : 0))
+                {
+                    UnexpectedOperationHandler.Handle(operation);
+                    return DeconstructionValue.Invalid;
+                }
+
+                var arguments = ImmutableArray.CreateBuilder<TValue>(metadataParameterCount);
+
+                TValue instanceValue = sourceValue;
+                if (hasReceiverArgument)
+                {
+                    instanceValue = TopValue;
+                    arguments.Add(sourceValue);
+                }
+
+                while (arguments.Count < metadataParameterCount)
+                    arguments.Add(TopValue);
+
+                // Key this synthesized Deconstruct() call on 'target', not 'source': 'source' may
+                // already be registered elsewhere under its own unrelated call pattern (e.g. if it's
+                // a method call), and reusing it here would incorrectly merge the two.
+                HandleMethodCall(
+                    deconstructMethod,
+                    instanceValue,
+                    arguments.MoveToImmutable(),
+                    target,
+                    state.Current.Context);
+
+                if (deconstructMethod.TryGetAttribute(nameof(DoesNotReturnAttribute), out _))
+                    return DeconstructionValue.NonReturning;
+
+                IParameterSymbol? receiverParameter = isExtensionMethod
+                    ? deconstructMethod.Parameters[0]
+                    : deconstructMethod.ContainingType.ExtensionParameter;
+                if (receiverParameter is not null && source is not null)
+                    ApplyDoesNotReturnIfCondition(receiverParameter, source, state);
+
+                var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+                for (int i = 0; i < targetTuple.Elements.Length; i++)
+                {
+                    IParameterSymbol outputParameter = deconstructMethod.Parameters[i + outputParameterOffset];
+                    DeconstructionValue nestedValue = EvaluateDeconstruction(
+                        targetTuple.Elements[i],
+                        source: null,
+                        outputParameter.Type,
+                        GetParameterTargetValue(outputParameter),
+                        sourceValueIsKnown: true,
+                        deconstructionInfo.Nested[i],
+                        operation,
+                        state);
+                    if (nestedValue.DoesNotReturn)
+                        return DeconstructionValue.NonReturning;
+                    nestedValues.Add(nestedValue);
+                }
+
+                return new DeconstructionValue(nestedValues.MoveToImmutable());
+            }
+
+            if (source is ITupleOperation sourceTuple &&
+                sourceTuple.Elements.Length == targetTuple.Elements.Length)
+            {
+                var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+                for (int i = 0; i < targetTuple.Elements.Length; i++)
+                {
+                    IOperation sourceElement = UnwrapDeconstructionSource(sourceTuple.Elements[i]);
+                    DeconstructionValue nestedValue = EvaluateDeconstruction(
+                        targetTuple.Elements[i],
+                        sourceElement,
+                        sourceElement.Type,
+                        default,
+                        sourceValueIsKnown: false,
+                        deconstructionInfo.Nested[i],
+                        operation,
+                        state);
+                    if (nestedValue.DoesNotReturn)
+                        return DeconstructionValue.NonReturning;
+                    nestedValues.Add(nestedValue);
+                }
+
+                return new DeconstructionValue(nestedValues.MoveToImmutable());
+            }
+
+            if (sourceType is not INamedTypeSymbol { IsTupleType: true } tupleType ||
+                tupleType.TupleElements.Length != targetTuple.Elements.Length)
+            {
+                UnexpectedOperationHandler.Handle(operation.Value);
+                return DeconstructionValue.Invalid;
+            }
+
+            var tupleValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+            for (int i = 0; i < targetTuple.Elements.Length; i++)
+            {
+                IFieldSymbol tupleElement = tupleType.TupleElements[i];
+                DeconstructionValue tupleValue = EvaluateDeconstruction(
+                    targetTuple.Elements[i],
+                    source: null,
+                    tupleElement.Type,
+                    GetTupleElementValue(tupleElement),
+                    sourceValueIsKnown: true,
+                    deconstructionInfo.Nested[i],
+                    operation,
+                    state);
+                if (tupleValue.DoesNotReturn)
+                    return DeconstructionValue.NonReturning;
+                tupleValues.Add(tupleValue);
+            }
+
+            return new DeconstructionValue(tupleValues.MoveToImmutable());
+        }
+
+        private void AssignDeconstruction(
+            IOperation target,
+            DeconstructionValue value,
+            IDeconstructionAssignmentOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            IReadOnlyDictionary<IOperation, TValue> savedTargetValues)
+        {
+            if (value.IsInvalid)
+                return;
+
+            target = UnwrapDeconstructionTarget(target);
+            if (value.Nested.IsDefaultOrEmpty)
+            {
+                ProcessAssignment(target, value.Value, target, state, savedTargetValues);
+                return;
+            }
+
+            if (target is not ITupleOperation targetTuple ||
+                targetTuple.Elements.Length != value.Nested.Length)
+            {
+                UnexpectedOperationHandler.Handle(operation);
+                return;
+            }
+
+            for (int i = 0; i < targetTuple.Elements.Length; i++)
+                AssignDeconstruction(targetTuple.Elements[i], value.Nested[i], operation, state, savedTargetValues);
+        }
+
+        private TValue GetDeconstructionSourceValue(
+            IOperation? source,
+            TValue sourceValue,
+            bool sourceValueIsKnown,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (sourceValueIsKnown)
+                return sourceValue;
+
+            Debug.Assert(source is not null);
+            return source is null ? TopValue : Visit(source, state);
+        }
+
+        // Evaluates a deconstruction target sub-expression and remembers its value, so that the
+        // write can reuse it later instead of evaluating the expression a second time.
+        private void EvaluateTargetSubExpression(
+            IOperation? operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            Dictionary<IOperation, TValue> savedTargetValues,
+            bool useStateCapturedTargetValues)
+        {
+            if (operation is null)
+                return;
+
+            TValue value;
+            CapturedTargetValue<TValue> capturedTargetValue = state.Current.LocalState.CapturedTargetValues.Get(new CapturedTargetKey(operation));
+            if (useStateCapturedTargetValues && capturedTargetValue.HasValue)
+                value = capturedTargetValue.Value;
+            else
+                value = Visit(operation, state);
+
+            savedTargetValues[operation] = value;
+        }
+
+        // Returns the value of an assignment target's sub-expression, reusing the value from
+        // EvaluateTargetSubExpression if it was already evaluated for a deconstruction. For an
+        // ordinary assignment nothing was evaluated ahead of time, so this just visits it.
+        private TValue VisitTargetSubExpression(
+            IOperation? operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            IReadOnlyDictionary<IOperation, TValue>? savedTargetValues)
+        {
+            if (operation is not null &&
+                savedTargetValues is not null &&
+                savedTargetValues.TryGetValue(operation, out TValue value))
+            {
+                return value;
+            }
+
+            if (operation is not null &&
+                state.Current.LocalState.CapturedTargetValues.Get(new CapturedTargetKey(operation)) is { HasValue: true } capturedValue)
+            {
+                return capturedValue.Value;
+            }
+
+            return Visit(operation, state);
+        }
+
+        // Visits the side-effecting sub-expressions that identify a deconstruction target location
+        // (a property/indexer receiver, or an array reference and its index), without performing
+        // any write. This runs before the source is visited, so that e.g. 'arr' in
+        // '(arr[i], b) = (x, y)' is evaluated before 'x'/'y' are read, matching left-to-right
+        // evaluation order and Roslyn's own lowering (GetAssignmentTargetsAndSideEffects).
+        //
+        // Note: IPropertyReferenceOperation's explicit indexer Arguments are intentionally NOT
+        // visited here, to match ProcessSingleTargetAssignment's IPropertyReferenceOperation case,
+        // which today only visits those Arguments after the value (a known, pre-existing ordering
+        // quirk - unlike the implicit System.Index-based indexer and array-element cases below,
+        // which already visit their index arguments before the value). If that quirk is ever fixed
+        // in ProcessSingleTargetAssignment, this case should be updated to match.
+        private void VisitDeconstructionTargetSideEffects(
+            IOperation target,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            Dictionary<IOperation, TValue> savedTargetValues,
+            bool useStateCapturedTargetValues = true)
+        {
+            target = UnwrapDeconstructionTarget(target);
+            if (target is ITupleOperation targetTuple)
+            {
+                foreach (var element in targetTuple.Elements)
+                    VisitDeconstructionTargetSideEffects(element, state, savedTargetValues, useStateCapturedTargetValues);
+                return;
+            }
+
+            switch (target)
+            {
+                case IFlowCaptureReferenceOperation flowCaptureReference:
+                    Debug.Assert(IsLValueFlowCapture(flowCaptureReference.Id));
+                    var capturedReferences = state.Current.LocalState.CapturedReferences.Get(flowCaptureReference.Id);
+                    Debug.Assert(!capturedReferences.IsUnknown());
+                    foreach (var capturedReference in capturedReferences.GetKnownValues())
+                        VisitDeconstructionTargetSideEffects(capturedReference.Reference, state, savedTargetValues, useStateCapturedTargetValues);
+                    break;
+                case IFieldReferenceOperation fieldRef:
+                    EvaluateTargetSubExpression(fieldRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
+                    break;
+                case IPropertyReferenceOperation propertyRef:
+                    // Avoid visiting the property reference itself; see the similar comment in
+                    // ProcessSingleTargetAssignment about https://github.com/dotnet/roslyn/issues/25057.
+                    EvaluateTargetSubExpression(propertyRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
+                    break;
+                case IEventReferenceOperation eventRef:
+                    EvaluateTargetSubExpression(eventRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
+                    break;
+                case IArrayElementReferenceOperation arrayElementRef:
+                    EvaluateTargetSubExpression(arrayElementRef.ArrayReference, state, savedTargetValues, useStateCapturedTargetValues);
+                    foreach (var index in arrayElementRef.Indices)
+                        EvaluateTargetSubExpression(index, state, savedTargetValues, useStateCapturedTargetValues);
+                    break;
+                case IInlineArrayAccessOperation inlineArrayAccess:
+                    EvaluateTargetSubExpression(inlineArrayAccess.Instance, state, savedTargetValues, useStateCapturedTargetValues);
+                    EvaluateTargetSubExpression(inlineArrayAccess.Argument, state, savedTargetValues, useStateCapturedTargetValues);
+                    break;
+                case IImplicitIndexerReferenceOperation indexerRef:
+                    EvaluateTargetSubExpression(indexerRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
+                    EvaluateTargetSubExpression(indexerRef.Argument, state, savedTargetValues, useStateCapturedTargetValues);
+                    break;
+                default:
+                    // Locals, parameters, discards, and declaration expressions have no
+                    // side-effecting sub-expression to evaluate ahead of the source.
+                    break;
+            }
+        }
+
+        private static IOperation UnwrapDeconstructionTarget(IOperation target)
+        {
+            while (true)
+            {
+                switch (target)
+                {
+                    case IDeclarationExpressionOperation declaration:
+                        target = declaration.Expression;
+                        continue;
+                    case IConversionOperation conversion:
+                        target = conversion.Operand;
+                        continue;
+                    case IParenthesizedOperation parenthesized:
+                        target = parenthesized.Operand;
+                        continue;
+                    default:
+                        return target;
+                }
+            }
+        }
+
+        private static IOperation UnwrapDeconstructionSource(IOperation source)
+        {
+            while (source is IConversionOperation { OperatorMethod: null } conversion)
+                source = conversion.Operand;
+
+            return source;
+        }
+
         public override TValue VisitEventAssignment(IEventAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
             var eventReference = (IEventReferenceOperation)operation.EventReference;
@@ -585,9 +1107,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // turns both arguments into flow capture references, instead of just passing a local
                 // reference for s.
 
-                // This can also happen for a deconstruction assignments, where the write is not to a byref.
-                // Once the analyzer implements support for deconstruction assignments (https://github.com/dotnet/linker/issues/3158),
-                // we can try enabling this assert to ensure that this case is only hit for byrefs.
+                // This is also reachable for writes which are not byrefs, because increment/decrement
+                // (IIncrementOrDecrementOperation) and coalescing assignment (ICoalesceAssignmentOperation)
+                // are not handled here and fall back to the base visitor, which visits the write target
+                // directly. Enabling the following assert requires handling those first.
                 // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
                 //     $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 return TopValue;
@@ -608,12 +1131,29 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (operation.Value is IFlowCaptureReferenceOperation)
                     return TopValue;
 
-                // Note: technically we should save some information about the value for LValue flow captures
-                // (for example, the object instance of a property reference) and avoid re-computing it when
-                // assigning to the FlowCaptureReference.
+                Dictionary<IOperation, TValue>? evaluatedTargetValues = null;
+                if (_deconstructionLValueFlowCaptures.Contains(operation.Id))
+                {
+                    evaluatedTargetValues = new Dictionary<IOperation, TValue>();
+                    VisitDeconstructionTargetSideEffects(
+                        operation.Value,
+                        state,
+                        evaluatedTargetValues,
+                        useStateCapturedTargetValues: false);
+                }
+
                 var capturedRef = new CapturedReferenceValue(operation.Value);
                 var currentState = state.Current;
                 currentState.LocalState.CapturedReferences.Set(operation.Id, capturedRef);
+                if (evaluatedTargetValues is not null)
+                {
+                    foreach (var evaluatedTargetValue in evaluatedTargetValues)
+                    {
+                        currentState.LocalState.CapturedTargetValues.Set(
+                            new CapturedTargetKey(evaluatedTargetValue.Key),
+                            new CapturedTargetValue<TValue>(evaluatedTargetValue.Value));
+                    }
+                }
                 state.Current = currentState;
                 return TopValue;
             }
@@ -708,10 +1248,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             if (operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Write))
             {
                 // Property references may be passed as ref/out parameters.
-                // Enable this assert once we have support for deconstruction assignments.
-                // https://github.com/dotnet/linker/issues/3158
+                // This is also reachable for writes which are not byrefs, because increment/decrement
+                // (IIncrementOrDecrementOperation) and coalescing assignment (ICoalesceAssignmentOperation)
+                // are not handled here and fall back to the base visitor, which visits the write target
+                // directly. Enabling the following assert requires handling those first.
                 // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
-                //   $"{operation.Syntax.GetLocation().GetLineSpan()}");
+                //     $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 return TopValue;
             }
 
@@ -873,21 +1415,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (parameterProxy.ParameterSymbol is not IParameterSymbol parameter)
                     continue;
 
-                if (!parameter.TryGetAttribute(nameof(DoesNotReturnIfAttribute), out var attributeData))
-                    continue;
-
-                if (attributeData.ConstructorArguments.Length != 1)
-                    continue;
-
-                var attributeArgument = attributeData.ConstructorArguments[0];
-                if (attributeArgument.Kind != TypedConstantKind.Primitive)
-                    continue;
-
-                if (attributeArgument.Value is not bool doesNotReturnIfConditionValue)
+                if (!parameter.TryGetAttribute(nameof(DoesNotReturnIfAttribute), out _))
                     continue;
 
                 var argumentIndex = parameterProxy.MetadataIndex;
-                var argument = arguments[argumentIndex];
 
                 IArgumentOperation argumentOperation;
                 switch (operation)
@@ -904,19 +1435,38 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
                 ;
 
-                // Get the condition value that is being asserted. If the attribute is DoesNotReturnIf(true),
-                // the condition value needs to be negated so that we can assert the false condition.
-                TConditionValue conditionValue = GetConditionValue(argumentOperation, state);
-                var current = state.Current;
-                ApplyCondition(
-                    !doesNotReturnIfConditionValue
-                        ? conditionValue
-                        : conditionValue.Negate(),
-                    ref current);
-                state.Current = current;
+                ApplyDoesNotReturnIfCondition(parameter, argumentOperation, state);
             }
 
             return value;
+        }
+
+        private void ApplyDoesNotReturnIfCondition(
+            IParameterSymbol parameter,
+            IOperation argumentOperation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (!parameter.TryGetAttribute(nameof(DoesNotReturnIfAttribute), out var attributeData) ||
+                attributeData.ConstructorArguments.Length != 1 ||
+                attributeData.ConstructorArguments[0] is not
+                {
+                    Kind: TypedConstantKind.Primitive,
+                    Value: bool doesNotReturnIfConditionValue
+                })
+            {
+                return;
+            }
+
+            // Get the condition value that is being asserted. If the attribute is DoesNotReturnIf(true),
+            // the condition value needs to be negated so that we can assert the false condition.
+            TConditionValue conditionValue = GetConditionValue(argumentOperation, state);
+            var current = state.Current;
+            ApplyCondition(
+                !doesNotReturnIfConditionValue
+                    ? conditionValue
+                    : conditionValue.Negate(),
+                ref current);
+            state.Current = current;
         }
 
         private TValue ProcessMethodCall(

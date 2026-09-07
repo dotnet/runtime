@@ -231,6 +231,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     expressions.Add(I32.Const(0));
                     expressions.Add(I32.Store((ulong)currentOffset));
                 }
+                else if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm locals — store each one into the argument area.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(0));
+                        expressions.Add(Local.Get(wasmLocalIndex));
+                        ulong slotOffset = (ulong)(currentOffset + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Store(slotOffset) : V128.Store(slotOffset));
+                        wasmLocalIndex++;
+                    }
+                }
                 else if (isIndirectStructArg[i])
                 {
                     // Indirect struct — copy the exact contents from the incoming pointer
@@ -351,13 +364,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Save the current stack pointer global into a local, then set it to local 0
             // (16-byte aligned, <= all buffers allocated in this thunk).
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             expressions.Add(Local.Set(savedSpLocalIndex));
             expressions.Add(Local.Get(0));
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // Load the helper function address and call
-            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex));
             expressions.Add(I32.LoadWithRVAOffset(_helperCell));
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
@@ -366,7 +379,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Restore the old stack pointer global
             expressions.Add(Local.Get(savedSpLocalIndex));
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // If the function has a wasm return value, load it from the local return buffer
             if (hasWasmReturn)

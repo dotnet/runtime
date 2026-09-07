@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for UnloadabilityIncompatible -->
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!--
+      The [SkipOnCoreClr] attribute on the IL entry point cannot express this on its own. Because
+      this test requires process isolation, the merged runner emits an OutOfProcessTest that just
+      launches the generated run script, and the IL assembly has a hand-written .entrypoint rather
+      than a generated wrapper, so nothing ever reads the attribute. The MSBuild property is what
+      puts the guard into the run script, so it must be kept.
+    -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test leaves threads running at exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

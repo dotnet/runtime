@@ -29,8 +29,9 @@ TargetPointer GetMethodTableAddress(TargetPointer address);
 // Get the string corresponding to a managed string object. Error if address does not represent a string.
 string GetStringValue(TargetPointer address);
 
-// Get the pointer to the data corresponding to a managed array object. Error if address does not represent a array.
-TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+// Get the pointer to the data and shape information corresponding to a managed array object.
+// Error if address does not represent an array.
+TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues);
 
 // Get the length (in chars) and the offset from the object base to the first character
 // for a managed string object. Error if address does not represent a string.
@@ -77,10 +78,7 @@ ulong GetSize(TargetPointer address);
 | `ObjectHeader` | `SyncBlockValue` | `uint32` | Sync block value from the object header |
 | `String` | `m_FirstChar` | `pointer` | Address of the first UTF-16 character in the string |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
-| `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
 | `SyncBlock` | `HashCode` | `uint32` | Hash code stored in the sync block |
-| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
-| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
 
 ### Global variables used
 
@@ -142,7 +140,7 @@ void GetStringData(TargetPointer address, out uint length, out uint offsetToFirs
     offsetToFirstChar = /* String::m_FirstChar offset */;
 }
 
-TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
+TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues)
 {
     TargetPointer mt = GetMethodTableAddress(address);
     if (mt == TargetPointer.Null)
@@ -171,6 +169,21 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
         // Single-dimensional, zero-based - doesn't have bounds
         boundsStart = address + /* Array::m_NumComponents offset */;
         lowerBounds = target.ReadGlobalPointer("ArrayBoundsZero");
+    }
+
+    dimensionLengths = new uint[rank];
+    lowerBoundsValues = new int[rank];
+    if (corType == CorElementType.Array)
+    {
+        for (int i = 0; i < rank; i++)
+        {
+            dimensionLengths[i] = target.Read<uint>(boundsStart + i * sizeof(int));
+            lowerBoundsValues[i] = target.Read<int>(lowerBounds + i * sizeof(int));
+        }
+    }
+    else
+    {
+        dimensionLengths[0] = count;
     }
 
     // Sync block is before `this` pointer, so substract the object header size

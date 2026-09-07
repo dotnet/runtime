@@ -974,7 +974,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     if (EA_IS_RELOC(size))
     {
         assert(genIsValidIntReg(reg));
-        emit->emitIns_R_AI(INS_bl, size, reg, imm); // for example: EA_PTR_DSP_RELOC
+        // for example: EA_PTR_DSP_RELOC
+        emit->emitIns_R_AI(INS_bl, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
     }
     else
     {
@@ -3620,8 +3621,6 @@ int CodeGenInterface::genTotalFrameSize() const
     // since we don't use "push" instructions to save them, we don't have to do the
     // save of these varargs register arguments as the first thing in the prolog.
 
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
-
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
     assert(totalFrameSize > 0);
@@ -3700,7 +3699,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         if (m_compiler->opts.compReloc)
         {
             // TODO-LOONGARCH64: here the bl is special flag rather than a real instruction.
-            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
+            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTargetReg,
+                                       (ssize_t)pAddr DEBUGARG((size_t)m_compiler->eeFindHelper(helper))
+                                           DEBUGARG(GTF_ICON_METHOD_HDL));
         }
         else
         {
@@ -6806,11 +6807,12 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         if ((localFrameSize + (m_compiler->compCalleeRegsPushed << 3)) > 2040)
         {
             remainingSPSize = localFrameSize & -16;
-            genStackPointerAdjustment(remainingSPSize, REG_RA, nullptr, /* reportUnwindData */ true);
+            genStackPointerAdjustment(remainingSPSize, REG_RA, nullptr, /* reportUnwindData */ false);
 
             remainingSPSize = totalFrameSize - remainingSPSize;
             FP_offset       = localFrameSize & 0xf;
         }
+        m_compiler->unwindSetFrameReg(REG_FPBASE, FP_offset);
     }
 
     JITDUMP("    calleeSaveSPOffset=%d\n", FP_offset + 16);
