@@ -82,7 +82,7 @@ DOTNET_DbgMiniDumpType values:
 
 **Command Line Usage**
 
-The createdump utility only dumps the parent process that launched it. A target PID cannot be specified. The type of dump can be controlled with the command switches below. The default is a "minidump" which contains the majority of the memory and managed state needed.
+The createdump utility is normally launched by the runtime as a child of the process being dumped. It only dumps the parent process that launched it, and a target PID cannot be specified. The type of dump can be controlled with the command switches below. The default is a "minidump" which contains the majority of the memory and managed state needed.
 
 ```
 createdump [options]

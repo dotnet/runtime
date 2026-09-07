@@ -13,6 +13,7 @@
 #endif
 
 const char* g_help = "createdump [options]\n"
+"createdump writes a dump of its parent process; a target PID cannot be specified.\n"
 "-f, --name - dump path and file name. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'. These specifiers are substituted with following values:\n"
 "   %p  PID of dumped process.\n"
 "   %e  The process executable filename.\n"
@@ -172,7 +173,7 @@ int createdump_main(const int argc, const char* argv[])
             }
             else
             {
-                printf_error("The pid argument is no longer supported\n");
+                printf_error("Unrecognized argument '%s'\n", *argv);
                 return -1;
             }
             argv++;
