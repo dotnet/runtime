@@ -101,20 +101,28 @@ Copyright (c) .NET Foundation. All rights reserved.
   </ItemGroup>
 
   <!-- The webcil stamp only forces RE-CONVERSION; it never removes what the previous mode left behind.
-       Flipping PublishReadyToRun or PublishTrimmed changes what every derived output should be (pack R2R vs
-       per-app R2R vs plain IL, untrimmed pack vs trimmed closure), yet those outputs are keyed on file
-       timestamps: stale per-app images survive in obj/R2R (where they also make crossgen2 fail writing over a
-       still-mapped file), and because static web assets are content-fingerprinted the newly staged copies land
-       BESIDE the old ones in the served directory instead of replacing them - two copies of an assembly from
-       two different version bubbles, which the runtime MVID check rejects or hangs on. Record the mode and
-       drop the derived outputs whenever it changes. Runs in the nested publish first (before crossgen), so the
-       outer build then sees an unchanged stamp and keeps what the nested publish just produced. -->
+       Flipping PublishReadyToRun, PublishTrimmed or the native flags changes what the derived outputs should
+       be (pack R2R vs per-app R2R vs plain IL, untrimmed pack vs trimmed closure, runtime-pack native vs
+       relinked), yet those outputs are keyed on file timestamps: stale per-app images survive in obj/R2R
+       (where they also make crossgen2 fail writing over a still-mapped file), and because static web assets
+       are content-fingerprinted the newly staged copies land BESIDE the old ones in the served directory
+       instead of replacing them - two copies of an assembly from two different version bubbles, which the
+       runtime MVID check rejects or hangs on. Record the mode and drop the derived outputs whenever it
+       changes.
+       Only the outer pass may own the stamp. The nested publish worker shares this IntermediateOutputPath but
+       resolves WasmNativeStrip and WasmNativeDebugSymbols differently (their SDK defaults test
+       WasmBuildingForNestedPublish), so letting it run too makes the two passes disagree on the mode string
+       and take turns rewriting the stamp, each wiping what the other just staged. The outer pass runs first
+       anyway, ahead of both its own webcil conversion and the nested publish's crossgen, so nothing is lost. -->
   <Target Name="_WasmCoreClrInvalidateStaleModeOutputs"
-          Condition="'$(_WasmEnableWebcil)' == 'true'"
+          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           BeforeTargets="_ComputeWasmBuildCandidates;_PrepareForReadyToRunCompilation">
     <PropertyGroup>
       <_WasmCoreClrModeStamp>$(IntermediateOutputPath)wasm-coreclr-mode.stamp</_WasmCoreClrModeStamp>
-      <_WasmCoreClrMode>PublishReadyToRun=$(PublishReadyToRun);PublishTrimmed=$(PublishTrimmed)</_WasmCoreClrMode>
+      <_WasmCoreClrMode>PublishReadyToRun=$(PublishReadyToRun);PublishTrimmed=$(PublishTrimmed);WasmBuildNative=$(WasmBuildNative);WasmNativeDebugSymbols=$(WasmNativeDebugSymbols);WasmNativeStrip=$(WasmNativeStrip)</_WasmCoreClrMode>
+      <!-- Only clear the served directory when it is the default one: WasmRuntimeAssetsLocation may be './',
+           where the app's own content sits next to the staged assets and a recursive delete would take it. -->
+      <_WasmCoreClrServedAssetsDir Condition="'$(WasmRuntimeAssetsLocation)' == '' or '$(WasmRuntimeAssetsLocation)' == '_framework'">$(OutDir)wwwroot\_framework\</_WasmCoreClrServedAssetsDir>
     </PropertyGroup>
     <ReadLinesFromFile File="$(_WasmCoreClrModeStamp)" Condition="Exists('$(_WasmCoreClrModeStamp)')">
       <Output TaskParameter="Lines" ItemName="_WasmCoreClrPreviousMode" />
@@ -122,9 +130,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup Condition="'@(_WasmCoreClrPreviousMode)' != '' and '@(_WasmCoreClrPreviousMode)' != '$(_WasmCoreClrMode)'">
       <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)R2R\*.wasm" />
       <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)webcil\**\*.wasm" />
-      <!-- Managed webcils only: the native assets are mode-independent and re-copied anyway. -->
-      <_WasmCoreClrStaleModeOutput Include="$(OutDir)wwwroot\_framework\*.wasm"
-                                   Exclude="$(OutDir)wwwroot\_framework\dotnet*.wasm" />
+      <!-- Just the link outputs, not the .o files: the emcc link rsp is an Input to the link target, so only
+           that step has to re-run for a native flag change. -->
+      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)wasm\for-build\dotnet.native.*" />
+      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)wasm\for-publish\dotnet.native.*" />
+      <!-- Everything staged, managed and native alike: these are content-fingerprinted, so a re-stage adds a
+           new name beside the old file instead of replacing it. All of it is re-copied on the next build. -->
+      <_WasmCoreClrStaleModeOutput Include="$(_WasmCoreClrServedAssetsDir)**\*" Condition="'$(_WasmCoreClrServedAssetsDir)' != ''" />
     </ItemGroup>
     <Delete Files="@(_WasmCoreClrStaleModeOutput)" ContinueOnError="true" />
     <WriteLinesToFile File="$(_WasmCoreClrModeStamp)" Lines="$(_WasmCoreClrMode)" Overwrite="true" WriteOnlyWhenDifferent="true" />
@@ -168,6 +180,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmTrimmedClosureDir Condition="'$(_WasmTrimmedClosureDir)' == '' and '$(IntermediateLinkDir)' != ''">$(IntermediateLinkDir)</_WasmTrimmedClosureDir>
       <_WasmTrimmedClosureDir Condition="'$(_WasmTrimmedClosureDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'linked'))</_WasmTrimmedClosureDir>
+      <!-- A native relink (or AOT) returns the final, already trimmed assembly set from the nested publish,
+           project assembly included. Only the plain managed path leaves it empty and falls back to the
+           untrimmed IntermediateAssembly, so only that path needs the repoint below. -->
+      <_WasmCoreClrHasFinalAssemblies Condition="'@(WasmAssembliesFinal)' != ''">true</_WasmCoreClrHasFinalAssemblies>
     </PropertyGroup>
     <ItemGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
       <!-- Tag every copy-local item with trimmed-closure membership (default false so the metadata is always
@@ -192,9 +208,10 @@ Copyright (c) .NET Foundation. All rights reserved.
            trimmed framework mismatches the two (e.g. the JSExport-generated call to RuntimeInformation.OSArchitecture
            survives in the untrimmed assembly while ILLink dropped the property from the trimmed CoreLib, giving a
            MissingMethodException at run time). @(WasmAssembliesFinal) is the SDK's designed override for exactly
-           this: an entry whose file name matches IntermediateAssembly becomes the served project assembly. -->
+           this: an entry whose file name matches IntermediateAssembly becomes the served project assembly. Skip it
+           when a nested publish already supplied that set, or ComputeWasmBuildAssets sees two project assemblies. -->
       <WasmAssembliesFinal Include="@(IntermediateAssembly->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
-                           Condition="Exists('$(_WasmTrimmedClosureDir)%(IntermediateAssembly.FileName).dll')" />
+                           Condition="'$(_WasmCoreClrHasFinalAssemblies)' != 'true' and Exists('$(_WasmTrimmedClosureDir)%(IntermediateAssembly.FileName).dll')" />
     </ItemGroup>
   </Target>
 
