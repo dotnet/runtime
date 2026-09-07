@@ -54,7 +54,10 @@ namespace System.Net.Http
         internal uint _lastSeenHttp3MaxHeaderListSize;
 
         // Same as the above, but for SETTINGS_MAX_CONCURRENT_STREAMS.
-        internal uint _lastSeenHttp2MaxConcurrentStreams = Http2Connection.InitialMaxConcurrentStreams;
+        // Unlike the values above, this one starts out at SocketsHttpHandler.InitialHttp2MaxConcurrentStreams,
+        // and we only ever memorize server-advertised values that are lower than that. That is, the setting
+        // acts as the upper bound for what every new connection starts with.
+        internal uint _lastSeenHttp2MaxConcurrentStreams;
 
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
@@ -85,6 +88,7 @@ namespace System.Net.Http
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
             _telemetryServerAddress = telemetryServerAddress;
+            _lastSeenHttp2MaxConcurrentStreams = (uint)Settings._initialHttp2MaxConcurrentStreams;
 
             // The only case where 'host' will not be set is if this is a Proxy connection pool. In that case the
             // connection targets the proxy itself, so use the proxy's host and port for the origin authority.

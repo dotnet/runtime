@@ -92,7 +92,6 @@ class WasmRegAlloc : public RegAllocInterface
             , m_fpReg(REG_NA)
             , m_lastVirtualRegRefsCount(0)
             , m_virtualRegRefs(nullptr)
-            , m_imageBaseUses(0)
             , m_physicalRegAssignments(comp->lvaTrackedCount, REG_STK, comp->getAllocator(CMK_LSRA))
         {
         }
@@ -111,10 +110,6 @@ class WasmRegAlloc : public RegAllocInterface
         //
         unsigned              m_lastVirtualRegRefsCount;
         VirtualRegReferences* m_virtualRegRefs;
-
-        // Count of nodes in this funclet that will materialize the image base.
-        //
-        unsigned m_imageBaseUses;
 
         // Map from local tracked index to phys reg for that local, in this funclet.
         //

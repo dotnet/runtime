@@ -52,7 +52,8 @@
 
 #include "crst.h"
 #include "util.hpp"
-#include "eecontract.h"
+#include <contract.h>
+
 enum StubCodeBlockKind : int;
 
 //-------------------------------------------------------------------------

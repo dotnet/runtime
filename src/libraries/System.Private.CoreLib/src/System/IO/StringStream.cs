@@ -9,7 +9,7 @@ namespace System.IO
 {
     /// <summary>
     /// Provides a read-only, non-seekable <see cref="Stream"/> that encodes a <see cref="string"/> or
-    /// <see cref="ReadOnlyMemory{Char}"/> into bytes on-the-fly using a specified <see cref="System.Text.Encoding"/>.
+    /// <see cref="ReadOnlyMemory{Char}"/> into bytes on-the-fly using a specified <see cref="Encoding"/>.
     /// </summary>
     /// <remarks>
     /// <para>This stream never emits a byte order mark (BOM). Callers who need a BOM can prepend it themselves.</para>
@@ -74,15 +74,22 @@ namespace System.IO
         public override bool CanRead => !_disposed;
 
         /// <inheritdoc/>
+        /// <summary>Gets a value indicating whether the <see cref="StringStream"/> supports seeking.</summary>
+        // Keep this intentionally non-seekable: backward positioning requires re-running the
+        // encoder from the beginning, making repeated seeks worst-case O(N).
         public override bool CanSeek => false;
 
         /// <inheritdoc/>
         public override bool CanWrite => false;
 
         /// <inheritdoc/>
+        /// <summary>Gets the length of the stream. This property is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override long Length => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         /// <inheritdoc/>
+        /// <summary>Gets or sets the position within the current stream. This property is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override long Position
         {
             get => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
@@ -275,21 +282,33 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Sets the current position of the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         /// <inheritdoc/>
+        /// <summary>Sets the length of the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>

@@ -29,6 +29,34 @@ namespace System.Numerics
             Debug.Assert(bits.Length == value.Length + value.Length);
             Debug.Assert(!bits.ContainsAnyExcept(0u));
 
+            if (value.Length >= 4
+                && (value.Length >= 8 || value[0] == 1 || value[0] == nuint.MaxValue)
+                && IsRepeatedLimbCandidate(value)
+                && TryMultiplyRepeatedLimb(value, value, bits))
+            {
+                return;
+            }
+
+            if (nint.Size == 8
+                && value.Length >= 8
+                && IsShiftedRepeatedLimbCandidate(value)
+                && TryMultiplyShiftedRepeatedLimbOperands(value, value, bits))
+            {
+                return;
+            }
+
+            if (!value.IsEmpty && value[0] == 0)
+            {
+                int offset = value.IndexOfAnyExcept((nuint)0);
+                if (offset < 0)
+                {
+                    return;
+                }
+
+                Square(value[offset..], bits[(offset * 2)..]);
+                return;
+            }
+
             // Executes different algorithms for computing z = a * a
             // based on the actual length of a. If a is "small" enough
             // we stick to the classic "grammar-school" method; for the
@@ -163,6 +191,12 @@ namespace System.Numerics
                     {
                         UInt128 carry = 0;
                         nuint v = value[i];
+
+                        if (v == 0)
+                        {
+                            continue;
+                        }
+
                         for (int j = 0; j < i; j++)
                         {
                             UInt128 digit1 = (UInt128)(ulong)bits[i + j] + carry;
@@ -185,6 +219,12 @@ namespace System.Numerics
                     {
                         ulong carry = 0;
                         nuint v = value[i];
+
+                        if (v == 0)
+                        {
+                            continue;
+                        }
+
                         for (int j = 0; j < i; j++)
                         {
                             ulong digit1 = bits[i + j] + carry;
@@ -199,14 +239,6 @@ namespace System.Numerics
                     }
                 }
             }
-        }
-
-        public static void Multiply(ReadOnlySpan<nuint> left, nuint right, Span<nuint> bits)
-        {
-            Debug.Assert(bits.Length == left.Length + 1);
-
-            nuint carry = Mul1(bits, left, right);
-            bits[left.Length] = carry;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -227,6 +259,45 @@ namespace System.Numerics
             Debug.Assert(MultiplyToom3Threshold >= 9);
             Debug.Assert(MultiplyKaratsubaThreshold <= MultiplyToom3Threshold);
 
+            if (left.Length + right.Length >= 8 && !right.IsEmpty && (left[0] == 0 || right[0] == 0))
+            {
+                int leftOffset = left.IndexOfAnyExcept((nuint)0);
+                int rightOffset = right.IndexOfAnyExcept((nuint)0);
+
+                if (leftOffset < 0 || rightOffset < 0)
+                {
+                    return;
+                }
+
+                Multiply(left[leftOffset..], right[rightOffset..], bits[(leftOffset + rightOffset)..]);
+                return;
+            }
+
+            if (right.Length >= 4)
+            {
+                if ((IsRepeatedLimbCandidate(right)
+                        && TryMultiplyRepeatedLimb(left, right, bits))
+                    || (IsRepeatedLimbCandidate(left)
+                        && TryMultiplyRepeatedLimb(right, left, bits)))
+                {
+                    return;
+                }
+
+                if (nint.Size == 8
+                    && (IsShiftedRepeatedLimbCandidate(left) || IsShiftedRepeatedLimbCandidate(right))
+                    && TryMultiplyShiftedRepeatedLimbOperands(left, right, bits))
+                {
+                    return;
+                }
+
+                if (right.Length < MultiplyKaratsubaThreshold
+                    && right.ContainsAny((nuint)0, (nuint)1))
+                {
+                    MultiplyNaiveSparse(left, right, bits);
+                    return;
+                }
+            }
+
             // Executes different algorithms for computing z = a * b
             // based on the actual length of b. If b is "small" enough
             // we stick to the classic "grammar-school" method; for the
@@ -238,7 +309,7 @@ namespace System.Numerics
 
             if (right.Length < MultiplyKaratsubaThreshold)
             {
-                Naive(left, right, bits);
+                MultiplyNaive(left, right, bits);
             }
             else if ((left.Length + 1) >> 1 is int n && right.Length <= n)
             {
@@ -489,16 +560,18 @@ namespace System.Numerics
                 Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
                 // ... split left like a = (a_1 << n) + a_0
-                ReadOnlySpan<nuint> leftLow = left.Slice(0, n);
+                ReadOnlySpan<nuint> leftLow = left.Slice(0, n).TrimEnd((nuint)0);
                 ReadOnlySpan<nuint> leftHigh = left.Slice(n);
-                Debug.Assert(leftLow.Length >= leftHigh.Length);
 
                 // ... prepare our result array (to reuse its memory)
                 Span<nuint> bitsLow = bits.Slice(0, n + right.Length);
                 Span<nuint> bitsHigh = bits.Slice(n);
 
                 // ... compute low
-                Multiply(leftLow, right, bitsLow);
+                if (!leftLow.IsEmpty)
+                {
+                    Multiply(leftLow, right, bitsLow.Slice(0, leftLow.Length + right.Length));
+                }
 
                 int carryLength = right.Length;
                 Span<nuint> carry = BigInteger.RentedBuffer.Create(carryLength, out BigInteger.RentedBuffer carryBuffer);
@@ -513,24 +586,6 @@ namespace System.Numerics
                 AddSelf(bitsHigh, carry);
 
                 carryBuffer.Dispose();
-            }
-
-            static void Naive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
-            {
-                Debug.Assert(right.Length < MultiplyKaratsubaThreshold);
-
-                // Multiplies the bits using the "grammar-school" method.
-                // Envisioning the "rhombus" of a pen-and-paper calculation
-                // should help getting the idea of these two loops...
-                // The inner multiplication operations are safe, because
-                // z_i+j + a_j * b_i + c <= 2(2^n - 1) + (2^n - 1)^2 =
-                // = 2^(2n) - 1, where n = BitsPerLimb.
-
-                for (int i = 0; i < right.Length; i++)
-                {
-                    nuint carry = MulAdd1(bits.Slice(i), left, right[i]);
-                    bits[i + left.Length] = carry;
-                }
             }
         }
 

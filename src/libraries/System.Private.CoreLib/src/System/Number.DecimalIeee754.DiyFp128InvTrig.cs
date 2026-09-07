@@ -33,78 +33,84 @@ internal static partial class Number
 
     // INV_TRIG_CONS_BASE (dpml_inv_trig_x.h): 0, pi/4, pi/2, 3pi/4, pi. Intel spaces these entries
     // 24 bytes apart, so the packed byte offset divided by 24 selects the constant.
-    private static readonly DiyFp128[] InvTrigConstants =
-    [
-        new DiyFp128(0, UxZeroExponent, 0, 0),                      // 0
-        new DiyFp128(0, 0, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1), // pi/4
-        new DiyFp128(0, 1, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1), // pi/2
-        new DiyFp128(0, 2, 0x96CBE3F9990E91A7, 0x9394C9E8A0A5159C), // 3pi/4
-        new DiyFp128(0, 2, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1), // pi
-    ];
+    private static DiyFp128 GetInvTrigConstant(int index)
+    {
+        ReadOnlySpan<int> exponents = [UxZeroExponent, 0, 1, 2, 2];
+        ReadOnlySpan<ulong> significands =
+        [
+            0, 0,
+            0xC90FDAA22168C234, 0xC4C6628B80DC1CD1,
+            0xC90FDAA22168C234, 0xC4C6628B80DC1CD1,
+            0x96CBE3F9990E91A7, 0x9394C9E8A0A5159C,
+            0xC90FDAA22168C234, 0xC4C6628B80DC1CD1,
+        ];
 
-    private static readonly DiyFp128FixedCoefficient[] InvTrigAtanNumeratorCoefficients =
-    [
-        new(0x0000000000000000, 0x0000000000000000),
-        new(0x9B21DB1817B033DE, 0x00000000036A28B8),
-        new(0x7AF48D0CBBB9E258, 0x00000004A9D8AEAC),
-        new(0x710B595CB5F5477A, 0x000001D601B80364),
-        new(0x82FF5AD5BDC83502, 0x00005360DB2203CD),
-        new(0xA46EA356B3ACE8E0, 0x000803A15271C15D),
-        new(0x511728BC47FD897A, 0x00752012D71DF9B4),
-        new(0xB0EEBD1D38E6CCD7, 0x04261AAD0C0E0AEF),
-        new(0x715215EE2223A644, 0x178D58E7069E5E06),
-        new(0x1A5B5968DAA31B09, 0x515E68B909775969),
-        new(0xA67DE44D68DB7EF7, 0x9C53EDB8B65E0E57),
-        new(0x0000000000000000, 0x8000000000000000),
-    ];
+        return new DiyFp128(0, exponents[index], significands[index * 2], significands[(index * 2) + 1]);
+    }
 
-    private static readonly DiyFp128FixedCoefficient[] InvTrigAtanDenominatorCoefficients =
+    private static ReadOnlySpan<DiyFp128FixedCoefficient> InvTrigAtanNumeratorCoefficients => DiyFp128FixedCoefficients(
     [
-        new(0x753B0A86A07A791A, 0x0000000000060285),
-        new(0xB62B5E42F41004BB, 0x000000001A6A8474),
-        new(0x6AF09BC24E1E2DAD, 0x00000012CF340CF3),
-        new(0x49426EE8106AF1A7, 0x00000523BCE40E29),
-        new(0xD77AD56C6CCAE258, 0x0000B5F6388D7935),
-        new(0x95AA5864A5D93FD4, 0x000E856C505D9AB5),
-        new(0xF9512F8649A8F559, 0x00B744F2C988C73A),
-        new(0x247CE9CC4DDD2493, 0x05C2135495031B41),
-        new(0xC6922892F40A72FC, 0x1D8EB88DDE3BC4F4),
-        new(0x0785210E97FF604A, 0x5DAF5BD2629E79E5),
-        new(0x51288EF813862999, 0xA6FE98636108B902),
-        new(0x0000000000000000, 0x8000000000000000),
-    ];
+        0x0000000000000000, 0x0000000000000000,
+        0x9B21DB1817B033DE, 0x00000000036A28B8,
+        0x7AF48D0CBBB9E258, 0x00000004A9D8AEAC,
+        0x710B595CB5F5477A, 0x000001D601B80364,
+        0x82FF5AD5BDC83502, 0x00005360DB2203CD,
+        0xA46EA356B3ACE8E0, 0x000803A15271C15D,
+        0x511728BC47FD897A, 0x00752012D71DF9B4,
+        0xB0EEBD1D38E6CCD7, 0x04261AAD0C0E0AEF,
+        0x715215EE2223A644, 0x178D58E7069E5E06,
+        0x1A5B5968DAA31B09, 0x515E68B909775969,
+        0xA67DE44D68DB7EF7, 0x9C53EDB8B65E0E57,
+        0x0000000000000000, 0x8000000000000000,
+    ]);
 
-    private static readonly DiyFp128FixedCoefficient[] InvTrigAsinNumeratorCoefficients =
+    private static ReadOnlySpan<DiyFp128FixedCoefficient> InvTrigAtanDenominatorCoefficients => DiyFp128FixedCoefficients(
     [
-        new(0xBC844BD3285A9ADB, 0x000000000018A298),
-        new(0x24543A40FF2FC62E, 0x000000004B712F53),
-        new(0x2553512C4DB90D47, 0x0000002B42B22A11),
-        new(0x4670C8AC9560DE1D, 0x00000A0239855097),
-        new(0x022DDA0E53EF4CB8, 0x00013575BD533BC9),
-        new(0xAFC38A68688E8800, 0x00160D59ECE50095),
-        new(0x6123E0EEA5F3E527, 0x00FCC7EE91E17495),
-        new(0xFA699043FFD8CC09, 0x074FACFD5647265E),
-        new(0x7DD602B0DF4A1E6D, 0x22EDBCFCE68005C2),
-        new(0xA938FA69D688D50A, 0x67F826ED129B3E51),
-        new(0xFF93B5CB3865C5F2, 0xAF5C9B73F163DD08),
-        new(0x0000000000000000, 0x8000000000000000),
-    ];
+        0x753B0A86A07A791A, 0x0000000000060285,
+        0xB62B5E42F41004BB, 0x000000001A6A8474,
+        0x6AF09BC24E1E2DAD, 0x00000012CF340CF3,
+        0x49426EE8106AF1A7, 0x00000523BCE40E29,
+        0xD77AD56C6CCAE258, 0x0000B5F6388D7935,
+        0x95AA5864A5D93FD4, 0x000E856C505D9AB5,
+        0xF9512F8649A8F559, 0x00B744F2C988C73A,
+        0x247CE9CC4DDD2493, 0x05C2135495031B41,
+        0xC6922892F40A72FC, 0x1D8EB88DDE3BC4F4,
+        0x0785210E97FF604A, 0x5DAF5BD2629E79E5,
+        0x51288EF813862999, 0xA6FE98636108B902,
+        0x0000000000000000, 0x8000000000000000,
+    ]);
 
-    private static readonly DiyFp128FixedCoefficient[] InvTrigAsinDenominatorCoefficients =
+    private static ReadOnlySpan<DiyFp128FixedCoefficient> InvTrigAsinNumeratorCoefficients => DiyFp128FixedCoefficients(
     [
-        new(0xEDE27D48152467C1, 0x0000000000882734),
-        new(0x1D75E618BE470341, 0x00000000CA5275D0),
-        new(0x001C0AB3C7D6F6E2, 0x000000559CC8243B),
-        new(0x36449091EA1AF30D, 0x000010830F45B29D),
-        new(0x9692608B4850F9DD, 0x0001C28A726A35F0),
-        new(0x755313B950B194C6, 0x001D43C1AA0112DE),
-        new(0x555FF65FD5BD1184, 0x013820000042983F),
-        new(0xA448034F044AD977, 0x0884C1099A59728A),
-        new(0x0743CFA35361E105, 0x26CAAD31C3EC7BEC),
-        new(0x5329169C42D6FDEB, 0x6EE5F75BDBF406D1),
-        new(0x54E90B208DBB1B38, 0xB4B1F0C946B9325E),
-        new(0x0000000000000000, 0x8000000000000000),
-    ];
+        0xBC844BD3285A9ADB, 0x000000000018A298,
+        0x24543A40FF2FC62E, 0x000000004B712F53,
+        0x2553512C4DB90D47, 0x0000002B42B22A11,
+        0x4670C8AC9560DE1D, 0x00000A0239855097,
+        0x022DDA0E53EF4CB8, 0x00013575BD533BC9,
+        0xAFC38A68688E8800, 0x00160D59ECE50095,
+        0x6123E0EEA5F3E527, 0x00FCC7EE91E17495,
+        0xFA699043FFD8CC09, 0x074FACFD5647265E,
+        0x7DD602B0DF4A1E6D, 0x22EDBCFCE68005C2,
+        0xA938FA69D688D50A, 0x67F826ED129B3E51,
+        0xFF93B5CB3865C5F2, 0xAF5C9B73F163DD08,
+        0x0000000000000000, 0x8000000000000000,
+    ]);
+
+    private static ReadOnlySpan<DiyFp128FixedCoefficient> InvTrigAsinDenominatorCoefficients => DiyFp128FixedCoefficients(
+    [
+        0xEDE27D48152467C1, 0x0000000000882734,
+        0x1D75E618BE470341, 0x00000000CA5275D0,
+        0x001C0AB3C7D6F6E2, 0x000000559CC8243B,
+        0x36449091EA1AF30D, 0x000010830F45B29D,
+        0x9692608B4850F9DD, 0x0001C28A726A35F0,
+        0x755313B950B194C6, 0x001D43C1AA0112DE,
+        0x555FF65FD5BD1184, 0x013820000042983F,
+        0xA448034F044AD977, 0x0884C1099A59728A,
+        0x0743CFA35361E105, 0x26CAAD31C3EC7BEC,
+        0x5329169C42D6FDEB, 0x6EE5F75BDBF406D1,
+        0x54E90B208DBB1B38, 0xB4B1F0C946B9325E,
+        0x0000000000000000, 0x8000000000000000,
+    ]);
 
     // UX_ATAN2. When haveX is false this is the single-argument atan (Intel's null x pointer, aux_x = 1).
     private static DiyFp128 DiyFp128Atan2(DiyFp128 y, DiyFp128 x, bool haveX)
@@ -190,7 +196,7 @@ internal static partial class Number
             int constantOffset = (int)((map >> index) & (0xFL << 3));
             DiyFp128Normalize(ref value);
             DiyFp128 sum = default;
-            DiyFp128AddSub(InvTrigConstants[constantOffset / 24], value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
+            DiyFp128AddSub(GetInvTrigConstant(constantOffset / 24), value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
             value = sum;
         }
 
@@ -242,7 +248,7 @@ internal static partial class Number
         value._exponent += exponentIncrement;
 
         DiyFp128 sum = default;
-        DiyFp128AddSub(InvTrigConstants[(mapInfo & 0xF0) / 24], value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
+        DiyFp128AddSub(GetInvTrigConstant((mapInfo & 0xF0) / 24), value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
         value = sum;
 
         value._sign = ((mapInfo & 4) != 0) ? UxSignBit : 0;

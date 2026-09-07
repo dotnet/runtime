@@ -445,7 +445,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextID;
@@ -474,7 +473,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextFatID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextFatID;

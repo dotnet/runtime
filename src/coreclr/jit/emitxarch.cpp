@@ -17,6 +17,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(TARGET_XARCH)
 
+#include <inttypes.h>
+
 /*****************************************************************************/
 /*****************************************************************************/
 
@@ -281,7 +283,7 @@ bool emitter::HasRex2Encoding(instruction ins)
 bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Has_NDD) != 0;
+    return (flags & INS_FLAGS_HasNDD) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -296,7 +298,7 @@ bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 bool emitter::IsApxNfCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Has_NF) != 0;
+    return (flags & INS_FLAGS_HasNF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -393,7 +395,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         }
 
         insFlags flags = CodeGenInterface::instInfo[ins];
-        return ((flags & INS_FLAGS_APX_EVEX_Mask) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
+        return ((flags & INS_FLAGS_ApxEvexMask) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
@@ -417,7 +419,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 
     // APX-only instructions and instructions with NDD/NF support
     // can be EVEX-encoded when promoted EVEX encoding is available.
-    if ((flags & INS_FLAGS_APX_EVEX_Mask) != 0)
+    if ((flags & INS_FLAGS_ApxEvexMask) != 0)
     {
         return UsePromotedEVEXEncoding();
     }
@@ -553,7 +555,7 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_APX_EVEX_Mask) != 0;
+    return (flags & INS_FLAGS_ApxEvexMask) != 0;
 #else // !TARGET_AMD64
     return false;
 #endif
@@ -708,7 +710,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_IsDstDstSrcAVXInstruction) != 0;
+    return (flags & INS_FLAGS_IsDstDstSrcAVXInstruction) != 0;
 }
 
 // Returns true if the AVX instruction requires 3 operands that duplicate the source
@@ -721,7 +723,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_IsDstSrcSrcAVXInstruction) != 0;
+    return (flags & INS_FLAGS_IsDstSrcSrcAVXInstruction) != 0;
 }
 
 bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
@@ -732,7 +734,7 @@ bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
+    return (flags & INS_FLAGS_Is3OperandInstructionMask) != 0;
 }
 
 // Returns true if the AVX instruction has op1/op2 being commutative
@@ -744,7 +746,7 @@ bool emitter::IsAvxCommutative(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_IsAvxCommutative) != 0;
+    return (flags & INS_FLAGS_IsAvxCommutative) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -765,7 +767,7 @@ bool emitter::IsAvxCommutative(instruction ins) const
 bool emitter::HasRegularWideForm(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_Has_Wbit) != 0;
+    return (flags & INS_FLAGS_HasWBit) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -785,7 +787,7 @@ bool emitter::HasRegularWideForm(instruction ins)
 bool emitter::HasRegularWideImmediateForm(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_Has_Sbit) != 0;
+    return (flags & INS_FLAGS_HasSBit) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -2325,7 +2327,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             // (ADD, SUB, IMUL, INC, DEC, ...), all of which move to Map 4 under EVEX.
             //
             // VEX- and EVEX-origin instructions that are merely APX-promoted (e.g. BLSR with NF via
-            // INS_Flags_Has_NF) keep their original map (map 2 for 0F38, etc.); their mm bits are
+            // INS_FLAGS_HasNF) keep their original map (map 2 for 0F38, etc.); their mm bits are
             // written later by emitExtractEvexPrefix from the opcode's leading bytes. Applying MAP4
             // to those instructions would merge mmm[2]=1 with mm=0b10 from 0F38 extraction,
             // producing mmm=0b110 (map 6) instead of the correct 0b010 (map 2).
@@ -11806,16 +11808,16 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
         if (offs)
         {
-            printf("%+Id", offs);
+            printf("%+zd", (ssize_t)offs);
         }
     }
     else
     {
-        printf("classVar[%#p]", (void*)m_compiler->dspPtr(fldHnd));
+        printf("classVar[%p]", (void*)m_compiler->dspPtr(fldHnd));
 
         if (offs)
         {
-            printf("%+Id", offs);
+            printf("%+zd", (ssize_t)offs);
         }
     }
 
@@ -11828,7 +11830,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
         printf("'%s", m_compiler->eeGetFieldName(fldHnd, true, buffer, sizeof(buffer)));
         if (offs)
         {
-            printf("%+Id", offs);
+            printf("%+zd", offs);
         }
         printf("'");
     }
@@ -12198,7 +12200,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
 
     ssize_t baseSize   = GetInputSizeInBytes(id);
     ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id, /* ignoreEmbeddedBroadcast */ true);
-    printf(" {1to%d}", vectorSize / baseSize);
+    printf(" {1to%zu}", (size_t)(vectorSize / baseSize));
 }
 
 // emitDispEmbRounding: Display the tag where embedded rounding is activated
@@ -12656,7 +12658,7 @@ void emitter::emitDispIns(
                 }
             }
 
-            printf(sstr);
+            printf("%s", sstr);
             emitDispAddrMode(id);
             emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -13496,7 +13498,7 @@ void emitter::emitDispIns(
                 }
             }
 
-            printf(sstr);
+            printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbMasking(id);
@@ -13737,7 +13739,7 @@ void emitter::emitDispIns(
     if (sz != 0 && sz != id->idCodeSize() && (!asmfm || m_compiler->verbose))
     {
         // Code size in the instrDesc is different from the actual code size we've been given!
-        printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
+        printf(" (ECS:%d, ACS:%zu)", id->idCodeSize(), sz);
     }
 #endif
 
@@ -17452,9 +17454,11 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             {
                 printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
-            printf("[3] Jump  block is at %08X - %02X = %08X\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
-            printf("[3] Jump        is at %08X - %02X = %08X\n", srcOffs, emitOffsAdj, srcOffs - emitOffsAdj);
-            printf("[3] Label block is at %08X - %02X = %08X\n", dstOffs, emitOffsAdj, dstOffs - emitOffsAdj);
+            printf("[3] Jump  block is at %08zX - %02X = %08zX\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
+            printf("[3] Jump        is at %08zX - %02X = %08zX\n", (size_t)srcOffs, emitOffsAdj,
+                   (size_t)(srcOffs - emitOffsAdj));
+            printf("[3] Label block is at %08zX - %02X = %08zX\n", (size_t)dstOffs, emitOffsAdj,
+                   (size_t)(dstOffs - emitOffsAdj));
         }
 #endif
 
@@ -17495,9 +17499,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             {
                 printf("[4] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
-            printf("[4] Jump  block is at %08X\n", blkOffs);
-            printf("[4] Jump        is at %08X\n", srcOffs);
-            printf("[4] Label block is at %08X - %02X = %08X\n", dstOffs + emitOffsAdj, emitOffsAdj, dstOffs);
+            printf("[4] Jump  block is at %08zX\n", blkOffs);
+            printf("[4] Jump        is at %08zX\n", (size_t)srcOffs);
+            printf("[4] Label block is at %08zX - %02X = %08zX\n", (size_t)(dstOffs + emitOffsAdj), emitOffsAdj,
+                   (size_t)dstOffs);
         }
 #endif
 
@@ -17519,9 +17524,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = id->idjShort ? ssz : lsz;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
-               distVal);
+        printf("; %s jump [%p/%03u] from %0*zX to %0*zX: dist = 0x%08zX\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+               m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize,
+               (size_t)dstOffs, (size_t)distVal);
     }
 #endif
 
@@ -17544,7 +17549,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             if (INDEBUG(m_compiler->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
                                                 INTERESTING_JUMP_NUM == 0))
             {
-                printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
+                printf("; NOTE: size of jump [%p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }
 #endif
         }

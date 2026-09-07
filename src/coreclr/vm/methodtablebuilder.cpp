@@ -22,7 +22,6 @@ int __cdecl compareCGCDescSeries(const void *arg1, const void *arg2)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     CGCDescSeries* gcInfo1 = (CGCDescSeries*) arg1;
     CGCDescSeries* gcInfo2 = (CGCDescSeries*) arg2;
@@ -676,7 +675,6 @@ MethodTableBuilder::BuildMethodTableThrowException(
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -7092,8 +7090,8 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
                                                    pMTItf->GetModule(),
                                                    mdTok))
             {
-                LOG((LF_CLASSLOADER, LL_INFO1000,
-                     "BADCONSTRAINTS on interface method implementation: %x\n", pTargetMD));
+                 LOG((LF_CLASSLOADER, LL_INFO1000,
+                     "BADCONSTRAINTS on interface method implementation: %p\n", pTargetMD));
                 // This exception will be due to an implicit implementation, since explicit errors
                 // will be detected in MethodImplCompareSignatures (for now, anyway).
                 CONSISTENCY_CHECK(!it.IsMethodImpl());
@@ -7373,6 +7371,20 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
         return TRUE;
     }
 #endif
+
+#ifdef FEATURE_COMINTEROP
+    if (pMDMethod->GetMethodType() == mcComInterop)
+    {
+        // Any of these methods may end up being dispatched as a CLR->COM call, in which case they
+        // are backed by transient IL that gets jitted onto the method itself. Since these methods
+        // always require a precode (see MethodDesc::RequiresStableEntryPointCore), the native code
+        // slot is needed to hold the native code entry point.
+        //
+        // Note that when FEATURE_COMINTEROP is disabled these methods are classified as mcIL and so
+        // they already get a native code slot from the tiered compilation check above.
+        return TRUE;
+    }
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_DEFAULT_INTERFACES
     if (IsInterface())
@@ -9005,7 +9017,6 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
         // We should only be calling this while this class is being built.
     _ASSERTE(GetHalfBakedMethodTable() == 0);

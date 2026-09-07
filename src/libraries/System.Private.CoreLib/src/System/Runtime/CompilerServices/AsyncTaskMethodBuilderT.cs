@@ -337,6 +337,7 @@ namespace System.Runtime.CompilerServices
                 base.InstrumentedMoveNext(threadPoolThread, flags);
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             [StackTraceHidden]
             // Diagnostic tooling depends on this name when classifying async callstack frames.
             private unsafe void MoveNextAsDispatcher(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)

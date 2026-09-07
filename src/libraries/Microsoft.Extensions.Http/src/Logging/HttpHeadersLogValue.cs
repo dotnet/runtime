@@ -11,6 +11,8 @@ namespace Microsoft.Extensions.Http.Logging
 {
     internal sealed class HttpHeadersLogValue : IReadOnlyList<KeyValuePair<string, object>>
     {
+        private const string RedactedValue = "*";
+
         private readonly Kind _kind;
         private readonly Func<string, bool> _shouldRedactHeaderValue;
 
@@ -36,19 +38,13 @@ namespace Microsoft.Extensions.Http.Logging
             {
                 if (_values == null)
                 {
-                    var values = new List<KeyValuePair<string, object>>();
+                    var values = new List<KeyValuePair<string, object>>(GetHeaderCount(Headers) + GetHeaderCount(ContentHeaders));
 
-                    foreach (KeyValuePair<string, IEnumerable<string>> kvp in Headers)
-                    {
-                        values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
-                    }
+                    AddHeaders(values, Headers);
 
                     if (ContentHeaders != null)
                     {
-                        foreach (KeyValuePair<string, IEnumerable<string>> kvp in ContentHeaders)
-                        {
-                            values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
-                        }
+                        AddHeaders(values, ContentHeaders);
                     }
 
                     _values = values;
@@ -73,6 +69,36 @@ namespace Microsoft.Extensions.Http.Logging
 
         public int Count => Values.Count;
 
+        // Enumerate the headers without triggering validation/parsing of the values, so that logging
+        // doesn't alter how the headers are subsequently serialized on the wire.
+        private void AddHeaders(List<KeyValuePair<string, object>> values, HttpHeaders headers)
+        {
+#if NET
+            foreach (KeyValuePair<string, HeaderStringValues> kvp in headers.NonValidated)
+#else
+            foreach (KeyValuePair<string, IEnumerable<string>> kvp in headers)
+#endif
+            {
+                string value = _shouldRedactHeaderValue(kvp.Key)
+                    ? RedactedValue
+#if NET
+                    : kvp.Value.ToString();
+#else
+                    : string.Join(", ", kvp.Value);
+#endif
+                values.Add(new KeyValuePair<string, object>(kvp.Key, value));
+            }
+        }
+
+        private static int GetHeaderCount(HttpHeaders? headers)
+        {
+#if NET
+            return headers?.NonValidated.Count ?? 0;
+#else
+            return 0;
+#endif
+        }
+
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
             return Values.GetEnumerator();
@@ -95,29 +121,7 @@ namespace Microsoft.Extensions.Http.Logging
                     KeyValuePair<string, object> kvp = Values[i];
                     builder.Append(kvp.Key);
                     builder.Append(": ");
-
-                    if (_shouldRedactHeaderValue(kvp.Key))
-                    {
-                        builder.Append('*');
-                        builder.AppendLine();
-                    }
-                    else
-                    {
-#if NET
-                        builder.AppendJoin(", ", (IEnumerable<object>)kvp.Value);
-                        builder.AppendLine();
-#else
-                        foreach (object value in (IEnumerable<object>)kvp.Value)
-                        {
-                            builder.Append(value);
-                            builder.Append(", ");
-                        }
-
-                        // Remove the extra ', '
-                        builder.Remove(builder.Length - 2, 2);
-                        builder.AppendLine();
-#endif
-                    }
+                    builder.AppendLine((string)kvp.Value);
                 }
 
                 _formatted = builder.ToString();

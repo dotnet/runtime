@@ -677,13 +677,13 @@ int minipal_getcpufeatures(void)
 #endif // HOST_UNIX
 
 #if defined(HOST_WINDOWS)
-    if (!IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE) ||
-        !IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
+    if (!IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE))
     {
         // One of the baseline ISAs is not supported
         result |= IntrinsicConstants_Invalid;
     }
-    else
+
+    if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Atomics;
     }

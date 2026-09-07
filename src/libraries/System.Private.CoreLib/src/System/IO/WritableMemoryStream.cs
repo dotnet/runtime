@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>
-    /// Provides a seekable, writable <see cref="Stream"/> over a <see cref="Memory{Byte}"/>.
+    /// Provides a seekable <see cref="Stream"/> for reading from and writing to a <see cref="Memory{Byte}"/>.
     /// </summary>
     public sealed class WritableMemoryStream : Stream
     {
@@ -20,7 +20,11 @@ namespace System.IO
         /// <summary>
         /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
         /// </summary>
-        /// <param name="buffer">The <see cref="Memory{Byte}"/> to wrap.</param>
+        /// <param name="buffer">The memory region from which to create the stream.</param>
+        /// <remarks>
+        /// The existing contents of <paramref name="buffer"/> are immediately readable.
+        /// Clear rented or reused memory before constructing the stream if its existing contents should not be exposed.
+        /// </remarks>
         public WritableMemoryStream(Memory<byte> buffer)
         {
             _memory = buffer;
@@ -213,6 +217,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Writes a byte to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the byte would exceed the fixed capacity of the stream.</exception>
         public override void WriteByte(byte value)
         {
             EnsureNotClosed();
@@ -232,6 +238,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -239,6 +247,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             EnsureNotClosed();
@@ -265,6 +275,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -280,6 +292,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             EnsureNotClosed();
@@ -294,6 +308,10 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Sets the length of the current stream to the specified value.</summary>
+        /// <param name="value">The length to set.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is negative.</exception>
+        /// <exception cref="NotSupportedException">The current stream is not resizable and <paramref name="value"/> is larger than the current capacity.</exception>
         public override void SetLength(long value)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);

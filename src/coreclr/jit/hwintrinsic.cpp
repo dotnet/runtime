@@ -2785,6 +2785,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_XARCH
 
         userCall->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+        gtUpdateNodeSideEffects(retNode);
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
@@ -3226,7 +3227,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_AsVector512:
         {
             assert(sig->numArgs == 1);
-            uint32_t vectorTByteLength = getVectorTByteLength();
+            uint32_t vectorTByteLength = getCompileTimeVectorTByteLength();
 
             if (vectorTByteLength == 0)
             {

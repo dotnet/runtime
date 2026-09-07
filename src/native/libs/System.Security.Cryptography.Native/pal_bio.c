@@ -58,14 +58,6 @@ int32_t CryptoNative_GetMemoryBioSize(BIO* bio)
     return (int32_t)ret;
 }
 
-int32_t CryptoNative_BioCtrlPending(BIO* bio)
-{
-    // No impact on the error queue.
-    size_t result = BIO_ctrl_pending(bio);
-    assert(result <= INT32_MAX);
-    return (int32_t)result;
-}
-
 /*
  * Managed-span BIO
  * ----------------

@@ -122,8 +122,6 @@ namespace
             case DynamicMethodDesc::StubPInvokeCalli:
             case DynamicMethodDesc::StubPInvokeVarArg:      return "IL_STUB_PInvoke";
             case DynamicMethodDesc::StubReversePInvoke:     return "IL_STUB_ReversePInvoke";
-            case DynamicMethodDesc::StubCLRToCOMInterop:    return "IL_STUB_CLRtoCOM";
-            case DynamicMethodDesc::StubCLRToCOMEvent:      return "IL_STUB_CLRtoCOM_Event";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
@@ -262,19 +260,12 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
+        // Forward CLR->COM calls are compiled as transient IL on the CLR->COM MethodDesc itself,
+        // so they never get an IL stub MethodDesc of their own.
+        _ASSERTE(SF_IsReverseStub(dwStubFlags));
+
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
-        if (SF_IsReverseStub(dwStubFlags))
-        {
-            pMD->SetILStubType(DynamicMethodDesc::StubCOMToCLRInterop);
-        }
-        else if (SF_IsCOMEventCallStub(dwStubFlags))
-        {
-            pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMEvent);
-        }
-        else
-        {
-            pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMInterop);
-        }
+        pMD->SetILStubType(DynamicMethodDesc::StubCOMToCLRInterop);
     }
     else
 #endif
@@ -452,7 +443,6 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -666,7 +656,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 #ifdef _DEBUG
     CQuickBytes qbManaged;
     PrettyPrintSig(pSig,  cbSig, "*",  &qbManaged, pSigModule->GetMDImport(), NULL);
-    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc %s StubMD: %p module: %p blob: %p sig: %s\n", pszResult, pMD, pSigModule, pBlob, qbManaged.Ptr()));
+    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc %s StubMD: %p module: %p blob: %p sig: %s\n", pszResult, pMD, pSigModule, pBlob, (char*)qbManaged.Ptr()));
 #endif // _DEBUG
 #endif // DACCESS_COMPILE
 

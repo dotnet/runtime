@@ -128,7 +128,6 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
         GC_NOTRIGGER; // Caller does not protect object references
         MODE_COOPERATIVE;
         PRECONDITION(!th.IsNull());
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -275,7 +274,6 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
         MODE_COOPERATIVE;
         PRECONDITION(srcObj != NULL);
         PRECONDITION(CheckPointer(pDst));
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
     CreatePrimitiveValue(dstType, srcType, srcObj->UnBox(), srcObj->GetMethodTable(), pDst);
@@ -292,7 +290,6 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pDst));
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -451,7 +448,6 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
         PRECONDITION(!th.IsNull());
         PRECONDITION(CheckPointer(value));
         PRECONDITION(IsProtectedByGCFrame (value));
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -535,7 +531,6 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
         MODE_COOPERATIVE;
         PRECONDITION(!th.IsNull());
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -591,7 +586,6 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
         PRECONDITION(IsProtectedByGCFrame (except));
 
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -631,7 +625,6 @@ void InvokeUtil::ValidateObjectTarget(FieldDesc *pField, TypeHandle enclosingTyp
         PRECONDITION(!enclosingType.IsNull() || pField->IsStatic());
         PRECONDITION(CheckPointer(target));
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -677,7 +670,6 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         PRECONDITION(IsProtectedByGCFrame (valueObj));
         PRECONDITION(declaringType.IsNull () || !declaringType.IsTypeDesc());
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -898,7 +890,6 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         PRECONDITION(CheckPointer(target));
         PRECONDITION(declaringType.IsNull () || !declaringType.IsTypeDesc());
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
