@@ -202,6 +202,11 @@ namespace System.Net.Mime
                 // treat it as not pre-encoded so it gets properly quoted/escaped below.
                 encoding = null;
             }
+            catch (ArgumentException)
+            {
+                // Unsupported charset; treat it as not pre-encoded so it gets properly quoted/escaped below.
+                encoding = null;
+            }
 
             if (encoding != null) // Manually encoded elsewhere, pass through
             {
