@@ -310,7 +310,12 @@ public class ConvertDllsToWebcil : Task
         try
         {
             using FileStream stream = File.OpenRead(path);
-            if (path.EndsWith(Utils.WebcilInWasmExtension, StringComparison.OrdinalIgnoreCase))
+            // Detect webcil-in-wasm by content (the '\0asm' magic), not by extension: a prebuilt R2R image
+            // may still be named *.dll before the rename lands everywhere, and a PEReader would throw on it,
+            // returning null and silently bypassing the version-mismatch guard.
+            // TODO: once every R2R image is emitted as *.wasm (see 33ecc5fd2e3 / dotnet/runtime#121257),
+            // drop the content sniff and key on Utils.WebcilInWasmExtension again.
+            if (IsWebcilInWasm(stream))
             {
                 using var webcilReader = new WebcilReader(stream, path);
                 return webcilReader.GetMetadataReader().GetAssemblyDefinition().Version;
@@ -322,6 +327,30 @@ public class ConvertDllsToWebcil : Task
         catch
         {
             return null;
+        }
+    }
+
+    // The WebAssembly module magic "\0asm" (0x00 0x61 0x73 0x6D). Leaves the stream position unchanged.
+    private static bool IsWebcilInWasm(Stream stream)
+    {
+        long position = stream.Position;
+        try
+        {
+            byte[] magic = new byte[4];
+            int read = 0;
+            while (read < magic.Length)
+            {
+                int n = stream.Read(magic, read, magic.Length - read);
+                if (n == 0)
+                    return false;
+                read += n;
+            }
+
+            return magic[0] == 0x00 && magic[1] == 0x61 && magic[2] == 0x73 && magic[3] == 0x6D;
+        }
+        finally
+        {
+            stream.Position = position;
         }
     }
 }
