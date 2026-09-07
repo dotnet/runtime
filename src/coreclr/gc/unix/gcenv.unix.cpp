@@ -1028,23 +1028,61 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     return GetVirtualMemoryMaxAddress();
 }
 
-// Return the maximum address of the of the virtual address space of this process.
+// Return the maximum address of the virtual address space of this process.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
 size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
 {
 #ifdef HOST_64BIT
-#ifndef TARGET_RISCV64
+#ifdef TARGET_RISCV64
+    // Run-time lookup isolated for RISC-V 64-bit to handle Sv39/Sv48/Sv57 MMU modes.
+    static volatile size_t max_address = 0;
+    if (max_address == 0)
+    {
+        size_t discovered = 0;
+
+        // 1. Probe for Sv57 capability (64 PB user ceiling).
+        // Per Linux kernel spec, the opt-in hint address must be >= 1ULL << 56.
+        void* ptr57 = mmap((void*)(1ULL << 56), 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+        if (ptr57 != MAP_FAILED)
+        {
+            munmap(ptr57, 4096);
+            discovered = (1ULL << 56); // Sv57 max user address (64 PB)
+        }
+
+        // 2. Probe for Sv48 capability (128 TB user ceiling) if Sv57 failed.
+        if (discovered == 0)
+        {
+            // Per Linux kernel spec, the opt-in hint address must be >= 1ULL << 47.
+            void* ptr48 = mmap((void*)(1ULL << 47), 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+            if (ptr48 != MAP_FAILED)
+            {
+                munmap(ptr48, 4096);
+                discovered = (1ULL << 47); // Sv48 max user address (128 TB)
+            }
+        }
+
+        // 3. Fallback to Sv39 if both high address capabilities failed.
+        if (discovered == 0)
+        {
+            void* ptr39 = mmap(NULL, 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+            if (ptr39 != MAP_FAILED)
+            {
+                munmap(ptr39, 4096);
+                discovered = (1ULL << 38); // Sv39 max user address (256 GB)
+            }
+        }
+
+        max_address = discovered;
+    }
+    return max_address;
+#else // TARGET_RISCV64
     // There is no API to get the total virtual address space size on
     // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
-#else // TARGET_RISCV64
-    // For RISC-V Linux Kernel SV39 virtual memory limit is 256gb.
-    static const uint64_t _256GB = (1ull << 38);
-    return _256GB;
 #endif // TARGET_RISCV64
 #else
     return (size_t)-1;
