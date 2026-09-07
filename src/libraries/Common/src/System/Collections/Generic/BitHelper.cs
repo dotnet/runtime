@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System.Collections.Generic
 {
@@ -33,6 +34,26 @@ namespace System.Collections.Generic
             }
         }
 
+        internal bool TryMarkBit(int bitPosition)
+        {
+            Debug.Assert(bitPosition >= 0);
+
+            uint bitArrayIndex = (uint)bitPosition / IntSize;
+
+            // Workaround for https://github.com/dotnet/runtime/issues/72004
+            Span<int> span = _span;
+            if (bitArrayIndex < (uint)span.Length)
+            {
+                int bits = span[(int)bitArrayIndex];
+                if ((bits & (1 << ((int)((uint)bitPosition % IntSize)))) == 0)
+                {
+                    span[(int)bitArrayIndex] = bits | (1 << ((int)((uint)bitPosition % IntSize)));
+                    return true;
+                }
+            }
+            return false;
+        }
+
         internal bool IsMarked(int bitPosition)
         {
             Debug.Assert(bitPosition >= 0);
@@ -46,7 +67,26 @@ namespace System.Collections.Generic
                 (span[(int)bitArrayIndex] & (1 << ((int)((uint)bitPosition % IntSize)))) != 0;
         }
 
+        internal bool IsUnmarked(int bitPosition)
+        {
+            Debug.Assert(bitPosition >= 0);
+
+            uint bitArrayIndex = (uint)bitPosition / IntSize;
+
+            // Workaround for https://github.com/dotnet/runtime/issues/72004
+            ReadOnlySpan<int> span = _span;
+            return
+                bitArrayIndex < (uint)span.Length &&
+                (span[(int)bitArrayIndex] & (1 << ((int)((uint)bitPosition % IntSize)))) == 0;
+        }
+
+        internal int FindFirstUnmarked()
+        {
+            int i = _span.IndexOfAnyExcept(~0);
+            return i < 0 ? -1 : i * IntSize + BitOperations.TrailingZeroCount(~_span[i]);
+        }
+
         /// <summary>How many ints must be allocated to represent n bits. Returns (n+31)/32, but avoids overflow.</summary>
-        internal static int ToIntArrayLength(int n) => n > 0 ? ((n - 1) / IntSize + 1) : 0;
+        internal static int ToIntArrayLength(int n) => (int)(((uint)n + 31) / IntSize);
     }
 }
