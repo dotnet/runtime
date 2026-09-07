@@ -79,18 +79,36 @@ Copyright (c) .NET Foundation. All rights reserved.
        _WasmFrameworkCopyToOutputDirectory, because they are served from bin/ by a plain file server rather
        than the static web assets middleware), that untrimmed IL set lands in the served _framework beside the
        outer build's trimmed R2R set: two fingerprinted copies of every trimmed assembly and a mixed version
-       bubble the runtime MVID check rejects. Only the outer build should populate the served directory. -->
+       bubble the runtime MVID check rejects. Only the outer build should populate the served directory.
+       The property alone is not enough: the xharness runner set injected by
+       AddTestRunnersToReferenceCopyLocalPaths carries its own CopyToOutputDirectory, which
+       DefineStaticWebAssets prefers over its parameter, so those untrimmed copies would still be staged
+       (observed as 5 duplicate runner assemblies beside their trimmed counterparts). Hence the item metadata
+       too - _WasmCoreClrRestoreCopyToOutputDirectory undoes it on the way back out. -->
   <Target Name="_WasmCoreClrSuppressNestedPublishAssetCopy"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
           BeforeTargets="_ComputeWasmBuildCandidates">
     <PropertyGroup>
       <_WasmFrameworkCopyToOutputDirectory>Never</_WasmFrameworkCopyToOutputDirectory>
     </PropertyGroup>
-    <!-- Items injected after ILLink carry their own CopyToOutputDirectory (the xharness runner set added by
-         AddTestRunnersToReferenceCopyLocalPaths from $(WasmTestRunnerDir)), which the property above cannot
-         override, so their untrimmed copies would still shadow the trimmed closure in the served bundle. -->
     <ItemGroup>
       <ReferenceCopyLocalPaths CopyToOutputDirectory="Never" />
+    </ItemGroup>
+  </Target>
+
+  <!-- CopyToOutputDirectory set by the target above is STICKY: a native relink (or AOT) returns the nested
+       publish's assembly set to the outer build, metadata included, and DefineStaticWebAssets prefers per-item
+       metadata over its parameter. The outer build would then define those assets in the manifest yet never
+       copy them, so the boot config requests a fingerprint that is not on disk and startup fails on a 500.
+       Restore the outer build's own value before its assets are computed. -->
+  <Target Name="_WasmCoreClrRestoreCopyToOutputDirectory"
+          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          BeforeTargets="_ComputeWasmBuildCandidates">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Condition="'%(ReferenceCopyLocalPaths.CopyToOutputDirectory)' == 'Never'"
+                               CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
+      <WasmAssembliesFinal Condition="'%(WasmAssembliesFinal.CopyToOutputDirectory)' == 'Never'"
+                           CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
     </ItemGroup>
   </Target>
 
