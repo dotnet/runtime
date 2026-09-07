@@ -4,7 +4,7 @@
 
 System.Net.ServerSentEvents provides the `SseParser` type, which exposes factory methods for creating parsers for the events in a stream of server-sent events (SSE).
 
-When parsing data from untrusted sources, configure `SseParserOptions.MaxBufferSize` to a bounded value so the parser does not buffer arbitrarily large event payloads.
+When parsing data from untrusted sources, configure `SseParserOptions.MaxBufferSize` to a bounded value so the parser does not buffer arbitrarily large event payloads. If multiple parsers are running in parallel, keep the limit low enough to maintain an acceptable total memory footprint.
 
 ## Key Features
 
@@ -34,6 +34,24 @@ MemoryStream stream = new(data);
 foreach (SseItem<Book> item in SseParser.Create(stream, (eventType, bytes) => JsonSerializer.Deserialize<Book>(bytes)).Enumerate())
 {
     Console.WriteLine(item.Data.Author);
+}
+```
+
+Limit the parser to 64 MiB to protect against untrusted or oversized input and to keep multiple parallel parsers from growing memory usage unexpectedly:
+
+```csharp
+using System.Net.ServerSentEvents;
+using System.Text;
+
+using Stream stream = await client.GetStreamAsync("https://localhost:12345/sse");
+SseParserOptions<string> options = new(static (_, bytes) => Encoding.UTF8.GetString(bytes))
+{
+    MaxBufferSize = 64 * 1024 * 1024
+};
+
+await foreach (SseItem<string> item in SseParser.Create(stream, options).EnumerateAsync())
+{
+    Console.WriteLine(item.Data);
 }
 ```
 

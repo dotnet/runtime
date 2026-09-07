@@ -26,6 +26,7 @@ namespace System.Net.ServerSentEvents
         /// The limit is enforced on a best-effort basis. The permitted memory consumption may be several times higher than the configured limit.
         /// Values smaller than the internal minimum buffer size are treated as that minimum.
         /// When the stream may be untrusted, set this property to a bounded value to avoid buffering arbitrarily large event payloads.
+        /// If multiple parsers are used in parallel, consider reducing this value to keep the aggregate memory usage within an acceptable bound.
         /// </remarks>
         public int MaxBufferSize
         {

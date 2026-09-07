@@ -31,7 +31,10 @@ namespace System.Net.ServerSentEvents
         /// <param name="itemParser">The parser to use to transform each payload of bytes into a data element.</param>
         /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="itemParser"/> is null.</exception>
-        /// <remarks>When parsing data from an untrusted source, configure <see cref="SseParserOptions{T}.MaxBufferSize"/> to a bounded value to limit how much data the parser may buffer.</remarks>
+        /// <remarks>
+        /// When parsing data from an untrusted source, configure <see cref="SseParserOptions{T}.MaxBufferSize"/> to a bounded value to limit how much data the parser may buffer.
+        /// If multiple parsers are created and run in parallel, choose a limit that keeps the combined memory usage acceptable.
+        /// </remarks>
         public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser) =>
             Create(sseStream, new SseParserOptions<T>(itemParser));
 
