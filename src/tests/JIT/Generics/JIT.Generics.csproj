@@ -4,6 +4,9 @@
     <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
+    <MergedWrapperProjectReference Include="Coverage\chaos65204782cs.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Arrays\ConstructedTypes\MultiDim\class01.cs" />
     <Compile Include="Arrays\ConstructedTypes\MultiDim\class01_Instance.cs" />
     <Compile Include="Arrays\ConstructedTypes\MultiDim\class01_static.cs" />
@@ -32,7 +35,6 @@
     <Compile Include="Conversions\Reference\NonGenToGen03.cs" />
     <Compile Include="Coverage\chaos55915408cs.cs" />
     <Compile Include="Coverage\chaos56200037cs.cs" />
-    <Compile Include="Coverage\chaos65204782cs.cs" />
     <Compile Include="Exceptions\general_class_instance01.cs" />
     <Compile Include="Exceptions\general_class_static01.cs" />
     <Compile Include="Exceptions\general_struct_instance01.cs" />

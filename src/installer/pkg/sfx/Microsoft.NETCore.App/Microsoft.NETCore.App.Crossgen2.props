@@ -18,6 +18,10 @@
       Include="$(CrossgenPublishProject)"
       OutputItemType="_RawCrossgenPublishFiles"
       ReferenceOutputAssembly="false" />
+
+    <!-- Lets a workload acquire this pack and find the tool with an MSBuild Sdk import. -->
+    <FilesToPackage Include="$(MSBuildThisFileDirectory)Crossgen2\Sdk.props"
+                    TargetPath="Sdk/" />
   </ItemGroup>
 
   <Target Name="PublishCrossgen"

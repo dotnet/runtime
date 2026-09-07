@@ -7427,6 +7427,12 @@ struct GenTreeVecCon : public GenTree
 
     bool IsNegativeZero(var_types simdBaseType) const;
 
+    bool ContainsNaN(var_types simdBaseType) const;
+
+    bool ContainsNegativeZero(var_types simdBaseType) const;
+
+    bool ContainsPositiveZero(var_types simdBaseType) const;
+
     bool IsZero() const
     {
         switch (gtType)
