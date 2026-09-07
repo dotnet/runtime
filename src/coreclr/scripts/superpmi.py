@@ -1765,10 +1765,12 @@ class SuperPMIReplay:
                 for o in self.coreclr_args.jitoption:
                     repro_flags += "-jitoption", o
 
-            common_flags += repro_flags
-
             if self.coreclr_args.no_ir_checks:
-                common_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+                # This changes what the JIT does, so it has to be part of the repro command
+                # line as well.
+                repro_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+
+            common_flags += repro_flags
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
             #
