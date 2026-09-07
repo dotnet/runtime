@@ -6,6 +6,7 @@
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    <PublishTrimmed Condition="'$(TargetOS)' == 'browser'">false</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
