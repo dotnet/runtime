@@ -94,6 +94,45 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <!-- PublishTrimmed selects the staged closure (untrimmed pack vs linker output) exactly like
+       PublishReadyToRun selects its flavour, so it belongs in the webcil staging stamp too. -->
+  <ItemGroup>
+    <_WasmWebcilStampProperty Include="PublishTrimmed" />
+  </ItemGroup>
+
+  <!-- The webcil stamp only forces RE-CONVERSION; it never removes what the previous mode left behind.
+       Flipping PublishReadyToRun or PublishTrimmed changes what every derived output should be (pack R2R vs
+       per-app R2R vs plain IL, untrimmed pack vs trimmed closure), yet those outputs are keyed on file
+       timestamps: stale per-app images survive in obj/R2R (where they also make crossgen2 fail writing over a
+       still-mapped file), and because static web assets are content-fingerprinted the newly staged copies land
+       BESIDE the old ones in the served directory instead of replacing them - two copies of an assembly from
+       two different version bubbles, which the runtime MVID check rejects or hangs on. Record the mode and
+       drop the derived outputs whenever it changes. Runs in the nested publish first (before crossgen), so the
+       outer build then sees an unchanged stamp and keeps what the nested publish just produced. -->
+  <Target Name="_WasmCoreClrInvalidateStaleModeOutputs"
+          Condition="'$(_WasmEnableWebcil)' == 'true'"
+          BeforeTargets="_ComputeWasmBuildCandidates;_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <_WasmCoreClrModeStamp>$(IntermediateOutputPath)wasm-coreclr-mode.stamp</_WasmCoreClrModeStamp>
+      <_WasmCoreClrMode>PublishReadyToRun=$(PublishReadyToRun);PublishTrimmed=$(PublishTrimmed)</_WasmCoreClrMode>
+    </PropertyGroup>
+    <ReadLinesFromFile File="$(_WasmCoreClrModeStamp)" Condition="Exists('$(_WasmCoreClrModeStamp)')">
+      <Output TaskParameter="Lines" ItemName="_WasmCoreClrPreviousMode" />
+    </ReadLinesFromFile>
+    <ItemGroup Condition="'@(_WasmCoreClrPreviousMode)' != '' and '@(_WasmCoreClrPreviousMode)' != '$(_WasmCoreClrMode)'">
+      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)R2R\*.wasm" />
+      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)webcil\**\*.wasm" />
+      <!-- Managed webcils only: the native assets are mode-independent and re-copied anyway. -->
+      <_WasmCoreClrStaleModeOutput Include="$(OutDir)wwwroot\_framework\*.wasm"
+                                   Exclude="$(OutDir)wwwroot\_framework\dotnet*.wasm" />
+    </ItemGroup>
+    <Delete Files="@(_WasmCoreClrStaleModeOutput)" ContinueOnError="true" />
+    <WriteLinesToFile File="$(_WasmCoreClrModeStamp)" Lines="$(_WasmCoreClrMode)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmCoreClrModeStamp)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
        loose in bin/; the managed .dll stays and ConvertDllsToWebcil stages the image. The _WasmRuntimePackR2RDir
        check stays at the item level: it is computed by the DependsOnTargets below, so it can't gate the target. -->
