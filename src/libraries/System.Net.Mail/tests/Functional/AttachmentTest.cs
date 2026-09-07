@@ -123,47 +123,47 @@ namespace System.Net.Mail.Tests
             // smoke test
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachmentname?=");
             Assert.Equal("attachmentname", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // lower case charset
             a = new Attachment(new MemoryStream(), "=?iso-8859-1?Q?attachmentname?=");
             Assert.Equal("attachmentname", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // Q encoding
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20name?=");
             Assert.Equal("attachment name", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // Q encoding (lowercase)
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment=20name?=");
             Assert.Equal("attachment name", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // B encoding
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?B?YXR0YWNobWVudCBuYW1l?=");
             Assert.Equal("attachment name", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // B encoding (lowercase)
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?b?YXR0YWNobWVudCBuYW1l?=");
             Assert.Equal("attachment name", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // space alternate
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment_name?=");
             Assert.Equal("attachment name", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // question mark alternate
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment=3Fname?=");
             Assert.Equal("attachment?name", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // underscore alternate
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment=5Fname?=");
             Assert.Equal("attachment_name", a.Name);
-            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
             // multiple encoded-words
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-1?Q?name?=");
