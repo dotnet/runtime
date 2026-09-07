@@ -52,9 +52,10 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPages(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: false);
 
-        // Native relink does not trigger for CoreCLR Blazor apps: the relink targets gate on
-        // IsBrowserWasmProject, which Blazor leaves unset (it resolves the wasm RID late). See the issue.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/133185", typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true. The relink triggers
+        // (BrowserWasmApp.CoreCLR.targets) key on WasmBuildNative in addition to the bare-RID
+        // IsBrowserWasmProject, so a late-resolved wasm RID cannot make the relink a silent no-op. See
+        // dotnet/runtime#133185.
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [InlineData(Configuration.Release, /*trimmed*/ true)]
         [TestCategory("no-workload")]
@@ -76,7 +77,10 @@ namespace Wasm.Build.Tests
                 // demands the (uninstalled) wasm-tools workload and disables the CoreCLR relink targets.
                 extraArgs += " -p:WasmBuildNative=true -p:UsingBrowserRuntimeWorkload=false";
             }
-            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs),
+                // Assert the native runtime was actually relinked (from obj), not the runtime-pack prebuilt,
+                // so the relink is proven rather than silently skipped. See dotnet/runtime#133185.
+                isNativeBuild: nativeRelink ? true : (bool?)null);
 
             AssertCoreLibReadyToRun(GetBlazorBinFrameworkDir(config, forPublish: true), expectReadyToRun: true);
 

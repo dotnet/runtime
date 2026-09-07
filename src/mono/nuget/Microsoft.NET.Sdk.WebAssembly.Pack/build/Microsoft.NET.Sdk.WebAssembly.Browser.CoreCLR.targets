@@ -68,8 +68,8 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="PublishReadyToRunComposite is not supported for CoreCLR browser-wasm; only non-composite (per-assembly) R2R images are supported." />
     <Error Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'"
            Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR browser-wasm; only 'wasm' is supported." />
-    <Error Condition="('$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(WasmBuildOnlyAfterPublish)' == 'true') and ('$(Crossgen2InBuildDir)' == '' or !Exists('$(Crossgen2InBuildDir)'))"
-           Text="PublishReadyToRun=true for CoreCLR browser-wasm requires a wasm-capable crossgen2, but none was resolved. Set Crossgen2InBuildDir to an in-build crossgen2 directory (or the crossgen2 pack) until wasm crossgen2 support flows through the base SDK (dotnet/sdk#55785)." />
+    <Error Condition="('$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(WasmBuildOnlyAfterPublish)' == 'true') and ('$(Crossgen2InBuildDir)' == '' or !Exists('$(Crossgen2InBuildDir)')) and '@(ResolvedCrossgen2Pack)' == ''"
+           Text="PublishReadyToRun=true for CoreCLR browser-wasm requires a wasm-capable crossgen2, but none was resolved. Set Crossgen2InBuildDir to an in-build crossgen2 directory (or provide a ResolvedCrossgen2Pack) until wasm crossgen2 support flows through the base SDK (dotnet/sdk#55785)." />
   </Target>
 
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
