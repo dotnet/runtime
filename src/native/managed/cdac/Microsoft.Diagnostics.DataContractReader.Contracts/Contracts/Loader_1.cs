@@ -788,6 +788,7 @@ internal readonly struct Loader_1 : ILoader
         {
             [LoaderAllocatorHeapType.LowFrequencyHeap] = loaderAllocator.LowFrequencyHeap,
             [LoaderAllocatorHeapType.HighFrequencyHeap] = loaderAllocator.HighFrequencyHeap,
+            [LoaderAllocatorHeapType.MethodTableHeap] = loaderAllocator.MethodTableHeap,
             [LoaderAllocatorHeapType.StaticsHeap] = loaderAllocator.StaticsHeap,
             [LoaderAllocatorHeapType.ExecutableHeap] = loaderAllocator.ExecutableHeap,
         };

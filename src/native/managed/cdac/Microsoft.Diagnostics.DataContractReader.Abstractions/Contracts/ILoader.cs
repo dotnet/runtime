@@ -41,6 +41,7 @@ public enum LoaderAllocatorHeapType
     Unknown,
     LowFrequencyHeap,
     HighFrequencyHeap,
+    MethodTableHeap,
     StaticsHeap,
     ExecutableHeap,
     FixupPrecodeHeap,

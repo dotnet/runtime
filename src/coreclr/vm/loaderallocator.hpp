@@ -320,6 +320,7 @@ protected:
     BYTE *              m_InitialReservedMemForLoaderHeaps;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_MethodTableHeapInstance[sizeof(LoaderHeap)];
 #ifdef HAS_FIXUP_PRECODE
     BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
 #endif // HAS_FIXUP_PRECODE
@@ -334,6 +335,7 @@ protected:
 #endif // FEATURE_READYTORUN
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
+    PTR_LoaderHeap      m_pMethodTableHeap;
     PTR_LoaderHeap      m_pStaticsHeap;
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
@@ -649,6 +651,12 @@ public:
         return m_pHighFrequencyHeap;
     }
 
+    PTR_LoaderHeap GetMethodTableHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pMethodTableHeap;
+    }
+
     PTR_LoaderHeap GetStaticsHeap()
     {
         LIMITED_METHOD_CONTRACT;
@@ -940,6 +948,7 @@ struct cdac_data<LoaderAllocator>
 {
     static constexpr size_t ReferenceCount = offsetof(LoaderAllocator, m_cReferences);
     static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
+    static constexpr size_t MethodTableHeap = offsetof(LoaderAllocator, m_pMethodTableHeap);
     static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
     static constexpr size_t StaticsHeap = offsetof(LoaderAllocator, m_pStaticsHeap);
     static constexpr size_t ExecutableHeap = offsetof(LoaderAllocator, m_pExecutableHeap);

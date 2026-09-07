@@ -62,6 +62,7 @@ enum LoaderAllocatorHeapType
     Unknown,
     LowFrequencyHeap,
     HighFrequencyHeap,
+    MethodTableHeap,
     StaticsHeap,
     ExecutableHeap,
     FixupPrecodeHeap,
@@ -187,6 +188,7 @@ enum ClrModifiableAssemblies : uint
 | `LoaderAllocator` | `FixupPrecodeHeap` | `pointer` | Fixup-precode heap (optional, present when fixup precodes are supported) |
 | `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
 | `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
+| `LoaderAllocator` | `MethodTableHeap` | `pointer` | Heap containing MethodTables and their attached GC descriptors and metadata |
 | `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
 | `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
 | `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
@@ -861,6 +863,7 @@ IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHe
     Dictionary<LoaderAllocatorHeapType, TargetPointer> heaps = {
         [LoaderAllocatorHeapType.LowFrequencyHeap] = la.LowFrequencyHeap,
         [LoaderAllocatorHeapType.HighFrequencyHeap] = la.HighFrequencyHeap,
+        [LoaderAllocatorHeapType.MethodTableHeap] = la.MethodTableHeap,
         [LoaderAllocatorHeapType.StaticsHeap] = la.StaticsHeap,
         [LoaderAllocatorHeapType.ExecutableHeap] = la.ExecutableHeap,
     };

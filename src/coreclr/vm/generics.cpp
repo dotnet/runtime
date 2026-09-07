@@ -244,7 +244,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     DWORD cbInstAndDictSlotSize;
     DWORD cbInstAndDictAllocSize = pOldMT->GetInstAndDictSize(&cbInstAndDictSlotSize);
 
-    // Allocate from the high frequence heap of the correct domain
+    // Allocate from the MethodTable heap of the correct loader allocator.
     S_SIZE_T allocSize = safe_cbMT;
     allocSize += cbOptional;
     allocSize += cbIMap;
@@ -261,7 +261,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         ThrowHR(COR_E_OVERFLOW);
     }
 
-    BYTE* pMemory = (BYTE *) pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem( allocSize ));
+    BYTE* pMemory = (BYTE *) pamTracker->Track(pAllocator->GetMethodTableHeap()->AllocMem( allocSize ));
 
     // Head of MethodTable memory
     MethodTable *pMT = (MethodTable*) (pMemory + cbGC);

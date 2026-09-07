@@ -304,8 +304,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     LoaderAllocator* pAllocator= this->GetLoaderAllocator();
-    BYTE* pMemory = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbEEClass) +
-                                                                                            S_SIZE_T(cbMT)));
+    BYTE* pMemory = (BYTE *)pamTracker->Track(pAllocator->GetMethodTableHeap()->AllocMem(S_SIZE_T(cbEEClass) +
+                                                                                      S_SIZE_T(cbMT)));
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pMemory, 0, sizeof(EEClass) + cbMT);

@@ -196,6 +196,7 @@ public unsafe class LoaderTests
     {
         [LoaderAllocatorHeapType.LowFrequencyHeap] = new(0x1000),
         [LoaderAllocatorHeapType.HighFrequencyHeap] = new(0x2000),
+        [LoaderAllocatorHeapType.MethodTableHeap] = new(0x4000),
         [LoaderAllocatorHeapType.StaticsHeap] = new(0x3000),
         [LoaderAllocatorHeapType.ExecutableHeap] = new(0x5000),
         [LoaderAllocatorHeapType.FixupPrecodeHeap] = new(0x6000),
@@ -230,6 +231,7 @@ public unsafe class LoaderTests
             {
                 ["LowFrequencyHeap"] = dummyField,
                 ["HighFrequencyHeap"] = dummyField,
+                ["MethodTableHeap"] = dummyField,
                 ["StaticsHeap"] = dummyField,
                 ["ExecutableHeap"] = dummyField,
                 ["FixupPrecodeHeap"] = dummyField,

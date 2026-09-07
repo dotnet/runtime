@@ -49,6 +49,7 @@ public class ISOSDacInterface13Tests : DumpTestBase
         [
             "LowFrequencyHeap",
             "HighFrequencyHeap",
+            "MethodTableHeap",
             "StaticsHeap",
             "ExecutableHeap",
             "FixupPrecodeHeap",

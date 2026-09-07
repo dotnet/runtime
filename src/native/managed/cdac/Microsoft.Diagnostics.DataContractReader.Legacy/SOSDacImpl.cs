@@ -6642,6 +6642,7 @@ public sealed unsafe partial class SOSDacImpl
         [
             LoaderAllocatorHeapType.LowFrequencyHeap,
             LoaderAllocatorHeapType.HighFrequencyHeap,
+            LoaderAllocatorHeapType.MethodTableHeap,
             LoaderAllocatorHeapType.StaticsHeap,
             LoaderAllocatorHeapType.ExecutableHeap,
             LoaderAllocatorHeapType.FixupPrecodeHeap,

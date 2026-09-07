@@ -38,6 +38,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_InitialReservedMemForLoaderHeaps = NULL;
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
+    m_pMethodTableHeap = nullptr;
     m_pExecutableHeap = NULL;
 #ifdef FEATURE_READYTORUN
 #ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -1142,6 +1143,11 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
         dwVSDHeapReserveSize = 0;
     }
 
+    // Split the existing reservation to isolate MethodTables without increasing the initial
+    // address-space footprint, particularly for collectible loader allocators.
+    DWORD dwMethodTableHeapReserveSize = static_cast<DWORD>(ALIGN_DOWN(dwHighFrequencyHeapReserveSize / 2, minipal_getpagesize()));
+    dwHighFrequencyHeapReserveSize -= dwMethodTableHeapReserveSize;
+
     // The global heap needs a bit of space for executable memory that is not associated with a rangelist.
     // Take a page from the high-frequency heap for this.
     if (pExecutableHeapMemory != NULL)
@@ -1154,6 +1160,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 
     DWORD dwTotalReserveMemSize = dwLowFrequencyHeapReserveSize
                                 + dwHighFrequencyHeapReserveSize
+                                + dwMethodTableHeapReserveSize
                                 + dwStaticsHeapReserveSize
                                 + dwCodeHeapReserveSize
                                 + dwVSDHeapReserveSize
@@ -1228,6 +1235,12 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
         _ASSERTE(m_pHighFrequencyHeap != NULL);
         m_pStaticsHeap = m_pHighFrequencyHeap;
     }
+
+    m_pMethodTableHeap = new (&m_MethodTableHeapInstance) LoaderHeap(HIGH_FREQUENCY_HEAP_RESERVE_SIZE,
+                                                                  HIGH_FREQUENCY_HEAP_COMMIT_SIZE,
+                                                                  initReservedMem,
+                                                                  dwMethodTableHeapReserveSize);
+    initReservedMem += dwMethodTableHeapReserveSize;
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
@@ -1434,6 +1447,12 @@ void LoaderAllocator::Terminate()
         m_pHighFrequencyHeap = NULL;
     }
 
+    if (m_pMethodTableHeap != nullptr)
+    {
+        m_pMethodTableHeap->~LoaderHeap();
+        m_pMethodTableHeap = nullptr;
+    }
+
 #ifdef HAS_FIXUP_PRECODE
     if (m_pFixupPrecodeHeap != NULL)
     {
@@ -1516,6 +1535,10 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pHighFrequencyHeap->EnumMemoryRegions(flags);
     }
+    if (m_pMethodTableHeap.IsValid())
+    {
+        m_pMethodTableHeap->EnumMemoryRegions(flags);
+    }
     if (m_pStaticsHeap.IsValid())
     {
         m_pStaticsHeap->EnumMemoryRegions(flags);
@@ -1558,6 +1581,8 @@ SIZE_T LoaderAllocator::EstimateSize()
     SIZE_T retval=0;
     if(m_pHighFrequencyHeap)
         retval+=m_pHighFrequencyHeap->GetSize();
+    if(m_pMethodTableHeap)
+        retval+=m_pMethodTableHeap->GetSize();
     if(m_pStaticsHeap)
         retval+=m_pStaticsHeap->GetSize();
     if(m_pLowFrequencyHeap)

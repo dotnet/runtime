@@ -140,7 +140,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
 
     size_t cbGC = numPointerSeries == 0 ? 0 : CGCDesc::ComputeSize(numPointerSeries);
 
-    BYTE* pMemory = (BYTE*)pamTracker->Track(allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
+    BYTE* pMemory = (BYTE*)pamTracker->Track(allocator->GetMethodTableHeap()->AllocMem(S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
 
     unsigned startOfDataInInstance = AlignUp(pParentClass->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
     unsigned startOfDataInObject = OBJECT_SIZE + startOfDataInInstance;

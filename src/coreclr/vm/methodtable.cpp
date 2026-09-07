@@ -673,7 +673,7 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
 
     LOG((LF_BCL, LL_INFO100, "Level2 - Creating MethodTable {0x%p}...\n", pClass));
 
-    MethodTable* pMT = (MethodTable *)(void *)pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTable))));
+    MethodTable* pMT = (MethodTable *)(void *)pamTracker->Track(pLoaderAllocator->GetMethodTableHeap()->AllocMem(S_SIZE_T(sizeof(MethodTable))));
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pMT, 0, sizeof(MethodTable));
