@@ -3756,20 +3756,7 @@ namespace Internal.JitInterface
             {
                 var sig = HandleToObject(callSig->methodSignature);
 
-                WasmLowering.LoweringFlags flags = 0;
-                if (callSig->hasTypeArg())
-                {
-                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-                }
-                if (callSig->isAsyncCall())
-                {
-                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-                }
-                if (((int)callSig->getCallConv() & 0xF) != 0)
-                {
-                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-                }
-
+                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(callSig);
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
                 // Only create R2R-to-interpreter thunks for managed calls.
@@ -3799,20 +3786,7 @@ namespace Internal.JitInterface
                     }
                 }
 
-                WasmLowering.LoweringFlags flags = 0;
-                if (callSig->hasTypeArg())
-                {
-                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-                }
-                if (callSig->isAsyncCall())
-                {
-                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-                }
-                if (((int)callSig->getCallConv() & 0xF) != 0)
-                {
-                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-                }
-
+                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(callSig);
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
                 // Only create R2R-to-interpreter thunks for managed calls.
