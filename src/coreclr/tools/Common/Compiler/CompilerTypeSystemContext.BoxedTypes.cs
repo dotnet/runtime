@@ -226,7 +226,7 @@ namespace ILCompiler
         /// A type with an identical layout to the layout of a boxed value type.
         /// The type has a single field of the type of the valuetype it represents.
         /// </summary>
-        private sealed partial class BoxedValueType : MetadataType, INonEmittableType
+        private sealed class BoxedValueType : MetadataType, INonEmittableType, IPrefixMangledType
         {
             public MetadataType ValueTypeRepresented { get; }
 
@@ -249,6 +249,10 @@ namespace ILCompiler
             public override MetadataType ContainingType => null;
             public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
             public override TypeSystemContext Context => ValueTypeRepresented.Context;
+
+            TypeDesc IPrefixMangledType.BaseType => ValueTypeRepresented;
+
+            ReadOnlySpan<byte> IPrefixMangledType.Prefix => "Boxed"u8;
 
             public BoxedValueType(ModuleDesc owningModule, MetadataType valuetype)
             {
@@ -309,25 +313,45 @@ namespace ILCompiler
             {
                 return Array.Empty<FieldDesc>();
             }
+
+            protected override int ClassCode => 1062019524;
+
+            protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
+            {
+                return comparer.Compare(ValueTypeRepresented, ((BoxedValueType)other).ValueTypeRepresented);
+            }
         }
 
         /// <summary>
-        /// Does a method represent an unboxing stub
+        /// Does a method represent an instantiating unboxing stub
         /// </summary>
         public bool IsSpecialUnboxingThunk(MethodDesc method)
         {
-            if (method.GetTypicalMethodDefinition().GetType() == typeof(GenericUnboxingThunk))
-                return true;
+            return method.GetTypicalMethodDefinition() is GenericUnboxingThunk;
+        }
 
-            return false;
+        public bool IsUnboxingThunk(MethodDesc method)
+        {
+            return method.GetTypicalMethodDefinition() is GenericUnboxingThunk or UnboxingThunk;
         }
 
         /// <summary>
-        /// Convert from an unboxing stub to the actual target method
+        /// Convert from an instantiating unboxing stub to the actual target method
         /// </summary>
         public MethodDesc GetTargetOfSpecialUnboxingThunk(MethodDesc method)
         {
-            MethodDesc typicalMethodTarget = ((GenericUnboxingThunk)method.GetTypicalMethodDefinition()).TargetMethod;
+            Debug.Assert(IsSpecialUnboxingThunk(method));
+            return GetTargetOfUnboxingThunk(method);
+        }
+
+        public MethodDesc GetTargetOfUnboxingThunk(MethodDesc method)
+        {
+            MethodDesc typicalMethodTarget = method.GetTypicalMethodDefinition() switch
+            {
+                GenericUnboxingThunk genericUnboxingThunk => genericUnboxingThunk.TargetMethod,
+                UnboxingThunk unboxingThunk => unboxingThunk.TargetMethod,
+                _ => throw new InvalidOperationException()
+            };
 
             MethodDesc methodOnInstantiatedType = typicalMethodTarget;
             if (method.OwningType.HasInstantiation)
@@ -348,7 +372,7 @@ namespace ILCompiler
         /// <summary>
         /// Represents a thunk to call shared instance method on boxed valuetypes.
         /// </summary>
-        private sealed partial class GenericUnboxingThunk : ILStubMethod
+        private sealed class GenericUnboxingThunk : ILStubMethod, IPrefixMangledMethod
         {
             private MethodDesc _targetMethod;
             private BoxedValueType _owningType;
@@ -369,6 +393,10 @@ namespace ILCompiler
             public override MethodSignature Signature => _targetMethod.Signature;
 
             public MethodDesc TargetMethod => _targetMethod;
+
+            MethodDesc IPrefixMangledMethod.BaseMethod => _targetMethod;
+
+            ReadOnlySpan<byte> IPrefixMangledMethod.Prefix => "unbox"u8;
 
             public override Utf8Span Name
             {
@@ -403,16 +431,26 @@ namespace ILCompiler
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
+                FieldDesc rawDataField = Context.SystemModule
+                    .GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8)
+                    .GetField("Data"u8);
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetField("Data"u8)));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(rawDataField));
 
                 // Load the MethodTable of the boxed valuetype (this is the hidden generic context parameter expected
                 // by the (canonical) instance method, but normally not part of the signature in IL).
                 codeStream.EmitLdArg(0);
+#if READYTORUN
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(rawDataField));
+                codeStream.EmitLdc(Context.Target.PointerSize);
+                codeStream.Emit(ILOpcode.sub);
+                codeStream.Emit(ILOpcode.ldind_i);
+#else
+                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(eeTypeField));
+#endif
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "SetNextCallGenericContext"u8, null)));
 
@@ -429,15 +467,25 @@ namespace ILCompiler
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
                 codeStream.Emit(ILOpcode.ret);
+#if READYTORUN
+                emit.SetHasGeneratedTokens();
+#endif
 
                 return emit.Link(this);
+            }
+
+            protected override int ClassCode => -247515475;
+
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+            {
+                return comparer.Compare(_targetMethod, ((GenericUnboxingThunk)other)._targetMethod);
             }
         }
 
         /// <summary>
         /// Represents a thunk to call instance method on boxed valuetypes.
         /// </summary>
-        private sealed partial class UnboxingThunk : ILStubMethod
+        private sealed class UnboxingThunk : ILStubMethod, IPrefixMangledMethod
         {
             private MethodDesc _targetMethod;
             private BoxedValueType _owningType;
@@ -458,6 +506,10 @@ namespace ILCompiler
             public override MethodSignature Signature => _targetMethod.Signature;
 
             public MethodDesc TargetMethod => _targetMethod;
+
+            MethodDesc IPrefixMangledMethod.BaseMethod => _targetMethod;
+
+            ReadOnlySpan<byte> IPrefixMangledMethod.Prefix => "unbox"u8;
 
             public override Utf8Span Name
             {
@@ -486,6 +538,7 @@ namespace ILCompiler
                         Array.Empty<object>());
                 }
 
+#if !READYTORUN
                 // TODO: mirror what was done in the commit that introduced this comment. Not doing it in that
                 // commit since this can't be tested in dotnet/runtime repo main right now.
                 if (_targetMethod.IsAsyncCall())
@@ -496,6 +549,7 @@ namespace ILCompiler
                     c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
                     return e.Link(this);
                 }
+#endif
 
                 // Generate the unboxing stub. This loosely corresponds to following C#:
                 // return BoxedValue.InstanceMethod([rest of parameters])
@@ -535,11 +589,21 @@ namespace ILCompiler
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(methodToInstantiate));
                 codeStream.Emit(ILOpcode.ret);
+#if READYTORUN
+                emit.SetHasGeneratedTokens();
+#endif
 
                 return emit.Link(this);
             }
 
             public override Instantiation Instantiation => _targetMethod.Instantiation;
+
+            protected override int ClassCode => 446545583;
+
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+            {
+                return comparer.Compare(_targetMethod, ((UnboxingThunk)other)._targetMethod);
+            }
         }
     }
 }
