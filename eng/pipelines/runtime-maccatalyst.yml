@@ -27,5 +27,4 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
