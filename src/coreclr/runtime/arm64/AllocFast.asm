@@ -10,6 +10,9 @@
 ;;  x0 == MethodTable
     LEAF_ENTRY RhpNewFast
 
+        ;; Overlap the MethodTable fetch with the allocation-context lookup.
+        prfm        pldl1keep, [x0]
+
         ;; x3 = ee_alloc_context pointer, TRASHES x2
         INLINE_GET_ALLOC_CONTEXT_BASE x3, x2
 

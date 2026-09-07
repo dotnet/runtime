@@ -9,6 +9,9 @@ include AsmMacros_Shared.inc
 ;;  RCX == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
 
+        ;; Overlap the MethodTable fetch with the allocation-context lookup.
+        prefetcht0  [rcx]
+
         ;; rdx = ee_alloc_context pointer, TRASHES rax
         INLINE_GET_ALLOC_CONTEXT_BASE rdx, rax
 

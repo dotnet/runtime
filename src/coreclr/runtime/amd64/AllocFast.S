@@ -9,6 +9,9 @@
 //  RDI == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
 
+        // Overlap the MethodTable fetch with the allocation-context lookup.
+        prefetcht0  [rdi]
+
         push_nonvol_reg rbx
         mov         rbx, rdi
 
