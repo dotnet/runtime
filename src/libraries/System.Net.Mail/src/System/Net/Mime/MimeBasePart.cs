@@ -177,11 +177,13 @@ namespace System.Net.Mime
                 {
                     whiteSpacesLength++;
                 }
-                // CRLF NOT followed by at least one SP/HT
-                if (hasNewLine && whiteSpacesLength == 2)
+
+                // Require at least one SP/HT between encoded-words (and if CRLF is present, it must be followed by SP/HT).
+                if (whiteSpacesLength == (hasNewLine ? 2 : 0))
                 {
                     return (value, null);
                 }
+
                 remainder = remainder.Slice(whiteSpacesLength);
                 if (remainder.IsEmpty)
                 {
