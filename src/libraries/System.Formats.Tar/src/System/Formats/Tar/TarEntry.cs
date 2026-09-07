@@ -771,16 +771,13 @@ namespace System.Formats.Tar
             {
                 long remainingDeclared = Math.Max(0, length - subReadStream.Position);
                 long? availableLength = subReadStream.AvailableLengthInSuperStream;
-                if (availableLength.HasValue)
+                if (!availableLength.HasValue)
                 {
-                    long availableFromCurrentPosition = Math.Max(0, availableLength.Value - subReadStream.Position);
-                    if (availableFromCurrentPosition < remainingDeclared)
-                    {
-                        return availableFromCurrentPosition;
-                    }
+                    return 0;
                 }
 
-                return remainingDeclared;
+                long availableFromCurrentPosition = Math.Max(0, availableLength.Value - subReadStream.Position);
+                return Math.Min(availableFromCurrentPosition, remainingDeclared);
             }
 
             return length;

@@ -37,7 +37,7 @@ namespace System.Formats.Tar.Tests
             }
             else
             {
-                Assert.Equal(HeaderSize, preallocationSize);
+                Assert.Equal(0, preallocationSize);
             }
         }
 
