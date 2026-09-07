@@ -12,11 +12,7 @@
 #define DEFAULT_DUMP_TEMPLATE "coredump.%p"
 #endif
 
-#ifdef HOST_UNIX
-const char* g_help = "createdump [options] pid\n"
-#else
 const char* g_help = "createdump [options]\n"
-#endif
 "-f, --name - dump path and file name. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'. These specifiers are substituted with following values:\n"
 "   %p  PID of dumped process.\n"
 "   %e  The process executable filename.\n"
@@ -69,7 +65,11 @@ int createdump_main(const int argc, const char* argv[])
     options.CreateDump = true;
     options.Signal = 0;
     options.CrashThread = 0;
+#ifdef HOST_UNIX
+    options.Pid = static_cast<int>(getppid());
+#else
     options.Pid = 0;
+#endif
     options.SignalCode = 0;
     options.SignalErrno = 0;
     options.SignalAddress = 0;
@@ -77,7 +77,7 @@ int createdump_main(const int argc, const char* argv[])
     bool help = false;
     int exitCode = 0;
 
-    // Parse the command line options and target pid
+    // Parse the command line options
     argv++;
     for (int i = 1; i < argc; i++)
     {
@@ -172,27 +172,15 @@ int createdump_main(const int argc, const char* argv[])
             }
             else
             {
-#ifdef HOST_UNIX
-                options.Pid = atoi(*argv);
-#else
                 printf_error("The pid argument is no longer supported\n");
                 return -1;
-#endif
             }
             argv++;
         }
     }
 
-#ifdef HOST_UNIX
-    if (options.Pid == 0)
-    {
-        help = true;
-    }
-#endif
-
     if (help)
     {
-        // if no pid or invalid command line option
         printf_error("%s", g_help);
         return -1;
     }

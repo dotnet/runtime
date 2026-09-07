@@ -1348,7 +1348,6 @@ BOOL
 PROCBuildCreateDumpCommandLine(
     const char* argv[],
     char** pprogram,
-    char** ppidarg,
     const char* dumpName,
     const char* logFileName,
     INT dumpType,
@@ -1379,11 +1378,6 @@ PROCBuildCreateDumpCommandLine(
         program[0] = '\0';
     }
     if (strcat_s(program, programLen, DumpGeneratorName) != SAFECRT_SUCCESS)
-    {
-        return FALSE;
-    }
-    *ppidarg = PROCFormatInt(gPID);
-    if (*ppidarg == nullptr)
     {
         return FALSE;
     }
@@ -1445,8 +1439,6 @@ PROCBuildCreateDumpCommandLine(
         argv[argc++] = "--logtofile";
         argv[argc++] = logFileName;
     }
-
-    argv[argc++] = *ppidarg;
 
     argv[argc] = nullptr;
     _ASSERTE(argc < MAX_ARGV_ENTRIES);
@@ -1728,8 +1720,7 @@ PROCAbortInitialize()
         }
 
         char* program = nullptr;
-        char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, logFilePath, dumpType, flags))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, dumpName, logFilePath, dumpType, flags))
         {
             return FALSE;
         }
@@ -1778,14 +1769,12 @@ PAL_GenerateCoreDump(
         dumpName = nullptr;
     }
     char* program = nullptr;
-    char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, dumpName, nullptr, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, CrashDumpSerialize_None);
     }
     free(program);
-    free(pidarg);
     return result;
 }
 
