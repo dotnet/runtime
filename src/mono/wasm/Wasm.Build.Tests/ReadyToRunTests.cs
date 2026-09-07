@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
@@ -38,7 +40,10 @@ namespace Wasm.Build.Tests
                 extraProperties: "<PublishReadyToRun>true</PublishReadyToRun>");
             BlazorBuild(info, config);
 
-            AssertCoreLibReadyToRun(GetBuildWebcilDir(config), expectReadyToRun: true);
+            string webcilDir = GetBuildWebcilDir(config);
+            AssertCoreLibReadyToRun(webcilDir, expectReadyToRun: true);
+            AssertNoDuplicateAssemblies(webcilDir);
+            AssertPerAppCrossgenRan(config, expected: false);
 
             await RunForBuildWithDotnetRun(new BlazorRunOptions(config,
                 CheckCounter: false,
@@ -58,6 +63,7 @@ namespace Wasm.Build.Tests
         // dotnet/runtime#133185.
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [InlineData(Configuration.Release, /*trimmed*/ true)]
+        [InlineData(Configuration.Release, /*trimmed*/ false)]
         [TestCategory("no-workload")]
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true);
@@ -82,7 +88,12 @@ namespace Wasm.Build.Tests
                 // so the relink is proven rather than silently skipped. See dotnet/runtime#133185.
                 isNativeBuild: nativeRelink ? true : (bool?)null);
 
-            AssertCoreLibReadyToRun(GetBlazorBinFrameworkDir(config, forPublish: true), expectReadyToRun: true);
+            string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            AssertNoDuplicateAssemblies(frameworkDir);
+            AssertNoManagedAssembliesOutsideFramework(frameworkDir);
+            AssertTrimmedClosureIsFullyStaged(config, frameworkDir);
+            AssertPerAppCrossgenRan(config, expected: true);
 
             await RunForPublishWithWebServer(new BlazorRunOptions(config,
                 CheckCounter: false,
@@ -99,6 +110,7 @@ namespace Wasm.Build.Tests
             BlazorBuild(info, config);
 
             AssertCoreLibReadyToRun(GetBuildWebcilDir(config), expectReadyToRun: false);
+            AssertPerAppCrossgenRan(config, expected: false);
         }
 
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
@@ -136,6 +148,79 @@ namespace Wasm.Build.Tests
 
         private string GetBuildWebcilDir(Configuration config) =>
             Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "webcil");
+
+        private string GetObjSubDir(Configuration config, string name) =>
+            Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, name);
+
+        // Static web assets are fingerprinted as <name>.<10 chars>.wasm. The pattern is deliberately
+        // case-sensitive: a case-insensitive match also eats real trailing segments like ".Components".
+        private static string StripFingerprint(string filePath)
+            => Regex.Replace(Path.GetFileNameWithoutExtension(filePath), @"\.[a-z0-9]{10}$", string.Empty);
+
+        private static string[] GetStagedAssemblyNames(string frameworkDir)
+            => Directory.EnumerateFiles(frameworkDir, "*.wasm")
+                .Where(f => !Path.GetFileName(f).StartsWith("dotnet", System.StringComparison.Ordinal))
+                .Select(StripFingerprint)
+                .ToArray();
+
+        // Fingerprinted assets land beside their predecessors instead of replacing them, so a stale copy of an
+        // assembly survives as a second file and the runtime can bind the wrong version bubble.
+        private static void AssertNoDuplicateAssemblies(string frameworkDir)
+        {
+            string[] duplicates = GetStagedAssemblyNames(frameworkDir)
+                .GroupBy(n => n, System.StringComparer.Ordinal)
+                .Where(g => g.Count() > 1)
+                .Select(g => $"{g.Key} x{g.Count()}")
+                .OrderBy(n => n, System.StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.True(duplicates.Length == 0,
+                $"Duplicate assemblies staged in '{frameworkDir}': {string.Join(", ", duplicates)}");
+        }
+
+        // A .wasm-named R2R image that is not routed back to a managed asset is treated as native and lands in
+        // the publish root, leaving the boot config without it. See dotnet/runtime#121257.
+        private static void AssertNoManagedAssembliesOutsideFramework(string frameworkDir)
+        {
+            string? wwwrootDir = Path.GetDirectoryName(frameworkDir);
+            if (wwwrootDir is null || !Directory.Exists(wwwrootDir))
+                return;
+
+            string[] stray = Directory.EnumerateFiles(wwwrootDir, "*.wasm").Select(Path.GetFileName).ToArray()!;
+            Assert.True(stray.Length == 0,
+                $"Managed assemblies leaked outside _framework into '{wwwrootDir}': {string.Join(", ", stray)}");
+        }
+
+        // Losing every crossgen'd assembly still exits 0 and can still leave a loadable-looking bundle, so
+        // compare the staged set against the linker's closure rather than trusting the exit code.
+        private void AssertTrimmedClosureIsFullyStaged(Configuration config, string frameworkDir)
+        {
+            string linkedDir = GetObjSubDir(config, "linked");
+            if (!Directory.Exists(linkedDir))
+                return;
+
+            HashSet<string> staged = new(GetStagedAssemblyNames(frameworkDir), System.StringComparer.Ordinal);
+            string[] missing = Directory.EnumerateFiles(linkedDir, "*.dll")
+                .Select(Path.GetFileNameWithoutExtension)
+                .Where(name => !staged.Contains(name!))
+                .OrderBy(name => name, System.StringComparer.Ordinal)
+                .ToArray()!;
+
+            Assert.True(missing.Length == 0,
+                $"Assemblies in the trimmed closure but missing from '{frameworkDir}': {string.Join(", ", missing)}");
+        }
+
+        // The dev loop serves the runtime pack's prebuilt native/r2r images; only publish crossgens per app.
+        private void AssertPerAppCrossgenRan(Configuration config, bool expected)
+        {
+            string r2rDir = GetObjSubDir(config, "R2R");
+            int imageCount = Directory.Exists(r2rDir) ? Directory.EnumerateFiles(r2rDir).Count() : 0;
+
+            if (expected)
+                Assert.True(imageCount > 0, $"Expected per-app ReadyToRun images under '{r2rDir}'.");
+            else
+                Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
+        }
 
         // In-tree publish crossgen2: the base SDK can't resolve a wasm crossgen2 and emits composite R2R
         // (which strips the assembly manifest and won't load), so (1) point the CoreCLR R2R override
