@@ -147,6 +147,9 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_HpkeKdfInfoLength" xml:space="preserve">
+    <value>The specified info exceeds the maximum length of {0} bytes.</value>
+  </data>
   <data name="Argument_MLDsaMuInvalidLength" xml:space="preserve">
     <value>The specified mu value is not the correct length for the ML-DSA algorithm.</value>
   </data>

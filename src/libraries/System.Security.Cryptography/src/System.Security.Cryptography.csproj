@@ -634,7 +634,6 @@
     <Compile Include="System\Security\Cryptography\HMACStatic.cs" />
     <Compile Include="System\Security\Cryptography\HpkeAeadMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeECDiffieHellmanKemAdapter.cs" />
-    <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeKdfMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeKemMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeManagedKemAdapter.cs" />
@@ -899,6 +898,7 @@
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeImplementation.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Browser.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
@@ -2112,6 +2112,10 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.GetCertContentType.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.PublicKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.X500DistinguishedName.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and '$(TargetPlatformIdentifier)' != 'browser'">
+    <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
   </ItemGroup>
 
   <ItemGroup>

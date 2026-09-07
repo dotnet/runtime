@@ -285,6 +285,83 @@ namespace System.Security.Cryptography
         /// </remarks>
         protected abstract void ExportEncapsulationKeyCore(Span<byte> destination);
 
+        public void Seal(
+            ReadOnlySpan<byte> plaintext,
+            out byte[] encapsulatedSecret,
+            out byte[] ciphertext,
+            ReadOnlySpan<byte> associatedData = default,
+            ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            byte[] ciphertextBuffer = new byte[Suite.GetCiphertextLength(plaintext.Length)];
+            byte[] encapsulatedSecretBuffer = new byte[Suite.EncapsulatedSecretSizeInBytes];
+
+            SealCore(plaintext, encapsulatedSecretBuffer, ciphertextBuffer, associatedData, info);
+
+            encapsulatedSecret = encapsulatedSecretBuffer;
+            ciphertext = ciphertextBuffer;
+        }
+
+        public void Seal(
+            byte[] plaintext,
+            out byte[] encapsulatedSecret,
+            out byte[] ciphertext,
+            byte[]? associatedData = null,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(plaintext);
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            byte[] ciphertextBuffer = new byte[Suite.GetCiphertextLength(plaintext.Length)];
+            byte[] encapsulatedSecretBuffer = new byte[Suite.EncapsulatedSecretSizeInBytes];
+
+            // associatedData and info null's implicity convert to empty span.
+            SealCore(plaintext, encapsulatedSecretBuffer, ciphertextBuffer, associatedData, info);
+
+            encapsulatedSecret = encapsulatedSecretBuffer;
+            ciphertext = ciphertextBuffer;
+        }
+
+        public void Seal(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> encapsulatedSecret,
+            Span<byte> ciphertext,
+            ReadOnlySpan<byte> associatedData = default,
+            ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedSecretSizeInBytes),
+                    nameof(encapsulatedSecret));
+            }
+
+            int expectedCiphertextLength = Suite.GetCiphertextLength(plaintext.Length);
+
+            if (ciphertext.Length != expectedCiphertextLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, expectedCiphertextLength),
+                    nameof(ciphertext));
+            }
+
+            SealCore(plaintext, encapsulatedSecret, ciphertext, associatedData, info);
+        }
+
+        protected abstract void SealCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> encapsulatedSecret,
+            Span<byte> ciphertext,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> info);
+
+
         /// <summary>
         ///   Releases all resources used by the <see cref="Hpke" /> class.
         /// </summary>
@@ -315,6 +392,16 @@ namespace System.Security.Cryptography
             if (!IsSupported(suite))
             {
                 throw new PlatformNotSupportedException();
+            }
+        }
+
+        private void ThrowIfInfoExceedsLimit(ReadOnlySpan<byte> info)
+        {
+            if (info.Length > Suite.KdfMetadata.MaximumInfoLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_HpkeKdfInfoLength, Suite.KdfMetadata.MaximumInfoLength),
+                    nameof(info));
             }
         }
 

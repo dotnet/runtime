@@ -1,15 +1,88 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
+#pragma warning disable CA1416 // //TODO:HPKE Call is reachable on "unsupported platform" - deal with this messy daignostic later.
+
 namespace System.Security.Cryptography
 {
+    internal abstract class HpkeManagedAeadAdapter : IDisposable
+    {
+        internal static HpkeManagedAeadAdapter Create(HpkeSuite suite, ReadOnlySpan<byte> key)
+        {
+            Debug.Assert(suite.AeadMetadata.Nt == 16);
+
+            switch (suite.AeadAlgorithm)
+            {
+                case HpkeAead.AES_128_GCM:
+                case HpkeAead.AES_256_GCM:
+                    return new HpkeManagedAesAeadAdapter(suite, key);
+                case HpkeAead.ChaCha20Poly1305:
+                    throw new NotImplementedException();
+                default:
+                    Debug.Fail($"Unmapped AEAD adapter algorithm {suite.AeadAlgorithm}.");
+                    throw new CryptographicException();
+            }
+        }
+
+        internal abstract void Encrypt(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> nonce,
+            ReadOnlySpan<byte> associatedData,
+            Span<byte> ciphertext,
+            Span<byte> tag);
+
+        internal abstract void Decrypt(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> nonce,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> tag,
+            Span<byte> plaintext);
+
+        public abstract void Dispose();
+    }
+
+    internal sealed class HpkeManagedAesAeadAdapter : HpkeManagedAeadAdapter
+    {
+        private readonly AesGcm _aes;
+
+        internal HpkeManagedAesAeadAdapter(HpkeSuite suite, ReadOnlySpan<byte> key)
+        {
+            _aes = new AesGcm(key, suite.AeadMetadata.Nt);
+        }
+
+        internal override void Encrypt(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> nonce,
+            ReadOnlySpan<byte> associatedData,
+            Span<byte> ciphertext,
+            Span<byte> tag)
+        {
+            _aes.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
+        }
+
+        internal override void Decrypt(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> nonce,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> tag,
+            Span<byte> plaintext)
+        {
+            _aes.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
+        }
+
+
+        public override void Dispose() => _aes.Dispose();
+    }
+
     internal sealed class HpkeImplementation : Hpke
     {
-        private readonly HpkeManagedKemAdapter _adapter;
+        private readonly HpkeManagedKemAdapter _kemAdapter;
 
-        private HpkeImplementation(HpkeManagedKemAdapter adapter) : base(adapter.Suite)
+        private HpkeImplementation(HpkeSuite suite, HpkeManagedKemAdapter kemAdapter) : base(suite)
         {
-            _adapter = adapter;
+            _kemAdapter = kemAdapter;
         }
 
         internal static bool IsSupportedImpl(HpkeSuite suite) =>
@@ -24,7 +97,7 @@ namespace System.Security.Cryptography
             try
             {
                 adapter.DeriveKeyPair(ikm);
-                return new HpkeImplementation(adapter);
+                return new HpkeImplementation(suite, adapter);
             }
             catch
             {
@@ -40,7 +113,7 @@ namespace System.Security.Cryptography
             try
             {
                 adapter.Generate();
-                return new HpkeImplementation(adapter);
+                return new HpkeImplementation(suite, adapter);
             }
             catch
             {
@@ -50,16 +123,26 @@ namespace System.Security.Cryptography
         }
 
         protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>
-            _adapter.ExportDecapsulationKey(destination);
+            _kemAdapter.ExportDecapsulationKey(destination);
 
         protected override void ExportEncapsulationKeyCore(Span<byte> destination) =>
-            _adapter.ExportEncapsulationKey(destination);
+            _kemAdapter.ExportEncapsulationKey(destination);
+
+        protected override void SealCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> encapsulatedSecret,
+            Span<byte> ciphertext,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> info)
+        {
+            throw new NotImplementedException();
+        }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _adapter.Dispose();
+                _kemAdapter.Dispose();
             }
 
             base.Dispose(disposing);
