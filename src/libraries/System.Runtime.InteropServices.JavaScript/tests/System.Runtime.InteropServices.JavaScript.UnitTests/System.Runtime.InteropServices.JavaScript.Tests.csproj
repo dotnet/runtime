@@ -6,6 +6,7 @@
     <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
+    <TestTrimming>true</TestTrimming>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=TZ=Europe/Berlin</WasmXHarnessMonoArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
