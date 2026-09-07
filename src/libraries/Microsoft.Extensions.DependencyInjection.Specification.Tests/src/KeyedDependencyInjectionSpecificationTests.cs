@@ -251,6 +251,22 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveServiceKeys()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IService, Service>();
+            serviceCollection.AddKeyedSingleton<IService>("first-service", new Service());
+            serviceCollection.AddKeyedSingleton<IService>("service", new Service());
+            serviceCollection.AddKeyedSingleton<IService>("service", new Service());
+            serviceCollection.AddKeyedSingleton<IService>(null, new Service());
+            serviceCollection.AddKeyedTransient<IService>(KeyedService.AnyKey, (sp, key) => new Service());
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            Assert.Equal(new object?[] { "first-service", "service", null }, provider.GetServiceKeys<IService>());
+        }
+
+        [Fact]
         public void ResolveKeyedServicesAnyKeyConsistency()
         {
             var serviceCollection = new ServiceCollection();
