@@ -112,7 +112,7 @@ namespace System.Reflection.Runtime.EventInfos
     }
 }
 
-namespace System.Reflection.Runtime.MethodInfos
+namespace System.Reflection
 {
     internal abstract partial class RuntimeMethodInfo
     {

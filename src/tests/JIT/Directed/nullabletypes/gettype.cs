@@ -4,8 +4,9 @@
 namespace JitTest_Directed_nullabletypes_gettype;
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 class C<T>
@@ -22,6 +23,16 @@ class C<T>
 
 public class P
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type GetNullableType(bool? value) => value.GetType();
+
+    [Fact]
+    public static void BoxedNullableGetType()
+    {
+        Assert.Same(typeof(bool), GetNullableType(true));
+        Assert.Throws<NullReferenceException>(() => GetNullableType(null));
+    }
+
     [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
@@ -50,4 +61,3 @@ public class P
         return 100;
     }
 }
-

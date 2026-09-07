@@ -6807,10 +6807,6 @@ PhaseStatus Compiler::optAssertionPropMain()
         return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
-
     // Allocate the bits for the predicate sensitive dataflow analysis
     bbJtrueAssertionOut    = optInitAssertionDataflowFlags();
     ASSERT_TP* jumpDestGen = optComputeAssertionGen();

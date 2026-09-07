@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration
 
         // _changeTokenRegistrations is only modified when config sources are modified. It is not referenced by any read operations.
         // Because modify config sources is not thread-safe, modifying _changeTokenRegistrations does not need to be thread-safe either.
-        private readonly List<IDisposable> _changeTokenRegistrations = new();
+        private List<IDisposable> _changeTokenRegistrations = new();
         private ConfigurationReloadToken _changeToken = new();
 
         /// <summary>
@@ -124,44 +124,107 @@ namespace Microsoft.Extensions.Configuration
         private void AddSource(IConfigurationSource source)
         {
             IConfigurationProvider provider = source.Build(this);
+            IDisposable registration;
 
-            provider.Load();
-            _changeTokenRegistrations.Add(ChangeToken.OnChange(provider.GetReloadToken, RaiseChanged));
+            try
+            {
+                provider.Load();
+                registration = ChangeToken.OnChange(provider.GetReloadToken, RaiseChanged);
 
-            _providerManager.AddProvider(provider);
+                try
+                {
+                    _providerManager.AddProvider(provider);
+                }
+                catch
+                {
+                    registration.Dispose();
+                    throw;
+                }
+            }
+            catch
+            {
+                (provider as IDisposable)?.Dispose();
+                throw;
+            }
+
+            _changeTokenRegistrations.Add(registration);
             RaiseChanged();
         }
 
         // Something other than Add was called on IConfigurationBuilder.Sources or IConfigurationBuilder.Properties has changed.
         private void ReloadSources()
         {
-            DisposeRegistrations();
-
-            _changeTokenRegistrations.Clear();
-
             var newProvidersList = new List<IConfigurationProvider>();
+            var newChangeTokenRegistrations = new List<IDisposable>();
 
-            foreach (IConfigurationSource source in _sources)
+            try
             {
-                newProvidersList.Add(source.Build(this));
+                foreach (IConfigurationSource source in _sources)
+                {
+                    newProvidersList.Add(source.Build(this));
+                }
+
+                foreach (IConfigurationProvider p in newProvidersList)
+                {
+                    p.Load();
+                    newChangeTokenRegistrations.Add(ChangeToken.OnChange(p.GetReloadToken, RaiseChanged));
+                }
+            }
+            catch
+            {
+                DisposeRegistrationsAndProviders(newChangeTokenRegistrations, newProvidersList);
+                throw;
             }
 
-            foreach (IConfigurationProvider p in newProvidersList)
+            ReferenceCountedProviders oldProviders;
+            try
             {
-                p.Load();
-                _changeTokenRegistrations.Add(ChangeToken.OnChange(p.GetReloadToken, RaiseChanged));
+                oldProviders = _providerManager.ReplaceProviders(newProvidersList);
+            }
+            catch
+            {
+                DisposeRegistrationsAndProviders(newChangeTokenRegistrations, newProvidersList);
+                throw;
             }
 
-            _providerManager.ReplaceProviders(newProvidersList);
+            List<IDisposable> oldChangeTokenRegistrations = _changeTokenRegistrations;
+            _changeTokenRegistrations = newChangeTokenRegistrations;
+            try
+            {
+                DisposeRegistrations(oldChangeTokenRegistrations);
+            }
+            finally
+            {
+                // Decrement the reference count to the old providers. If they are being concurrently read,
+                // disposal is delayed until the final reference is released.
+                oldProviders.Dispose();
+            }
+
             RaiseChanged();
         }
 
         private void DisposeRegistrations()
+            => DisposeRegistrations(_changeTokenRegistrations);
+
+        private static void DisposeRegistrations(IEnumerable<IDisposable> registrations)
         {
-            // dispose change token registrations
-            foreach (IDisposable registration in _changeTokenRegistrations)
+            foreach (IDisposable registration in registrations)
             {
                 registration.Dispose();
+            }
+        }
+
+        private static void DisposeRegistrationsAndProviders(
+            IEnumerable<IDisposable> registrations,
+            IEnumerable<IConfigurationProvider> providers)
+        {
+            try
+            {
+                DisposeRegistrations(registrations);
+            }
+            finally
+            {
+                ConfigurationRoot.DisposeProviders(providers);
             }
         }
 

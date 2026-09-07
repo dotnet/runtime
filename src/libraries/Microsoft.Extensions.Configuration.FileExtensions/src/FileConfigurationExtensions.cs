@@ -20,12 +20,13 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="fileProvider">The default file provider instance.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+        /// <remarks>The caller retains ownership of <paramref name="fileProvider"/>.</remarks>
         public static IConfigurationBuilder SetFileProvider(this IConfigurationBuilder builder, IFileProvider fileProvider)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentNullException.ThrowIfNull(fileProvider);
 
-            builder.Properties[FileProviderKey] = fileProvider;
+            SetFileProviderProperty(builder, fileProvider);
             return builder;
         }
 
@@ -37,30 +38,30 @@ namespace Microsoft.Extensions.Configuration
         public static IFileProvider GetFileProvider(this IConfigurationBuilder builder)
         {
             ArgumentNullException.ThrowIfNull(builder);
-            return builder.GetFileProvider(out _);
+
+            if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
+            {
+                return provider is FileProviderHandle handle
+                    ? handle.GetOrCreate()
+                    : (IFileProvider)provider;
+            }
+
+            return new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
         }
 
-        /// <summary>
-        /// Gets the default <see cref="IFileProvider"/> to be used for file-based providers, reporting the
-        /// <see cref="PhysicalFileProvider"/> created when <paramref name="builder"/> doesn't have one configured.
-        /// </summary>
-        /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <param name="created">
-        /// When this method returns, contains the file provider created by this call and therefore safe to dispose,
-        /// or <see langword="null"/> if the returned file provider was supplied by the caller.
-        /// </param>
-        /// <returns>The default <see cref="IFileProvider"/>.</returns>
-        internal static IFileProvider GetFileProvider(this IConfigurationBuilder builder, out PhysicalFileProvider? created)
+        internal static FileProviderHandle GetFileProviderHandle(this IConfigurationBuilder builder)
         {
             ArgumentNullException.ThrowIfNull(builder);
 
             if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
             {
-                created = null;
-                return (IFileProvider)provider;
+                return provider is FileProviderHandle handle
+                    ? handle
+                    : FileProviderHandle.CreateBorrowed((IFileProvider)provider);
             }
 
-            return created = new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
+            return FileProviderHandle.CreateOwned(
+                new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty));
         }
 
         /// <summary>
@@ -69,12 +70,31 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="basePath">The absolute path of file-based providers.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+        /// <remarks>
+        /// The physical file provider created by this method is disposed once no configuration providers are using it.
+        /// </remarks>
         public static IConfigurationBuilder SetBasePath(this IConfigurationBuilder builder, string basePath)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentNullException.ThrowIfNull(basePath);
 
-            return builder.SetFileProvider(new PhysicalFileProvider(basePath));
+            SetFileProviderProperty(
+                builder,
+                FileProviderHandle.CreateOwned(new PhysicalFileProvider(basePath)));
+            return builder;
+        }
+
+        private static void SetFileProviderProperty(IConfigurationBuilder builder, object fileProvider)
+        {
+            builder.Properties.TryGetValue(FileProviderKey, out object? previous);
+            try
+            {
+                builder.Properties[FileProviderKey] = fileProvider;
+            }
+            finally
+            {
+                (previous as FileProviderHandle)?.DiscardIfIdle();
+            }
         }
 
         /// <summary>

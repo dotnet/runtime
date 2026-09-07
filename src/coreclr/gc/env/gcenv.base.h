@@ -113,10 +113,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #pragma intrinsic(__dmb)
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
- #elif defined(HOST_BROWSER)
-  #define YieldProcessor()
-  #define MemoryBarrier __sync_synchronize
-#elif defined(HOST_AMD64)
+ #elif defined(HOST_AMD64)
 
   extern "C" void
   _mm_pause (
@@ -190,6 +187,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() asm volatile( ".word 0x0100000f");
  #define MemoryBarrier __sync_synchronize
 #endif // __riscv
+
+#ifdef HOST_BROWSER
+  #define YieldProcessor()
+  #define MemoryBarrier __sync_synchronize
+#endif // HOST_BROWSER
 
 #endif // _MSC_VER
 

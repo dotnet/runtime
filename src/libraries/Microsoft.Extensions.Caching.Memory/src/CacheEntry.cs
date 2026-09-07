@@ -151,6 +151,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal long Size => _size;
 
+        internal bool IsDisposed => _isDisposed;
+
         long? ICacheEntry.Size
         {
             get => _size < 0 ? null : _size;
@@ -159,6 +161,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 if (value < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
+                }
+
+                if (_isDisposed)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.CacheEntrySetAfterDispose, nameof(ICacheEntry.Size)));
                 }
 
                 _size = value ?? NotSet;

@@ -539,7 +539,8 @@ extern "C" void QCALLTYPE MetadataImport_Enum(
     mdToken tkParent,
     /* in/out */ INT32* length,
     INT32* shortResult,
-    QCall::ObjectHandleOnStack longResult)
+    QCall::ObjectHandleOnStack longResult,
+    QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {

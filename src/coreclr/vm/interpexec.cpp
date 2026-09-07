@@ -222,6 +222,9 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -2912,6 +2915,30 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
                 }
 
+                INTOP_CASE(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE)
+                {
+                    void* typeHandle = LOCAL_VAR(ip[2], void*);
+
+                    if (typeHandle == nullptr)
+                    {
+                        LOCAL_VAR(ip[1], OBJECTREF) = nullptr;
+                    }
+                    else
+                    {
+                        TypeHandle handle = TypeHandle::FromPtr(typeHandle);
+                        OBJECTREF runtimeType = handle.GetManagedClassObjectIfExists();
+                        if (runtimeType == nullptr)
+                        {
+                            pFrame->ip = ip;
+                            runtimeType = handle.GetManagedClassObject();
+                        }
+                        LOCAL_VAR(ip[1], OBJECTREF) = runtimeType;
+                    }
+
+                    ip += 3;
+                    INTOP_NEXT;
+                }
+
                 INTOP_CASE(INTOP_CALL_HELPER_P_PS)
                 {
                     pFrame->ip = ip;
@@ -3334,8 +3361,7 @@ SWITCH_OPCODE:
                         cookie = targetMethod->GetCalliCookie();
                         if (cookie == NULL)
                         {
-                            MetaSig sig(targetMethod);
-                            cookie = GetCookieForCalliSig(sig, NULL);
+                            cookie = GetCookieForManagedMethod(targetMethod);
                             _ASSERTE(cookie != NULL);
                             targetMethod->SetCalliCookie(cookie);
                             cookie = targetMethod->GetCalliCookie();

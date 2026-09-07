@@ -609,6 +609,21 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
 
+        if ((corInfoType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (strip(corInfoType) != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (lvaSecretStubArg != BAD_VAR_NUM)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            lvaSecretStubArg = *curVarNum;
+        }
+
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
         if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
         {
@@ -931,6 +946,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             wellKnownArg = WellKnownArg::RetBuffer;
         }
+        else if (i == lvaSecretStubArg)
+        {
+            wellKnownArg = WellKnownArg::SecretStubParam;
+        }
 #ifdef SWIFT_SUPPORT
         else if (i == lvaSwiftSelfArg)
         {
@@ -977,7 +996,9 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
             CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
             if (clsHnd != NO_CLASS_HANDLE)
             {
-                info.compCompHnd->getWasmLowering(clsHnd);
+                eeRunExtraSuperPmiQueries([&]() {
+                    info.compCompHnd->getWasmLowering(clsHnd);
+                });
             }
         }
 #endif // DEBUG
@@ -2589,7 +2610,13 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 #ifdef DEBUG
         if (JitConfig.EnableExtraSuperPmiQueries())
         {
+            // makeExtraStructQueries runs real JIT work, so it is not trapped here. It can also set
+            // compFloatingPointUsed, via impNormStructType, GetHfaType, and ClassLayout::Create,
+            // which would let the queries change codegen, so restore that.
+            //
+            const bool savedFloatingPointUsed = compFloatingPointUsed;
             makeExtraStructQueries(layout->GetClassHandle(), 2);
+            compFloatingPointUsed = savedFloatingPointUsed;
         }
 #endif // DEBUG
     }
@@ -2638,7 +2665,8 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
         size_t                   numNodes = ArrLen(nodes);
         info.compCompHnd->getTypeLayout(structHandle, nodes, &numNodes);
     };
-    queryLayout();
+    // Trapped because an AOT compiler rejects this query for an out-of-bubble type.
+    eeRunExtraSuperPmiQueries(queryLayout);
 
     // Bypass fetching instance fields of ref classes for now,
     // as it requires traversing the class hierarchy.
@@ -5718,8 +5746,10 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 #endif
 
 #if defined(WINDOWS_AMD64_ABI)
-    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-    return false;
+    // On Windows AMD64, standard register arguments have caller-reserved stack space.
+    unsigned paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+    int      callerOffset;
+    return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, &callerOffset);
 #else // !WINDOWS_AMD64_ABI
 
     //  A register argument that is not enregistered ends up as

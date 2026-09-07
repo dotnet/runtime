@@ -7558,7 +7558,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         GenTreeIntConCommon* icon = addr->AsIntConCommon();
 
 #if defined(FEATURE_SIMD)
-        if ((!addr->TypeIs(TYP_SIMD12) || !icon->ImmedValNeedsReloc(m_compiler)) && icon->FitsInAddrBase(m_compiler))
+        if ((!node->TypeIs(TYP_SIMD12) || !icon->ImmedValNeedsReloc(m_compiler)) && icon->FitsInAddrBase(m_compiler))
 #else
         if (icon->FitsInAddrBase(m_compiler))
 #endif

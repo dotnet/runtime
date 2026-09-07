@@ -12,7 +12,7 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// Interface for section-like objects that can be emitted to a wasm module stream.
     /// </summary>
-    interface IWasmEmittable
+    internal interface IWasmEmittable
     {
         int EmitToStream(Stream outputFileStream);
         int EncodeSize();
@@ -21,7 +21,7 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// Interface for types that represent a WebAssembly section.
     /// </summary>
-    interface IWasmSection : IWasmEmittable
+    internal interface IWasmSection : IWasmEmittable
     {
         WasmSectionType Type { get; }
     }
@@ -140,7 +140,7 @@ namespace ILCompiler.ObjectWriter
     // the WasmSection abstraction.
     internal sealed class WasmExternallyCountedSection : WasmVectorSection
     {
-        private bool _entryCountSet = false;
+        private bool _entryCountSet;
 
         public WasmExternallyCountedSection(WasmSectionType type, Stream stream, Utf8String name, int sectionIndex)
             : base(type, stream, name, sectionIndex)

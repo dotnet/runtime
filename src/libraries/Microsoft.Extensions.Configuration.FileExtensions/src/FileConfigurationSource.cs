@@ -13,35 +13,29 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public abstract class FileConfigurationSource : IConfigurationSource
     {
-        private IFileProvider? _fileProvider;
-        private FileProviderOwner? _fileProviderOwner;
+        private FileProviderHandle? _fileProvider;
 
         /// <summary>
         /// Gets or sets the provider used to access the contents of the file.
         /// </summary>
         /// <remarks>
-        /// A file provider assigned to this property or supplied by the <see cref="IConfigurationBuilder"/>
-        /// belongs to the caller and is not disposed by the configuration system. A
-        /// <see cref="PhysicalFileProvider"/> created implicitly by <see cref="ResolveFileProvider"/> or
-        /// <see cref="EnsureDefaults"/> is disposed once every <see cref="FileConfigurationProvider"/>
-        /// using it has been disposed. Building this source again after that replaces it with a fresh instance.
-        /// A provider built while using such an implicitly created provider keeps using that instance and
-        /// the current <see cref="Path"/> even if this source is subsequently changed.
+        /// A provider supplied by the caller is not disposed by the configuration system.
+        /// A provider created by the configuration system is disposed once nothing is using it.
         /// </remarks>
         public IFileProvider? FileProvider
         {
-            get => _fileProvider;
+            get => _fileProvider?.Current;
             set
             {
-                if (ReferenceEquals(_fileProvider, value))
+                if (ReferenceEquals(FileProvider, value) &&
+                    (value is not null || _fileProvider is null))
                 {
                     return;
                 }
 
-                FileProviderOwner? previousOwner = _fileProviderOwner;
-                _fileProviderOwner = null;
-                _fileProvider = value;
-                previousOwner?.Retire();
+                FileProviderHandle? previous = _fileProvider;
+                _fileProvider = value is null ? null : FileProviderHandle.CreateBorrowed(value);
+                previous?.DiscardIfIdle();
             }
         }
 
@@ -93,36 +87,15 @@ namespace Microsoft.Extensions.Configuration
         /// Called to use any default settings on the builder like the FileProvider or FileLoadExceptionHandler.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <remarks>
-        /// A file provider set on <paramref name="builder"/> is used without transferring ownership. When
-        /// no provider is set, the physical file provider created by this method belongs to the configuration
-        /// system and is disposed once nothing is using it. See <see cref="FileProvider"/>.
-        /// </remarks>
         public void EnsureDefaults(IConfigurationBuilder builder)
         {
-            if (_fileProvider is null)
-            {
-                IFileProvider fileProvider = builder.GetFileProvider(out PhysicalFileProvider? created);
-                if (created is not null)
-                {
-                    SetOwnedFileProvider(created);
-                }
-                else
-                {
-                    _fileProvider = fileProvider;
-                }
-            }
-
+            _fileProvider ??= builder.GetFileProviderHandle();
             OnLoadException ??= builder.GetFileLoadExceptionHandler();
         }
 
         /// <summary>
         /// Creates a physical file provider for the file's directory if no file provider has been set, for absolute Path.
         /// </summary>
-        /// <remarks>
-        /// The physical file provider created by this method belongs to the configuration system and is
-        /// disposed once nothing is using it. See <see cref="FileProvider"/>.
-        /// </remarks>
         public void ResolveFileProvider()
         {
             if (_fileProvider is null &&
@@ -130,31 +103,16 @@ namespace Microsoft.Extensions.Configuration
                 System.IO.Path.IsPathRooted(Path) &&
                 System.IO.Path.GetDirectoryName(Path) is string directory)
             {
-                SetOwnedFileProvider(new PhysicalFileProvider(directory));
+                _fileProvider = FileProviderHandle.CreateOwned(new PhysicalFileProvider(directory));
                 Path = System.IO.Path.GetFileName(Path);
             }
         }
 
-        internal FileProviderOwner? AcquireFileProvider(out IFileProvider? fileProvider)
+        internal FileProviderHandle? AcquireFileProvider()
         {
-            FileProviderOwner? owner = _fileProviderOwner;
-            if (owner is null)
-            {
-                fileProvider = _fileProvider;
-                return null;
-            }
-
-            fileProvider = owner.Acquire();
-            _fileProvider = fileProvider;
-            return owner;
-        }
-
-        private void SetOwnedFileProvider(PhysicalFileProvider fileProvider)
-        {
-            FileProviderOwner? previousOwner = _fileProviderOwner;
-            _fileProviderOwner = new FileProviderOwner(fileProvider);
-            _fileProvider = fileProvider;
-            previousOwner?.Retire();
+            FileProviderHandle? fileProvider = _fileProvider;
+            fileProvider?.Acquire();
+            return fileProvider;
         }
     }
 }

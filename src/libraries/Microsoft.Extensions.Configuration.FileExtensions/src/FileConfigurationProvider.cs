@@ -20,9 +20,7 @@ namespace Microsoft.Extensions.Configuration
     public abstract class FileConfigurationProvider : ConfigurationProvider, IDisposable
     {
         private readonly IDisposable? _changeTokenRegistration;
-        private readonly IFileProvider? _fileProvider;
-        private readonly string? _path;
-        private FileProviderOwner? _fileProviderOwner;
+        private FileProviderHandle? _fileProvider;
 
         /// <summary>
         /// Initializes a new instance with the specified source.
@@ -33,21 +31,14 @@ namespace Microsoft.Extensions.Configuration
             ArgumentNullException.ThrowIfNull(source);
 
             Source = source;
-            FileProviderOwner? fileProviderOwner = source.AcquireFileProvider(out IFileProvider? fileProvider);
-            if (fileProviderOwner is not null)
-            {
-                // Keep the resource and path paired with the lease that protects them. Caller-provided
-                // file providers retain the existing behavior of being resolved from Source when used.
-                _fileProvider = fileProvider;
-                _path = source.Path;
-            }
+            FileProviderHandle? fileProvider = source.AcquireFileProvider();
 
             try
             {
-                if (Source.ReloadOnChange && FileProvider is not null)
+                if (Source.ReloadOnChange && Source.FileProvider is not null)
                 {
                     _changeTokenRegistration = ChangeToken.OnChange(
-                        () => FileProvider.Watch(Path!),
+                        () => Source.FileProvider.Watch(Source.Path!),
                         async () =>
                         {
                             await Task.Delay(Source.ReloadDelay).ConfigureAwait(false);
@@ -68,11 +59,11 @@ namespace Microsoft.Extensions.Configuration
             }
             catch
             {
-                fileProviderOwner?.Release();
+                fileProvider?.Release();
                 throw;
             }
 
-            _fileProviderOwner = fileProviderOwner;
+            _fileProvider = fileProvider;
         }
 
         /// <summary>
@@ -80,20 +71,16 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public FileConfigurationSource Source { get; }
 
-        private IFileProvider? FileProvider => _fileProvider ?? Source.FileProvider;
-
-        private string? Path => _fileProvider is null ? Source.Path : _path;
-
         /// <summary>
         /// Generates a string representing this provider name and relevant details.
         /// </summary>
         /// <returns>The configuration name.</returns>
         public override string ToString()
-            => $"{GetType().Name} for '{Path}' ({(Source.Optional ? "Optional" : "Required")})";
+            => $"{GetType().Name} for '{Source.Path}' ({(Source.Optional ? "Optional" : "Required")})";
 
         private void Load(bool reload)
         {
-            IFileInfo? file = FileProvider?.GetFileInfo(Path ?? string.Empty);
+            IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
             if (file == null || !file.Exists)
             {
                 HandleLoadingNonExisting(reload, file);
@@ -159,7 +146,7 @@ namespace Microsoft.Extensions.Configuration
                         ClearData();
                         updated = true;
                     }
-                    string filePath = file.PhysicalPath ?? Path ?? file.Name;
+                    string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
                     var wrapped = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
                     HandleException(ExceptionDispatchInfo.Capture(wrapped));
                 }
@@ -189,7 +176,7 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Path ?? file?.Name));
+                var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path ?? file?.Name));
                 if (!string.IsNullOrEmpty(file?.PhysicalPath))
                 {
                     error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
@@ -206,7 +193,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Loads the contents of the file at <see cref="Path"/>.
+        /// Loads the contents of the file at <see cref="FileConfigurationSource.Path"/>.
         /// </summary>
         /// <exception cref="DirectoryNotFoundException">Optional is <c>false</c> on the source and a
         /// directory cannot be found at the specified Path.</exception>
@@ -254,17 +241,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <inheritdoc />
-        public void Dispose()
-        {
-            try
-            {
-                Dispose(true);
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _fileProviderOwner, null)?.Release();
-            }
-        }
+        public void Dispose() => Dispose(true);
 
         /// <summary>
         /// Disposes the provider.
@@ -272,7 +249,14 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="disposing"><c>true</c> if invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
-            _changeTokenRegistration?.Dispose();
+            try
+            {
+                _changeTokenRegistration?.Dispose();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _fileProvider, null)?.Release();
+            }
         }
     }
 }

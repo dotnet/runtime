@@ -785,7 +785,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     //
     if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
     {
-        info.compCompHnd->getWasmLowering(clsHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            info.compCompHnd->getWasmLowering(clsHnd);
+        });
     }
 #endif // DEBUG
 #endif // defined(TARGET_WASM)
@@ -4299,6 +4301,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
+    activePhaseChecks |= PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED;
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
     // If this is a failed inline attempt, we're done.
@@ -4336,6 +4339,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform indirect calls that require control flow expansion.
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
+
+    // Relaxed IR checks are currently only enabled through indirect call transformation.
+    activePhaseChecks &= ~(PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED);
 
     // Cleanup un-imported BBs, cleanup un-imported or
     // partially imported try regions, add OSR step blocks.
@@ -4600,10 +4606,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
     // Decide the kind of code we want to generate. Done here, after the second
     // round of empty-EH removal above, so that EH eliminated post-morph doesn't
@@ -4930,6 +4932,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
+    activePhaseChecks |= PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
@@ -5003,6 +5007,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
+    // LSRA may insert nodes without users to model register saves/restores.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     auto regAllocPhase = [this] {
         m_regAlloc->doRegisterAllocation();
     };
@@ -6221,31 +6229,33 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
-        // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)eeGetClassAssemblyName(info.compClassHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)eeGetClassAssemblyName(info.compClassHnd);
 
-        // Fetch class names for the method's generic parameters.
-        //
-        CORINFO_SIG_INFO sig;
-        info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+            // Fetch class names for the method's generic parameters.
+            //
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
 
-        const unsigned classInst = sig.sigInst.classInstCount;
-        if (classInst > 0)
-        {
-            for (unsigned i = 0; i < classInst; i++)
+            const unsigned classInst = sig.sigInst.classInstCount;
+            if (classInst > 0)
             {
-                eeGetClassName(sig.sigInst.classInst[i]);
+                for (unsigned i = 0; i < classInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.classInst[i]);
+                }
             }
-        }
 
-        const unsigned methodInst = sig.sigInst.methInstCount;
-        if (methodInst > 0)
-        {
-            for (unsigned i = 0; i < methodInst; i++)
+            const unsigned methodInst = sig.sigInst.methInstCount;
+            if (methodInst > 0)
             {
-                eeGetClassName(sig.sigInst.methInst[i]);
+                for (unsigned i = 0; i < methodInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.methInst[i]);
+                }
             }
-        }
+        });
     }
 #endif // DEBUG
 

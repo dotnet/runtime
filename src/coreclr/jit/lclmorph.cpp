@@ -1505,7 +1505,7 @@ private:
                 // later turn into indirections.
                 bool isSuitableLocal =
                     m_compiler->opts.compJitOptimizeStructHiddenBuffer && varTypeIsStruct(varDsc) &&
-                    !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
+                    !m_compiler->lvaIsUnknownSizeLocal(lclNum) && !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
                     (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
 #ifdef TARGET_X86
                 if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))

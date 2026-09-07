@@ -45,12 +45,20 @@ namespace Microsoft.Extensions.Configuration
         public IConfigurationRoot Build()
         {
             var providers = new List<IConfigurationProvider>();
-            foreach (IConfigurationSource source in _sources)
+            try
             {
-                IConfigurationProvider provider = source.Build(this);
-                providers.Add(provider);
+                foreach (IConfigurationSource source in _sources)
+                {
+                    IConfigurationProvider provider = source.Build(this);
+                    providers.Add(provider);
+                }
+                return new ConfigurationRoot(providers);
             }
-            return new ConfigurationRoot(providers);
+            catch
+            {
+                ConfigurationRoot.DisposeProviders(providers);
+                throw;
+            }
         }
     }
 }

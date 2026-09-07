@@ -781,7 +781,7 @@
     "GCLowestAddress": "Lowest GC address as recorded by the VM/GC interface",
     "GcNotificationFlags": "Global flag for storing GC notification data",
     "GCThread": "Pointer to the GC thread",
-    "GlobalAllocContext": "Pointer to the global EEAllocContext",
+    "GlobalAllocContext": "Pointer to the global EEAllocContext. Required in GC contract version `c1`; optional in `c2` and later, where it is absent in runtimes which allocate only out of thread allocation contexts",
     "GlobalFreeHugeRegions": "Pointer to the global free huge region list",
     "GlobalMechanismsLength": "Number of counters in the global GC mechanisms array",
     "GlobalRegionsToDecommit": "Pointer to the global regions-to-decommit array",

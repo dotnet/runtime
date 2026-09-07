@@ -179,9 +179,6 @@ namespace Microsoft.Extensions.Configuration
             }
 
             string? directoryPath = Path.GetDirectoryName(secretPath);
-
-            // Passing the rooted path lets the source create the file provider itself, which also makes the source
-            // responsible for disposing it. Creating one here would leak it, along with its file watcher.
             return Directory.Exists(directoryPath)
                 ? configuration.AddJsonFile(secretPath, optional, reloadOnChange)
                 : configuration.AddJsonFile(PathHelper.SecretsFileName, optional, reloadOnChange);

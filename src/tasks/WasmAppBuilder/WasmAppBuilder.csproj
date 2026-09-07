@@ -59,15 +59,14 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
 
+  <!-- The module list is shared with the runtime tests' corerun relink, which has to cover the
+       same modules as the tables generated here. -->
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
-        <WasmPInvokeModule Include="libSystem.Native" />
-        <WasmPInvokeModule Include="libSystem.Native.Browser" />
-        <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
-        <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-        <WasmPInvokeModule Include="libSystem.Native.Browser" />
-        <WasmPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+        <WasmPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
       </ItemGroup>
 
       <PropertyGroup>

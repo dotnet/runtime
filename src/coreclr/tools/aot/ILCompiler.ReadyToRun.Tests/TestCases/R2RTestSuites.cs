@@ -62,6 +62,38 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void GenericTypeConstraintsAllowVariantParameters()
+    {
+        var genericTypeConstraints = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericTypeConstraintsAllowVariantParameters),
+            SourceResourceNames = ["TypeValidation/GenericTypeConstraints.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericTypeConstraintsAllowVariantParameters),
+            [
+                new(nameof(GenericTypeConstraintsAllowVariantParameters), [new CrossgenAssembly(genericTypeConstraints)])
+                {
+                    AdditionalArgs =
+                    {
+                        "--compile-no-methods",
+                        "--type-validation",
+                        "AutomaticWithLogging",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(
+                (reader.ReadyToRunHeader.Flags & (uint)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation) != 0,
+                "Expected the ReadyToRun image to skip runtime type validation.");
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
@@ -192,6 +224,51 @@ public class R2RTestSuites
             WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
             Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
             return body.Value;
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmCompositeModule()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var wasmCompositeModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmCompositeModule),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmCompositeModule),
+            [
+                new(nameof(WasmCompositeModule),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(wasmCompositeModule),
+                ])
+                {
+                    OutputFileExtension = ".wasm",
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            // A composite Webcil image has no ILLibrary flag in its COR header, and Webcil has no
+            // export table to publish an RTR_HEADER export, so the ReadyToRun header has to be
+            // found through the CLI header's ManagedNativeHeader directory.
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.True(reader.Composite);
+            Assert.True(R2RAssert.HasManifestRef(reader, "CompositeLib", out string diag), diag);
+            ReadyToRunSection section = reader.ReadyToRunHeader.Sections.Values.First();
+            int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
+            Assert.Equal(0, payloadOffset & 0xF);
         }
     }
 
@@ -1757,6 +1834,7 @@ public class R2RTestSuites
             [
                 new(nameof(VirtualMethodGenericsNonGVM), [new CrossgenAssembly(nonGvmLib)])
                 {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
                     Validate = Validate,
                 },
             ]));
@@ -1785,6 +1863,20 @@ public class R2RTestSuites
 
             // Test7: Non-final DIM
             Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
+
+            // Test8: non-generic value type - both interface and Object.ToString dispatch arrive
+            // with a boxed 'this' and so need an unboxing thunk
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test8", "Test8Method", out diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test8", "ToString", out diag), diag);
+
+            // Test9: generic value type, exact instantiation
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<int>", "Test9Method", out diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<int>", "ToString", out diag), diag);
+
+            // Test9: shared instantiation - the thunk additionally recovers the generic context
+            // from the boxed instance's MethodTable
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<__Canon>", "Test9Method", out diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<__Canon>", "ToString", out diag), diag);
         }
     }
 
@@ -1802,6 +1894,7 @@ public class R2RTestSuites
             [
                 new(nameof(VirtualMethodGenericsGVM), [new CrossgenAssembly(gvmLib)])
                 {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
                     Validate = Validate,
                 },
             ]));
@@ -1830,6 +1923,15 @@ public class R2RTestSuites
 
             // Test7: Static virtual generic method
             Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
+
+            // Test8: Value-type interface GVM unboxing thunk
+            ReadyToRunMethod unboxingThunk = Assert.Single(
+                R2RAssert.GetAllMethods(reader),
+                method => method.DeclaringType == "Test8" &&
+                    method.Name == "Test8Method" &&
+                    method.InstanceArgs is ["int"] &&
+                    method.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal));
+            Assert.NotEmpty(unboxingThunk.RuntimeFunctions);
         }
     }
 

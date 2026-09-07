@@ -128,6 +128,18 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void DisposesProviderWhenAddingSourceFails()
+        {
+            var provider = new ThrowingDisposableTestConfigurationProvider();
+            using var config = new ConfigurationManager();
+
+            Assert.Throws<InvalidOperationException>(
+                () => ((IConfigurationBuilder)config).Add(new TestConfigurationSource(provider)));
+
+            Assert.True(provider.IsDisposed);
+        }
+
+        [Fact]
         public void DisposesProvidersOnRemoval()
         {
             var provider1 = new TestConfigurationProvider("foo", "foo-value");
@@ -171,6 +183,25 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider2.IsDisposed);
             Assert.True(provider4.IsDisposed);
             Assert.True(provider5.IsDisposed);
+        }
+
+        [Fact]
+        public void FailedReloadDisposesReplacementProvidersAndPreservesCurrentProviders()
+        {
+            var currentProvider = new DisposableTestConfigurationProvider("foo", "foo-value");
+            var replacementProvider = new ThrowingDisposableTestConfigurationProvider();
+            int buildCount = 0;
+            var source = new TestConfigurationSource(
+                () => buildCount++ == 0 ? currentProvider : replacementProvider);
+            using var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+            builder.Add(source);
+
+            Assert.Throws<InvalidOperationException>(() => builder.Properties["reload"] = true);
+
+            Assert.True(replacementProvider.IsDisposed);
+            Assert.False(currentProvider.IsDisposed);
+            Assert.Equal("foo-value", config["foo"]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -1230,16 +1261,21 @@ namespace Microsoft.Extensions.Configuration.Test
 
         private class TestConfigurationSource : IConfigurationSource
         {
-            private readonly IConfigurationProvider _provider;
+            private readonly Func<IConfigurationProvider> _providerFactory;
 
             public TestConfigurationSource(IConfigurationProvider provider)
+                : this(() => provider)
             {
-                _provider = provider;
+            }
+
+            public TestConfigurationSource(Func<IConfigurationProvider> providerFactory)
+            {
+                _providerFactory = providerFactory;
             }
 
             public IConfigurationProvider Build(IConfigurationBuilder builder)
             {
-                return _provider;
+                return _providerFactory();
             }
         }
 
@@ -1314,6 +1350,15 @@ namespace Microsoft.Extensions.Configuration.Test
 
             public void Dispose()
                 => IsDisposed = true;
+        }
+
+        private sealed class ThrowingDisposableTestConfigurationProvider : ConfigurationProvider, IDisposable
+        {
+            public bool IsDisposed { get; private set; }
+
+            public override void Load() => throw new InvalidOperationException("Loading failed.");
+
+            public void Dispose() => IsDisposed = true;
         }
 
         private class TestChangeToken : IChangeToken

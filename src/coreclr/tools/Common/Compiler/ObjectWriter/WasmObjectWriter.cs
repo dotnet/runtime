@@ -33,6 +33,7 @@ namespace ILCompiler.ObjectWriter
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
             { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount },
+            { WasmObjectNodeSection.DataSection, WasmSectionType.Data },
         };
 
         // Sections emitted before data segments.
@@ -43,14 +44,18 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.FunctionSection.Name,
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.MemorySection.Name,
+            // Tag section (unused)
             WasmObjectNodeSection.GlobalSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
             WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
+            WasmObjectNodeSection.DataSection.Name,
         ];
 
         private protected readonly Dictionary<string, WasmGlobal> _definedGlobals = new();
+        /// <summary>Names of the writer-inserted stub functions, which are the only exported functions.</summary>
+        private protected readonly List<Utf8String> _wasmStubNames = new();
         private protected readonly WasmSections _sections = new();
         private protected readonly WasmSymbolManager _wasmSymbolManager = new();
         /// <summary>
@@ -346,6 +351,7 @@ namespace ILCompiler.ObjectWriter
 
             RegisterFunctionSymbol(name);
             RegisterStubIndexAndSignature(body.Signature);
+            _wasmStubNames.Add(name);
         }
 
         private protected int RegisterSignature(WasmFuncType signature)

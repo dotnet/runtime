@@ -78,7 +78,8 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
-            bool targetAllowsRuntimeCodeGeneration = GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
+            bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
+                ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
@@ -309,8 +310,8 @@ namespace ILCompiler
                 {
                     foreach (var inputFile in inputFilePaths)
                     {
-                        var tmpOutFile = inputFile.Value.Replace(".dll", ".ni.dll.tmp");
-                        var outFile = inputFile.Value.Replace(".dll", ".ni.dll");
+                        var tmpOutFile = GetNearOutputFilePath(inputFile.Value, temporary: true);
+                        var outFile = GetNearOutputFilePath(inputFile.Value, temporary: false);
                         Console.WriteLine($@"Moving R2R PE file: {tmpOutFile} to {outFile}");
                         System.IO.File.Move(tmpOutFile, outFile);
                     }
@@ -324,6 +325,23 @@ namespace ILCompiler
             return 0;
         }
 
+        private static string GetNearOutputFilePath(string inFilePath, bool temporary)
+        {
+            string inputFileExtension = Path.GetExtension(inFilePath);
+            if (inputFileExtension.Equals(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.ChangeExtension(inFilePath, temporary ? ".ni.dll.tmp" : ".ni.dll");
+            }
+            else if (inputFileExtension.Equals(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.ChangeExtension(inFilePath, temporary ? ".ni.exe.tmp" : ".ni.exe");
+            }
+            else
+            {
+                throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension));
+            }
+        }
+
         private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext, Logger logger)
         {
             //
@@ -332,19 +350,7 @@ namespace ILCompiler
             var e = inFilePaths.GetEnumerator();
             e.MoveNext();
             string inFilePath = e.Current.Value;
-            string inputFileExtension = Path.GetExtension(inFilePath);
-            string nearOutFilePath = inputFileExtension switch
-            {
-                ".dll" => Path.ChangeExtension(inFilePath,
-                    _singleFileCompilation&& _inputBubble
-                        ? ".ni.dll.tmp"
-                        : ".ni.dll"),
-                ".exe" => Path.ChangeExtension(inFilePath,
-                    _singleFileCompilation && _inputBubble
-                        ? ".ni.exe.tmp"
-                        : ".ni.exe"),
-                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
-            };
+            string nearOutFilePath = GetNearOutputFilePath(inFilePath, temporary: _singleFileCompilation && _inputBubble);
 
             string outFile = _outNearInput ? nearOutFilePath : _outputFilePath;
             string dgmlLogFileName = Get(_command.DgmlLogFileName);
@@ -655,6 +661,7 @@ namespace ILCompiler
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
                     nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);

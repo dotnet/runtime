@@ -276,7 +276,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_Check_TypeLayout               |  0x2A | Verification of type layout, followed by typespec and expected type layout descriptor
 | READYTORUN_FIXUP_Check_FieldOffset              |  0x2B | Verification of field offset, followed by field signature and expected field layout descriptor
 | READYTORUN_FIXUP_DelegateCtor                   |  0x2C | Delegate constructor, followed by method signature
-| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
+| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Type which declares the method described by the signature. Followed by the method signature.
 | READYTORUN_FIXUP_IndirectPInvokeTarget          |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_PInvokeTarget                  |  0x2F | Target of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_Check_InstructionSetSupport    |  0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.

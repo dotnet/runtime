@@ -588,7 +588,7 @@ namespace Internal.JitInterface
         {
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly) && signature.Flags.HasFlag(MethodSignatureFlags.UnmanagedCallingConvention))
             {
-                flags = flags | LoweringFlags.IsUnmanagedCallersOnly;
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
 
             TypeDesc returnType = signature.ReturnType;
@@ -628,7 +628,7 @@ namespace Internal.JitInterface
                     returnContext.CacheReturnStructBySize(returnType);
                     if (!TryGetMultiSegmentLayout(returnType, out _, out _))
                     {
-                        int returnAlignment = CorInfoImpl.GetClassAlignmentRequirementStatic((DefType)returnType);
+                        int returnAlignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)returnType);
                         returnContext.CacheStruct(returnType, returnAlignment > 8);
                     }
                 }
@@ -727,7 +727,7 @@ namespace Internal.JitInterface
                     else
                     {
                         Debug.Assert(paramType is DefType);
-                        int paramAlignment = CorInfoImpl.GetClassAlignmentRequirementStatic((DefType)paramType);
+                        int paramAlignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)paramType);
                         bool requiresAlignedSlot = paramAlignment > 8;
                         sigBuilder.Append(requiresAlignedSlot ? 'A' : 'S');
                         sigBuilder.Append(paramSize);
