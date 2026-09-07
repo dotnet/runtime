@@ -260,7 +260,7 @@ public class ConvertDllsToWebcil : Task
             return true;
         }
 
-        candidateHasILCode = AssemblyHasILCode(candidateDllPath, out Version candidateVersion);
+        candidateHasILCode = AssemblyHasILCode(candidateDllPath, out Guid candidateMvid);
         if (!candidateHasILCode)
         {
             Log.LogMessage(MessageImportance.Low,
@@ -268,15 +268,18 @@ public class ConvertDllsToWebcil : Task
             return false;
         }
 
-        Version prebuiltVersion = TryReadAssemblyVersion(prebuiltImagePath);
+        Guid? prebuiltMvid = TryReadMvid(prebuiltImagePath);
 
-        // If the prebuilt identity is unreadable, keep it (prior behavior) so the common case where
-        // every candidate is the pack's own assembly is never regressed.
-        if (prebuiltVersion is null || candidateVersion.Equals(prebuiltVersion))
+        // Compare MVIDs, not assembly versions: with cross-module inlining (--opt-cross-module) every image in
+        // the bundle shares one version bubble the runtime checks by MVID at load, and the assembly version
+        // rarely changes between incremental builds, so a stale prebuilt R2R would pass a version check yet
+        // fail-fast at startup. If the prebuilt identity is unreadable, keep it (prior behavior) so the common
+        // case where every candidate is the pack's own assembly is never regressed.
+        if (prebuiltMvid is null || candidateMvid.Equals(prebuiltMvid.Value))
             return true;
 
         Log.LogMessage(MessageImportance.Normal,
-            $"Not staging prebuilt R2R image '{prebuiltImagePath}' (v{prebuiltVersion}) for '{candidateDllPath}' (v{candidateVersion}): assembly version mismatch; converting IL instead.");
+            $"Not staging prebuilt R2R image '{prebuiltImagePath}' (MVID {prebuiltMvid}) for '{candidateDllPath}' (MVID {candidateMvid}): module version mismatch; converting IL instead.");
         return false;
     }
 
@@ -287,12 +290,12 @@ public class ConvertDllsToWebcil : Task
             && tableSize > 0;
     }
 
-    private static bool AssemblyHasILCode(string path, out Version version)
+    private static bool AssemblyHasILCode(string path, out Guid mvid)
     {
         using FileStream stream = File.OpenRead(path);
         using var peReader = new PEReader(stream);
         MetadataReader metadataReader = peReader.GetMetadataReader();
-        version = metadataReader.GetAssemblyDefinition().Version;
+        mvid = metadataReader.GetGuid(metadataReader.GetModuleDefinition().Mvid);
 
         foreach (MethodDefinitionHandle methodDefinitionHandle in metadataReader.MethodDefinitions)
         {
@@ -305,24 +308,26 @@ public class ConvertDllsToWebcil : Task
         return false;
     }
 
-    private static Version TryReadAssemblyVersion(string path)
+    private static Guid? TryReadMvid(string path)
     {
         try
         {
             using FileStream stream = File.OpenRead(path);
             // Detect webcil-in-wasm by content (the '\0asm' magic), not by extension: a prebuilt R2R image
             // may still be named *.dll before the rename lands everywhere, and a PEReader would throw on it,
-            // returning null and silently bypassing the version-mismatch guard.
+            // returning null and silently bypassing the MVID guard.
             // TODO: once every R2R image is emitted as *.wasm (see 33ecc5fd2e3 / dotnet/runtime#121257),
             // drop the content sniff and key on Utils.WebcilInWasmExtension again.
             if (IsWebcilInWasm(stream))
             {
                 using var webcilReader = new WebcilReader(stream, path);
-                return webcilReader.GetMetadataReader().GetAssemblyDefinition().Version;
+                MetadataReader webcilMetadata = webcilReader.GetMetadataReader();
+                return webcilMetadata.GetGuid(webcilMetadata.GetModuleDefinition().Mvid);
             }
 
             using var peReader = new PEReader(stream);
-            return peReader.GetMetadataReader().GetAssemblyDefinition().Version;
+            MetadataReader peMetadata = peReader.GetMetadataReader();
+            return peMetadata.GetGuid(peMetadata.GetModuleDefinition().Mvid);
         }
         catch
         {

@@ -141,31 +141,23 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- Route per-app R2R images into the served _framework. The SDK CrossGen pipeline (ContainerFormat=wasm)
        replaces each IL .dll in ResolvedFileToPublish with its R2R image named <name>.wasm; ComputeWasmPublishAssets
        keys on the .dll extension to route managed assemblies into _framework, so a .wasm-named R2R image is treated
-       as native and leaks to the publish root (leaving the boot config with no coreAssembly). Swap each per-app R2R
-       .wasm back to its IL .dll (the trimmed IL crossgen compiled), so ComputeWasmPublishAssets classifies it as a
-       managed assembly and ConvertDllsToWebcil stages the R2R image from PrebuiltR2RDirectory (= _WasmPublishR2RDir)
-       keyed on that .dll, the same mechanism the dev-loop build uses for pack R2R. Runs in the outer publish
-       (WasmBuildingForNestedPublish != true) where ProcessPublishFilesForWasm assembles the served bundle; the obj
-       R2R and link dirs are shared on disk with the nested crossgen. See dotnet/runtime#121257. -->
+       as native and leaks to the publish root (leaving the boot config with no coreAssembly). _ReadyToRunCompileList
+       maps each R2R output (OutputR2RImage) back to the IL .dll crossgen compiled (its Identity), so restore that IL
+       .dll: ComputeWasmPublishAssets then classifies it as a managed assembly and ConvertDllsToWebcil stages the R2R
+       image from PrebuiltR2RDirectory (= _WasmPublishR2RDir) keyed on that .dll, the same mechanism the dev-loop
+       build uses for pack R2R. Using the compile list (not a link dir) covers both trimmed (IL from the linker) and
+       untrimmed (IL from the pack) uniformly. DependsOnTargets=CreateReadyToRunImages so it runs after that target's
+       .dll -> .wasm replacement; runs in the outer publish (WasmBuildingForNestedPublish != true) where
+       ProcessPublishFilesForWasm assembles the served bundle. See dotnet/runtime#121257. -->
   <Target Name="_WasmCoreClrRoutePerAppR2RToFramework"
           Condition="'$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRun)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories;CreateReadyToRunImages"
           BeforeTargets="ProcessPublishFilesForWasm">
-    <PropertyGroup>
-      <_WasmR2RILDir Condition="'$(_WasmR2RILDir)' == '' and '$(IntermediateLinkDir)' != ''">$(IntermediateLinkDir)</_WasmR2RILDir>
-      <_WasmR2RILDir Condition="'$(_WasmR2RILDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'linked'))</_WasmR2RILDir>
-    </PropertyGroup>
-    <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmR2RILDir)')">
-      <_WasmPerAppR2RToRoute Include="@(ResolvedFileToPublish)"
-        Condition="'%(Extension)' == '.wasm' and Exists('$(_WasmPublishR2RDir)%(FileName).wasm') and Exists('$(_WasmR2RILDir)%(FileName).dll')" />
-      <ResolvedFileToPublish Remove="@(_WasmPerAppR2RToRoute)" />
-      <ResolvedFileToPublish Include="@(_WasmPerAppR2RToRoute->'$(_WasmR2RILDir)%(FileName).dll')">
-        <RelativePath>%(FileName).dll</RelativePath>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        <PostprocessAssembly></PostprocessAssembly>
-        <OriginalItemSpec></OriginalItemSpec>
-        <NativeLinkerInputPath></NativeLinkerInputPath>
-      </ResolvedFileToPublish>
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+      <ResolvedFileToPublish Include="@(_ReadyToRunCompileList)"
+                             RelativePath="%(FileName)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
   </Target>
 
@@ -217,6 +209,21 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
     </ItemGroup>
+  </Target>
+
+  <!-- Delete per-app R2R images left in obj/R2R by a previous incremental build whose assembly is no longer in
+       the compile closure (a reference or trimming change dropped it). A stale orphan would otherwise be staged
+       and fail-fast at load against the current version bubble. Mirrors the framework build's sfxproj
+       _WasmFrameworkR2RLayoutObsolete. Runs where crossgen produced the images (_ReadyToRunCompileList in scope). -->
+  <Target Name="_WasmCoreClrPruneStalePerAppR2R"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          AfterTargets="_CreateR2RImages">
+    <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
+      <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm"
+                           Exclude="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+    </ItemGroup>
+    <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>
 
 </Project>
