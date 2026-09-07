@@ -1107,7 +1107,6 @@ namespace Internal.IL
                     VerificationError(VerifierError.DelegatePattern);
                     return;
                 }
-                else
                 if (!ftn.Method.Signature.IsStatic)
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
