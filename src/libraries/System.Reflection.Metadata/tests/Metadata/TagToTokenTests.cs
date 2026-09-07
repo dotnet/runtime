@@ -94,7 +94,7 @@ namespace System.Reflection.Metadata.Tests
                    };
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsNotBrowser))]
         public void ValidateTagToTokenConversion()
         {
             foreach (var tag in GetTags())

@@ -939,6 +939,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("TODO_WASM", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void AssemblyGetForwardedTypes()
         {
             Assembly a = typeof(AssemblyTests).Assembly;

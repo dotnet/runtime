@@ -88,6 +88,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(Export_MemberData))]
         public void Export(string testname, Action<XsdDataContractExporter> export, Action<string, XmlSchemaSet> schemaCheck = null)
         {

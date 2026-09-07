@@ -78,6 +78,7 @@ namespace System.Reflection.Tests
         [ComVisible(false)]
         [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))
             /* Descriptors tell us to remove ComVisibleAttribute */]
+        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Test_CustomAttribute_Constructor_CrossAssembly2()
         {
             MethodInfo m = (MethodInfo)MethodBase.GetCurrentMethod();
