@@ -2580,6 +2580,7 @@ namespace System.Reflection
             if (!all && !s_pca.Contains(caType))
                 return;
 
+            // Native AOT doesn't have the metadata to materialize this attribute https://github.com/dotnet/runtimelab/issues/830
 #if !NATIVEAOT
             if (all || caType == typeof(DllImportAttribute))
             {
@@ -2599,11 +2600,14 @@ namespace System.Reflection
             if (!all && !s_pca.Contains(caType!))
                 return false;
 
+            // Native AOT doesn't have the metadata to materialize this attribute https://github.com/dotnet/runtimelab/issues/830
+#if !NATIVEAOT
             if (all || caType == typeof(DllImportAttribute))
             {
                 if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
                     return true;
             }
+#endif
             if (all || caType == typeof(PreserveSigAttribute))
             {
                 if ((method.GetMethodImplementationFlags() & MethodImplAttributes.PreserveSig) != 0)
@@ -2637,6 +2641,7 @@ namespace System.Reflection
                 if (parameter.IsOptional)
                     pcas.Add(new OptionalAttribute());
             }
+            // Native AOT doesn't have the metadata to materialize this attribute https://github.com/dotnet/runtimelab/issues/830
 #if !NATIVEAOT
             if (all || caType == typeof(MarshalAsAttribute))
             {
@@ -2663,6 +2668,7 @@ namespace System.Reflection
             {
                 if (parameter.IsOptional) return true;
             }
+            // Native AOT doesn't have the metadata to materialize this attribute https://github.com/dotnet/runtimelab/issues/830
 #if !NATIVEAOT
             if (all || caType == typeof(MarshalAsAttribute))
             {
@@ -2684,6 +2690,7 @@ namespace System.Reflection
 
             Attribute? pca;
 
+            // Native AOT doesn't have the metadata to materialize this attribute https://github.com/dotnet/runtimelab/issues/830
 #if !NATIVEAOT
             if (all || caType == typeof(MarshalAsAttribute))
             {
@@ -2710,6 +2717,7 @@ namespace System.Reflection
             if (!all && !s_pca.Contains(caType!))
                 return false;
 
+            // Native AOT doesn't have the metadata to materialize this attribute https://github.com/dotnet/runtimelab/issues/830
 #if !NATIVEAOT
             if (all || caType == typeof(MarshalAsAttribute))
             {
