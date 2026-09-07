@@ -42,18 +42,19 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_ResolveWasmConfiguration">
     <PropertyGroup>
       <_WasmRuntimePackR2RDir Condition="'$(_WasmRuntimePackR2RDir)' == '' and '$(_RuntimePackNativeDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_RuntimePackNativeDir)', 'r2r'))</_WasmRuntimePackR2RDir>
+      <!-- Computed unconditionally: the trimmed-closure restriction below needs it with ReadyToRun off too. -->
+      <_WasmCoreClrUnderPublish Condition="'$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(WasmBuildOnlyAfterPublish)' == 'true'">true</_WasmCoreClrUnderPublish>
     </PropertyGroup>
     <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
       <!-- Match the SDK crossgen output dir casing exactly (_ReadyToRunOutputPath = $(IntermediateOutputPath)R2R);
            a lowercase 'r2r' stages nothing on case-sensitive filesystems. -->
       <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmPublishR2RDir>
-      <_WasmR2RUnderPublish Condition="'$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(WasmBuildOnlyAfterPublish)' == 'true'">true</_WasmR2RUnderPublish>
       <!-- Publish always crossgens the whole closure: BCL + app from the per-app R2R (obj/R2R). -->
       <_WasmPublishPrebuiltR2RDirectory>$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <!-- Under publish the build sub-phase mirrors the publish selection so it is superseded cleanly;
            the dev-loop build (neither) sources the BCL from the untrimmed pack R2R and ships the app as IL. -->
-      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmR2RUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
-      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmR2RUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
   </Target>
 
@@ -106,15 +107,17 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- In the trimmed publish-flow build (_WasmR2RUnderPublish: WasmBuildOnlyAfterPublish or a nested publish
-       worker) the served bundle must contain ONLY the linker's trimmed app closure, sourced from the trimmed
-       output. The runtime pack copy-local set carries every shared-framework assembly (~196); the trimmed
-       closure is a small subset (e.g. ~47). Staging the whole pack alongside the per-app R2R images mixes
-       untrimmed-pack and trimmed-per-app version bubbles, so the runtime R2R MVID check faults at startup.
+  <!-- In any trimmed publish-flow build (_WasmCoreClrUnderPublish: an outer publish, a nested publish worker,
+       or the WasmBuildOnlyAfterPublish library-test flow) the served bundle must contain ONLY the linker's
+       trimmed app closure, sourced from the trimmed output. The runtime pack copy-local set carries every
+       shared-framework assembly (~196); the trimmed closure is a small subset (e.g. ~43). Serving the two
+       mixed is wrong with or without ReadyToRun: with R2R it also mixes untrimmed-pack and trimmed-per-app
+       version bubbles so the runtime MVID check faults at startup, and either way an untrimmed assembly can
+       call a member ILLink removed from the trimmed framework (MissingMethodException).
        Keep only assemblies present in the linker output and repoint each at its trimmed IL: ConvertDllsToWebcil
        still stages the per-app R2R image (_WasmBuildPrebuiltR2RDirectory = obj/R2R) for the crossgen'd members
        and PE-converts the trimmed IL for the NYI-fallback (IL-only) members, so every served webcil pins the
-       same trimmed MVIDs. The _WasmR2RUnderPublish test stays at item level because it is computed by the
+       same trimmed MVIDs. The _WasmCoreClrUnderPublish test stays at item level because it is computed by the
        _WasmCoreClrSelectR2RDirectories DependsOnTarget (gating the target on it would skip the target before it
        runs). Scoped to the outer build (WasmBuildingForNestedPublish != true): the nested publish worker owns
        the trimming itself, and rewriting its ReferenceCopyLocalPaths ahead of ILLink would corrupt the link.
@@ -127,7 +130,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmTrimmedClosureDir Condition="'$(_WasmTrimmedClosureDir)' == '' and '$(IntermediateLinkDir)' != ''">$(IntermediateLinkDir)</_WasmTrimmedClosureDir>
       <_WasmTrimmedClosureDir Condition="'$(_WasmTrimmedClosureDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'linked'))</_WasmTrimmedClosureDir>
     </PropertyGroup>
-    <ItemGroup Condition="'$(_WasmR2RUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
+    <ItemGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
       <!-- Tag every copy-local item with trimmed-closure membership (default false so the metadata is always
            defined), then set true for managed assemblies the linker kept. -->
       <ReferenceCopyLocalPaths>
