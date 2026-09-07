@@ -111,6 +111,10 @@
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <Compile Include="$(CoreLibSharedDir)System\ListBuilder.cs" Link="System\ListBuilder.cs" />
+    <Compile Include="Tests\System\ListBuilderTests.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="System\IO\PathInternal.Windows.cs" />
