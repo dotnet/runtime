@@ -128,6 +128,29 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal override void ExportEncapsulationKey(Span<byte> destination)
+        {
+            Debug.Assert(_ecdh is not null);
+            Debug.Assert(destination.Length == Suite.EncapsulationKeySizeInBytes);
+
+            ECParameters parameters = _ecdh.ExportParameters(includePrivateParameters: false);
+            byte[]? x = parameters.Q.X;
+            byte[]? y = parameters.Q.Y;
+
+            Debug.Assert(x is not null);
+            Debug.Assert(y is not null);
+
+            if (x is null ||
+                y is null ||
+                x.Length != destination.Length / 2 ||
+                y.Length != destination.Length / 2)
+            {
+                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+            }
+
+            AsymmetricAlgorithmHelpers.EncodeToUncompressedAnsiX963Key(x, y, ReadOnlySpan<byte>.Empty, destination);
+        }
+
         public override void Dispose() => _ecdh?.Dispose();
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]

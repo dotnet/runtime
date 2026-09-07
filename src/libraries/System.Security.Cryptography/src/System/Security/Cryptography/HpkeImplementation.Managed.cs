@@ -52,6 +52,9 @@ namespace System.Security.Cryptography
         protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>
             _adapter.ExportDecapsulationKey(destination);
 
+        protected override void ExportEncapsulationKeyCore(Span<byte> destination) =>
+            _adapter.ExportEncapsulationKey(destination);
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
