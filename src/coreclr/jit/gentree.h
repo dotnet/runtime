@@ -2170,6 +2170,15 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
+    bool IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDef(Compiler* comp, GenTreeLclVarCommon* def, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDef(
+        Compiler* comp, GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size, TVisitor visitor);
+
     template <typename TVisitor>
     VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
 

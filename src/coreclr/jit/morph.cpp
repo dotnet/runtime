@@ -6859,22 +6859,22 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
 
 void Compiler::fgAssignSetVarDef(GenTree* tree)
 {
-    auto visitDef = [=](const LocalDef& def) {
-        if (def.IsEntire)
+    auto visitDef = [=](GenTreeLclVarCommon* def) {
+        if (tree->IsEntireLocalDef(this, def))
         {
-            def.Def->gtFlags |= GTF_VAR_DEF;
+            def->gtFlags |= GTF_VAR_DEF;
         }
         else
         {
             // We consider partial definitions to be modeled as uses followed by definitions.
             // This captures the idea that precedings defs are not necessarily made redundant
             // by this definition.
-            def.Def->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
+            def->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
         }
         return GenTree::VisitResult::Continue;
     };
 
-    tree->VisitLocalDefs(this, visitDef);
+    tree->VisitLocalDefNodes(this, visitDef);
 }
 
 //------------------------------------------------------------------------------
@@ -13196,8 +13196,8 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
     //
     if (optAssertionCount > 0)
     {
-        auto visitDef = [=](GenTreeLclVarCommon* lcl) {
-            fgKillDependentAssertions(lcl->GetLclNum() DEBUGARG(tree));
+        auto visitDef = [=](GenTreeLclVarCommon* def) {
+            fgKillDependentAssertions(def->GetLclNum() DEBUGARG(tree));
             return GenTree::VisitResult::Continue;
         };
 

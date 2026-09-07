@@ -1570,10 +1570,10 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
     // by the call appears live when its result is used. Its previous value is
     // overwritten on normal flow and only needs to be preserved if it is live
     // into an EH successor.
-    auto visitDef = [&](const LocalDef& def) {
-        if (def.IsEntire)
+    auto visitDef = [&](const auto& def) {
+        if (def.IsEntire(m_compiler))
         {
-            unsigned lclNum = def.Def->GetLclNum();
+            unsigned lclNum = def.GetLclNum();
             if (IsCallDefLiveInEHSucc(block, lclNum))
             {
                 JITDUMP("  V%02u is fully defined but live into an EH successor\n", lclNum);

@@ -1737,18 +1737,18 @@ GenTreeLclVarCommon* Liveness<TLiveness>::ComputeLifeCall(VARSET_TP&       life,
 
     GenTreeLclVarCommon* partialDef = nullptr;
 
-    auto visitDef = [&](const LocalDef& def) {
-        if (!def.IsEntire)
+    auto visitDef = [&](GenTreeLclVarCommon* def) {
+        if ((def->gtFlags & GTF_VAR_USEASG) != 0)
         {
             assert(partialDef == nullptr);
-            partialDef = def.Def;
+            partialDef = def;
         }
 
-        ComputeLifeLocal(life, keepAliveVars, def.Def);
+        ComputeLifeLocal(life, keepAliveVars, def);
         return GenTree::VisitResult::Continue;
     };
 
-    call->VisitLocalDefs(m_compiler, visitDef);
+    call->VisitLocalDefNodes(m_compiler, visitDef);
 
     return partialDef;
 }

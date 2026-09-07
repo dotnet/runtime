@@ -4450,12 +4450,464 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
     }
 }
 
+template <typename TDerived>
+struct LocalDefProvider
+{
+    bool HasMultiDefIndex() const
+    {
+        return static_cast<const TDerived*>(this)->GetMultiDefIndex() != BAD_VAR_NUM;
+    }
+
+    unsigned GetSsaNum(Compiler* compiler) const
+    {
+        const TDerived* derived = static_cast<const TDerived*>(this);
+        unsigned        index   = derived->GetMultiDefIndex();
+        return index == BAD_VAR_NUM ? derived->GetDefNode()->GetSsaNum()
+                                    : derived->GetDefNode()->GetSsaNum(compiler, index);
+    }
+
+    void SetSsaNum(Compiler* compiler, unsigned ssaNum) const
+    {
+        const TDerived* derived = static_cast<const TDerived*>(this);
+        unsigned        index   = derived->GetMultiDefIndex();
+        if (index == BAD_VAR_NUM)
+        {
+            derived->GetDefNode()->SetSsaNum(ssaNum);
+        }
+        else
+        {
+            derived->GetDefNode()->SetSsaNum(compiler, index, ssaNum);
+        }
+    }
+};
+
+struct StoreLclVarDef : LocalDefProvider<StoreLclVarDef>
+{
+    GenTreeLclVarCommon* m_def;
+
+    explicit StoreLclVarDef(GenTreeLclVarCommon* def)
+        : m_def(def)
+    {
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_def->GetLclNum();
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return BAD_VAR_NUM;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return true;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return GetStoreSize(compiler);
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return compiler->lvaLclValueSize(GetLclNum());
+    }
+};
+
+struct PromotedStoreLclVarDef : LocalDefProvider<PromotedStoreLclVarDef>
+{
+    GenTreeLclVarCommon* m_def;
+    unsigned             m_lclNum;
+    uint8_t              m_index;
+
+    PromotedStoreLclVarDef(GenTreeLclVarCommon* def, unsigned lclNum, unsigned index)
+        : m_def(def)
+        , m_lclNum(lclNum)
+        , m_index(static_cast<uint8_t>(index))
+    {
+        assert(index < UINT8_MAX);
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_lclNum;
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return m_index;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return true;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return compiler->lvaGetDesc(m_lclNum)->lvValueSize();
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return compiler->lvaGetDesc(m_lclNum)->lvFldOffset;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return compiler->lvaLclValueSize(m_def->GetLclNum());
+    }
+};
+
+struct StoreLclFldDef : LocalDefProvider<StoreLclFldDef>
+{
+    GenTreeLclFld* m_def;
+
+    explicit StoreLclFldDef(GenTreeLclFld* def)
+        : m_def(def)
+    {
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_def->GetLclNum();
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return BAD_VAR_NUM;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return !m_def->IsPartialLclFld(compiler);
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return m_def->GetLclOffs();
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return m_def->GetValueSize();
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return m_def->GetValueSize();
+    }
+};
+
+struct CallLocalDef : LocalDefProvider<CallLocalDef>
+{
+    GenTreeLclVarCommon* m_def;
+    ssize_t              m_offset;
+    ValueSize            m_size;
+    bool                 m_isEntire;
+
+    CallLocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size)
+        : m_def(def)
+        , m_offset(offset)
+        , m_size(size)
+        , m_isEntire(isEntire)
+    {
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_def->GetLclNum();
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return BAD_VAR_NUM;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return m_isEntire;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return m_offset;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return m_size;
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return m_size;
+    }
+};
+
+struct PromotedRangeLocalDef : LocalDefProvider<PromotedRangeLocalDef>
+{
+    GenTreeLclVarCommon* m_def;
+    unsigned             m_lclNum;
+    uint8_t              m_index;
+    bool                 m_isEntire;
+    ssize_t              m_offset;
+    ValueSize            m_size;
+    ssize_t              m_valueOffset;
+    ValueSize            m_storeSize;
+
+    PromotedRangeLocalDef(GenTreeLclVarCommon* def,
+                          unsigned             lclNum,
+                          unsigned             index,
+                          bool                 isEntire,
+                          ssize_t              offset,
+                          ValueSize            size,
+                          ssize_t              valueOffset,
+                          ValueSize            storeSize)
+        : m_def(def)
+        , m_lclNum(lclNum)
+        , m_index(static_cast<uint8_t>(index))
+        , m_isEntire(isEntire)
+        , m_offset(offset)
+        , m_size(size)
+        , m_valueOffset(valueOffset)
+        , m_storeSize(storeSize)
+    {
+        assert(index < UINT8_MAX);
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_lclNum;
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return m_index;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return m_isEntire;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return m_offset;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return m_size;
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return m_valueOffset;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return m_storeSize;
+    }
+};
+
+template <typename TVisitor>
+GenTree::VisitResult VisitPromotedRangeLocalDefs(
+    Compiler* comp, GenTreeLclVarCommon* def, LclVarDsc* varDsc, ssize_t offset, ValueSize storeSize, TVisitor visitor)
+{
+    unsigned fieldLclNum = comp->lvaGetFieldLocal(varDsc, static_cast<unsigned>(offset));
+    if (fieldLclNum != BAD_VAR_NUM)
+    {
+        LclVarDsc* fieldVarDsc = comp->lvaGetDesc(fieldLclNum);
+        if (fieldVarDsc->lvValueSize() == storeSize)
+        {
+            unsigned index = fieldLclNum - varDsc->lvFieldLclStart;
+            return visitor(PromotedRangeLocalDef(def, fieldLclNum, index, /* isEntire */ true,
+                                                 /* offset */ 0, storeSize, /* valueOffset */ 0, storeSize));
+        }
+    }
+
+    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+    {
+        fieldLclNum            = varDsc->lvFieldLclStart + index;
+        LclVarDsc* fieldVarDsc = comp->lvaGetDesc(fieldLclNum);
+
+        ssize_t   fieldStoreOffset;
+        ValueSize fieldStoreSize;
+        if (!comp->gtStoreMayDefineField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+        {
+            continue;
+        }
+
+        bool    isEntire    = (fieldStoreOffset == 0) && (fieldStoreSize == fieldVarDsc->lvValueSize());
+        ssize_t valueOffset = max(static_cast<ssize_t>(fieldVarDsc->lvFldOffset), offset) - offset;
+        if (visitor(PromotedRangeLocalDef(def, fieldLclNum, index, isEntire, fieldStoreOffset, fieldStoreSize,
+                                          valueOffset, storeSize)) == GenTree::VisitResult::Abort)
+        {
+            return GenTree::VisitResult::Abort;
+        }
+    }
+
+    return GenTree::VisitResult::Continue;
+}
+
 //------------------------------------------------------------------------
-// VisitLocalDefs: Visit locals being defined by this node.
+// IsEntireLocalDef: Check whether a physical local definition entirely
+// defines its local.
+//
+// Arguments:
+//   comp - the compiler instance
+//   def  - the physical definition
+//
+// Return Value:
+//   True if it does.
+//
+inline bool GenTree::IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def)
+{
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        return true;
+    }
+
+    if (OperIs(GT_STORE_LCL_FLD))
+    {
+        return !def->IsPartialLclFld(comp);
+    }
+
+    assert(OperIs(GT_CALL));
+    GenTreeCall* call = AsCall();
+    if (def == comp->gtCallGetDefinedAsyncResumedLclAddr(call))
+    {
+        return comp->lvaLclExactSize(def->GetLclNum()) == TARGET_POINTER_SIZE;
+    }
+
+    assert(def == comp->gtCallGetDefinedRetBufLclAddr(call));
+    ValueSize storeSize(comp->typGetObjLayout(call->gtRetClsHnd)->GetSize());
+    return comp->IsEntireAccess(def->GetLclNum(), def->GetLclOffs(), storeSize);
+}
+
+//------------------------------------------------------------------------
+// VisitLocalDef: Visit the logical locals represented by one physical definition.
 //
 // Arguments:
 //   comp    - the compiler instance
-//   visitor - Functor of type GenTree::VisitResult(LocalDef)
+//   def     - the physical definition
+//   visitor - generic functor accepting a local definition provider
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLocalDef(Compiler* comp, GenTreeLclVarCommon* def, TVisitor visitor)
+{
+    assert(OperIs(GT_STORE_LCL_VAR));
+
+    unsigned   lclNum = def->GetLclNum();
+    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+    if (!varDsc->lvPromoted)
+    {
+        return visitor(StoreLclVarDef(def));
+    }
+
+    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+    {
+        unsigned fieldLclNum = varDsc->lvFieldLclStart + index;
+        RETURN_IF_ABORT(visitor(PromotedStoreLclVarDef(def, fieldLclNum, index)));
+    }
+
+    return VisitResult::Continue;
+}
+
+//------------------------------------------------------------------------
+// VisitLocalDef: Visit the logical locals represented by one physical call
+// definition.
+//
+// Arguments:
+//   comp          - the compiler instance
+//   def           - the physical definition
+//   isEntire      - whether the physical store entirely defines its local
+//   offset        - offset of the store relative to the physical local
+//   size          - size of the store
+//   visitor       - generic functor accepting a local definition provider
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLocalDef(
+    Compiler* comp, GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size, TVisitor visitor)
+{
+    assert(OperIs(GT_CALL));
+
+    unsigned   lclNum = def->GetLclNum();
+    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+    if (!varDsc->lvPromoted)
+    {
+        return visitor(CallLocalDef(def, isEntire, offset, size));
+    }
+
+    return VisitPromotedRangeLocalDefs(comp, def, varDsc, offset, size, visitor);
+}
+
+//------------------------------------------------------------------------
+// VisitLocalDefs: Visit logical locals being defined by this node.
+//
+// Arguments:
+//   comp    - the compiler instance
+//   visitor - generic functor accepting a local definition provider
 //
 // Return Value:
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
@@ -4470,13 +4922,18 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        ValueSize size = comp->lvaLclValueSize(AsLclVarCommon()->GetLclNum());
-        return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
+        return VisitLocalDef(comp, AsLclVarCommon(), visitor);
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
-        GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetValueSize()));
+        GenTreeLclFld* fld    = AsLclFld();
+        LclVarDsc*     varDsc = comp->lvaGetDesc(fld);
+        if (!varDsc->lvPromoted)
+        {
+            return visitor(StoreLclFldDef(fld));
+        }
+
+        return VisitPromotedRangeLocalDefs(comp, fld, varDsc, fld->GetLclOffs(), fld->GetValueSize(), visitor);
     }
     if (OperIs(GT_CALL))
     {
@@ -4487,8 +4944,8 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
         {
             bool isEntire = comp->lvaLclExactSize(asyncResumedLclAddr->GetLclNum()) == TARGET_POINTER_SIZE;
 
-            RETURN_IF_ABORT(visitor(LocalDef(asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(),
-                                             ValueSize(TARGET_POINTER_SIZE))));
+            RETURN_IF_ABORT(VisitLocalDef(comp, asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(),
+                                          ValueSize(TARGET_POINTER_SIZE), visitor));
         }
 
         GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
@@ -4499,7 +4956,8 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
             bool isEntire =
                 comp->IsEntireAccess(retBufLclAddr->GetLclNum(), retBufLclAddr->GetLclOffs(), ValueSize(storeSize));
 
-            return visitor(LocalDef(retBufLclAddr, isEntire, retBufLclAddr->GetLclOffs(), ValueSize(storeSize)));
+            return VisitLocalDef(comp, retBufLclAddr, isEntire, retBufLclAddr->GetLclOffs(), ValueSize(storeSize),
+                                 visitor);
         }
     }
 
@@ -4507,7 +4965,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 }
 
 //------------------------------------------------------------------------
-// VisitLocalDefNodes: Visit GenTreeLclVarCommon nodes representing definitions in the specified node.
+// VisitLocalDefNodes: Visit physical GenTreeLclVarCommon nodes representing definitions in the specified node.
 //
 // Arguments:
 //   comp    - the compiler instance
@@ -4515,11 +4973,6 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 //
 // Return Value:
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
-//
-// Notes:
-//   This function is contractually bound to recognize a superset of stores
-//   that "LocalAddressVisitor" recognizes and transforms, as it is used to
-//   detect which trees can define tracked locals.
 //
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visitor)

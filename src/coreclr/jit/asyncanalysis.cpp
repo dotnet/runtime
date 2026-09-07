@@ -181,6 +181,13 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
         {
             return;
         }
+
+        auto visitDef = [&](const auto& def) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLocalDefs(compiler, visitDef);
+        return;
     }
     else if (node->OperIs(GT_LCL_ADDR))
     {
@@ -345,13 +352,21 @@ static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutat
 {
     if (node->IsCall())
     {
-        auto visitDef = [&](GenTreeLclVarCommon* lcl) {
-            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(lcl), mutated);
+        auto visitDef = [&](const auto& def) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
             return GenTree::VisitResult::Continue;
         };
-        node->VisitLocalDefNodes(compiler, visitDef);
+        node->VisitLocalDefs(compiler, visitDef);
     }
-    else if (node->OperIsLocalStore() || node->OperIs(GT_LCL_ADDR))
+    else if (node->OperIsLocalStore())
+    {
+        auto visitDef = [&](const auto& def) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLocalDefs(compiler, visitDef);
+    }
+    else if (node->OperIs(GT_LCL_ADDR))
     {
         MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
     }
