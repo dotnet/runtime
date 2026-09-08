@@ -46,10 +46,15 @@ namespace System.Security.Cryptography
             const int MaxStackIkmSize = 64;
             Span<byte> ikmStack = stackalloc byte[MaxStackIkmSize];
 
-            using (CryptoPoolLease ikm = CryptoPoolLease.RentConditionally(Suite.KemMetadata.Nsk, ikmStack))
+            try
             {
-                RandomNumberGenerator.Fill(ikm.Span);
-                DeriveKeyPair(ikm.Span);
+                Span<byte> ikm = ikmStack.Slice(0, Suite.KemMetadata.Nsk);
+                RandomNumberGenerator.Fill(ikm);
+                DeriveKeyPair(ikm);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(ikmStack);
             }
         }
 
@@ -74,15 +79,16 @@ namespace System.Security.Cryptography
 
             try
             {
-                using (CryptoPoolLease context = CryptoPoolLease.Rent(contextLength, skipClear: true))
-                {
-                    // kem_context = enc || pkR. Both components are serialized public keys.
-                    encapsulatedSecret.CopyTo(context.Span);
-                    ExportEncapsulationKey(context.Span.Slice(encapsulatedSecret.Length));
+                const int MaxStackContextLength = 256;
+                Span<byte> contextBuffer = stackalloc byte[MaxStackContextLength];
+                Span<byte> context = contextBuffer.Slice(0, contextLength);
 
-                    LabeledExtract(ReadOnlySpan<byte>.Empty, EaePrkLabel, secretAgreement, prk);
-                    LabeledExpand(prk, SharedSecretLabel, context.Span, sharedSecret);
-                }
+                // kem_context = enc || pkR. Both components are serialized public keys.
+                encapsulatedSecret.CopyTo(context);
+                ExportEncapsulationKey(context.Slice(encapsulatedSecret.Length));
+
+                LabeledExtract(ReadOnlySpan<byte>.Empty, EaePrkLabel, secretAgreement, prk);
+                LabeledExpand(prk, SharedSecretLabel, context, sharedSecret);
             }
             finally
             {
@@ -124,12 +130,12 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> suiteId = Suite.KemMetadata.SuiteId;
             int labeledInfoLength =
                 checked(sizeof(ushort) + VersionLabel.Length + suiteId.Length + label.Length + info.Length);
-            const int MaxStackLabeledInfoLength = 64;
+            const int MaxStackLabeledInfoLength = 256;
+            Span<byte> labeledInfoBuffer = stackalloc byte[MaxStackLabeledInfoLength];
 
-            using (CryptoPoolLease labeledInfo = CryptoPoolLease.RentConditionally(
-                labeledInfoLength, stackalloc byte[MaxStackLabeledInfoLength]))
+            try
             {
-                Span<byte> destination = labeledInfo.Span;
+                Span<byte> destination = labeledInfoBuffer.Slice(0, labeledInfoLength);
                 BinaryPrimitives.WriteUInt16BigEndian(destination, checked((ushort)output.Length));
                 int offset = sizeof(ushort);
                 VersionLabel.CopyTo(destination.Slice(offset));
@@ -140,7 +146,11 @@ namespace System.Security.Cryptography
                 offset += label.Length;
                 info.CopyTo(destination.Slice(offset));
 
-                HKDF.Expand(KeyDerivationKdf.HkdfHashAlgorithm, prk, output, labeledInfo.Span);
+                HKDF.Expand(KeyDerivationKdf.HkdfHashAlgorithm, prk, output, destination);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(labeledInfoBuffer);
             }
         }
 

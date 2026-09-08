@@ -77,35 +77,42 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> order = Order;
             Debug.Assert(order.Length == Suite.KemMetadata.Nsk);
             byte[] privateKey = new byte[Suite.KemMetadata.Nsk];
+            Span<byte> prkBuffer = stackalloc byte[PrkStackBufferSize];
 
             using (PinAndClear.Track(privateKey))
-            using (CryptoPoolLease prk = CryptoPoolLease.RentConditionally(
-                KeyDerivationKdf.Nh, stackalloc byte[PrkStackBufferSize]))
             {
-                LabeledExtract(ReadOnlySpan<byte>.Empty, "dkp_prk"u8, ikm, prk.Span);
-                Span<byte> counterBytes = stackalloc byte[1];
-
-                for (int counter = 0; counter <= byte.MaxValue; counter++)
+                try
                 {
-                    counterBytes[0] = (byte)counter;
-                    LabeledExpand(prk.Span, "candidate"u8, counterBytes, privateKey);
-                    // P-521 uses 0x01 here because Nsk is 66 bytes; P-256 and P-384 use 0xFF.
-                    privateKey[0] &= _candidateBitmask;
+                    Span<byte> prk = prkBuffer.Slice(0, KeyDerivationKdf.Nh);
+                    LabeledExtract(ReadOnlySpan<byte>.Empty, "dkp_prk"u8, ikm, prk);
+                    Span<byte> counterBytes = stackalloc byte[1];
 
-                    if (IsValidScalar(privateKey, order))
+                    for (int counter = 0; counter <= byte.MaxValue; counter++)
                     {
-#pragma warning disable CA1416 // Not supported on browser
-                        _ecdh = ECDiffieHellman.Create(new ECParameters
-                        {
-                            Curve = _curve,
-                            D = privateKey,
-                        });
-#pragma warning restore CA1416 // Not supported on browser
-                        return;
-                    }
-                }
+                        counterBytes[0] = (byte)counter;
+                        LabeledExpand(prk, "candidate"u8, counterBytes, privateKey);
+                        // P-521 uses 0x01 here because Nsk is 66 bytes; P-256 and P-384 use 0xFF.
+                        privateKey[0] &= _candidateBitmask;
 
-                throw new CryptographicException(SR.Cryptography_HpkeKeyDerivationFailed);
+                        if (IsValidScalar(privateKey, order))
+                        {
+#pragma warning disable CA1416 // Not supported on browser
+                            _ecdh = ECDiffieHellman.Create(new ECParameters
+                            {
+                                Curve = _curve,
+                                D = privateKey,
+                            });
+#pragma warning restore CA1416 // Not supported on browser
+                            return;
+                        }
+                    }
+
+                    throw new CryptographicException(SR.Cryptography_HpkeKeyDerivationFailed);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(prkBuffer);
+                }
             }
         }
 

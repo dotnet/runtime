@@ -24,20 +24,19 @@ namespace System.Security.Cryptography
             Debug.Assert(_x25519 is null);
 
             Span<byte> privateKey = stackalloc byte[X25519DiffieHellman.PrivateKeySizeInBytes];
+            Span<byte> prkBuffer = stackalloc byte[PrkStackBufferSize];
 
-            using (CryptoPoolLease prk = CryptoPoolLease.RentConditionally(
-                KeyDerivationKdf.Nh, stackalloc byte[PrkStackBufferSize]))
+            try
             {
-                try
-                {
-                    LabeledExtract(ReadOnlySpan<byte>.Empty, "dkp_prk"u8, ikm, prk.Span);
-                    LabeledExpand(prk.Span, "sk"u8, ReadOnlySpan<byte>.Empty, privateKey);
-                    _x25519 = X25519DiffieHellman.ImportPrivateKey(privateKey);
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(privateKey);
-                }
+                Span<byte> prk = prkBuffer.Slice(0, KeyDerivationKdf.Nh);
+                LabeledExtract(ReadOnlySpan<byte>.Empty, "dkp_prk"u8, ikm, prk);
+                LabeledExpand(prk, "sk"u8, ReadOnlySpan<byte>.Empty, privateKey);
+                _x25519 = X25519DiffieHellman.ImportPrivateKey(privateKey);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(privateKey);
+                CryptographicOperations.ZeroMemory(prkBuffer);
             }
         }
 

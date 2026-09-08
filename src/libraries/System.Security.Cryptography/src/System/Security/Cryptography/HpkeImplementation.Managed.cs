@@ -63,40 +63,48 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info)
         {
             const int MaxStackSecretLength = 64;
+            Span<byte> sharedSecretBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> keyBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> baseNonceBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> exporterSecretBuffer = stackalloc byte[MaxStackSecretLength];
 
-            using (CryptoPoolLease sharedSecret = CryptoPoolLease.RentConditionally(
-                Suite.KemMetadata.Nsecret, stackalloc byte[MaxStackSecretLength]))
-            using (CryptoPoolLease key = CryptoPoolLease.RentConditionally(
-                Suite.AeadMetadata.Nk, stackalloc byte[MaxStackSecretLength]))
-            using (CryptoPoolLease baseNonce = CryptoPoolLease.RentConditionally(
-                Suite.AeadMetadata.Nn, stackalloc byte[MaxStackSecretLength]))
-            using (CryptoPoolLease exporterSecret = CryptoPoolLease.RentConditionally(
-                Suite.KdfMetadata.Nh, stackalloc byte[MaxStackSecretLength]))
+            try
             {
-                _kemAdapter.Encapsulate(encapsulatedSecret, sharedSecret.Span);
+                Span<byte> sharedSecret = sharedSecretBuffer.Slice(0, Suite.KemMetadata.Nsecret);
+                Span<byte> key = keyBuffer.Slice(0, Suite.AeadMetadata.Nk);
+                Span<byte> baseNonce = baseNonceBuffer.Slice(0, Suite.AeadMetadata.Nn);
+                Span<byte> exporterSecret = exporterSecretBuffer.Slice(0, Suite.KdfMetadata.Nh);
+                _kemAdapter.Encapsulate(encapsulatedSecret, sharedSecret);
 
                 HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
                 kdf.DeriveSecrets(
                     mode: 0,
-                    sharedSecret.Span,
+                    sharedSecret,
                     info,
                     psk: default,
                     pskId: default,
-                    key.Span,
-                    baseNonce.Span,
-                    exporterSecret.Span);
+                    key,
+                    baseNonce,
+                    exporterSecret);
 
-                using (HpkeManagedAeadAdapter aead = HpkeManagedAeadAdapter.Create(Suite, key.Span))
+                using (HpkeManagedAeadAdapter aead = HpkeManagedAeadAdapter.Create(Suite, key))
                 {
                     // Single-shot sealing uses sequence number zero, so the nonce is base_nonce.
                     // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
                     aead.Encrypt(
                         plaintext,
-                        baseNonce.Span,
+                        baseNonce,
                         associatedData,
                         ciphertext.Slice(0, plaintext.Length),
                         ciphertext.Slice(plaintext.Length));
                 }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedSecretBuffer);
+                CryptographicOperations.ZeroMemory(keyBuffer);
+                CryptographicOperations.ZeroMemory(baseNonceBuffer);
+                CryptographicOperations.ZeroMemory(exporterSecretBuffer);
             }
         }
 

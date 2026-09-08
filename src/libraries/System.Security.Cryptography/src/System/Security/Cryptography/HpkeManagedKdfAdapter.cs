@@ -49,19 +49,24 @@ namespace System.Security.Cryptography
         {
             int secretLength = checked(key.Length + baseNonce.Length + exporterSecret.Length);
             const int MaxStackSecretLength = 128;
+            Span<byte> secretBuffer = stackalloc byte[MaxStackSecretLength];
 
-            using (CryptoPoolLease secret = CryptoPoolLease.RentConditionally(
-                secretLength, stackalloc byte[MaxStackSecretLength]))
+            try
             {
-                Span<byte> derivedKey = secret.Span.Slice(0, key.Length);
-                Span<byte> derivedNonce = secret.Span.Slice(key.Length, baseNonce.Length);
-                Span<byte> derivedExporterSecret = secret.Span.Slice(key.Length + baseNonce.Length);
+                Span<byte> secret = secretBuffer.Slice(0, secretLength);
+                Span<byte> derivedKey = secret.Slice(0, key.Length);
+                Span<byte> derivedNonce = secret.Slice(key.Length, baseNonce.Length);
+                Span<byte> derivedExporterSecret = secret.Slice(key.Length + baseNonce.Length);
 
                 DeriveSecretsCore(mode, sharedSecret, info, psk, pskId, derivedKey, derivedNonce, derivedExporterSecret);
 
                 derivedKey.CopyTo(key);
                 derivedNonce.CopyTo(baseNonce);
                 derivedExporterSecret.CopyTo(exporterSecret);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(secretBuffer);
             }
         }
 
@@ -131,20 +136,26 @@ namespace System.Security.Cryptography
         {
             int hashLength = Suite.KdfMetadata.Nh;
             const int MaxStackContextLength = 1 + 2 * SHA512.HashSizeInBytes;
+            Span<byte> contextBuffer = stackalloc byte[MaxStackContextLength];
+            Span<byte> secretBuffer = stackalloc byte[SHA512.HashSizeInBytes];
 
-            using (CryptoPoolLease context = CryptoPoolLease.RentConditionally(
-                1 + 2 * hashLength, stackalloc byte[MaxStackContextLength]))
-            using (CryptoPoolLease secret = CryptoPoolLease.RentConditionally(
-                hashLength, stackalloc byte[SHA512.HashSizeInBytes]))
+            try
             {
-                context.Span[0] = mode;
-                LabeledExtract(ReadOnlySpan<byte>.Empty, "psk_id_hash"u8, pskId, context.Span.Slice(1, hashLength));
-                LabeledExtract(ReadOnlySpan<byte>.Empty, "info_hash"u8, info, context.Span.Slice(1 + hashLength));
-                LabeledExtract(sharedSecret, "secret"u8, psk, secret.Span);
+                Span<byte> context = contextBuffer.Slice(0, 1 + 2 * hashLength);
+                Span<byte> secret = secretBuffer.Slice(0, hashLength);
+                context[0] = mode;
+                LabeledExtract(ReadOnlySpan<byte>.Empty, "psk_id_hash"u8, pskId, context.Slice(1, hashLength));
+                LabeledExtract(ReadOnlySpan<byte>.Empty, "info_hash"u8, info, context.Slice(1 + hashLength));
+                LabeledExtract(sharedSecret, "secret"u8, psk, secret);
 
-                LabeledExpand(secret.Span, "key"u8, context.Span, key);
-                LabeledExpand(secret.Span, "base_nonce"u8, context.Span, baseNonce);
-                LabeledExpand(secret.Span, "exp"u8, context.Span, exporterSecret);
+                LabeledExpand(secret, "key"u8, context, key);
+                LabeledExpand(secret, "base_nonce"u8, context, baseNonce);
+                LabeledExpand(secret, "exp"u8, context, exporterSecret);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(contextBuffer);
+                CryptographicOperations.ZeroMemory(secretBuffer);
             }
         }
 
@@ -227,19 +238,27 @@ namespace System.Security.Cryptography
                 secretsLength, stackalloc byte[MaxStackInputLength]))
             using (CryptoPoolLease context = CryptoPoolLease.RentConditionally(
                 contextLength, stackalloc byte[MaxStackInputLength]))
-            using (CryptoPoolLease output = CryptoPoolLease.RentConditionally(
-                outputLength, stackalloc byte[MaxStackOutputLength]))
             {
-                int offset = WriteLengthPrefixed(psk, secrets.Span);
-                WriteLengthPrefixed(sharedSecret, secrets.Span.Slice(offset));
-                context.Span[0] = mode;
-                offset = 1 + WriteLengthPrefixed(pskId, context.Span.Slice(1));
-                WriteLengthPrefixed(info, context.Span.Slice(offset));
+                Span<byte> outputBuffer = stackalloc byte[MaxStackOutputLength];
 
-                LabeledDerive(secrets.Span, "secret"u8, context.Span, output.Span);
-                output.Span.Slice(0, key.Length).CopyTo(key);
-                output.Span.Slice(key.Length, baseNonce.Length).CopyTo(baseNonce);
-                output.Span.Slice(key.Length + baseNonce.Length).CopyTo(exporterSecret);
+                try
+                {
+                    Span<byte> output = outputBuffer.Slice(0, outputLength);
+                    int offset = WriteLengthPrefixed(psk, secrets.Span);
+                    WriteLengthPrefixed(sharedSecret, secrets.Span.Slice(offset));
+                    context.Span[0] = mode;
+                    offset = 1 + WriteLengthPrefixed(pskId, context.Span.Slice(1));
+                    WriteLengthPrefixed(info, context.Span.Slice(offset));
+
+                    LabeledDerive(secrets.Span, "secret"u8, context.Span, output);
+                    output.Slice(0, key.Length).CopyTo(key);
+                    output.Slice(key.Length, baseNonce.Length).CopyTo(baseNonce);
+                    output.Slice(key.Length + baseNonce.Length).CopyTo(exporterSecret);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(outputBuffer);
+                }
             }
         }
 
@@ -259,18 +278,23 @@ namespace System.Security.Cryptography
             // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.4
             int length = checked(VersionLabel.Length + SuiteId.Length + sizeof(ushort) + label.Length + sizeof(ushort));
             const int MaxStackPrefixLength = 64;
+            Span<byte> prefixBuffer = stackalloc byte[MaxStackPrefixLength];
 
-            using (CryptoPoolLease prefix = CryptoPoolLease.RentConditionally(
-                length, stackalloc byte[MaxStackPrefixLength]))
+            try
             {
-                VersionLabel.CopyTo(prefix.Span);
+                Span<byte> prefix = prefixBuffer.Slice(0, length);
+                VersionLabel.CopyTo(prefix);
                 int offset = VersionLabel.Length;
-                SuiteId.CopyTo(prefix.Span.Slice(offset));
+                SuiteId.CopyTo(prefix.Slice(offset));
                 offset += SuiteId.Length;
-                offset += WriteLengthPrefixed(label, prefix.Span.Slice(offset));
-                BinaryPrimitives.WriteUInt16BigEndian(prefix.Span.Slice(offset), checked((ushort)output.Length));
+                offset += WriteLengthPrefixed(label, prefix.Slice(offset));
+                BinaryPrimitives.WriteUInt16BigEndian(prefix.Slice(offset), checked((ushort)output.Length));
 
-                Derive(ikm, prefix.Span, context, output);
+                Derive(ikm, prefix, context, output);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(prefixBuffer);
             }
         }
 
