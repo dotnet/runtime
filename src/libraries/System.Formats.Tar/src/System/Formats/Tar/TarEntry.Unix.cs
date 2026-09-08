@@ -31,15 +31,6 @@ namespace System.Formats.Tar
             Interop.CheckIo(Interop.Sys.MkFifo(destinationFileName, (uint)Mode), destinationFileName);
         }
 
-        // Unix specific implementation of the method that extracts the current entry as a hard link.
-        private void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath)
-        {
-            Debug.Assert(EntryType is TarEntryType.HardLink);
-            Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
-            Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
-            File.CreateHardLink(hardLinkFilePath, targetFilePath);
-        }
-
         // On Unix-like systems no explicit step is needed to make a file sparse: the kernel
         // creates a hole whenever a write is preceded by a seek past the previous end. Most
         // modern file systems (ext4, btrfs, xfs, APFS, ...) support sparse files; on those that
