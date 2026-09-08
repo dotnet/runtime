@@ -3,6 +3,7 @@
     <CLRTestPriority>0</CLRTestPriority>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(Configuration)' != 'Release' or '$(TargetOS)' != 'linux' or '$(TargetArchitecture)' != 'arm64' or '$(TargetsLinuxGlibc)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
