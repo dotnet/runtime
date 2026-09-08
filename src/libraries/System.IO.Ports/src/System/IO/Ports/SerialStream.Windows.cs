@@ -1678,7 +1678,7 @@ namespace System.IO.Ports
             private void CallEvents(int nativeEvents)
             {
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                
+
                 // EV_ERR includes only CE_FRAME, CE_OVERRUN, and CE_RXPARITY
                 // To catch errors such as CE_RXOVER, we need to call CleanCommErrors bit more regularly.
                 // EV_RXCHAR is perhaps too loose an event to look for overflow errors but a safe side to err...
