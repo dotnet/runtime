@@ -25,7 +25,7 @@ The reporter is implemented under `src/coreclr/debug/crashreport`. VM-specific t
 
 ## Activation and signal handling ##
 
-The reporter is enabled with `DOTNET_EnableCrashReport=1`. `DOTNET_EnableCrashReportOnly=1` also enables the in-process reporter and has the same effect because the in-process reporter never generates a dump. The remainder of this document uses `DOTNET_EnableCrashReport` as the primary setting. The reporter registers a callback with the Platform Abstraction Layer (PAL), which invokes the callback from terminal fatal-signal paths such as `SIGSEGV`, `SIGBUS`, `SIGFPE`, `SIGILL`, `SIGABRT`, and `SIGTRAP`.
+When CoreCLR selects the in-process reporting path, either `DOTNET_EnableCrashReport=1` or `DOTNET_EnableCrashReportOnly=1` enables the reporter. Both settings have the same effect because the in-process reporter never generates a dump. The remainder of this document uses `DOTNET_EnableCrashReport` as the primary setting. The reporter registers a callback with the Platform Abstraction Layer (PAL), which invokes the callback from terminal fatal-signal paths such as `SIGSEGV`, `SIGBUS`, `SIGFPE`, `SIGILL`, `SIGABRT`, and `SIGTRAP`.
 
 The runtime coordinates concurrent crash-reporting attempts so that only one report is generated from the shared process state at a time.
 
