@@ -650,7 +650,7 @@
           BeforeTargets="_CoreCLRGenerateManagedToNative"
           DependsOnTargets="ResolveFrameworkReferences">
     <CallTarget Targets="ResolveReadyToRunCompilers"
-                Condition="'$(PortableCallHelpersGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' == '' and '$(Crossgen2ToolPath)' == ''" />
+                Condition="'$(PortableCallHelpersGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' == '' and '$(Crossgen2ToolPath)' == '' and '@(ResolvedCrossgen2Pack)' != ''" />
   </Target>
 
   <Target Name="_CoreCLRGenerateManagedToNative">
