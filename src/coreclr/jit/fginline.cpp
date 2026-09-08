@@ -497,7 +497,7 @@ private:
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.
                 // Propagate those flags from the containing BB.
-                m_compiler->compCurBB->CopyFlags(inlineeBB, BBF_COPY_PROPAGATE);
+                m_compiler->compCurBB->CopyFlags(inlineeBB, BBF_COPY_PROPAGATE | BBF_RECURSIVE_TAILCALL);
             }
         }
 
