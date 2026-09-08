@@ -84,49 +84,59 @@ namespace System
         {
             Debug.Assert(TCasing.NonAsciiMask == 0 || (span.Length & 1) == 0);
             int length = span.Length;
-            if (length <= 8)
+            if (length > 8)
             {
-                if (length >= 4)
+                if (length > 32)
+                    return GetNonRandomizedHashCodeLarge<TCasing>(span);
+
+                // Two overlapping halves cover every byte, so keep 9..32 - the range that
+                // holds most dictionary keys - free of calls.
+                ulong a = BitConverter.ToUInt64(span);
+                ulong b = BitConverter.ToUInt64(span.Slice(length - 8));
+                if (((a | b) & TCasing.NonAsciiMask) != 0)
+                    return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
+                a = (uint)length + (a | TCasing.LowercaseMask);
+                b |= TCasing.LowercaseMask;
+                if (length > 16)
                 {
-                    uint first = BitConverter.ToUInt32(span);
-                    if (length > 4)
-                    {
-                        uint last = BitConverter.ToUInt32(span.Slice(length - 4));
-                        if (((first | last) & (uint)TCasing.NonAsciiMask) != 0)
-                            return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
-                        first |= (uint)TCasing.LowercaseMask;
-                        last |= (uint)TCasing.LowercaseMask;
-                        return (int)((first ^ (uint)length ^ HashPrime2) + (last ^ HashPrime1) * HashPrime3);
-                    }
-                    if ((first & (uint)TCasing.NonAsciiMask) != 0)
+                    // Mix overlapping loads at different bit offsets.
+                    ulong first = BitConverter.ToUInt64(span.Slice(8)), last = BitConverter.ToUInt64(span.Slice(length - 16));
+                    if (((first | last) & TCasing.NonAsciiMask) != 0)
+                        return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
+                    a += BitOperations.RotateLeft(first | TCasing.LowercaseMask, 23);
+                    b ^= BitOperations.RotateLeft(last | TCasing.LowercaseMask, 25);
+                }
+                return MixNonRandomizedHash(a, b);
+            }
+
+            if (length >= 4)
+            {
+                uint first = BitConverter.ToUInt32(span);
+                if (length > 4)
+                {
+                    uint last = BitConverter.ToUInt32(span.Slice(length - 4));
+                    if (((first | last) & (uint)TCasing.NonAsciiMask) != 0)
                         return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
                     first |= (uint)TCasing.LowercaseMask;
-                    return (int)((first ^ (uint)length) * HashPrime1);
+                    last |= (uint)TCasing.LowercaseMask;
+                    return (int)((first ^ (uint)length ^ HashPrime2) + (last ^ HashPrime1) * HashPrime3);
                 }
-                if (length >= 2)
-                {
-                    uint first = BitConverter.ToUInt16(span);
-                    if ((first & (ushort)TCasing.NonAsciiMask) != 0)
-                        return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
-                    first |= (ushort)TCasing.LowercaseMask;
-                    if (length == 3)
-                        return (int)(((first | ((uint)span[2] << 16)) ^ 3u) * HashPrime1);
-                    return (int)(first + HashPrime2);
-                }
-                return length == 0 ? 0 : (int)(span[0] + HashPrime1);
+                if ((first & (uint)TCasing.NonAsciiMask) != 0)
+                    return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
+                first |= (uint)TCasing.LowercaseMask;
+                return (int)((first ^ (uint)length) * HashPrime1);
             }
-            if (length > 16)
-                return GetNonRandomizedHashCodeLarge<TCasing>(span);
-
-            ulong a = BitConverter.ToUInt64(span);
-            ulong b = BitConverter.ToUInt64(span.Slice(length - 8));
-            if (((a | b) & TCasing.NonAsciiMask) != 0)
-                return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
-            a |= TCasing.LowercaseMask;
-            b |= TCasing.LowercaseMask;
-            a += (uint)length;
-            ulong hash = (a ^ BitOperations.RotateLeft(b, 27)) * HashSeed1;
-            return (int)(hash ^ (hash >> 32));
+            if (length >= 2)
+            {
+                uint first = BitConverter.ToUInt16(span);
+                if ((first & (ushort)TCasing.NonAsciiMask) != 0)
+                    return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
+                first |= (ushort)TCasing.LowercaseMask;
+                if (length == 3)
+                    return (int)(((first | ((uint)span[2] << 16)) ^ 3u) * HashPrime1);
+                return (int)(first + HashPrime2);
+            }
+            return length == 0 ? 0 : (int)(span[0] + HashPrime1);
         }
 
         // Keep the less common sizes out of callers' inlining budgets.
@@ -134,6 +144,7 @@ namespace System
         private static int GetNonRandomizedHashCodeLarge<TCasing>(ReadOnlySpan<byte> span) where TCasing : struct, IHashCasing
         {
             int length = span.Length;
+            Debug.Assert(length > 32);
             if (length > 64)
                 return GetNonRandomizedHashCodeLong<TCasing>(span, length);
             ulong a = BitConverter.ToUInt64(span);
@@ -142,6 +153,8 @@ namespace System
                 return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
             a = (uint)length + (a | TCasing.LowercaseMask);
             b |= TCasing.LowercaseMask;
+            // The first guard is redundant for a caller-checked length, but it keeps the
+            // slice bounds provable so the loads stay check-free.
             if (length > 16)
             {
                 // Mix overlapping loads at different bit offsets.
@@ -168,8 +181,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int MixNonRandomizedHash(ulong a, ulong b)
         {
-            ulong hash = (a ^ HashSeed1) * HashSeed2 +
-                BitOperations.RotateLeft((b ^ HashSeed2) * HashSeed1, 27);
+            // Folding b in at two rotations before a single multiply spreads the low bits
+            // as well as two multiplies did, and needs only one 64-bit constant.
+            ulong hash = ((a ^ BitOperations.RotateLeft(b, 27)) + BitOperations.RotateLeft(b, 41)) * HashSeed1;
             return (int)(hash ^ (hash >> 32));
         }
 
