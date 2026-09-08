@@ -1049,6 +1049,10 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
             munmap(ptr57, 4096);
             discovered = (1ULL << 56); // Sv57 max user address (64 PB)
         }
+        else if (errno == EEXIST)
+        {
+            discovered = (1ULL << 56); // Tier is supported but page is occupied.
+        }
 
         // 2. Probe for Sv48 capability (128 TB user ceiling) if Sv57 failed.
         if (discovered == 0)
@@ -1059,6 +1063,10 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
             {
                 munmap(ptr48, 4096);
                 discovered = (1ULL << 47); // Sv48 max user address (128 TB)
+            }
+            else if (errno == EEXIST)
+            {
+                discovered = (1ULL << 47); // Tier is supported but page is occupied.
             }
         }
 
