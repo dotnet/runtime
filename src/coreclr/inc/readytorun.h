@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 28
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -69,6 +69,7 @@
 // R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
 // R2R Version 27 redefines READYTORUN_FIXUP_DeclaringTypeHandle to be encoded as a method signature instead of a pair of type signatures
 // R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
+// R2R Version 28.1 adds READYTORUN_HELPER_ResumeAfterCatch for WebAssembly exception resumption.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -394,6 +395,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GCPoll                    = 0x44,
     READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
     READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
+    READYTORUN_HELPER_ResumeAfterCatch          = 0x47,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50, // No longer supported as of READYTORUN_MAJOR_VERSION 17.0

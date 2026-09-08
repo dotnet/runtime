@@ -3364,6 +3364,17 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     switchBlock->SetSwitch(swtDesc);
     switchBlock->SetFlags(BBF_CATCH_RESUMPTION);
 
+    if (IsReadyToRun())
+    {
+        // The WebAssembly restore-context mechanism resumes managed code by throwing an exception
+        // tag. RtlRestoreContext forbids GC mode transitions for the duration of that native
+        // unwind; managed code is about to run again here, so re-permit them.
+        GenTree* resumeAfterCatch = gtNewHelperCallNode(CORINFO_HELP_JIT_RESUME_AFTER_CATCH, TYP_VOID);
+        resumeAfterCatch          = fgMorphCall(resumeAfterCatch->AsCall());
+        gtSetEvalOrder(resumeAfterCatch);
+        LIR::AsRange(switchBlock).InsertAtBeginning(LIR::SeqTree(this, resumeAfterCatch));
+    }
+
     // Build the IR for the switch
     //
     GenTree* const biasValue          = gtNewIconNode(caseBias);

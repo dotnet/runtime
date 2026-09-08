@@ -431,6 +431,29 @@ PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
 
+#ifndef DACCESS_COMPILE
+// Tracks whether the current thread is allowed to transition between cooperative and preemptive
+// GC mode.
+//
+// This is normally true. It is cleared for the duration of the WebAssembly restore-context unwind
+// (see RtlRestoreContext in vm/wasm/helpers.cpp), which resumes managed code at a catch
+// continuation by throwing a native exception tag. That unwind runs arbitrary native cleanup
+// between the catch funclet and the resumed managed code, and any GC mode transition performed
+// there would leave the thread in the wrong mode when managed code resumes.
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH sets it back to true at the resumption point.
+//
+// Only asserts consume this, so it costs nothing in release builds beyond the two stores.
+extern thread_local bool t_gcModeSwitchPermitted;
+
+// Assert that a cooperative/preemptive GC mode transition is legal at this point.
+#define ASSERT_GC_MODE_SWITCH_PERMITTED()                                                                              \
+    _ASSERTE_MSG(t_gcModeSwitchPermitted,                                                                              \
+                 "GC mode transition while a restore-context unwind is in progress. The thread is between "            \
+                 "RtlRestoreContext and the managed catch continuation, where the mode must not change.")
+#else
+#define ASSERT_GC_MODE_SWITCH_PERMITTED()
+#endif // !DACCESS_COMPILE
+
 // #ThreadClass
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  We can get this
@@ -1193,6 +1216,7 @@ public:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(this == GetThread());
         _ASSERTE(!m_fPreemptiveGCDisabled);
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         // holding a spin lock in preemp mode and transit to coop mode will cause other threads
         // spinning waiting for GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
@@ -1256,6 +1280,7 @@ public:
 #ifndef DACCESS_COMPILE
         _ASSERTE(this == GetThread());
         _ASSERTE(m_fPreemptiveGCDisabled);
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 

@@ -2186,6 +2186,18 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
+#ifdef TARGET_WASM
+EXTERN_C void JIT_ResumeAfterCatch(void* sp, PCODE portableEntryPoint);
+#else
+// Only WebAssembly emits this helper; see the wasm implementation in vm/wasm/helpers.cpp and
+// the comment on t_gcModeSwitchPermitted. The definition exists so the helper table links
+// everywhere.
+extern "C" void JIT_ResumeAfterCatch()
+{
+    t_gcModeSwitchPermitted = true;
+}
+#endif
+
 #ifdef DEBUGGING_SUPPORTED
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
 {
@@ -2284,6 +2296,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
 #endif
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads != 0)
         {
@@ -2320,6 +2333,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
         frame->currentThread = thread;
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads != 0)
         {
@@ -2346,6 +2360,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting
     // to make this exit faster.
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
@@ -2369,6 +2384,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting
     // to make this exit faster.
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)

@@ -126,6 +126,10 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
+// See the declaration in threads.h. Transitions are permitted by default; only the WebAssembly
+// restore-context unwind clears this.
+thread_local bool t_gcModeSwitchPermitted = true;
+
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);

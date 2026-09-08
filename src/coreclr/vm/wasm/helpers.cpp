@@ -237,6 +237,12 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
     UNREFERENCED_PARAMETER(ContextRecord);
     UNREFERENCED_PARAMETER(ExceptionRecord);
 
+    // Resuming managed code at a catch continuation is done by throwing a native exception tag.
+    // Native cleanup that runs during that unwind must not change the thread's GC mode, or managed
+    // code resumes in the wrong mode. CORINFO_HELP_JIT_RESUME_AFTER_CATCH re-permits transitions at
+    // the resumption point.
+    t_gcModeSwitchPermitted = false;
+
     ThrowRtlRestoreContextTag();
 
     __builtin_unreachable();
@@ -385,6 +391,7 @@ EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, Inl
     _ASSERTE(sp == stack_pointer_global_value);
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -415,6 +422,7 @@ extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -438,6 +446,7 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
 
     Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -447,6 +456,33 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     {
         inlinedCallFrame.Pop();
     }
+}
+
+// Called at a catch resumption point, once the restore-context unwind has completed and managed
+// code is about to run again. Unlike the other wasm R2R helpers this does not touch the thread's
+// GC mode; it only lifts the restriction installed by RtlRestoreContext.
+EXTERN_C void JIT_ResumeAfterCatchImpl(uintptr_t callersStackPointer)
+{
+    UNREFERENCED_PARAMETER(callersStackPointer);
+
+    t_gcModeSwitchPermitted = true;
+}
+
+// R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale, so publish the
+// incoming sp before any native code runs, and restore it afterwards.
+EXTERN_C __attribute__((naked)) void JIT_ResumeAfterCatch(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+{
+    asm(
+        "global.get __stack_pointer\n"
+        "local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "local.get 0\n"                 /* callersStackPointer */
+        "global.set __stack_pointer\n"
+        "local.get 0\n"                 /* sp argument for the implementation */
+        "call %[JIT_ResumeAfterCatchImpl]\n"
+        "local.get 1\n"                 /* restore previous __stack_pointer */
+        "global.set __stack_pointer\n"
+        "return\n"
+        :: [JIT_ResumeAfterCatchImpl] "i" (JIT_ResumeAfterCatchImpl));
 }
 
 EXTERN_C FCDECL0(void, JIT_PollGC);
