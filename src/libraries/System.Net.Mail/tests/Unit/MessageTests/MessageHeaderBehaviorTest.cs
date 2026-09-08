@@ -212,12 +212,14 @@ namespace System.Net.Mail.Tests
             Assert.Equal("Report caf\u00e9.txt", _message.Subject);
         }
 
-        [Fact]
-        public void MessageSubject_UnknownEncodingEncodedUnicode_Accepted()
+        [Theory]
+        [InlineData("utf-99")]
+        [InlineData("utf-7")]
+        public void MessageSubject_UnknownEncodingEncodedUnicode_Accepted(string charset)
         {
             _message.From = new MailAddress("from@example.com");
 
-            string input = "=?utf-99?B?SGkgw5wgQm9i?=";
+            string input = $"=?{charset}?B?SGkgw5wgQm9i?=";
             _message.Subject = input;
 
             Assert.Null(_message.SubjectEncoding);

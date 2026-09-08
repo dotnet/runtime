@@ -50,6 +50,11 @@ namespace System.Net.Mime
                 return string.Empty;
             }
 
+            if (!value.Contains("=?", StringComparison.Ordinal))
+            {
+                return value;
+            }
+
             StringBuilder decodedValue = new StringBuilder(value.Length);
             ReadOnlySpan<char> valueSpan = value;
             bool decodedAny = false;
@@ -129,11 +134,59 @@ namespace System.Net.Mime
                 ReadOnlySpan<char> token = valueSpan[tokenStart..current];
                 if (TryParseEncodedWord(token, out Range charSet, out _, out _))
                 {
-                    return Encoding.GetEncoding(token[charSet].ToString());
+                    Encoding? encoding = TryGetEncoding(token[charSet]);
+                    if (encoding is not null)
+                    {
+                        return encoding;
+                    }
                 }
             }
 
             return null;
+        }
+
+        internal static bool IsFullyEncoded(string value)
+        {
+            ReadOnlySpan<char> valueSpan = value;
+            bool encodedAny = false;
+            int current = 0;
+
+            while (current < valueSpan.Length)
+            {
+                int whitespaceStart = current;
+                while (current < valueSpan.Length && IsLinearWhiteSpace(valueSpan[current]))
+                {
+                    current++;
+                }
+
+                if (!IsValidHeaderWhiteSpace(valueSpan[whitespaceStart..current]))
+                {
+                    return false;
+                }
+
+                int tokenStart = current;
+                while (current < valueSpan.Length && !IsLinearWhiteSpace(valueSpan[current]))
+                {
+                    current++;
+                }
+
+                if (tokenStart == current)
+                {
+                    break;
+                }
+
+                ReadOnlySpan<char> token = valueSpan[tokenStart..current];
+                if (!TryParseEncodedWord(token, out Range charSet, out _, out _) ||
+                    TryGetEncoding(token[charSet]) is null ||
+                    token.ContainsAny('"', '\\'))
+                {
+                    return false;
+                }
+
+                encodedAny = true;
+            }
+
+            return encodedAny;
         }
 
         private static bool TryDecodeHeaderValue(ReadOnlySpan<char> value, out string decodedValue)
@@ -144,7 +197,12 @@ namespace System.Net.Mime
                 return false;
             }
 
-            Encoding encoding = Encoding.GetEncoding(value[charSetRange].ToString());
+            Encoding? encoding = TryGetEncoding(value[charSetRange]);
+            if (encoding is null)
+            {
+                return false;
+            }
+
             ReadOnlySpan<char> encodedText = value[encodedTextRange];
             byte[] buffer = new byte[encodedText.Length];
             Encoding.ASCII.GetBytes(encodedText, buffer);
@@ -164,9 +222,17 @@ namespace System.Net.Mime
             base64Encoding = false;
             encodedText = default;
 
-            if (value.Length is < 7 or > 75 || !value.StartsWith("=?") || !value.EndsWith("?="))
+            if (value.Length < 7 || !value.StartsWith("=?") || !value.EndsWith("?="))
             {
                 return false;
+            }
+
+            foreach (char c in value)
+            {
+                if (c is < '!' or > '~')
+                {
+                    return false;
+                }
             }
 
             int charSetEnd = value[2..].IndexOf('?');
@@ -201,6 +267,45 @@ namespace System.Net.Mime
 
             charSet = 2..charSetEnd;
             encodedText = (encodingEnd + 1)..^2;
+            return true;
+        }
+
+        private static Encoding? TryGetEncoding(ReadOnlySpan<char> charSet)
+        {
+            try
+            {
+                return Encoding.GetEncoding(charSet.ToString());
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+            catch (NotSupportedException)
+            {
+                return null;
+            }
+        }
+
+        private static bool IsValidHeaderWhiteSpace(ReadOnlySpan<char> value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] is ' ' or '\t')
+                {
+                    continue;
+                }
+
+                if (value[i] != '\r' ||
+                    i + 2 >= value.Length ||
+                    value[i + 1] != '\n' ||
+                    value[i + 2] is not (' ' or '\t'))
+                {
+                    return false;
+                }
+
+                i += 2;
+            }
+
             return true;
         }
 
