@@ -95,7 +95,7 @@ namespace System
                 ulong b = BitConverter.ToUInt64(span.Slice(length - 8));
                 if (((a | b) & TCasing.NonAsciiMask) != 0)
                     return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
-                a = (uint)length + (a | TCasing.LowercaseMask);
+                a = (uint)length * HashPrime1 + (a | TCasing.LowercaseMask);
                 b |= TCasing.LowercaseMask;
                 if (length > 16)
                 {
@@ -119,7 +119,10 @@ namespace System
                         return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
                     first |= (uint)TCasing.LowercaseMask;
                     last |= (uint)TCasing.LowercaseMask;
-                    return (int)((first ^ (uint)length ^ HashPrime2) + (last ^ HashPrime1) * HashPrime3);
+                    // Spread the length before mixing it in. Combining it linearly cancels
+                    // against a leading or trailing char whose delta matches the length
+                    // delta, which collides whole families such as "600"/"8000".
+                    return (int)((first ^ ((uint)length * HashPrime1) ^ HashPrime2) + (last ^ HashPrime1) * HashPrime3);
                 }
                 if ((first & (uint)TCasing.NonAsciiMask) != 0)
                     return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
@@ -151,7 +154,7 @@ namespace System
             ulong b = BitConverter.ToUInt64(span.Slice(length - 8));
             if (((a | b) & TCasing.NonAsciiMask) != 0)
                 return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, length);
-            a = (uint)length + (a | TCasing.LowercaseMask);
+            a = (uint)length * HashPrime1 + (a | TCasing.LowercaseMask);
             b |= TCasing.LowercaseMask;
             // The first guard is redundant for a caller-checked length, but it keeps the
             // slice bounds provable so the loads stay check-free.
