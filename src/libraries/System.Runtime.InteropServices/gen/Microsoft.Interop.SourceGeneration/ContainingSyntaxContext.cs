@@ -4,21 +4,22 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
+    public enum ContainingDeclarationKind
+    {
+        Class,
+        Struct,
+        Interface,
+        Record,
+        RecordStruct,
+        Method
+    }
+
     public readonly struct ContainingSyntax : IEquatable<ContainingSyntax>
     {
-        public ContainingSyntax(SyntaxTokenList modifiers, SyntaxKind typeKind, SyntaxToken identifier, TypeParameterListSyntax? typeParameters)
-            : this(CodeWriterHelpers.GetModifiers(modifiers), typeKind, identifier.Text, GetTypeParameters(typeParameters))
-        {
-        }
-
-        public ContainingSyntax(ImmutableArray<string> modifiers, SyntaxKind typeKind, string identifier, string? typeParameters = null)
+        public ContainingSyntax(ImmutableArray<string> modifiers, ContainingDeclarationKind typeKind, string identifier, string? typeParameters = null)
         {
             Modifiers = modifiers;
             TypeKind = typeKind;
@@ -28,8 +29,18 @@ namespace Microsoft.Interop
 
         public ImmutableArray<string> Modifiers { get; init; }
         public string Identifier { get; init; }
-        public SyntaxKind TypeKind { get; init; }
+        public ContainingDeclarationKind TypeKind { get; init; }
         public string? TypeParameters { get; init; }
+
+        public string DeclarationKeyword => TypeKind switch
+        {
+            ContainingDeclarationKind.Class => "class",
+            ContainingDeclarationKind.Struct => "struct",
+            ContainingDeclarationKind.Interface => "interface",
+            ContainingDeclarationKind.Record => "record",
+            ContainingDeclarationKind.RecordStruct => "record struct",
+            _ => throw new UnreachableException(),
+        };
 
         public override bool Equals(object? obj) => obj is ContainingSyntax other && Equals(other);
 
@@ -51,63 +62,13 @@ namespace Microsoft.Interop
             }
             return hash;
         }
-
-        private static string? GetTypeParameters(TypeParameterListSyntax? typeParameters)
-        {
-            if (typeParameters is null)
-            {
-                return null;
-            }
-
-            return "<" + string.Join(", ", typeParameters.Parameters.Select(static parameter =>
-                (parameter.AttributeLists.Count == 0 ? "" : string.Join(" ", parameter.AttributeLists.Select(static attributes => attributes.ToString())) + " ")
-                + (parameter.VarianceKeyword.RawKind == 0 ? "" : parameter.VarianceKeyword.Text + " ")
-                + parameter.Identifier.Text)) + ">";
-        }
     }
 
     public sealed record ContainingSyntaxContext(ImmutableArray<ContainingSyntax> ContainingSyntax, string? ContainingNamespace)
     {
-        public ContainingSyntaxContext(MemberDeclarationSyntax memberDeclaration)
-            : this(GetContainingTypes(memberDeclaration), GetContainingNamespace(memberDeclaration))
-        {
-        }
-
         public ContainingSyntaxContext AddContainingSyntax(ContainingSyntax nestedType)
         {
             return this with { ContainingSyntax = ContainingSyntax.Insert(0, nestedType) };
-        }
-
-        private static ImmutableArray<ContainingSyntax> GetContainingTypes(MemberDeclarationSyntax memberDeclaration)
-        {
-            var containingTypes = ImmutableArray.CreateBuilder<ContainingSyntax>();
-            for (SyntaxNode? parent = memberDeclaration.Parent; parent is TypeDeclarationSyntax typeDeclaration; parent = parent.Parent)
-            {
-                containingTypes.Add(new ContainingSyntax(
-                    typeDeclaration.Modifiers,
-                    typeDeclaration.Kind(),
-                    typeDeclaration.Identifier,
-                    typeDeclaration.TypeParameterList));
-            }
-            return containingTypes.ToImmutable();
-        }
-
-        private static string? GetContainingNamespace(MemberDeclarationSyntax memberDeclaration)
-        {
-            StringBuilder? containingNamespace = null;
-            for (SyntaxNode? parent = memberDeclaration.FirstAncestorOrSelf<BaseNamespaceDeclarationSyntax>(); parent is BaseNamespaceDeclarationSyntax ns; parent = parent.Parent)
-            {
-                string name = string.Concat(ns.Name.DescendantTokens().Select(static token => token.Text));
-                if (containingNamespace is null)
-                {
-                    containingNamespace = new StringBuilder(name);
-                }
-                else
-                {
-                    containingNamespace.Insert(0, name + ".");
-                }
-            }
-            return containingNamespace?.ToString();
         }
 
         public bool Equals(ContainingSyntaxContext? other)
@@ -172,7 +133,7 @@ namespace Microsoft.Interop
                     writer.Write(string.Join(" ", modifiers));
                     writer.Write(' ');
                 }
-                writer.Write($"{syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}");
+                writer.Write($"{syntax.DeclarationKeyword} {syntax.Identifier}");
                 if (syntax.TypeParameters is not null)
                 {
                     writer.WriteVerbatim(syntax.TypeParameters);

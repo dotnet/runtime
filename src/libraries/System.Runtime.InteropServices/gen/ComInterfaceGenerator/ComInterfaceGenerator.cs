@@ -348,21 +348,21 @@ namespace Microsoft.Interop
             if (syntax is null)
                 return sourcelessStubInformation;
 
-            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+            ContainingSyntaxContext containingSyntaxContext = syntax.GetContainingSyntaxContext();
             ContainingSyntax methodSyntaxTemplate = syntax switch
             {
                 MethodDeclarationSyntax methodSyntax => new ContainingSyntax(
                     CodeWriterHelpers.GetModifiers(methodSyntax.Modifiers)
                         .Where(static modifier => modifier is not ("new" or "partial" or "virtual" or "public" or "private" or "protected" or "internal"))
                         .ToImmutableArray(),
-                    SyntaxKind.MethodDeclaration,
+                    ContainingDeclarationKind.Method,
                     CodeWriterHelpers.EscapeIdentifier(symbol.Name),
                     typeParameters: null),
                 // Property / indexer accessors are emitted as plain methods named e.g. 'get_Foo' / 'set_Foo'
                 // ('get_Item' / 'set_Item' for indexers, or the [IndexerName]-renamed value).
                 PropertyDeclarationSyntax or IndexerDeclarationSyntax => new ContainingSyntax(
                     ImmutableArray<string>.Empty,
-                    SyntaxKind.MethodDeclaration,
+                    ContainingDeclarationKind.Method,
                     symbol.Name,
                     typeParameters: null),
                 _ => throw new UnreachableException(),
@@ -715,7 +715,7 @@ namespace Microsoft.Interop
                 (ContainingSyntax syntax, IEnumerable<ComMethodContext>? shadowingMethods) = data;
 
                 writer.WriteLine("[global::System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute<InterfaceInformation, InterfaceImplementation>]");
-                writer.WriteLine($"{string.Join(" ", CodeWriterHelpers.AddModifier(syntax.Modifiers, "unsafe"))} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
+                writer.WriteLine($"{string.Join(" ", CodeWriterHelpers.AddModifier(syntax.Modifiers, "unsafe"))} {syntax.DeclarationKeyword} {syntax.Identifier}{syntax.TypeParameters}");
                 writer.WriteLine('{');
                 writer.Indent++;
 

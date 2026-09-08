@@ -219,6 +219,95 @@ public class CodeWritingTests
         Assert.Equal(signature.GetHashCode(), equivalent.GetHashCode());
     }
 
+    [Theory]
+    [InlineData(ContainingDeclarationKind.Class, "class")]
+    [InlineData(ContainingDeclarationKind.Struct, "struct")]
+    [InlineData(ContainingDeclarationKind.Interface, "interface")]
+    [InlineData(ContainingDeclarationKind.Record, "record")]
+    [InlineData(ContainingDeclarationKind.RecordStruct, "record struct")]
+    public void ContainingDeclarationsCanBeWrittenFromValues(ContainingDeclarationKind kind, string keyword)
+    {
+        var declaration = new ContainingSyntax(["partial"], kind, "@event", "<T>");
+        var context = new ContainingSyntaxContext([declaration], "Outer.@namespace");
+        string expected = $$"""
+            namespace Outer.@namespace
+            {
+                partial {{keyword}} @event<T>
+                {
+                    private static int M() => 42;
+                }
+            }
+
+            """.ReplaceLineEndings("\r\n");
+
+        Assert.Equal(expected, context.WrapMemberInContainingSyntax("private static int M() => 42;"));
+    }
+
+    [Theory]
+    [InlineData("class", ContainingDeclarationKind.Class)]
+    [InlineData("struct", ContainingDeclarationKind.Struct)]
+    [InlineData("interface", ContainingDeclarationKind.Interface)]
+    [InlineData("record", ContainingDeclarationKind.Record)]
+    [InlineData("record class", ContainingDeclarationKind.Record)]
+    [InlineData("record struct", ContainingDeclarationKind.RecordStruct)]
+    public void DeclarationExtractionPreservesInputDetails(string keyword, ContainingDeclarationKind kind)
+    {
+        string source = $$"""
+            namespace Outer
+            {
+                namespace @namespace /* comment */ . Inner
+                {
+                    public partial {{keyword}} @event<T>
+                    {
+                        partial void M();
+                    }
+                }
+            }
+            """;
+        CompilationUnitSyntax input = SyntaxFactory.ParseCompilationUnit(source);
+        Assert.False(input.ContainsDiagnostics);
+        MethodDeclarationSyntax method = input.DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
+        ContainingSyntaxContext context = method.GetContainingSyntaxContext();
+        ContainingSyntax declaration = Assert.Single(context.ContainingSyntax);
+
+        Assert.Equal("Outer.@namespace.Inner", context.ContainingNamespace);
+        Assert.Equal(["public", "partial"], declaration.Modifiers);
+        Assert.Equal("@event", declaration.Identifier);
+        Assert.Equal("<T>", declaration.TypeParameters);
+        Assert.Equal(kind, declaration.TypeKind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ContainingDeclarationsPreserveNestingAndModifierOrder(bool addUnsafe)
+    {
+        var context = new ContainingSyntaxContext(
+            [
+                new ContainingSyntax(["readonly", "ref", "partial"], ContainingDeclarationKind.Struct, "Nested", "<U>"),
+                new ContainingSyntax(["public", "partial"], ContainingDeclarationKind.Class, "Outer", "<T>")
+            ],
+            ContainingNamespace: null);
+        string expected = $$"""
+            public {{(addUnsafe ? "unsafe " : "")}}partial class Outer<T>
+            {
+                readonly {{(addUnsafe ? "unsafe " : "")}}ref partial struct Nested<U>
+                {
+                    private static int M() => 42;
+                }
+            }
+
+            """.ReplaceLineEndings("\r\n");
+        const string Member = "private static int M() => 42;";
+
+        string actual = addUnsafe
+            ? context.WrapMembersInContainingSyntaxWithUnsafeModifier(Member)
+            : context.WrapMemberInContainingSyntax(Member);
+
+        Assert.Equal(expected, actual);
+        Assert.False(SyntaxFactory.ParseCompilationUnit(actual).ContainsDiagnostics);
+    }
+
     [Fact]
     public void ContainingDeclarationsPreserveInputLiteralContents()
     {
@@ -234,7 +323,7 @@ public class CodeWritingTests
 
         CompilationUnitSyntax input = SyntaxFactory.ParseCompilationUnit(Source);
         MethodDeclarationSyntax method = input.DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
-        var context = new ContainingSyntaxContext(method);
+        ContainingSyntaxContext context = method.GetContainingSyntaxContext();
         CompilationUnitSyntax output = SyntaxFactory.ParseCompilationUnit(context.WrapMemberInContainingSyntax("partial void M() { }\r\n"));
 
         Assert.False(output.ContainsDiagnostics);

@@ -353,13 +353,13 @@ namespace Microsoft.Interop
                 new CodeEmitOptions(SkipInit: true),
                 typeof(VtableIndexStubGenerator).Assembly);
 
-            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+            ContainingSyntaxContext containingSyntaxContext = syntax.GetContainingSyntaxContext();
 
             var methodSyntaxTemplate = new ContainingSyntax(
                 CodeWriterHelpers.GetModifiers(syntax.Modifiers)
                     .Where(static modifier => modifier is not ("partial" or "virtual" or "public" or "private" or "protected" or "internal"))
                     .ToImmutableArray(),
-                SyntaxKind.MethodDeclaration,
+                ContainingDeclarationKind.Method,
                 CodeWriterHelpers.EscapeIdentifier(symbol.Name),
                 typeParameters: null);
 

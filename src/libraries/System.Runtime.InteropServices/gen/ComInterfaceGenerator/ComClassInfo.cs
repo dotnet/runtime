@@ -42,8 +42,8 @@ namespace Microsoft.Interop
 
             return new ComClassInfo(
                 type.ToDisplayString(),
-                new ContainingSyntaxContext(syntax),
-                new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                syntax.GetContainingSyntaxContext(),
+                syntax.GetDeclarationTemplate(),
                 new(names.ToImmutable()));
         }
 

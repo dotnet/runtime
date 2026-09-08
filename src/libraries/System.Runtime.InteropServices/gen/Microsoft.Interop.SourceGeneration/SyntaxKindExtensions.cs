@@ -7,13 +7,13 @@ namespace Microsoft.Interop;
 
 public static class SyntaxKindExtensions
 {
-    public static string GetDeclarationKeyword(this SyntaxKind syntaxKind) => syntaxKind switch
+    public static ContainingDeclarationKind GetDeclarationKind(this SyntaxKind syntaxKind) => syntaxKind switch
     {
-        SyntaxKind.ClassDeclaration => "class",
-        SyntaxKind.StructDeclaration => "struct",
-        SyntaxKind.InterfaceDeclaration => "interface",
-        SyntaxKind.RecordDeclaration => "record",
-        SyntaxKind.RecordStructDeclaration => "record struct",
+        SyntaxKind.ClassDeclaration => ContainingDeclarationKind.Class,
+        SyntaxKind.StructDeclaration => ContainingDeclarationKind.Struct,
+        SyntaxKind.InterfaceDeclaration => ContainingDeclarationKind.Interface,
+        SyntaxKind.RecordDeclaration => ContainingDeclarationKind.Record,
+        SyntaxKind.RecordStructDeclaration => ContainingDeclarationKind.RecordStruct,
         _ => throw new UnreachableException(),
     };
 }

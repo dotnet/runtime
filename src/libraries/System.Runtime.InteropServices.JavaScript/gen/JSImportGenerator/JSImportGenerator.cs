@@ -99,8 +99,8 @@ namespace Microsoft.Interop.JavaScript
             var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
             JSImportData jsImportData = ProcessJSImportAttribute(jsImportAttr!) ?? new JSImportData("INVALID_CSHARP_SYNTAX", null);
             var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
-            var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
-            var methodTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
+            ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
+            ContainingSyntax methodTemplate = originalSyntax.GetDeclarationTemplate();
 
             return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, methodTemplate, locations, jsImportData);
         }

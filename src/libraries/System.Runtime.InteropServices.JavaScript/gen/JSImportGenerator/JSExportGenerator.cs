@@ -100,7 +100,7 @@ namespace Microsoft.Interop.JavaScript
             var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
             JSExportData jsExportData = ProcessJSExportAttribute(jsExportAttr!) ?? new JSExportData();
             var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
-            var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
+            ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
             return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, locations, jsExportData);
         }

@@ -227,9 +227,9 @@ namespace Microsoft.Interop
                 new CodeEmitOptions(SkipInit: false),
                 typeof(DownlevelLibraryImportGenerator).Assembly);
 
-            var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
+            ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
-            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
+            ContainingSyntax methodSyntaxTemplate = originalSyntax.GetDeclarationTemplate();
 
             List<string> additionalAttributes = GenerateForwardedAttributes(defaultDllImportSearchPathsAttribute);
             return new IncrementalStubGenerationContext(

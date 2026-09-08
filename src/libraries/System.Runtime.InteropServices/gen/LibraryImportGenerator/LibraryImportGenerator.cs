@@ -273,9 +273,9 @@ namespace Microsoft.Interop
                 typeof(LibraryImportGenerator).Assembly,
                 errorHandlingInfo);
 
-            var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
+            ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
-            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
+            ContainingSyntax methodSyntaxTemplate = originalSyntax.GetDeclarationTemplate();
 
             List<string> additionalAttributes = GenerateForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute, debuggerHiddenAttribute);
             return new IncrementalStubGenerationContext(

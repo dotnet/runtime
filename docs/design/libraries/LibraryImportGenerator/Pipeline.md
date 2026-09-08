@@ -14,6 +14,8 @@ The interop generators share their text-emission infrastructure in
 `src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration`.
 Input analysis extracts type names, attributes, containing declarations, and marshalling
 information into value models. Emission operates on these models, not on syntax trees.
+`ContainingSyntaxContext` stores declaration text and `ContainingDeclarationKind` values;
+`SyntaxExtensions` extracts that data from input declarations before emission.
 `GeneratedParameter` and `GeneratedMethodSignature` describe signatures, and
 `IndentedTextWriter` writes statements and scoped blocks with deterministic line endings.
 
