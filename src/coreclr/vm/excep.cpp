@@ -5640,6 +5640,10 @@ void FaultingExceptionFrame::InitAndLink(CONTEXT *pContext)
 
     Init(pContext);
 
+    // We may enter here from preemptive mode with an unwalkable stack,
+    // so we can't transition to co-op mode reliably.
+    PERMANENT_CONTRACT_VIOLATION(ModeViolation);
+
     Push();
 }
 
