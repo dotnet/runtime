@@ -77,7 +77,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFrameworkCopyToOutputDirectory>Never</_WasmFrameworkCopyToOutputDirectory>
     </PropertyGroup>
     <ItemGroup>
-      <ReferenceCopyLocalPaths CopyToOutputDirectory="Never" />
+      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)" CopyToOutputDirectory="Never" />
     </ItemGroup>
   </Target>
 
@@ -88,9 +88,11 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(_WasmEnableWebcil)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           BeforeTargets="_ComputeWasmBuildCandidates">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Condition="'%(ReferenceCopyLocalPaths.CopyToOutputDirectory)' == 'Never'"
+      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
+                               Condition="'%(ReferenceCopyLocalPaths.CopyToOutputDirectory)' == 'Never'"
                                CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
-      <WasmAssembliesFinal Condition="'%(WasmAssembliesFinal.CopyToOutputDirectory)' == 'Never'"
+      <WasmAssembliesFinal Update="@(WasmAssembliesFinal)"
+                           Condition="'%(WasmAssembliesFinal.CopyToOutputDirectory)' == 'Never'"
                            CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
     </ItemGroup>
   </Target>
@@ -128,9 +130,10 @@ Copyright (c) .NET Foundation. All rights reserved.
            that step has to re-run for a native flag change. -->
       <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)wasm\for-build\dotnet.native.*" />
       <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)wasm\for-publish\dotnet.native.*" />
-      <!-- Everything staged, managed and native alike: these are content-fingerprinted, so a re-stage adds a
-           new name beside the old file instead of replacing it. All of it is re-copied on the next build. -->
-      <_WasmCoreClrStaleModeOutput Include="$(_WasmCoreClrServedAssetsDir)**\*" Condition="'$(_WasmCoreClrServedAssetsDir)' != ''" />
+      <!-- Only the fingerprinted assemblies we stage (webcil-in-wasm and their .dll aliases): these accumulate
+           beside their predecessors on a mode flip. Scoped to *.wasm/*.dll rather than a recursive wipe so the
+           SDK never removes app-authored content that may live under the served directory. -->
+      <_WasmCoreClrStaleModeOutput Include="$(_WasmCoreClrServedAssetsDir)*.wasm;$(_WasmCoreClrServedAssetsDir)*.dll" Condition="'$(_WasmCoreClrServedAssetsDir)' != ''" />
     </ItemGroup>
     <Delete Files="@(_WasmCoreClrStaleModeOutput)" ContinueOnError="true" />
     <WriteLinesToFile File="$(_WasmCoreClrModeStamp)" Lines="$(_WasmCoreClrMode)" Overwrite="true" WriteOnlyWhenDifferent="true" />
