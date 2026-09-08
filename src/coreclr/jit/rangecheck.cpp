@@ -1260,6 +1260,16 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
             limit   = Limit(Limit::keConstant, maxValue);
         }
+        // Current assertion is "normalLclVN u<= preferredBoundVN".
+        else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LE_UN) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && curAssertion.GetOp2().IsVNNeverNegative() &&
+                 (curAssertion.GetOp2().GetVN() == preferredBoundVN) && (curAssertion.GetOp2().GetCns() == 0))
+        {
+            cmpOper    = GT_LE;
+            limit      = Limit(Limit::keBinOpArray, preferredBoundVN, 0);
+            isUnsigned = true;
+        }
         // Current assertion is of the form "i <relop> (vn + cns)" where vn is a real
         // (length-like) checked bound. The arbitrary-VN sub-form of O2K_VN_ADD_CNS (created by
         // CreateRelopVN, where op2.vn is not a checked bound) is intentionally excluded here so
@@ -1499,6 +1509,30 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                     cmpOper = GT_GT;
                     limit   = Limit(Limit::keConstant, 0);
                 }
+            }
+            else
+            {
+                continue;
+            }
+        }
+        // Current assertion is "normalLclVN u< boundVN". Get boundVN's range using our preferred bound.
+        else if (canUseCheckedBounds && pRange->LowerLimit().IsUnknown() && pRange->UpperLimit().IsUnknown() &&
+                 curAssertion.KindIs(Compiler::OAK_LT_UN) && (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
+                 (curAssertion.GetOp2().GetVN() != preferredBoundVN) && (curAssertion.GetOp2().GetCns() == 0) &&
+                 (budget > 0))
+        {
+            Range boundRange = GetRangeFromType(comp->vnStore->TypeOfVN(curAssertion.GetOp2().GetVN()));
+            MergeEdgeAssertionsWorker(comp, curAssertion.GetOp2().GetVN(), preferredBoundVN, assertions, &boundRange,
+                                      canUseCheckedBounds, budget - 1, visited);
+
+            if (boundRange.LowerLimit().IsConstant() && (boundRange.LowerLimit().GetConstant() >= 0) &&
+                boundRange.UpperLimit().IsBinOpArray() && (boundRange.UpperLimit().vn == preferredBoundVN) &&
+                (boundRange.UpperLimit().GetConstant() <= 0))
+            {
+                cmpOper    = GT_LT;
+                limit      = boundRange.UpperLimit();
+                isUnsigned = true;
             }
             else
             {
@@ -1930,9 +1964,7 @@ Range RangeCheck::GetRangeFromType(var_types type)
 }
 
 // Compute the range for a local var definition.
-Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
-                                          GenTreeLclVarCommon* lcl,
-                                          bool monIncreasing   DEBUGARG(int indent))
+Range RangeCheck::ComputeRangeForLocalDef(GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent))
 {
     LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
     if (ssaDef == nullptr)
@@ -1947,17 +1979,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
         JITDUMP("----------------------------------------------------\n");
     }
 #endif
-    Range range = GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
-    if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_compiler->GetAssertionCount() > 0))
-    {
-        JITDUMP("Merge assertions from " FMT_BB ": ", block->bbNum);
-        Compiler::optDumpAssertionIndices(block->bbAssertionIn, " ");
-        JITDUMP("for definition [%06d]\n", Compiler::dspTreeID(ssaDef->GetDefNode()))
-
-        MergeEdgeAssertions(ssaDef->GetDefNode(), block->bbAssertionIn, &range);
-        JITDUMP("done merging\n");
-    }
-    return range;
+    return GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
 }
 
 // Get the limit's maximum possible value.
@@ -2320,7 +2342,8 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
     {
-        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
+        range = ComputeRangeForLocalDef(expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
+        // Phi arguments need edge assertions, not the assertions of a block that jump threading may have bypassed.
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
