@@ -45,10 +45,6 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>6d12eaff065a8a79e10851022b22a2079da6fe44</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100.Transport" Version="11.0.100-rc.1.26431.109">
-      <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>4f8bdb66a033b551cc724f902111718ef5ca986c</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.NET.Runtime.Emscripten.Internal" Version="12.0.0-alpha.1.26456.103">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>6d12eaff065a8a79e10851022b22a2079da6fe44</Sha>
@@ -72,6 +68,10 @@
       <Sha>6d12eaff065a8a79e10851022b22a2079da6fe44</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.GenAPI" Version="11.0.0-beta.26456.103">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>6d12eaff065a8a79e10851022b22a2079da6fe44</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.DotNet.GenAPI.Task" Version="12.0.100-alpha.1.26456.103">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>6d12eaff065a8a79e10851022b22a2079da6fe44</Sha>
     </Dependency>
