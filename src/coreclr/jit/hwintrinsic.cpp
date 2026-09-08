@@ -2785,6 +2785,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_XARCH
 
         userCall->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+        gtUpdateNodeSideEffects(retNode);
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)

@@ -54,6 +54,8 @@ namespace ILCompiler.ObjectWriter
         ];
 
         private protected readonly Dictionary<string, WasmGlobal> _definedGlobals = new();
+        /// <summary>Names of the writer-inserted stub functions, which are the only exported functions.</summary>
+        private protected readonly List<Utf8String> _wasmStubNames = new();
         private protected readonly WasmSections _sections = new();
         private protected readonly WasmSymbolManager _wasmSymbolManager = new();
         /// <summary>
@@ -349,6 +351,7 @@ namespace ILCompiler.ObjectWriter
 
             RegisterFunctionSymbol(name);
             RegisterStubIndexAndSignature(body.Signature);
+            _wasmStubNames.Add(name);
         }
 
         private protected int RegisterSignature(WasmFuncType signature)

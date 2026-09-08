@@ -86,7 +86,6 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
         [InlineData(true)]
         [InlineData(false)]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/116473")]
         public async Task SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
             if (PlatformDetection.IsDebugLibrary(typeof(SslStream).Assembly) && !enabledBySwitch)

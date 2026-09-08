@@ -974,7 +974,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     if (EA_IS_RELOC(size))
     {
         assert(genIsValidIntReg(reg));
-        emit->emitIns_R_AI(INS_bl, size, reg, imm); // for example: EA_PTR_DSP_RELOC
+        // for example: EA_PTR_DSP_RELOC
+        emit->emitIns_R_AI(INS_bl, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
     }
     else
     {
@@ -3698,7 +3699,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         if (m_compiler->opts.compReloc)
         {
             // TODO-LOONGARCH64: here the bl is special flag rather than a real instruction.
-            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
+            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTargetReg,
+                                       (ssize_t)pAddr DEBUGARG((size_t)m_compiler->eeFindHelper(helper))
+                                           DEBUGARG(GTF_ICON_METHOD_HDL));
         }
         else
         {

@@ -485,6 +485,7 @@ namespace System
             public GCHandle loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT, QCallTypeHandle methodType, string method, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
@@ -520,6 +521,7 @@ namespace System
             return ret;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
@@ -570,12 +572,14 @@ namespace System
                 _target = target;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
         private static partial void Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, IntPtr method, out BindToMethodDetails bindToMethodDetails);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
@@ -611,6 +615,7 @@ namespace System
             return methodInfo!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_CreateMethodInfo")]
         private static unsafe partial void CreateMethodInfo(MethodDesc* methodDesc, ObjectHandleOnStack retMethodInfo);
 
@@ -621,6 +626,7 @@ namespace System
             return GetMethodDesc(ObjectHandleOnStack.Create(ref instance));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
         private static unsafe partial MethodDesc* GetMethodDesc(ObjectHandleOnStack instance);
 
@@ -663,6 +669,7 @@ namespace System
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
         private static partial IntPtr AdjustTarget(MethodTable* targetMT, IntPtr methodPtr);
 
@@ -672,6 +679,7 @@ namespace System
             InitializeVirtualCallStub(ObjectHandleOnStack.Create(ref d), methodPtr);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
 

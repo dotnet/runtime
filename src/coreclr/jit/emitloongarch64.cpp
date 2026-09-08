@@ -2094,6 +2094,11 @@ void emitter::emitIns_R_AI(instruction  ins,
         id->idOpSize(EA_PTRSIZE);
     }
 
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
 
@@ -3881,6 +3886,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     // for stores, but we ignore those cases here.)
     if (emitInsMayWriteToGCReg(ins)) // True if "id->idIns()" writes to a register than can hold GC ref.
     {
+        if (INS_OPTS_RELOC == id->idInsOpt())
+        {
+            // For relocation case (pcalau12i + addi.d/ld.d), the GCReg should update after calculation completed.
+            dstRW2 += 4;
+        }
+
         // We assume that "idReg1" is the primary destination register for all instructions
         if (id->idGCref() != GCT_NONE)
         {

@@ -621,6 +621,11 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned clsAttr;
     unsigned methAttr;
 
+    // True if the target of this candidate can be inlined. GDV candidates are kept
+    // around even when it can't be, so this is what tells the two apart.
+    //
+    bool isInlineable;
+
     CorInfoInitClassResult initClassResult;
     InlineContext*         inlinersContext;
 
