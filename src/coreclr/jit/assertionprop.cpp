@@ -3291,7 +3291,8 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
             ValueNumPair operandsExcSet = vnStore->VNPForEmptyExcSet();
             for (GenTree* operand : tree->Operands())
             {
-                operandsExcSet = vnStore->VNPUnionExcSet(operand->gtVNPair, operandsExcSet);
+                ValueNumPair operandVNP = operand->gtVNPair.BothDefined() ? operand->gtVNPair : vnStore->VNPForVoid();
+                operandsExcSet          = vnStore->VNPUnionExcSet(operandVNP, operandsExcSet);
             }
             ignoreRoot = vnStore->VNPExcIsSubset(operandsExcSet, vnStore->VNPExceptionSet(vnPair));
         }
