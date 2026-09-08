@@ -40,7 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 # define SZFREG 4
 # define STORE_FP fsw
 # define LOAD_FP flw
-#else
-# error "Unsupported RISC-V floating-point length"
 #endif
+/* Without F/D there are no floating-point registers to save or restore, so
+   SZFREG/STORE_FP/LOAD_FP stay undefined; getcontext.S and setcontext.S
+   already guard their use with #ifdef STORE_FP / #ifdef LOAD_FP. */
 

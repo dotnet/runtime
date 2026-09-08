@@ -68,6 +68,12 @@ typedef int64_t unw_sword_t;
 typedef double unw_tdep_fpreg_t;
 #elif __riscv_flen == 32
 typedef float unw_tdep_fpreg_t;
+#elif !defined(__riscv_flen)
+/* Built for a target without F/D. There are no floating-point registers to
+   unwind, but the type is part of the public API, so keep it the width the
+   double-precision ABI uses and make it an integer so that the header does not
+   require floating point of its includer. */
+typedef uint64_t unw_tdep_fpreg_t;
 #else
 # error "Unsupported RISC-V floating-point size"
 #endif
