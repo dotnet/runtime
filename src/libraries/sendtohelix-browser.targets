@@ -290,13 +290,18 @@
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
-    <!-- CoreCLR ReadyToRun: ship the in-build crossgen2 and the wasm-aware Crossgen2Tasks shim so the
-         Wasm.Build.Tests opt-in resolves them under BASE_DIR. Inert when crossgen2 isn't built. -->
+    <!-- CoreCLR ReadyToRun: ship the wasm-aware Crossgen2Tasks shim (the wasm-container crossgen tasks) so the
+         Wasm.Build.Tests opt-in finds it under BASE_DIR. The crossgen2 tool itself is resolved on the worker
+         from the SDK crossgen2 pack (which the SDK restores when PublishReadyToRun is set), so it is only shipped
+         as a correlation payload when the in-build crossgen2 is present in this leg (dev/in-tree). The shim ships
+         whenever it is built - it is gated on its own path, not on the crossgen2 bin dir, which the WBT test leg
+         does not carry. -->
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\')">
+      <HelixCorrelationPayload Include="$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\"
+                               Destination="Crossgen2Tasks/$(Configuration)" />
+    </ItemGroup>
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(Crossgen2InBuildDir)')">
       <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Destination="coreclr/browser.wasm.$(Configuration)/$(BuildArchitecture)/crossgen2" />
-      <HelixCorrelationPayload Include="$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\"
-                               Condition="Exists('$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\')"
-                               Destination="Crossgen2Tasks/$(Configuration)" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->

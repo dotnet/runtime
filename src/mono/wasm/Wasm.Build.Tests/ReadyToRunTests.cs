@@ -219,10 +219,11 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
         }
 
-        // In-tree publish crossgen2: the base SDK can't resolve a wasm crossgen2 and emits composite R2R
-        // (which strips the assembly manifest and won't load), so point the CoreCLR R2R override at the
-        // crossgen2 built under BASE_DIR and activate the wasm-aware Crossgen2Tasks shim. All inert if
-        // BASE_DIR / the directories aren't present.
+        // Wire the wasm-aware Crossgen2Tasks shim (the wasm-container crossgen tasks) so R2R images use the
+        // right container, and the in-build crossgen2 when this leg shipped it. Each is passed only when present
+        // under BASE_DIR: the no-workload leg ships the shim but resolves crossgen2 itself from the SDK pack (the
+        // SDK restores it when PublishReadyToRun is set), so passing a non-existent Crossgen2InBuildDir there
+        // would break the call-helpers generator. All inert if BASE_DIR is unset.
         private static string GetR2RBuildArgs(Configuration config)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
@@ -234,7 +235,15 @@ namespace Wasm.Build.Tests
             string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
             string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
             string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
-            return $"-p:Crossgen2InBuildDir={crossgenDir} -p:Crossgen2SdkOverridePropsPath={shimProps} -p:Crossgen2SdkOverrideTargetsPath={shimTargets}";
+
+            var args = new List<string>();
+            if (Directory.Exists(crossgenDir))
+                args.Add($"-p:Crossgen2InBuildDir={crossgenDir}");
+            if (File.Exists(shimProps))
+                args.Add($"-p:Crossgen2SdkOverridePropsPath={shimProps}");
+            if (File.Exists(shimTargets))
+                args.Add($"-p:Crossgen2SdkOverrideTargetsPath={shimTargets}");
+            return string.Join(" ", args);
         }
 
         private static void AssertCoreLibReadyToRun(string frameworkDir, bool expectReadyToRun)

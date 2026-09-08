@@ -180,6 +180,9 @@ public class WasmTemplateTestsBase : BuildTestBase
                 <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
                     <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
                 </KnownWebAssemblySdkPack>
+                <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+                    <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</Crossgen2PackVersion>
+                </KnownCrossgen2Pack>
                 </ItemGroup>
             </Target>
         """;

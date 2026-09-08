@@ -6,30 +6,31 @@ ReadyToRun compiler override for CoreCLR browser-wasm, appended to AfterMicrosof
 Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.props so it imports after Microsoft.NET.Publish.targets and
 its ResolveReadyToRunCompilers wins. Mirrors AppleBuild.ReadyToRun.targets.
 
-Sets the Crossgen2Tool item directly, because the base SDK resolver keys on ResolvedCrossgen2Pack, which a
-standalone SDK app does not populate for a local build. Retire this in favour of that once the crossgen2
-pack ships as a restorable package. Inert for normal consumers.
+When an in-build crossgen2 is available (in-tree / dev builds) the Crossgen2Tool item is set from it. Otherwise
+the SDK-resolved crossgen2 pack (@(ResolvedCrossgen2Pack), which the SDK restores when PublishReadyToRun is set)
+is used - so this override never shadows that resolution into an empty tool. Inert for normal consumers.
 
 Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project>
   <Target Name="ResolveReadyToRunCompilers"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2InBuildDir)' != '' and Exists('$(Crossgen2InBuildDir)')"
+          Condition="'$(PublishReadyToRun)' == 'true'"
           DependsOnTargets="$(ResolveReadyToRunCompilersDependsOn)">
     <PropertyGroup>
+      <_WasmCrossgen2InBuildUsable Condition="'$(Crossgen2InBuildDir)' != '' and Exists('$(Crossgen2InBuildDir)')">true</_WasmCrossgen2InBuildUsable>
       <_WasmCrossgen2ExeSuffix Condition="'$(ExeSuffix)' != ''">$(ExeSuffix)</_WasmCrossgen2ExeSuffix>
       <_WasmCrossgen2ExeSuffix Condition="'$(_WasmCrossgen2ExeSuffix)' == '' and $([MSBuild]::IsOSPlatform('windows'))">.exe</_WasmCrossgen2ExeSuffix>
       <!-- Accept both layouts: the raw in-build dir has crossgen2 at its root, the shipped
            Microsoft.NETCore.App.Crossgen2.<hostRid> pack has it under tools/. -->
       <_WasmCrossgen2RootExe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCrossgen2ExeSuffix)'))</_WasmCrossgen2RootExe>
       <_WasmCrossgen2ToolsExe>$([MSBuild]::NormalizePath('$([MSBuild]::NormalizeDirectory('$(Crossgen2InBuildDir)', 'tools'))', 'crossgen2$(_WasmCrossgen2ExeSuffix)'))</_WasmCrossgen2ToolsExe>
-      <Crossgen2Path Condition="Exists('$(_WasmCrossgen2RootExe)')">$(_WasmCrossgen2RootExe)</Crossgen2Path>
-      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and Exists('$(_WasmCrossgen2ToolsExe)')">$(_WasmCrossgen2ToolsExe)</Crossgen2Path>
-      <Crossgen2Path Condition="'$(Crossgen2Path)' == ''">$(_WasmCrossgen2RootExe)</Crossgen2Path>
+      <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and Exists('$(_WasmCrossgen2RootExe)')">$(_WasmCrossgen2RootExe)</Crossgen2Path>
+      <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and '$(Crossgen2Path)' == '' and Exists('$(_WasmCrossgen2ToolsExe)')">$(_WasmCrossgen2ToolsExe)</Crossgen2Path>
+      <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and '$(Crossgen2Path)' == ''">$(_WasmCrossgen2RootExe)</Crossgen2Path>
       <!-- Directory of the resolved crossgen2, so _WasmCoreClrConservativeR2RInputs can add the wasm JIT
            crossgen2 auto-loads to the R2R inputs. -->
-      <_WasmResolvedCrossgen2Dir>$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetDirectoryName('$(Crossgen2Path)'))))</_WasmResolvedCrossgen2Dir>
+      <_WasmResolvedCrossgen2Dir Condition="'$(Crossgen2Path)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetDirectoryName('$(Crossgen2Path)'))))</_WasmResolvedCrossgen2Dir>
       <!-- RunReadyToRunCompiler (NETSDK1158) requires non-empty TargetOS/TargetArch on the Crossgen2Tool item
            when JitPath is unset (crossgen2 then auto-loads its own clrjit_universal_wasm). In-tree builds set
            $(TargetOS)/$(TargetArchitecture); a standalone SDK app does not. -->
@@ -39,11 +40,27 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmR2RTargetArch Condition="'$(_WasmR2RTargetArch)' == ''">wasm</_WasmR2RTargetArch>
     </PropertyGroup>
 
-    <ItemGroup>
+    <!-- Preferred: the in-build crossgen2 (in-tree and dev out-of-tree builds that pass Crossgen2InBuildDir). -->
+    <ItemGroup Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true'">
       <Crossgen2Tool Include="$(Crossgen2Path)"
                      TargetArch="$(_WasmR2RTargetArch)"
                      TargetOS="$(_WasmR2RTargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)" />
     </ItemGroup>
+
+    <!-- Fallback: the SDK-resolved crossgen2 pack (restored when PublishReadyToRun is set, e.g. the no-workload
+         Helix leg). Mirrors the resolver in Microsoft.NET.CrossGen.targets so the tool is never left empty. -->
+    <ResolveReadyToRunCompilers Condition="'$(_WasmCrossgen2InBuildUsable)' != 'true' and '@(ResolvedCrossgen2Pack)' != ''"
+                                RuntimePacks="@(ResolvedRuntimePack)"
+                                Crossgen2Packs="@(ResolvedCrossgen2Pack)"
+                                TargetingPacks="@(ResolvedTargetingPack)"
+                                RuntimeGraphPath="$(RuntimeIdentifierGraphPath)"
+                                NETCoreSdkRuntimeIdentifier="$(NETCoreSdkRuntimeIdentifier)"
+                                EmitSymbols="$(PublishReadyToRunEmitSymbols)"
+                                ReadyToRunUseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
+                                PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)">
+      <Output TaskParameter="CrossgenTool" ItemName="CrossgenTool" />
+      <Output TaskParameter="Crossgen2Tool" ItemName="Crossgen2Tool" />
+    </ResolveReadyToRunCompilers>
   </Target>
 </Project>
