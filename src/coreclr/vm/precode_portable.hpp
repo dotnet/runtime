@@ -18,7 +18,7 @@ public: // static
     static bool HasInterpreterData(PCODE addr);
 
     static void* GetActualCode(PCODE addr);
-    static void SetActualCode(PCODE addr, PCODE actualCode);
+    static void SetActualCode(PCODE addr, void* actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
@@ -132,8 +132,8 @@ public:
 class UnboxingStubPortableEntryPoint final
 {
 public:
-    Volatile<void*> _targetMethodDesc;
-    Volatile<void*> _targetEntryPoint;
+    Volatile<MethodDesc*> _targetMethodDesc;
+    Volatile<PCODE> _targetEntryPoint;
     PortableEntryPoint _entryPoint;
 
     static UnboxingStubPortableEntryPoint* FromEntryPoint(PCODE addr)
@@ -154,19 +154,19 @@ public:
         LIMITED_METHOD_CONTRACT;
         _entryPoint.Init(pMD);
         _targetMethodDesc = nullptr;
-        _targetEntryPoint = nullptr;
+        _targetEntryPoint = (PCODE)nullptr;
     }
 
     static void SetStubTargetAndActualCode(
         PCODE addr,
         MethodDesc* targetMethodDesc,
         PCODE targetEntryPoint,
-        PCODE actualCode)
+        void* actualCode)
     {
         WRAPPER_NO_CONTRACT;
         UnboxingStubPortableEntryPoint* entryPoint = FromEntryPoint(addr);
         entryPoint->_targetMethodDesc = targetMethodDesc;
-        entryPoint->_targetEntryPoint = reinterpret_cast<void*>(PCODEToPINSTR(targetEntryPoint));
+        entryPoint->_targetEntryPoint = targetEntryPoint;
         PortableEntryPoint::SetActualCode(addr, actualCode);
     }
 };

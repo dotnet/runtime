@@ -2500,8 +2500,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         MethodDesc* targetMethodDesc;
         PCODE targetEntryPoint;
-        PCODE unboxingStub = (PCODE)GetUnboxingStub(this, &targetMethodDesc, &targetEntryPoint);
-        if (unboxingStub != (PCODE)NULL)
+        void* unboxingStub = GetUnboxingStub(this, &targetMethodDesc, &targetEntryPoint);
+        if (unboxingStub != NULL)
         {
             pCode = GetPortableEntryPoint();
             UnboxingStubPortableEntryPoint::SetStubTargetAndActualCode(
@@ -2559,7 +2559,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // Update the PortableEntryPoint to point to the actual code for the FCall implementation.
             // Return the PortableEntryPoint as the PCODE.
             PCODE entryPoint = GetPortableEntryPoint();
-            PortableEntryPoint::SetActualCode(entryPoint, pCode);
+            PortableEntryPoint::SetActualCode(entryPoint, (void*)pCode);
             pCode = entryPoint;
         }
         else
@@ -2588,7 +2588,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
                 // entrypoint so callers dispatch directly to it instead of looping back into the prestub.
                 // In this path helperMD comes from an FCall helper entrypoint, so native code must exist.
                 _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(pCode));
-                PortableEntryPoint::SetActualCode(entryPoint, (PCODE)(TADDR)PortableEntryPoint::GetActualCode(pCode));
+                PortableEntryPoint::SetActualCode(entryPoint, PortableEntryPoint::GetActualCode(pCode));
             }
             pCode = entryPoint;
         }
