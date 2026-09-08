@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(15)]
-        [InlineData(18)]
+        [InlineData(19)]
         [InlineData(31)]
         [InlineData(33)]
         [InlineData(63)]
@@ -79,6 +79,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256, 32, 65, 65)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384, 48, 97, 97)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512, 66, 133, 133)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256, 32, 32, 32)]
         [InlineData(HpkeKem.MLKEM_512, 64, 768, 800)]
         [InlineData(HpkeKem.MLKEM_768, 64, 1088, 1184)]
@@ -112,6 +113,8 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM,
             "DHKEM(P-256, HKDF-SHA256) HKDF-SHA256 AES-128-GCM")]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512, HpkeKdf.HKDF_SHA512, HpkeAead.AES_256_GCM,
+            "DHKEM(P-521, HKDF-SHA512) HKDF-SHA512 AES-256-GCM")]
         [InlineData(HpkeKem.MLKEM_768, HpkeKdf.HKDF_SHA512, HpkeAead.AES_256_GCM,
             "ML-KEM-768 HKDF-SHA512 AES-256-GCM")]
         [InlineData(HpkeKem.MLKEM1024_P384, HpkeKdf.SHAKE256, HpkeAead.ChaCha20Poly1305,

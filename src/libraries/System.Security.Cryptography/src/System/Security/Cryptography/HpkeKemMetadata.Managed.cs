@@ -25,6 +25,10 @@ namespace System.Security.Cryptography
                     SuiteId = [.."KEM"u8, 0x00, 0x11];
                     KemKdf = CreateKemKdf(HpkeKdf.HKDF_SHA384);
                     break;
+                case HpkeKem.DHKEM_P521_HKDF_SHA512:
+                    SuiteId = [.."KEM"u8, 0x00, 0x12];
+                    KemKdf = CreateKemKdf(HpkeKdf.HKDF_SHA512);
+                    break;
                 case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                     SuiteId = [.."KEM"u8, 0x00, 0x20];
                     KemKdf = CreateKemKdf(HpkeKdf.HKDF_SHA256);
@@ -76,6 +80,7 @@ namespace System.Security.Cryptography
                 {
                     case HpkeKem.DHKEM_P256_HKDF_SHA256:
                     case HpkeKem.DHKEM_P384_HKDF_SHA384:
+                    case HpkeKem.DHKEM_P521_HKDF_SHA512:
                         return !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
                     case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                         return X25519DiffieHellman.IsSupported;

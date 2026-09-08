@@ -33,6 +33,7 @@ namespace System.Security.Cryptography
             {
                 case HpkeKem.DHKEM_P256_HKDF_SHA256:
                 case HpkeKem.DHKEM_P384_HKDF_SHA384:
+                case HpkeKem.DHKEM_P521_HKDF_SHA512:
                     return new HpkeECDiffieHellmanKemAdapter(suite);
                 case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                     return new HpkeX25519DiffieHellmanKemAdapter(suite);
@@ -43,7 +44,7 @@ namespace System.Security.Cryptography
 
         internal void Generate()
         {
-            const int MaxStackIkmSize = 64;
+            const int MaxStackIkmSize = 128;
             Span<byte> ikmStack = stackalloc byte[MaxStackIkmSize];
 
             try
@@ -79,7 +80,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                const int MaxStackContextLength = 256;
+                const int MaxStackContextLength = 512;
                 Span<byte> contextBuffer = stackalloc byte[MaxStackContextLength];
                 Span<byte> context = contextBuffer.Slice(0, contextLength);
 
@@ -130,7 +131,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> suiteId = Suite.KemMetadata.SuiteId;
             int labeledInfoLength =
                 checked(sizeof(ushort) + VersionLabel.Length + suiteId.Length + label.Length + info.Length);
-            const int MaxStackLabeledInfoLength = 256;
+            const int MaxStackLabeledInfoLength = 512;
             Span<byte> labeledInfoBuffer = stackalloc byte[MaxStackLabeledInfoLength];
 
             try

@@ -1948,6 +1948,7 @@ namespace System.Security.Cryptography
     {
         DHKEM_P256_HKDF_SHA256 = 16,
         DHKEM_P384_HKDF_SHA384 = 17,
+        DHKEM_P521_HKDF_SHA512 = 18,
         DHKEM_X25519_HKDF_SHA256 = 32,
         MLKEM_512 = 64,
         MLKEM_768 = 65,

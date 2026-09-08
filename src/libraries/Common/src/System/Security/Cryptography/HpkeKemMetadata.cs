@@ -34,6 +34,8 @@ namespace System.Security.Cryptography
                     return new HpkeKemMetadata(kem, nsecret: 32, nenc: 65, npk: 65, nsk: 32, name: "DHKEM(P-256, HKDF-SHA256)");
                 case HpkeKem.DHKEM_P384_HKDF_SHA384:
                     return new HpkeKemMetadata(kem, nsecret: 48, nenc: 97, npk: 97, nsk: 48, name: "DHKEM(P-384, HKDF-SHA384)");
+                case HpkeKem.DHKEM_P521_HKDF_SHA512:
+                    return new HpkeKemMetadata(kem, nsecret: 64, nenc: 133, npk: 133, nsk: 66, name: "DHKEM(P-521, HKDF-SHA512)");
                 case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                     return new HpkeKemMetadata(kem, nsecret: 32, nenc: 32, npk: 32, nsk: 32, name: "DHKEM(X25519, HKDF-SHA256)");
 

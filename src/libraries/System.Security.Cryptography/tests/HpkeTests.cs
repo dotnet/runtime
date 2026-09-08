@@ -47,6 +47,26 @@ namespace System.Security.Cryptography.Tests
             "477ab1f326a361dfd1e41212109510e813380547c68c0964c1908f16f67b902a" +
             "061be27b2f8b43f1fab1bf0dbf89f5167ce80aca2c210b8fc0f040699db9ee1229")]
         [InlineData(
+            HpkeKem.DHKEM_P521_HKDF_SHA512,
+            "2ad954bbe39b7122529f7dde780bff626cd97f850d0784a432784e69d86eccaa" +
+            "de43b6c10a8ffdb94bf943c6da479db137914ec835a7e715e36e45e29b587bab3bf1",
+            "01462680369ae375e4b3791070a7458ed527842f6a98a79ff5e0d4cbde83c2719" +
+            "6a3916956655523a6a2556a7af62c5cadabe2ef9da3760bb21e005202f7b2462847",
+            "0401b45498c1714e2dce167d3caf162e45e0642afc7ed435df7902ccae0e84ba0f7d" +
+            "373f646b7738bbbdca11ed91bdeae3cdcba3301f2457be452f271fa6837580e661" +
+            "012af49583a62e48d44bed350c7118c0d8dc861c238c72a2bda17f64704f464b573" +
+            "38e7f40b60959480c0e58e6559b190d81663ed816e523b6b6a418f66d2451ec64")]
+        [InlineData(
+            HpkeKem.DHKEM_P521_HKDF_SHA512,
+            "39a28dc317c3e48b908948f99d608059f882d3d09c0541824bc25f94e6dee7aa0" +
+            "df1c644296b06fbb76e84aef5008f8a908e08fbabadf70658538d74753a85f8856a",
+            "009227b4b91cf1eb6eecb6c0c0bae93a272d24e11c63bd4c34a581c49f9c3ca0" +
+            "1c16bbd32a0a1fac22784f2ae985c85f183baad103b2d02aee787179dfc1a94fea11",
+            "0400b81073b1612cf7fdb6db07b35cf4bc17bda5854f3d270ecd9ea99f6c07b46795" +
+            "b8014b66c523ceed6f4829c18bc3886c891b63fa902500ce3ddeb1fbec7e608ac7" +
+            "0050b76a0a7fc081dbf1cb30b005981113e635eb501a973aba662d7f16fcc12897d" +
+            "d752d657d37774bb16197c0d9724eecc1ed65349fb6ac1f280749e7669766f8cd")]
+        [InlineData(
             HpkeKem.DHKEM_X25519_HKDF_SHA256,
             "7268600d403fce431561aef583ee1613527cff655c1343f29812e66706df3234",
             "52c4a758a802cd8b936eceea314432798d5baf2d7e9235dc084ab1b9cfa2f736",
@@ -119,6 +139,17 @@ namespace System.Security.Cryptography.Tests
             "2b122485c81e76277b6fb7d96d85e1e2f0d41c8b6659dbbd2fad77d4a2318ceb88a350b02f7fdb242af6ee6222",
             "24612f7a27e9a8a0ddffcc18e769f5e03c9ebb658071b558058172d81336d151933f3d80846596d99f67994822")]
         [InlineData(
+            HpkeKem.DHKEM_P521_HKDF_SHA512, HpkeKdf.HKDF_SHA512, HpkeAead.AES_256_GCM,
+            "2ad954bbe39b7122529f7dde780bff626cd97f850d0784a432784e69d86eccaa" +
+            "de43b6c10a8ffdb94bf943c6da479db137914ec835a7e715e36e45e29b587bab3bf1",
+            "040138b385ca16bb0d5fa0c0665fbbd7e69e3ee29f63991d3e9b5fa740aab8900aa" +
+            "eed46ed73a49055758425a0ce36507c54b29cc5b85a5cee6bae0cf1c21f2731ece2" +
+            "013dc3fb7c8d21654bb161b463962ca19e8c654ff24c94dd2898de12051f1ed0692" +
+            "237fb02b2f8d1dc1c73e9b366b529eb436e98a996ee522aef863dd5739d2f29b0",
+            "170f8beddfe949b75ef9c387e201baf4132fa7374593dfafa90768788b7b2b200aafcc6d80ea4c795a7c5b841a",
+            "d9ee248e220ca24ac00bbbe7e221a832e4f7fa64c4fbab3945b6f3af0c5ecd5e16815b328be4954a05fd352256",
+            "142cf1e02d1f58d9285f2af7dcfa44f7c3f2d15c73d460c48c6e0e506a3144bae35284e7e221105b61d24e1c7a")]
+        [InlineData(
             HpkeKem.DHKEM_X25519_HKDF_SHA256, HpkeKdf.HKDF_SHA512, HpkeAead.ChaCha20Poly1305,
             "969bb169aa9c24a501ee9d962e96c310226d427fb6eb3fc579d9882dbc708315",
             "1d38fc578d4209ea0ef3ee5f1128ac4876a9549d74dc2d2f46e75942a6188244",
@@ -178,6 +209,7 @@ namespace System.Security.Cryptography.Tests
             [
                 HpkeKem.DHKEM_P256_HKDF_SHA256,
                 HpkeKem.DHKEM_P384_HKDF_SHA384,
+                HpkeKem.DHKEM_P521_HKDF_SHA512,
                 HpkeKem.DHKEM_X25519_HKDF_SHA256,
             ];
 
@@ -314,6 +346,8 @@ namespace System.Security.Cryptography.Tests
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256, 4)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384, 0)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384, 4)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512, 0)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512, 4)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256, 0)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256, 1)]
         public static void Open_InvalidEncapsulatedSecret(HpkeKem kem, byte firstByte)
@@ -343,6 +377,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
         public static void Open_ArgumentValidation(HpkeKem kem)
         {
@@ -433,6 +468,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
         [InlineData(HpkeKem.MLKEM_512)]
         [InlineData(HpkeKem.MLKEM_768)]
@@ -647,6 +683,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
         public static void CreateContexts_IndependentLifetime(HpkeKem kem)
         {
@@ -694,6 +731,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
         [InlineData(HpkeKem.MLKEM_512)]
         [InlineData(HpkeKem.MLKEM_768)]
@@ -898,6 +936,16 @@ namespace System.Security.Cryptography.Tests
             "7e99307095b1cee54b807077f6f5092970a27fbb57ce2835263132c75e52e7e0",
             "351d83aa6f2ba77c4b9b89aa22fcb18aff3f792bb04e999de9f76f03f99e92c8d9203605cc0dcbb5eb08a9db6b",
             "e9deb7896d9414ea4d3e01763e425b5bce3b43874d9121f33441f601a8f7faafb0687512f8782f23ea7aa25b4d")]
+        [InlineData(
+            HpkeKem.DHKEM_P521_HKDF_SHA512, HpkeKdf.HKDF_SHA512, HpkeAead.AES_256_GCM,
+            "a2a2458705e278e574f835effecd18232f8a4c459e7550a09d44348ae5d3b1ea" +
+            "9d95c51995e657ad6f7cae659f5e186126a471c017f8f5e41da9eba74d4e0473e179",
+            "040085eff0835cc84351f32471d32aa453cdc1f6418eaaecf1c2824210eb1d48d076" +
+            "8b368110fab21407c324b8bb4bec63f042cfa4d0868d19b760eb4beba1bff793b3" +
+            "0036d2c614d55730bd2a40c718f9466faf4d5f8170d22b6df98dfe0c067d02b349" +
+            "ae4a142e0c03418f0a1479ff78a3db07ae2c2e89e5840f712c174ba2118e90fdcb",
+            "de69e9d943a5d0b70be3359a19f317bd9aca4a2ebb4332a39bcdfc97d5fe62f3a77702f4822c3be531aa7843a1",
+            "77a16162831f90de350fea9152cfc685ecfa10acb4f7994f41aed43fa5431f2382d078ec88baec53943984553e")]
         [InlineData(
             HpkeKem.DHKEM_X25519_HKDF_SHA256, HpkeKdf.HKDF_SHA512, HpkeAead.ChaCha20Poly1305,
             "92c0e581f1b0ad231dd7346d69071afa23eb4dacdf0b868b644a20bd5121dc07",
@@ -1326,6 +1374,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
         public static void GenerateKey(HpkeKem kem)
         {
@@ -1365,6 +1414,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
         public static void ExportDecapsulationKey_BufferAndLifetime(HpkeKem kem)
         {
@@ -1418,6 +1468,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
         public static void ExportEncapsulationKey_BufferAndLifetime(HpkeKem kem)
         {

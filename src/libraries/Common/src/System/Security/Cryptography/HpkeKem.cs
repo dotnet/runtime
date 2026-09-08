@@ -23,6 +23,11 @@ namespace System.Security.Cryptography
         DHKEM_P384_HKDF_SHA384 = 17,
 
         /// <summary>
+        ///   Indicates that key encapsulation uses DHKEM with the NIST P-521 curve and HKDF-SHA-512.
+        /// </summary>
+        DHKEM_P521_HKDF_SHA512 = 18,
+
+        /// <summary>
         ///   Indicates that key encapsulation uses DHKEM with X25519 and HKDF-SHA-256.
         /// </summary>
         DHKEM_X25519_HKDF_SHA256 = 32,
