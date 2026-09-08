@@ -158,7 +158,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (!s_buildEnv.IsCoreClrRuntime)
             return;
 
-        string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
 
         extraProperties +=
         """
@@ -167,9 +167,9 @@ public class WasmTemplateTestsBase : BuildTestBase
         extraItems +=
         $$"""
             <KnownFrameworkReference Update="Microsoft.NETCore.App">
-              <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
-              <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
-              <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+              <TargetingPackVersion>{{runtimePackVersion}}</TargetingPackVersion>
+              <DefaultRuntimeFrameworkVersion>{{runtimePackVersion}}</DefaultRuntimeFrameworkVersion>
+              <LatestRuntimeFrameworkVersion>{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
               <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
             </KnownFrameworkReference>
         """;
@@ -178,7 +178,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
                 <ItemGroup>
                 <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
                 </KnownWebAssemblySdkPack>
                 </ItemGroup>
             </Target>
