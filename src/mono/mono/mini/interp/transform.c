@@ -5063,7 +5063,8 @@ interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsig
 		return FALSE;
 	MonoMethod *method = td->inlined_method ? td->inlined_method : td->method;
 	MonoMethod *cmethod;
-	if (*next_ip == CEE_CALL &&
+	if (!mono_class_is_nullable (box_class) &&
+			*next_ip == CEE_CALL &&
 			(cmethod = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error)) &&
 			(cmethod->klass == mono_defaults.object_class) &&
 			(strcmp (cmethod->name, "GetType") == 0)) {
