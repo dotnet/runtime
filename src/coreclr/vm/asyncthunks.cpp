@@ -547,6 +547,9 @@ void MethodDesc::EmitCovariantForwardingThunk(MethodDesc* pOrdinaryVariant, Meta
     // matching TransparentAwait overload as-is.
     pCode->EmitCALLVIRT(token, localArg, 1);
 
+    // The await below is in tail position ("return await ...").
+    pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+
     // await the returned Task
     bool returnsVoid = msig.IsReturnTypeVoid();
     int awaitToken;
