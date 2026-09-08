@@ -155,14 +155,14 @@ Crash reports contain process, module, exception, and stack information and shou
 
 # Limitations #
 
-The in-process reporter trades completeness for availability on a damaged process path:
+Because the reporter runs inside the crashing process, it prioritizes producing a useful partial report over collecting every possible diagnostic detail. This results in the following limitations:
 
-- it is not a replacement for a memory dump and cannot support arbitrary postmortem memory inspection;
-- it is currently supported only by CoreCLR, not NativeAOT;
-- native frame symbolication is not performed in the crashing process;
-- only managed threads known to CoreCLR are enumerated;
-- other managed threads are omitted when the runtime cannot be suspended safely;
-- severe memory corruption can prevent stack walking or output; and
-- report generation after a fatal signal remains best-effort and may be terminated by the watchdog.
+- the report is not a memory dump and cannot be used for arbitrary postmortem memory inspection;
+- threads that are not attached to CoreCLR are not enumerated;
+- the reporter does not collect a native call stack or native module list; the JSON report records only the crashing thread's native register context and crash-site address;
+- when a completed runtime suspension cannot be created or safely reused, stack collection is limited to the crashing thread;
+- severe memory corruption can make stack information incomplete or prevent report generation;
+- a JSON output failure can leave only the compact log; and
+- the watchdog terminates the process if report generation after a fatal signal exceeds the configured timeout.
 
-When the environment permits launching and attaching _createdump_, a dump remains the more complete diagnostic artifact. The in-process report is aimed at reliably preserving a useful crash summary when _createdump_ is unavailable or has not been enabled.
+When the environment permits launching and attaching _createdump_, a dump remains the more complete diagnostic artifact. The in-process report is aimed at reliably preserving a useful crash summary when _createdump_ is unavailable.
