@@ -109,6 +109,26 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal override void Encapsulate(Span<byte> encapsulatedSecret, Span<byte> sharedSecret)
+        {
+            Debug.Assert(_ecdh is not null);
+
+            using (HpkeECDiffieHellmanKemAdapter ephemeral = new HpkeECDiffieHellmanKemAdapter(Suite))
+            using (ECDiffieHellmanPublicKey recipientPublicKey = _ecdh.PublicKey)
+            {
+                ephemeral.Generate();
+                Debug.Assert(ephemeral._ecdh is not null);
+
+                byte[] secretAgreement = ephemeral._ecdh.DeriveRawSecretAgreement(recipientPublicKey);
+
+                using (PinAndClear.Track(secretAgreement))
+                {
+                    ephemeral.ExportEncapsulationKey(encapsulatedSecret);
+                    ExtractAndExpand(secretAgreement, encapsulatedSecret, sharedSecret);
+                }
+            }
+        }
+
         internal override void ExportDecapsulationKey(Span<byte> destination)
         {
             Debug.Assert(_ecdh is not null);

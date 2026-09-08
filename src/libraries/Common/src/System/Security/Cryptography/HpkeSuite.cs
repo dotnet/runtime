@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
@@ -11,9 +12,12 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.HpkeExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class HpkeSuite : IEquatable<HpkeSuite>
     {
+        private readonly byte[] _suiteId;
+
         internal HpkeAeadMetadata AeadMetadata { get; }
         internal HpkeKdfMetadata KdfMetadata { get; }
         internal HpkeKemMetadata KemMetadata { get; }
+        internal ReadOnlySpan<byte> SuiteId => _suiteId;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="HpkeSuite" /> class with the specified algorithms.
@@ -37,6 +41,12 @@ namespace System.Security.Cryptography
             KemMetadata = HpkeKemMetadata.Create(kem) ?? throw new ArgumentOutOfRangeException(nameof(kem));
             KdfMetadata = HpkeKdfMetadata.Create(kdf) ?? throw new ArgumentOutOfRangeException(nameof(kdf));
             AeadMetadata = HpkeAeadMetadata.Create(aead) ?? throw new ArgumentOutOfRangeException(nameof(aead));
+
+            _suiteId = new byte[10];
+            "HPKE"u8.CopyTo(_suiteId);
+            BinaryPrimitives.WriteUInt16BigEndian(_suiteId.AsSpan(4), checked((ushort)kem));
+            BinaryPrimitives.WriteUInt16BigEndian(_suiteId.AsSpan(6), checked((ushort)kdf));
+            BinaryPrimitives.WriteUInt16BigEndian(_suiteId.AsSpan(8), checked((ushort)aead));
         }
 
         /// <summary>

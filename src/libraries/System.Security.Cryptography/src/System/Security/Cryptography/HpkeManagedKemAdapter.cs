@@ -10,7 +10,14 @@ namespace System.Security.Cryptography
     {
         protected const int PrkStackBufferSize = SHA512.HashSizeInBytes;
 
+        // HPKE draft, Section 4.4: version prefix for LabeledExtract and LabeledExpand.
+        // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.4
         private static ReadOnlySpan<byte> VersionLabel => "HPKE-v1"u8;
+
+        // HPKE draft, Section 4.5: ExtractAndExpand labels for the PRK and KEM shared secret.
+        // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.5
+        private static ReadOnlySpan<byte> EaePrkLabel => "eae_prk"u8;
+        private static ReadOnlySpan<byte> SharedSecretLabel => "shared_secret"u8;
 
         internal HpkeSuite Suite { get; }
         protected HpkeKdfMetadata KeyDerivationKdf => Suite.KemMetadata.KemKdf;
@@ -37,12 +44,49 @@ namespace System.Security.Cryptography
         internal void Generate()
         {
             const int MaxStackIkmSize = 64;
+            Span<byte> ikmStack = stackalloc byte[MaxStackIkmSize];
 
-            using (CryptoPoolLease ikm = CryptoPoolLease.RentConditionally(
-                Suite.KemMetadata.Nsk, stackalloc byte[MaxStackIkmSize]))
+            using (CryptoPoolLease ikm = CryptoPoolLease.RentConditionally(Suite.KemMetadata.Nsk, ikmStack))
             {
                 RandomNumberGenerator.Fill(ikm.Span);
                 DeriveKeyPair(ikm.Span);
+            }
+        }
+
+        // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.5
+        protected void ExtractAndExpand(
+            ReadOnlySpan<byte> secretAgreement,
+            ReadOnlySpan<byte> encapsulatedSecret,
+            Span<byte> sharedSecret)
+        {
+            int contextLength = checked(encapsulatedSecret.Length + Suite.EncapsulationKeySizeInBytes);
+
+            // We don't support any KDFs with a hash (Nh) > 64. Since our supported KDFs is a closed set assume 64
+            // will work.
+            if (KeyDerivationKdf.Nh > PrkStackBufferSize)
+            {
+                Debug.Fail($"{KeyDerivationKdf.Nh} is unexpectedly bigger than {PrkStackBufferSize}.");
+                throw new CryptographicException();
+            }
+
+            Span<byte> prkBuffer = stackalloc byte[PrkStackBufferSize];
+            Span<byte> prk = prkBuffer.Slice(0, KeyDerivationKdf.Nh);
+
+            try
+            {
+                using (CryptoPoolLease context = CryptoPoolLease.Rent(contextLength, skipClear: true))
+                {
+                    // kem_context = enc || pkR. Both components are serialized public keys.
+                    encapsulatedSecret.CopyTo(context.Span);
+                    ExportEncapsulationKey(context.Span.Slice(encapsulatedSecret.Length));
+
+                    LabeledExtract(ReadOnlySpan<byte>.Empty, EaePrkLabel, secretAgreement, prk);
+                    LabeledExpand(prk, SharedSecretLabel, context.Span, sharedSecret);
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(prkBuffer);
             }
         }
 
@@ -101,6 +145,7 @@ namespace System.Security.Cryptography
         }
 
         internal abstract void DeriveKeyPair(ReadOnlySpan<byte> ikm);
+        internal abstract void Encapsulate(Span<byte> encapsulatedSecret, Span<byte> sharedSecret);
         internal abstract void ImportEncapsulationKey(ReadOnlySpan<byte> encapsulationKey);
         internal abstract void ExportDecapsulationKey(Span<byte> destination);
         internal abstract void ExportEncapsulationKey(Span<byte> destination);

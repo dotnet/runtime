@@ -12,6 +12,7 @@ namespace System.Security.Cryptography
         internal static HpkeManagedAeadAdapter Create(HpkeSuite suite, ReadOnlySpan<byte> key)
         {
             Debug.Assert(suite.AeadMetadata.Nt == 16);
+            Debug.Assert(key.Length == suite.AeadMetadata.Nk);
 
             switch (suite.AeadAlgorithm)
             {
@@ -19,7 +20,7 @@ namespace System.Security.Cryptography
                 case HpkeAead.AES_256_GCM:
                     return new HpkeManagedAesAeadAdapter(suite, key);
                 case HpkeAead.ChaCha20Poly1305:
-                    throw new NotImplementedException();
+                    return new HpkeManagedChaCha20Poly1305AeadAdapter(key);
                 default:
                     Debug.Fail($"Unmapped AEAD adapter algorithm {suite.AeadAlgorithm}.");
                     throw new CryptographicException();
@@ -74,6 +75,38 @@ namespace System.Security.Cryptography
 
 
         public override void Dispose() => _aes.Dispose();
+    }
+
+    internal sealed class HpkeManagedChaCha20Poly1305AeadAdapter : HpkeManagedAeadAdapter
+    {
+        private readonly ChaCha20Poly1305 _chacha;
+
+        internal HpkeManagedChaCha20Poly1305AeadAdapter(ReadOnlySpan<byte> key)
+        {
+            _chacha = new ChaCha20Poly1305(key);
+        }
+
+        internal override void Encrypt(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> nonce,
+            ReadOnlySpan<byte> associatedData,
+            Span<byte> ciphertext,
+            Span<byte> tag)
+        {
+            _chacha.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
+        }
+
+        internal override void Decrypt(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> nonce,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> tag,
+            Span<byte> plaintext)
+        {
+            _chacha.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
+        }
+
+        public override void Dispose() => _chacha.Dispose();
     }
 
     internal sealed class HpkeImplementation : Hpke

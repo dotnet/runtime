@@ -2116,6 +2116,7 @@
 
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManagedKdfAdapter.cs" />
   </ItemGroup>
 
   <ItemGroup>

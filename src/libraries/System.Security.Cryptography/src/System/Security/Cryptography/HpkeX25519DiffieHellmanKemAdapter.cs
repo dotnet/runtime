@@ -41,6 +41,30 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal override void Encapsulate(Span<byte> encapsulatedSecret, Span<byte> sharedSecret)
+        {
+            Debug.Assert(_x25519 is not null);
+
+            using (HpkeX25519DiffieHellmanKemAdapter ephemeral = new HpkeX25519DiffieHellmanKemAdapter(Suite))
+            {
+                ephemeral.Generate();
+                Debug.Assert(ephemeral._x25519 is not null);
+
+                Span<byte> dh = stackalloc byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+
+                try
+                {
+                    ephemeral._x25519.DeriveRawSecretAgreement(_x25519, dh);
+                    ephemeral.ExportEncapsulationKey(encapsulatedSecret);
+                    ExtractAndExpand(dh, encapsulatedSecret, sharedSecret);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(dh);
+                }
+            }
+        }
+
         internal override void ExportDecapsulationKey(Span<byte> destination)
         {
             Debug.Assert(_x25519 is not null);

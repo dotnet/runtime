@@ -1905,6 +1905,10 @@ namespace System.Security.Cryptography
         protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
         public static System.Security.Cryptography.Hpke GenerateKey(System.Security.Cryptography.HpkeSuite suite) { throw null; }
         public static bool IsSupported(System.Security.Cryptography.HpkeSuite suite) { throw null; }
+        public void Seal(byte[] plaintext, out byte[] encapsulatedSecret, out byte[] ciphertext, byte[]? associatedData = null, byte[]? info = null) { throw null; }
+        public void Seal(System.ReadOnlySpan<byte> plaintext, out byte[] encapsulatedSecret, out byte[] ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> encapsulatedSecret, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void SealCore(System.ReadOnlySpan<byte> plaintext, System.Span<byte> encapsulatedSecret, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> associatedData, System.ReadOnlySpan<byte> info);
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public enum HpkeAead
