@@ -1,114 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
-#pragma warning disable CA1416 // //TODO:HPKE Call is reachable on "unsupported platform" - deal with this messy daignostic later.
-
 namespace System.Security.Cryptography
 {
-    internal abstract class HpkeManagedAeadAdapter : IDisposable
-    {
-        internal static HpkeManagedAeadAdapter Create(HpkeSuite suite, ReadOnlySpan<byte> key)
-        {
-            Debug.Assert(suite.AeadMetadata.Nt == 16);
-            Debug.Assert(key.Length == suite.AeadMetadata.Nk);
-
-            switch (suite.AeadAlgorithm)
-            {
-                case HpkeAead.AES_128_GCM:
-                case HpkeAead.AES_256_GCM:
-                    return new HpkeManagedAesAeadAdapter(suite, key);
-                case HpkeAead.ChaCha20Poly1305:
-                    return new HpkeManagedChaCha20Poly1305AeadAdapter(key);
-                default:
-                    Debug.Fail($"Unmapped AEAD adapter algorithm {suite.AeadAlgorithm}.");
-                    throw new CryptographicException();
-            }
-        }
-
-        internal abstract void Encrypt(
-            ReadOnlySpan<byte> plaintext,
-            ReadOnlySpan<byte> nonce,
-            ReadOnlySpan<byte> associatedData,
-            Span<byte> ciphertext,
-            Span<byte> tag);
-
-        internal abstract void Decrypt(
-            ReadOnlySpan<byte> ciphertext,
-            ReadOnlySpan<byte> nonce,
-            ReadOnlySpan<byte> associatedData,
-            ReadOnlySpan<byte> tag,
-            Span<byte> plaintext);
-
-        public abstract void Dispose();
-    }
-
-    internal sealed class HpkeManagedAesAeadAdapter : HpkeManagedAeadAdapter
-    {
-        private readonly AesGcm _aes;
-
-        internal HpkeManagedAesAeadAdapter(HpkeSuite suite, ReadOnlySpan<byte> key)
-        {
-            _aes = new AesGcm(key, suite.AeadMetadata.Nt);
-        }
-
-        internal override void Encrypt(
-            ReadOnlySpan<byte> plaintext,
-            ReadOnlySpan<byte> nonce,
-            ReadOnlySpan<byte> associatedData,
-            Span<byte> ciphertext,
-            Span<byte> tag)
-        {
-            _aes.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
-        }
-
-        internal override void Decrypt(
-            ReadOnlySpan<byte> ciphertext,
-            ReadOnlySpan<byte> nonce,
-            ReadOnlySpan<byte> associatedData,
-            ReadOnlySpan<byte> tag,
-            Span<byte> plaintext)
-        {
-            _aes.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
-        }
-
-
-        public override void Dispose() => _aes.Dispose();
-    }
-
-    internal sealed class HpkeManagedChaCha20Poly1305AeadAdapter : HpkeManagedAeadAdapter
-    {
-        private readonly ChaCha20Poly1305 _chacha;
-
-        internal HpkeManagedChaCha20Poly1305AeadAdapter(ReadOnlySpan<byte> key)
-        {
-            _chacha = new ChaCha20Poly1305(key);
-        }
-
-        internal override void Encrypt(
-            ReadOnlySpan<byte> plaintext,
-            ReadOnlySpan<byte> nonce,
-            ReadOnlySpan<byte> associatedData,
-            Span<byte> ciphertext,
-            Span<byte> tag)
-        {
-            _chacha.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
-        }
-
-        internal override void Decrypt(
-            ReadOnlySpan<byte> ciphertext,
-            ReadOnlySpan<byte> nonce,
-            ReadOnlySpan<byte> associatedData,
-            ReadOnlySpan<byte> tag,
-            Span<byte> plaintext)
-        {
-            _chacha.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
-        }
-
-        public override void Dispose() => _chacha.Dispose();
-    }
-
     internal sealed class HpkeImplementation : Hpke
     {
         private readonly HpkeManagedKemAdapter _kemAdapter;
@@ -168,7 +62,42 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData,
             ReadOnlySpan<byte> info)
         {
-            throw new NotImplementedException();
+            const int MaxStackSecretLength = 64;
+
+            using (CryptoPoolLease sharedSecret = CryptoPoolLease.RentConditionally(
+                Suite.KemMetadata.Nsecret, stackalloc byte[MaxStackSecretLength]))
+            using (CryptoPoolLease key = CryptoPoolLease.RentConditionally(
+                Suite.AeadMetadata.Nk, stackalloc byte[MaxStackSecretLength]))
+            using (CryptoPoolLease baseNonce = CryptoPoolLease.RentConditionally(
+                Suite.AeadMetadata.Nn, stackalloc byte[MaxStackSecretLength]))
+            using (CryptoPoolLease exporterSecret = CryptoPoolLease.RentConditionally(
+                Suite.KdfMetadata.Nh, stackalloc byte[MaxStackSecretLength]))
+            {
+                _kemAdapter.Encapsulate(encapsulatedSecret, sharedSecret.Span);
+
+                HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
+                kdf.DeriveSecrets(
+                    mode: 0,
+                    sharedSecret.Span,
+                    info,
+                    psk: default,
+                    pskId: default,
+                    key.Span,
+                    baseNonce.Span,
+                    exporterSecret.Span);
+
+                using (HpkeManagedAeadAdapter aead = HpkeManagedAeadAdapter.Create(Suite, key.Span))
+                {
+                    // Single-shot sealing uses sequence number zero, so the nonce is base_nonce.
+                    // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
+                    aead.Encrypt(
+                        plaintext,
+                        baseNonce.Span,
+                        associatedData,
+                        ciphertext.Slice(0, plaintext.Length),
+                        ciphertext.Slice(plaintext.Length));
+                }
+            }
         }
 
         protected override void Dispose(bool disposing)
