@@ -47,8 +47,6 @@ static int MessageBoxImpl(
 {
     CONTRACTL
     {
-        INJECT_FAULT(return IDCANCEL;);
-
         // Assert if none of MB_ICON is set
         PRECONDITION((uType & MB_ICONMASK) != 0);
     }
@@ -100,7 +98,6 @@ static int UtilMessageBoxNonLocalized(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
 
         // Assert if none of MB_ICON is set
         PRECONDITION((uType & MB_ICONMASK) != 0);
@@ -152,7 +149,6 @@ int NotifyUserOfFaultMessageBox(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
     }
     CONTRACTL_END;
 

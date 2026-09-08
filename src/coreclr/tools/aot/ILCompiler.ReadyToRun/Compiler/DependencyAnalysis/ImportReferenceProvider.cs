@@ -4,6 +4,7 @@
 using System;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using ILCompiler.ReadyToRun;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 using Internal.ReadyToRunConstants;
@@ -15,9 +16,15 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class ImportReferenceProvider : INativeFormatTypeReferenceProvider
     {
         private ReadyToRunSymbolNodeFactory _symbolNodeFactory;
+        private ExternalReferenceTokenManager _externalReferenceTokenManager;
 
-        public Import GetImportToType(TypeDesc type)
+        public Import GetImportToType(TypeDesc type, ModuleDesc moduleRequiringImport = null)
         {
+            if (moduleRequiringImport is not null)
+            {
+                _externalReferenceTokenManager.EnsureDefTokensAreAvailable(type, moduleRequiringImport, referencesAreForAsyncMethod: false);
+            }
+
             return _symbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
         }
 
@@ -27,9 +34,10 @@ namespace ILCompiler.DependencyAnalysis
             return _symbolNodeFactory.ModuleLookup((IEcmaModule)module);
         }
 
-        public void Initialize(ReadyToRunSymbolNodeFactory symbolNodeFactory)
+        internal void Initialize(ReadyToRunSymbolNodeFactory symbolNodeFactory, ExternalReferenceTokenManager externalReferenceTokenManager)
         {
             _symbolNodeFactory = symbolNodeFactory;
+            _externalReferenceTokenManager = externalReferenceTokenManager;
         }
 
         internal Vertex EncodeReferenceToModule(NativeWriter writer, ModuleDesc module)
@@ -38,13 +46,14 @@ namespace ILCompiler.DependencyAnalysis
             return writer.GetTuple(writer.GetUnsignedConstant((uint)typeImport.Table.IndexFromBeginningOfArray), writer.GetUnsignedConstant((uint)typeImport.IndexFromBeginningOfArray));
         }
 
-        internal Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type)
+        internal Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module)
         {
-            Import typeImport = GetImportToType(type);
+            Debug.Assert(module is not null);
+            Import typeImport = GetImportToType(type, module);
             return writer.GetTuple(writer.GetUnsignedConstant((uint)typeImport.Table.IndexFromBeginningOfArray), writer.GetUnsignedConstant((uint)typeImport.IndexFromBeginningOfArray));
         }
 
         Vertex INativeFormatTypeReferenceProvider.EncodeReferenceToMethod(NativeWriter writer, MethodDesc method) => throw new NotImplementedException();
-        Vertex INativeFormatTypeReferenceProvider.EncodeReferenceToType(NativeWriter writer, TypeDesc type) => EncodeReferenceToType(writer, type);
+        Vertex INativeFormatTypeReferenceProvider.EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module) => EncodeReferenceToType(writer, type, module);
     }
 }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_VirtualMethods_generic_virtual_methods;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -9,6 +11,7 @@ using Xunit;
 
 public class GenericVirtualMethodTests
 {
+    [OuterLoop]
     [Fact]
     public static void ClassBase_NonGenericDerived_AllVariants()
     {
@@ -16,6 +19,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("ClassBase_NonGenericDerived_NoInlining", new ClassBaseCaller(new ClassBase_NonGenericDerived_NoInlining()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void ClassBase_GenericDerived_AllVariants()
     {
@@ -25,6 +29,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("ClassBase_GenericDerived_NoInlining_String", new ClassBaseCaller(new ClassBase_GenericDerived_NoInlining<string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericClassBase_NonGenericDerived_AllVariants()
     {
@@ -34,6 +39,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericClassBase_NonGenericDerived_NoInlining_Shared", new GenericClassBaseCaller<string>(new GenericClassBase_NonGenericDerived_NoInlining_Shared()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericClassBase_GenericDerived_InliningVariants()
     {
@@ -43,6 +49,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericClassBase_GenericDerived_Inlining_String_String", new GenericClassBaseCaller<string>(new GenericClassBase_GenericDerived_Inlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericClassBase_GenericDerived_NoInliningVariants()
     {
@@ -52,6 +59,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericClassBase_GenericDerived_NoInlining_String_String", new GenericClassBaseCaller<string>(new GenericClassBase_GenericDerived_NoInlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_NonGenericClassDerived_AllVariants()
     {
@@ -59,6 +67,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_NonGenericClassDerived_NoInlining", new InterfaceBaseCaller(new InterfaceBase_NonGenericClassDerived_NoInlining()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_NonGenericStructDerived_AllVariants()
     {
@@ -66,6 +75,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_NonGenericStructDerived_NoInlining", new InterfaceBaseCaller(new InterfaceBase_NonGenericStructDerived_NoInlining()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_GenericClassDerived_AllVariants()
     {
@@ -75,6 +85,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_GenericClassDerived_NoInlining_String", new InterfaceBaseCaller(new InterfaceBase_GenericClassDerived_NoInlining<string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_GenericStructDerived_AllVariants()
     {
@@ -84,6 +95,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_GenericStructDerived_NoInlining_String", new InterfaceBaseCaller(new InterfaceBase_GenericStructDerived_NoInlining<string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_NonGenericClassDerived_AllVariants()
     {
@@ -93,6 +105,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_NonGenericClassDerived_NoInlining_Shared", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_NonGenericClassDerived_NoInlining_Shared()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_NonGenericStructDerived_AllVariants()
     {
@@ -102,6 +115,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_NonGenericStructDerived_NoInlining_Shared", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_NonGenericStructDerived_NoInlining_Shared()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericClassDerived_InliningVariants()
     {
@@ -111,6 +125,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericClassDerived_Inlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericClassDerived_Inlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericClassDerived_NoInliningVariants()
     {
@@ -120,6 +135,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericClassDerived_NoInlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericClassDerived_NoInlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericStructDerived_InliningVariants()
     {
@@ -129,6 +145,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericStructDerived_Inlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericStructDerived_Inlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericStructDerived_NoInliningVariants()
     {
@@ -138,6 +155,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericStructDerived_NoInlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericStructDerived_NoInlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void RuntimeLookupDelegate()
     {

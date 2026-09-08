@@ -207,7 +207,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
 
         Assert.NotNull(managedFrame);
 
-        ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, managedFrame, legacyImpl: null);
+        ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, managedFrame, legacyImpl: null, new());
         IXCLRDataFrame xclrFrame = frame;
 
         DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);

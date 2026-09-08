@@ -4,8 +4,7 @@
     <!-- Needed for IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AlwaysUseCrossGen2 Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'">true</AlwaysUseCrossGen2>
-    <CrossGenTest Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</CrossGenTest>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>

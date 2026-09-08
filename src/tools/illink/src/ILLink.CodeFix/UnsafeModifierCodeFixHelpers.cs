@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ILLink.CodeFixProvider;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -25,10 +26,15 @@ namespace ILLink.CodeFix
         /// <summary>
         /// Registers an add-unsafe action for a supported declaration that has no existing safety modifier.
         /// </summary>
+        /// <remarks>
+        /// A destructor or a declaration that documents why it is safe gets <c>safe</c> instead, so the fixer does
+        /// not add a meaningless <c>unsafe</c> modifier or force callers of an audited member into unsafe contexts.
+        /// </remarks>
         internal static async Task RegisterAddUnsafeCodeFixAsync(
             CodeFixContext context,
             LocalizableString codeFixTitle,
-            Func<SyntaxNode, bool> isSupportedDeclaration)
+            Func<SyntaxNode, bool> isSupportedDeclaration,
+            SyntaxKind insertAfterModifier = SyntaxKind.None)
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
             if (root is null)
@@ -45,11 +51,36 @@ namespace ILLink.CodeFix
                 return;
             }
 
+            bool hasSafetyDocumentation = UnsafeMigrationSyntaxHelpers.HasSafetyDocumentation(declaration);
+            bool useSafeModifier = UnsafeMigrationSyntaxHelpers.SafeKeywordKind != SyntaxKind.None
+                && (declaration is DestructorDeclarationSyntax || hasSafetyDocumentation);
+            SyntaxKind modifier = useSafeModifier
+                ? UnsafeMigrationSyntaxHelpers.SafeKeywordKind
+                : SyntaxKind.UnsafeKeyword;
             string title = codeFixTitle.ToString();
+            string displayTitle = title;
+            if (useSafeModifier)
+            {
+                string resourceName = hasSafetyDocumentation
+                    ? nameof(Resources.AddSafeToDocumentedMemberCodeFixTitle)
+                    : nameof(Resources.AddSafeCodeFixTitle);
+                displayTitle = new LocalizableResourceString(
+                    resourceName,
+                    Resources.ResourceManager,
+                    typeof(Resources)).ToString();
+            }
+
+            // Both flavors share an equivalence key so a single fix-all pass can apply the contract each
+            // declaration asks for, rather than settling on whichever flavor it encountered first.
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    title,
-                    cancellationToken => AddUnsafeModifierAsync(context.Document, declaration, cancellationToken),
+                    displayTitle,
+                    cancellationToken => AddModifierAsync(
+                        context.Document,
+                        declaration,
+                        modifier,
+                        cancellationToken,
+                        insertAfterModifier),
                     title),
                 context.Diagnostics[0]);
         }
@@ -83,10 +114,11 @@ namespace ILLink.CodeFix
             Document document,
             SyntaxNode declaration,
             SyntaxKind modifier,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            SyntaxKind insertAfterModifier = SyntaxKind.None)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
-            editor.ReplaceNode(declaration, AddModifier(declaration, modifier));
+            editor.ReplaceNode(declaration, AddModifier(declaration, modifier, insertAfterModifier));
             return editor.GetChangedDocument();
         }
 
@@ -119,14 +151,17 @@ namespace ILLink.CodeFix
         /// <summary>
         /// Returns <paramref name="declaration"/> with a safety modifier added.
         /// </summary>
-        internal static SyntaxNode AddModifier(SyntaxNode declaration, SyntaxKind modifier)
+        internal static SyntaxNode AddModifier(
+            SyntaxNode declaration,
+            SyntaxKind modifier,
+            SyntaxKind insertAfterModifier = SyntaxKind.None)
         {
             if (declaration is AccessorDeclarationSyntax accessor)
                 return AddModifier(accessor, modifier);
 
             SyntaxTokenList modifiers = UnsafeMigrationSyntaxHelpers.GetModifiers(declaration);
             if (modifiers.Count > 0)
-                return WithModifiers(declaration, AddModifier(modifiers, modifier));
+                return WithModifiers(declaration, AddModifier(modifiers, modifier, insertAfterModifier));
 
             // With no existing modifiers the declaration's leading trivia belongs to the token the new modifier
             // displaces, so it has to move with it. Attribute lists keep their own leading trivia.
@@ -187,7 +222,7 @@ namespace ILLink.CodeFix
         {
             // SyntaxGenerator does not yet model unsafe property accessors, so edit their tokens directly.
             if (accessor.Modifiers.Count > 0)
-                return accessor.WithModifiers(AddModifier(accessor.Modifiers, modifier));
+                return accessor.WithModifiers(AddModifier(accessor.Modifiers, modifier, SyntaxKind.None));
 
             SyntaxToken modifierToken = SyntaxFactory.Token(modifier)
                 .WithLeadingTrivia(accessor.Keyword.LeadingTrivia)
@@ -224,12 +259,26 @@ namespace ILLink.CodeFix
             return accessor.WithModifiers(modifiers);
         }
 
-        private static SyntaxTokenList AddModifier(SyntaxTokenList modifiers, SyntaxKind modifier)
+        private static SyntaxTokenList AddModifier(
+            SyntaxTokenList modifiers,
+            SyntaxKind modifier,
+            SyntaxKind insertAfterModifier)
         {
-            // 'extern' and 'partial' conventionally sit closest to the return type, so the safety modifier goes
-            // before them. Otherwise it is appended, which matches the repo's preferred modifier order where
-            // 'unsafe' follows 'virtual', 'abstract', 'sealed' and 'override'.
-            int insertionIndex = GetFirstModifierIndex(modifiers, SyntaxKind.ExternKeyword, SyntaxKind.PartialKeyword);
+            int insertionIndex = insertAfterModifier == SyntaxKind.None
+                ? -1
+                : modifiers.IndexOf(insertAfterModifier);
+            if (insertionIndex >= 0)
+            {
+                insertionIndex++;
+            }
+            else
+            {
+                // 'extern' and 'partial' conventionally sit closest to the return type, so the safety modifier goes
+                // before them. Otherwise it is appended, which matches the repo's preferred modifier order where
+                // 'unsafe' follows 'virtual', 'abstract', 'sealed' and 'override'.
+                insertionIndex = GetFirstModifierIndex(modifiers, SyntaxKind.ExternKeyword, SyntaxKind.PartialKeyword);
+            }
+
             if (insertionIndex < 0)
                 insertionIndex = modifiers.Count;
 

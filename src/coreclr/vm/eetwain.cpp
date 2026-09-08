@@ -31,7 +31,9 @@
 #pragma optimize("tg", on)
 #endif
 
+#ifdef FEATURE_VARARGS
 void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ctx);
+#endif // FEATURE_VARARGS
 
 #include "gc_unwind_x86.inl"
 
@@ -967,6 +969,7 @@ void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
     Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
 }
 
+#ifdef FEATURE_VARARGS
 /* report args in 'msig' to the GC.
    'argsStart' is start of the stack-based arguments
    'varArgSig' describes the arguments
@@ -1012,6 +1015,7 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
         }
     }
 }
+#endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 FCIMPL1(void, GCReporting::Register, GCFrame* frame)
@@ -1204,6 +1208,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         return true;
     }
 
+#ifdef FEATURE_VARARGS
     if (gcInfoDecoder.GetIsVarArg())
     {
         MethodDesc* pMD = pCodeInfo->GetMethodDesc();
@@ -1262,6 +1267,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
         promoteVarArgs(prevSP, varArgSig, pCtx);
     }
+#else // !FEATURE_VARARGS
+    _ASSERTE(!gcInfoDecoder.GetIsVarArg());
+#endif // FEATURE_VARARGS
 
     return true;
 
@@ -1796,7 +1804,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
 
     if (uAbortAddr)
     {
-        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n", dwResumePC, GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n",
+                (void*)dwResumePC, (void*)GetSP(pContext));
 
         // The dwResumePC is passed to the THROW_CONTROL_FOR_THREAD_FUNCTION ASM helper so that
         // it can establish it as its return address and native stack unwinding can work properly.
@@ -1818,7 +1827,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
     }
     else
     {
-        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pContext), GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", (void*)GetIP(pContext),
+                    (void*)GetSP(pContext));
     }
 
     ClrRestoreNonvolatileContext(pContext, targetSSP);

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public class Test
@@ -221,7 +222,7 @@ public class Test
     }
 
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         int test = 0;
@@ -249,4 +250,3 @@ public class Test
         return 100;
     }
 }
-

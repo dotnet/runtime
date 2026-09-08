@@ -56,9 +56,10 @@ namespace System
 #endif
         }
 
+        /// <safety>Stores the pointer as an integer value; the pointed-to memory is never accessed.</safety>
         [CLSCompliant(false)]
         [NonVersionable]
-        public unsafe IntPtr(void* value)
+        public IntPtr(void* value)
         {
             _value = (nint)value;
         }
@@ -116,13 +117,15 @@ namespace System
         [NonVersionable]
         public static explicit operator nint(long value) => checked((nint)value);
 
+        /// <safety>Converts between a pointer and an integer of the same width; no memory is accessed.</safety>
         [CLSCompliant(false)]
         [NonVersionable]
-        public static unsafe explicit operator nint(void* value) => (nint)value;
+        public static explicit operator nint(void* value) => (nint)value;
 
+        /// <safety>Converts between an integer and a pointer of the same width; no memory is accessed.</safety>
         [CLSCompliant(false)]
         [NonVersionable]
-        public static unsafe explicit operator void*(nint value) => (void*)value;
+        public static explicit operator void*(nint value) => (void*)value;
 
         [NonVersionable]
         public static explicit operator int(nint value)
@@ -161,9 +164,10 @@ namespace System
             get => sizeof(nint_t);
         }
 
+        /// <safety>Returns the stored value reinterpreted as a pointer; no memory is accessed.</safety>
         [CLSCompliant(false)]
         [NonVersionable]
-        public unsafe void* ToPointer() => (void*)_value;
+        public void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static nint MaxValue

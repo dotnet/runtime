@@ -117,6 +117,8 @@ public:
 
     BOOL IsManagedNativeCode(const BYTE *address);
 
+    BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip) DAC_UNEXPECTED();
+
     PCODE GetNativeCodeStartAddress(PCODE address) DAC_UNEXPECTED();
 
     MethodDesc *GetNativeCodeMethodDesc(const PCODE address) DAC_UNEXPECTED();

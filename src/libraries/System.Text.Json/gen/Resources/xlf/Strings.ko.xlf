@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedMessageFormat">
         <source>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</source>
-        <target state="new">Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</target>
+        <target state="translated">지정된 형식 '{0}'은(는) 다형식 형식 '{1}'에 대해 지원되는 파생 형식이 아닙니다. 파생 형식은 기본 형식에 할당할 수 있어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedTitle">
         <source>Derived type is not a supported polymorphic derived type.</source>
-        <target state="new">Derived type is not a supported polymorphic derived type.</target>
+        <target state="translated">파생 형식이 지원되는 다형성 파생 형식이 아닙니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
@@ -64,42 +64,42 @@
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionMessageFormat">
         <source>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</source>
-        <target state="new">The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</target>
+        <target state="translated">다형식 형식 '{1}'에 대해 형식 판별자 '{0}'이(가) 두 번 이상 지정되었습니다. 파생 형식은 고유한 판별자에 해당해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionTitle">
         <source>Derived types produce a duplicate type discriminator.</source>
-        <target state="new">Derived types produce a duplicate type discriminator.</target>
+        <target state="translated">파생 형식이 중복 형식 판별자를 생성합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</target>
+        <target state="translated">'{0}' 형식은 JsonPolymorphicAttribute.InferClosedTypePolymorphism을 사용하도록 설정하지만 폐쇄형 형식이 아니므로 파생 형식을 유추할 수 없습니다. 형식을 'closed'로 선언하거나 JsonDerivedTypeAttribute를 사용하여 파생 형식을 등록하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeTitle">
         <source>Inferred closed type polymorphism is enabled on a type that is not a closed type.</source>
-        <target state="new">Inferred closed type polymorphism is enabled on a type that is not a closed type.</target>
+        <target state="translated">유추된 폐쇄형 형식 다형성이 폐쇄형 형식이 아닌 형식에서 사용하도록 설정되어 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</target>
+        <target state="translated">'{0}' 형식은 JsonPolymorphicAttribute.InferClosedTypePolymorphism을 사용하도록 설정하지만 JsonDerivedTypeAttribute도 선언합니다. 명시적 등록은 유추를 대체하므로 명시적으로 선언된 파생 형식만 다형적으로 직렬화됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle">
         <source>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</source>
-        <target state="new">Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</target>
+        <target state="translated">유추된 폐쇄형 형식 다형성은 파생 형식을 명시적으로 등록하는 형식에는 영향을 주지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
         <source>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</source>
-        <target state="new">The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</target>
+        <target state="translated">유추된 파생 형식 '{0}'은(는) 다형식 기본 형식 '{1}'보다 액세스 수준이 낮습니다. 유추된 파생 형식은 기본 형식만큼 액세스할 수 있어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleTitle">
         <source>Inferred derived type is less accessible than the polymorphic base type.</source>
-        <target state="new">Inferred derived type is less accessible than the polymorphic base type.</target>
+        <target state="translated">유추된 파생 형식이 다형성 기본 형식보다 액세스하기 어렵습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

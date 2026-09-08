@@ -54,6 +54,21 @@ namespace ILLink.RoslynAnalyzer
         internal static bool HasSafeModifier(SyntaxNode declaration) =>
             s_safeKeyword != SyntaxKind.None && GetModifiers(declaration).Any(s_safeKeyword);
 
+        /// <summary>
+        /// Determines whether a declaration carries a <c>&lt;safety&gt;</c> XML documentation element.
+        /// </summary>
+        /// <remarks>
+        /// The element is the audit record for a safety contract: it justifies keeping <c>unsafe</c> on a member
+        /// (<c>IL5005</c>), states that a pointer signature is deliberately not caller-unsafe (<c>IL5006</c>), and
+        /// justifies an explicit <c>safe</c> modifier (<c>IL5010</c>).
+        /// </remarks>
+        internal static bool HasSafetyDocumentation(SyntaxNode declaration) =>
+            declaration.GetLeadingTrivia().Any(static trivia =>
+                trivia.GetStructure() is DocumentationCommentTriviaSyntax documentationComment
+                && documentationComment.DescendantNodes().Any(static node =>
+                    node is XmlElementSyntax { StartTag.Name.LocalName.ValueText: "safety" }
+                        or XmlEmptyElementSyntax { Name.LocalName.ValueText: "safety" }));
+
         internal static SyntaxToken GetModifier(SyntaxNode declaration, SyntaxKind modifier)
         {
             foreach (SyntaxToken token in GetModifiers(declaration))

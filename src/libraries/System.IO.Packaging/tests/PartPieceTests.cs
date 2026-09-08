@@ -362,6 +362,71 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void PartUriHonorsSystemUriEqualityContract()
+        {
+            // PackUriHelper.CreatePartUri returns an internal Uri subclass (ValidatedPartUri) that must
+            // preserve System.Uri's object.Equals/GetHashCode contract so it can be safely mixed with
+            // plain System.Uri instances in hash-based collections such as HashSet<Uri>/Dictionary<Uri,_>.
+            Uri plain = new Uri("/foo.xml", UriKind.Relative);
+            Uri validated = PackUriHelper.CreatePartUri(plain);
+
+            object a = validated;
+            object b = plain;
+
+            // object.Equals must be symmetric and treat a value-equal plain System.Uri as equal.
+            Assert.True(a.Equals(b));
+            Assert.True(b.Equals(a));
+
+            // GetHashCode must be consistent with a value-equal plain System.Uri so both types can
+            // coexist as keys in the same hash-based collection.
+            Assert.Equal(plain.GetHashCode(), validated.GetHashCode());
+
+            var set = new HashSet<Uri> { plain };
+            Assert.Contains(validated, set);
+
+            var set2 = new HashSet<Uri> { validated };
+            Assert.Contains(plain, set2);
+        }
+
+        [Fact]
+        public void ContentTypeOverrideLookupIsCaseInsensitive()
+        {
+            // Regression test: a package whose [Content_Types].xml Override PartName differs only
+            // by case from the actual zip entry name must still resolve the part's content type.
+            // This exercises ZipPackage's internal ValidatedPartUri-keyed override dictionary, which
+            // must remain case-insensitive independent of whether ValidatedPartUri overrides
+            // object.Equals/GetHashCode.
+            using var ms = new MemoryStream();
+            using (var zipArchive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var contentTypesEntry = zipArchive.CreateEntry("[Content_Types].xml");
+                using (var writer = new StreamWriter(contentTypesEntry.Open()))
+                {
+                    writer.Write(
+                        """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                            <Override PartName="/Test.xml" ContentType="application/foo" />
+                        </Types>
+                        """);
+                }
+
+                var partEntry = zipArchive.CreateEntry("test.xml");
+                using (var writer = new StreamWriter(partEntry.Open()))
+                {
+                    writer.Write("<root/>");
+                }
+            }
+
+            ms.Position = 0;
+            using var package = Package.Open(ms, FileMode.Open, FileAccess.Read);
+            PackagePart[] parts = package.GetParts().ToArray();
+
+            Assert.Single(parts);
+            Assert.Equal("application/foo", parts[0].ContentType);
+        }
+
+        [Fact]
         public void CanCreateAtomicPart()
         {
             using var ms = new MemoryStream();

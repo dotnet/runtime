@@ -79,6 +79,34 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ClosedTypeInference_NestedHierarchyFromReferencedAssembly(bool defaultMode)
+        {
+            JsonSerializerContext context = defaultMode
+                ? ClosedInferenceContext_Default.Default
+                : ClosedInferenceContext_Metadata.Default;
+
+            JsonTypeInfo? typeInfo = context.GetTypeInfo(typeof(ReferencedClosedPet));
+            Assert.NotNull(typeInfo);
+            JsonPolymorphismOptions? polymorphismOptions = typeInfo.PolymorphismOptions;
+            Assert.NotNull(polymorphismOptions);
+
+            Assert.Collection(
+                polymorphismOptions.DerivedTypes,
+                derivedType =>
+                {
+                    Assert.Equal(typeof(ReferencedClosedCat), derivedType.DerivedType);
+                    Assert.Equal(nameof(ReferencedClosedCat), derivedType.TypeDiscriminator);
+                },
+                derivedType =>
+                {
+                    Assert.Equal(typeof(ReferencedClosedLabrador), derivedType.DerivedType);
+                    Assert.Equal(nameof(ReferencedClosedLabrador), derivedType.TypeDiscriminator);
+                });
+        }
+
+        [Theory]
         [InlineData(false, false)]
         [InlineData(true, false)]
         [InlineData(false, true)]
@@ -113,6 +141,41 @@ namespace System.Text.Json.SourceGeneration.Tests
                 $"{nameof(JsonPolymorphicAttribute)}.{nameof(JsonPolymorphicAttribute.InferClosedTypePolymorphism)}",
                 exception.Message);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RuntimeInferClosedTypePolymorphism_NestedHierarchyWithoutGeneratedMetadata_Throws(bool defaultMode)
+        {
+            var options = new JsonSerializerOptions
+            {
+                InferClosedTypePolymorphism = true,
+            };
+
+            JsonSerializerContext context = defaultMode
+                ? new PolymorphicTests_Default.NestedPolymorphismTestsContext_Default(options)
+                : new NestedPolymorphismTestsContext_Metadata(options);
+
+            Assert.Same(options, context.Options);
+
+            InvalidOperationException exception =
+                Assert.Throws<InvalidOperationException>(() => options.GetTypeInfo(typeof(ClosedPet)));
+
+            Assert.Contains(typeof(ClosedPet).ToString(), exception.Message);
+            Assert.Contains(
+                $"{nameof(JsonSerializerOptions)}.{nameof(JsonSerializerOptions.InferClosedTypePolymorphism)}",
+                exception.Message);
+            Assert.Contains(
+                $"{nameof(JsonSourceGenerationOptionsAttribute)}.{nameof(JsonSourceGenerationOptionsAttribute.InferClosedTypePolymorphism)}",
+                exception.Message);
+            Assert.Contains(
+                $"{nameof(JsonPolymorphicAttribute)}.{nameof(JsonPolymorphicAttribute.InferClosedTypePolymorphism)}",
+                exception.Message);
+        }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+        [JsonSerializable(typeof(ClosedPet))]
+        internal sealed partial class NestedPolymorphismTestsContext_Metadata : JsonSerializerContext;
     }
 
     public sealed partial class PolymorphicTests_Metadata_AsyncStream
@@ -142,6 +205,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClosedShape))]
         [JsonSerializable(typeof(NonClosedAttributeBase))]
         internal sealed partial class PolymorphicTestsContext_Default;
+
+        [JsonSerializable(typeof(ClosedPet))]
+        internal sealed partial class NestedPolymorphismTestsContext_Default : JsonSerializerContext;
     }
 
     public sealed partial class PolymorphicTests_Default_AsyncStream
@@ -174,6 +240,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedCustomDiscriminatorBase))]
     [JsonSerializable(typeof(ClosedDeepJaggedBase<List<int[][][]>>))]
     [JsonSerializable(typeof(ClosedDeepJaggedMismatchBase<List<int[][]>>))]
+    [JsonSerializable(typeof(ClosedDog))]
     [JsonSerializable(typeof(ClosedDuplicateArityBase<int, int>))]
     [JsonSerializable(typeof(ClosedDuplicateArityBase<int, string>))]
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedOne")]
@@ -192,12 +259,21 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedKvpBase<KeyValuePair<string, int>>))]
     [JsonSerializable(typeof(ClosedMixedBase<int>))]
     [JsonSerializable(typeof(ClosedNestedAccessContainer.Base))]
+    [JsonSerializable(typeof(ClosedNestedAccessBase))]
     [JsonSerializable(typeof(ClosedNestedArgBase<ClosedNestedOuter<string>.NestedBox<int>>))]
+    [JsonSerializable(typeof(ClosedNestedCollisionBase))]
+    [JsonSerializable(typeof(ClosedNestedCollisionHolderA.Node), TypeInfoPropertyName = "ClosedNestedCollisionNodeA")]
+    [JsonSerializable(typeof(ClosedNestedCollisionHolderB.Node), TypeInfoPropertyName = "ClosedNestedCollisionNodeB")]
+    [JsonSerializable(typeof(ClosedNestedConverterRoot))]
     [JsonSerializable(typeof(ClosedNestedDerivedBase<int>))]
+    [JsonSerializable(typeof(ClosedNestedEmptyRoot))]
+    [JsonSerializable(typeof(ClosedNestedGenericRoot<List<int[]>>))]
     [JsonSerializable(typeof(ClosedNestedMismatchBase<ClosedNestedOuter<string>.NestedBox<int>>))]
+    [JsonSerializable(typeof(ClosedOpenRoot))]
     [JsonSerializable(typeof(ClosedPair<string, int>))]
     [JsonSerializable(typeof(ClosedPartialBase<string, int>))]
     [JsonSerializable(typeof(ClosedPayload))]
+    [JsonSerializable(typeof(ClosedPet))]
     [JsonSerializable(typeof(ClosedProtectedAccessBase))]
     [JsonSerializable(typeof(ClosedRepeatedBase<int, int>))]
     [JsonSerializable(typeof(ClosedRepeatedMismatchBase<int, string>))]
@@ -210,6 +286,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedWrappedBase<List<string>>))]
     [JsonSerializable(typeof(List<ClosedShape>))]
     [JsonSerializable(typeof(PlainAbstractBase))]
+    [JsonSerializable(typeof(ReferencedClosedPet))]
     [JsonSerializable(typeof(ReferencedClosedShape))]
     internal sealed partial class ClosedInferenceContext_Metadata : JsonSerializerContext;
 
@@ -229,6 +306,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedCustomDiscriminatorBase))]
     [JsonSerializable(typeof(ClosedDeepJaggedBase<List<int[][][]>>))]
     [JsonSerializable(typeof(ClosedDeepJaggedMismatchBase<List<int[][]>>))]
+    [JsonSerializable(typeof(ClosedDog))]
     [JsonSerializable(typeof(ClosedDuplicateArityBase<int, int>))]
     [JsonSerializable(typeof(ClosedDuplicateArityBase<int, string>))]
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedOne")]
@@ -247,12 +325,21 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedKvpBase<KeyValuePair<string, int>>))]
     [JsonSerializable(typeof(ClosedMixedBase<int>))]
     [JsonSerializable(typeof(ClosedNestedAccessContainer.Base))]
+    [JsonSerializable(typeof(ClosedNestedAccessBase))]
     [JsonSerializable(typeof(ClosedNestedArgBase<ClosedNestedOuter<string>.NestedBox<int>>))]
+    [JsonSerializable(typeof(ClosedNestedCollisionBase))]
+    [JsonSerializable(typeof(ClosedNestedCollisionHolderA.Node), TypeInfoPropertyName = "ClosedNestedCollisionNodeA")]
+    [JsonSerializable(typeof(ClosedNestedCollisionHolderB.Node), TypeInfoPropertyName = "ClosedNestedCollisionNodeB")]
+    [JsonSerializable(typeof(ClosedNestedConverterRoot))]
     [JsonSerializable(typeof(ClosedNestedDerivedBase<int>))]
+    [JsonSerializable(typeof(ClosedNestedEmptyRoot))]
+    [JsonSerializable(typeof(ClosedNestedGenericRoot<List<int[]>>))]
     [JsonSerializable(typeof(ClosedNestedMismatchBase<ClosedNestedOuter<string>.NestedBox<int>>))]
+    [JsonSerializable(typeof(ClosedOpenRoot))]
     [JsonSerializable(typeof(ClosedPair<string, int>))]
     [JsonSerializable(typeof(ClosedPartialBase<string, int>))]
     [JsonSerializable(typeof(ClosedPayload))]
+    [JsonSerializable(typeof(ClosedPet))]
     [JsonSerializable(typeof(ClosedProtectedAccessBase))]
     [JsonSerializable(typeof(ClosedRepeatedBase<int, int>))]
     [JsonSerializable(typeof(ClosedRepeatedMismatchBase<int, string>))]
@@ -265,6 +352,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedWrappedBase<List<string>>))]
     [JsonSerializable(typeof(List<ClosedShape>))]
     [JsonSerializable(typeof(PlainAbstractBase))]
+    [JsonSerializable(typeof(ReferencedClosedPet))]
     [JsonSerializable(typeof(ReferencedClosedShape))]
     internal sealed partial class ClosedInferenceContext_Default : JsonSerializerContext;
 #pragma warning restore SYSLIB1229, SYSLIB1240, SYSLIB1241, SYSLIB1242

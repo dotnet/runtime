@@ -15,6 +15,7 @@ public static class Constants
         public const string FunctionTableIndexRangeList = nameof(FunctionTableIndexRangeList);
         public const string GCThread = nameof(GCThread);
         public const string Debugger = nameof(Debugger);
+        public const string DebuggerPatchTable = nameof(DebuggerPatchTable);
         public const string MaxHijackFunctions = nameof(MaxHijackFunctions);
         public const string CLRJitAttachState = nameof(CLRJitAttachState);
         public const string CORDebuggerControlFlags = nameof(CORDebuggerControlFlags);

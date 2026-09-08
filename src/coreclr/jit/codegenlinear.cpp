@@ -198,7 +198,7 @@ void CodeGen::genCodeForBBlist()
     if (m_compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", m_compiler->compCycleEstimate,
+        printf("compCycleEstimate = %6zu, compSizeEstimate = %5zu ", m_compiler->compCycleEstimate,
                m_compiler->compSizeEstimate);
         printf("%s\n", m_compiler->info.compFullName);
     }
@@ -246,8 +246,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     JITDUMP("\n=============== Generating ");
     JITDUMPEXEC(block->dspBlockHeader(true, true));
     JITDUMPEXEC(m_compiler->fgDispBBLiveness(block));
-
-    assert(LIR::AsRange(block).CheckLIR(m_compiler));
 
     // Figure out which registers hold variables on entry to this block
 
@@ -1009,7 +1007,7 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
 
-#ifndef TARGET_WASM
+#if HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1120,23 +1118,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
 }
 
-//------------------------------------------------------------------------
-// genUpdateVarReg: Update the current register location for a multi-reg lclVar
-//
-// Arguments:
-//    varDsc   - the LclVarDsc for the lclVar
-//    tree     - the lclVar node
-//    regIndex - the index of the register in the node
-//
-// inline
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    // This should only be called for multireg lclVars.
-    assert(m_compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
-    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
-}
-#endif // !TARGET_WASM
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 // genUpdateVarReg: Update the current register location for a lclVar
@@ -1760,6 +1742,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+#endif
         else if (tree->OperIsFieldList())
         {
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
@@ -1768,7 +1751,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
                 genConsumeRegs(fieldNode);
             }
         }
-#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -2802,6 +2784,10 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "advsimd") != nullptr))
     {
         genArm64EmitterUnitTestsAdvSimd();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "fp16") != nullptr))
+    {
+        genArm64EmitterUnitTestsFp16();
     }
     if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {

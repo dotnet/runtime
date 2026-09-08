@@ -10,6 +10,9 @@ set(CRASHREPORT_SOURCES
     inproccrashreportwatchdog.cpp
 )
 
+include(configure.cmake)
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_library(inproccrashreport OBJECT ${CRASHREPORT_SOURCES})
 target_include_directories(inproccrashreport PRIVATE ${CLR_DIR}/pal/src/include)
 

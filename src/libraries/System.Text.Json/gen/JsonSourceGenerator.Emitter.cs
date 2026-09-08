@@ -738,7 +738,8 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("},");
 
                     // The deconstructor switch has no `_` arm — it relies on the union's
-                    // declared case set being exhaustively covered by its arms.
+                    // declared case set being exhaustively covered by its arms. Adding a
+                    // `_` arm would make it unreachable (CS8510).
                     writer.WriteLine($"UnionDeconstructor = static ({genericArg} value) =>");
                     writer.WriteLine('{');
                     writer.Indentation++;
@@ -783,22 +784,9 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
+                        string caseTypeFQN = caseSpec.CaseType.FullyQualifiedName;
 
-                        if (patternTypeFQN == typeMetadata.TypeRef.FullyQualifiedName)
-                        {
-                            // Recursive case: the case type is the union type itself. A type pattern `T`
-                            // applied to a union is equivalent to `T or { Value: T }`, so a bare type
-                            // pattern here is also satisfied by the union instance itself. That both binds
-                            // the union rather than its payload -- making the converter recurse on the same
-                            // value forever -- and renders any later arm unreachable. Match the payload
-                            // explicitly so that only the unwrapped value is bound.
-                            writer.WriteLine($"{{ Value: {patternTypeFQN} caseValue{deconArmIndex} }} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
-                        }
-                        else
-                        {
-                            writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
-                        }
-
+                        writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseTypeFQN}), (object?)caseValue{deconArmIndex}),");
                         deconArmIndex++;
                     }
 

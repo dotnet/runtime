@@ -20,7 +20,7 @@ namespace System.Reflection
             Debug.Assert(target is not null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
         }
@@ -30,7 +30,7 @@ namespace System.Reflection
             Debug.Assert(target is not null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
         }
@@ -40,7 +40,7 @@ namespace System.Reflection
             Debug.Assert(target is not null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
         }
@@ -89,13 +89,13 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule()!, target.MetadataToken);
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
         }
 
-        private static ReadOnlyCollection<CustomAttributeData> GetCombinedList(IList<CustomAttributeData> customAttributes, ref RuntimeType.ListBuilder<Attribute> pseudoAttributes)
+        private static ReadOnlyCollection<CustomAttributeData> GetCombinedList(IList<CustomAttributeData> customAttributes, ref ListBuilder<Attribute> pseudoAttributes)
         {
             Debug.Assert(pseudoAttributes.Count != 0);
 
@@ -651,11 +651,13 @@ namespace System.Reflection
     [StructLayout(LayoutKind.Explicit)]
     internal struct PrimitiveValue
     {
+        /// <safety>Overlaps only Byte8; both views are non-reference integers (int and long), so reinterpreting one as the other cannot forge a managed reference or read out of bounds.</safety>
         [FieldOffset(0)]
-        public int Byte4;
+        public safe int Byte4;
 
+        /// <safety>Overlaps only Byte4; both views are non-reference integers (long and int), so reinterpreting one as the other cannot forge a managed reference.</safety>
         [FieldOffset(0)]
-        public long Byte8;
+        public safe long Byte8;
     }
 
     internal sealed class CustomAttributeEncodedArgument
@@ -1251,7 +1253,7 @@ namespace System.Reflection
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = (type.GetGenericTypeDefinition() as RuntimeType)!;
 
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(type, caType, ref pcas);
 
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
@@ -1264,7 +1266,7 @@ namespace System.Reflection
                 return attributes;
             }
 
-            RuntimeType.ListBuilder<object> result = default;
+            ListBuilder<object> result = default;
             bool mustBeInheritable = false;
 
             for (int i = 0; i < pcas.Count; i++)
@@ -1293,7 +1295,7 @@ namespace System.Reflection
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
                 method = (method.GetGenericMethodDefinition() as RuntimeMethodInfo)!;
 
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(method, caType, ref pcas);
 
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
@@ -1306,7 +1308,7 @@ namespace System.Reflection
                 return attributes;
             }
 
-            RuntimeType.ListBuilder<object> result = default;
+            ListBuilder<object> result = default;
             bool mustBeInheritable = false;
 
             for (int i = 0; i < pcas.Count; i++)
@@ -1362,7 +1364,7 @@ namespace System.Reflection
             Debug.Assert(field is not null);
             Debug.Assert(caType is not null);
 
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(field, caType, ref pcas);
             object[] attributes = GetCustomAttributes(field.GetRuntimeModule(), field.MetadataToken, pcas.Count, caType);
             if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
@@ -1374,7 +1376,7 @@ namespace System.Reflection
             Debug.Assert(parameter is not null);
             Debug.Assert(caType is not null);
 
-            RuntimeType.ListBuilder<Attribute> pcas = default;
+            ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(parameter, caType, ref pcas);
             object[] attributes = GetCustomAttributes(parameter.GetRuntimeModule()!, parameter.MetadataToken, pcas.Count, caType);
             if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
@@ -1430,7 +1432,7 @@ namespace System.Reflection
             {
                 Debug.Assert(attributeCtorToken == 0);
 
-                RuntimeType.ListBuilder<object> derivedAttributes = default;
+                ListBuilder<object> derivedAttributes = default;
 
                 for (int i = 0; i < attributeTokens.Length; i++)
                 {
@@ -1469,7 +1471,7 @@ namespace System.Reflection
         private static object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType)
         {
-            RuntimeType.ListBuilder<object> attributes = default;
+            ListBuilder<object> attributes = default;
 
             AddCustomAttributes(ref attributes, decoratedModule, decoratedMetadataToken, attributeFilterType, false, default);
 
@@ -1486,11 +1488,11 @@ namespace System.Reflection
                             "attribute instantiation which is present in the code linker has analyzed." +
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
         private static void AddCustomAttributes(
-            ref RuntimeType.ListBuilder<object> attributes,
+            ref ListBuilder<object> attributes,
             RuntimeModule decoratedModule, int decoratedMetadataToken,
             RuntimeType? attributeFilterType, bool mustBeInheritable,
             // The derivedAttributes list must be passed by value so that it is not modified with the discovered attributes
-            RuntimeType.ListBuilder<object> derivedAttributes)
+            ListBuilder<object> derivedAttributes)
         {
             CustomAttributeRecord[] car = RuntimeCustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
 
@@ -1622,7 +1624,7 @@ namespace System.Reflection
             MetadataToken decoratedToken,
             RuntimeType attributeFilterType,
             bool mustBeInheritable,
-            ref RuntimeType.ListBuilder<object> derivedAttributes,
+            ref ListBuilder<object> derivedAttributes,
             out RuntimeType attributeType,
             out IRuntimeMethodInfo? ctorWithParameters,
             out bool isVarArg)
@@ -1729,7 +1731,7 @@ namespace System.Reflection
 
         #region Private Static Methods
         private static bool AttributeUsageCheck(
-            RuntimeType attributeType, bool mustBeInheritable, ref RuntimeType.ListBuilder<object> derivedAttributes)
+            RuntimeType attributeType, bool mustBeInheritable, ref ListBuilder<object> derivedAttributes)
         {
             AttributeUsageAttribute? attributeUsageAttribute = null;
 
@@ -1858,6 +1860,7 @@ namespace System.Reflection
             return result != 0;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
         private static partial void CreateCustomAttributeInstance(
             QCallModule pModule,
@@ -1887,6 +1890,7 @@ namespace System.Reflection
             return result!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreatePropertyOrFieldData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void CreatePropertyOrFieldData(
             QCallModule pModule,
@@ -1980,7 +1984,7 @@ namespace System.Reflection
         #endregion
 
         #region Internal Static
-        internal static void GetCustomAttributes(RuntimeType type, RuntimeType caType, ref RuntimeType.ListBuilder<Attribute> pcas)
+        internal static void GetCustomAttributes(RuntimeType type, RuntimeType caType, ref ListBuilder<Attribute> pcas)
         {
             Debug.Assert(type is not null);
             Debug.Assert(caType is not null);
@@ -2024,7 +2028,7 @@ namespace System.Reflection
             return false;
         }
 
-        internal static void GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, ref RuntimeType.ListBuilder<Attribute> pcas)
+        internal static void GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, ref ListBuilder<Attribute> pcas)
         {
             Debug.Assert(method is not null);
             Debug.Assert(caType is not null);
@@ -2064,7 +2068,7 @@ namespace System.Reflection
             return false;
         }
 
-        internal static void GetCustomAttributes(RuntimeParameterInfo parameter, RuntimeType caType, ref RuntimeType.ListBuilder<Attribute> pcas)
+        internal static void GetCustomAttributes(RuntimeParameterInfo parameter, RuntimeType caType, ref ListBuilder<Attribute> pcas)
         {
             Debug.Assert(parameter is not null);
             Debug.Assert(caType is not null);
@@ -2120,7 +2124,7 @@ namespace System.Reflection
             return false;
         }
 
-        internal static void GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType, ref RuntimeType.ListBuilder<Attribute> pcas)
+        internal static void GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType, ref ListBuilder<Attribute> pcas)
         {
             Debug.Assert(field is not null);
             Debug.Assert(caType is not null);

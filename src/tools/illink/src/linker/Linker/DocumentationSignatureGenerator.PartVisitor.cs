@@ -42,7 +42,7 @@ namespace Mono.Linker
                     builder.Append("[0:");
                     for (int i = 1; i < arrayType.Rank; i++)
                     {
-                        if (arrayType.Dimensions[0].LowerBound != 0)
+                        if (arrayType.Dimensions[i].LowerBound != 0)
                             throw new NotImplementedException();
                         builder.Append(",0:");
                     }
@@ -178,11 +178,13 @@ namespace Mono.Linker
 
                 // Compute arity counting only the newly-introduced generic parameters
                 var declaringType = genericInstance.DeclaringType;
-                var declaringArity = 0;
-                if (declaringType != null && declaringType.HasGenericParameters)
-                    declaringArity = declaringType.GenericParameters.Count;
+                var declaringArity = declaringType?.GetGenericParameterCount(resolver) ?? 0;
                 var totalArity = genericInstance.GenericArguments.Count;
                 var arity = totalArity - declaringArity;
+                Debug.Assert(arity >= 0);
+
+                if (arity == 0)
+                    return;
 
                 // Un-mangle the generic type name
                 var suffixLength = arity.ToString().Length + 1;

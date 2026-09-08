@@ -8,6 +8,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable C99 inttypes.h format macros (PRI*, SCN*) for C++ translation units.
+# Some C++ standard library implementations gate these macros behind
+# __STDC_FORMAT_MACROS in C++ mode (e.g. glibc prior to C++11 conformance).
+add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:__STDC_FORMAT_MACROS>)
+
 # We need to set this to Release as there's no way to intercept configuration-specific linker flags
 # for try_compile-style tests (like check_c_source_compiles) and some of the default Debug flags
 # (ie. /INCREMENTAL) conflict with our own flags.

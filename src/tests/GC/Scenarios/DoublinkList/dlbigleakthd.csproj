@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
 
     <!-- Test needs explicit Main as it uses command-line parameters -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>

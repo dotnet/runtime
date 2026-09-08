@@ -624,16 +624,37 @@ public:
             //
             const unsigned controlVarNum =
                 m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
-            LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
-            controlVarDsc->lvType          = TYP_INT;
-            BasicBlock*      dispatcher    = nullptr;
-            BasicBlock*      tryHeader     = TryHeader();
-            FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
-            FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
-            unsigned         headerNumber  = 0;
-            BitVecOps::Iter  iterator(m_traits, m_entries);
-            unsigned int     poHeaderNumber = 0;
-            weight_t         netLikelihood  = 0.0;
+            LclVarDsc* const controlVarDsc         = m_compiler->lvaGetDesc(controlVarNum);
+            controlVarDsc->lvType                  = TYP_INT;
+            BasicBlock*                 dispatcher = nullptr;
+            BasicBlock*                 tryHeader  = TryHeader();
+            FlowEdge** const            succs      = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const            cases      = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            CompAllocator               allocator  = m_compiler->getAllocator(CMK_WasmSccTransform);
+            jitstd::vector<BasicBlock*> predBlocks(allocator);
+            jitstd::vector<unsigned>    predOffsets(allocator);
+            unsigned                    headerNumber = 0;
+            BitVecOps::Iter             iterator(m_traits, m_entries);
+            unsigned int                poHeaderNumber = 0;
+            weight_t                    netLikelihood  = 0.0;
+
+            // Snapshot the predecessor blocks before modifying any edges. Redirecting an edge for one
+            // header can create a new predecessor of another header, and that new edge must not be
+            // transformed as if it had originally targeted the other header.
+            //
+            while (iterator.NextElem(&poHeaderNumber))
+            {
+                BasicBlock* const header = m_dfsTree->GetPostOrder(poHeaderNumber);
+                predOffsets.push_back(static_cast<unsigned>(predBlocks.size()));
+
+                for (BasicBlock* const pred : header->PredBlocks())
+                {
+                    predBlocks.push_back(pred);
+                }
+            }
+            predOffsets.push_back(static_cast<unsigned>(predBlocks.size()));
+
+            iterator = BitVecOps::Iter(m_traits, m_entries);
 
             while (iterator.NextElem(&poHeaderNumber))
             {
@@ -711,11 +732,18 @@ public:
 
                 weight_t headerWeight = header->bbWeight;
 
-                for (FlowEdge* const f : header->PredEdgesEditing())
+                for (unsigned predIndex = predOffsets[headerNumber]; predIndex < predOffsets[headerNumber + 1];
+                     predIndex++)
                 {
-                    assert(f->getDestinationBlock() == header);
-                    BasicBlock* const pred          = f->getSourceBlock();
+                    BasicBlock* const pred          = predBlocks[predIndex];
                     BasicBlock*       transferBlock = nullptr;
+
+                    // Processing an earlier header may have removed this original edge.
+                    //
+                    if (m_compiler->fgGetPredForBlock(header, pred) == nullptr)
+                    {
+                        continue;
+                    }
 
                     // When the pred source is a BBJ_EHCATCHRET, the edge does not represent real
                     // control flow in Wasm, as any resume from catch flow is captured by the post-try
@@ -819,6 +847,12 @@ public:
                 cases[headerNumber] = dispatchToOutboundTargetEdge;
 
                 headerNumber++;
+            }
+
+            // All entry flow now passes through the try header before reaching the dispatcher.
+            if (tryHeader != nullptr)
+            {
+                tryHeader->setBBProfileWeight(TotalEntryWeight());
             }
 
             // Create the dispatch switch... really there should be no default but for now we'll have one.
@@ -2423,12 +2457,21 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             //  them. If we can somehow guarantee that all callees will spill their ref parameters
             //  immediately, we could do this before the block above.
 
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'.
-            tree->VisitOperands([&defs](GenTree* op) {
+            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
+            //  not itself on the operand stack, so look through it to the operands that are.
+            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
                 if (!op->IsValue())
-                    return GenTree::VisitResult::Continue;
+                    return;
+                if (op->isContained())
+                {
+                    op->VisitOperands([&recurse](GenTree* innerOp) {
+                        recurse(innerOp, recurse);
+                        return GenTree::VisitResult::Continue;
+                    });
+                    return;
+                }
                 if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return GenTree::VisitResult::Continue;
+                    return;
 
                 for (size_t i = defs.size(); i > 0; i--)
                 {
@@ -2439,7 +2482,16 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                         break;
                     }
                 }
+            };
 
+            // A contained node is part of its parent, so it is visited as part of the parent instead.
+            if (tree->isContained())
+            {
+                continue;
+            }
+
+            tree->VisitOperands([&removeUses](GenTree* op) {
+                removeUses(op, removeUses);
                 return GenTree::VisitResult::Continue;
             });
 

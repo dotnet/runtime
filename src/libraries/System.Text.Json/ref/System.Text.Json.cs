@@ -1277,6 +1277,12 @@ namespace System.Text.Json.Serialization
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type? TypeClassifier { get { throw null; } set { } }
     }
+    public partial class JsonUnionTypeStructuralClassifier : System.Text.Json.Serialization.JsonTypeClassifierFactory
+    {
+        public JsonUnionTypeStructuralClassifier() { }
+        public override bool CanClassify(System.Text.Json.Serialization.JsonTypeClassifierContext context) { throw null; }
+        public override System.Text.Json.Serialization.JsonTypeClassifier CreateJsonClassifier(System.Text.Json.Serialization.JsonTypeClassifierContext context, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
     public enum JsonUnknownDerivedTypeHandling
     {
         FailSerialization = 0,

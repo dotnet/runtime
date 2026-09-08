@@ -24,6 +24,7 @@ using System.Text;
 using Xunit;
 using TestLibrary;
 
+namespace SIMDTests.Vector3InteropTests;
 
 public struct DT 
 {

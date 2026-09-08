@@ -535,6 +535,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
+#if TARGET_MASKS_SHIFTS
+            // These targets mask the rotate amount implicitly, so strip a redundant
+            // AND(amount, mask) before lowering the rotate.
+            TryRemoveShiftRotateMask(node->AsOp());
+#endif
+
             LowerRotate(node);
             break;
         }
@@ -556,7 +562,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_MASKS_SHIFTS
             LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
@@ -2044,7 +2050,10 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
         // which will be first in the list.
         // The this parameter is always passed in registers, so we can ignore it.
         unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
-        assert(call->gtArgs.CountUserArgs() == m_compiler->info.compILargsCount);
+        // The arguments of the unmanaged call are the leading arguments of the IL stub, so the stub
+        // cannot have fewer of them. It can have more: an unmanaged CALLI stub takes the call target
+        // as an extra trailing argument that is not passed on to the unmanaged call.
+        assert(call->gtArgs.CountUserArgs() <= m_compiler->info.compILargsCount);
         bool checkForUnmanagedThisArg = call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall;
         for (CallArg& arg : call->gtArgs.Args())
         {
@@ -2454,7 +2463,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // TODO-CQ: drop the whole thing in case of 0
         if ((cnsSize > 0) && (cnsSize <= (ssize_t)m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
@@ -2544,7 +2553,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // The case of 0 has been handled earlier with VN
         if (cnsSize > 0)
         {
@@ -2903,11 +2912,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
                 {
                     controlExpr = LowerNonvirtPinvokeCall(call);
                 }
-                else if (call->gtCallType == CT_INDIRECT)
-                {
-                    controlExpr = LowerIndirectNonvirtCall(call);
-                }
-                else
+                else if (call->gtCallType != CT_INDIRECT)
                 {
                     controlExpr = LowerDirectCall(call);
                 }
@@ -3188,7 +3193,6 @@ size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
     {
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
-            assert(operand.GetNode()->OperIsPutArg());
             result += MarkPutArgAndFieldListNodes(operand.GetNode());
         }
     }
@@ -6659,14 +6663,6 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
     DISPTREERANGE(BlockRange(), call);
 }
 
-GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
-{
-    // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
-    // Hence we should never see this type of call in lower.
-    noway_assert(call->gtCallCookie == nullptr);
-    return nullptr;
-}
-
 //------------------------------------------------------------------------
 // CreateReturnTrapSeq: Create a tree to perform a "return trap", used in PInvoke
 // epilogs to invoke a GC under a condition. The return trap checks some global
@@ -7824,12 +7820,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     DISPNODE(base);
     if (index != nullptr)
     {
-        JITDUMP("  + Index * %u + %d\n    ", scale, offset);
+        JITDUMP("  + Index * %u + %zd\n    ", scale, offset);
         DISPNODE(index);
     }
     else
     {
-        JITDUMP("  + %d\n", offset);
+        JITDUMP("  + %zd\n", offset);
     }
 
     // Save the (potentially) unused operands before changing the address to LEA.
@@ -8235,7 +8231,7 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     }
 
     // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_HAS_MULHI
     if (!m_compiler->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
@@ -8543,7 +8539,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             return false;
         }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_HAS_MULHI
         ssize_t magic;
         int     shift;
 
@@ -8836,30 +8832,30 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerShift: Lower shift nodes
+// TryRemoveShiftRotateMask: Remove a redundant mask on a shift or rotate count.
 //
 // Arguments:
-//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
+//    op - the shift or rotate node (GT_LSH, GT_RSH, GT_RSZ, GT_ROL or GT_ROR)
 //
 // Notes:
-//    Remove unnecessary shift count masking, xarch shift instructions
-//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//    Some targets' shift/rotate instructions mask their count to bitsize.
+//    Remove the explicit AND(count, mask) that keeps at least those low bits.
 //
-void Lowering::LowerShift(GenTreeOp* shift)
+void Lowering::TryRemoveShiftRotateMask(GenTreeOp* op)
 {
-    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+    assert(op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
 
     size_t mask = 0x1f;
-#ifdef TARGET_64BIT
-    if (varTypeIsLong(shift->TypeGet()))
+#if !LOWER_DECOMPOSE_LONGS
+    if (varTypeIsLong(op->TypeGet()))
     {
         mask = 0x3f;
     }
 #else
-    assert(!varTypeIsLong(shift->TypeGet()));
+    assert(!varTypeIsLong(op->TypeGet()));
 #endif
 
-    for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
+    for (GenTree* andOp = op->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
     {
         GenTree* maskOp = andOp->gtGetOp2();
 
@@ -8873,12 +8869,29 @@ void Lowering::LowerShift(GenTreeOp* shift)
             break;
         }
 
-        shift->gtOp2 = andOp->gtGetOp1();
+        op->gtOp2 = andOp->gtGetOp1();
         BlockRange().Remove(andOp);
         BlockRange().Remove(maskOp);
         // The parent was replaced, clear contain and regOpt flag.
-        shift->gtOp2->ClearContained();
+        op->gtOp2->ClearContained();
     }
+}
+
+//------------------------------------------------------------------------
+// LowerShift: Lower shift nodes
+//
+// Arguments:
+//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
+//
+// Notes:
+//    Remove unnecessary shift count masking, shift instructions on some targets
+//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//
+void Lowering::LowerShift(GenTreeOp* shift)
+{
+    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+
+    TryRemoveShiftRotateMask(shift);
 
     ContainCheckShiftRotate(shift);
 
@@ -9615,7 +9628,6 @@ bool Lowering::CheckBlock(Compiler* compiler, BasicBlock* block)
         CheckNode(compiler, node);
     }
 
-    assert(blockRange.CheckLIR(compiler, true));
     return true;
 }
 #endif
@@ -11556,7 +11568,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         // Later stores must overwrite any overlapping bytes from earlier stores.
         uint64_t currBitsMask = (currMask << currShift) & newMask;
         uint64_t val          = (prevBits & ~currBitsMask) | currBits;
-        JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+        JITDUMP("Coalesced two stores into a single store with value %lld\n", (long long)(int64_t)val);
 
         assert(currData.value->OperIs(GT_CNS_INT));
         auto* intCon = currData.value->AsIntCon();
