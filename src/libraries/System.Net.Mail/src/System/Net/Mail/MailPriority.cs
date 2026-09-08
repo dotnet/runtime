@@ -138,7 +138,7 @@ namespace System.Net.Mail
                     {
                         // extract the encoding from =?encoding?BorQ?blablalba?= and store the
                         // decoded value; we'll re-encode before sending
-                        (string decodedValue, Encoding? inputEncoding) = MimeBasePart.DecodeHeaderValue(value);
+                        (string decodedValue, Encoding? inputEncoding) = MimeBasePart.DecodeHeaderValue(value, true);
                         if (inputEncoding != null)
                         {
                             value = decodedValue;

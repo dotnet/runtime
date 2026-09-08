@@ -116,7 +116,7 @@ namespace System.Net.Mime
             get
             {
                 string? value = Parameters["name"];
-                (string decodedValue, Encoding? nameEncoding) = MimeBasePart.DecodeHeaderValue(value);
+                (string decodedValue, Encoding? nameEncoding) = MimeBasePart.DecodeHeaderValue(value, false);
                 if (nameEncoding != null)
                 {
                     value = decodedValue;
@@ -194,7 +194,7 @@ namespace System.Net.Mime
             Encoding? encoding;
             try
             {
-                (_, encoding) = MimeBasePart.DecodeHeaderValue(value);
+                (_, encoding) = MimeBasePart.DecodeHeaderValue(value, false);
             }
             catch (FormatException)
             {

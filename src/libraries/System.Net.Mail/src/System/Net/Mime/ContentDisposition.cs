@@ -226,7 +226,7 @@ namespace System.Net.Mime
             Encoding? encoding;
             try
             {
-                (_, encoding) = MimeBasePart.DecodeHeaderValue(value);
+                (_, encoding) = MimeBasePart.DecodeHeaderValue(value, false);
             }
             catch (FormatException)
             {

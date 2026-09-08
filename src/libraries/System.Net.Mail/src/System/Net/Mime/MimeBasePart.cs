@@ -64,7 +64,7 @@ namespace System.Net.Mime
         // The entire value must consist of one or more well-formed RFC 2047 encoded-words
         // separated by linear whitespace (folding); otherwise the value is returned unchanged
         // with a null Encoding.
-        internal static (string Value, Encoding? Encoding) DecodeHeaderValue(string? value)
+        internal static (string Value, Encoding? Encoding) DecodeHeaderValue(string? value, bool allowQuoteAndEscape)
         {
             const int MaxEncodedWordLength = 75;
 
@@ -135,6 +135,10 @@ namespace System.Net.Mime
 
                 ReadOnlySpan<char> data = remainder.Slice(dataStart, terminator);
                 if (data.ContainsAnyExcept(s_encodedWordDataChars))
+                {
+                    return (value, null);
+                }
+                if (!allowQuoteAndEscape & data.ContainsAny('\\', '"'))
                 {
                     return (value, null);
                 }
