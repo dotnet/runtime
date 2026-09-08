@@ -31,7 +31,6 @@
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
-    <WasmWarnOnUnresolvedPInvokeModules Condition="'$(WasmWarnOnUnresolvedPInvokeModules)' == ''">true</WasmWarnOnUnresolvedPInvokeModules>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
 
@@ -95,7 +94,7 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator"
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
@@ -205,7 +204,11 @@
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <!-- TODO-WASM: At the moment we are skipping dotnet.native.wasm that always contain diagnostic-server.
+      Related https://github.com/dotnet/runtime/issues/132772
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmPerformanceInstrumentation)' != ''">true</WasmBuildNative>
+      -->
     </PropertyGroup>
 
     <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
@@ -214,7 +217,7 @@
          pack only ships thunks for the framework's own [UnmanagedCallersOnly] methods. -->
     <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release' and '$(WasmBuildNativeImplicitInReleaseConfiguration)' != 'false'">true</WasmBuildNative>
     </PropertyGroup>
   </Target>
 
@@ -590,7 +593,7 @@
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
-    <!-- Compile flags for ManagedToNativeGenerator output (callhelpers-pinvoke.cpp,
+    <!-- Compile flags for the generated interop helpers (callhelpers-pinvoke.cpp,
          callhelpers-interp-to-managed.cpp). The generated files #include the real CoreCLR
          headers (<callhelpers.hpp>, <minipal/entrypoints.h>, <minipal/utils.h>).
          Force-include coreclr_compat.h to provide the prerequisite types/macros
@@ -642,9 +645,6 @@
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-pinvoke.cpp</_WasmPInvokeTablePath>
       <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-reverse.cpp</_WasmReversePInvokeTablePath>
       <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)callhelpers-interp-to-managed.cpp</_WasmInterpToNativeTablePath>
-      <_WasmM2NCachePath>$(_WasmIntermediateOutputPath)m2n_cache.txt</_WasmM2NCachePath>
-      <_IsLibraryMode Condition="'$(OutputType)' == 'Library'">true</_IsLibraryMode>
-      <_IsLibraryMode Condition="'$(_IsLibraryMode)' == ''">false</_IsLibraryMode>
     </PropertyGroup>
 
     <!-- P/Invoke modules: user native libraries + system native libraries -->
@@ -654,24 +654,30 @@
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_WasmIgnoredPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
       <_WasmPInvokeModules Include="libSystem.Native.Browser" />
       <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
     </ItemGroup>
 
-    <!-- Managed assemblies to scan -->
+    <!-- Managed assemblies to scan. An app bundle legitimately carries native payloads named .dll -
+         per-architecture content shipped by a NuGet package is the usual case - and the generator
+         reads managed metadata, so narrow the list before handing it over. -->
     <ItemGroup>
-      <_WasmManagedAssemblies Include="@(WasmAssembliesToBundle->Distinct())" />
+      <_WasmBundledFile Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
 
     <!-- With R2R the published .dll are webcil-in-wasm images MetadataLoadContext can't parse; scan the
          trimmed IL (same closure crossgen used) instead. Gated on the linker dir only, because the nested
-         WasmNestedPublishApp build where this runs doesn't carry PublishReadyToRun. -->
+         WasmNestedPublishApp build where this runs doesn't carry PublishReadyToRun. Remapped ahead of the
+         filter below, which reads PE headers and cannot make sense of webcil either. -->
     <ItemGroup Condition="'$(IntermediateLinkDir)' != ''">
-      <_WasmManagedAssembliesR2RRemap Include="@(_WasmManagedAssemblies)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
-      <_WasmManagedAssemblies Remove="@(_WasmManagedAssembliesR2RRemap)" />
-      <_WasmManagedAssemblies Include="@(_WasmManagedAssembliesR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <_WasmBundledFileR2RRemap Include="@(_WasmBundledFile)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <_WasmBundledFile Remove="@(_WasmBundledFileR2RRemap)" />
+      <_WasmBundledFile Include="@(_WasmBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
     </ItemGroup>
+
+    <FilterManagedAssemblies Assemblies="@(_WasmBundledFile)">
+      <Output TaskParameter="ManagedAssemblies" ItemName="_WasmManagedAssemblies" />
+    </FilterManagedAssemblies>
 
     <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
     <PropertyGroup>
@@ -688,19 +694,41 @@
       <_WasmManagedAssemblies Include="$(_CoreLibPath)" />
     </ItemGroup>
 
-    <ManagedToNativeGenerator
-      Assemblies="@(_WasmManagedAssemblies)"
-      PInvokeModules="@(_WasmPInvokeModules)"
-      IgnoredPInvokeModules="@(_WasmIgnoredPInvokeModules)"
-      PInvokeOutputPath="$(_WasmPInvokeTablePath)"
-      ReversePInvokeOutputPath="$(_WasmReversePInvokeTablePath)"
-      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
-      CacheFilePath="$(_WasmM2NCachePath)"
-      TargetOS="browser"
-      WarnOnUnresolvedPInvokeModules="$(WasmWarnOnUnresolvedPInvokeModules)"
-      IsLibraryMode="$(_IsLibraryMode)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ManagedToNativeGenerator>
+    <!-- crossgen2 has the type system that knows the wasm ABI, so it generates the helpers itself.
+         In the repo it comes from the build output; outside it, from the crossgen2 pack
+         the wasm-tools workload acquires, which sets $(Crossgen2ToolPath) from its Sdk.props. -->
+    <PropertyGroup>
+      <_PortableCallHelpersGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_PortableCallHelpersGeneratorExeSuffix>
+      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_PortableCallHelpersGeneratorExeSuffix)'))</PortableCallHelpersGeneratorPath>
+      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == ''">$(Crossgen2ToolPath)</PortableCallHelpersGeneratorPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
+           Text="crossgen2 was not found, so the portable call helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
+    <Error Condition="'$([System.IO.Path]::GetExtension(`$(PortableCallHelpersGeneratorPath)`))' == '.dll'"
+           Text="%24(PortableCallHelpersGeneratorPath) is '$(PortableCallHelpersGeneratorPath)'. It has to name a crossgen2 executable; an IL assembly cannot be launched directly." />
+    <Error Condition="!Exists('$(PortableCallHelpersGeneratorPath)')"
+           Text="%24(PortableCallHelpersGeneratorPath) is '$(PortableCallHelpersGeneratorPath)', which does not exist. In the repo, build crossgen2 first; outside it, install the 'wasm-tools' workload." />
+
+    <PropertyGroup>
+      <_PortableCallHelpersGeneratorRsp>$(_WasmIntermediateOutputPath)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_PortableCallHelpersGeneratorArg Include="--targetos:browser" />
+      <_PortableCallHelpersGeneratorArg Include="--targetarch:wasm" />
+      <_PortableCallHelpersGeneratorArg Include="--generate-portable-callhelpers:$(_WasmIntermediateOutputPath)" />
+      <_PortableCallHelpersGeneratorArg Include="@(_WasmPInvokeModules->'--directpinvoke:%(Identity)')" />
+      <_PortableCallHelpersGeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_PortableCallHelpersGeneratorRsp)" Lines="@(_PortableCallHelpersGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Exec Command="&quot;$(PortableCallHelpersGeneratorPath)&quot; &quot;@$(_PortableCallHelpersGeneratorRsp)&quot;" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_PortableCallHelpersGeneratorRsp);$(_WasmPInvokeTablePath);$(_WasmReversePInvokeTablePath);$(_WasmInterpToNativeTablePath)" />
+    </ItemGroup>
 
     <ItemGroup>
       <_WasmSourceFileToCompileGenerated Remove="@(_WasmSourceFileToCompileGenerated)" />
@@ -747,7 +775,7 @@
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
 
-    <!-- Compile generated ManagedToNativeGenerator output (force-includes coreclr_compat.h). -->
+    <!-- Compile the generated interop helpers (force-includes coreclr_compat.h). -->
     <EmccCompile
           Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0"
           SourceFiles="@(_WasmSourceFileToCompileGenerated)"

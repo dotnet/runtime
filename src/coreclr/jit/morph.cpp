@@ -15176,14 +15176,11 @@ PhaseStatus Compiler::fgExpandQmarkNodes(bool early)
         }
     }
 
-#ifdef DEBUG
     if (!early)
     {
-        fgPostExpandQmarkChecks();
+        INDEBUG(fgPostExpandQmarkChecks());
+        compQmarkRationalized = true;
     }
-#endif
-
-    compQmarkRationalized = true;
 
     // TODO: if qmark expansion created throw blocks, try and merge them
     //

@@ -88,7 +88,7 @@ public class ManagedToNativeGenerator : Task
         if (ShouldRun(managedAssemblies))
         {
             var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS);
-            var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log, isCoreClr: false);
+            var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log);
 
             var resolver = new PathAssemblyResolver(managedAssemblies);
             using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
