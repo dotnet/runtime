@@ -547,12 +547,10 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
-        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
-        [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
-        public static void CreateSender_NotImplemented(HpkeKem kem)
+        [MemberData(nameof(OpenSuiteData))]
+        public static void CreateSender_Seal(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
         {
-            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            HpkeSuite suite = new(kem, kdf, aead);
 
             if (!Hpke.IsSupported(suite))
             {
@@ -562,11 +560,92 @@ namespace System.Security.Cryptography.Tests
 
             using (Hpke key = Hpke.GenerateKey(suite))
             {
-                byte[] original = [0xA5];
-                byte[] enc = original;
-                Assert.Throws<NotImplementedException>(() => key.CreateSender(out enc));
-                Assert.Same(original, enc);
-                Assert.Throws<NotImplementedException>(() => key.CreateSender(new byte[suite.EncapsulatedSecretSizeInBytes]));
+                byte[] info = new byte[1024];
+                info.AsSpan().Fill(0x3C);
+                byte[] associatedData = "associated data"u8.ToArray();
+
+                foreach (int length in new[] { 0, 1, 257 })
+                {
+                    byte[] plaintext = new byte[length];
+                    plaintext.AsSpan().Fill(0xA7);
+                    int ciphertextLength = suite.GetCiphertextLength(length);
+
+                    using (HpkeSender sender = key.CreateSender(out byte[] enc, info))
+                    {
+                        Assert.Same(suite, sender.Suite);
+                        Assert.Equal(suite.EncapsulatedSecretSizeInBytes, enc.Length);
+                        AssertExtensions.Throws<ArgumentException>(
+                            "ciphertext", () => sender.Seal(plaintext, new byte[ciphertextLength - 1].AsSpan(), associatedData));
+
+                        byte[] ciphertext = sender.Seal(plaintext, associatedData);
+                        Assert.Equal(plaintext, key.Open(enc, ciphertext, associatedData, info));
+
+                        byte[] nextCiphertext = sender.Seal(
+                            new ReadOnlySpan<byte>(plaintext), new ReadOnlySpan<byte>(associatedData));
+                        Assert.Equal(ciphertextLength, nextCiphertext.Length);
+                        Assert.NotEqual(ciphertext, nextCiphertext);
+                        Assert.Throws<AuthenticationTagMismatchException>(
+                            () => key.Open(enc, nextCiphertext, associatedData, info));
+                    }
+
+                    byte[] encBuffer = new byte[suite.EncapsulatedSecretSizeInBytes + 2];
+                    encBuffer.AsSpan().Fill(0xA5);
+
+                    using (HpkeSender sender = key.CreateSender(
+                        encBuffer.AsSpan(1, suite.EncapsulatedSecretSizeInBytes), info))
+                    {
+                        Assert.Same(suite, sender.Suite);
+                        Assert.Equal(0xA5, encBuffer[0]);
+                        Assert.Equal(0xA5, encBuffer[^1]);
+                        byte[] enc = encBuffer.AsSpan(1, suite.EncapsulatedSecretSizeInBytes).ToArray();
+                        byte[] ciphertextBuffer = new byte[ciphertextLength + 2];
+                        ciphertextBuffer.AsSpan().Fill(0xA5);
+                        sender.Seal(plaintext, ciphertextBuffer.AsSpan(1, ciphertextLength), associatedData);
+                        Assert.Equal(0xA5, ciphertextBuffer[0]);
+                        Assert.Equal(0xA5, ciphertextBuffer[^1]);
+                        Assert.Equal(plaintext, key.Open(
+                            enc, ciphertextBuffer.AsSpan(1, ciphertextLength), new ReadOnlySpan<byte>(associatedData), info));
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
+        public static void CreateSender_IndependentLifetime(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            byte[] ikm = new byte[suite.DecapsulationKeySizeInBytes];
+
+            try
+            {
+                using (Hpke key = Hpke.DeriveKey(suite, ikm))
+                using (Hpke peer = Hpke.DeriveKey(suite, ikm))
+                using (HpkeSender first = key.CreateSender(out byte[] firstEnc))
+                using (HpkeSender second = key.CreateSender(out byte[] secondEnc))
+                {
+                    key.Dispose();
+                    Assert.NotEqual(firstEnc, secondEnc);
+                    byte[] plaintext = "message"u8.ToArray();
+                    Assert.Equal(plaintext, peer.Open(firstEnc, first.Seal(plaintext)));
+
+                    first.Dispose();
+                    Assert.Throws<ObjectDisposedException>(() => first.Seal(plaintext));
+                    Assert.Equal(plaintext, peer.Open(secondEnc, second.Seal(plaintext)));
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(ikm);
             }
         }
 

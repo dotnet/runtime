@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Diagnostics;
+
 namespace System.Security.Cryptography
 {
     internal sealed class HpkeImplementation : Hpke
@@ -161,14 +164,137 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info) =>
-            throw new NotImplementedException();
+        protected override HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info)
+        {
+            const int MaxStackSecretLength = 64;
+            Span<byte> sharedSecretBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> keyBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> baseNonceBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> exporterSecretBuffer = stackalloc byte[MaxStackSecretLength];
+
+            try
+            {
+                Span<byte> sharedSecret = sharedSecretBuffer.Slice(0, Suite.KemMetadata.Nsecret);
+                Span<byte> key = keyBuffer.Slice(0, Suite.AeadMetadata.Nk);
+                Span<byte> baseNonce = baseNonceBuffer.Slice(0, Suite.AeadMetadata.Nn);
+                Span<byte> exporterSecret = exporterSecretBuffer.Slice(0, Suite.KdfMetadata.Nh);
+                _kemAdapter.Encapsulate(encapsulatedSecret, sharedSecret);
+
+                HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
+                kdf.DeriveSecrets(
+                    mode: 0,
+                    sharedSecret,
+                    info,
+                    psk: default,
+                    pskId: default,
+                    key,
+                    baseNonce,
+                    exporterSecret);
+
+                HpkeManagedAeadAdapter aead = HpkeManagedAeadAdapter.Create(Suite, key);
+
+                try
+                {
+                    return new HpkeSenderImplementation(Suite, aead, baseNonce);
+                }
+                catch
+                {
+                    aead.Dispose();
+                    throw;
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedSecretBuffer);
+                CryptographicOperations.ZeroMemory(keyBuffer);
+                CryptographicOperations.ZeroMemory(baseNonceBuffer);
+                CryptographicOperations.ZeroMemory(exporterSecretBuffer);
+            }
+        }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 _kemAdapter.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
+    internal sealed class HpkeSenderImplementation : HpkeSender
+    {
+        private readonly HpkeManagedAeadAdapter _aeadAdapter;
+        private readonly byte[] _baseNonce;
+        private ulong _sequenceNumber;
+
+        internal HpkeSenderImplementation(
+            HpkeSuite suite,
+            HpkeManagedAeadAdapter aeadAdapter,
+            ReadOnlySpan<byte> baseNonce) : base(suite)
+        {
+            Debug.Assert(baseNonce.Length == suite.AeadMetadata.Nn);
+            Debug.Assert(baseNonce.Length >= sizeof(ulong));
+
+            _baseNonce = baseNonce.ToArray();
+            _aeadAdapter = aeadAdapter;
+        }
+
+        protected override void SealCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> ciphertext,
+            ReadOnlySpan<byte> associatedData)
+        {
+            if (_sequenceNumber == ulong.MaxValue)
+            {
+                throw new CryptographicException(SR.Cryptography_HpkeMessageLimitReached);
+            }
+
+            const int MaxStackNonceLength = 12;
+            Span<byte> nonceBuffer = stackalloc byte[MaxStackNonceLength];
+
+            try
+            {
+                Span<byte> nonce = nonceBuffer.Slice(0, _baseNonce.Length);
+                _baseNonce.AsSpan().CopyTo(nonce);
+
+                // The zero-padded sequence number only affects the final eight nonce bytes.
+                // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
+                Span<byte> sequenceBytes = nonce.Slice(nonce.Length - sizeof(ulong));
+                BinaryPrimitives.WriteUInt64BigEndian(
+                    sequenceBytes,
+                    BinaryPrimitives.ReadUInt64BigEndian(sequenceBytes) ^ _sequenceNumber);
+
+                _aeadAdapter.Encrypt(
+                    plaintext,
+                    nonce,
+                    associatedData,
+                    ciphertext.Slice(0, plaintext.Length),
+                    ciphertext.Slice(plaintext.Length));
+                _sequenceNumber++;
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(nonceBuffer);
+            }
+        }
+
+        protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination) =>
+            throw new NotImplementedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                try
+                {
+                    _aeadAdapter.Dispose();
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(_baseNonce);
+                }
             }
 
             base.Dispose(disposing);
