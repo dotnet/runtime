@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
 using Xunit;
 using Microsoft.Interop.UnitTests;
 using Microsoft.CodeAnalysis.CSharp.Testing;
@@ -22,6 +25,9 @@ namespace JSImportGenerator.Unit.Tests
             yield return new object[] { CodeSnippets.TrivialClassDeclarations };
             yield return new object[] { CodeSnippets.AllDefault };
             yield return new object[] { CodeSnippets.AllAnnotated };
+            yield return new object[] { CodeSnippets.TaskAndDelegateSignatures };
+            yield return new object[] { CodeSnippets.NestedDeclarations };
+            yield return new object[] { CodeSnippets.EscapedIdentifiersAndLiterals };
             yield return new object[] { CodeSnippets.DefaultReturnMarshaler<int>() };
             yield return new object[] { CodeSnippets.DefaultReturnMarshaler<byte>() };
             yield return new object[] { CodeSnippets.DefaultReturnMarshaler<bool>() };
@@ -48,6 +54,134 @@ namespace JSImportGenerator.Unit.Tests
             Assert.Empty(generatorDiags);
 
             TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+        }
+
+        [Fact]
+        public void GeneratedLiteralsAndIdentifiersPreserveTheirValues()
+        {
+            Compilation compilation = TestUtils.CreateCompilation(CodeSnippets.EscapedIdentifiersAndLiterals);
+            GeneratorDriver driver = CreateTrackedDriver(compilation);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation generatedCompilation, out var diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
+
+            GeneratorDriverRunResult result = driver.GetRunResult();
+            InvocationExpressionSyntax[] imports = result.Results[0].GeneratedSources.Single().SyntaxTree.GetRoot()
+                .DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Where(static invocation => invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "BindJSFunction" })
+                .ToArray();
+            Assert.Equal(2, imports.Length);
+            Assert.Equal("function\"\\\r\n\0\u2028", Assert.IsType<LiteralExpressionSyntax>(imports[0].ArgumentList.Arguments[0].Expression).Token.ValueText);
+            Assert.Equal("module\"\\\t", Assert.IsType<LiteralExpressionSyntax>(imports[0].ArgumentList.Arguments[1].Expression).Token.ValueText);
+            Assert.Equal("", Assert.IsType<LiteralExpressionSyntax>(imports[1].ArgumentList.Arguments[0].Expression).Token.ValueText);
+            Assert.Equal("", Assert.IsType<LiteralExpressionSyntax>(imports[1].ArgumentList.Arguments[1].Expression).Token.ValueText);
+
+            SyntaxNode exports = result.Results[1].GeneratedSources.Single().SyntaxTree.GetRoot();
+            string[] wrappers = exports.DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .Select(static method => method.Identifier.ValueText)
+                .Where(static name => name.StartsWith("__Wrapper_", StringComparison.Ordinal))
+                .ToArray();
+            Assert.Equal(2, wrappers.Length);
+            Assert.StartsWith("__Wrapper_return_", wrappers[0], StringComparison.Ordinal);
+            Assert.StartsWith("__Wrapper_Export_", wrappers[1], StringComparison.Ordinal);
+
+            string[] registrations = exports.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Where(static invocation => invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "BindManagedFunction" })
+                .Select(static invocation => Assert.IsType<LiteralExpressionSyntax>(invocation.ArgumentList.Arguments[0].Expression).Token.ValueText)
+                .ToArray();
+            Assert.Equal(["[compilation]@namespace.@event.class:return", "[compilation]@namespace.@event.class:Export"], registrations);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void GeneratedSourcesUseValueEquality(bool changeSignature, bool useCallbacks)
+        {
+            string source = useCallbacks ? CodeSnippets.TaskAndDelegateSignatures : CodeSnippets.IncrementalGeneration;
+            Compilation compilation = TestUtils.CreateCompilation(source);
+            GeneratorDriver driver = CreateTrackedDriver(compilation);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation generatedCompilation, out var diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
+            GeneratorDriverRunResult originalResult = driver.GetRunResult();
+
+            string updatedSource = changeSignature
+                ? source.Replace("value", "renamed", StringComparison.Ordinal)
+                : source.Replace("=> value;", useCallbacks ? "=> value ?? throw new System.InvalidOperationException();" : "=> value + 1;", StringComparison.Ordinal);
+            SyntaxTree originalTree = compilation.SyntaxTrees.Single();
+            compilation = compilation.ReplaceSyntaxTree(originalTree, CSharpSyntaxTree.ParseText(updatedSource, (CSharpParseOptions)originalTree.Options));
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out generatedCompilation, out diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
+            GeneratorDriverRunResult updatedResult = driver.GetRunResult();
+
+            Assert.Equal(2, updatedResult.Results.Length);
+            for (int i = 0; i < updatedResult.Results.Length; i++)
+            {
+                GeneratorRunResult generated = updatedResult.Results[i];
+                var outputs = generated.TrackedSteps["GenerateSingleStub"].SelectMany(static step => step.Outputs).ToArray();
+                Assert.Equal(useCallbacks ? 4 : 1, outputs.Length);
+                foreach (var output in outputs)
+                {
+                    if (i == 0)
+                    {
+                        Assert.EndsWith("\r\n", Assert.IsType<string>(output.Value), StringComparison.Ordinal);
+                    }
+                    else
+                    {
+                        Assert.IsType<(string Source, string Registration, string Attribute)>(output.Value);
+                    }
+
+                    if (changeSignature)
+                    {
+                        Assert.Equal(IncrementalStepRunReason.Modified, output.Reason);
+                    }
+                    else
+                    {
+                        Assert.True(output.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged);
+                    }
+                }
+
+                string originalText = Assert.Single(originalResult.Results[i].GeneratedSources).SourceText.ToString();
+                string updatedText = Assert.Single(generated.GeneratedSources).SourceText.ToString();
+                Assert.StartsWith("// <auto-generated/>\r\n", updatedText, StringComparison.Ordinal);
+                string withoutLineEndings = updatedText.Replace("\r\n", "", StringComparison.Ordinal);
+                Assert.DoesNotContain("\n", withoutLineEndings);
+                Assert.DoesNotContain("\r", withoutLineEndings);
+                if (changeSignature)
+                {
+                    Assert.NotEqual(originalText, updatedText);
+                }
+                else
+                {
+                    Assert.Equal(originalText, updatedText);
+                    Assert.NotEmpty(generated.TrackedOutputSteps);
+                    Assert.All(generated.TrackedOutputSteps.Values.SelectMany(static steps => steps).SelectMany(static step => step.Outputs),
+                        static output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+                }
+            }
+        }
+
+        [Fact]
+        public void NoAttributedMethodsDoNotGenerateSources()
+        {
+            Compilation compilation = TestUtils.CreateCompilation("public class Basic { }");
+            GeneratorDriver driver = CreateTrackedDriver(compilation);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation generatedCompilation, out var diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
+            Assert.All(driver.GetRunResult().Results, static result => Assert.Empty(result.GeneratedSources));
+        }
+
+        private static GeneratorDriver CreateTrackedDriver(Compilation compilation)
+        {
+            return TestUtils.CreateDriver(
+                compilation,
+                null,
+                [new Microsoft.Interop.JavaScript.JSImportGenerator(), new Microsoft.Interop.JavaScript.JSExportGenerator()],
+                new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true));
         }
 
         [Fact]
@@ -313,7 +447,6 @@ namespace JSImportGenerator.Unit.Tests
                                         {
                                             __retVal_native = __InvokeJSFunction(____arg_exception_native, ____arg_return_native);
                                         }
-
                                         // UnmarshalCapture - Capture the native data into marshaller instances in case conversion to managed data throws an exception.
                                         __retVal_native.ToManaged(out __retVal, static (ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __task_result_arg, out int __task_result) =>
                                         {

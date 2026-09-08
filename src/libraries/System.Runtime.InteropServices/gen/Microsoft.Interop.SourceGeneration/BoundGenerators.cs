@@ -8,9 +8,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -244,12 +241,10 @@ namespace Microsoft.Interop
 
         public ImmutableArray<IBoundMarshallingGenerator> NativeParameterMarshallers { get; private init; }
 
-        public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData(StubIdentifierContext context)
+        public GeneratedMethodSignature GenerateTargetMethodSignatureData(StubIdentifierContext context)
         {
-            return (
-                ParameterList(
-                    SeparatedList(
-                        NativeParameterMarshallers.Select(marshaler => marshaler.AsParameter(context)))),
+            return new GeneratedMethodSignature(
+                NativeParameterMarshallers.Select(marshaller => marshaller.AsParameter(context)).ToImmutableArray(),
                 NativeReturnMarshaller.AsReturnType(),
                 NativeReturnMarshaller.GenerateAttributesForReturnType()
             );

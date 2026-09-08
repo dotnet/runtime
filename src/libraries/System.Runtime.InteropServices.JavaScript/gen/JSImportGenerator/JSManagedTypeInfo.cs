@@ -4,8 +4,6 @@
 using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -17,86 +15,38 @@ namespace Microsoft.Interop.JavaScript
             switch (type)
             {
                 case { SpecialType: SpecialType.System_Void }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Void)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Void, "void");
                 case { SpecialType: SpecialType.System_Boolean }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Boolean)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Boolean, "bool");
                 case { SpecialType: SpecialType.System_Byte }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Byte)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ByteKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Byte, "byte");
                 case { SpecialType: SpecialType.System_Char }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Char)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.CharKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Char, "char");
                 case { SpecialType: SpecialType.System_Int16 }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Int16)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ShortKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Int16, "short");
                 case { SpecialType: SpecialType.System_Int32 }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Int32)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.IntKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Int32, "int");
                 case { SpecialType: SpecialType.System_Int64 }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Int64)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.LongKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Int64, "long");
                 case { SpecialType: SpecialType.System_Single }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Single)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.FloatKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Single, "float");
                 case { SpecialType: SpecialType.System_Double }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Double)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Double, "double");
                 case { SpecialType: SpecialType.System_IntPtr }:
                 case IPointerTypeSymbol { PointedAtType.SpecialType: SpecialType.System_Void }:
-                    return new JSSimpleTypeInfo(KnownManagedType.IntPtr)
-                    {
-                        Syntax = SyntaxFactory.IdentifierName("nint")
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.IntPtr, "nint");
                 case { SpecialType: SpecialType.System_DateTime }:
-                    return new JSSimpleTypeInfo(KnownManagedType.DateTime)
-                    {
-                        Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.DateTime, fullTypeName);
                 case ITypeSymbol when fullTypeName == "global::System.DateTimeOffset":
-                    return new JSSimpleTypeInfo(KnownManagedType.DateTimeOffset)
-                    {
-                        Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.DateTimeOffset, fullTypeName);
                 case ITypeSymbol when fullTypeName == "global::System.Exception":
-                    return new JSSimpleTypeInfo(KnownManagedType.Exception)
-                    {
-                        Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Exception, fullTypeName);
                 case { SpecialType: SpecialType.System_Object }:
-                    return new JSSimpleTypeInfo(KnownManagedType.Object)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.Object, "object");
                 case { SpecialType: SpecialType.System_String }:
-                    return new JSSimpleTypeInfo(KnownManagedType.String)
-                    {
-                        Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword))
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.String, "string");
                 case ITypeSymbol when fullTypeName == "global::System.Runtime.InteropServices.JavaScript.JSObject":
-                    return new JSSimpleTypeInfo(KnownManagedType.JSObject)
-                    {
-                        Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
-                    };
+                    return new JSSimpleTypeInfo(KnownManagedType.JSObject, fullTypeName);
 
                 //nullable
                 case INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T } nullable:
@@ -116,7 +66,7 @@ namespace Microsoft.Interop.JavaScript
 
                 // task
                 case ITypeSymbol when fullTypeName == Constants.TaskGlobal:
-                    return new JSTaskTypeInfo(new JSSimpleTypeInfo(KnownManagedType.Void, SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))));
+                    return new JSTaskTypeInfo(new JSSimpleTypeInfo(KnownManagedType.Void, "void"));
                 case INamedTypeSymbol { TypeArguments.Length: 1 } taskType when fullTypeName.StartsWith(Constants.TaskGlobal, StringComparison.Ordinal):
                     if (CreateJSTypeInfoForTypeSymbol(taskType.TypeArguments[0]) is JSSimpleTypeInfo rti)
                     {
@@ -172,17 +122,9 @@ namespace Microsoft.Interop.JavaScript
         }
     }
 
-    internal sealed record JSInvalidTypeInfo() : JSSimpleTypeInfo(KnownManagedType.None);
+    internal sealed record JSInvalidTypeInfo() : JSSimpleTypeInfo(KnownManagedType.None, "");
 
-    internal record JSSimpleTypeInfo(KnownManagedType KnownType) : JSTypeInfo(KnownType)
-    {
-        public JSSimpleTypeInfo(KnownManagedType knownType, TypeSyntax syntax)
-            : this(knownType)
-        {
-            Syntax = syntax;
-        }
-        public TypeSyntax Syntax { get; init; }
-    }
+    internal record JSSimpleTypeInfo(KnownManagedType KnownType, string FullTypeName) : JSTypeInfo(KnownType);
 
     internal sealed record JSArrayTypeInfo(JSSimpleTypeInfo ElementTypeInfo) : JSTypeInfo(KnownManagedType.Array);
 
@@ -194,5 +136,26 @@ namespace Microsoft.Interop.JavaScript
 
     internal sealed record JSNullableTypeInfo(JSSimpleTypeInfo ResultTypeInfo) : JSTypeInfo(KnownManagedType.Nullable);
 
-    internal sealed record JSFunctionTypeInfo(bool IsAction, JSSimpleTypeInfo[] ArgsTypeInfo) : JSTypeInfo(IsAction ? KnownManagedType.Action : KnownManagedType.Function);
+    internal sealed record JSFunctionTypeInfo(bool IsAction, JSSimpleTypeInfo[] ArgsTypeInfo) : JSTypeInfo(IsAction ? KnownManagedType.Action : KnownManagedType.Function)
+    {
+        public bool Equals(JSFunctionTypeInfo? other)
+        {
+            return other is not null
+                && IsAction == other.IsAction
+                && ArgsTypeInfo.SequenceEqual(other.ArgsTypeInfo);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = IsAction.GetHashCode();
+                foreach (JSSimpleTypeInfo argument in ArgsTypeInfo)
+                {
+                    hash = hash * 31 + argument.GetHashCode();
+                }
+                return hash;
+            }
+        }
+    }
 }

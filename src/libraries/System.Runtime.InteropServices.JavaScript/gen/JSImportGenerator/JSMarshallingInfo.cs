@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
 
 namespace Microsoft.Interop.JavaScript
@@ -25,6 +26,24 @@ namespace Microsoft.Interop.JavaScript
         public JSMarshallingInfo AddElementDependencies(IEnumerable<TypePositionInfo> elementDependencies)
         {
             return this with { _elementDependencies = _elementDependencies.AddRange(elementDependencies) };
+        }
+
+        public virtual bool Equals(JSMarshallingInfo? other)
+        {
+            return other is not null
+                && EqualityContract == other.EqualityContract
+                && Inner == other.Inner
+                && TypeInfo == other.TypeInfo
+                && JSType == other.JSType
+                && (JSTypeArguments is null
+                    ? other.JSTypeArguments is null
+                    : other.JSTypeArguments is not null && JSTypeArguments.SequenceEqual(other.JSTypeArguments))
+                && _elementDependencies.SequenceEqual(other._elementDependencies);
+        }
+
+        public override int GetHashCode()
+        {
+            throw new UnreachableException();
         }
     }
 
