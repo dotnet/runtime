@@ -166,19 +166,20 @@ public class WasmTemplateTestsBase : BuildTestBase
         """;
         extraItems +=
         $$"""
-            <KnownFrameworkReference Update="Microsoft.NETCore.App">
-              <TargetingPackVersion>{{runtimePackVersion}}</TargetingPackVersion>
-              <DefaultRuntimeFrameworkVersion>{{runtimePackVersion}}</DefaultRuntimeFrameworkVersion>
-              <LatestRuntimeFrameworkVersion>{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
-              <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+            <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                     Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+              <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
+              <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+              <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
             </KnownFrameworkReference>
         """;
         insertAtEnd +=
         $$"""
-            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences"
+                    Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
                 <ItemGroup>
                 <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
+                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
                 </KnownWebAssemblySdkPack>
                 </ItemGroup>
             </Target>
