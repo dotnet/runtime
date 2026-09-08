@@ -17,7 +17,6 @@ namespace System
         private const uint HashPrime1 = 0x9E3779B1u;
         private const uint HashPrime2 = 0x85EBCA77u;
         private const uint HashPrime3 = 0xC2B2AE3Du;
-        private const uint HashPrime4 = 0x27D4EB2Fu;
         private const ulong HashSeed1 = 0x9E3779B185EBCA87;
         private const ulong HashSeed2 = 0xC2B2AE3D27D4EB4F;
 
@@ -179,60 +178,64 @@ namespace System
             (BitOperations.RotateLeft(hash, 5) + hash) ^ value;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong RoundNonRandomizedHash64(ulong hash, ulong value) =>
+            (hash + (hash << 5)) ^ value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetNonRandomizedHashCodeLong<TCasing>(ReadOnlySpan<byte> span, int byteLength,
-            uint h0 = 0, uint h1 = 0, uint h2 = 0, uint h3 = 0, uint tailHash = 0) where TCasing : struct, IHashCasing
+            ulong h0 = 0, ulong h1 = 0, ulong h2 = 0, ulong h3 = 0, uint tailHash = 0) where TCasing : struct, IHashCasing
         {
-            uint length = (uint)byteLength;
+            ulong length = (uint)byteLength;
             int initialLength = span.Length;
             if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<uint> hash = initialLength == byteLength
-                    ? Vector128.Create(length) + Vector128.Create(HashPrime1, HashPrime2, HashPrime3, HashPrime4)
-                    : Vector128.Create(h0, h1, h2, h3);
-                while (span.Length >= 16)
+                Vector128<ulong> hash0 = initialLength == byteLength
+                    ? Vector128.Create(length) + Vector128.Create(HashSeed1, HashSeed2)
+                    : Vector128.Create(h0, h1);
+                Vector128<ulong> hash1 = initialLength == byteLength
+                    ? Vector128.Create(length) + Vector128.Create(~HashSeed1, ~HashSeed2)
+                    : Vector128.Create(h2, h3);
+                while (span.Length >= 32)
                 {
-                    Vector128<uint> value = Vector128.Create(span).AsUInt32();
-                    if (!Vector128.EqualsAll(value & Vector128.Create((uint)TCasing.NonAsciiMask), Vector128<uint>.Zero))
-                        return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, byteLength, hash.GetElement(0), hash.GetElement(1), hash.GetElement(2), hash.GetElement(3));
-                    value |= Vector128.Create((uint)TCasing.LowercaseMask);
-                    hash = (((hash << 5) | (hash >> 27)) + hash) ^ value;
-                    span = span.Slice(16);
+                    Vector128<ulong> value0 = Vector128.Create(span).AsUInt64();
+                    Vector128<ulong> value1 = Vector128.Create(span.Slice(16)).AsUInt64();
+                    if (!Vector128.EqualsAll((value0 | value1) & Vector128.Create(TCasing.NonAsciiMask), Vector128<ulong>.Zero))
+                        return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, byteLength, hash0.GetElement(0), hash0.GetElement(1), hash1.GetElement(0), hash1.GetElement(1));
+                    value0 |= Vector128.Create(TCasing.LowercaseMask);
+                    value1 |= Vector128.Create(TCasing.LowercaseMask);
+                    hash0 = (hash0 + (hash0 << 5)) ^ value0;
+                    hash1 = (hash1 + (hash1 << 5)) ^ value1;
+                    span = span.Slice(32);
                 }
-                h0 = hash.GetElement(0);
-                h1 = hash.GetElement(1);
-                h2 = hash.GetElement(2);
-                h3 = hash.GetElement(3);
+                h0 = hash0.GetElement(0);
+                h1 = hash0.GetElement(1);
+                h2 = hash1.GetElement(0);
+                h3 = hash1.GetElement(1);
             }
             else
             {
                 if (initialLength == byteLength)
                 {
-                    h0 = length + HashPrime1;
-                    h1 = length + HashPrime2;
-                    h2 = length + HashPrime3;
-                    h3 = length + HashPrime4;
+                    h0 = length + HashSeed1;
+                    h1 = length + HashSeed2;
+                    h2 = length + ~HashSeed1;
+                    h3 = length + ~HashSeed2;
                 }
-                while (span.Length >= 16)
+                while (span.Length >= 32)
                 {
                     ulong first = BitConverter.ToUInt64(span), second = BitConverter.ToUInt64(span.Slice(8));
-                    if (((first | second) & TCasing.NonAsciiMask) != 0)
+                    ulong third = BitConverter.ToUInt64(span.Slice(16)), fourth = BitConverter.ToUInt64(span.Slice(24));
+                    if (((first | second | third | fourth) & TCasing.NonAsciiMask) != 0)
                         return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(span, byteLength, h0, h1, h2, h3);
-                    first |= TCasing.LowercaseMask;
-                    second |= TCasing.LowercaseMask;
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        first = BitOperations.RotateLeft(first, 32);
-                        second = BitOperations.RotateLeft(second, 32);
-                    }
-                    h0 = RoundNonRandomizedHash(h0, (uint)first);
-                    h1 = RoundNonRandomizedHash(h1, (uint)(first >> 32));
-                    h2 = RoundNonRandomizedHash(h2, (uint)second);
-                    h3 = RoundNonRandomizedHash(h3, (uint)(second >> 32));
-                    span = span.Slice(16);
+                    h0 = RoundNonRandomizedHash64(h0, first | TCasing.LowercaseMask);
+                    h1 = RoundNonRandomizedHash64(h1, second | TCasing.LowercaseMask);
+                    h2 = RoundNonRandomizedHash64(h2, third | TCasing.LowercaseMask);
+                    h3 = RoundNonRandomizedHash64(h3, fourth | TCasing.LowercaseMask);
+                    span = span.Slice(32);
                 }
             }
-            uint result = initialLength >= 16 ? h0 + BitOperations.RotateLeft(h1, 7) +
-                BitOperations.RotateLeft(h2, 13) + BitOperations.RotateLeft(h3, 21) : tailHash;
+            uint result = initialLength >= 32 ? (uint)MixNonRandomizedHash(
+                h0 + BitOperations.RotateLeft(h1, 23), h2 + BitOperations.RotateLeft(h3, 37)) : tailHash;
             while (span.Length >= 4)
             {
                 uint value = BitConverter.ToUInt32(span);
@@ -256,7 +259,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ReadOnlySpan<byte> remaining, int byteLength,
-            uint h0 = 0, uint h1 = 0, uint h2 = 0, uint h3 = 0, uint tailHash = 0)
+            ulong h0 = 0, ulong h1 = 0, ulong h2 = 0, ulong h3 = 0, uint tailHash = 0)
         {
             int length = remaining.Length / sizeof(char);
             char[]? borrowedSource = null, borrowedScratch = null;
