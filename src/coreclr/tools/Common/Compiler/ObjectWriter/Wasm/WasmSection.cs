@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -114,6 +116,87 @@ namespace ILCompiler.ObjectWriter
         {
             Type = type;
         }
+    }
+
+    internal abstract class WasmCustomSection : WasmSection
+    {
+        protected WasmCustomSection(Stream stream, Utf8String customSectionName, int sectionIndex)
+            : base(WasmSectionType.Custom, stream, customSectionName, sectionIndex)
+        {
+            Debug.Assert(stream is not null);
+            Debug.Assert(!customSectionName.IsNull);
+        }
+
+        protected sealed override int ContentPrefixSize => checked(
+            (int)DwarfHelper.SizeOfULEB128((ulong)SectionName.Length) +
+            SectionName.Length +
+            CustomPayloadPrefixSize);
+
+        protected sealed override int EncodeContentPrefix(Span<byte> destination)
+        {
+            int bytesWritten = DwarfHelper.WriteULEB128(destination, (ulong)SectionName.Length);
+            SectionName.AsSpan().CopyTo(destination.Slice(bytesWritten));
+            bytesWritten += SectionName.Length;
+            return bytesWritten + EncodeCustomPayloadPrefix(destination.Slice(bytesWritten));
+        }
+
+        protected virtual int CustomPayloadPrefixSize => 0;
+
+        protected virtual int EncodeCustomPayloadPrefix(Span<byte> destination) => 0;
+    }
+
+    internal sealed class PaddingWasmSection : IWasmSection
+    {
+        private const int MinimumSectionSize = 3;
+
+        private readonly int _size;
+        public PaddingWasmSection(int followingSectionAlignment, long currentOffset)
+        {
+            if (followingSectionAlignment is 1 or 0 || currentOffset % followingSectionAlignment == 0)
+            {
+                _size = 0;
+                return;
+            }
+
+            int padding = (int)(AlignmentHelper.AlignUp(currentOffset, followingSectionAlignment) - currentOffset);
+            if (padding < MinimumSectionSize)
+            {
+                padding += followingSectionAlignment;
+            }
+            _size = padding;
+            Debug.Assert(DwarfHelper.SizeOfULEB128((ulong)_size) <= 5);
+        }
+
+        public WasmSectionType Type => WasmSectionType.Custom;
+
+        public int EmitToStream(Stream outputFileStream)
+        {
+            if (_size == 0)
+            {
+                return 0;
+            }
+            int sectionSizeEncodingLength = 1;
+            int sectionPayloadLength = 0;
+            for (; sectionSizeEncodingLength <= 5; sectionSizeEncodingLength++)
+            {
+                sectionPayloadLength = _size - 1 - sectionSizeEncodingLength;
+                if (DwarfHelper.SizeOfULEB128((ulong)sectionPayloadLength) <= sectionSizeEncodingLength)
+                {
+                    break;
+                }
+            }
+
+            Span<byte> header = stackalloc byte[1 + sectionSizeEncodingLength];
+            header[0] = (byte)WasmSectionType.Custom;
+            DwarfHelper.WritePaddedULEB128(header.Slice(1), (ulong)sectionPayloadLength);
+            outputFileStream.Write(header);
+            WasmDataSegmentEncoding.EmitPadding(outputFileStream, sectionPayloadLength);
+
+            Debug.Assert(header.Length + sectionPayloadLength == _size);
+            return _size;
+        }
+
+        public int EncodeSize() => _size;
     }
 
     internal abstract class WasmVectorSection : WasmSection

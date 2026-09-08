@@ -7,7 +7,6 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <InvariantTimezone>true</InvariantTimezone>
-    <WasmWarnOnUnresolvedPInvokeModules>false</WasmWarnOnUnresolvedPInvokeModules>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -3041,10 +3041,19 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             fgIncorporateBlockCounts();
         }
 
-        // We now always run repair, to get consistent initial counts
+        // Repair retains existing likelihoods. If the counts were discarded,
+        // start over and let the normal heuristics set them.
         //
-        JITDUMP("\nRepairing profile...\n");
-        ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+        if (fgPgoHaveWeights)
+        {
+            JITDUMP("\nRepairing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+        }
+        else
+        {
+            JITDUMP("\nSynthesizing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::ResetAndSynthesize);
+        }
     }
 
 #ifdef DEBUG

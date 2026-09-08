@@ -6,7 +6,6 @@
 parameters:
   isExtraPlatformsBuild: false
   isAndroidEmulatorOnlyBuild: false
-  isRollingBuild: false
   useHelixMonitor: false
 
 jobs:
