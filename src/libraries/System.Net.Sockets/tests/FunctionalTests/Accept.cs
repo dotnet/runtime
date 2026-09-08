@@ -513,13 +513,11 @@ namespace System.Net.Sockets.Tests
                 using Socket ipv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
                 using Socket ipv4 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
 
-                Task connect6 = ipv6.ConnectAsync(IPAddress.IPv6Loopback, port);
-                Task connect4 = ipv4.ConnectAsync(IPAddress.Loopback, port);
-                await Task.WhenAll(connect6, connect4).WaitAsync(TimeSpan.FromSeconds(5));
-
+                await ipv4.ConnectAsync(IPAddress.Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
                 ipv4.LingerState = new LingerOption(true, 0);
                 ipv4.Close();
 
+                await ipv6.ConnectAsync(IPAddress.IPv6Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
                 byte[] message = [42];
                 Assert.Equal(message.Length, ipv6.Send(message));
 
