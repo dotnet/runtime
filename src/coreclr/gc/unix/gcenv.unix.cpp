@@ -1029,6 +1029,10 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 }
 
 #if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64))
+#ifndef MAP_FIXED_NOREPLACE
+#define MAP_FIXED_NOREPLACE 0x100000
+#endif
+
 // Check whether the user virtual address space of this process extends up to (1 << vaBits)
 // by trying to map the last page below that boundary at a fixed address.
 // Parameters:
