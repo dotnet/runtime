@@ -1660,8 +1660,6 @@ namespace ComWrappersTests
             // the cache holds that handle, so the entry dies here rather than after finalization.
             Assert.False(first.TryGetTarget(out _));
 
-            // Verify the replacement is usable before the helper abandons its strong reference.
-            // Once only the weak reference remains, a GC may collect the wrapper at any time.
             WeakReference<object> second = CreateAndAbandonWrapper(cw, comWrapper);
 
             // Now let the wrapper finalizers run, which is what removes entries, and check the cache is
@@ -1694,8 +1692,7 @@ namespace ComWrappersTests
                 var wrapper = (ManualReleaseITestObjectWrapper)cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
                 var reference = new WeakReference<object>(wrapper);
 
-                Assert.True(reference.TryGetTarget(out object? target));
-                Assert.True(ComWrappers.TryGetComInstance(target, out IntPtr unknown));
+                Assert.True(ComWrappers.TryGetComInstance(wrapper, out IntPtr unknown));
                 Marshal.Release(unknown);
 
                 wrapper.FinalRelease();
