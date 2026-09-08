@@ -481,7 +481,8 @@ enum BasicBlockFlags : uint64_t
     // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
     // we don't know (unless we actually pay close attention during the copy).
 
-    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS | \
+                         BBF_RECURSIVE_TAILCALL,
 };
 
 FORCEINLINE
