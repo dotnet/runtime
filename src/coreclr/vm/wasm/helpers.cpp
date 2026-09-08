@@ -1576,18 +1576,8 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
 
 void* GetVirtualDispatchThunk(MethodDesc *pMD)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (pMD->ContainsGenericVariables())
-    {
-        return NULL;
-    }
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!pMD->ContainsGenericVariables());
 
     MetaSig sig(pMD);
     return ComputePortableEntryPointThunk(sig, 'V', true /* wasmCallingConventionOnly */);

@@ -2786,10 +2786,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
     //
 
     PCODE         pCode   = (PCODE)NULL;
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
     void* virtualDispatchTarget = nullptr;
     DWORD packedVirtualDispatchOffsets = 0;
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     PreserveLastErrorHolder preserveLastError;
 
@@ -3072,7 +3072,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 }
             }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
             if (!pMT->IsInterface())
             {
                 virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
@@ -3091,7 +3091,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 packedVirtualDispatchOffsets =
                     offsetOfIndirection | (offsetAfterIndirection << 16);
             }
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             _ASSERTE(pCode != (PCODE)NULL);
         }
         else
@@ -3135,22 +3135,17 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
-#ifdef TARGET_WASM
     if (virtualDispatchTarget != nullptr)
     {
-        static_assert(offsetof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT, Target) == 0);
-        static_assert(offsetof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT, PackedDispatchOffsets) == 4);
-        static_assert(offsetof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT, InitialEntry) == 8);
-
         READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT** ppImportEntry =
             reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT**>(pIndirection);
         READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pCurrentEntry = VolatileLoad(ppImportEntry);
 
         if (pCurrentEntry->Target != virtualDispatchTarget)
         {
-            AllocMemHolder<READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT> pNewEntry(
+            AllocMemHolder<VirtualDispatchPortableEntryPoint> pNewEntry(
                 pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
-                    S_SIZE_T(sizeof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT))));
+                    S_SIZE_T(sizeof(VirtualDispatchPortableEntryPoint))));
             pNewEntry->Target = virtualDispatchTarget;
             pNewEntry->PackedDispatchOffsets = packedVirtualDispatchOffsets;
             pNewEntry->InitialEntry = pCurrentEntry;
@@ -3159,7 +3154,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 InterlockedCompareExchangeT(
                     ppImportEntry,
                     reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT*>(
-                        static_cast<READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT*>(pNewEntry)),
+                        static_cast<VirtualDispatchPortableEntryPoint*>(pNewEntry)),
                     pCurrentEntry);
             if (pPublishedEntry == pCurrentEntry)
             {
@@ -3167,8 +3162,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
             }
         }
     }
-#endif // TARGET_WASM
-#endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
