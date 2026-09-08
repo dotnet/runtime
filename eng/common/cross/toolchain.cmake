@@ -333,6 +333,51 @@ if(TARGET_ARCH_NAME MATCHES "^(arm|armel)$")
   if(TARGET_ARCH_NAME STREQUAL "armel")
     add_compile_options(-mfloat-abi=softfp)
   endif()
+elseif(TARGET_ARCH_NAME STREQUAL "riscv64")
+  # The ISA string and the ABI have to be settled here rather than in
+  # configurecompiler.cmake alone: cmake compiles and links its own probes at
+  # project() time, and a probe built for a different ABI than the sysroot fails
+  # to link, so the compiler is reported as broken before the build starts.
+  #
+  # Both are unset by default, which leaves the toolchain's own defaults in
+  # place. They may also come from the environment, the way CROSS_ROOTFS,
+  # TARGET_BUILD_ARCH and TOOLCHAIN already do, so that a build driven through a
+  # superproject can select them without reaching the cmake command line.
+  if(DEFINED ENV{CLR_CMAKE_RISCV64_MARCH})
+    set(CLR_CMAKE_RISCV64_MARCH "$ENV{CLR_CMAKE_RISCV64_MARCH}")
+  endif()
+  if(DEFINED ENV{CLR_CMAKE_RISCV64_MABI})
+    set(CLR_CMAKE_RISCV64_MABI "$ENV{CLR_CMAKE_RISCV64_MABI}")
+  endif()
+
+  set(_riscv64_isa_flags "")
+  if(DEFINED CLR_CMAKE_RISCV64_MARCH)
+    string(APPEND _riscv64_isa_flags " -march=${CLR_CMAKE_RISCV64_MARCH}")
+  endif()
+  if(DEFINED CLR_CMAKE_RISCV64_MABI)
+    string(APPEND _riscv64_isa_flags " -mabi=${CLR_CMAKE_RISCV64_MABI}")
+  endif()
+
+  if(NOT _riscv64_isa_flags STREQUAL "")
+    # *_FLAGS_INIT rather than add_compile_options: a try_compile runs as its own
+    # project and does not inherit directory properties, so the probe would still
+    # be built for the compiler's default ABI and fail against the sysroot.
+    string(APPEND CMAKE_C_FLAGS_INIT "${_riscv64_isa_flags}")
+    string(APPEND CMAKE_CXX_FLAGS_INIT "${_riscv64_isa_flags}")
+    string(APPEND CMAKE_ASM_FLAGS_INIT "${_riscv64_isa_flags}")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS_INIT "${_riscv64_isa_flags}")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS_INIT "${_riscv64_isa_flags}")
+  endif()
+
+  # Without the A extension the compiler lowers C/C++ atomics to __atomic_*
+  # calls instead of emitting lr/sc, and those live in libatomic. Not every link
+  # in the tree passes -latomic on its own.
+  if(DEFINED CLR_CMAKE_RISCV64_MARCH AND NOT CLR_CMAKE_RISCV64_MARCH MATCHES "a")
+    add_toolchain_linker_flag("-latomic")
+  endif()
+
+  # persist variables across multiple try_compile passes
+  list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES CLR_CMAKE_RISCV64_MARCH CLR_CMAKE_RISCV64_MABI)
 elseif(TARGET_ARCH_NAME STREQUAL "s390x")
   add_compile_options("--target=${TOOLCHAIN}")
 elseif(TARGET_ARCH_NAME STREQUAL "x86")
