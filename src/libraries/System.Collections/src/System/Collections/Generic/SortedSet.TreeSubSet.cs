@@ -22,7 +22,7 @@ namespace System.Collections.Generic
             // not up to date -> _countVersion < _underlying.version
             private int _countVersion;
             // level of the subsets root from the underlying roots.
-            // Is up-to date if _countVersion = _underlying.version
+            // Is up-to date if version = _underlying.version
             private int _rootLevel;
             // these exist for unbounded collections
             // for instance, you could allow this subset to be defined for i > 10. The set will throw if
