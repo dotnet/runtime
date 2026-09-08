@@ -12,10 +12,6 @@
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
 
-#if defined(HOST_IOS)
-#include <TargetConditionals.h>
-#endif
-
 #include "vars.hpp"
 #include <limits.h>
 #include "ilformatter.h"
@@ -4824,10 +4820,10 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
     // We shouldn't have been asked to map an already bound patch
     _ASSERTE( !dcp->IsBound() );
 
-#if defined(HOST_IOS) && !TARGET_OS_SIMULATOR
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
     if (ExecutionManager::IsReadyToRunCode(dac_cast<PCODE>(djiTo->m_addrOfCode)))
     {
-        // Leave deferred patches unbound because physical iOS cannot patch R2R code.
+        // Leave deferred patches unbound because this configuration cannot patch R2R code.
         return S_OK;
     }
 #endif
@@ -8922,7 +8918,7 @@ void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
     if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
         return;
 
-#if defined(HOST_IOS) && !TARGET_OS_SIMULATOR
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
     DebuggerController::CancelOutstandingThreadStarter(pRuntimeThread);
 #endif
 

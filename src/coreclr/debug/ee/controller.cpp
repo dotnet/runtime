@@ -16,9 +16,6 @@
 #include "../inc/common.h"
 #include "eeconfig.h"
 
-#if defined(HOST_IOS)
-#include <TargetConditionals.h>
-#endif
 #include "../../vm/methoditer.h"
 #include "../../vm/tailcallhelp.h"
 
@@ -1861,11 +1858,11 @@ BOOL DebuggerController::CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address,
     LOG((LF_CORDB|LF_ENC,LL_INFO1000,"DC::ActivatePatch: patchId:0x%zx\n", patch->patchId));
     patch->LogInstance();
 
-#if defined(HOST_IOS) && !TARGET_OS_SIMULATOR
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
     if (ExecutionManager::IsReadyToRunCode(dac_cast<PCODE>(patch->address)))
     {
         LOG((LF_CORDB, LL_INFO10000,
-            "DC::ActivatePatch: R2R patch at %p is not supported on physical iOS\n",
+            "DC::ActivatePatch: R2R patch at %p is not supported when dynamic code compilation is disabled\n",
             patch->address));
         return false;
     }
@@ -2035,6 +2032,15 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
     BOOL result = FALSE;
     MethodDesc* pMD = dji->m_nativeCodeVersion.GetMethodDesc();
 
+#ifdef _DEBUG
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    bool isReadyToRunPatchUnsupported =
+        ExecutionManager::IsReadyToRunCode(dac_cast<PCODE>(dji->m_addrOfCode));
+#else
+    constexpr bool isReadyToRunPatchUnsupported = false;
+#endif
+#endif
+
     if (primary->offsetIsIL == 0)
     {
         // Zero is the only native offset that we allow to bind across different jitted
@@ -2056,9 +2062,11 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         }
 #endif // FEATURE_INTERPRETER
 
-        result = AddBindAndActivatePatchForMethodDesc(pMD, dji,
+        BOOL fOk = AddBindAndActivatePatchForMethodDesc(pMD, dji,
             nativeOffset, PATCH_KIND_IL_REPLICA,
             LEAF_MOST_FRAME, m_pAppDomain);
+        _ASSERTE(fOk || isReadyToRunPatchUnsupported);
+        result = fOk;
     }
     else // bind by IL offset
     {
@@ -2085,9 +2093,11 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
                 continue;
             }
 
-            result = AddBindAndActivatePatchForMethodDesc(pMD, dji,
+            BOOL fOk = AddBindAndActivatePatchForMethodDesc(pMD, dji,
                 offsetNative, PATCH_KIND_IL_REPLICA,
-                LEAF_MOST_FRAME, m_pAppDomain) || result;
+                LEAF_MOST_FRAME, m_pAppDomain);
+            _ASSERTE(fOk || isReadyToRunPatchUnsupported);
+            result = fOk || result;
         }
     }
 
@@ -2557,7 +2567,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
         LOG((LF_CORDB, LL_INFO10000,
              "Setting managed trace patch at 0x%p(%p)\n", (void*)trace->GetAddress(), fp.GetSPValue()));
 
-#if defined(HOST_IOS) && !TARGET_OS_SIMULATOR
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
         // Resolving debug information can recursively bind pending patches. Reject
         // unpatchable R2R code before entering that path.
         if (ExecutionManager::IsReadyToRunCode(trace->GetAddress()))
