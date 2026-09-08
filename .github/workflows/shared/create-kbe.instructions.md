@@ -76,10 +76,10 @@ uses `user.login` to recognize trusted bots before filtering search results.
    identifier, derive two bounded, verbatim fragments:
    - an invariant error phrase from `ErrorMessage` / `ErrorPattern`, removing
      only volatile paths, line numbers, hashes, GUIDs, timestamps, and exit
-     codes; keep a distinctive 1–8 word literal fragment and reject generic
+     codes; keep a distinctive 1-8 word literal fragment and reject generic
      tool or build-failed text;
    - a leg root from `Build error leg or test failing`, taking the leg portion
-     before the template's final `-` separator (commonly rendered as ` - `),
+     before the last hyphen (whether rendered as ` - ` or `-`),
      then removing platform, architecture, configuration, retry, and
      parenthesized run-specific details; keep at most 4 distinctive words
      (80 characters).
@@ -90,8 +90,9 @@ uses `user.login` to recognize trusted bots before filtering search results.
    result as a candidate only when both fragments match and the full candidate
    verification below succeeds. If more than one candidate remains plausible,
    do not guess: record `skipped: ambiguous dup #<a>/#<b>, needs human review`.
-   If either fragment cannot be bounded, do not broaden the search; record the
-   existing `skipped: weak signature` outcome instead.
+   If either fragment cannot be bounded, skip variation 8 without broadening
+   the search and continue the normal flow. Reserve `skipped: weak signature`
+   for failures whose error signature itself does not meet the specificity bar.
 
 When a failure includes a complete test method identifier, search that
 identifier verbatim before deriving any shorter stem. Do not truncate
@@ -147,6 +148,14 @@ candidates:
   across runs and survives cases where the predecessor was integrity-filtered or
   cross-linked rather than directly readable.
 
+For a build break with no test or method identifier, when the open variation 8
+search misses, also search recently closed KBEs with the same pair:
+
+- `is:issue is:closed label:"Known Build Error" in:body "<invariant-error-phrase>" "<leg-root>" closed:>=<30-days-ago>`
+
+Apply the closed-candidate timing and full candidate-verification rules below
+to any pair match.
+
 On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
 it from the build metadata, not the queue time) against the issue's `closed_at`:
 
@@ -166,8 +175,12 @@ lets a recurring signature surface at all. If that widened scan returns **two or
 more** closed `[ci-scan]` predecessors sharing the stem, treat it as a recurring
 signature, not a fresh regression: do **not** file — record `existing-kbe #<n>`
 against the most recently closed predecessor, even if the current build finished
-after that predecessor's `closed_at`. Fewer than two hits is not a recurring
-signature; fall back to the post-close recurrence rule above.
+after that predecessor's `closed_at`. For a build break with no test or method
+identifier, use the invariant-error-phrase + leg-root pair instead of a
+test-name stem and widen the pair search to `closed:>=<90-days-ago>`; two or
+more closed `[ci-scan]` predecessors matching both fragments have the same
+recurring-signature outcome. Fewer than two hits is not a recurring signature;
+fall back to the post-close recurrence rule above.
 
 <a id="search-area-team-tracker"></a>
 
@@ -177,6 +190,14 @@ Search for a plain tracker with:
 
 - `is:issue is:open in:title "<test-name>"`
 - `in:body "<test-file-path>"`
+
+For a build break with no test or method identifier, also search the pair from
+variation 8 without a label filter:
+
+- `is:issue is:open in:body "<invariant-error-phrase>" "<leg-root>"`
+
+Treat a matching unlabelled issue as `linked-tracker #<n>` and apply the same
+two-fragment verification and ambiguity rules before recording it.
 
 On hit, record `linked-tracker #<n>`.
 
