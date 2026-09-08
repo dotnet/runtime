@@ -202,6 +202,17 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        public void MessageSubject_MixedAsciiAndEncodedUnicode_Accepted()
+        {
+            _message.From = new MailAddress("from@example.com");
+
+            _message.Subject = "Report =?utf-8?B?Y2Fmw6kudHh0?=";
+
+            Assert.Equal(Encoding.UTF8, _message.SubjectEncoding);
+            Assert.Equal("Report caf\u00e9.txt", _message.Subject);
+        }
+
+        [Fact]
         public void MessageSubject_UnknownEncodingEncodedUnicode_Accepted()
         {
             _message.From = new MailAddress("from@example.com");

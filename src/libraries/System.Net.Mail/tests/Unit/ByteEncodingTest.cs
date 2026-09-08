@@ -45,6 +45,27 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
+        [InlineData("B")]
+        [InlineData("b")]
+        public void DecodeHeaderValue_Base64EncodingIdentifier_IsCaseInsensitive(string encodingIdentifier)
+        {
+            Assert.Equal("caf\u00e9.txt", MimeBasePart.DecodeHeaderValue($"=?utf-8?{encodingIdentifier}?Y2Fmw6kudHh0?="));
+        }
+
+        [Theory]
+        [InlineData("Report =?utf-8?B?Y2Fmw6kudHh0?=", "Report caf\u00e9.txt")]
+        [InlineData("=?utf-8?B?Y2Fmw6kudHh0?= attached", "caf\u00e9.txt attached")]
+        [InlineData("Report =?utf-8?B?Y2Fmw6kudHh0?= attached", "Report caf\u00e9.txt attached")]
+        [InlineData(" =?utf-8?B?Y2Fmw6kudHh0?= ", " caf\u00e9.txt ")]
+        [InlineData("=?utf-8?B?Y2Fm?= \r\n\t=?utf-8?B?w6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("Report =?utf-8?X?Y2Fmw6kudHh0?=", "Report =?utf-8?X?Y2Fmw6kudHh0?=")]
+        [InlineData("Report=?utf-8?B?Y2Fmw6kudHh0?=", "Report=?utf-8?B?Y2Fmw6kudHh0?=")]
+        public void DecodeHeaderValue_MixedAsciiAndEncodedWords_DecodesTokens(string value, string expected)
+        {
+            Assert.Equal(expected, MimeBasePart.DecodeHeaderValue(value));
+        }
+
+        [Theory]
         [InlineData("some test header to base64", 1)]
         [InlineData("some test header to base64asdf \xE9\xE5 encode that contains some unicode \xE5 \xF8\xEE asdf\xE9\xE5 and is really really long and stuff ", 3)]
         public void EncoderAndDecoder_WithQEncodedString_AndNoUnicode_AndShortHeader_ShouldEncodeAndDecode(

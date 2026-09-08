@@ -150,6 +150,17 @@ namespace System.Net.Mime.Tests
             Assert.Empty(ct.Parameters);
         }
 
+        [Theory]
+        [InlineData("=?utf-8?B?Y2Fmw6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("=?utf-8?b?Y2Fmw6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("Report =?utf-8?B?Y2Fmw6kudHh0?=", "Report caf\u00e9.txt")]
+        public static void Name_EncodedWords_AreDecoded(string value, string expected)
+        {
+            var ct = new ContentType($"application/octet-stream; name=\"{value}\"");
+
+            Assert.Equal(expected, ct.Name);
+        }
+
         [Fact]
         public static void MediaType_Set_InvalidArgs_Throws()
         {

@@ -43,8 +43,6 @@ namespace System.Net.Mime
             return stream.GetEncodedString();
         }
 
-        private static readonly char[] s_headerValueSplitChars = new char[] { '\r', '\n', ' ' };
-
         internal static string DecodeHeaderValue(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -52,45 +50,60 @@ namespace System.Net.Mime
                 return string.Empty;
             }
 
-            string newValue = string.Empty;
+            StringBuilder decodedValue = new StringBuilder(value.Length);
+            ReadOnlySpan<char> valueSpan = value;
+            bool decodedAny = false;
+            bool previousTokenWasEncoded = false;
+            int current = 0;
 
-            //split strings, they may be folded.  If they are, decode one at a time and append the results
-            string[] substringsToDecode = value.Split(s_headerValueSplitChars, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string foldedSubString in substringsToDecode)
+            while (current < valueSpan.Length)
             {
-                //an encoded string has as specific format in that it must start and end with an
-                //'=' char and contains five parts, separated by '?' chars.
-                //the first and last part are therefore '=', the second part is the byte encoding (B or Q)
-                //the third is the unicode encoding type, and the fourth is encoded message itself.  '?' is not valid inside of
-                //an encoded string other than as a separator for these five parts.
-                //If this check fails, the string is either not encoded or cannot be decoded by this method
-                string[] subStrings = foldedSubString.Split('?');
-                if ((subStrings.Length != 5 || subStrings[0] != "=" || subStrings[4] != "="))
+                int whitespaceStart = current;
+                while (current < valueSpan.Length && IsLinearWhiteSpace(valueSpan[current]))
                 {
-                    return value;
+                    current++;
                 }
 
-                string charSet = subStrings[1];
-                bool base64Encoding = (subStrings[2] == "B");
-                byte[] buffer = Encoding.ASCII.GetBytes(subStrings[3]);
-                int newLength;
+                int tokenStart = current;
+                while (current < valueSpan.Length && !IsLinearWhiteSpace(valueSpan[current]))
+                {
+                    current++;
+                }
 
-                IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(Encoding.GetEncoding(charSet), base64Encoding, 0);
+                if (tokenStart == current)
+                {
+                    decodedValue.Append(valueSpan[whitespaceStart..current]);
+                    break;
+                }
 
-                newLength = s.DecodeBytes(buffer);
+                ReadOnlySpan<char> token = valueSpan[tokenStart..current];
+                if (TryDecodeHeaderValue(token, out string decodedToken))
+                {
+                    if (!previousTokenWasEncoded)
+                    {
+                        decodedValue.Append(valueSpan[whitespaceStart..tokenStart]);
+                    }
 
-                Encoding encoding = Encoding.GetEncoding(charSet);
-                newValue += encoding.GetString(buffer, 0, newLength);
+                    decodedValue.Append(decodedToken);
+                    decodedAny = true;
+                    previousTokenWasEncoded = true;
+                }
+                else
+                {
+                    decodedValue.Append(valueSpan[whitespaceStart..tokenStart]);
+                    decodedValue.Append(token);
+                    previousTokenWasEncoded = false;
+                }
             }
-            return newValue;
+
+            return decodedAny ? decodedValue.ToString() : value;
         }
 
         // Detect the encoding: "=?encoding?BorQ?content?="
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?="; // 3.5
         // With the addition of folding in 4.0, there may be multiple lines with encoding, only detect the first:
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?=\r\n =?utf-8?B??=";
-        internal static unsafe Encoding? DecodeEncoding(string? value)
+        internal static Encoding? DecodeEncoding(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -98,16 +111,100 @@ namespace System.Net.Mime
             }
 
             ReadOnlySpan<char> valueSpan = value;
-            Span<Range> subStrings = stackalloc Range[6];
-            if (valueSpan.SplitAny(subStrings, "?\r\n") < 5 ||
-                valueSpan[subStrings[0]] is not "=" ||
-                valueSpan[subStrings[4]] is not "=")
+            int current = 0;
+
+            while (current < valueSpan.Length)
             {
-                return null;
+                while (current < valueSpan.Length && IsLinearWhiteSpace(valueSpan[current]))
+                {
+                    current++;
+                }
+
+                int tokenStart = current;
+                while (current < valueSpan.Length && !IsLinearWhiteSpace(valueSpan[current]))
+                {
+                    current++;
+                }
+
+                ReadOnlySpan<char> token = valueSpan[tokenStart..current];
+                if (TryParseEncodedWord(token, out Range charSet, out _, out _))
+                {
+                    return Encoding.GetEncoding(token[charSet].ToString());
+                }
             }
 
-            return Encoding.GetEncoding(value[subStrings[1]]);
+            return null;
         }
+
+        private static bool TryDecodeHeaderValue(ReadOnlySpan<char> value, out string decodedValue)
+        {
+            decodedValue = string.Empty;
+            if (!TryParseEncodedWord(value, out Range charSetRange, out bool base64Encoding, out Range encodedTextRange))
+            {
+                return false;
+            }
+
+            Encoding encoding = Encoding.GetEncoding(value[charSetRange].ToString());
+            ReadOnlySpan<char> encodedText = value[encodedTextRange];
+            byte[] buffer = new byte[encodedText.Length];
+            Encoding.ASCII.GetBytes(encodedText, buffer);
+            IEncodableStream stream = EncodedStreamFactory.GetEncoderForHeader(encoding, base64Encoding, 0);
+            int decodedLength = stream.DecodeBytes(buffer);
+            decodedValue = encoding.GetString(buffer, 0, decodedLength);
+            return true;
+        }
+
+        private static bool TryParseEncodedWord(
+            ReadOnlySpan<char> value,
+            out Range charSet,
+            out bool base64Encoding,
+            out Range encodedText)
+        {
+            charSet = default;
+            base64Encoding = false;
+            encodedText = default;
+
+            if (value.Length is < 7 or > 75 || !value.StartsWith("=?") || !value.EndsWith("?="))
+            {
+                return false;
+            }
+
+            int charSetEnd = value[2..].IndexOf('?');
+            if (charSetEnd <= 0)
+            {
+                return false;
+            }
+            charSetEnd += 2;
+
+            int encodingEnd = value[(charSetEnd + 1)..].IndexOf('?');
+            if (encodingEnd != 1)
+            {
+                return false;
+            }
+            encodingEnd += charSetEnd + 1;
+
+            char encodingIdentifier = value[charSetEnd + 1];
+            if (encodingIdentifier is 'B' or 'b')
+            {
+                base64Encoding = true;
+            }
+            else if (encodingIdentifier is not ('Q' or 'q'))
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> encodedTextValue = value[(encodingEnd + 1)..^2];
+            if (encodedTextValue.Contains('?'))
+            {
+                return false;
+            }
+
+            charSet = 2..charSetEnd;
+            encodedText = (encodingEnd + 1)..^2;
+            return true;
+        }
+
+        private static bool IsLinearWhiteSpace(char value) => value is ' ' or '\t' or '\r' or '\n';
 
         internal static bool IsAscii(string value, bool permitCROrLF)
         {
