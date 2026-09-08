@@ -1,6 +1,6 @@
 # Introduction #
 
-The .NET runtime can generate a compact crash report from inside a crashing process. The in-process crash reporter is intended for environments where launching and attaching an external dump-generation process is unavailable, restricted, or unnecessarily expensive. This is particularly important for mobile applications, but the reporter is supported by CoreCLR on Unix platforms that provide the required native fatal-signal process model.
+CoreCLR can generate a compact crash report from inside a crashing process. The in-process crash reporter is intended for environments where launching and attaching an external dump-generation process is unavailable, restricted, or unnecessarily expensive. This is particularly important for mobile applications, but the reporter is supported by CoreCLR on Unix platforms that provide the required native fatal-signal process model.
 
 The reporter complements the out-of-process _createdump_ utility described in [Cross-platform Minidumps](xplat-minidump-generation.md). It does not generate a memory dump. Instead, it records the most useful information that can be collected safely from the crashing process:
 
@@ -36,6 +36,8 @@ CoreCLR chooses the crash-reporting mechanism as follows:
 - On mobile platforms, `DOTNET_EnableCrashReport=1` enables the in-process reporter because _createdump_ is not available.
 
 The in-process reporter is not currently enabled on Windows, Browser, or WASI. Windows uses its existing dump and Windows Error Reporting mechanisms, while Browser and WASI do not provide the required native fatal-signal process model.
+
+The in-process reporter is also not supported by NativeAOT. NativeAOT represents managed frames using the platform ABI and unwind information, so platform crash reporting facilities such as Android tombstones and Apple crash reports already produce mixed call stacks containing both native and managed frames. On mobile platforms, an in-process NativeAOT reporter would not add enough information beyond those platform reports to justify a separate reporting mechanism. NativeAOT support can be reconsidered if the in-process reporter provides additional diagnostic information that is not available from the platform tooling.
 
 ## Signal chaining ##
 
@@ -146,6 +148,7 @@ Crash reports contain process, module, exception, and stack information and shou
 The in-process reporter trades completeness for availability on a damaged process path:
 
 - it is not a replacement for a memory dump and cannot support arbitrary postmortem memory inspection;
+- it is currently supported only by CoreCLR, not NativeAOT;
 - native frame symbolication is not performed in the crashing process;
 - only managed threads known to CoreCLR are enumerated;
 - other managed threads are omitted when the runtime cannot be suspended safely;
