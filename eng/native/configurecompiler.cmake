@@ -919,19 +919,15 @@ if(CLR_CMAKE_HOST_UNIX_RISCV64)
   add_compile_options(-mabi=lp64d)
 endif(CLR_CMAKE_HOST_UNIX_RISCV64)
 
+if(CLR_CMAKE_HOST_UNIX_X86)
+  add_compile_options(-msse2)
+endif()
+
 if(CLR_CMAKE_HOST_ARCH_AMD64)
   if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/arch:SSE4.2>)
   else()
     add_compile_options(-march=x86-64-v2)
-  endif()
-endif()
-
-if(CLR_CMAKE_HOST_ARCH_I386)
-  if(CLR_CMAKE_HOST_WIN32)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/arch:SSE2>)
-  else()
-    add_compile_options(-march=x86-64)
   endif()
 endif()
 
