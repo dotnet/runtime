@@ -77,12 +77,12 @@ uses `user.login` to recognize trusted bots before filtering search results.
    - an invariant error phrase from `ErrorMessage` / `ErrorPattern`, removing
      only volatile paths, line numbers, hashes, GUIDs, timestamps, and exit
      codes; keep a distinctive 1-8 word literal fragment and reject generic
-     tool or build-failed text;
+     tool-failure text such as `dotnet build failed`;
    - a leg root from `Build error leg or test failing`, taking the leg portion
      before the last hyphen (whether rendered as ` - ` or `-`),
      then removing platform, architecture, configuration, retry, and
-     parenthesized run-specific details; keep at most 4 distinctive words
-     (80 characters).
+     parenthesized run-specific details; keep at most 4 distinctive words and
+     80 characters.
 
    Search the pair together in the same issue:
    `is:issue is:open label:"Known Build Error" in:body "<invariant-error-phrase>" "<leg-root>"`.
@@ -196,7 +196,7 @@ variation 8 without a label filter:
 
 - `is:issue is:open in:body "<invariant-error-phrase>" "<leg-root>"`
 
-Treat a matching unlabelled issue as `linked-tracker #<n>` and apply the same
+Treat a matching unlabeled issue as `linked-tracker #<n>` and apply the same
 two-fragment verification and ambiguity rules before recording it.
 
 On hit, record `linked-tracker #<n>`.
