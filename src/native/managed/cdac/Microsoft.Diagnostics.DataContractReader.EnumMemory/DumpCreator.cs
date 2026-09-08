@@ -40,6 +40,7 @@ internal sealed class DumpCreator
     {
         TryEnumerate(EnumerateRuntimeModule);
         TryEnumerate(EnumerateStatics);
+        TryEnumerate(EnumerateDebugger);
         TryEnumerate(EnumerateModules);
         TryEnumerate(EnumerateThreads);
 
@@ -74,8 +75,20 @@ internal sealed class DumpCreator
     private void EnumerateStatics()
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        rts.GetWellKnownMethodTable(WellKnownMethodTable.Array);
+        rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);
+        rts.GetWellKnownMethodTable(WellKnownMethodTable.Exception);
+        rts.GetWellKnownMethodTable(WellKnownMethodTable.Free);
         rts.GetWellKnownMethodTable(WellKnownMethodTable.Object);
         rts.GetWellKnownMethodTable(WellKnownMethodTable.String);
+    }
+
+    private void EnumerateDebugger()
+    {
+        IDebugger debugger = _target.Contracts.Debugger;
+        debugger.TryGetDebuggerData(out _);
+        debugger.GetAttachStateFlags();
+        _target.Contracts.ReJIT.IsEnabled();
     }
 
     private void EnumerateModules()
@@ -84,6 +97,7 @@ internal sealed class DumpCreator
         IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
 
         TargetPointer appDomain = loader.GetAppDomain();
+        loader.GetRootAssembly();
         IEnumerable<ContractModuleHandle> modules = loader.GetModuleHandles(
             appDomain,
             AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
@@ -91,11 +105,19 @@ internal sealed class DumpCreator
         foreach (ContractModuleHandle module in modules)
         {
             loader.GetModule(module);
+            loader.GetAssembly(module);
             TargetPointer peAssembly = loader.GetPEAssembly(module);
             ModuleFlags flags = loader.GetFlags(module);
             loader.GetSimpleName(module);
             loader.GetPath(module);
             loader.GetFileName(module);
+            loader.GetILBase(module);
+            loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.FieldDefToDesc);
+            loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.ManifestModuleReferences);
+            loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.MemberRefToDesc);
+            loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.MethodDefToDesc);
+            loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.TypeDefToMethodTable);
+            loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.TypeRefToMethodTable);
 
             if (loader.TryGetLoadedImageContents(module, out _, out _, out _))
                 _emitter.RegisterMetadataRange(ecmaMetadata.GetReadOnlyMetadataAddress(module));
@@ -113,11 +135,28 @@ internal sealed class DumpCreator
             TargetPointer loaderAllocator = loader.GetLoaderAllocator(module);
             if (loaderAllocator != TargetPointer.Null)
                 _loaderAllocators.Add(loaderAllocator);
+
+            loader.IsProbeExtensionResultValid(module);
         }
 
         TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
         if (globalLoaderAllocator != TargetPointer.Null)
+        {
             _loaderAllocators.Add(globalLoaderAllocator);
+            loader.GetHighFrequencyHeap(globalLoaderAllocator);
+            loader.GetLowFrequencyHeap(globalLoaderAllocator);
+        }
+
+        foreach (ContractModuleHandle module in loader.GetModuleHandles(
+            appDomain,
+            AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            loader.IsAssemblyLoaded(module);
+        }
+
+        foreach (ContractModuleHandle _ in loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeFailedToLoad))
+        {
+        }
     }
 
     private void EnumerateThreads()
@@ -152,9 +191,9 @@ internal sealed class DumpCreator
         IStackWalk stackWalk = _target.Contracts.StackWalk;
         foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
         {
-            _ = stackWalk.GetInstructionPointer(frame);
+            TargetCodePointer instructionPointer = stackWalk.GetInstructionPointer(frame);
             TargetPointer methodDesc = stackWalk.GetMethodDescPtr(frame);
-            _methods.CaptureMethod(methodDesc);
+            _methods.CaptureMethod(methodDesc, instructionPointer);
         }
     }
 

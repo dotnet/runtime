@@ -15,18 +15,47 @@ internal sealed class MethodCollector(Target target)
 {
     private readonly Target _target = target;
     private readonly HashSet<TargetPointer> _captured = [];
+    private readonly HashSet<TargetPointer> _capturedCodeBlocks = [];
     private readonly Dictionary<TargetPointer, string> _names = [];
 
     public IReadOnlyDictionary<TargetPointer, string> Names => _names;
 
     public void CaptureMethod(TargetPointer methodDesc)
+        => CaptureMethod(methodDesc, TargetCodePointer.Null);
+
+    public void CaptureMethod(TargetPointer methodDesc, TargetCodePointer instructionPointer)
     {
+        if (instructionPointer != TargetCodePointer.Null)
+            EnumerateCodeDependencies(instructionPointer);
+
         if (methodDesc == TargetPointer.Null || !_captured.Add(methodDesc))
             return;
 
         EnumerateMethodDependencies(methodDesc);
         EnumerateMethodDescDataDependencies(methodDesc);
         CacheMethodName(methodDesc);
+    }
+
+    private void EnumerateCodeDependencies(TargetCodePointer instructionPointer)
+    {
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        if (executionManager.GetCodeBlockHandle(instructionPointer) is not CodeBlockHandle codeBlock
+            || !_capturedCodeBlocks.Add(codeBlock.Address))
+            return;
+
+        executionManager.GetGCInfo(codeBlock, out _, out _);
+
+        IDebugInfo debugInfo = _target.Contracts.DebugInfo;
+        if (!debugInfo.HasDebugInfo(instructionPointer))
+            return;
+
+        foreach (OffsetMapping _ in debugInfo.GetMethodNativeMap(instructionPointer, preferUninstrumented: true, out _))
+        {
+        }
+
+        foreach (DebugVarInfo _ in debugInfo.GetMethodVarInfo(instructionPointer, out _))
+        {
+        }
     }
 
     private void EnumerateMethodDependencies(TargetPointer methodDesc)
@@ -36,11 +65,17 @@ internal sealed class MethodCollector(Target target)
         if (types.IsNoMetadataMethod(method, out _))
             return;
 
-        types.GetMethodToken(method);
+        uint token = types.GetMethodToken(method);
         TargetPointer methodTable = types.GetMethodTable(method);
         TargetPointer module = types.GetModule(types.GetTypeHandle(methodTable));
-        ContractModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
-        _target.Contracts.Loader.GetPath(moduleHandle);
+        ILoader loader = _target.Contracts.Loader;
+        ContractModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
+        loader.GetAssembly(moduleHandle);
+        loader.GetFlags(moduleHandle);
+        loader.GetPath(moduleHandle);
+        loader.IsProbeExtensionResultValid(moduleHandle);
+        loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.MethodDefToDesc, token, out _);
+        loader.GetILHeader(moduleHandle, token);
     }
 
     private void EnumerateMethodDescDataDependencies(TargetPointer methodDesc)
