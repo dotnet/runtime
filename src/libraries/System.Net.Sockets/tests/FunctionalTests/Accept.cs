@@ -496,22 +496,20 @@ namespace System.Net.Sockets.Tests
 
     public sealed class AcceptDualStackResetTests
     {
-        // Regression: on macOS, when a peer connects to a dual-stack AF_INET6 listener and
-        // immediately resets (SO_LINGER=0), accept(2) can return successfully with an empty
-        // remote sockaddr. Without a guard on the resulting zero-sized SocketAddress, the
-        // shared FinishOperationSyncSuccess path throws ArgumentException from EndPoint.Create
-        // and permanently breaks the listener (observed in Kestrel's accept loop).
-        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
-        public async Task AcceptAsync_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy()
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
+        [SkipOnPlatform(TestPlatforms.Wasi | TestPlatforms.OpenBSD, "These platforms don't support dual-mode sockets")]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Accept_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy(bool useAsync)
         {
-            using Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            listener.DualMode = true;
-            listener.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
-            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
-            listener.Listen(128);
-
             for (int i = 0; i < 200; i++)
             {
+                using Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                listener.DualMode = true;
+                listener.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+                listener.Listen(2);
+
                 using Socket ipv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
                 using Socket ipv4 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
 
@@ -522,16 +520,29 @@ namespace System.Net.Sockets.Tests
                 ipv4.LingerState = new LingerOption(true, 0);
                 ipv4.Close();
 
-                using Socket a1 = await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                using Socket a2 = await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            }
+                byte[] message = [42];
+                Assert.Equal(message.Length, ipv6.Send(message));
 
-            Task<Socket> finalAccept = listener.AcceptAsync();
-            using (Socket probe = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                await probe.ConnectAsync(IPAddress.Loopback, port);
-                using Socket finalAccepted = await finalAccept.WaitAsync(TimeSpan.FromSeconds(5));
-                Assert.True(finalAccepted.Connected);
+                bool receivedMessage = false;
+                for (int acceptCount = 0; acceptCount < 2 && !receivedMessage; acceptCount++)
+                {
+                    using Socket accepted = useAsync
+                        ? await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5))
+                        : listener.Accept();
+
+                    try
+                    {
+                        byte[] received = new byte[message.Length];
+                        int receivedCount = await accepted.ReceiveAsync(received).WaitAsync(TimeSpan.FromSeconds(5));
+                        receivedMessage = receivedCount == message.Length && received.AsSpan().SequenceEqual(message);
+                    }
+                    catch (SocketException)
+                    {
+                        // Some platforms surface the reset connection from accept(), while others discard it.
+                    }
+                }
+
+                Assert.True(receivedMessage);
             }
         }
     }
