@@ -1692,10 +1692,10 @@ namespace ComWrappersTests
                 var wrapper = (ManualReleaseITestObjectWrapper)cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
                 var reference = new WeakReference<object>(wrapper);
 
+                wrapper.FinalRelease();
+
                 Assert.True(ComWrappers.TryGetComInstance(wrapper, out IntPtr unknown));
                 Marshal.Release(unknown);
-
-                wrapper.FinalRelease();
 
                 GC.KeepAlive(wrapper);
 
