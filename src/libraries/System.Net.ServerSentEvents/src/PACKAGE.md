@@ -43,6 +43,7 @@ When connecting to an untrusted event source, use a buffer-size limit to handle 
 using System.Net.ServerSentEvents;
 using System.Text;
 
+using HttpClient client = new();
 using Stream stream = await client.GetStreamAsync("https://localhost:12345/sse");
 SseParserOptions<string> options = new(static (_, bytes) => Encoding.UTF8.GetString(bytes))
 {
