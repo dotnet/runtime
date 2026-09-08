@@ -115,6 +115,24 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public required bool CanUseUnsafeAccessorForConstructor { get; init; }
 
+        /// <summary>
+        /// The type parameter names of the type when it is generic and its constructor accessor uses a generic wrapper
+        /// class (e.g., ["T"]). Null when the type is not generic or generic UnsafeAccessors are not supported.
+        /// </summary>
+        public ImmutableEquatableArray<string>? TypeParameterNames { get; init; }
+
+        /// <summary>
+        /// When <see cref="TypeParameterNames"/> is set, the FQN of the type using open type parameters
+        /// (e.g., "global::TestApp.MyGenericType&lt;T&gt;"), used in the generic constructor accessor wrapper.
+        /// </summary>
+        public string? OpenTypeFQN { get; init; }
+
+        /// <summary>
+        /// When <see cref="TypeParameterNames"/> is set, the combined type parameter constraint clauses of the type
+        /// (e.g., "where T : notnull"). Null when the type has no constraints.
+        /// </summary>
+        public string? TypeParameterConstraintClauses { get; init; }
+
         public required TypeRef? NullableUnderlyingType { get; init; }
 
         /// <summary>

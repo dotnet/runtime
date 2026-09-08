@@ -122,6 +122,30 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public static void GenericTypeWithInaccessibleConstructor_IsSupported()
+        {
+            // A generic type with an inaccessible [JsonConstructor] must be constructed through a generic
+            // UnsafeAccessor wrapper class; an accessor naming the closed type directly throws at run time.
+            GenericInaccessibleCtor<int> deserialized = JsonSerializer.Deserialize(
+                """{"Value":42}""", GenericInaccessibleCtorContext.Default.GenericInaccessibleCtorInt32);
+            Assert.Equal(42, deserialized.Value);
+
+            string json = JsonSerializer.Serialize(deserialized, GenericInaccessibleCtorContext.Default.GenericInaccessibleCtorInt32);
+            Assert.Equal("""{"Value":42}""", json);
+        }
+
+        public class GenericInaccessibleCtor<T>
+        {
+            [JsonConstructor]
+            private GenericInaccessibleCtor(T value) => Value = value;
+
+            public T Value { get; }
+        }
+
+        [JsonSerializable(typeof(GenericInaccessibleCtor<int>))]
+        internal partial class GenericInaccessibleCtorContext : JsonSerializerContext { }
+
+        [Fact]
         [RequiresUnreferencedCode("Tests reflection-based JsonSerializer APIs.")]
         [RequiresDynamicCode("Tests reflection-based JsonSerializer APIs.")]
         public static async Task SupportsBoxedRootLevelValues()

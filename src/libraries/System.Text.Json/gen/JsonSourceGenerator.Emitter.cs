@@ -1355,6 +1355,25 @@ namespace System.Text.Json.SourceGeneration
             private static string GetConstructorAccessorName(TypeGenerationSpec typeSpec)
                 => $"__ctor_{typeSpec.TypeInfoPropertyName}";
 
+            /// <summary>
+            /// For a constructor accessor on a generic type using a wrapper class (.NET 9+), returns the fully qualified
+            /// accessor reference including the generic wrapper class prefix, e.g.
+            /// <c>__GenericCtorAccessor_MyType&lt;int&gt;.__ctor_MyType</c>. For non-generic types, returns the plain name.
+            /// </summary>
+            private static string GetQualifiedConstructorAccessorName(TypeGenerationSpec typeSpec)
+            {
+                string accessorName = GetConstructorAccessorName(typeSpec);
+                if (typeSpec.TypeParameterNames is null)
+                {
+                    return accessorName;
+                }
+
+                string closedTypeArgs = typeSpec.TypeRef.FullyQualifiedName;
+                int openAngle = closedTypeArgs.IndexOf('<');
+                string typeArgsList = closedTypeArgs.Substring(openAngle);
+                return $"__GenericCtorAccessor_{typeSpec.TypeInfoPropertyName}{typeArgsList}.{accessorName}";
+            }
+
             private static string GetConstructorReflectionCacheName(TypeGenerationSpec typeSpec)
                 => $"s_ctor_{typeSpec.TypeInfoPropertyName}";
 
@@ -1394,8 +1413,40 @@ namespace System.Text.Json.SourceGeneration
 
                 if (typeSpec.CanUseUnsafeAccessorForConstructor)
                 {
-                    writer.WriteLine($"[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Constructor)]");
-                    writer.WriteLine($"private static extern {typeFQN} {wrapperName}({wrapperParams});");
+                    if (typeSpec.TypeParameterNames is not null)
+                    {
+                        // Generic types need a wrapper class for UnsafeAccessor (.NET 9+). An extern that names the
+                        // closed generic type directly does not resolve the constructor and throws MissingMethodException
+                        // at run time. The extern uses the open type parameters and is referenced through the closed
+                        // type arguments at the call site (see GetQualifiedConstructorAccessorName).
+                        string typeParamList = string.Join(", ", typeSpec.TypeParameterNames);
+                        string constraintClauses = typeSpec.TypeParameterConstraintClauses is { } c ? $" {c}" : "";
+                        string openTypeFQN = typeSpec.OpenTypeFQN!;
+
+                        var openWrapperParams = new StringBuilder();
+                        foreach (ParameterGenerationSpec param in parameters)
+                        {
+                            if (openWrapperParams.Length > 0)
+                            {
+                                openWrapperParams.Append(", ");
+                            }
+
+                            openWrapperParams.Append($"{param.OpenParameterTypeFQN} p{param.ParameterIndex}");
+                        }
+
+                        writer.WriteLine($"private static class __GenericCtorAccessor_{typeSpec.TypeInfoPropertyName}<{typeParamList}>{constraintClauses}");
+                        writer.WriteLine('{');
+                        writer.Indentation++;
+                        writer.WriteLine($"[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Constructor)]");
+                        writer.WriteLine($"public static extern {openTypeFQN} {wrapperName}({openWrapperParams});");
+                        writer.Indentation--;
+                        writer.WriteLine('}');
+                    }
+                    else
+                    {
+                        writer.WriteLine($"[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Constructor)]");
+                        writer.WriteLine($"private static extern {typeFQN} {wrapperName}({wrapperParams});");
+                    }
                 }
                 else
                 {
@@ -1700,7 +1751,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (typeGenerationSpec.ConstructorIsInaccessible)
                     {
-                        string accessorName = GetConstructorAccessorName(typeGenerationSpec);
+                        string accessorName = GetQualifiedConstructorAccessorName(typeGenerationSpec);
                         sb.Append($"return {accessorName}(");
                     }
                     else
@@ -1711,7 +1762,7 @@ namespace System.Text.Json.SourceGeneration
                 else if (typeGenerationSpec.ConstructorIsInaccessible)
                 {
                     // Inaccessible constructor: use the unified constructor accessor wrapper.
-                    string accessorName = GetConstructorAccessorName(typeGenerationSpec);
+                    string accessorName = GetQualifiedConstructorAccessorName(typeGenerationSpec);
                     sb = new($"static args => {accessorName}(");
                 }
                 else
@@ -2414,7 +2465,7 @@ namespace System.Text.Json.SourceGeneration
                     { IsValueTuple: true } => $"() => default({typeSpec.TypeRef.FullyQualifiedName})",
                     { ConstructionStrategy: ObjectConstructionStrategy.ParameterlessConstructor, ConstructorIsInaccessible: false } => $"() => new {typeSpec.TypeRef.FullyQualifiedName}()",
                     { ConstructionStrategy: ObjectConstructionStrategy.ParameterlessConstructor, ConstructorIsInaccessible: true } =>
-                        $"static () => {GetConstructorAccessorName(typeSpec)}()",
+                        $"static () => {GetQualifiedConstructorAccessorName(typeSpec)}()",
                     _ => "null",
                 };
             }

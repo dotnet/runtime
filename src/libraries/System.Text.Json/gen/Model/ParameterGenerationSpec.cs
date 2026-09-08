@@ -29,6 +29,13 @@ namespace System.Text.Json.SourceGeneration
         public required string Name { get; init; }
         public required bool HasDefaultValue { get; init; }
 
+        /// <summary>
+        /// When the declaring type's constructor accessor uses a generic wrapper class, the FQN of the parameter type
+        /// using open type parameters (e.g., "T"). Null when the declaring type is not generic (or generic
+        /// UnsafeAccessors are not supported).
+        /// </summary>
+        public string? OpenParameterTypeFQN { get; init; }
+
         // The default value of a constructor parameter can only be a constant
         // so it always satisfies the structural equality requirement for the record.
         public required object? DefaultValue { get; init; }

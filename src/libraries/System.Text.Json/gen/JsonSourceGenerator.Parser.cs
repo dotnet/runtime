@@ -941,6 +941,12 @@ namespace System.Text.Json.SourceGeneration
                         && _knownSymbols.UnsafeAccessorAttributeType is not null
                         && (type is not INamedTypeSymbol { IsGenericType: true }
                             || _knownSymbols.SupportsGenericUnsafeAccessors),
+                    TypeParameterNames = type is INamedTypeSymbol { IsGenericType: true } genericType && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? genericType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
+                    OpenTypeFQN = type is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? type.OriginalDefinition.GetFullyQualifiedName() : null,
+                    TypeParameterConstraintClauses = type is INamedTypeSymbol { IsGenericType: true } genericType2 && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? GetTypeParameterConstraintClauses(genericType2.OriginalDefinition) : null,
                     NullableUnderlyingType = nullableUnderlyingType,
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
@@ -2836,6 +2842,10 @@ namespace System.Text.Json.SourceGeneration
                     constructionStrategy = ObjectConstructionStrategy.ParameterizedConstructor;
                     constructorParameters = new ParameterGenerationSpec[paramCount];
 
+                    // Generic types with an inaccessible constructor use a generic wrapper class for the UnsafeAccessor
+                    // (.NET 9+); its extern signature references the parameter types in open (type-parameter) form.
+                    bool useOpenParameterTypes = type is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors;
+
                     // Compute ArgsIndex for each parameter.
                     // out parameters don't have entries in the args array.
                     int argsIndex = 0;
@@ -2878,6 +2888,7 @@ namespace System.Text.Json.SourceGeneration
                             ArgsIndex = currentArgsIndex,
                             IsNullable = parameterInfo.IsNullable(),
                             RefKind = parameterInfo.RefKind,
+                            OpenParameterTypeFQN = useOpenParameterTypes ? parameterInfo.OriginalDefinition.Type.GetFullyQualifiedName() : null,
                         };
                     }
                 }
