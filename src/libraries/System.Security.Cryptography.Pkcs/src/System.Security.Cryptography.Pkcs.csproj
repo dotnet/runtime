@@ -6,8 +6,8 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>2</ServicingVersion>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
 
 Commonly Used Types:
