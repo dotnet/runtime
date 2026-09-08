@@ -51,7 +51,50 @@ tools:
 checkout:
   fetch-depth: 200
 
+steps:
+  - name: Filter scanner-authored KBEs (deterministic)
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      KBE_CANDIDATES: /tmp/gh-aw/agent/scanner-kbe-candidates.json
+    run: |
+      set -euo pipefail
+
+      mkdir -p /tmp/gh-aw/agent
+      gh issue list \
+        --repo "$GH_REPO" \
+        --state open \
+        --label "Known Build Error" \
+        --limit 1000 \
+        --json number,title,createdAt,author,labels \
+        --jq '
+          {
+            candidates: ([
+              .[]
+              | select(
+                  .author.login == "github-actions[bot]" and
+                  (.title | startswith("[ci-scan] ")) and
+                  ([.labels[].name] | index("Known Build Error") != null)
+                )
+              | {
+                  number,
+                  title,
+                  created_at: .createdAt,
+                  author: .author.login
+                }
+            ] | sort_by(.created_at, .number))
+          }
+        ' > "$KBE_CANDIDATES"
+
+      candidate_count="$(jq '.candidates | length' "$KBE_CANDIDATES")"
+      echo "Allowlisted ${candidate_count} scanner-authored KBE(s)."
+      if [ "$candidate_count" -eq 0 ]; then
+        echo '{"type":"noop","message":"No scanner-authored [ci-scan] KBEs found"}' >> "${GH_AW_SAFE_OUTPUTS:?}"
+      fi
+
 safe-outputs:
+  noop:
+    report-as-issue: false
   create-pull-request:
     title-prefix: "[ci-fix] "
     draft: true
@@ -147,11 +190,7 @@ Read once at start:
 
 ### Step 2 — Enumerate open KBEs
 
-List open KBE issues this workflow is responsible for. Use the `github` MCP `search_issues` (integrity-gated; `[Filtered]` results are skipped — record the count, do not chase them):
-
-- `repo:dotnet/runtime is:issue is:open label:"Known Build Error" in:title "[ci-scan]" sort:created-asc`
-
-Do NOT bound this query by `updated:` recency. Older-but-still-open `[ci-scan]` KBEs are exactly the ones at risk of being stranded with no mitigation, so they must remain in scope. `sort:created-asc` walks the oldest open KBEs first; the per-run PR cap (Step 6 / `create-pull-request max`) bounds how many you act on, and the next run continues where this one left off.
+The deterministic pre-step has written `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. It is the authoritative allowlist: it contains only open issues whose exact `Known Build Error` label, `[ci-scan]` title prefix, and `github-actions[bot]` author were verified through the GitHub API. Process only the issue numbers in `.candidates[].number`, in ascending creation order. Do not enumerate or read other `Known Build Error` issues, even if they appear in GitHub search results.
 
 For each result, read the body + latest comments through the `github` MCP (NOT `gh`, so the integrity gate applies). Extract:
 
