@@ -321,7 +321,7 @@ namespace System.Net.ServerSentEvents
                 }
 
                 // We need to copy the data from the line buffer to the data buffer. Make sure there's enough room.
-                int requiredAvailableSpace = lineBuffer.Length + 1;
+                int requiredAvailableSpace = fieldValue.Length + 1;
                 if (_dataBuffer.AvailableLength < requiredAvailableSpace)
                 {
                     if (requiredAvailableSpace > _maxBufferSize - _dataBuffer.ActiveLength)
