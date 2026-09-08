@@ -323,15 +323,15 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
     <PropertyGroup>
       <_WasmCorerunGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmCorerunGeneratorExeSuffix>
-      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCorerunGeneratorExeSuffix)'))</PortableCallHelpersGeneratorPath>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCorerunGeneratorExeSuffix)'))</Crossgen2Path>
     </PropertyGroup>
 
-    <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
-           Text="crossgen2 was not found. Build the 'clr' subset or set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
-    <Error Condition="!Exists('$(PortableCallHelpersGeneratorPath)')"
-           Text="crossgen2 executable not found: '$(PortableCallHelpersGeneratorPath)'. Build the 'clr' subset or correct %24(PortableCallHelpersGeneratorPath)." />
-    <Error Condition="'$([System.IO.Path]::GetExtension(`$(PortableCallHelpersGeneratorPath)`))' == '.dll'"
-           Text="Set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable, not the DLL '$(PortableCallHelpersGeneratorPath)'." />
+    <Error Condition="'$(Crossgen2Path)' == ''"
+           Text="crossgen2 was not found. Build the 'clr' subset or set %24(Crossgen2Path) to a crossgen2 executable." />
+    <Error Condition="!Exists('$(Crossgen2Path)')"
+           Text="crossgen2 executable not found: '$(Crossgen2Path)'. Build the 'clr' subset or correct %24(Crossgen2Path)." />
+    <Error Condition="'$([System.IO.Path]::GetExtension(`$(Crossgen2Path)`))' == '.dll'"
+           Text="Set %24(Crossgen2Path) to a crossgen2 executable, not the DLL '$(Crossgen2Path)'." />
 
     <ItemGroup>
       <!-- This file is only imported for browser, so $(TargetOS) is that; naming it rather than
@@ -345,7 +345,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
     <WriteLinesToFile File="$(_WasmCorerunGeneratorRsp)" Lines="@(_WasmCorerunGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Exec Command="&quot;$(PortableCallHelpersGeneratorPath)&quot; &quot;@$(_WasmCorerunGeneratorRsp)&quot;" />
+    <Exec Command="&quot;$(Crossgen2Path)&quot; &quot;@$(_WasmCorerunGeneratorRsp)&quot;" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmCorerunGeneratorRsp)" />
