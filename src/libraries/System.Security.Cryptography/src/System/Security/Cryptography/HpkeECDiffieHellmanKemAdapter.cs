@@ -52,7 +52,11 @@ namespace System.Security.Cryptography
         internal override void ImportEncapsulationKey(ReadOnlySpan<byte> encapsulationKey)
         {
             Debug.Assert(_ecdh is null);
+            _ecdh = CreateFromEncapsulationKey(encapsulationKey);
+        }
 
+        private ECDiffieHellman CreateFromEncapsulationKey(ReadOnlySpan<byte> encapsulationKey)
+        {
             if (encapsulationKey.Length != Suite.EncapsulationKeySizeInBytes)
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
@@ -66,7 +70,7 @@ namespace System.Security.Cryptography
 
 #pragma warning disable CA1416 // Not supported on browser
             parameters.Curve = _curve;
-            _ecdh = ECDiffieHellman.Create(parameters);
+            return ECDiffieHellman.Create(parameters);
 #pragma warning restore CA1416 // Not supported on browser
         }
 
@@ -131,6 +135,23 @@ namespace System.Security.Cryptography
                 using (PinAndClear.Track(secretAgreement))
                 {
                     ephemeral.ExportEncapsulationKey(encapsulatedSecret);
+                    ExtractAndExpand(secretAgreement, encapsulatedSecret, sharedSecret);
+                }
+            }
+        }
+
+        // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.5
+        internal override void Decapsulate(ReadOnlySpan<byte> encapsulatedSecret, Span<byte> sharedSecret)
+        {
+            Debug.Assert(_ecdh is not null);
+
+            using (ECDiffieHellman ephemeral = CreateFromEncapsulationKey(encapsulatedSecret))
+            using (ECDiffieHellmanPublicKey ephemeralPublicKey = ephemeral.PublicKey)
+            {
+                byte[] secretAgreement = _ecdh.DeriveRawSecretAgreement(ephemeralPublicKey);
+
+                using (PinAndClear.Track(secretAgreement))
+                {
                     ExtractAndExpand(secretAgreement, encapsulatedSecret, sharedSecret);
                 }
             }

@@ -361,6 +361,234 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData,
             ReadOnlySpan<byte> info);
 
+        /// <summary>
+        ///   Decrypts and authenticates a single HPKE ciphertext using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The ciphertext, including its trailing authentication tag.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional authenticated data, which must match the value used by the sender.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the sender.
+        /// </param>
+        /// <returns>
+        ///   A new byte array containing the authenticated plaintext.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="encapsulatedSecret" /> is not exactly
+        ///     <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="ciphertext" /> is shorter than <see cref="HpkeSuite.AeadTagSizeInBytes" /> bytes.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="AuthenticationTagMismatchException">
+        ///   The authentication tag could not be verified.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred during decryption.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public byte[] Open(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> associatedData = default,
+            ReadOnlySpan<byte> info = default)
+        {
+            int plaintextLength = ValidateOpenInputs(encapsulatedSecret, ciphertext, info);
+            byte[] plaintext = new byte[plaintextLength];
+
+            try
+            {
+                OpenCore(encapsulatedSecret, ciphertext, plaintext, associatedData, info);
+                return plaintext;
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(plaintext);
+                throw;
+            }
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates a single HPKE ciphertext using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The ciphertext, including its trailing authentication tag.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional authenticated data, which must match the value used by the sender,
+        ///   or <see langword="null" /> to use no additional authenticated data.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the sender,
+        ///   or <see langword="null" /> to use an empty context.
+        /// </param>
+        /// <returns>
+        ///   A new byte array containing the authenticated plaintext.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encapsulatedSecret" /> or <paramref name="ciphertext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="encapsulatedSecret" /> is not exactly
+        ///     <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="ciphertext" /> is shorter than <see cref="HpkeSuite.AeadTagSizeInBytes" /> bytes.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="AuthenticationTagMismatchException">
+        ///   The authentication tag could not be verified.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred during decryption.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public byte[] Open(
+            byte[] encapsulatedSecret,
+            byte[] ciphertext,
+            byte[]? associatedData = null,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(encapsulatedSecret);
+            ArgumentNullException.ThrowIfNull(ciphertext);
+            return Open(
+                new ReadOnlySpan<byte>(encapsulatedSecret),
+                ciphertext,
+                new ReadOnlySpan<byte>(associatedData),
+                info);
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates a single HPKE ciphertext into the provided buffer using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The ciphertext, including its trailing authentication tag.
+        /// </param>
+        /// <param name="plaintext">
+        ///   The buffer to receive the authenticated plaintext.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional authenticated data, which must match the value used by the sender.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the sender.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="encapsulatedSecret" /> is not exactly
+        ///     <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="ciphertext" /> is shorter than <see cref="HpkeSuite.AeadTagSizeInBytes" /> bytes.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The length of <paramref name="plaintext" /> is not exactly the length of
+        ///     <paramref name="ciphertext" /> minus <see cref="HpkeSuite.AeadTagSizeInBytes" />.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="AuthenticationTagMismatchException">
+        ///   The authentication tag could not be verified.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred during decryption.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public void Open(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> plaintext,
+            ReadOnlySpan<byte> associatedData = default,
+            ReadOnlySpan<byte> info = default)
+        {
+            int plaintextLength = ValidateOpenInputs(encapsulatedSecret, ciphertext, info);
+
+            if (plaintext.Length != plaintextLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, plaintextLength),
+                    nameof(plaintext));
+            }
+
+            OpenCore(encapsulatedSecret, ciphertext, plaintext, associatedData, info);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, decrypts and authenticates a single HPKE ciphertext using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The ciphertext, including its trailing authentication tag.
+        /// </param>
+        /// <param name="plaintext">
+        ///   The buffer to receive the authenticated plaintext.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional authenticated data.
+        /// </param>
+        /// <param name="info">
+        ///   The application context.
+        /// </param>
+        /// <exception cref="AuthenticationTagMismatchException">
+        ///   The authentication tag could not be verified.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred during decryption.
+        /// </exception>
+        /// <remarks>
+        ///   The calling method has verified that this instance is not disposed, the input and output lengths
+        ///   are valid for <see cref="Suite" />, and <paramref name="info" /> satisfies the KDF's length limit.
+        ///   Implementations must fill the entire plaintext buffer on success and must not leave
+        ///   unauthenticated plaintext in the buffer when authentication fails.
+        /// </remarks>
+        protected abstract void OpenCore(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> plaintext,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> info);
 
         /// <summary>
         ///   Releases all resources used by the <see cref="Hpke" /> class.
@@ -403,6 +631,33 @@ namespace System.Security.Cryptography
                     SR.Format(SR.Argument_HpkeKdfInfoLength, Suite.KdfMetadata.MaximumInfoLength),
                     nameof(info));
             }
+        }
+
+        private int ValidateOpenInputs(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> info)
+        {
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_HpkeEncapsulatedSecretLength, Suite.EncapsulatedSecretSizeInBytes),
+                    nameof(encapsulatedSecret));
+            }
+
+            int tagSize = Suite.AeadTagSizeInBytes;
+
+            if (ciphertext.Length < tagSize)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_HpkeCiphertextTooShort, tagSize),
+                    nameof(ciphertext));
+            }
+
+            return ciphertext.Length - tagSize;
         }
 
         private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);

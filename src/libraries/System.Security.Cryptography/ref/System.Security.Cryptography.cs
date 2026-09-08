@@ -1905,6 +1905,10 @@ namespace System.Security.Cryptography
         protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
         public static System.Security.Cryptography.Hpke GenerateKey(System.Security.Cryptography.HpkeSuite suite) { throw null; }
         public static bool IsSupported(System.Security.Cryptography.HpkeSuite suite) { throw null; }
+        public byte[] Open(byte[] encapsulatedSecret, byte[] ciphertext, byte[]? associatedData = null, byte[]? info = null) { throw null; }
+        public byte[] Open(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Open(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void OpenCore(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData, System.ReadOnlySpan<byte> info);
         public void Seal(byte[] plaintext, out byte[] encapsulatedSecret, out byte[] ciphertext, byte[]? associatedData = null, byte[]? info = null) { throw null; }
         public void Seal(System.ReadOnlySpan<byte> plaintext, out byte[] encapsulatedSecret, out byte[] ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> encapsulatedSecret, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }

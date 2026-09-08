@@ -64,6 +64,23 @@ namespace System.Security.Cryptography
             }
         }
 
+        // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.5
+        internal override void Decapsulate(ReadOnlySpan<byte> encapsulatedSecret, Span<byte> sharedSecret)
+        {
+            Debug.Assert(_x25519 is not null);
+            Span<byte> secretAgreement = stackalloc byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+
+            try
+            {
+                _x25519.DeriveRawSecretAgreement(encapsulatedSecret, secretAgreement);
+                ExtractAndExpand(secretAgreement, encapsulatedSecret, sharedSecret);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(secretAgreement);
+            }
+        }
+
         internal override void ExportDecapsulationKey(Span<byte> destination)
         {
             Debug.Assert(_x25519 is not null);

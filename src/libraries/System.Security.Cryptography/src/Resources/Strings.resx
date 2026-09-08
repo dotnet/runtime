@@ -147,6 +147,12 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_HpkeCiphertextTooShort" xml:space="preserve">
+    <value>The ciphertext must be at least {0} bytes long to contain the authentication tag.</value>
+  </data>
+  <data name="Argument_HpkeEncapsulatedSecretLength" xml:space="preserve">
+    <value>The encapsulated secret must be exactly {0} bytes long.</value>
+  </data>
   <data name="Argument_HpkeKdfInfoLength" xml:space="preserve">
     <value>The specified info exceeds the maximum length of {0} bytes.</value>
   </data>

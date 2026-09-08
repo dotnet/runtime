@@ -156,6 +156,7 @@ namespace System.Security.Cryptography
 
         internal abstract void DeriveKeyPair(ReadOnlySpan<byte> ikm);
         internal abstract void Encapsulate(Span<byte> encapsulatedSecret, Span<byte> sharedSecret);
+        internal abstract void Decapsulate(ReadOnlySpan<byte> encapsulatedSecret, Span<byte> sharedSecret);
         internal abstract void ImportEncapsulationKey(ReadOnlySpan<byte> encapsulationKey);
         internal abstract void ExportDecapsulationKey(Span<byte> destination);
         internal abstract void ExportEncapsulationKey(Span<byte> destination);

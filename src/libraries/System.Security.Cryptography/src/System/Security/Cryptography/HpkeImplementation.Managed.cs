@@ -108,6 +108,59 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override void OpenCore(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> plaintext,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> info)
+        {
+            const int MaxStackSecretLength = 64;
+            Span<byte> sharedSecretBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> keyBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> baseNonceBuffer = stackalloc byte[MaxStackSecretLength];
+            Span<byte> exporterSecretBuffer = stackalloc byte[MaxStackSecretLength];
+
+            try
+            {
+                Span<byte> sharedSecret = sharedSecretBuffer.Slice(0, Suite.KemMetadata.Nsecret);
+                Span<byte> key = keyBuffer.Slice(0, Suite.AeadMetadata.Nk);
+                Span<byte> baseNonce = baseNonceBuffer.Slice(0, Suite.AeadMetadata.Nn);
+                Span<byte> exporterSecret = exporterSecretBuffer.Slice(0, Suite.KdfMetadata.Nh);
+                _kemAdapter.Decapsulate(encapsulatedSecret, sharedSecret);
+
+                HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
+                kdf.DeriveSecrets(
+                    mode: 0,
+                    sharedSecret,
+                    info,
+                    psk: default,
+                    pskId: default,
+                    key,
+                    baseNonce,
+                    exporterSecret);
+
+                using (HpkeManagedAeadAdapter aead = HpkeManagedAeadAdapter.Create(Suite, key))
+                {
+                    // Single-shot opening uses sequence number zero, so the nonce is base_nonce.
+                    // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
+                    aead.Decrypt(
+                        ciphertext.Slice(0, plaintext.Length),
+                        baseNonce,
+                        associatedData,
+                        ciphertext.Slice(plaintext.Length),
+                        plaintext);
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedSecretBuffer);
+                CryptographicOperations.ZeroMemory(keyBuffer);
+                CryptographicOperations.ZeroMemory(baseNonceBuffer);
+                CryptographicOperations.ZeroMemory(exporterSecretBuffer);
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

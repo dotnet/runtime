@@ -62,6 +62,22 @@ namespace System.Security.Cryptography
             throw new CryptographicException();
         }
 
+        protected override void OpenCore(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> plaintext,
+            ReadOnlySpan<byte> associatedData,
+            ReadOnlySpan<byte> info)
+        {
+            _ = encapsulatedSecret;
+            _ = ciphertext;
+            _ = plaintext;
+            _ = associatedData;
+            _ = info;
+            Debug.Fail("Platform validation should not permit this call.");
+            throw new CryptographicException();
+        }
+
         protected override void Dispose(bool disposing)
         {
             Debug.Fail("Platform validation should not permit this call.");
