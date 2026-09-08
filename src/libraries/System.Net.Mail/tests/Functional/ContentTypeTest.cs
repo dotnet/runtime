@@ -175,7 +175,7 @@ namespace System.Net.Mime.Tests
         // alone must not put the value on the pass-through-unquoted path.
         [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
-        // A would-be encoded-word containing an unescaped quote in the data section.
+        [InlineData("=?utf-8?Q?foo\\\\?=")]
         [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
         // Like the above, but with no whitespace after ';' (still should not be treated as safe pre-encoded input).
         [InlineData("=?utf-8?Q?foo\";filename=\"foo.txt?=")]
