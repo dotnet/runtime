@@ -1431,8 +1431,8 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #error "Portable entry points are not currently supported with tiered compilation, as the interaction between the two is not yet fully worked out."
 #endif
 #ifdef TARGET_WASM
-    PCODE actualEntryPoint;
-    actualEntryPoint = GetMinFunctionTableIndex() + id;
+    void* actualEntryPoint;
+    actualEntryPoint = (void*)(GetMinFunctionTableIndex() + id);
     PCODE virtualEntrypointIP;
     virtualEntrypointIP = R2RRelativeFunctionIndexToVirtualIP(id);
     pEntryPoint = pMD->GetTemporaryEntryPoint();
