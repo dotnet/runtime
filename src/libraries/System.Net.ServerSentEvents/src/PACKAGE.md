@@ -37,7 +37,7 @@ foreach (SseItem<Book> item in SseParser.Create(stream, (eventType, bytes) => Js
 }
 ```
 
-Limit the parser to 64 MiB to protect against untrusted or oversized input and to keep multiple parallel parsers from growing memory usage unexpectedly:
+In case of connecting to untrusted event source, use buffer size limitation to handle oversized input. If you use multiple parser at the same time, consider more strict limits to limit growing memory usage unexpectedly:
 
 ```csharp
 using System.Net.ServerSentEvents;

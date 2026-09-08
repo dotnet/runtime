@@ -22,6 +22,9 @@ namespace System.Net.ServerSentEvents
         /// This overload has behavior equivalent to calling <see cref="Create{T}(Stream, SseItemParser{T})"/> with a delegate
         /// that decodes the data of each event using <see cref="Encoding.UTF8"/>'s GetString method.
         /// </remarks>
+        /// <remarks>
+        /// When parsing data from an untrusted source, use constructor accepting <see cref="SseParserOptions{T}"/> which allow limiting how much data the parser may buffer.
+        /// </remarks>
         public static SseParser<string> Create(Stream sseStream) =>
             Create(sseStream, static (_, bytes) => Encoding.UTF8.GetString(bytes));
 
@@ -32,8 +35,7 @@ namespace System.Net.ServerSentEvents
         /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="itemParser"/> is null.</exception>
         /// <remarks>
-        /// When parsing data from an untrusted source, configure <see cref="SseParserOptions{T}.MaxBufferSize"/> to a bounded value to limit how much data the parser may buffer.
-        /// If multiple parsers are created and run in parallel, choose a limit that keeps the combined memory usage acceptable.
+        /// When parsing data from an untrusted source, use constructor accepting <see cref="SseParserOptions{T}"/> which allow limiting how much data the parser may buffer.
         /// </remarks>
         public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser) =>
             Create(sseStream, new SseParserOptions<T>(itemParser));
