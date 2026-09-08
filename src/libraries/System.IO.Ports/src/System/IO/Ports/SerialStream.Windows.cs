@@ -1677,6 +1677,8 @@ namespace System.IO.Ports
 
             private void CallEvents(int nativeEvents)
             {
+                SerialStream stream = (SerialStream)streamWeakReference.Target;
+                
                 // EV_ERR includes only CE_FRAME, CE_OVERRUN, and CE_RXPARITY
                 // To catch errors such as CE_RXOVER, we need to call CleanCommErrors bit more regularly.
                 // EV_RXCHAR is perhaps too loose an event to look for overflow errors but a safe side to err...
@@ -1708,7 +1710,7 @@ namespace System.IO.Ports
                     // TODO: what about other error conditions not covered by the enum?  Should those produce some other error?
 
                     // if error events occurred and an event handler exists to handle them, queue a work item to handle them
-                    if (errors != 0 && stream.ErrorReceived != null)
+                    if (errors != 0 && stream?.ErrorReceived != null)
                     {
                         ThreadPool.QueueUserWorkItem(callErrorEvents, errors);
                     }
@@ -1717,13 +1719,13 @@ namespace System.IO.Ports
                 // now look for pin changed and received events.
 
                 // if pin changed events occurred and an event handler exists to handle them, queue a work item to handle them
-                if ((nativeEvents & PinChangedEvents) != 0 && stream.PinChanged != null)
+                if ((nativeEvents & PinChangedEvents) != 0 && stream?.PinChanged != null)
                 {
                     ThreadPool.QueueUserWorkItem(callPinEvents, nativeEvents);
                 }
 
                 // if receive events occurred and an event handler exists to handle them, queue a work item to handle them
-                if ((nativeEvents & ReceivedEvents) != 0 && stream.DataReceived != null)
+                if ((nativeEvents & ReceivedEvents) != 0 && stream?.DataReceived != null)
                 {
                     ThreadPool.QueueUserWorkItem(callReceiveEvents, nativeEvents);
                 }
