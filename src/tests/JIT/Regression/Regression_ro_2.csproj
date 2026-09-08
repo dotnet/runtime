@@ -139,9 +139,7 @@
     <Compile Include="JitBlue\Runtime_132785\Runtime_132785.cs" />
     <Compile Include="JitBlue\Runtime_132902\Runtime_132902.cs" />
     <Compile Include="JitBlue\Runtime_133022\Runtime_133022.cs" />
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133442 -->
-    <Compile Include="JitBlue\Runtime_133101\Runtime_133101.cs"
-             Condition="!('$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit')" />
+    <Compile Include="JitBlue\Runtime_133101\Runtime_133101.cs" />
     <Compile Include="JitBlue\Runtime_133207\Runtime_133207.cs" />
   </ItemGroup>
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
