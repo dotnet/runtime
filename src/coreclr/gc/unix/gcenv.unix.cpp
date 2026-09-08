@@ -1028,70 +1028,78 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     return GetVirtualMemoryMaxAddress();
 }
 
+#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64))
+// Check whether the user virtual address space of this process extends up to (1 << vaBits)
+// by trying to map the last page below that boundary at a fixed address.
+// Parameters:
+//  vaBits - number of bits of the user virtual address space to probe for
+// Return:
+//  true if the boundary is within the user virtual address space, false otherwise
+static bool IsUserVirtualAddressSpaceAtLeast(int vaBits)
+{
+    size_t pageSize = OS_PAGE_SIZE;
+    void* probe = (void*)((((size_t)1) << vaBits) - pageSize);
+    void* result = mmap(probe, pageSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+    if (result == MAP_FAILED)
+    {
+        // EEXIST means the page is already mapped, so the address is valid.
+        // Anything else (typically ENOMEM) means the address is outside of the user address space.
+        return errno == EEXIST;
+    }
+
+    munmap(result, pageSize);
+
+    // Kernels older than 4.17 ignore MAP_FIXED_NOREPLACE and treat the address as a hint,
+    // so the mapping may have been placed elsewhere. Trust only an exact match.
+    return result == probe;
+}
+#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64)
+
 // Return the maximum address of the virtual address space of this process.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
 size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
 {
 #ifdef HOST_64BIT
-#ifdef TARGET_RISCV64
-    // Run-time lookup isolated for RISC-V 64-bit to handle Sv39/Sv48/Sv57 MMU modes.
-    static volatile size_t max_address = 0;
-    if (max_address == 0)
+#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64))
+    // The size of the user virtual address space is a kernel configuration choice on these
+    // architectures, so discover it at run time by probing the candidates from the largest to
+    // the smallest one. The smallest candidate is assumed without probing.
+    static volatile size_t s_maxAddress = 0;
+    if (s_maxAddress == 0)
     {
-        size_t discovered = 0;
+#if defined(TARGET_ARM64)
+        // CONFIG_ARM64_VA_BITS can be 52, 48, 47, 42, 39 or 36 and the user address space is
+        // 1 << CONFIG_ARM64_VA_BITS. Android kernels typically use 39 bits.
+        static const int candidates[] = { 52, 48, 47, 42, 39 };
+        const int minVaBits = 36;
+#else // TARGET_ARM64
+        // The user address space is the lower half of the Sv57 / Sv48 / Sv39 virtual address space.
+        static const int candidates[] = { 56, 47 };
+        const int minVaBits = 38;
+#endif // TARGET_ARM64
 
-        // 1. Probe for Sv57 capability (64 PB user ceiling).
-        // Per Linux kernel spec, the opt-in hint address must be >= 1ULL << 56.
-        void* ptr57 = mmap((void*)(1ULL << 56), 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
-        if (ptr57 != MAP_FAILED)
+        size_t maxAddress = ((size_t)1) << minVaBits;
+        for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++)
         {
-            munmap(ptr57, 4096);
-            discovered = (1ULL << 56); // Sv57 max user address (64 PB)
-        }
-        else if (errno == EEXIST)
-        {
-            discovered = (1ULL << 56); // Tier is supported but page is occupied.
-        }
-
-        // 2. Probe for Sv48 capability (128 TB user ceiling) if Sv57 failed.
-        if (discovered == 0)
-        {
-            // Per Linux kernel spec, the opt-in hint address must be >= 1ULL << 47.
-            void* ptr48 = mmap((void*)(1ULL << 47), 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
-            if (ptr48 != MAP_FAILED)
+            if (IsUserVirtualAddressSpaceAtLeast(candidates[i]))
             {
-                munmap(ptr48, 4096);
-                discovered = (1ULL << 47); // Sv48 max user address (128 TB)
-            }
-            else if (errno == EEXIST)
-            {
-                discovered = (1ULL << 47); // Tier is supported but page is occupied.
+                maxAddress = ((size_t)1) << candidates[i];
+                break;
             }
         }
 
-        // 3. Fallback to Sv39 if both high address capabilities failed.
-        if (discovered == 0)
-        {
-            void* ptr39 = mmap(NULL, 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-            if (ptr39 != MAP_FAILED)
-            {
-                munmap(ptr39, 4096);
-                discovered = (1ULL << 38); // Sv39 max user address (256 GB)
-            }
-        }
-
-        max_address = discovered;
+        s_maxAddress = maxAddress;
     }
-    return max_address;
-#else // TARGET_RISCV64
+    return s_maxAddress;
+#else // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64)
     // There is no API to get the total virtual address space size on
     // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
-#endif // TARGET_RISCV64
+#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64)
 #else
     return (size_t)-1;
 #endif
