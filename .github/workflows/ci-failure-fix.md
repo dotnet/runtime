@@ -42,8 +42,9 @@ concurrency:
 tools:
   github:
     toolsets: [pull_requests, repos, issues, search]
+    allowed-repos: ["dotnet/runtime"]
     min-integrity: approved
-    trusted-users: ["github-actions[bot]"]
+    approval-labels: ["Known Build Error"]
   edit:
   bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
 
