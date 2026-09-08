@@ -194,6 +194,14 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_COOP_NO_DTOR_END()          __gcHolder.Leave();
 #endif
 
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_COOP_REGION_BEGIN()         GCX_COOP_NO_DTOR(); try { do {} while (0)
+#define GCX_COOP_REGION_END()           } catch (...) { GCX_COOP_NO_DTOR_END(); throw; } GCX_COOP_NO_DTOR_END(); do {} while (0)
+
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_PREEMP()                                    GCPreemp __gcHolder("GCX_PREEMP", __FUNCTION__, __FILE__, __LINE__)
 #define GCX_PREEMP_NO_DTOR()                            GCPreempNoDtor __gcHolder; __gcHolder.Enter(TRUE, "GCX_PREEMP_NO_DTOR", __FUNCTION__, __FILE__, __LINE__)
@@ -205,6 +213,14 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_PREEMP_NO_DTOR()                            GCPreempNoDtor __gcHolder; __gcHolder.Enter(TRUE)
 #define GCX_PREEMP_NO_DTOR_END()                        __gcHolder.Leave()
 #endif
+
+// On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
+// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_PREEMP_REGION_BEGIN()       GCX_PREEMP_NO_DTOR(); try { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } catch (...) { GCX_PREEMP_NO_DTOR_END(); throw; } GCX_PREEMP_NO_DTOR_END(); do {} while (0)
 
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_COOP_THREAD_EXISTS(curThread)   GCCoopThreadExists __gcHolder((curThread), "GCX_COOP_THREAD_EXISTS",  __FUNCTION__, __FILE__, __LINE__)
@@ -227,6 +243,14 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_MAYBE_COOP_NO_DTOR(_cond)   GCCoopNoDtor __gcHolder; __gcHolder.Enter(_cond)
 #define GCX_MAYBE_COOP_NO_DTOR_END()    __gcHolder.Leave();
 #endif
+
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  GCX_MAYBE_COOP_NO_DTOR(_cond); try { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } catch (...) { GCX_MAYBE_COOP_NO_DTOR_END(); throw; } GCX_MAYBE_COOP_NO_DTOR_END(); do {} while (0)
 
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_MAYBE_PREEMP(_cond)                           GCPreemp __gcHolder(_cond, "GCX_MAYBE_PREEMP",  __FUNCTION__, __FILE__, __LINE__)
@@ -272,15 +296,39 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_COOP_NO_DTOR()
 #define GCX_COOP_NO_DTOR_END()
 
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_COOP_REGION_BEGIN()         { do {} while (0)
+#define GCX_COOP_REGION_END()           } do {} while (0)
+
 #define GCX_PREEMP()
 #define GCX_PREEMP_NO_DTOR()
 #define GCX_PREEMP_NO_DTOR_HAVE_THREAD(curThreadNullOk)
 #define GCX_PREEMP_NO_DTOR_END()
 
+// On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
+// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_PREEMP_REGION_BEGIN()       { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } do {} while (0)
+
 #define GCX_MAYBE_PREEMP(_cond)
 
 #define GCX_COOP_NO_THREAD_BROKEN()
 #define GCX_MAYBE_COOP_NO_THREAD_BROKEN(_cond)
+
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } do {} while (0)
 
 #define GCX_PREEMP_THREAD_EXISTS(curThread)
 #define GCX_COOP_THREAD_EXISTS(curThread)

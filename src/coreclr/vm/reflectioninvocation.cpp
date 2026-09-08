@@ -338,7 +338,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     BEGIN_QCALL;
 
     Thread * pThread = GetThread();
-    GCX_COOP();
+    GCX_COOP_REGION_BEGIN();
 
     struct
     {
@@ -731,7 +731,7 @@ Done:
     result.Set(gc.retVal);
 
     GCPROTECT_END();
-
+    GCX_COOP_REGION_END();
     END_QCALL;
 }
 
