@@ -66,32 +66,15 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
              TaskFactory="TaskHostFactory" />
 
   <!--
-    Hook: the managed test build and the native test build are separate steps in the lab (see
-    src/tests/build.proj), and only one of them runs at a time.
-
-      * combined/local build (__CopyNativeTestBinaries != 1) - 'Build' is the entry point, and
-        CopyAllNativeProjectReferenceBinaries runs *before* it, so the managed assembly this
-        target has to scan does not exist yet at that point. Hook after 'Build'.
-      * lab 'copynativeonly' step (__CopyNativeTestBinaries == 1) - 'Build' never runs;
-        CopyAllNativeProjectReferenceBinaries is invoked directly on each project, and the managed
-        outputs are already on disk from the earlier managed test build. Hook after that.
-
-    Both delegate to the same implementation, and both carry the guards CreateExecuteScript uses
-    so that projects which are not actually being built are skipped.
+    Hook: CopyAllNativeProjectReferenceBinaries runs *before* 'Build', so the managed assembly this
+    target has to scan does not exist yet at that point. Hook after 'Build' instead, once the
+    managed outputs and copied native binaries are both on disk. The condition carries the same
+    guards CreateExecuteScript uses so that projects which are not actually being built are
+    skipped.
   -->
   <Target Name="_WasmBuildTestCorerunAfterBuild"
           AfterTargets="Build"
           Condition="('@(CMakeProjectReference)' != '' or '@(NativeFileReference)' != '' or Exists('$(OutDir)corerun.js')) and
-                     '$(__CopyNativeTestBinaries)' != '1' and
-                     '$(CLRTestBuildAllTargets)' != 'allTargets' and
-                     '$(_WillCLRTestProjectBuild)' == 'true'"
-          DependsOnTargets="WasmBuildTestCorerun" />
-
-  <Target Name="_WasmBuildTestCorerunAfterCopyNative"
-          AfterTargets="CopyAllNativeProjectReferenceBinaries"
-          Condition="('@(CMakeProjectReference)' != '' or '@(NativeFileReference)' != '' or Exists('$(OutDir)corerun.js')) and
-                     '$(__CopyNativeTestBinaries)' == '1' and
-                     '$(CLRTestBuildAllTargets)' != 'allTargets' and
                      '$(_WillCLRTestProjectBuild)' == 'true'"
           DependsOnTargets="WasmBuildTestCorerun" />
 

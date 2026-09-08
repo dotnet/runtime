@@ -97,7 +97,7 @@
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(NativeAotIncompatible)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(IsGCSimulatorTest)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
@@ -106,9 +106,11 @@
     <_WillCLRTestProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
-    <_CopyNativeProjectBinaries Condition="'$(__CopyNativeTestBinaries)' != '1'">$(__CopyNativeProjectsAfterCombinedTestBuild)</_CopyNativeProjectBinaries>
-    <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
-    <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
+    <!-- Native project binaries are copied as part of the managed Build whenever the project will
+         actually build and native components were not skipped, unless something upstream has
+         already explicitly set _CopyNativeProjectBinaries. -->
+    <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == '' and '$(_WillCLRTestProjectBuild)' == 'true' and '$(__SkipNative)' != '1'">true</_CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">false</_CopyNativeProjectBinaries>
   </PropertyGroup>
 
   <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
@@ -124,7 +126,6 @@
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
 
     <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
-    <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
 
   <!-- If a test in a merged test directory (e.g., under JIT\Directed where Directed_1.csproj and siblings -->
@@ -283,7 +284,7 @@
           Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
-          Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
+          Condition="'$(GenerateRunScript)' != 'false' And '$(_WillCLRTestProjectBuild)' == 'true'"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="UpdateReferenceItems"

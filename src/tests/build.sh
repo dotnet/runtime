@@ -58,7 +58,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    if [[ "$__SkipNative" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
+    if [[ "$__SkipNative" != 1 && "$__GenerateLayoutOnly" != 1 && \
         "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
         build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs -DCLR_CMAKE_TEST_RUNTIME_FLAVOR=$__RuntimeFlavor -DCLR_CMAKE_TEST_BUILD_MODE=$__TestBuildMode" "CoreCLR test component"
 
@@ -94,8 +94,7 @@ build_Tests()
     export __BuildTestDir
     export __BuildTestTree
     export __RuntimeFlavor
-    export __CopyNativeProjectsAfterCombinedTestBuild
-    export __CopyNativeTestBinaries
+    export __SkipNative
     export __Priority
     export __CreatePerfmap
     export __CompositeBuildMode
@@ -150,7 +149,6 @@ usage_list+=("-skipmanaged - Skip the managed tests build.")
 usage_list+=("-skipnative - Skip the native tests build.")
 usage_list+=("-skipgeneratelayout - Skip generating the Core_Root layout.")
 usage_list+=("")
-usage_list+=("-copynativeonly - Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly - Only generate the Core_Root layout without building managed or native test components.")
 usage_list+=("")
 usage_list+=("-crossgen2 - Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
@@ -158,7 +156,6 @@ usage_list+=("-composite - Use Crossgen2 composite mode (all framework gets comp
 usage_list+=("-nativeaot - Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1 - Include priority=1 tests in the build.")
 usage_list+=("-perfmap - Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
-usage_list+=("-allTargets - Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
 usage_list+=("-use-bootstrap - Use artifacts produced by the bootstrap subset for local targeting, runtime, and apphost packs.")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
@@ -189,14 +186,6 @@ handle_arguments_local() {
 
         skipnative|-skipnative)
             __SkipNative=1
-            __CopyNativeProjectsAfterCombinedTestBuild=false
-            ;;
-
-        copynativeonly|-copynativeonly)
-            __SkipNative=1
-            __CopyNativeTestBinaries=1
-            __CopyNativeProjectsAfterCombinedTestBuild=false
-            __SkipGenerateLayout=1
             ;;
 
         crossgen2|-crossgen2)
@@ -222,10 +211,6 @@ handle_arguments_local() {
 
         priority1|-priority1)
             __Priority=1
-            ;;
-
-        alltargets|-alltargets)
-            __UnprocessedBuildArgs+=("/p:CLRTestBuildAllTargets=allTargets")
             ;;
 
         use-bootstrap|-use-bootstrap)
@@ -344,8 +329,6 @@ export __ProjectDir
 
 __Compiler=clang
 __ConfigureOnly=0
-__CopyNativeProjectsAfterCombinedTestBuild=true
-__CopyNativeTestBinaries=0
 __CrossBuild=0
 __CompositeBuildMode=
 __CreatePerfmap=

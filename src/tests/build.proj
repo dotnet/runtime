@@ -217,13 +217,9 @@
       Condition="'$(__SkipManaged)' != '1'" >
 
     <PropertyGroup>
-      <TargetToBuild>Build</TargetToBuild>
-      <!-- In split pipeline mode (in the lab) we're using the native component copying step to generate the test execution scripts -->
-      <TargetToBuild Condition="'$(__CopyNativeTestBinaries)' == '1'">CopyAllNativeTestProjectBinaries</TargetToBuild>
-
       <GroupBuildCmd>$(DotNetCli) msbuild</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) $(MSBuildThisFileFullPath)</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) /t:$(TargetToBuild)</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) /t:Build</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
@@ -235,7 +231,6 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(UseBootstrap)' == 'true'">$(GroupBuildCmd) "/p:UseBootstrap=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(ServerGarbageCollection)' != ''">$(GroupBuildCmd) "/p:ServerGarbageCollection=$(ServerGarbageCollection)"</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:UseCodeFlowEnforcement=$(UseCodeFlowEnforcement)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(ControlFlowGuard)' != ''">$(GroupBuildCmd) "/p:ControlFlowGuard=$(ControlFlowGuard)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>
@@ -270,7 +265,7 @@
   <Target Name="GenerateLayout"
       DependsOnTargets="CreateTestOverlay"
       AfterTargets="ManagedBuild;RestorePackages"
-      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
+      Condition="'$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
 
     <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
@@ -281,7 +276,7 @@
 
   <Target Name="CrossgenFramework"
       DependsOnTargets="GenerateLayout"
-      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and '$(TargetArchitecture)' != 'wasm' and !$(MonoAot) and !$(MonoFullAot)" >
+      Condition="'$(__TestBuildMode)' == 'crossgen2' and '$(TargetArchitecture)' != 'wasm' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
@@ -321,7 +316,7 @@
   <Target Name="BuildMonoAot"
       DependsOnTargets="MonoAotCompileTests"
       AfterTargets="ManagedBuild"
-      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
+      Condition="'$(__GenerateLayoutOnly)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
 
   <Target Name="BuildNativeAotFrameworkObjects"
           Condition="'$(BuildNativeAotFrameworkObjects)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
