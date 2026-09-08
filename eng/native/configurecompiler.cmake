@@ -925,8 +925,39 @@ if(CLR_CMAKE_HOST_UNIX_ARMV6)
 endif(CLR_CMAKE_HOST_UNIX_ARMV6)
 
 if(CLR_CMAKE_HOST_UNIX_RISCV64)
-  add_compile_options(-march=rv64gc)
-  add_compile_options(-mabi=lp64d)
+  # The ISA string and the ABI the native runtime is built with. The defaults are
+  # the rv64gc/lp64d baseline, so an unconfigured build is unchanged. A target
+  # whose sysroot is built for a different ABI - a soft-float lp64 userspace, for
+  # instance - selects it here, the way armel selects -mfloat-abi=softfp above,
+  # instead of overriding the flags further down the command line.
+  #
+  # The float-ABI field of e_flags follows -mabi (not -march), so setting the ABI
+  # once here is what makes the whole native build agree with the sysroot; the
+  # linker rejects a mix, and it is also passed at link time so that the driver
+  # selects the matching CRT and builtins.
+  set(CLR_CMAKE_RISCV64_MARCH "rv64gc" CACHE STRING "RISC-V ISA string for the native runtime build")
+  set(CLR_CMAKE_RISCV64_MABI "lp64d" CACHE STRING "RISC-V ABI for the native runtime build")
+
+  # Also settable from the environment, the way CLR_CC, ROOTFS_DIR and TOOLCHAIN
+  # already are: a build driven through a superproject cannot always reach the
+  # cmake command line of an individual repository.
+  if(DEFINED ENV{CLR_CMAKE_RISCV64_MARCH})
+    set(CLR_CMAKE_RISCV64_MARCH "$ENV{CLR_CMAKE_RISCV64_MARCH}")
+  endif()
+  if(DEFINED ENV{CLR_CMAKE_RISCV64_MABI})
+    set(CLR_CMAKE_RISCV64_MABI "$ENV{CLR_CMAKE_RISCV64_MABI}")
+  endif()
+
+  # Without the A extension every __atomic_* call is "not lock-free" and clang
+  # warns; the runtime builds with -Werror, which would make that fatal.
+  if(NOT CLR_CMAKE_RISCV64_MARCH MATCHES "a")
+    add_compile_options(-Wno-atomic-alignment)
+  endif()
+
+  add_compile_options(-march=${CLR_CMAKE_RISCV64_MARCH})
+  add_compile_options(-mabi=${CLR_CMAKE_RISCV64_MABI})
+  add_link_options(-march=${CLR_CMAKE_RISCV64_MARCH})
+  add_link_options(-mabi=${CLR_CMAKE_RISCV64_MABI})
 endif(CLR_CMAKE_HOST_UNIX_RISCV64)
 
 if(CLR_CMAKE_HOST_UNIX_X86)
