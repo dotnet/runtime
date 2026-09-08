@@ -698,6 +698,118 @@ namespace System.Security.Cryptography
         protected abstract HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info);
 
         /// <summary>
+        ///   Creates an HPKE recipient context using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the sender.
+        /// </param>
+        /// <returns>
+        ///   A new recipient context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="encapsulatedSecret" /> is not exactly
+        ///     <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred while creating the recipient.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a recipient is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public HpkeRecipient CreateRecipient(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+            ThrowIfInvalidEncapsulatedSecretLength(encapsulatedSecret);
+            return CreateRecipientCore(encapsulatedSecret, info);
+        }
+
+        /// <summary>
+        ///   Creates an HPKE recipient context using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the sender,
+        ///   or <see langword="null" /> to use an empty context.
+        /// </param>
+        /// <returns>
+        ///   A new recipient context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encapsulatedSecret" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="encapsulatedSecret" /> is not exactly
+        ///     <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred while creating the recipient.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a recipient is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public HpkeRecipient CreateRecipient(byte[] encapsulatedSecret, byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(encapsulatedSecret);
+            return CreateRecipient(new ReadOnlySpan<byte>(encapsulatedSecret), info);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, creates an HPKE recipient context using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="info">
+        ///   The application context.
+        /// </param>
+        /// <returns>
+        ///   A new recipient context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred while creating the recipient.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a recipient is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The calling method has verified that this instance is not disposed, the encapsulated secret
+        ///   has the exact required length, and <paramref name="info" /> satisfies the KDF's length limit.
+        ///   Implementations must return an initialized recipient for <see cref="Suite" />.
+        /// </remarks>
+        protected abstract HpkeRecipient CreateRecipientCore(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info);
+
+        /// <summary>
         ///   Releases all resources used by the <see cref="Hpke" /> class.
         /// </summary>
         public void Dispose()
@@ -740,6 +852,16 @@ namespace System.Security.Cryptography
             }
         }
 
+        private void ThrowIfInvalidEncapsulatedSecretLength(ReadOnlySpan<byte> encapsulatedSecret)
+        {
+            if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_HpkeEncapsulatedSecretLength, Suite.EncapsulatedSecretSizeInBytes),
+                    nameof(encapsulatedSecret));
+            }
+        }
+
         private int ValidateOpenInputs(
             ReadOnlySpan<byte> encapsulatedSecret,
             ReadOnlySpan<byte> ciphertext,
@@ -747,13 +869,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfInfoExceedsLimit(info);
             ThrowIfDisposed();
-
-            if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_HpkeEncapsulatedSecretLength, Suite.EncapsulatedSecretSizeInBytes),
-                    nameof(encapsulatedSecret));
-            }
+            ThrowIfInvalidEncapsulatedSecretLength(encapsulatedSecret);
 
             int tagSize = Suite.AeadTagSizeInBytes;
 

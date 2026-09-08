@@ -107,20 +107,27 @@ namespace System.Security.Cryptography.Tests
             "668b37171f1072f3cf12ea8a236a45df23fc13b82af3609ad1e354f6ef817550",
             "04a92719c6195d5085104f469a8b9814d5838ff72b60501e2c4466e5e67b325a" +
             "c98536d7b61a1af4b78e5b7f951c0900be863c403ce65c9bfcb9382657222d18c4",
-            "5ad590bb8baa577f8619db35a36311226a896e7342a6d836d8b7bcd2f20b6c7f9076ac232e3ab2523f39513434")]
+            "5ad590bb8baa577f8619db35a36311226a896e7342a6d836d8b7bcd2f20b6c7f9076ac232e3ab2523f39513434",
+            "fa6f037b47fc21826b610172ca9637e82d6e5801eb31cbd3748271affd4ecb06646e0329cbdf3c3cd655b28e82",
+            "895cabfac50ce6c6eb02ffe6c048bf53b7f7be9a91fc559402cbc5b8dcaeb52b2ccc93e466c28fb55fed7a7fec")]
         [InlineData(
             HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA512, HpkeAead.AES_256_GCM,
             "a2f6e7c4d9e108e03be268a64fe73e11a320963c85375a30bfc9ec4a214c6a55",
             "0404dc39344526dbfa728afba96986d575811b5af199c11f821a0e603a4d191b2554" +
             "4a402f25364964b2c129cb417b3c1dab4dfc0854f3084e843f731654392726",
-            "949f58e87c39b3f55390b6a970de27dfac44aadc2fbc9d623dcde1a08b628c83ad07dbbee6aede7fcfbf955670")]
+            "949f58e87c39b3f55390b6a970de27dfac44aadc2fbc9d623dcde1a08b628c83ad07dbbee6aede7fcfbf955670",
+            "2b122485c81e76277b6fb7d96d85e1e2f0d41c8b6659dbbd2fad77d4a2318ceb88a350b02f7fdb242af6ee6222",
+            "24612f7a27e9a8a0ddffcc18e769f5e03c9ebb658071b558058172d81336d151933f3d80846596d99f67994822")]
         [InlineData(
             HpkeKem.DHKEM_X25519_HKDF_SHA256, HpkeKdf.HKDF_SHA512, HpkeAead.ChaCha20Poly1305,
             "969bb169aa9c24a501ee9d962e96c310226d427fb6eb3fc579d9882dbc708315",
             "1d38fc578d4209ea0ef3ee5f1128ac4876a9549d74dc2d2f46e75942a6188244",
-            "72da9627fd7eb3a8b7169c6d97419b80adefca751c6b52b39a2e084d35ce3eb4487aadaca5a9c590e0938c48b9")]
+            "72da9627fd7eb3a8b7169c6d97419b80adefca751c6b52b39a2e084d35ce3eb4487aadaca5a9c590e0938c48b9",
+            "bf59c5bfd8b31c3debc4a050388f7a047a24c18559902512d1146177a320616a6b527b194c92cf91d8832db1d5",
+            "a80cdfe1a370a2db7e664c4acc69948d3a095be78bbfb0160f1aa0313cf0ed440154e913e5f9bc6756d7693982")]
         public static void Open_KnownAnswer(
-            HpkeKem kem, HpkeKdf kdf, HpkeAead aead, string ikmHex, string encHex, string ciphertextHex)
+            HpkeKem kem, HpkeKdf kdf, HpkeAead aead, string ikmHex, string encHex,
+            string ciphertextHex, string secondCiphertextHex, string thirdCiphertextHex)
         {
             HpkeSuite suite = new(kem, kdf, aead);
 
@@ -148,6 +155,15 @@ namespace System.Security.Cryptography.Tests
                     byte[] destination = new byte[plaintext.Length];
                     key.Open(enc, ciphertext, destination.AsSpan(), associatedData, info);
                     Assert.Equal(plaintext, destination);
+
+                    using (HpkeRecipient recipient = key.CreateRecipient(enc, info))
+                    {
+                        Assert.Equal(plaintext, recipient.Open(ciphertext, associatedData));
+                        Assert.Equal(plaintext, recipient.Open(
+                            new ReadOnlySpan<byte>(Convert.FromHexString(secondCiphertextHex)), "Count-1"u8));
+                        recipient.Open(Convert.FromHexString(thirdCiphertextHex), destination.AsSpan(), "Count-2"u8);
+                        Assert.Equal(plaintext, destination);
+                    }
                 }
             }
             finally
@@ -319,6 +335,8 @@ namespace System.Security.Cryptography.Tests
                 Assert.ThrowsAny<CryptographicException>(() => key.Open(enc, ciphertext));
                 Assert.ThrowsAny<CryptographicException>(() => key.Open(enc.AsSpan(), ciphertext));
                 Assert.ThrowsAny<CryptographicException>(() => key.Open(enc, ciphertext, Span<byte>.Empty));
+                Assert.ThrowsAny<CryptographicException>(() => key.CreateRecipient(enc));
+                Assert.ThrowsAny<CryptographicException>(() => key.CreateRecipient(enc.AsSpan()));
             }
         }
 
@@ -548,7 +566,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(OpenSuiteData))]
-        public static void CreateSender_Seal(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
+        public static void CreateContexts_SealAndOpen(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
         {
             HpkeSuite suite = new(kem, kdf, aead);
 
@@ -571,14 +589,17 @@ namespace System.Security.Cryptography.Tests
                     int ciphertextLength = suite.GetCiphertextLength(length);
 
                     using (HpkeSender sender = key.CreateSender(out byte[] enc, info))
+                    using (HpkeRecipient recipient = key.CreateRecipient(enc, info))
                     {
                         Assert.Same(suite, sender.Suite);
+                        Assert.Same(suite, recipient.Suite);
                         Assert.Equal(suite.EncapsulatedSecretSizeInBytes, enc.Length);
                         AssertExtensions.Throws<ArgumentException>(
                             "ciphertext", () => sender.Seal(plaintext, new byte[ciphertextLength - 1].AsSpan(), associatedData));
 
                         byte[] ciphertext = sender.Seal(plaintext, associatedData);
                         Assert.Equal(plaintext, key.Open(enc, ciphertext, associatedData, info));
+                        Assert.Equal(plaintext, recipient.Open(ciphertext, associatedData));
 
                         byte[] nextCiphertext = sender.Seal(
                             new ReadOnlySpan<byte>(plaintext), new ReadOnlySpan<byte>(associatedData));
@@ -586,6 +607,8 @@ namespace System.Security.Cryptography.Tests
                         Assert.NotEqual(ciphertext, nextCiphertext);
                         Assert.Throws<AuthenticationTagMismatchException>(
                             () => key.Open(enc, nextCiphertext, associatedData, info));
+                        Assert.Equal(plaintext, recipient.Open(
+                            new ReadOnlySpan<byte>(nextCiphertext), new ReadOnlySpan<byte>(associatedData)));
                     }
 
                     byte[] encBuffer = new byte[suite.EncapsulatedSecretSizeInBytes + 2];
@@ -605,6 +628,17 @@ namespace System.Security.Cryptography.Tests
                         Assert.Equal(0xA5, ciphertextBuffer[^1]);
                         Assert.Equal(plaintext, key.Open(
                             enc, ciphertextBuffer.AsSpan(1, ciphertextLength), new ReadOnlySpan<byte>(associatedData), info));
+
+                        using (HpkeRecipient recipient = key.CreateRecipient(enc.AsSpan(), info))
+                        {
+                            Assert.Same(suite, recipient.Suite);
+                            byte[] destination = new byte[length + 2];
+                            destination.AsSpan().Fill(0xA5);
+                            recipient.Open(ciphertextBuffer.AsSpan(1, ciphertextLength), destination.AsSpan(1, length), associatedData);
+                            AssertExtensions.SequenceEqual(plaintext.AsSpan(), destination.AsSpan(1, length));
+                            Assert.Equal(0xA5, destination[0]);
+                            Assert.Equal(0xA5, destination[^1]);
+                        }
                     }
                 }
             }
@@ -614,7 +648,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
         [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
         [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
-        public static void CreateSender_IndependentLifetime(HpkeKem kem)
+        public static void CreateContexts_IndependentLifetime(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
 
@@ -632,20 +666,219 @@ namespace System.Security.Cryptography.Tests
                 using (Hpke peer = Hpke.DeriveKey(suite, ikm))
                 using (HpkeSender first = key.CreateSender(out byte[] firstEnc))
                 using (HpkeSender second = key.CreateSender(out byte[] secondEnc))
+                using (HpkeRecipient firstRecipient = key.CreateRecipient(firstEnc))
+                using (HpkeRecipient secondRecipient = key.CreateRecipient(secondEnc.AsSpan()))
                 {
                     key.Dispose();
                     Assert.NotEqual(firstEnc, secondEnc);
                     byte[] plaintext = "message"u8.ToArray();
-                    Assert.Equal(plaintext, peer.Open(firstEnc, first.Seal(plaintext)));
+                    byte[] firstCiphertext = first.Seal(plaintext);
+                    Assert.Equal(plaintext, peer.Open(firstEnc, firstCiphertext));
+                    Assert.Equal(plaintext, firstRecipient.Open(firstCiphertext));
 
                     first.Dispose();
+                    firstRecipient.Dispose();
                     Assert.Throws<ObjectDisposedException>(() => first.Seal(plaintext));
-                    Assert.Equal(plaintext, peer.Open(secondEnc, second.Seal(plaintext)));
+                    Assert.Throws<ObjectDisposedException>(() => firstRecipient.Open(firstCiphertext));
+                    byte[] secondCiphertext = second.Seal(plaintext);
+                    Assert.Equal(plaintext, peer.Open(secondEnc, secondCiphertext));
+                    Assert.Equal(plaintext, secondRecipient.Open(secondCiphertext));
                 }
             }
             finally
             {
                 CryptographicOperations.ZeroMemory(ikm);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
+        [InlineData(HpkeKem.MLKEM_512)]
+        [InlineData(HpkeKem.MLKEM_768)]
+        [InlineData(HpkeKem.MLKEM_1024)]
+        [InlineData(HpkeKem.MLKEM768_P256)]
+        [InlineData(HpkeKem.MLKEM1024_P384)]
+        public static void CreateRecipient_Overloads(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite))
+            {
+                byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+                enc.AsSpan().Fill(0xD7);
+                byte[] info = [1, 2, 3];
+
+                using (HpkeRecipient recipient = key.CreateRecipient(enc, info))
+                {
+                    Assert.IsType<RecordingHpkeRecipient>(recipient);
+                    Assert.Same(suite, recipient.Suite);
+                    Assert.Equal(enc, key.LastRecipientEncapsulatedSecret);
+                    Assert.Equal(info, key.LastRecipientInfo);
+                }
+
+                using (HpkeRecipient recipient = key.CreateRecipient(enc.AsSpan(), info))
+                {
+                    Assert.Same(suite, recipient.Suite);
+                    Assert.Equal(enc, key.LastRecipientEncapsulatedSecret);
+                    Assert.Equal(info, key.LastRecipientInfo);
+                }
+
+                using (HpkeRecipient recipient = key.CreateRecipient(enc, info: null))
+                {
+                    Assert.Empty(key.LastRecipientInfo);
+                }
+
+                using (HpkeRecipient recipient = key.CreateRecipient(enc.AsSpan()))
+                {
+                    Assert.Empty(key.LastRecipientInfo);
+                }
+
+                Assert.Equal(4, key.CreateRecipientCalls);
+            }
+        }
+
+        [Fact]
+        public static void CreateRecipient_Validation()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "encapsulatedSecret", () => key.CreateRecipient((byte[])null));
+
+                foreach (int length in new[] { 0, suite.EncapsulatedSecretSizeInBytes - 1, suite.EncapsulatedSecretSizeInBytes + 1 })
+                {
+                    byte[] enc = new byte[length];
+                    AssertExtensions.Throws<ArgumentException>("encapsulatedSecret", () => key.CreateRecipient(enc));
+                    AssertExtensions.Throws<ArgumentException>("encapsulatedSecret", () => key.CreateRecipient(enc.AsSpan()));
+                }
+
+                key.Dispose();
+                byte[] validLengthEnc = new byte[suite.EncapsulatedSecretSizeInBytes];
+                Assert.Throws<ObjectDisposedException>(() => key.CreateRecipient(validLengthEnc));
+                Assert.Throws<ObjectDisposedException>(() => key.CreateRecipient(validLengthEnc.AsSpan()));
+                Assert.Equal(0, key.CreateRecipientCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256, 65536, true)]
+        [InlineData(HpkeKdf.HKDF_SHA384, 65536, true)]
+        [InlineData(HpkeKdf.HKDF_SHA512, 65536, true)]
+        [InlineData(HpkeKdf.SHAKE128, 65535, true)]
+        [InlineData(HpkeKdf.SHAKE128, 65536, false)]
+        [InlineData(HpkeKdf.SHAKE256, 65535, true)]
+        [InlineData(HpkeKdf.SHAKE256, 65536, false)]
+        public static void CreateRecipient_InfoLength(HpkeKdf kdf, int infoLength, bool valid)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite))
+            {
+                byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+                byte[] info = new byte[infoLength];
+                info.AsSpan().Fill(0x39);
+
+                if (valid)
+                {
+                    using (HpkeRecipient recipient = key.CreateRecipient(enc, info))
+                    {
+                        Assert.Equal(info, key.LastRecipientInfo);
+                    }
+
+                    using (HpkeRecipient recipient = key.CreateRecipient(enc.AsSpan(), info))
+                    {
+                        Assert.Equal(info, key.LastRecipientInfo);
+                    }
+                }
+                else
+                {
+                    AssertExtensions.Throws<ArgumentException>("info", () => key.CreateRecipient(enc, info));
+                    AssertExtensions.Throws<ArgumentException>("info", () => key.CreateRecipient(enc.AsSpan(), info));
+                }
+
+                Assert.Equal(valid ? 2 : 0, key.CreateRecipientCalls);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenSuiteData))]
+        public static void Recipient_AuthenticationFailureAndOrdering(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
+        {
+            HpkeSuite suite = new(kem, kdf, aead);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            byte[] info = "application context"u8.ToArray();
+            byte[] associatedData = "associated data"u8.ToArray();
+            byte[] first = "first"u8.ToArray();
+            byte[] second = "second"u8.ToArray();
+            byte[] third = "third"u8.ToArray();
+
+            using (Hpke key = Hpke.GenerateKey(suite))
+            using (Hpke wrongKey = Hpke.GenerateKey(suite))
+            using (HpkeSender sender = key.CreateSender(out byte[] enc, info))
+            using (HpkeRecipient recipient = key.CreateRecipient(enc, info))
+            {
+                byte[] firstCiphertext = sender.Seal(first, associatedData);
+                byte[] secondCiphertext = sender.Seal(second, associatedData);
+                byte[] thirdCiphertext = sender.Seal(third, associatedData);
+
+                using (HpkeRecipient wrongKeyRecipient = wrongKey.CreateRecipient(enc, info))
+                using (HpkeRecipient wrongInfoRecipient = key.CreateRecipient(enc, "different context"u8.ToArray()))
+                {
+                    Assert.Throws<AuthenticationTagMismatchException>(() => wrongKeyRecipient.Open(firstCiphertext, associatedData));
+                    Assert.Throws<AuthenticationTagMismatchException>(() => wrongInfoRecipient.Open(firstCiphertext, associatedData));
+                }
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "plaintext", () => recipient.Open(firstCiphertext, new byte[first.Length - 1].AsSpan(), associatedData));
+
+                for (int tamper = 0; tamper < 3; tamper++)
+                {
+                    byte[] modifiedCiphertext = (byte[])firstCiphertext.Clone();
+                    byte[] modifiedAssociatedData = (byte[])associatedData.Clone();
+
+                    switch (tamper)
+                    {
+                        case 0:
+                            modifiedCiphertext[0] ^= 1;
+                            break;
+                        case 1:
+                            modifiedCiphertext[^1] ^= 1;
+                            break;
+                        case 2:
+                            modifiedAssociatedData[0] ^= 1;
+                            break;
+                    }
+
+                    Assert.Throws<AuthenticationTagMismatchException>(() => recipient.Open(modifiedCiphertext, modifiedAssociatedData));
+                    Assert.Throws<AuthenticationTagMismatchException>(() => recipient.Open(
+                        new ReadOnlySpan<byte>(modifiedCiphertext), new ReadOnlySpan<byte>(modifiedAssociatedData)));
+
+                    byte[] destination = new byte[first.Length + 2];
+                    destination.AsSpan().Fill(0xA5);
+                    Assert.Throws<AuthenticationTagMismatchException>(() => recipient.Open(
+                        modifiedCiphertext, destination.AsSpan(1, first.Length), modifiedAssociatedData));
+                    AssertExtensions.SequenceEqual(new byte[first.Length].AsSpan(), destination.AsSpan(1, first.Length));
+                    Assert.Equal(0xA5, destination[0]);
+                    Assert.Equal(0xA5, destination[^1]);
+                }
+
+                Assert.Equal(first, recipient.Open(firstCiphertext, associatedData));
+                Assert.Throws<AuthenticationTagMismatchException>(() => recipient.Open(firstCiphertext, associatedData));
+                Assert.Throws<AuthenticationTagMismatchException>(() => recipient.Open(thirdCiphertext, associatedData));
+                Assert.Equal(second, recipient.Open(new ReadOnlySpan<byte>(secondCiphertext), new ReadOnlySpan<byte>(associatedData)));
+                byte[] thirdDestination = new byte[third.Length];
+                recipient.Open(thirdCiphertext, thirdDestination.AsSpan(), associatedData);
+                Assert.Equal(third, thirdDestination);
             }
         }
 
@@ -655,6 +888,9 @@ namespace System.Security.Cryptography.Tests
             internal int CreateSenderCalls { get; private set; }
             internal byte[] LastSenderInfo { get; private set; } = [];
             internal bool ThrowOnCreateSender { get; set; }
+            internal int CreateRecipientCalls { get; private set; }
+            internal byte[] LastRecipientEncapsulatedSecret { get; private set; } = [];
+            internal byte[] LastRecipientInfo { get; private set; } = [];
 
             internal RecordingHpke(HpkeSuite suite) : base(suite)
             {
@@ -683,6 +919,16 @@ namespace System.Security.Cryptography.Tests
                 }
 
                 return new RecordingHpkeSender(Suite);
+            }
+
+            protected override HpkeRecipient CreateRecipientCore(
+                ReadOnlySpan<byte> encapsulatedSecret,
+                ReadOnlySpan<byte> info)
+            {
+                CreateRecipientCalls++;
+                LastRecipientEncapsulatedSecret = encapsulatedSecret.ToArray();
+                LastRecipientInfo = info.ToArray();
+                return new RecordingHpkeRecipient(Suite);
             }
 
             protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>

@@ -1893,6 +1893,9 @@ namespace System.Security.Cryptography
     {
         protected Hpke(System.Security.Cryptography.HpkeSuite suite) { }
         public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
+        public System.Security.Cryptography.HpkeRecipient CreateRecipient(byte[] encapsulatedSecret, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeRecipient CreateRecipient(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeRecipient CreateRecipientCore(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info);
         public System.Security.Cryptography.HpkeSender CreateSender(out byte[] encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Security.Cryptography.HpkeSender CreateSender(System.Span<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract System.Security.Cryptography.HpkeSender CreateSenderCore(System.Span<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info);
