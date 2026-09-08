@@ -237,8 +237,9 @@ namespace System.Runtime.CompilerServices
             PrepareDelegate(ObjectHandleOnStack.Create(ref d));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "Delegate_CreateDelegate")]
-        private static unsafe partial void CreateDelegate(nint method, MethodTable* delegateMt, MethodTable* targetMt, ObjectHandleOnStack objHandle);
+        private static unsafe partial void CreateDelegate(MethodTable* delegateMt, MethodTable* targetMt, nint method, ObjectHandleOnStack objHandle, ObjectHandleOnStack targetHandle);
 
         // This method is used by the JIT as a helper
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -249,7 +250,8 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(RuntimeTypeHandle.GetRuntimeType(delegateMt).IsDelegate());
 
             Delegate? newDelegate = null;
-            CreateDelegate(method, delegateMt, targetMt, ObjectHandleOnStack.Create(ref newDelegate));
+            object? target = null;
+            CreateDelegate(delegateMt, targetMt, method, ObjectHandleOnStack.Create(ref newDelegate), ObjectHandleOnStack.Create(ref target));
 
             if (newDelegate is null)
             {
