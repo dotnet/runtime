@@ -1707,19 +1707,23 @@ namespace System.IO.Ports
                     //       but CE_BREAK is returned from ClreaCommError.
                     // TODO: what about other error conditions not covered by the enum?  Should those produce some other error?
 
-                    if (errors != 0)
+                    // if error events occurred and an event handler exists to handle them, queue a work item to handle them
+                    if (errors != 0 && stream.ErrorReceived != null)
                     {
                         ThreadPool.QueueUserWorkItem(callErrorEvents, errors);
                     }
                 }
 
                 // now look for pin changed and received events.
-                if ((nativeEvents & PinChangedEvents) != 0)
+
+                // if pin changed events occurred and an event handler exists to handle them, queue a work item to handle them
+                if ((nativeEvents & PinChangedEvents) != 0 && stream.PinChanged != null)
                 {
                     ThreadPool.QueueUserWorkItem(callPinEvents, nativeEvents);
                 }
 
-                if ((nativeEvents & ReceivedEvents) != 0)
+                // if receive events occurred and an event handler exists to handle them, queue a work item to handle them
+                if ((nativeEvents & ReceivedEvents) != 0 && stream.DataReceived != null)
                 {
                     ThreadPool.QueueUserWorkItem(callReceiveEvents, nativeEvents);
                 }
