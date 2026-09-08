@@ -199,7 +199,7 @@ namespace System
             => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
 
         /// <summary>
-        /// Indicates whether the current application is running on FreeBSD.
+        /// Indicates whether the current application is running on OpenBSD.
         /// </summary>
         [NonVersionable]
         public static bool IsOpenBSD() =>
