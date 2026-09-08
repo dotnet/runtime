@@ -1028,7 +1028,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     return GetVirtualMemoryMaxAddress();
 }
 
-#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64))
+#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64))
 #ifndef MAP_FIXED_NOREPLACE
 #define MAP_FIXED_NOREPLACE 0x100000
 #endif
@@ -1057,7 +1057,7 @@ static bool IsUserVirtualAddressSpaceAtLeast(int vaBits)
     // so the mapping may have been placed elsewhere. Trust only an exact match.
     return result == probe;
 }
-#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64)
+#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
 
 // Return the maximum address of the virtual address space of this process.
 // Return:
@@ -1065,7 +1065,7 @@ static bool IsUserVirtualAddressSpaceAtLeast(int vaBits)
 size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
 {
 #ifdef HOST_64BIT
-#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64))
+#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64))
     // The size of the user virtual address space is a kernel configuration choice on these
     // architectures, so discover it at run time by probing the candidates from the largest to
     // the smallest one. The smallest candidate is assumed without probing.
@@ -1073,15 +1073,15 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
     if (s_maxAddress == 0)
     {
 #if defined(TARGET_ARM64)
-        // CONFIG_ARM64_VA_BITS can be 52, 48, 47, 42, 39 or 36 and the user address space is
-        // 1 << CONFIG_ARM64_VA_BITS. Android kernels typically use 39 bits.
         static const int candidates[] = { 52, 48, 47, 42, 39 };
         const int minVaBits = 36;
-#else // TARGET_ARM64
-        // The user address space is the lower half of the Sv57 / Sv48 / Sv39 virtual address space.
+#elif defined(TARGET_RISCV64)
         static const int candidates[] = { 56, 47 };
         const int minVaBits = 38;
-#endif // TARGET_ARM64
+#else // TARGET_LOONGARCH64
+        static const int candidates[] = { 47, 39 };
+        const int minVaBits = 36;
+#endif
 
         size_t maxAddress = ((size_t)1) << minVaBits;
         for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++)
@@ -1096,14 +1096,14 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
         s_maxAddress = maxAddress;
     }
     return s_maxAddress;
-#else // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64)
+#else // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
     // There is no API to get the total virtual address space size on
     // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
-#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64)
+#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
 #else
     return (size_t)-1;
 #endif
