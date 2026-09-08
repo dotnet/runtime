@@ -575,17 +575,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `InstantiatedMethodDesc` | `NumGenericArgs` | `uint16` | How many generic args the method has |
 | `InstantiatedMethodDesc` | `PerInstInfo` | `pointer` | The pointer to the method's type arguments |
 | `LoaderAllocator` | `CreationNumber` | `uint64` | Monotonically-increasing creation number assigned to each collectible LoaderAllocator. |
-| `LoaderAllocator` | `DynamicHelpersStubHeap` | `pointer` | Dynamic-helper stub heap (optional, present when ReadyToRun dynamic-helper stubs are enabled) |
-| `LoaderAllocator` | `ExecutableHeap` | `pointer` | Executable-code heap |
-| `LoaderAllocator` | `FixupPrecodeHeap` | `pointer` | Fixup-precode heap (optional, present when fixup precodes are supported) |
-| `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
 | `LoaderAllocator` | `IsCollectible` | `uint8` | Non-zero if the LoaderAllocator is collectible. |
-| `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
-| `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
-| `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
-| `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
-| `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
-| `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
 | `MethodDesc` | *(type size)* | `uint32` | Base size for mcIL classification |
 | `MethodDesc` | `ChunkIndex` | `uint8` | Offset of this MethodDesc relative to the end of its containing MethodDescChunk - in multiples of MethodDescAlignment |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
@@ -621,7 +611,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `NativeCodeSlot` | *(type size)* | `uint32` | Size of the native code slot, added when HasNativeCodeSlot flag is set |
 | `NonVtableSlot` | *(type size)* | `uint32` | Size of the non-vtable slot, added when HasNonVtableSlot flag is set |
 | `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
-| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `ParamTypeDesc` | `TypeArg` | `pointer` | Associated type argument |
 | `PInvokeMethodDesc` | *(type size)* | `uint32` | Base size for mcPInvoke classification |
 | `Signature` | `SignatureLength` | `uint32` | Length in bytes of the raw signature blob. |
