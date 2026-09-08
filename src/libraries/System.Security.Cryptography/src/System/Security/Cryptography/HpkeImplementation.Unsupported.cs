@@ -78,6 +78,9 @@ namespace System.Security.Cryptography
             throw new CryptographicException();
         }
 
+        protected override HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info) =>
+            throw new PlatformNotSupportedException();
+
         protected override void Dispose(bool disposing)
         {
             Debug.Fail("Platform validation should not permit this call.");

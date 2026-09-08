@@ -161,6 +161,9 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info) =>
+            throw new NotImplementedException();
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

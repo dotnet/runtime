@@ -330,7 +330,7 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
 
-            using (OpenValidationHpke key = new(suite))
+            using (RecordingHpke key = new(suite))
             {
                 byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
                 byte[] ciphertext = new byte[suite.GetCiphertextLength(1)];
@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
 
-            using (OpenValidationHpke key = new(suite))
+            using (RecordingHpke key = new(suite))
             {
                 byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
                 byte[] ciphertext = new byte[suite.AeadTagSizeInBytes];
@@ -412,11 +412,172 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        private sealed class OpenValidationHpke : Hpke
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
+        [InlineData(HpkeKem.MLKEM_512)]
+        [InlineData(HpkeKem.MLKEM_768)]
+        [InlineData(HpkeKem.MLKEM_1024)]
+        [InlineData(HpkeKem.MLKEM768_P256)]
+        [InlineData(HpkeKem.MLKEM1024_P384)]
+        public static void CreateSender_Overloads(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite))
+            {
+                byte[] info = [1, 2, 3];
+                byte[] expected = new byte[suite.EncapsulatedSecretSizeInBytes];
+                expected.AsSpan().Fill(0xD7);
+
+                using (HpkeSender sender = key.CreateSender(out byte[] enc, info))
+                {
+                    Assert.IsType<RecordingHpkeSender>(sender);
+                    Assert.Same(suite, sender.Suite);
+                    Assert.Equal(expected, enc);
+                    Assert.Equal(info, key.LastSenderInfo);
+                }
+
+                byte[] destination = new byte[expected.Length + 2];
+                destination.AsSpan().Fill(0xA5);
+
+                using (HpkeSender sender = key.CreateSender(destination.AsSpan(1, expected.Length), info))
+                {
+                    Assert.Same(suite, sender.Suite);
+                    AssertExtensions.SequenceEqual(expected.AsSpan(), destination.AsSpan(1, expected.Length));
+                    Assert.Equal(0xA5, destination[0]);
+                    Assert.Equal(0xA5, destination[^1]);
+                    Assert.Equal(info, key.LastSenderInfo);
+                }
+
+                using (HpkeSender sender = key.CreateSender(out _))
+                {
+                    Assert.Empty(key.LastSenderInfo);
+                }
+
+                using (HpkeSender sender = key.CreateSender(destination.AsSpan(1, expected.Length)))
+                {
+                    Assert.Empty(key.LastSenderInfo);
+                }
+
+                Assert.Equal(4, key.CreateSenderCalls);
+            }
+        }
+
+        [Fact]
+        public static void CreateSender_Validation()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite))
+            {
+                foreach (int length in new[] { 0, suite.EncapsulatedSecretSizeInBytes - 1, suite.EncapsulatedSecretSizeInBytes + 1 })
+                {
+                    byte[] destination = new byte[length];
+                    destination.AsSpan().Fill(0xA5);
+                    byte[] original = (byte[])destination.Clone();
+                    AssertExtensions.Throws<ArgumentException>(
+                        "encapsulatedSecret", () => key.CreateSender(destination));
+                    Assert.Equal(original, destination);
+                }
+
+                key.Dispose();
+                byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+                Assert.Throws<ObjectDisposedException>(() => key.CreateSender(out _));
+                Assert.Throws<ObjectDisposedException>(() => key.CreateSender(enc));
+                Assert.Equal(0, key.CreateSenderCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256, 65536, true)]
+        [InlineData(HpkeKdf.HKDF_SHA384, 65536, true)]
+        [InlineData(HpkeKdf.HKDF_SHA512, 65536, true)]
+        [InlineData(HpkeKdf.SHAKE128, 65535, true)]
+        [InlineData(HpkeKdf.SHAKE128, 65536, false)]
+        [InlineData(HpkeKdf.SHAKE256, 65535, true)]
+        [InlineData(HpkeKdf.SHAKE256, 65536, false)]
+        public static void CreateSender_InfoLength(HpkeKdf kdf, int infoLength, bool valid)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite))
+            {
+                byte[] info = new byte[infoLength];
+                info.AsSpan().Fill(0x39);
+                byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+
+                if (valid)
+                {
+                    using (HpkeSender sender = key.CreateSender(out _, info))
+                    {
+                        Assert.Equal(info, key.LastSenderInfo);
+                    }
+
+                    using (HpkeSender sender = key.CreateSender(enc, info))
+                    {
+                        Assert.Equal(info, key.LastSenderInfo);
+                    }
+                }
+                else
+                {
+                    AssertExtensions.Throws<ArgumentException>("info", () => key.CreateSender(out _, info));
+                    AssertExtensions.Throws<ArgumentException>("info", () => key.CreateSender(enc, info));
+                }
+
+                Assert.Equal(valid ? 2 : 0, key.CreateSenderCalls);
+            }
+        }
+
+        [Fact]
+        public static void CreateSender_CoreFailureDoesNotPublishOutput()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite) { ThrowOnCreateSender = true })
+            {
+                byte[] original = [0xA5];
+                byte[] enc = original;
+                Assert.Throws<CryptographicException>(() => key.CreateSender(out enc));
+                Assert.Same(original, enc);
+                Assert.Throws<CryptographicException>(() => key.CreateSender(new byte[suite.EncapsulatedSecretSizeInBytes]));
+                Assert.Equal(2, key.CreateSenderCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_X25519_HKDF_SHA256)]
+        public static void CreateSender_NotImplemented(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            using (Hpke key = Hpke.GenerateKey(suite))
+            {
+                byte[] original = [0xA5];
+                byte[] enc = original;
+                Assert.Throws<NotImplementedException>(() => key.CreateSender(out enc));
+                Assert.Same(original, enc);
+                Assert.Throws<NotImplementedException>(() => key.CreateSender(new byte[suite.EncapsulatedSecretSizeInBytes]));
+            }
+        }
+
+        private sealed class RecordingHpke : Hpke
         {
             internal bool OpenCoreCalled { get; private set; }
+            internal int CreateSenderCalls { get; private set; }
+            internal byte[] LastSenderInfo { get; private set; } = [];
+            internal bool ThrowOnCreateSender { get; set; }
 
-            internal OpenValidationHpke(HpkeSuite suite) : base(suite)
+            internal RecordingHpke(HpkeSuite suite) : base(suite)
             {
             }
 
@@ -429,6 +590,20 @@ namespace System.Security.Cryptography.Tests
             {
                 OpenCoreCalled = true;
                 plaintext.Clear();
+            }
+
+            protected override HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info)
+            {
+                CreateSenderCalls++;
+                LastSenderInfo = info.ToArray();
+                encapsulatedSecret.Fill(0xD7);
+
+                if (ThrowOnCreateSender)
+                {
+                    throw new CryptographicException("Sender creation test failure.");
+                }
+
+                return new RecordingHpkeSender(Suite);
             }
 
             protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>
@@ -580,6 +755,506 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<ObjectDisposedException>(() => key.ExportEncapsulationKey());
                 Assert.Throws<ObjectDisposedException>(() => key.ExportEncapsulationKey(exported));
                 AssertExtensions.SequenceEqual(exported.AsSpan(), buffer.AsSpan(1, keySize));
+            }
+        }
+
+        [Fact]
+        public static void Sender_ConstructorAndDisposal()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("suite", () => new RecordingHpkeSender(null));
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeSender sender = new(suite))
+            {
+                Assert.Same(suite, sender.Suite);
+                sender.Dispose();
+                sender.Dispose();
+                Assert.Equal(1, sender.DisposeCalls);
+
+                byte[] ciphertext = new byte[suite.AeadTagSizeInBytes];
+                Assert.Throws<ObjectDisposedException>(() => sender.Seal(Array.Empty<byte>()));
+                Assert.Throws<ObjectDisposedException>(() => sender.Seal(ReadOnlySpan<byte>.Empty));
+                Assert.Throws<ObjectDisposedException>(() => sender.Seal(ReadOnlySpan<byte>.Empty, ciphertext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => sender.Export(Array.Empty<byte>(), 0));
+                Assert.Throws<ObjectDisposedException>(() => sender.Export(ReadOnlySpan<byte>.Empty, 0));
+                Assert.Throws<ObjectDisposedException>(() => sender.Export(ReadOnlySpan<byte>.Empty, Span<byte>.Empty));
+                Assert.Equal(0, sender.SealCalls);
+                Assert.Equal(0, sender.ExportCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeAead.AES_128_GCM, 0)]
+        [InlineData(HpkeAead.AES_128_GCM, 5)]
+        [InlineData(HpkeAead.AES_256_GCM, 5)]
+        [InlineData(HpkeAead.ChaCha20Poly1305, 5)]
+        public static void Sender_Seal(HpkeAead aead, int plaintextLength)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, aead);
+
+            using (RecordingHpkeSender sender = new(suite))
+            {
+                byte[] plaintext = new byte[plaintextLength];
+                plaintext.AsSpan().Fill(0x3C);
+                byte[] associatedData = [1, 2, 3];
+                byte[] expected = new byte[suite.GetCiphertextLength(plaintextLength)];
+                expected.AsSpan().Fill(0xD3);
+
+                Assert.Equal(expected, sender.Seal(plaintext, associatedData));
+                Assert.Equal(plaintext, sender.LastPlaintext);
+                Assert.Equal(associatedData, sender.LastAssociatedData);
+
+                Assert.Equal(expected, sender.Seal(
+                    new ReadOnlySpan<byte>(plaintext), new ReadOnlySpan<byte>(associatedData)));
+                Assert.Equal(plaintext, sender.LastPlaintext);
+                Assert.Equal(associatedData, sender.LastAssociatedData);
+
+                byte[] destination = new byte[expected.Length + 2];
+                destination.AsSpan().Fill(0xA5);
+                sender.Seal(plaintext, destination.AsSpan(1, expected.Length), associatedData);
+                AssertExtensions.SequenceEqual(expected.AsSpan(), destination.AsSpan(1, expected.Length));
+                Assert.Equal(0xA5, destination[0]);
+                Assert.Equal(0xA5, destination[^1]);
+                Assert.Equal(plaintext, sender.LastPlaintext);
+                Assert.Equal(associatedData, sender.LastAssociatedData);
+
+                Assert.Equal(expected, sender.Seal(plaintext));
+                Assert.Empty(sender.LastAssociatedData);
+                Assert.Equal(expected, sender.Seal(plaintext.AsSpan()));
+                Assert.Empty(sender.LastAssociatedData);
+                Assert.Equal(5, sender.SealCalls);
+                Assert.Equal(0, sender.ExportCalls);
+            }
+        }
+
+        [Fact]
+        public static void Sender_SealValidation()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeSender sender = new(suite))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("plaintext", () => sender.Seal((byte[])null));
+
+                foreach (int length in new[] { 0, suite.AeadTagSizeInBytes - 1, suite.AeadTagSizeInBytes + 1 })
+                {
+                    byte[] ciphertext = new byte[length];
+                    ciphertext.AsSpan().Fill(0xA5);
+                    byte[] originalCiphertext = (byte[])ciphertext.Clone();
+                    AssertExtensions.Throws<ArgumentException>(
+                        "ciphertext", () => sender.Seal(ReadOnlySpan<byte>.Empty, ciphertext.AsSpan()));
+                    Assert.Equal(originalCiphertext, ciphertext);
+                }
+
+                Assert.Equal(0, sender.SealCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256, 8160)]
+        [InlineData(HpkeKdf.HKDF_SHA384, 12240)]
+        [InlineData(HpkeKdf.HKDF_SHA512, 16320)]
+        [InlineData(HpkeKdf.SHAKE128, 65535)]
+        [InlineData(HpkeKdf.SHAKE256, 65535)]
+        public static void Sender_Export(HpkeKdf kdf, int maximumLength)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeSender sender = new(suite))
+            {
+                // Unlike setup info, a SHAKE exporter context is not length-prefixed.
+                byte[] exporterContext = new byte[65536];
+                exporterContext.AsSpan().Fill(0x39);
+
+                foreach (int length in new[] { 0, 1, maximumLength })
+                {
+                    byte[] expected = new byte[length];
+                    expected.AsSpan().Fill(0xE7);
+                    Assert.Equal(expected, sender.Export(exporterContext, length));
+                    Assert.Equal(exporterContext, sender.LastExporterContext);
+                    Assert.Equal(expected, sender.Export(exporterContext.AsSpan(), length));
+                    Assert.Equal(exporterContext, sender.LastExporterContext);
+
+                    byte[] destination = new byte[length + 2];
+                    destination.AsSpan().Fill(0xA5);
+                    sender.Export(exporterContext, destination.AsSpan(1, length));
+                    AssertExtensions.SequenceEqual(expected.AsSpan(), destination.AsSpan(1, length));
+                    Assert.Equal(0xA5, destination[0]);
+                    Assert.Equal(0xA5, destination[^1]);
+                    Assert.Equal(exporterContext, sender.LastExporterContext);
+                }
+
+                Assert.Equal(9, sender.ExportCalls);
+                Assert.Equal(0, sender.SealCalls);
+                Assert.Empty(sender.Export(Array.Empty<byte>(), 0));
+                Assert.Empty(sender.LastExporterContext);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256, 8160)]
+        [InlineData(HpkeKdf.HKDF_SHA384, 12240)]
+        [InlineData(HpkeKdf.HKDF_SHA512, 16320)]
+        [InlineData(HpkeKdf.SHAKE128, 65535)]
+        [InlineData(HpkeKdf.SHAKE256, 65535)]
+        public static void Sender_ExportValidation(HpkeKdf kdf, int maximumLength)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeSender sender = new(suite))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("exporterContext", () => sender.Export((byte[])null, 0));
+
+                foreach (int length in new[] { -1, int.MinValue, maximumLength + 1, int.MaxValue })
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        "length", () => sender.Export(Array.Empty<byte>(), length));
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        "length", () => sender.Export(ReadOnlySpan<byte>.Empty, length));
+                }
+
+                byte[] destination = new byte[maximumLength + 1];
+                destination.AsSpan().Fill(0xA5);
+                byte[] originalDestination = (byte[])destination.Clone();
+                AssertExtensions.Throws<ArgumentException>(
+                    "destination", () => sender.Export(ReadOnlySpan<byte>.Empty, destination.AsSpan()));
+                Assert.Equal(originalDestination, destination);
+                Assert.Equal(0, sender.ExportCalls);
+            }
+        }
+
+        [Fact]
+        public static void Sender_CoreFailuresPropagate()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeSender sender = new(suite) { ThrowOnCoreCall = true })
+            {
+                byte[] ciphertext = new byte[suite.AeadTagSizeInBytes];
+                Assert.Throws<CryptographicException>(() => sender.Seal(Array.Empty<byte>()));
+                Assert.Throws<CryptographicException>(() => sender.Seal(ReadOnlySpan<byte>.Empty));
+                Assert.Throws<CryptographicException>(() => sender.Seal(ReadOnlySpan<byte>.Empty, ciphertext.AsSpan()));
+                Assert.Throws<CryptographicException>(() => sender.Export(Array.Empty<byte>(), 1));
+                Assert.Throws<CryptographicException>(() => sender.Export(ReadOnlySpan<byte>.Empty, 1));
+                Assert.Throws<CryptographicException>(() => sender.Export(ReadOnlySpan<byte>.Empty, new byte[1].AsSpan()));
+                Assert.Equal(3, sender.SealCalls);
+                Assert.Equal(3, sender.ExportCalls);
+            }
+        }
+
+        [Fact]
+        public static void Recipient_ConstructorAndDisposal()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("suite", () => new RecordingHpkeRecipient(null));
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeRecipient recipient = new(suite))
+            {
+                Assert.Same(suite, recipient.Suite);
+                recipient.Dispose();
+                recipient.Dispose();
+                Assert.Equal(1, recipient.DisposeCalls);
+
+                byte[] ciphertext = new byte[suite.AeadTagSizeInBytes];
+                Assert.Throws<ObjectDisposedException>(() => recipient.Open(ciphertext));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Open(ciphertext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Open(ciphertext, Span<byte>.Empty));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Export(Array.Empty<byte>(), 0));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Export(ReadOnlySpan<byte>.Empty, 0));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Export(ReadOnlySpan<byte>.Empty, Span<byte>.Empty));
+                Assert.Equal(0, recipient.OpenCalls);
+                Assert.Equal(0, recipient.ExportCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeAead.AES_128_GCM, 0)]
+        [InlineData(HpkeAead.AES_128_GCM, 5)]
+        [InlineData(HpkeAead.AES_256_GCM, 5)]
+        [InlineData(HpkeAead.ChaCha20Poly1305, 5)]
+        public static void Recipient_Open(HpkeAead aead, int plaintextLength)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, aead);
+
+            using (RecordingHpkeRecipient recipient = new(suite))
+            {
+                byte[] ciphertext = new byte[suite.GetCiphertextLength(plaintextLength)];
+                ciphertext.AsSpan().Fill(0x3C);
+                byte[] associatedData = [1, 2, 3];
+                byte[] expected = new byte[plaintextLength];
+                expected.AsSpan().Fill(0xD3);
+
+                Assert.Equal(expected, recipient.Open(ciphertext, associatedData));
+                Assert.Equal(ciphertext, recipient.LastCiphertext);
+                Assert.Equal(associatedData, recipient.LastAssociatedData);
+
+                Assert.Equal(expected, recipient.Open(
+                    new ReadOnlySpan<byte>(ciphertext), new ReadOnlySpan<byte>(associatedData)));
+                Assert.Equal(ciphertext, recipient.LastCiphertext);
+                Assert.Equal(associatedData, recipient.LastAssociatedData);
+
+                byte[] destination = new byte[plaintextLength + 2];
+                destination.AsSpan().Fill(0xA5);
+                recipient.Open(ciphertext, destination.AsSpan(1, plaintextLength), associatedData);
+                AssertExtensions.SequenceEqual(expected.AsSpan(), destination.AsSpan(1, plaintextLength));
+                Assert.Equal(0xA5, destination[0]);
+                Assert.Equal(0xA5, destination[^1]);
+                Assert.Equal(ciphertext, recipient.LastCiphertext);
+                Assert.Equal(associatedData, recipient.LastAssociatedData);
+
+                Assert.Equal(expected, recipient.Open(ciphertext));
+                Assert.Empty(recipient.LastAssociatedData);
+                Assert.Equal(expected, recipient.Open(ciphertext.AsSpan()));
+                Assert.Empty(recipient.LastAssociatedData);
+                Assert.Equal(5, recipient.OpenCalls);
+                Assert.Equal(0, recipient.ExportCalls);
+            }
+        }
+
+        [Fact]
+        public static void Recipient_OpenValidation()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeRecipient recipient = new(suite))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("ciphertext", () => recipient.Open((byte[])null));
+                byte[] plaintext = [0xA5];
+
+                foreach (int length in new[] { 0, suite.AeadTagSizeInBytes - 1 })
+                {
+                    byte[] ciphertext = new byte[length];
+                    AssertExtensions.Throws<ArgumentException>("ciphertext", () => recipient.Open(ciphertext));
+                    AssertExtensions.Throws<ArgumentException>("ciphertext", () => recipient.Open(ciphertext.AsSpan()));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "ciphertext", () => recipient.Open(ciphertext, plaintext.AsSpan()));
+                    Assert.Equal(0xA5, plaintext[0]);
+                }
+
+                byte[] validLengthCiphertext = new byte[suite.GetCiphertextLength(1)];
+
+                foreach (int length in new[] { 0, 2 })
+                {
+                    byte[] destination = new byte[length];
+                    destination.AsSpan().Fill(0xA5);
+                    byte[] originalDestination = (byte[])destination.Clone();
+                    AssertExtensions.Throws<ArgumentException>(
+                        "plaintext", () => recipient.Open(validLengthCiphertext, destination.AsSpan()));
+                    Assert.Equal(originalDestination, destination);
+                }
+
+                Assert.Equal(0, recipient.OpenCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256, 8160)]
+        [InlineData(HpkeKdf.HKDF_SHA384, 12240)]
+        [InlineData(HpkeKdf.HKDF_SHA512, 16320)]
+        [InlineData(HpkeKdf.SHAKE128, 65535)]
+        [InlineData(HpkeKdf.SHAKE256, 65535)]
+        public static void Recipient_Export(HpkeKdf kdf, int maximumLength)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeRecipient recipient = new(suite))
+            {
+                byte[] exporterContext = new byte[65536];
+                exporterContext.AsSpan().Fill(0x39);
+
+                foreach (int length in new[] { 0, 1, maximumLength })
+                {
+                    byte[] expected = new byte[length];
+                    expected.AsSpan().Fill(0xE7);
+                    Assert.Equal(expected, recipient.Export(exporterContext, length));
+                    Assert.Equal(exporterContext, recipient.LastExporterContext);
+                    Assert.Equal(expected, recipient.Export(exporterContext.AsSpan(), length));
+                    Assert.Equal(exporterContext, recipient.LastExporterContext);
+
+                    byte[] destination = new byte[length + 2];
+                    destination.AsSpan().Fill(0xA5);
+                    recipient.Export(exporterContext, destination.AsSpan(1, length));
+                    AssertExtensions.SequenceEqual(expected.AsSpan(), destination.AsSpan(1, length));
+                    Assert.Equal(0xA5, destination[0]);
+                    Assert.Equal(0xA5, destination[^1]);
+                    Assert.Equal(exporterContext, recipient.LastExporterContext);
+                }
+
+                Assert.Equal(9, recipient.ExportCalls);
+                Assert.Equal(0, recipient.OpenCalls);
+                Assert.Empty(recipient.Export(Array.Empty<byte>(), 0));
+                Assert.Empty(recipient.LastExporterContext);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256, 8160)]
+        [InlineData(HpkeKdf.HKDF_SHA384, 12240)]
+        [InlineData(HpkeKdf.HKDF_SHA512, 16320)]
+        [InlineData(HpkeKdf.SHAKE128, 65535)]
+        [InlineData(HpkeKdf.SHAKE256, 65535)]
+        public static void Recipient_ExportValidation(HpkeKdf kdf, int maximumLength)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeRecipient recipient = new(suite))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("exporterContext", () => recipient.Export((byte[])null, 0));
+
+                foreach (int length in new[] { -1, int.MinValue, maximumLength + 1, int.MaxValue })
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        "length", () => recipient.Export(Array.Empty<byte>(), length));
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        "length", () => recipient.Export(ReadOnlySpan<byte>.Empty, length));
+                }
+
+                byte[] destination = new byte[maximumLength + 1];
+                destination.AsSpan().Fill(0xA5);
+                byte[] originalDestination = (byte[])destination.Clone();
+                AssertExtensions.Throws<ArgumentException>(
+                    "destination", () => recipient.Export(ReadOnlySpan<byte>.Empty, destination.AsSpan()));
+                Assert.Equal(originalDestination, destination);
+                Assert.Equal(0, recipient.ExportCalls);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Recipient_CoreFailuresPropagate(bool authenticationFailure)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpkeRecipient recipient = new(suite)
+            {
+                ThrowOnCoreCall = true,
+                AuthenticationFailure = authenticationFailure,
+            })
+            {
+                Type expectedException = authenticationFailure
+                    ? typeof(AuthenticationTagMismatchException)
+                    : typeof(CryptographicException);
+                byte[] ciphertext = new byte[suite.GetCiphertextLength(1)];
+                byte[] plaintext = [0xA5, 0xA5, 0xA5];
+
+                Assert.Throws(expectedException, () => recipient.Open(ciphertext));
+                Assert.Throws(expectedException, () => recipient.Open(ciphertext.AsSpan()));
+                Assert.Throws(expectedException, () => recipient.Open(ciphertext, plaintext.AsSpan(1, 1)));
+                Assert.Equal(new byte[] { 0xA5, 0, 0xA5 }, plaintext);
+                Assert.Throws<CryptographicException>(() => recipient.Export(Array.Empty<byte>(), 1));
+                Assert.Throws<CryptographicException>(() => recipient.Export(ReadOnlySpan<byte>.Empty, 1));
+                Assert.Throws<CryptographicException>(() => recipient.Export(ReadOnlySpan<byte>.Empty, new byte[1].AsSpan()));
+                Assert.Equal(3, recipient.OpenCalls);
+                Assert.Equal(3, recipient.ExportCalls);
+            }
+        }
+
+        private sealed class RecordingHpkeRecipient : HpkeRecipient
+        {
+            internal int OpenCalls { get; private set; }
+            internal int ExportCalls { get; private set; }
+            internal int DisposeCalls { get; private set; }
+            internal byte[] LastCiphertext { get; private set; } = [];
+            internal byte[] LastAssociatedData { get; private set; } = [];
+            internal byte[] LastExporterContext { get; private set; } = [];
+            internal bool ThrowOnCoreCall { get; set; }
+            internal bool AuthenticationFailure { get; set; }
+
+            internal RecordingHpkeRecipient(HpkeSuite suite) : base(suite)
+            {
+            }
+
+            protected override void OpenCore(
+                ReadOnlySpan<byte> ciphertext,
+                Span<byte> plaintext,
+                ReadOnlySpan<byte> associatedData)
+            {
+                OpenCalls++;
+                LastCiphertext = ciphertext.ToArray();
+                LastAssociatedData = associatedData.ToArray();
+                plaintext.Fill(0xD3);
+
+                if (ThrowOnCoreCall)
+                {
+                    plaintext.Clear();
+
+                    if (AuthenticationFailure)
+                    {
+                        throw new AuthenticationTagMismatchException("Recipient test authentication failure.");
+                    }
+
+                    throw new CryptographicException("Recipient test failure.");
+                }
+            }
+
+            protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
+            {
+                ExportCalls++;
+                LastExporterContext = exporterContext.ToArray();
+                destination.Fill(0xE7);
+
+                if (ThrowOnCoreCall)
+                {
+                    throw new CryptographicException("Recipient test failure.");
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                Assert.True(disposing);
+                DisposeCalls++;
+                base.Dispose(disposing);
+            }
+        }
+
+        private sealed class RecordingHpkeSender : HpkeSender
+        {
+            internal int SealCalls { get; private set; }
+            internal int ExportCalls { get; private set; }
+            internal int DisposeCalls { get; private set; }
+            internal byte[] LastPlaintext { get; private set; } = [];
+            internal byte[] LastAssociatedData { get; private set; } = [];
+            internal byte[] LastExporterContext { get; private set; } = [];
+            internal bool ThrowOnCoreCall { get; set; }
+
+            internal RecordingHpkeSender(HpkeSuite suite) : base(suite)
+            {
+            }
+
+            protected override void SealCore(
+                ReadOnlySpan<byte> plaintext,
+                Span<byte> ciphertext,
+                ReadOnlySpan<byte> associatedData)
+            {
+                SealCalls++;
+                LastPlaintext = plaintext.ToArray();
+                LastAssociatedData = associatedData.ToArray();
+                ciphertext.Fill(0xD3);
+
+                if (ThrowOnCoreCall)
+                {
+                    throw new CryptographicException("Sender test failure.");
+                }
+            }
+
+            protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
+            {
+                ExportCalls++;
+                LastExporterContext = exporterContext.ToArray();
+                destination.Fill(0xE7);
+
+                if (ThrowOnCoreCall)
+                {
+                    throw new CryptographicException("Sender test failure.");
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                Assert.True(disposing);
+                DisposeCalls++;
+                base.Dispose(disposing);
             }
         }
     }

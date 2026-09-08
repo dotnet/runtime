@@ -418,6 +418,10 @@
              Link="Common\System\Security\Cryptography\HpkeKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKemMetadata.cs"
              Link="Common\System\Security\Cryptography\HpkeKemMetadata.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeRecipient.cs"
+             Link="Common\System\Security\Cryptography\HpkeRecipient.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSender.cs"
+             Link="Common\System\Security\Cryptography\HpkeSender.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
              Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"

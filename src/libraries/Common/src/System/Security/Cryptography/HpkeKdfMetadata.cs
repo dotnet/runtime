@@ -11,6 +11,10 @@ namespace System.Security.Cryptography
         internal string Name { get; }
         internal int? MaximumInfoLength { get; }
 
+        // HKDF is limited to 255 hash blocks; HPKE encodes SHAKE output lengths in two bytes.
+        // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.4
+        internal int MaximumExportLength => IsTwoStage ? 255 * Nh : ushort.MaxValue;
+
         private HpkeKdfMetadata(HpkeKdf kdf, int nh, bool isTwoStage, string name)
         {
             Kdf = kdf;

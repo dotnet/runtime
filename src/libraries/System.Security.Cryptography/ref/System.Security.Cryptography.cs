@@ -1893,6 +1893,9 @@ namespace System.Security.Cryptography
     {
         protected Hpke(System.Security.Cryptography.HpkeSuite suite) { }
         public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
+        public System.Security.Cryptography.HpkeSender CreateSender(out byte[] encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSender CreateSender(System.Span<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeSender CreateSenderCore(System.Span<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info);
         public static System.Security.Cryptography.Hpke DeriveKey(System.Security.Cryptography.HpkeSuite suite, byte[] ikm) { throw null; }
         public static System.Security.Cryptography.Hpke DeriveKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> ikm) { throw null; }
         public void Dispose() { }
@@ -1941,6 +1944,38 @@ namespace System.Security.Cryptography
         MLKEM_1024 = 66,
         MLKEM768_P256 = 80,
         MLKEM1024_P384 = 81,
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class HpkeRecipient : System.IDisposable
+    {
+        protected HpkeRecipient(System.Security.Cryptography.HpkeSuite suite) { }
+        public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] Export(byte[] exporterContext, int length) { throw null; }
+        public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
+        public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
+        protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
+        public byte[] Open(byte[] ciphertext, byte[]? associatedData = null) { throw null; }
+        public byte[] Open(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Open(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void OpenCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData);
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class HpkeSender : System.IDisposable
+    {
+        protected HpkeSender(System.Security.Cryptography.HpkeSuite suite) { }
+        public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] Export(byte[] exporterContext, int length) { throw null; }
+        public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
+        public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
+        protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
+        public byte[] Seal(byte[] plaintext, byte[]? associatedData = null) { throw null; }
+        public byte[] Seal(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void SealCore(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> associatedData);
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class HpkeSuite : System.IEquatable<System.Security.Cryptography.HpkeSuite>

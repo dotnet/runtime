@@ -78,12 +78,12 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(exporterSecret.Length == Suite.KdfMetadata.Nh);
 
-            int maximumLength = Suite.KdfMetadata.IsTwoStage ? 255 * Suite.KdfMetadata.Nh : ushort.MaxValue;
+            int maximumLength = Suite.KdfMetadata.MaximumExportLength;
 
             if (destination.Length > maximumLength)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Cryptography_Okm_TooLarge, maximumLength),
+                    SR.Format(SR.Argument_HpkeExportLengthTooLarge, maximumLength),
                     nameof(destination));
             }
 

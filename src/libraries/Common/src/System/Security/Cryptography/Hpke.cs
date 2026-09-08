@@ -591,6 +591,113 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info);
 
         /// <summary>
+        ///   Creates an HPKE sender context using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   When this method returns, contains the encapsulated secret to send to the recipient.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient.
+        /// </param>
+        /// <returns>
+        ///   A new sender context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a sender is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public HpkeSender CreateSender(out byte[] encapsulatedSecret, ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            byte[] encapsulatedSecretBuffer = new byte[Suite.EncapsulatedSecretSizeInBytes];
+            HpkeSender sender = CreateSenderCore(encapsulatedSecretBuffer, info);
+            encapsulatedSecret = encapsulatedSecretBuffer;
+            return sender;
+        }
+
+        /// <summary>
+        ///   Creates an HPKE sender context using Base mode and writes the encapsulated secret into the provided buffer.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The buffer to receive the encapsulated secret to send to the recipient.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient.
+        /// </param>
+        /// <returns>
+        ///   A new sender context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="encapsulatedSecret" /> is not exactly
+        ///     <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a sender is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        public HpkeSender CreateSender(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedSecretSizeInBytes),
+                    nameof(encapsulatedSecret));
+            }
+
+            return CreateSenderCore(encapsulatedSecret, info);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, creates an HPKE sender context using Base mode.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The buffer to receive the encapsulated secret.
+        /// </param>
+        /// <param name="info">
+        ///   The application context.
+        /// </param>
+        /// <returns>
+        ///   A new sender context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a sender is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The calling method has verified that this instance is not disposed, the encapsulated secret buffer
+        ///   has the exact required length, and <paramref name="info" /> satisfies the KDF's length limit.
+        ///   Implementations must fill the entire buffer and return an initialized sender for <see cref="Suite" />.
+        /// </remarks>
+        protected abstract HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info);
+
+        /// <summary>
         ///   Releases all resources used by the <see cref="Hpke" /> class.
         /// </summary>
         public void Dispose()
