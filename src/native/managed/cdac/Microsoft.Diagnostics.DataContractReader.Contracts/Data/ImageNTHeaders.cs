@@ -10,8 +10,8 @@ internal sealed partial class ImageNTHeaders : IData<ImageNTHeaders>
     public const int OptionalHeaderOffset = 24;
 
     [RawOffset(FileHeaderOffset)]
-    public ImageFileHeader FileHeader { get; }
+    public partial ImageFileHeader FileHeader { get; }
 
     [RawOffset(OptionalHeaderOffset)]
-    public ImageOptionalHeader OptionalHeader { get; }
+    public partial ImageOptionalHeader OptionalHeader { get; }
 }

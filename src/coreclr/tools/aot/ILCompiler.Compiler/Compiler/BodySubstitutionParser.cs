@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using System.Xml;
 using System.Xml.XPath;
 using System.Globalization;
@@ -163,6 +164,26 @@ namespace ILCompiler
 
         private static object TryCreateSubstitution(TypeDesc type, string value)
         {
+            if (type.IsEnum && type.UnderlyingType.Category == TypeFlags.Int32)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic &&
+                        field.Name.StringEquals(value) &&
+                        field is EcmaField ecmaField)
+                    {
+                        MetadataReader reader = ecmaField.MetadataReader;
+                        ConstantHandle constantHandle = reader.GetFieldDefinition(ecmaField.Handle).GetDefaultValue();
+                        if (!constantHandle.IsNil)
+                        {
+                            Constant constant = reader.GetConstant(constantHandle);
+                            if (constant.TypeCode == ConstantTypeCode.Int32)
+                                return reader.GetBlobReader(constant.Value).ReadInt32();
+                        }
+                    }
+                }
+            }
+
             switch (type.UnderlyingType.Category)
             {
                 case TypeFlags.Int32:

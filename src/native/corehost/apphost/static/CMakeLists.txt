@@ -26,17 +26,16 @@ if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RA
 endif()
 
 set(SOURCES
-    ../bundle_marker.cpp
-    ./hostfxr_resolver.cpp
+    ../bundle_marker.c
+    ./apphost_hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
-    ../../fxr_resolver.c
-    ../../corehost.cpp
+    ../apphost.c
 )
 
 set(HEADERS
     ../bundle_marker.h
-    ../../hostfxr_resolver.h
+    ../apphost_hostfxr_resolver.h
     ../../fxr_resolver.h
 )
 
@@ -62,7 +61,7 @@ endif()
 if(CLR_CMAKE_TARGET_WIN32)
     add_compile_definitions(UNICODE)
     list(APPEND SOURCES
-        ../apphost.windows.cpp
+        ../apphost.windows.c
     )
 
     list(APPEND HEADERS
@@ -147,6 +146,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 else()
     if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
         LIST(APPEND NATIVE_LIBS createdump_static)
+        target_compile_definitions(singlefilehost PRIVATE FEATURE_STATIC_CREATEDUMP)
     endif()
 
     LIST(APPEND NATIVE_LIBS

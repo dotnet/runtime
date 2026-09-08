@@ -70,6 +70,12 @@ namespace System.ComponentModel.DataAnnotations
         ///     When validation is valid, the result is <see cref="ValidationResult.Success" />.
         ///     When validation is invalid, the result is an instance of <see cref="ValidationResult" />.
         /// </returns>
+        /// <remarks>
+        ///     Implementations must observe the supplied <paramref name="cancellationToken" /> and stop work promptly
+        ///     when cancellation is requested. The validation infrastructure may cancel this token after a validation
+        ///     failure to stop sibling validators and awaits all started validation tasks before returning. An
+        ///     implementation that ignores cancellation can delay failure and short-circuiting.
+        /// </remarks>
         protected abstract Task<ValidationResult?> IsValidAsync(
             object? value,
             ValidationContext validationContext,
@@ -104,6 +110,19 @@ namespace System.ComponentModel.DataAnnotations
         ///     When validation is valid, the result is <see cref="ValidationResult.Success" />.
         ///     When validation is invalid, the result is an instance of <see cref="ValidationResult" />.
         /// </returns>
+        /// <remarks>
+        ///     <para>
+        ///         The underlying <see cref="IsValidAsync(object, ValidationContext, CancellationToken)" /> implementation
+        ///         must observe the supplied <paramref name="cancellationToken" /> and stop work promptly when cancellation
+        ///         is requested. The validation infrastructure awaits all started validation tasks before returning, so an
+        ///         implementation that ignores cancellation can delay failure and short-circuiting.
+        ///     </para>
+        ///     <para>
+        ///         Callers that need to bound validation time should pass a token configured to cancel after a timeout,
+        ///         such as one from a <see cref="CancellationTokenSource" /> configured with
+        ///         <see cref="CancellationTokenSource.CancelAfter(TimeSpan)" />.
+        ///     </para>
+        /// </remarks>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         public async Task<ValidationResult?> GetValidationResultAsync(

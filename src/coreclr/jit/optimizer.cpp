@@ -2260,9 +2260,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     if (haveProfileWeights)
     {
-        // Reduce flow into the new loop entry/exit blocks
+        // Reduce flow into the new loop entry block
         newPreheader->setBBProfileWeight(newCondToNewPreheader->getLikelyWeight());
-        exit->decreaseBBProfileWeight(newCondToNewExit->getLikelyWeight());
 
         // Update the duplicated blocks' weights
 
@@ -2273,6 +2272,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         }
 
         condBlock->setBBProfileWeight(condBlock->computeIncomingWeight());
+
+        // Recompute exit's weight from its (now updated) incoming edges.
+        // Using computeIncomingWeight here (rather than decreasing by the newly
+        // introduced preheader-to-exit edge weight) avoids amplifying small
+        // pre-existing inconsistencies once the loop-exit flow is scaled down.
+        exit->setBBProfileWeight(exit->computeIncomingWeight());
     }
 
     // Finally compact the condition with its pred if that is possible now.
@@ -3679,7 +3684,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
                 printTreeID(origExpr);
                 printf(" was declared as hoistable from loop at nesting depth %d; actually hoisted from loop at depth "
                        "%d.\n",
-                       tlAndN.m_num, depth);
+                       (int)tlAndN.m_num, (int)depth);
                 assert(false);
             }
             else
@@ -5959,7 +5964,9 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && isEntire &&
+                        // For async methods we may skip an explicit init through the resumption path
+                        //
+                        if (!removedExplicitZeroInit && isEntire && !compIsAsync() &&
                             (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->IsLiveInOutOfHandler())))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
@@ -6083,7 +6090,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     // the implicit "live-in" one, which is not guaranteed, but very likely.
                     if ((defIndex == 1) && !varDsc->TypeIs(TYP_STRUCT))
                     {
-                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n");
                         continue;
                     }
 

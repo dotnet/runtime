@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.NativeObjectWrapperObject))]
 internal sealed partial class NativeObjectWrapperObject : IData<NativeObjectWrapperObject>
 {
-    [Field] public TargetPointer ExternalComObject { get; }
+    [Field] public partial TargetPointer ExternalComObject { get; }
 }

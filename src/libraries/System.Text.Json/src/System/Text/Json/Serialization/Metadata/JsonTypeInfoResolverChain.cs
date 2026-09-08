@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Metadata
             foreach (IJsonTypeInfoResolver resolver in _list)
             {
                 JsonTypeInfo? typeInfo = resolver.GetTypeInfo(type, options);
-                if (typeInfo != null)
+                if (typeInfo is not null)
                 {
                     return typeInfo;
                 }

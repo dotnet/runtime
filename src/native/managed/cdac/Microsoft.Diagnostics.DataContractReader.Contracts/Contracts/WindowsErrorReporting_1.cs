@@ -28,7 +28,7 @@ internal readonly struct WindowsErrorReporting_1 : IWindowsErrorReporting
             Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(thrownObject);
             if (exception.WatsonBuckets != TargetPointer.Null)
             {
-                readFrom = _target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _);
+                readFrom = _target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _, out _, out _);
             }
             else
             {

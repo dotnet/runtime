@@ -749,6 +749,61 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Directly encode constant to instructions.
             }
+            else if (vecCon->TypeIs(TYP_SIMD))
+            {
+                simdscalable_t             simdVal = vecCon->gtSimdScalableVal;
+                Arm64SimdScalableConstInfo info    = Arm64SimdScalableConstInfo::Decode(simdVal);
+
+                // If the constant doesn't fit into the instructions, then temps will be required
+                switch (simdVal.gtSimdScalableKind)
+                {
+                    case SimdScalableRepeated:
+                    {
+                        if (!info.CanEncodeRepeated<emitter>(simdVal))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                            buildInternalRegisterUses();
+                        }
+                        break;
+                    }
+
+                    case SimdScalableSequence:
+                    {
+                        const bool indexNeedsReg = info.IndexNeedsSequenceReg<emitter>();
+                        const bool stepNeedsReg  = info.StepNeedsSequenceReg<emitter>();
+
+                        if (indexNeedsReg)
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+
+                        if (stepNeedsReg)
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+
+                        if (indexNeedsReg || stepNeedsReg)
+                        {
+                            buildInternalRegisterUses();
+                        }
+                        break;
+                    }
+
+                    case SimdScalableScalar:
+                    {
+                        if (!info.CanEncodeScalar<emitter>(simdVal, emitActualTypeSize(info.baseType)))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                            buildInternalRegisterUses();
+                        }
+                        break;
+                    }
+
+                    default:
+                        unreached();
+                        break;
+                }
+            }
             else
             {
                 // Reserve int to load constant from memory (IF_LARGELDC)
@@ -770,7 +825,15 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             GenTreeMskCon* mskCon = tree->AsMskCon();
 
-            if (mskCon->IsAllBitsSet() || mskCon->IsZero())
+            var_types maskBaseType = TYP_BYTE;
+#if defined(DEBUG)
+            if (JitConfig.JitUseScalableVectorT())
+            {
+                maskBaseType = mskCon->gtSimdScalableMaskVal.gtSimdMaskScalableBaseType;
+            }
+#endif // DEBUG
+
+            if (mskCon->IsAllBitsSet(maskBaseType) || mskCon->IsZero())
             {
                 // Directly encode constant to instructions.
             }
@@ -1825,6 +1888,15 @@ void LinearScan::BuildHWIntrinsicTempRegs(GenTreeHWIntrinsic* intrinsicTree,
             }
             break;
 
+        case NI_Vector_Create:
+        case NI_Vector_CreateScalarUnsafe:
+            // FP values need moving into a GP register
+            if (intrinsicTree->TypeIs(TYP_SIMD) && varTypeIsFloating(intrin.baseType))
+            {
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+            }
+            break;
+
         default:
             break;
     }
@@ -2625,7 +2697,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 //
 GenTreeHWIntrinsic* LinearScan::getEmbeddedMaskOperand(const HWIntrinsic intrin)
 {
-    if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()))
+    if (HWIntrinsicInfo::IsSveConditionalSelect(intrin.id) && (intrin.op2->IsEmbMaskOp()))
     {
         assert(intrin.op2->OperIsHWIntrinsic());
         return intrin.op2->AsHWIntrinsic();
@@ -2649,7 +2721,8 @@ GenTreeHWIntrinsic* LinearScan::getContainedCselOperand(GenTreeHWIntrinsic* intr
         GenTree* currentOp = intrinsicTree->Op(opNum);
 
         if (currentOp->OperIs(GT_HWINTRINSIC) &&
-            (currentOp->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect) && currentOp->isContained())
+            HWIntrinsicInfo::IsSveConditionalSelect(currentOp->AsHWIntrinsic()->GetHWIntrinsicId()) &&
+            currentOp->isContained())
         {
             return currentOp->AsHWIntrinsic();
         }

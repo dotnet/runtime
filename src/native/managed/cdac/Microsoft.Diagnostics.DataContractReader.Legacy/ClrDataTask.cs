@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -12,21 +13,28 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 {
+    private readonly Lock _apiLock;
     private readonly TargetPointer _address;
     private readonly Target _target;
     private readonly IXCLRDataTask? _legacyImpl;
 
-    public ClrDataTask(TargetPointer address, Target target, IXCLRDataTask? legacyImpl)
+    public ClrDataTask(TargetPointer address, Target target, IXCLRDataTask? legacyImpl, Lock apiLock)
     {
+        _apiLock = apiLock;
         _address = address;
         _target = target;
         _legacyImpl = legacyImpl;
     }
 
     int IXCLRDataTask.GetProcess(/*IXCLRDataProcess*/ void** process)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
     int IXCLRDataTask.GetCurrentAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataAppDomain? legacyAppDomain = null;
 
@@ -39,7 +47,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         try
         {
             TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
-            appDomain.Interface = new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain);
+            appDomain.Interface = new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain, _apiLock);
         }
         catch (System.Exception ex)
         {
@@ -54,20 +62,45 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         return hr;
     }
     int IXCLRDataTask.GetUniqueID(ulong* id)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetUniqueID(id) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.GetFlags(uint* flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.IsSameObject(IXCLRDataTask* task)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameObject(task) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.GetDesiredExecutionState(uint* state)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.SetDesiredExecutionState(uint state)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
-
-    int IXCLRDataTask.CreateStackWalk(uint flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+    int IXCLRDataTask.GetFlags(uint* flags)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+    int IXCLRDataTask.IsSameObject(IXCLRDataTask* task)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+    int IXCLRDataTask.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+    int IXCLRDataTask.GetDesiredExecutionState(uint* state)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+    int IXCLRDataTask.SetDesiredExecutionState(uint state)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataTask.CreateStackWalk(CLRDataStackWalkFlag flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
         Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
         if (threadData.State.HasFlag(Contracts.ThreadState.Unstarted))
             return HResults.E_FAIL;
@@ -82,19 +115,32 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             legacyStackWalk = legacyStackWalkOut.Interface;
         }
 
-        stackWalk.Interface = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk);
+        stackWalk.Interface = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk, _apiLock);
         return HResults.S_OK;
     }
 
     int IXCLRDataTask.GetOSThreadID(uint* id)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetOSThreadID(id) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
     int IXCLRDataTask.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuffer) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
     int IXCLRDataTask.SetContext(uint contextSize, byte* context)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.SetContext(contextSize, context) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataTask.GetCurrentExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataExceptionState? legacyExceptionState = null;
 
@@ -114,7 +160,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             else
             {
                 Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
-                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, TargetPointer.Null, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState, _apiLock);
             }
         }
         catch (System.Exception ex)
@@ -131,11 +177,57 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     }
 
     int IXCLRDataTask.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (reqCode != (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION
+                || inBufferSize != 0
+                || inBuffer is not null
+                || outBufferSize != sizeof(uint))
+            {
+                throw new ArgumentException("Invalid request parameters.");
+            }
+
+            if (outBuffer is null)
+                throw new NullReferenceException("The output buffer is null.");
+
+            *(uint*)outBuffer = 3;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint revisionLocal = 0;
+            int hrLocal = _legacyImpl.Request(
+                reqCode,
+                inBufferSize,
+                inBuffer,
+                outBufferSize,
+                outBuffer is null ? null : (byte*)&revisionLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*(uint*)outBuffer == revisionLocal);
+        }
+#endif
+
+        return hr;
+    }
     int IXCLRDataTask.GetName(uint bufLen, uint* nameLen, char* nameBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetName(bufLen, nameLen, nameBuffer) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
     int IXCLRDataTask.GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataExceptionState? legacyExceptionState = null;
 
@@ -155,7 +247,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             }
             else
             {
-                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL, thrownObjectHandle, TargetPointer.Null, legacyExceptionState);
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL, TargetPointer.Null, thrownObjectHandle, TargetPointer.Null, legacyExceptionState, _apiLock);
             }
         }
         catch (System.Exception ex)

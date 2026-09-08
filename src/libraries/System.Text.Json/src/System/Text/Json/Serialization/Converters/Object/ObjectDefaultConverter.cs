@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    if (jsonTypeInfo.CreateObject == null)
+                    if (jsonTypeInfo.CreateObject is null)
                     {
                         ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                     }
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 PopulatePropertiesFastPath(obj, jsonTypeInfo, options, ref reader, ref state);
-                Debug.Assert(obj != null);
+                Debug.Assert(obj is not null);
                 value = (T)obj;
                 return true;
             }
@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        if (jsonTypeInfo.CreateObject == null)
+                        if (jsonTypeInfo.CreateObject is null)
                         {
                             ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                         }
@@ -130,7 +130,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
-                        Debug.Assert(state.ReferenceId != null);
+                        Debug.Assert(state.ReferenceId is not null);
                         Debug.Assert(options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve);
                         state.ReferenceResolver.AddReference(state.ReferenceId, obj);
                         state.ReferenceId = null;
@@ -145,7 +145,7 @@ namespace System.Text.Json.Serialization.Converters
                 else
                 {
                     obj = state.Current.ReturnValue!;
-                    Debug.Assert(obj != null);
+                    Debug.Assert(obj is not null);
                 }
 
                 // Process all properties.
@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        Debug.Assert(state.Current.JsonPropertyInfo != null);
+                        Debug.Assert(state.Current.JsonPropertyInfo is not null);
                         jsonPropertyInfo = state.Current.JsonPropertyInfo!;
                     }
 
@@ -260,11 +260,11 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Unbox
-            Debug.Assert(obj != null);
+            Debug.Assert(obj is not null);
             value = (T)obj;
 
             // Check if we are trying to update the UTF-8 property cache.
-            if (state.Current.PropertyRefCacheBuilder != null)
+            if (state.Current.PropertyRefCacheBuilder is not null)
             {
                 jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }
@@ -313,7 +313,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Check if we are trying to update the UTF-8 property cache.
-            if (state.Current.PropertyRefCacheBuilder != null)
+            if (state.Current.PropertyRefCacheBuilder is not null)
             {
                 jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }

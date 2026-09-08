@@ -160,9 +160,13 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 // static
 ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumber reg)
 {
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    constexpr unsigned fpRegDebugNumBase = ICorDebugInfo::REGNUM_FP_FIRST;
 #ifdef TARGET_AMD64
-    constexpr unsigned fpRegDebugNumBase  = ICorDebugInfo::REGNUM_FP_FIRST;
-    constexpr unsigned maxEncodableFpRegs = 16; // Only XMM0-XMM15 are in RegNum
+    constexpr unsigned maxEncodableFpRegs = 16; // Only XMM0-XMM15
+#else
+    constexpr unsigned maxEncodableFpRegs = 32; // V0-V31
+#endif
 #else
     constexpr unsigned fpRegDebugNumBase  = 0;
     constexpr unsigned maxEncodableFpRegs = 0;
@@ -176,9 +180,7 @@ ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumb
     if (genIsValidFloatReg(reg))
     {
         unsigned fpIndex = reg - REG_FP_FIRST;
-#ifdef TARGET_AMD64
-        // Only XMM0-XMM15 are representable in the debug RegNum enum.
-        // XMM16-XMM31 (AVX-512) cannot be encoded.
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         if (fpIndex >= maxEncodableFpRegs)
         {
             return ICorDebugInfo::REGNUM_COUNT; // sentinel: caller checks for this
@@ -210,18 +212,22 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
     {
         if (genIsValidFloatReg(reg))
         {
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+            // AMD64/ARM64 enumerate the FP registers in the debug RegNum enum
+            // (XMM0-15 / V0-31), so store the mapped RegNum. This keeps the single-FP
+            // encoding identical to getSiVarLoc and lets the DBI decode uniformly via
+            // ConvertRegNumToCorDebugRegister.
             ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(reg);
             if (debugReg == ICorDebugInfo::REGNUM_COUNT)
             {
-                // XMM16+ cannot be encoded in the debug info.
+                // The FP register is not representable in the debug RegNum enum.
                 vlType = VLT_INVALID;
                 return;
             }
             vlType       = VLT_REG_FP;
             vlReg.vlrReg = static_cast<regNumber>(debugReg);
 #else
-            // Non-AMD64: store 0-based FP register index (DBI adds platform base)
+            // Other targets: store 0-based FP register index (DBI adds platform base)
             vlType       = VLT_REG_FP;
             vlReg.vlrReg = static_cast<regNumber>(reg - REG_FP_FIRST);
 #endif
@@ -240,7 +246,7 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
     }
     else
     {
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         ICorDebugInfo::RegNum debugReg1 = mapRegNumToDebugRegNum(reg);
         ICorDebugInfo::RegNum debugReg2 = mapRegNumToDebugRegNum(otherReg);
         if (debugReg1 == ICorDebugInfo::REGNUM_COUNT || debugReg2 == ICorDebugInfo::REGNUM_COUNT)
@@ -252,8 +258,8 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
         vlRegReg.vlrrReg1 = static_cast<regNumber>(debugReg1);
         vlRegReg.vlrrReg2 = static_cast<regNumber>(debugReg2);
 #else
-        // Non-AMD64: VLT_REG_REG only supports int registers. If either is FP,
-        // we cannot encode this — fall back to VLT_INVALID.
+        // Other non-AMD64 targets: VLT_REG_REG only supports int registers. If either
+        // is FP, we cannot encode this — fall back to VLT_INVALID.
         if (!genIsValidIntReg(reg) || !genIsValidIntReg(otherReg))
         {
             vlType = VLT_INVALID;
@@ -634,7 +640,9 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             break;
 
         case VLT_REG_FP:
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+            // AMD64/ARM64 store the FP register as a debug RegNum (REGNUM_FP_FIRST-based);
+            // map it back to a JIT regNumber for display.
             printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg -
                                                            ICorDebugInfo::REGNUM_FP_FIRST)));
 #else
@@ -660,7 +668,7 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             break;
 
         case VLT_REG_REG:
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         {
             // Map RegNum values (which may include FP register indices) back to
             // JIT regNumber for display purposes.

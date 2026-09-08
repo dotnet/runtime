@@ -46,10 +46,7 @@ HANDLE GetZlibHeap()
     return s_hPublishedHeap;
 }
 
-voidpf z_custom_calloc(opaque, items, size)
-    voidpf opaque;
-    unsigned items;
-    unsigned size;
+voidpf z_custom_calloc(voidpf opaque, unsigned items, unsigned size)
 {
 
     SIZE_T cbRequested;
@@ -67,9 +64,7 @@ voidpf z_custom_calloc(opaque, items, size)
     return HeapAlloc(GetZlibHeap(), 0, cbRequested);
 }
 
-void z_custom_cfree(opaque, ptr)
-    voidpf opaque;
-    voidpf ptr;
+void z_custom_cfree(voidpf opaque, voidpf ptr)
 {
     if (ptr == NULL) { return; } // ok to free nullptr
 

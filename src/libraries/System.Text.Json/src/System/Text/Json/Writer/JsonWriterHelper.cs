@@ -324,7 +324,7 @@ namespace System.Text.Json
                 }
                 finally
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         ArrayPool<byte>.Shared.Return(rented);
                     }
@@ -359,7 +359,7 @@ namespace System.Text.Json
                 }
                 finally
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         ArrayPool<byte>.Shared.Return(rented);
                     }

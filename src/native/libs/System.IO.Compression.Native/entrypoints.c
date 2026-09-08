@@ -37,6 +37,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_Deflate)
     DllImportEntry(CompressionNative_DeflateEnd)
     DllImportEntry(CompressionNative_DeflateInit2_)
+    DllImportEntry(CompressionNative_DeflateReset)
     DllImportEntry(CompressionNative_Inflate)
     DllImportEntry(CompressionNative_InflateEnd)
     DllImportEntry(CompressionNative_InflateInit2_)

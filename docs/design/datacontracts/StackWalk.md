@@ -9,6 +9,18 @@ public interface IStackDataFrameHandle
 {
     // Describes what the current Context/FrameIter of this handle represents.
     StackWalkState State { get; }
+
+    // True when the current managed frame was interrupted by an exception frame.
+    bool IsInterrupted { get; }
+
+    // True when the interrupting frame represents an active hardware fault.
+    bool HasFaulted { get; }
+
+    // True when the current Frame is either a SoftwareExceptionFrame or FaultingExceptionFrame
+    bool IsExceptionFrame { get; }
+
+    // True when this is the active stack frame.
+    bool IsActiveFrame { get; }
 }
 
 public enum StackWalkState
@@ -45,18 +57,19 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     bool isFirst = true);
 
 // Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(
-    IStackDataFrameHandle stackDataFrameHandle,
-    StackwalkFlag flags = StackwalkFlag.Default);
-
-[Flags]
-enum StackwalkFlag
-{
-    Default = 0,
-}
+byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the computed debugger frame pointer for the current stack dataframe.
+TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the base pointer register from the current frame's context.
+TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the stack pointer from the current frame's context.
+TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
 string GetFrameName(TargetPointer frameIdentifier);
@@ -68,7 +81,7 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr);
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the instruction pointer from the current frame's context.
-TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
+TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
 
 // Walks the Thread's explicit (capital "F") Frame chain and yields a StackFrameData per Frame.
 IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer);
@@ -83,7 +96,9 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 
 // Walks the stack and returns all GC references found on each frame.
 // This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
-IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
+IReadOnlyList<StackReferenceData> WalkStackReferences(
+    ThreadData threadData,
+    bool resolveInteriorPointers);
 
 // Returns a context for the thread, trying (in order): the debugger filter context,
 // the OS thread context, or a context derived from the explicit Frame chain.
@@ -91,6 +106,17 @@ byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint
 
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
+
+// Returns an opaque identifier that represents the root of a funclet tree and
+// uniquely distinguishes it from any other tree. Every non-funclet frame is the root
+// of a tree which may have 0 or more child funclets in it.
+TargetPointer GetFuncletRootId(
+    IStackDataFrameHandle stackDataFrameHandle,
+    out uint parentNativeOffset);
+
+// Returns the exact generic instantiation context token for the current frameless managed frame,
+// or TargetPointer.Null if it can't be recovered.
+TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 ## Version 1
@@ -106,94 +132,112 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 * [Windows x64](https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64)
 * [Windows ARM64](https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling)
 
-This contract depends on the following descriptors:
+<!-- BEGIN GENERATED: usage contract=StackWalk version=c1 -->
+### Data descriptors used
 
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `Frame` | `Next` | Pointer to next from on linked list |
-| `InlinedCallFrame` | `CallSiteSP` | SP saved in Frame |
-| `InlinedCallFrame` | `CallerReturnAddress` | Return address saved in Frame |
-| `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
-| `InlinedCallFrame` (arm) | `SPAfterProlog` | Value of the SP after prolog. Used on ARM to maintain additional JIT invariant |
-| `InlinedCallFrame` | `Datum` | MethodDesc ptr or on 64 bit host: CALLI target address (if lowest bit is set) or on windows x86 host: argument stack size (if value is <64k) |
-| `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
-| `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
-| `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
-| `FramedMethodFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
-| `StubDispatchFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
-| `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
-| `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
-| `StubDispatchFrame` | `Indirection` | Import slot pointer for GCRefMap resolution via `FindReadyToRunModule` |
-| `ExternalMethodFrame` | `Indirection` | Import slot pointer for GCRefMap resolution via `FindReadyToRunModule` |
-| `DynamicHelperFrame` | `DynamicHelperFrameFlags` | Flags indicating which argument registers contain GC references |
-| `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
-| `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
-| `TransitionBlock` | `OffsetOfArgs` | Byte offset of stack arguments (first arg after registers) = `sizeof(TransitionBlock)` |
-| `TransitionBlock` | `ArgumentRegisters` | Byte offset of the argument registers area within the TransitionBlock |
-| `TransitionBlock` | `FirstGCRefMapSlot` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
-| `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
-| `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
-| `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
-| `FuncEvalFrame` | `ReturnAddress` | Return address of the frame |
-| `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
-| `DebuggerEval` | `EvalUsesHijack` | Flag used in processing FuncEvalFrame |
-| `DebuggerEval` | `MethodToken` | Metadata token of the method being evaluated |
-| `DebuggerEval` | `AssemblyPtr` | Pointer to the Assembly the eval is rooted in |
-| `ResumableFrame` | `TargetContextPtr` | Pointer to the Frame's Target Context |
-| `FaultingExceptionFrame` | `TargetContext` | Frame's Target Context |
-| `HijackFrame` | `ReturnAddress` | Frame's stored instruction pointer |
-| `HijackFrame` | `HijackArgsPtr` | Pointer to the Frame's stored HijackArgs |
-| `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
-| `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
-| `HijackArgs` (arm/arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
-| `InterpreterFrame` | `TopInterpMethodContextFrame` | Pointer to the InterpreterFrame's top `InterpMethodContextFrame` |
-| `InterpreterFrame` | `IsFaulting` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include `CONTEXT_EXCEPTION_ACTIVE` so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
-| `InterpMethodContextFrame` | `StartIp` | Pointer to the `InterpByteCodeStart` for resolving the MethodDesc |
-| `InterpMethodContextFrame` | `ParentPtr` | Pointer to the parent `InterpMethodContextFrame` in the call chain (null for outermost frame) |
-| `InterpMethodContextFrame` | `Ip` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
-| `InterpMethodContextFrame` | `NextPtr` | Pointer to the next `InterpMethodContextFrame` toward the top of the stack |
-| `InterpMethodContextFrame` | `Stack` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
-| `ArgumentRegisters` (arm) | For each register `r` saved in ArgumentRegisters, `r` | Register names associated with stored register values |
-| `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
-| `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
-| `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
-| `ExceptionInfo` | `ExceptionFlags` | Bit flags from `ExceptionFlags` class (`exstatecommon.h`). Used for GC reference reporting during stack walks with funclet handling. |
-| `ExceptionInfo` | `StackLowBound` | Low bound of the stack range unwound by this exception |
-| `ExceptionInfo` | `StackHighBound` | High bound of the stack range unwound by this exception |
-| `ExceptionInfo` | `CSFEHClause` | Caller stack frame of the current EH clause |
-| `ExceptionInfo` | `CSFEnclosingClause` | Caller stack frame of the enclosing clause |
-| `ExceptionInfo` | `CallerOfActualHandlerFrame` | Stack frame of the caller of the catch handler |
-| `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested ExInfo |
-| `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
-| `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | Start PC offset of the catch handler clause, used for interruptible offset override |
-| `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | End PC offset of the catch handler clause, used for interruptible offset override |
-| `GCFrame` | `Next` | Pointer to the next `GCFrame` toward the top of the chain |
-| `GCFrame` | `ObjRefs` | Pointer to the array of protected object reference slots |
-| `GCFrame` | `NumObjRefs` | Count of protected object reference slots starting at `ObjRefs` |
-| `GCFrame` | `GCFlags` | `GC_CALL_*` promotion flags applied when reporting the protected slots |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
+| `DebuggerEval` | `AssemblyPtr` | `pointer` | Pointer to the Assembly the eval is rooted in |
+| `DebuggerEval` | `EvalUsesHijack` | `uint8` | Flag used in processing FuncEvalFrame |
+| `DebuggerEval` | `MethodToken` | `uint32` | Metadata token of the method being evaluated |
+| `DebuggerEval` | `TargetContext` | `pointer` | Context saved inside DebuggerEval |
+| `DynamicHelperFrame` | `DynamicHelperFrameFlags` | `int32` | Flags indicating which argument registers contain GC references |
+| `ExceptionInfo` | `CallerOfActualHandlerFrame` | `pointer` | Stack frame of the caller of the catch handler |
+| `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | `uint32` | End PC offset of the catch handler clause, used for interruptible offset override |
+| `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | `uint32` | Start PC offset of the catch handler clause, used for interruptible offset override |
+| `ExceptionInfo` | `CSFEHClause` | `pointer` | Caller stack frame of the current EH clause |
+| `ExceptionInfo` | `CSFEnclosingClause` | `pointer` | Caller stack frame of the enclosing clause |
+| `ExceptionInfo` | `ExceptionFlags` | `uint32` | Exception state flags |
+| `ExceptionInfo` | `PreviousNestedInfo` | `pointer` | Pointer to previous nested exception info |
+| `ExceptionInfo` | `StackHighBound` | `pointer` | High bound of the stack range unwound by this exception |
+| `ExceptionInfo` | `StackLowBound` | `pointer` | Low bound of the stack range unwound by this exception |
+| `ExternalMethodFrame` | `Indirection` | `pointer` | Import slot pointer for GCRefMap resolution via FindReadyToRunModule |
+| `FaultingExceptionFrame` | `TargetContext` | `pointer` | Frame's Target Context |
+| `Frame` | `Next` | `pointer` | Pointer to next from on linked list |
+| `FramedMethodFrame` | `MethodDescPtr` | `pointer` | Pointer to Frame's method desc |
+| `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
+| `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
+| `FuncEvalFrame` | `ReturnAddress` | `CodePointer` | Return address of the frame |
+| `GCFrame` | `GCFlags` | `uint32` | GC_CALL_* promotion flags applied when reporting the protected slots |
+| `GCFrame` | `Next` | `pointer` | Pointer to the next GCFrame toward the top of the chain |
+| `GCFrame` | `NumObjRefs` | `uint32` | Count of protected object reference slots starting at ObjRefs |
+| `GCFrame` | `ObjRefs` | `pointer` | Pointer to the array of protected object reference slots |
+| `HijackArgs` | *(type size)* | `uint32` | Size in bytes of the platform-specific hijack argument save area |
+| `HijackArgs` | `CalleeSavedRegisters` | `pointer` | Address of the embedded nonvolatile-register values saved for the hijacked thread |
+| `HijackArgs` | `Rsp` | `pointer` | Stack pointer saved when the thread was hijacked on Windows x64 |
+| `HijackFrame` | `HijackArgsPtr` | `pointer` | Pointer to the Frame's stored HijackArgs |
+| `HijackFrame` | `ReturnAddress` | `CodePointer` | Frame's stored instruction pointer |
+| `InlinedCallFrame` | *(type size)* | `uint32` | Size in bytes of the frame; a reportable MethodDesc pointer may immediately follow it |
+| `InlinedCallFrame` | `CalleeSavedFP` | `pointer` | FP saved in Frame |
+| `InlinedCallFrame` | `CallerReturnAddress` | `CodePointer` | Return address saved in Frame |
+| `InlinedCallFrame` | `CallSiteSP` | `pointer` | SP saved in Frame |
+| `InlinedCallFrame` | `Datum` | `pointer` | Non-x86: MethodDesc ptr (after masking any InlinedCallFrameMarker bits); x86: argument stack size when the masked value is <64k, otherwise a MethodDesc ptr |
+| `InlinedCallFrame` | `SPAfterProlog` | `pointer` | Stack pointer after the managed method prolog, used to unwind frames with stack allocation |
+| `InterpMethodContextFrame` | `Ip` | `pointer` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
+| `InterpMethodContextFrame` | `NextPtr` | `pointer` | Pointer to the next InterpMethodContextFrame toward the top of the stack |
+| `InterpMethodContextFrame` | `ParentPtr` | `pointer` | Pointer to the parent InterpMethodContextFrame in the call chain (null for outermost frame) |
+| `InterpMethodContextFrame` | `Stack` | `pointer` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
+| `InterpreterFrame` | `IsFaulting` | `uint8` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include CONTEXT_EXCEPTION_ACTIVE so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
+| `InterpreterFrame` | `TopInterpMethodContextFrame` | `pointer` | Pointer to the InterpreterFrame's top InterpMethodContextFrame |
+| `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
+| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
+| `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
+| `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
+| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
+| `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
+| `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
+| `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
+| `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
+| `StubDispatchFrame` | `Indirection` | `pointer` | Import slot pointer for GCRefMap resolution via FindReadyToRunModule |
+| `StubDispatchFrame` | `MethodDescPtr` | `pointer` | Pointer to Frame's method desc |
+| `StubDispatchFrame` | `RepresentativeMTPtr` | `pointer` | Pointer to Frame's method table pointer |
+| `StubDispatchFrame` | `RepresentativeSlot` | `uint32` | Frame's method table slot |
+| `TailCallFrame` | *(type size)* | `uint32` | Size in bytes of the tailcall frame, used to restore the caller's stack pointer |
+| `TailCallFrame` | `CalleeSavedRegisters` | `pointer` | Address of the embedded nonvolatile-register values saved in the tailcall frame |
+| `TailCallFrame` | `ReturnAddress` | `CodePointer` | Return address saved in the tailcall frame |
+| `Thread` | `ExceptionTracker` | `pointer` | Pointer to exception tracking information |
+| `TransitionBlock` | *(type size)* | `uint32` | Size in bytes of the transition block, used to restore the caller's stack pointer |
+| `TransitionBlock` | `ArgumentRegisters` | `pointer` | Byte offset of the argument registers area within the TransitionBlock |
+| `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
+| `TransitionBlock` | `FirstGCRefMapSlot` | `pointer` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
+| `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
+| `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
-Global variables used:
-| Global Name | Type | Purpose |
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| For each FrameType `<frameType>`, `<frameType>##Identifier` | `nuint` (`FrameIdentifier` enum value) | Identifier used to determine concrete type of Frames |
+| `<FrameType>Identifier` *(name pattern)* | `pointer` | Per-frame-type sentinel address used to identify and classify runtime frames |
+| `Architecture` | `string` | Target architecture |
+| `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `CallingConvention` |
+| `Debugger` |
+| `Exception` |
+| `ExecutionManager` |
+| `GC` |
+| `GCInfo` |
+| `Object` |
+| `PlatformMetadata` |
+| `RuntimeInfo` |
+| `RuntimeTypeSystem` |
+| `Thread` |
+<!-- END GENERATED: usage contract=StackWalk version=c1 -->
 
 Constants used:
 | Source | Name | Value | Purpose |
 | --- | --- | --- | --- |
 | `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
-| `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `2 (64-bit), 1(32-bit)` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
+| `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `1` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
 | N/A | `REDIRECTSTUB_ESTABLISHER_OFFSET_RBP` | 0 | AMD64 offset for redirect stubs. |
 | N/A | `REDIRECTSTUB_SP_OFFSET_CONTEXT` | 0 | ARM, ARM64, Loongarch & RISCV64 offset for redirect stubs. |
 | N/A | `REDIRECTSTUB_EBP_OFFSET_CONTEXT` | -4 | X86 offset for redirect stubs. |
-
-Contracts used:
-| Contract Name |
-| --- |
-| `ExecutionManager` |
-| `Thread` |
-| `RuntimeTypeSystem` |
-| `GCInfo` |
-| `Exception` |
 
 
 ### Stackwalk Algorithm
@@ -484,9 +528,7 @@ The rest of the APIs convey state about the stack walk at a given point which fa
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(
-    IStackDataFrameHandle stackDataFrameHandle,
-    StackwalkFlag flags = StackwalkFlag.Default);
+byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
@@ -576,7 +618,7 @@ IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer)
 A Frame qualifies when all of the following hold:
 1. The Frame's identifier identifies it as an `InlinedCallFrame`.
 2. `InlinedCallFrame::FrameHasActiveCall` is true (the frame's `CallerReturnAddress` is non-null and, on x86, `CallSiteSP` is non-null).
-3. The low bits of the `Datum` field match `InlinedCallFrameMarker::ExceptionHandlingHelper` (`2` on 64-bit, `1` on 32-bit). The marker shares the low bits used by `InlinedCallFrameMarker::Mask`.
+3. The low bits of the `Datum` field match `InlinedCallFrameMarker::ExceptionHandlingHelper` (`1`). The marker shares the low bits used by `InlinedCallFrameMarker::Mask`.
 
 ```csharp
 bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress)
@@ -600,13 +642,35 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 
 `GetInstructionPointer` returns the instruction pointer (IP) from the current frame's context. This is the address of the instruction being executed (or about to be executed) in the method associated with this frame.
 ```csharp
-TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
+TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
-`WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
+`GetRuntimeFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
 
 ```csharp
-IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
+TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetStackPointer` returns the stack pointer from the current frame's context.
+
+```csharp
+TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetContextFramePointer` returns the base pointer register from the current frame's context: EBP on x86, RBP on x64, and the platform frame-pointer register on other architectures.
+
+```csharp
+TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+Each `IStackDataFrameHandle` also exposes `IsInterrupted` and `HasFaulted`. `IsInterrupted` is true when the current managed frame was reached through an exception Frame. `HasFaulted` is true when that exception Frame is a `FaultingExceptionFrame` whose saved context still has `CONTEXT_EXCEPTION_ACTIVE` set.
+
+`WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). When `resolveInteriorPointers` is true, interior references are resolved to their containing objects. This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
+
+```csharp
+IReadOnlyList<StackReferenceData> WalkStackReferences(
+    ThreadData threadData,
+    bool resolveInteriorPointers)
 ```
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
@@ -619,6 +683,27 @@ If no Frame in the chain produces a usable context (thread is not running manage
 
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
 
+`GetFuncletRootId` returns the caller stack pointer for a non-funclet frame and sets `parentNativeOffset` to zero. For a funclet, it performs a secondary stack walk that skips intervening funclets and returns the caller stack pointer and relative native offset of the parent method frame. If that parent cannot be located because it has already been unwound, the method returns the current frame's caller stack pointer and sets `parentNativeOffset` to zero.
+
+`GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frameless managed frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. It returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
+
+1. Selects the platform GC-info decoder, or the interpreter GC-info decoder for `CodeKind.Interpreter`, and requests the location through `IGCInfo.TryGetGenericContextStorage`.
+2. Reads the returned location through one common path:
+   * `Register`: read the register identified by `RegisterName` or `RegisterNumber` and use its value directly.
+   * `StackPointerRelative`: read memory at SP plus the signed offset.
+   * `RegisterRelative`: read the base register identified by `RegisterName` or `RegisterNumber` and then memory at that value plus the signed offset.
+   * `InterpreterArgumentRelative`: read memory at `InterpMethodContextFrame.Stack` plus the signed offset. The stack walker exposes that argument-block base as the synthetic context frame pointer.
+3. For a `ThisPtr` context, treats the recovered value as the object reference and returns its `MethodTable`. For `InstArgMethodDesc` and `InstArgMethodTable`, the recovered value is already the exact token.
+
+The architecture-specific storage lookup preserves the native paths:
+
+* Non-x86 JIT code uses the generic-context stack slot decoded from GC info, relative to the decoded numeric stack-base register or SP.
+* x86 rejects prolog and epilog offsets. Explicit instantiation arguments use the named EBP-relative native `GetParamTypeArgOffset` calculation. Context-from-`this` replays the fully or partially interruptible transition stream to recover `thisPtrResult`; if a register currently describes `this`, its numeric x86 register identifier is returned. Otherwise, it uses the first untracked slot and the same EBP/ESP plus pushed-depth address calculation as `EECodeManager::GetInstance`.
+* Interpreted explicit contexts use the GC-info offset relative to the interpreter argument block. Context-from-`this` uses offset zero, matching `InterpreterCodeManager::GetInstance`'s `*(OBJECTREF*)frame->pStack`.
+
+Explicit runtime `FramedMethodFrame` recovery remains outside this API. Native uses `FramedMethodFrame::GetThis` / `GetParamTypeArg`, whose signature-dependent `ArgIterator` placement is not currently represented by the cDAC contracts.
+
+
 #### CreateStackWalk with a caller-provided CONTEXT
 
 `CreateStackWalk(ThreadData, byte[], bool isFirst)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT. `isFirst` (default `true`) is used to determine whether the walker starts with internal state `isFirst` set to true.
@@ -626,7 +711,7 @@ If no Frame in the chain produces a usable context (thread is not running manage
 1. Compute the caller SP by cloning the seed context and unwinding the clone.
 2. Iterate the explicit Frame chain; update context from the first Frame `>= callerSP` (on non-x86) or after the additional ReturnAddress/FP cross-check See [text](https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/vm/stackwalk.cpp#L1238). Do not update if no Frame meets these criteria.
 3. For every Frame whose `GetCurrentReturnAddress() == seedIP`, rewrite the seed context via `UpdateContextFromCurrentFrame` and record the matched Frame type.
-4. After the loop, if a match was found, override the first walker state `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86) and `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`).
+4. After the loop, if a match was found, override the first walker state `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86), `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`), and `HasFaulted` (true only for a `FaultingExceptionFrame` whose rewritten context still has `CONTEXT_EXCEPTION_ACTIVE` set).
 
 The frame iterator is left positioned at the first Frame `>= callerSP`, if such a frame exists.
 

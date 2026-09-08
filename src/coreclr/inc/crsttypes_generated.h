@@ -119,6 +119,79 @@ enum CrstType
     CrstUnwindInfoTablePendingLock = 101,
     CrstUnwindInfoTablePublishLock = 102,
     CrstVSDIndirectionCellLock = 103,
+    CrstFrozenObjectHeap = 31,
+    CrstFuncPtrStubs = 32,
+    CrstFusionAppCtx = 33,
+    CrstGCCover = 34,
+    CrstGenericDictionaryExpansion = 35,
+    CrstGlobalStrLiteralMap = 36,
+    CrstHandleTable = 37,
+    CrstIJWFixupData = 38,
+    CrstIJWHash = 39,
+    CrstILStubGen = 40,
+    CrstInlineTrackingMap = 41,
+    CrstInstMethodHashTable = 42,
+    CrstInterfaceDispatchGlobalLists = 43,
+    CrstInterop = 44,
+    CrstInteropData = 45,
+    CrstIsJMCMethod = 46,
+    CrstISymUnmanagedReader = 47,
+    CrstJit = 48,
+    CrstJitInlineTrackingMap = 49,
+    CrstJitPatchpoint = 50,
+    CrstJumpStubCache = 51,
+    CrstLeafLock = 52,
+    CrstListLock = 53,
+    CrstLoaderAllocator = 54,
+    CrstLoaderAllocatorReferences = 55,
+    CrstLoaderHeap = 56,
+    CrstManagedObjectWrapperMap = 57,
+    CrstMethodDescBackpatchInfoTracker = 58,
+    CrstMethodTableExposedObject = 59,
+    CrstModule = 60,
+    CrstModuleLookupTable = 61,
+    CrstMulticoreJitHash = 62,
+    CrstMulticoreJitManager = 63,
+    CrstNativeImageEagerFixups = 64,
+    CrstNativeImageLoad = 65,
+    CrstNotifyGdb = 66,
+    CrstPEImage = 67,
+    CrstPendingTypeLoadEntry = 68,
+    CrstPerfMap = 69,
+    CrstPgoData = 70,
+    CrstPinnedByrefValidation = 71,
+    CrstPinnedHeapHandleTable = 72,
+    CrstPregeneratedStringThunks = 73,
+    CrstProfilerGCRefDataFreeList = 74,
+    CrstProfilingAPIStatus = 75,
+    CrstRCWCache = 76,
+    CrstRCWCleanupList = 77,
+    CrstReadyToRunEntryPointToMethodDescMap = 78,
+    CrstReflection = 79,
+    CrstReJITGlobalRequest = 80,
+    CrstSigConvert = 81,
+    CrstSingleUseLock = 82,
+    CrstStressLog = 83,
+    CrstStubCache = 84,
+    CrstStubDispatchCache = 85,
+    CrstSyncBlockCache = 86,
+    CrstSyncHashLock = 87,
+    CrstSystemDomain = 88,
+    CrstSystemDomainDelayedUnloadList = 89,
+    CrstThreadIdDispenser = 90,
+    CrstThreadLocalStorageLock = 91,
+    CrstThreadStore = 92,
+    CrstTieredCompilation = 93,
+    CrstTypeEquivalenceMap = 94,
+    CrstTypeIDMap = 95,
+    CrstUMEntryThunkCache = 96,
+    CrstUMEntryThunkFreeListLock = 97,
+    CrstUniqueStack = 98,
+    CrstUnresolvedClassLock = 99,
+    CrstUnwindInfoTablePendingLock = 100,
+    CrstUnwindInfoTablePublishLock = 101,
+    CrstVSDIndirectionCellLock = 102,
+    CrstWebcilImageRelocation = 103,
     CrstWrapperTemplate = 104,
     kNumberOfCrstTypes = 105
 };
@@ -196,7 +269,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstModuleLookupTable
     0,          // CrstMulticoreJitHash
     14,         // CrstMulticoreJitManager
-    7,          // CrstNativeImageEagerFixups
+    8,          // CrstNativeImageEagerFixups
     0,          // CrstNativeImageLoad
     0,          // CrstNotifyGdb
     4,          // CrstPEImage
@@ -235,6 +308,7 @@ int g_rgCrstLevelMap[] =
     2,          // CrstUnwindInfoTablePendingLock
     3,          // CrstUnwindInfoTablePublishLock
     3,          // CrstVSDIndirectionCellLock
+    -1,         // CrstWebcilImageRelocation
     3,          // CrstWrapperTemplate
 };
 
@@ -345,6 +419,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstUnwindInfoTablePendingLock",
     "CrstUnwindInfoTablePublishLock",
     "CrstVSDIndirectionCellLock",
+    "CrstWebcilImageRelocation",
     "CrstWrapperTemplate",
 };
 

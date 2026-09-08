@@ -1705,7 +1705,8 @@ namespace Internal.NativeFormat
                 if (place)
                     _section.Place(tree);
 
-                _section.Place(second);
+                second = _section.Place(second);
+                tree.Update(first, second);
 
                 isLeaf = false;
                 return tree;

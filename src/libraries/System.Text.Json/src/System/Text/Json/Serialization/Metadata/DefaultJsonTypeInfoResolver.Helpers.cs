@@ -93,11 +93,42 @@ namespace System.Text.Json.Serialization.Metadata
             // name (as we do for other compiler-emitted attributes such as RequiredMemberAttribute) instead of via a
             // compile-time type reference, so that inference works on every target framework and regardless of whether
             // the attribute is provided by the runtime or polyfilled by the compiler.
-            if (typeInfo.Options.InferClosedTypePolymorphism &&
-                (options is null || options.DerivedTypes.Count == 0) &&
-                GetInferredClosedDerivedTypes(typeInfo.Type) is { Length: > 0 } inferredDerivedTypes)
+            //
+            // Consistent with other type-scoped settings such as JsonNumberHandlingAttribute, a value specified on the
+            // declaration overrides the global JsonSerializerOptions setting; the global value applies when unset.
+            bool? inferClosedTypePolymorphismOverride = polymorphicAttribute?.InferClosedTypePolymorphismOrNull;
+
+            bool inferClosedTypePolymorphism = inferClosedTypePolymorphismOverride ?? typeInfo.Options.InferClosedTypePolymorphism;
+
+            // A single attribute walk answers both questions. It is skipped entirely unless inference could
+            // apply, so ordinary type resolution does not pay for it: an explicit opt-in always needs the
+            // answer, while a global opt-in only matters when the declaration registers no derived types.
+            bool isClosedType = false;
+            Type[]? closedDerivedTypes = null;
+
+            if (inferClosedTypePolymorphismOverride is true ||
+                (inferClosedTypePolymorphism && options is null or { DerivedTypes.Count: 0 }))
+            {
+                isClosedType = IsClosedType(typeInfo.Type, out closedDerivedTypes);
+            }
+
+            if (inferClosedTypePolymorphismOverride is true && !isClosedType)
+            {
+                // Enabling inference on a type that is not closed can never infer derived types, so it is
+                // always a mistake -- including when the declaration carries explicit JsonDerivedTypeAttribute
+                // registrations, which would otherwise mask the error behind a working hierarchy. This matches
+                // the SYSLIB1243 error reported by the source generator.
+                ThrowHelper.ThrowInvalidOperationException_InferClosedTypePolymorphismOnNonClosedType(typeInfo.Type);
+            }
+
+            if (inferClosedTypePolymorphism &&
+                options is null or { DerivedTypes.Count: 0 } &&
+                closedDerivedTypes is { Length: > 0 } declaredDerivedTypes)
             {
                 options ??= new();
+
+                List<Type> inferredDerivedTypes = new(declaredDerivedTypes.Length);
+                GetClosedDerivedTypes(declaredDerivedTypes, inferredDerivedTypes);
 
                 foreach (Type derivedType in inferredDerivedTypes)
                 {
@@ -111,6 +142,21 @@ namespace System.Text.Json.Serialization.Metadata
 
                     options.DerivedTypes.Add(new JsonDerivedType(derivedType, GetInferredTypeDiscriminator(derivedType)));
                 }
+            }
+            else if (inferClosedTypePolymorphismOverride is false &&
+                options is { DerivedTypes.Count: 0 } &&
+                polymorphicAttribute is not null &&
+                !HasNonDefaultPolymorphismSettings(polymorphicAttribute))
+            {
+                // The declaration explicitly opted out of inference without specifying any other polymorphism
+                // metadata, so JsonPolymorphicAttribute is being used to exclude the type from a global opt-in
+                // rather than to declare a hierarchy. Leave the type non-polymorphic instead of failing
+                // configuration on an empty registration list.
+                //
+                // Any other empty registration list -- including a closed type that declares no derived types
+                // -- falls through to the pre-existing 'should specify at least one derived type' failure that
+                // JsonPolymorphicAttribute has always produced when no derived types are registered.
+                options = null;
             }
 
             if (options is not null)
@@ -144,6 +190,12 @@ namespace System.Text.Json.Serialization.Metadata
                 int genericAritySeparatorIndex = name.IndexOf('`');
                 return genericAritySeparatorIndex < 0 ? name : name.Substring(0, genericAritySeparatorIndex);
             }
+
+            static bool HasNonDefaultPolymorphismSettings(JsonPolymorphicAttribute attribute) =>
+                attribute.IgnoreUnrecognizedTypeDiscriminators ||
+                attribute.TypeClassifier is not null ||
+                attribute.TypeDiscriminatorPropertyName is not null ||
+                attribute.UnknownDerivedTypeHandling != default;
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -190,14 +242,24 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Reads the derived-type list from the compiler-emitted
-        /// <c>System.Runtime.CompilerServices.IsClosedTypeAttribute</c> that marks a closed type hierarchy.
-        /// The attribute is matched by full name because the C# compiler polyfills it into assemblies that
-        /// target runtimes without the type, making the polyfilled copy distinct from any runtime-provided one.
-        /// Returns <see langword="null"/> when the type is not a closed hierarchy or declares no derived types.
+        /// Determines whether <paramref name="type"/> is declared <see langword="closed"/>, reporting the
+        /// derived types the compiler recorded for it in <paramref name="derivedTypes"/>.
+        ///
+        /// The two results are independent: a closed type that declares no derived types is still a closed
+        /// type, so <paramref name="derivedTypes"/> is <see langword="null"/> both for a type that is not
+        /// closed and for a closed type with an empty hierarchy. Inference only consults
+        /// <paramref name="derivedTypes"/> and is therefore inert on any type that is not closed, but
+        /// diagnosing an explicit <see cref="JsonPolymorphicAttribute.InferClosedTypePolymorphism"/> opt-in
+        /// has to tell those two cases apart -- the first is an error, the second a valid declaration.
+        ///
+        /// The marker attribute is matched by full name because the C# compiler polyfills
+        /// <c>System.Runtime.CompilerServices.IsClosedTypeAttribute</c> into assemblies that target runtimes
+        /// without the type, making the polyfilled copy distinct from any runtime-provided one.
         /// </summary>
-        private static Type[]? GetInferredClosedDerivedTypes(Type type)
+        private static bool IsClosedType(Type type, out Type[]? derivedTypes)
         {
+            derivedTypes = null;
+
             foreach (CustomAttributeData attributeData in type.GetCustomAttributesData())
             {
                 Type attributeType = attributeData.AttributeType;
@@ -207,53 +269,85 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                foreach (CustomAttributeNamedArgument namedArgument in attributeData.NamedArguments)
+                derivedTypes = GetDeclaredDerivedTypes(attributeData);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void GetClosedDerivedTypes(Type[] declaredDerivedTypes, List<Type> derivedTypes)
+        {
+            foreach (Type derivedType in declaredDerivedTypes)
+            {
+                Type derivedTypeDefinition = derivedType.IsGenericType
+                    ? derivedType.GetGenericTypeDefinition()
+                    : derivedType;
+
+                if (IsClosedType(derivedTypeDefinition, out Type[]? nestedDerivedTypes))
                 {
-                    if (namedArgument.MemberName != "DerivedTypes")
+                    if (nestedDerivedTypes is not null)
                     {
-                        continue;
+                        GetClosedDerivedTypes(nestedDerivedTypes, derivedTypes);
                     }
+                }
+                else
+                {
+                    derivedTypes.Add(derivedType);
+                }
+            }
+        }
 
-                    object? value = namedArgument.TypedValue.Value;
+        /// <summary>
+        /// Reads the derived-type list from the compiler-emitted closed-type marker attribute. Returns
+        /// <see langword="null"/> when the hierarchy is empty or the attribute cannot be interpreted.
+        /// </summary>
+        private static Type[]? GetDeclaredDerivedTypes(CustomAttributeData attributeData)
+        {
+            foreach (CustomAttributeNamedArgument namedArgument in attributeData.NamedArguments)
+            {
+                if (namedArgument.MemberName != "DerivedTypes")
+                {
+                    continue;
+                }
 
-                    // Mono materializes array-valued named arguments directly, while CoreCLR wraps
-                    // each element in a CustomAttributeTypedArgument.
-                    if (value is Type[] materializedDerivedTypes)
+                object? value = namedArgument.TypedValue.Value;
+
+                // Mono materializes array-valued named arguments directly, while CoreCLR wraps
+                // each element in a CustomAttributeTypedArgument.
+                if (value is Type[] materializedDerivedTypes)
+                {
+                    foreach (Type? derivedType in materializedDerivedTypes)
                     {
-                        foreach (Type? derivedType in materializedDerivedTypes)
+                        if (derivedType is null)
                         {
-                            if (derivedType is null)
-                            {
-                                return null;
-                            }
+                            return null;
                         }
-
-                        return materializedDerivedTypes;
                     }
 
-                    if (value is not IList<CustomAttributeTypedArgument> derivedTypeArguments)
+                    return materializedDerivedTypes;
+                }
+
+                if (value is not IList<CustomAttributeTypedArgument> derivedTypeArguments)
+                {
+                    return null;
+                }
+
+                Type[] derivedTypes = new Type[derivedTypeArguments.Count];
+                for (int i = 0; i < derivedTypes.Length; i++)
+                {
+                    if (derivedTypeArguments[i].Value is not Type derivedType)
                     {
                         return null;
                     }
 
-                    Type[] derivedTypes = new Type[derivedTypeArguments.Count];
-                    for (int i = 0; i < derivedTypes.Length; i++)
-                    {
-                        if (derivedTypeArguments[i].Value is not Type derivedType)
-                        {
-                            return null;
-                        }
-
-                        derivedTypes[i] = derivedType;
-                    }
-
-                    return derivedTypes;
+                    derivedTypes[i] = derivedType;
                 }
 
-                // The closed-type marker is present but carries no derived types.
-                return null;
+                return derivedTypes;
             }
 
+            // The closed-type marker is present but carries no derived types.
             return null;
         }
 
@@ -523,7 +617,7 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                bool hasJsonIncludeAttribute = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                bool hasJsonIncludeAttribute = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) is not null;
 
                 // Only include properties that either have a public getter or a public setter or have the JsonIncludeAttribute set.
                 if (propertyInfo.GetMethod?.IsPublic == true ||
@@ -545,7 +639,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (FieldInfo fieldInfo in currentType.GetFields(AllInstanceMembers))
             {
-                bool hasJsonIncludeAttribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                bool hasJsonIncludeAttribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) is not null;
                 if (hasJsonIncludeAttribute || (fieldInfo.IsPublic && typeInfo.Options.IncludeFields))
                 {
                     AddMember(
@@ -576,13 +670,13 @@ namespace System.Text.Json.Serialization.Metadata
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
             JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, typeNamingPolicy, nullabilityCtx, typeIgnoreCondition, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
-            if (jsonPropertyInfo == null)
+            if (jsonPropertyInfo is null)
             {
                 // ignored invalid property
                 return;
             }
 
-            Debug.Assert(jsonPropertyInfo.Name != null);
+            Debug.Assert(jsonPropertyInfo.Name is not null);
             typeInfo.PropertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
         }
 
@@ -735,7 +829,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool hasJsonIncludeAttribute,
             JsonNamingPolicy? typeNamingPolicy)
         {
-            Debug.Assert(jsonPropertyInfo.AttributeProvider == null);
+            Debug.Assert(jsonPropertyInfo.AttributeProvider is null);
 
             switch (jsonPropertyInfo.AttributeProvider = memberInfo)
             {
@@ -765,7 +859,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             jsonPropertyInfo.IgnoreCondition = ignoreCondition;
-            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
+            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) is not null;
         }
 
         private static void DeterminePropertyPolicies(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
@@ -784,7 +878,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
             string? name;
-            if (nameAttribute != null)
+            if (nameAttribute is not null)
             {
                 name = nameAttribute.Name;
             }
@@ -799,7 +893,7 @@ namespace System.Text.Json.Serialization.Metadata
                     : memberInfo.Name;
             }
 
-            if (name == null)
+            if (name is null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(propertyInfo);
             }
@@ -810,7 +904,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static void DeterminePropertyIsRequired(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
         {
             propertyInfo.IsRequired =
-                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) is not null
                 || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
         }
 
@@ -906,85 +1000,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 return NullabilityState.NotNull;
             }
-#if NET8_0
-            // Workaround for https://github.com/dotnet/runtime/issues/92487
-            // The fix has been incorporated into .NET 9 (and the polyfilled implementations in netfx).
-            // Should be removed once .NET 8 support is dropped.
-            if (parameterInfo.GetGenericParameterDefinition() is { ParameterType: { IsGenericParameter: true } typeParam })
-            {
-                // Step 1. Look for nullable annotations on the type parameter.
-                if (GetNullableFlags(typeParam) is byte[] flags)
-                {
-                    return TranslateByte(flags[0]);
-                }
 
-                // Step 2. Look for nullable annotations on the generic method declaration.
-                if (typeParam.DeclaringMethod != null && GetNullableContextFlag(typeParam.DeclaringMethod) is byte flag)
-                {
-                    return TranslateByte(flag);
-                }
-
-                // Step 3. Look for nullable annotations on the generic type declaration.
-                if (GetNullableContextFlag(typeParam.DeclaringType!) is byte flag2)
-                {
-                    return TranslateByte(flag2);
-                }
-
-                // Default to nullable.
-                return NullabilityState.Nullable;
-
-                static byte[]? GetNullableFlags(MemberInfo member)
-                {
-                    foreach (CustomAttributeData attr in member.GetCustomAttributesData())
-                    {
-                        Type attrType = attr.AttributeType;
-                        if (attrType.Name == "NullableAttribute" && attrType.Namespace == "System.Runtime.CompilerServices")
-                        {
-                            foreach (CustomAttributeTypedArgument ctorArg in attr.ConstructorArguments)
-                            {
-                                switch (ctorArg.Value)
-                                {
-                                    case byte flag:
-                                        return [flag];
-                                    case byte[] flags:
-                                        return flags;
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
-                }
-
-                static byte? GetNullableContextFlag(MemberInfo member)
-                {
-                    foreach (CustomAttributeData attr in member.GetCustomAttributesData())
-                    {
-                        Type attrType = attr.AttributeType;
-                        if (attrType.Name == "NullableContextAttribute" && attrType.Namespace == "System.Runtime.CompilerServices")
-                        {
-                            foreach (CustomAttributeTypedArgument ctorArg in attr.ConstructorArguments)
-                            {
-                                if (ctorArg.Value is byte flag)
-                                {
-                                    return flag;
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
-                }
-
-                static NullabilityState TranslateByte(byte b) =>
-                    b switch
-                    {
-                        1 => NullabilityState.NotNull,
-                        2 => NullabilityState.Nullable,
-                        _ => NullabilityState.Unknown
-                    };
-            }
-#endif
             NullabilityInfo nullability = nullabilityCtx.Create(parameterInfo);
             return nullability.WriteState;
         }

@@ -31,8 +31,13 @@
 #include "request_common.h"
 #include "conditionalweaktable.h"
 
+#include "metamodelro.h"
+#include "metamodelrw.h"
+#include "liteweightstgdb.h"
+#include "mdinternalrw.h"
+#include "stgpool.h"
+
 #ifndef USE_DAC_TABLE_RVA
-extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 #include <clrconfignocache.h>
 #define CAN_USE_CDAC
 #endif
@@ -232,6 +237,8 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    pMetadataLookup - callback interface to do internal metadata lookup. This is because
 //                  metadata is not dac-ized.
 //    ppInterface - mandatory out-parameter
+//    ppLegacyDac - mandatory out-parameter; receives a reference to the native
+//                  DAC when ppInterface receives a cDAC implementation
 //
 // Return Value:
 //    S_OK on success.
@@ -244,7 +251,7 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    This will yield an IDacDbiInterface to provide structured access to the
 //    data-target.
 //
-//    Must call Release on interface to free its resources.
+//    Must call Release on each returned interface to free its resources.
 //
 //---------------------------------------------------------------------------------------
 STDAPI
@@ -252,22 +259,30 @@ DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,
+    CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
-    IDacDbiInterface ** ppInterface)
+    IDacDbiInterface ** ppInterface,
+    IUnknown ** ppLegacyDac)
 {
+#ifndef CAN_USE_CDAC
+    // Consumed only by the cDAC path, which is compiled out here.
+    (void)contractDescriptorAddress;
+#endif
+
     // No marshalling is done by the instantiationf function - we just need to setup the infrastructure.
     // We don't want to warn if this involves creating and accessing undacized data structures,
     // because it's for the infrastructure, not DACized code itself.
     SUPPORTS_DAC_HOST_ONLY;
 
     // Since this is public, verify it.
-    if ((ppInterface == NULL) || (pTarget == NULL) || (baseAddress == 0))
+    if ((ppInterface == NULL) || (ppLegacyDac == NULL) || (pTarget == NULL) || (baseAddress == 0))
     {
         return E_INVALIDARG;
     }
 
     *ppInterface = NULL;
+    *ppLegacyDac = NULL;
 
     //
     // Actually allocate the real object and initialize it.
@@ -293,8 +308,8 @@ DacDbiInterfaceInstance(
         DWORD val;
         if (enable.TryAsInteger(10, val) && val == 1)
         {
-            uint64_t contractDescriptorAddr = 0;
-            if (TryGetSymbol(pDac->m_pTarget, pDac->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            uint64_t contractDescriptorAddr = contractDescriptorAddress;
+            if (contractDescriptorAddr != 0)
             {
                 IUnknown* legacyImpl;
                 HRESULT qiRes = pDac->QueryInterface(IID_IUnknown, (void**)&legacyImpl);
@@ -304,7 +319,7 @@ DacDbiInterfaceInstance(
                 cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pTarget, legacyImpl);
                 if (cdac.IsValid())
                 {
-                    ReleaseHolder<IUnknown> cdacInterface = nullptr;
+                    ReleaseHolder<IUnknown> cdacInterface;
                     cdac.CreateDacDbiInterface(&cdacInterface);
                     if (cdacInterface != nullptr)
                     {
@@ -312,11 +327,11 @@ DacDbiInterfaceInstance(
                         HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
                         if (SUCCEEDED(hr))
                         {
-                            // Lifetime is now managed by cDAC implementation
-                            pDac->Release();
-                            // Release the AddRef from the QI for legacyImpl
+                            // Transfer the QI reference to DBI so the legacy DAC remains alive
+                            // until the managed cDAC interface has been released.
                             pDac->Release();
                             *ppInterface = pCDacDbi;
+                            *ppLegacyDac = legacyImpl;
                             return S_OK;
                         }
                     }
@@ -531,6 +546,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FlushCache()
     // Current impl of Flush() should always succeed. If it ever fails, we want to know.
     _ASSERTE(SUCCEEDED(hr));
     return hr;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Destroy()
+{
+    return S_OK;
 }
 
 // enable or disable DAC target consistency checks
@@ -968,10 +988,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     // If a MethodDesc is provided, it has to be consistent with the MethodDef token and the RVA.
     _ASSERTE((pMD == NULL) || ((pMD->GetMemberDef() == mdMethodToken) && (pMD->GetRVA() == methodRVA)));
 
-    TADDR pTargetIL; // target address of start of IL blob
-
-    // This works for methods in dynamic modules, and methods overridden by a profiler.
-    pTargetIL = pModule->GetDynamicIL(mdMethodToken);
+    TADDR pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
@@ -1235,7 +1252,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_AD
         pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
         pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
 
-        SIZE_T unusedLatestEncVersion;
+        ULONG64 unusedLatestEncVersion;
         Module * pModule = pMethodDesc->GetModule();
         _ASSERTE(pModule != NULL);
         LookupEnCVersions(pModule,
@@ -3894,7 +3911,438 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule
     return hr;
 }
 
-// Implementation of IDacDbiInterface::GetSymbolsBuffer
+//-----------------------------------------------------------------------------
+// Serialization of the target's writable (MDInternalRW) metadata into a
+// single contiguous ECMA-335 metadata image.
+//-----------------------------------------------------------------------------
+namespace
+{
+    // Heap index size flags (ECMA-335 II.24.2.6)
+    const BYTE HEAP_STRING_4 = 0x01;
+    const BYTE HEAP_GUID_4 = 0x02;
+    const BYTE HEAP_BLOB_4 = 0x04;
+
+    const ULONG64 MaxPoolBytes = 100000000;
+    const ULONG32 MaxPoolSegments = 1000;
+    const ULONG32 MaxTableCount = 64;
+
+    FORCEINLINE ULONG32 AlignUp4(ULONG32 value)
+    {
+        return (value + 3) & ~(ULONG32)3;
+    }
+
+    // Owns a copy of a coalesced storage pool.
+    struct PoolData
+    {
+        NewArrayHolder<BYTE> Data;
+        ULONG32 Size;
+
+        PoolData() : Data(NULL), Size(0) {}
+    };
+
+    void ReadStoragePool(TADDR poolAddress, PoolData & result)
+    {
+        TADDR segData[MaxPoolSegments];
+        ULONG32 segSize[MaxPoolSegments];
+        ULONG32 segCount = 0;
+        ULONG64 totalSize = 0;
+
+        StgPool * pPool = dac_cast<DPTR(StgPool)>(poolAddress);
+        StgPoolSeg * pSeg = pPool;
+        for (ULONG32 iteration = 0; ; iteration++)
+        {
+            ULONG32 dataSize = pSeg->GetDataSize();
+            if (iteration >= MaxPoolSegments ||
+                totalSize > MaxPoolBytes ||
+                dataSize > MaxPoolBytes - totalSize)
+            {
+                ThrowHR(CLDB_E_FILE_CORRUPT);
+            }
+            if (dataSize > 0)
+            {
+                segData[segCount] = (TADDR)pSeg->GetSegData();
+                segSize[segCount] = dataSize;
+                segCount++;
+                totalSize += dataSize;
+            }
+
+            TADDR nextSegment = (TADDR)pSeg->GetNextSeg();
+            if (nextSegment == (TADDR)NULL)
+            {
+                break;
+            }
+            pSeg = dac_cast<DPTR(StgPoolSeg)>(nextSegment);
+        }
+
+        result.Size = (ULONG32)totalSize;
+        result.Data = new BYTE[result.Size == 0 ? 1 : result.Size];
+        ULONG32 offset = 0;
+        for (ULONG32 i = 0; i < segCount; i++)
+        {
+            DacReadAll(segData[i], result.Data + offset, segSize[i], true);
+            offset += segSize[i];
+        }
+    }
+
+    // Minimal growable byte buffer used to assemble the ECMA-335 metadata image.
+    class MetadataBlobBuilder
+    {
+    public:
+        MetadataBlobBuilder() : m_pData(NULL), m_count(0), m_capacity(0) {}
+        ~MetadataBlobBuilder() { delete[] m_pData; }
+
+        ULONG32 Count() const { return m_count; }
+        const BYTE * Data() const { return m_pData; }
+
+        void WriteByte(BYTE value) { EnsureCapacity(m_count + 1); m_pData[m_count++] = value; }
+        void WriteUInt16(UINT16 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteUInt32(UINT32 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteUInt64(UINT64 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteBytes(const BYTE * pData, ULONG32 size) { if (size != 0) WriteRaw(pData, size); }
+
+        void WriteZeros(ULONG32 count)
+        {
+            EnsureCapacity(m_count + count);
+            memset(m_pData + m_count, 0, count);
+            m_count += count;
+        }
+
+        // Reserve a 4-byte slot to be patched later; returns its offset.
+        ULONG32 Reserve4()
+        {
+            ULONG32 offset = m_count;
+            WriteUInt32(0);
+            return offset;
+        }
+
+        void PatchUInt32(ULONG32 offset, UINT32 value)
+        {
+            memcpy(m_pData + offset, &value, sizeof(value));
+        }
+
+        // Writes a null-terminated ASCII string padded with zeros to a 4-byte boundary,
+        // occupying AlignUp(length + 1, 4) bytes total.
+        void WriteAlignedString(const char * value, ULONG32 length)
+        {
+            ULONG32 total = AlignUp4(length + 1);
+            EnsureCapacity(m_count + total);
+            if (length != 0)
+            {
+                memcpy(m_pData + m_count, value, length);
+            }
+            memset(m_pData + m_count + length, 0, total - length);
+            m_count += total;
+        }
+
+        // Writes a heap's bytes padded with zeros to a 4-byte boundary.
+        void WriteAlignedHeap(const BYTE * pData, ULONG32 size)
+        {
+            WriteBytes(pData, size);
+            WriteZeros(AlignUp4(size) - size);
+        }
+
+    private:
+        void WriteRaw(const void * pData, ULONG32 size)
+        {
+            EnsureCapacity(m_count + size);
+            memcpy(m_pData + m_count, pData, size);
+            m_count += size;
+        }
+
+        void EnsureCapacity(ULONG32 needed)
+        {
+            if (needed <= m_capacity)
+            {
+                return;
+            }
+            ULONG32 newCapacity = (m_capacity == 0) ? 256 : m_capacity;
+            while (newCapacity < needed)
+            {
+                newCapacity *= 2;
+            }
+            BYTE * pNew = new BYTE[newCapacity];
+            if (m_count != 0)
+            {
+                memcpy(pNew, m_pData, m_count);
+            }
+            delete[] m_pData;
+            m_pData = pNew;
+            m_capacity = newCapacity;
+        }
+
+        BYTE * m_pData;
+        ULONG32 m_count;
+        ULONG32 m_capacity;
+    };
+
+    // Writes an ECMA-335 stream header (offset placeholder, size, name) and returns
+    // the offset of the placeholder for the caller to patch with the stream start.
+    ULONG32 WriteStreamHeader(MetadataBlobBuilder & builder, const char * name, ULONG32 size)
+    {
+        ULONG32 offsetField = builder.Reserve4();
+        builder.WriteUInt32(size);
+        builder.WriteAlignedString(name, (ULONG32)strlen(name));
+        return offsetField;
+    }
+}
+
+// Reconstruct and serialize the writable metadata of a module into a freshly allocated
+// ECMA-335 image. On success *ppBlob is a new[]-allocated buffer of *pcbBlob bytes that
+// the caller owns.
+void DacDbiInterfaceImpl::SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob)
+{
+    PEAssembly * pPEAssembly = pModule->GetPEAssembly();
+    TADDR mdRWAddr = pPEAssembly->GetMDInternalRWAddress();
+    if (mdRWAddr == (TADDR)NULL)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
+    MDInternalRW * pMDInternalRW = dac_cast<DPTR(MDInternalRW)>(mdRWAddr);
+    CLiteWeightStgdbRW * pStgdb = dac_cast<DPTR(CLiteWeightStgdbRW)>((TADDR)pMDInternalRW->m_pStgdb);
+    CMiniMdRW * pMiniMd = dac_cast<DPTR(CMiniMdRW)>(PTR_HOST_MEMBER_TADDR(CLiteWeightStgdbRW, pStgdb, m_MiniMd));
+
+    ULONG32 tableCount = pMiniMd->GetCountTables();
+    if (tableCount > MaxTableCount)
+    {
+        ThrowHR(CLDB_E_FILE_CORRUPT);
+    }
+
+    // ECMA-335 II.24.2.6
+    ULONG32 rowCounts[MaxTableCount];
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        rowCounts[i] = pMiniMd->m_Schema.m_cRecs[i];
+    }
+
+    ULONG64 sorted = pMiniMd->m_Schema.m_sorted;
+    BYTE heaps = pMiniMd->m_Schema.m_heaps;
+
+    bool largeStringHeap = (heaps & HEAP_STRING_4) != 0;
+    bool largeGuidHeap = (heaps & HEAP_GUID_4) != 0;
+    bool largeBlobHeap = (heaps & HEAP_BLOB_4) != 0;
+    bool all4ByteColumns = pMiniMd->m_fAll4ByteColumns != FALSE;
+
+    PoolData stringHeap;
+    PoolData blobHeap;
+    PoolData userStringHeap;
+    PoolData guidHeap;
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_StringHeap), stringHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_BlobHeap), blobHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_UserStringHeap), userStringHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_GuidHeap), guidHeap);
+
+    // Coalesce the record data for each table.
+    NewArrayHolder<PoolData> tables = new PoolData[tableCount == 0 ? 1 : tableCount];
+    TADDR tablesBase = PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_Tables);
+    ULONG32 tableStride = (ULONG32)sizeof(MetaData::TableRW);
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        ReadStoragePool(tablesBase + i * tableStride, tables[i]);
+    }
+
+    // Read the metadata version string (ECMA-335 II.24.2.1 metadata root):
+    // Signature(4) | MajorVersion(2) | MinorVersion(2) | Reserved(4) | VersionLength(4) | Version[VersionLength]
+    const ULONG32 MetadataRootVersionLengthOffset = 12;
+    const ULONG32 MetadataRootVersionStringOffset = 16;
+    const ULONG32 MaxMetadataVersionLength = 256;
+    BYTE versionBuffer[MaxMetadataVersionLength];
+    ULONG32 versionLength = 0;
+    TADDR metadataRootAddress = (TADDR)pStgdb->m_pvMd;
+    if (metadataRootAddress != (TADDR)NULL)
+    {
+        ULONG32 rawVersionLength = *dac_cast<DPTR(ULONG32)>(metadataRootAddress + MetadataRootVersionLengthOffset);
+        if (rawVersionLength != 0)
+        {
+            ULONG32 toRead = rawVersionLength < MaxMetadataVersionLength ? rawVersionLength : MaxMetadataVersionLength;
+            DacReadAll(metadataRootAddress + MetadataRootVersionStringOffset, versionBuffer, toRead, true);
+            for (versionLength = 0; versionLength < toRead; versionLength++)
+            {
+                if (versionBuffer[versionLength] == 0)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    // From the multiple different storage pools, build a single contiguous ECMA-335 metadata blob.
+    MetadataBlobBuilder builder;
+    builder.WriteUInt32(0x424A5342);
+
+    // major version
+    builder.WriteUInt16(1);
+
+    // minor version
+    builder.WriteUInt16(1);
+
+    // reserved
+    builder.WriteUInt32(0);
+
+    builder.WriteUInt32(AlignUp4(versionLength + 1));
+    builder.WriteAlignedString((const char *)versionBuffer, versionLength);
+
+    // reserved
+    builder.WriteUInt16(0);
+
+    // number of streams
+    UINT16 numStreams = 5; // #Strings, #US, #Blob, #GUID, #~ (metadata)
+    if (all4ByteColumns)
+    {
+        // The #JTD marker stream directs the reader to a "minimal delta" image
+        // in which all variable-sized columns are 4 bytes long.
+        numStreams++;
+    }
+    builder.WriteUInt16(numStreams);
+
+    // Write stream headers
+    if (all4ByteColumns)
+    {
+        ULONG32 jtdOffset = WriteStreamHeader(builder, "#JTD", 0);
+        builder.PatchUInt32(jtdOffset, builder.Count());
+    }
+
+    ULONG32 stringsOffset = WriteStreamHeader(builder, "#Strings", AlignUp4(stringHeap.Size));
+    ULONG32 blobOffset = WriteStreamHeader(builder, "#Blob", AlignUp4(blobHeap.Size));
+    ULONG32 guidOffset = WriteStreamHeader(builder, "#GUID", AlignUp4(guidHeap.Size));
+    ULONG32 userStringOffset = WriteStreamHeader(builder, "#US", AlignUp4(userStringHeap.Size));
+
+    // Use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
+    // that are only present in the uncompressed tables stream.
+    ULONG32 tablesOffset = builder.Reserve4();
+    ULONG32 tablesSize = builder.Reserve4();
+    builder.WriteAlignedString("#-", 2);
+
+    // Write the heap-style streams
+    builder.PatchUInt32(stringsOffset, builder.Count());
+    builder.WriteAlignedHeap(stringHeap.Data, stringHeap.Size);
+
+    builder.PatchUInt32(blobOffset, builder.Count());
+    builder.WriteAlignedHeap(blobHeap.Data, blobHeap.Size);
+
+    builder.PatchUInt32(guidOffset, builder.Count());
+    builder.WriteAlignedHeap(guidHeap.Data, guidHeap.Size);
+
+    builder.PatchUInt32(userStringOffset, builder.Count());
+    builder.WriteAlignedHeap(userStringHeap.Data, userStringHeap.Size);
+
+    // Write tables stream
+    ULONG32 tableStreamStart = builder.Count();
+    builder.PatchUInt32(tablesOffset, tableStreamStart);
+
+    // Write tables stream header
+    builder.WriteUInt32(0); // reserved
+    // ECMA-335 II.24.2.6: MajorVersion shall be 2, MinorVersion shall be 0.
+    builder.WriteByte(2); // major version
+    builder.WriteByte(0); // minor version
+    BYTE heapSizes =
+        (BYTE)((largeStringHeap ? HEAP_STRING_4 : 0) |
+               (largeGuidHeap ? HEAP_GUID_4 : 0) |
+               (largeBlobHeap ? HEAP_BLOB_4 : 0));
+    builder.WriteByte(heapSizes);
+    builder.WriteByte(1); // reserved
+
+    ULONG64 validTables = 0;
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if (rowCounts[i] != 0)
+        {
+            validTables |= (ULONG64)1 << i;
+        }
+    }
+
+    ULONG64 sortedTables = 0;
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if ((sorted & ((ULONG64)1 << i)) != 0)
+        {
+            sortedTables |= (ULONG64)1 << i;
+        }
+    }
+
+    builder.WriteUInt64(validTables);
+    builder.WriteUInt64(sortedTables);
+
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if (rowCounts[i] != 0)
+        {
+            builder.WriteUInt32(rowCounts[i]);
+        }
+    }
+
+    // Write the tables
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        builder.WriteBytes(tables[i].Data, tables[i].Size);
+    }
+
+    // Patch the #- stream size now that the full table stream has been written.
+    builder.PatchUInt32(tablesSize, builder.Count() - tableStreamStart);
+
+    ULONG32 blobSize = builder.Count();
+    BYTE * pBlob = new BYTE[blobSize == 0 ? 1 : blobSize];
+    memcpy(pBlob, builder.Data(), blobSize);
+    *ppBlob = pBlob;
+    *pcbBlob = blobSize;
+}
+
+// Implementation of IDacDbiInterface::GetReadWriteMetadataSize
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize)
+{
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (pSize == NULL)
+        {
+            ThrowHR(E_POINTER);
+        }
+
+        *pSize = 0;
+
+        Module * pModule = vmModule.GetDacPtr();
+        BYTE * pRawBlob = NULL;
+        ULONG32 blobSize = 0;
+        SerializeReadWriteMetadata(pModule, &pRawBlob, &blobSize);
+        NewArrayHolder<BYTE> blob(pRawBlob);
+        *pSize = blobSize;
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+// Implementation of IDacDbiInterface::FillReadWriteMetadata
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer)
+{
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (pBuffer == NULL)
+        {
+            ThrowHR(E_POINTER);
+        }
+
+        Module * pModule = vmModule.GetDacPtr();
+        BYTE * pRawBlob = NULL;
+        ULONG32 blobSize = 0;
+        SerializeReadWriteMetadata(pModule, &pRawBlob, &blobSize);
+        NewArrayHolder<BYTE> blob(pRawBlob);
+
+        if (cbBuffer < blobSize)
+        {
+            ThrowHR(HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER));
+        }
+
+        memcpy(pBuffer, pRawBlob, blobSize);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, OUT TargetBuffer * pTargetBuffer, OUT SymbolFormat * pSymbolFormat)
 {
     DD_ENTER_MAY_THROW;
@@ -5074,6 +5522,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 {
     DD_ENTER_MAY_THROW;
 
+#ifndef FEATURE_VARARGS
+    *pArgBase = (CORDB_ADDRESS)NULL;
+    *pRetVal = TargetBuffer();
+    return E_NOTIMPL;
+#else // FEATURE_VARARGS
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -5100,6 +5553,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+#endif // FEATURE_VARARGS
 }
 
 // returns TRUE if the type requires 8-byte alignment
@@ -5341,8 +5795,8 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
                                             VMPTR_MethodDesc vmMethodDesc,
                                             mdMethodDef      mdMethod,
                                             CORDB_ADDRESS    pNativeStartAddress,
-                                            SIZE_T *         pLatestEnCVersion,
-                                            SIZE_T *         pJittedInstanceEnCVersion /* = NULL */)
+                                            ULONG64 *        pLatestEnCVersion,
+                                            ULONG64 *        pJittedInstanceEnCVersion /* = NULL */)
 {
     MethodDesc * pMD     = vmMethodDesc.GetDacPtr();
 
@@ -5351,46 +5805,37 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
 
     _ASSERTE(pLatestEnCVersion != NULL);
 
-    // @dbgtodo  inspection - once we do EnC, stop using DMIs.
-    // If the method wasn't EnCed, DMIs may not exist. And since this is DAC, we can't create them.
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
 
-    // We may not have the memory for the DebuggerMethodInfos in a minidump.
-    // When dump debugging EnC information isn't very useful so just fallback
-    // to default version.
-    DebuggerMethodInfo * pDMI = NULL;
-    DebuggerJitInfo * pDJI = NULL;
-    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    // Latest EnC version: the active IL code version for this method.
+    ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_Module>(pModule), mdMethod);
+    *pLatestEnCVersion = activeILVersion.IsNull()
+        ? (SIZE_T)CorDB_DEFAULT_ENC_FUNCTION_VERSION
+        : activeILVersion.GetEnCVersion();
+
+    // Jitted-instance EnC version: the version the native code at pNativeStartAddress was built from.
+    if (pJittedInstanceEnCVersion != NULL)
     {
-        if (g_pDebugger != NULL)
+        *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+        if (pNativeStartAddress != (CORDB_ADDRESS)NULL)
         {
-            pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
-            if (pDMI != NULL)
+            NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(
+                dac_cast<PTR_MethodDesc>(pMD),
+                PINSTRToPCODE(CORDB_ADDRESS_TO_TADDR(pNativeStartAddress)));
+            if (!nativeCodeVersion.IsNull())
             {
-                pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+                *pJittedInstanceEnCVersion = nativeCodeVersion.GetILCodeVersion().GetEnCVersion();
             }
         }
     }
-    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-    if (pDJI != NULL)
+#else // !FEATURE_CODE_VERSIONING
+    *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+    if (pJittedInstanceEnCVersion != NULL)
     {
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = pDJI->m_encVersion;
-        }
-        *pLatestEnCVersion = pDMI->GetCurrentEnCVersion();
+        *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
     }
-    else
-    {
-        // If we have no DMI/DJI, then we must never have EnCed. So we can use default EnC info
-        // Several cases where we don't have a DMI/DJI:
-        // - LCG methods
-        // - method was never "touched" by debugger. (DJIs are created lazily).
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-        }
-        *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-    }
+#endif // FEATURE_CODE_VERSIONING
 }
 
 // Get the address of the Debugger control block on the helper thread
@@ -6202,7 +6647,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     if (threadStore != NULL)
     {
         int count = (int)threadStore->ThreadCountInEE();
-        mAllocInfo = new (nothrow) AllocInfo[count + 1];
+        mAllocInfo = new (nothrow) AllocInfo[count];
         if (mAllocInfo == NULL)
             return E_OUTOFMEMORY;
 
@@ -6229,14 +6674,6 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
-        if (globalCtx.alloc_ptr != nullptr)
-        {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
-            j++;
-        }
-
         mAllocContextCount = j;
     }
 
@@ -6973,13 +7410,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGCHeapInformation(OUT COR_HEAP
 }
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata)
 {
     DD_ENTER_MAY_THROW;
-    if (pAddrMDInternalRW == NULL)
+    if (pHasReadWriteMetadata == NULL)
         return E_INVALIDARG;
     PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
-    *pAddrMDInternalRW = pPEAssembly->GetMDInternalRWAddress();
+    *pHasReadWriteMetadata = pPEAssembly->HasReadWriteMetadata();
     return S_OK;
 }
 
@@ -6999,7 +7436,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(V
     // manager's active IL version hasn't yet asked the profiler for the IL body to use, in which case we want to filter it
     //  out from the return in this method.
     ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
-    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive)
+    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive || activeILVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7038,7 +7475,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_Native
 #ifdef FEATURE_REJIT
     NativeCodeVersionNode* pNativeCodeVersionNode = vmNativeCodeVersionNode.GetDacPtr();
     ILCodeVersion ilCodeVersion = pNativeCodeVersionNode->GetILCodeVersion();
-    if (ilCodeVersion.IsDefaultVersion())
+    if (ilCodeVersion.IsDefaultVersion() || ilCodeVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7051,6 +7488,59 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_Native
     _ASSERTE(!"You shouldn't be calling this - rejit is not supported in this build");
     pVmILCodeVersionNode->SetDacTargetPtr(0);
 #endif
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, TargetBuffer * pCodeInfo, mdSignature * pLocalSigToken)
+{
+    DD_ENTER_MAY_THROW;
+    if (pCodeInfo == NULL || pLocalSigToken == NULL)
+        return E_INVALIDARG;
+
+    pCodeInfo->Clear();
+    *pLocalSigToken = mdSignatureNil;
+
+    PTR_Module pModule = vmModule.GetDacPtr();
+    CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
+
+    TADDR pTargetIL = 0; // target address of start of IL blob for the requested EnC version
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        // Find the explicit EnC IL code version stamped with the requested EnC version. The default
+        // version has no explicit node (it represents the original, unedited IL), so it is skipped.
+        ILCodeVersionCollection ilCodeVersions = pCodeVersionManager->GetILCodeVersions(pModule, methodTk);
+        for (ILCodeVersionIterator cur = ilCodeVersions.Begin(), end = ilCodeVersions.End(); cur != end; cur++)
+        {
+            ILCodeVersion ilCodeVersion = *cur;
+            if (!ilCodeVersion.IsDefaultVersion() &&
+                ilCodeVersion.GetSource() == CodeVersionSource::kEnC &&
+                ilCodeVersion.GetEnCVersion() == enCVersion)
+            {
+                pTargetIL = dac_cast<TADDR>(ilCodeVersion.GetIL());
+                break;
+            }
+        }
+    }
+
+    if (pTargetIL != 0)
+    {
+        // Bring the IL blob over to the host and extract the code buffer and local var sig token.
+        // We need the target address of the IL itself (beyond the header), so we add the offset from
+        // the beginning of the host IL blob (the header) to the beginning of the IL to the target
+        // address of the blob.
+        COR_ILMETHOD * pHostIL = DacGetIlMethod(pTargetIL);
+        COR_ILMETHOD_DECODER header(pHostIL);
+
+        pCodeInfo->pAddress = pTargetIL + ((SIZE_T)(header.Code) - (SIZE_T)pHostIL);
+        pCodeInfo->cbSize = header.GetCodeSize();
+
+        if (header.LocalVarSigTok != mdTokenNil)
+        {
+            *pLocalSigToken = header.GetLocalVarSigTok();
+        }
+    }
+
     return S_OK;
 }
 
@@ -7096,32 +7586,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Mo
     *pOptimizationsDisabled = FALSE;
 #endif
 
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
-{
-    DD_ENTER_MAY_THROW;
-    if (pDefines == NULL)
-        return E_INVALIDARG;
-
-    if (g_pDebugger == NULL)
-        return CORDBG_E_NOTREADY;
-
-    *pDefines = g_pDebugger->m_defines;
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMDStructuresVersion(ULONG32* pMDStructuresVersion)
-{
-    DD_ENTER_MAY_THROW;
-    if (pMDStructuresVersion == NULL)
-        return E_INVALIDARG;
-
-    if (g_pDebugger == NULL)
-        return CORDBG_E_NOTREADY;
-
-    *pMDStructuresVersion = g_pDebugger->m_mdDataStructureVersion;
     return S_OK;
 }
 

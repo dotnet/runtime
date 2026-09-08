@@ -562,3 +562,9 @@ type Driver() =
 let main () =
     let driver = Driver()
     driver.Start()
+
+[<EntryPoint>]
+let entryPoint _argv =
+    let driver = Driver()
+    driver.Start()
+    100

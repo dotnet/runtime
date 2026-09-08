@@ -14,357 +14,6 @@
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
 
-void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
-
-// -------------------------------------------------
-// Logic that will eventually mostly be pregenerated for R2R to interpreter code
-// -------------------------------------------------
-namespace
-{
-    FCDECL0(void, CallInterpreter_RetVoid);
-    WASM_CALLABLE_FUNC_1(void, CallInterpreter_RetVoid, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        void * result = NULL;
-
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
-        return;
-    }
-    FCDECL1(void, CallInterpreter_I32_RetVoid, int32_t);
-    WASM_CALLABLE_FUNC_2(void, CallInterpreter_I32_RetVoid, int32_t arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL2(void, CallInterpreter_I32_I32_RetVoid, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_3(void, CallInterpreter_I32_I32_RetVoid, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[2];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL3(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_4(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[3];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL4(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_5(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[4];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL0(int32_t, CallInterpreter_RetI32);
-    WASM_CALLABLE_FUNC_1(int32_t, CallInterpreter_RetI32, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL1(int32_t, CallInterpreter_I32_RetI32, int32_t);
-    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_I32_RetI32, int32_t arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL1(int32_t, CallInterpreter_D64_RetI32, double);
-    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_D64_RetI32, double arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            double args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL1(int64_t, CallInterpreter_D64_RetI64, double);
-    WASM_CALLABLE_FUNC_2(int64_t, CallInterpreter_D64_RetI64, double arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            double args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        int64_t result = 0;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return result;
-    }
-    FCDECL2(int32_t, CallInterpreter_I32_I32_RetI32, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_I32_RetI32, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[2];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL2(int32_t, CallInterpreter_I32_S8_RetI32, int32_t, int8_t*);
-    WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_S8_RetI32, int32_t arg0, int8_t* arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[2];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        memcpy(&transitionBlock.args[1], arg1, 8);
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL3(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_4(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[3];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL4(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_5(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[4];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL5(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[5];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[6];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        transitionBlock.args[5] = (int64_t)arg5;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[7];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        transitionBlock.args[5] = (int64_t)arg5;
-        transitionBlock.args[6] = (int64_t)arg6;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_9(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[8];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        transitionBlock.args[5] = (int64_t)arg5;
-        transitionBlock.args[6] = (int64_t)arg6;
-        transitionBlock.args[7] = (int64_t)arg7;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-}
-
-const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
-    { "Ivp", (void*)&CallInterpreter_RetVoid },
-    { "Ivip", (void*)&CallInterpreter_I32_RetVoid },
-    { "Iviip", (void*)&CallInterpreter_I32_I32_RetVoid },
-    { "Iviiip", (void*)&CallInterpreter_I32_I32_I32_RetVoid },
-    { "Iviiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetVoid },
-    { "Iip", (void*)&CallInterpreter_RetI32 },
-    { "Iiip", (void*)&CallInterpreter_I32_RetI32 },
-    { "Iiiip", (void*)&CallInterpreter_I32_I32_RetI32 },
-    { "Iiiiip", (void*)&CallInterpreter_I32_I32_I32_RetI32 },
-    { "Iiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Iidp", (void*)&CallInterpreter_D64_RetI32 },
-    { "Ildp", (void*)&CallInterpreter_D64_RetI64 },
-    { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 }
-};
-
-const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
-// -------------------------------------------------
-// END Logic that will eventually mostly be pregenerated for R2R to interpreter code END
-// -------------------------------------------------
 
 extern "C" void STDCALL CallCountingStubCode()
 {
@@ -491,13 +140,22 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         return;
     }
 
-    pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
-
     pRD->IsCallerContextValid = FALSE;
 
-    pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
-    pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
-    
+    if (m_pCallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
+    {
+        pRD->pCurrentContext->InterpreterSP = (TADDR)m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer((TADDR)m_pCallSiteSP);
+        _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer((TADDR)m_pCallSiteSP, (PCODE)pRD->pCurrentContext->InterpreterIP);
+    }
+    else
+    {
+        pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
+        pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+    }
+
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
@@ -508,7 +166,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     }
 #endif // FEATURE_INTERPRETER
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -537,7 +195,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 size_t CallDescrWorkerInternalReturnAddressOffset = 0;
@@ -552,6 +210,26 @@ __attribute__((naked)) void ThrowRtlRestoreContextTag()
 {
     asm("throw __coreclr_wasm_rtlrestorecontext_tag\n"
         "unreachable\n" ::);
+}
+
+// Runtime-owned WebAssembly global carrying the runtime-async continuation return
+// value. Exported so every R2R webcil imports this same global (see libCorerun.js).
+// Single-threaded today; like __stack_pointer it becomes per-thread once wasm threads land.
+asm(".globl __async_continuation\n"
+    ".globaltype __async_continuation, i32\n"
+    "__async_continuation:\n");
+
+extern "C" __attribute__((naked)) uint32_t RuntimeAsync_LoadAsyncContinuation()
+{
+    asm("global.get __async_continuation\n"
+        "return\n" ::);
+}
+
+extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint32_t value)
+{
+    asm("local.get 0\n"
+        "global.set __async_continuation\n"
+        "return\n" ::);
 }
 
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
@@ -641,16 +319,6 @@ extern "C" void TheUMEntryPrestub(void)
     PORTABILITY_ASSERT("TheUMEntryPrestub is not implemented on wasm");
 }
 
-extern "C" void STDCALL VarargPInvokeStub(void)
-{
-    PORTABILITY_ASSERT("VarargPInvokeStub is not implemented on wasm");
-}
-
-extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void)
-{
-    PORTABILITY_ASSERT("VarargPInvokeStub_RetBuffArg is not implemented on wasm");
-}
-
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock)
 {
     PORTABILITY_ASSERT("CID_VirtualOpenDelegateDispatch is not implemented on wasm");
@@ -676,32 +344,131 @@ EXTERN_C VOID STDCALL ResetCurrentContext()
 {
 }
 
-extern "C" void STDCALL GenericPInvokeCalliHelper(void)
+// Does the pinvoke frame transition; the naked wrappers below have already set the wasm
+// __stack_pointer global to callersStackPointer so it is safe to run native code here.
+EXTERN_C void JIT_PInvokeBeginImpl(uintptr_t callersStackPointer, InlinedCallFrame* pFrame)
 {
-    PORTABILITY_ASSERT("GenericPInvokeCalliHelper is not implemented on wasm");
+    Thread* pThread = GetThread();
+
+    // Initialize the JIT-provided frame storage, deriving its state from callersStackPointer since wasm
+    // has no machine registers to read the caller SP / return address from.
+    ::new ((void*)pFrame) InlinedCallFrame();
+    pFrame->m_pCallSiteSP          = (void*)callersStackPointer;
+    pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is true, UpdateRegDisplay_Impl derives state from m_pCallSiteSP.
+    pFrame->m_pCalleeSavedFP       = 0;
+    pFrame->m_pThread              = pThread;
+
+    // Link the frame and transition to preemptive GC mode for the native call.
+    pFrame->Push();
+    pThread->EnablePreemptiveGC();
 }
 
-EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame)
+// R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale, so publish
+// the incoming sp to __stack_pointer before any native code runs and leave it there so the
+// subsequent native pinvoke target is also safe.
+extern "C" __attribute__((naked)) void JIT_PInvokeBegin(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeBegin is not implemented on wasm");
+    asm("local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
+        "local.get 0\n"                /* sp */
+        "local.get 1\n"                /* pFrame */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeBeginImpl));
 }
 
-EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame)
+extern "C" VOID JIT_PInvokeEndRarePath();
+
+#ifdef DEBUG
+// Debug variant of these apis tests that sp and __stack_pointer are in sync
+EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeEnd is not implemented on wasm");
+    _ASSERTE(sp == stack_pointer_global_value);
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
 }
+
+extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    asm(
+        "local.get 0\n"                /* sp */
+        "global.get __stack_pointer\n" /* __stack_pointer */
+        "local.get 1\n"                /* pFrame */
+        "local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs, set this here, so that if the assumption around sp == __stack_pointer is wrong the assert logic will work correctly. */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeEndImpl));
+}
+#else
+extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    UNREFERENCED_PARAMETER(sp);
+    UNREFERENCED_PARAMETER(pep);
+
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
+}
+#endif
 
 extern "C" void STDCALL JIT_StackProbe()
 {
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
-FCIMPL0(void, JIT_PollGC)
+EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
 {
-    PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
+    InlinedCallFrame inlinedCallFrame;
+    JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
+
+    Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        inlinedCallFrame.Pop();
+    }
 }
-FCIMPLEND
+
+EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+{
+    asm(
+        "i32.const 0\n"
+        "i32.load %[g_TrapReturningThreads]\n"
+        "if\n"
+        "  global.get __stack_pointer\n"
+        "  local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "  local.get 0\n"                 /* callersStackPointer */
+        "  global.set __stack_pointer\n"
+        "  local.get 0\n"                 /* sp argument for the rare-path helper */
+        "  call %[JIT_PollGCRarePath]\n"
+        "  local.get 1\n"                 /* restore previous __stack_pointer */
+        "  global.set __stack_pointer\n"
+        "end_if\n"
+        "return\n"
+        :: [g_TrapReturningThreads] "i" (&g_TrapReturningThreads),
+           [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
+}
 
 void InitJITHelpers1()
 {
@@ -883,6 +650,13 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
     _ASSERTE(cookie != NULL);
 
     (cookie)(ftn, pArgs, pRet);
+
+    // Async callees write their continuation to the shared global; hand it back to the caller.
+    //
+    if (pContinuationRet != nullptr)
+    {
+        *pContinuationRet = (Object*)(uintptr_t)RuntimeAsync_LoadAsyncContinuation();
+    }
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
@@ -906,19 +680,132 @@ namespace
         ToI64,
         ToF32,
         ToF64,
-        ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
+        ToV128,
+        ToSlotsI64,  // Passed by value as several i64 slots (Int128/UInt128)
+        ToSlotsV128, // Passed by value as several v128 slots (Vector256<T>, Vector512<T>)
+        ToStruct,   // S<N>/A<N> — multi-field struct passed by pointer
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
 
     struct ConvertResult
     {
         ConvertType type;
-        uint32_t structSize; // only meaningful when type == ToStruct
+        uint32_t structSize;             // meaningful for struct and multi-slot types
+        bool requiresAlignedStructSlot; // only meaningful when type == ToStruct
     };
 
     // Lowers a TypeHandle to a ConvertResult, unwrapping single-field structs
     // per the BasicCABI spec.
-    ConvertResult LowerTypeHandle(TypeHandle th)
+    // A Vector128<T>, or a 16-byte Vector<T>, over a numeric base type: the one wasm v128.
+    bool IsWasmV128TypeHandle(TypeHandle th)
+    {
+        if (th.IsTypeDesc() || (th.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE))
+        {
+            return false;
+        }
+
+        MethodTable* pMT = th.AsMethodTable();
+        if (!pMT->IsIntrinsicType() || (pMT->GetNumGenericArgs() != 1) ||
+            !CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType()))
+        {
+            return false;
+        }
+
+        PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
+        PTR_MethodTable pVectorTMT   = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+
+        return ((pVector128MT != nullptr) && pMT->HasSameTypeDefAs(pVector128MT)) ||
+               ((th.GetSize() == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT));
+    }
+
+    // Returns true for the CoreLib types with special multi-slot Wasm ABI behavior. This check must
+    // remain in sync with IsKnownMultiSegmentType in WasmLowering.cs.
+    static bool IsWasmMultiSlotTypeHandle(TypeHandle th)
+    {
+        if (th.IsTypeDesc() || (th.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE))
+        {
+            return false;
+        }
+
+        MethodTable* pMT = th.AsMethodTable();
+        PTR_MethodTable pInt128MT     = CoreLibBinder::GetClassIfExist(CLASS__INT128);
+        PTR_MethodTable pUInt128MT    = CoreLibBinder::GetClassIfExist(CLASS__UINT128);
+        PTR_MethodTable pDecimal128MT = CoreLibBinder::GetClassIfExist(CLASS__DECIMAL128);
+        if (((pInt128MT != nullptr) && pMT->HasSameTypeDefAs(pInt128MT)) ||
+            ((pUInt128MT != nullptr) && pMT->HasSameTypeDefAs(pUInt128MT)) ||
+            ((pDecimal128MT != nullptr) && pMT->HasSameTypeDefAs(pDecimal128MT)))
+        {
+            return true;
+        }
+
+        if (!pMT->IsIntrinsicType() || (pMT->GetNumGenericArgs() != 1) ||
+            !CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType()))
+        {
+            return false;
+        }
+
+        PTR_MethodTable pVector256MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR256T);
+        PTR_MethodTable pVector512MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR512T);
+        return ((pVector256MT != nullptr) && pMT->HasSameTypeDefAs(pVector256MT)) ||
+               ((pVector512MT != nullptr) && pMT->HasSameTypeDefAs(pVector512MT));
+    }
+
+    // Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots use,
+    // and reports that slot's width. This is safe only after IsWasmMultiSlotTypeHandle succeeds: the
+    // known integer and decimal types have homogeneous uint64 fields, and the known vectors have
+    // homogeneous vector fields. It is not valid for an arbitrary aggregate.
+    static bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
+    {
+        _ASSERTE(IsWasmMultiSlotTypeHandle(th));
+
+        // Three iterations cover the deepest supported chain:
+        // Vector512<T> -> Vector256<T> -> Vector128<T>.
+        for (int depth = 0; depth < 3; depth++)
+        {
+            if (IsWasmV128TypeHandle(th))
+            {
+                *pSlotSize = 16;
+                return true;
+            }
+
+            CorElementType elemType = th.GetSignatureCorElementType();
+            if ((elemType == ELEMENT_TYPE_I8) || (elemType == ELEMENT_TYPE_U8))
+            {
+                *pSlotSize = 8;
+                return true;
+            }
+
+            if ((elemType != ELEMENT_TYPE_VALUETYPE) || th.IsTypeDesc())
+            {
+                return false;
+            }
+
+            MethodTable* pMT = th.AsMethodTable();
+
+            // A generic intrinsic whose base type is not a supported vector element -- the shared
+            // __Canon form, say -- is not ABI-classifiable, and its fields are an implementation
+            // detail rather than its slots. Same guard IsWasmV128TypeHandle applies, and the same
+            // one GetSlotType applies in crossgen2; without it Vector256<__Canon> walks past the
+            // v128 check into Vector128's raw ulong fields and reports four i64 slots where
+            // crossgen2 says S32.
+            if (pMT->IsIntrinsicType() && (pMT->GetNumGenericArgs() == 1) &&
+                !CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType()))
+            {
+                return false;
+            }
+
+            if (pMT->GetNumInstanceFields() == 0)
+            {
+                return false;
+            }
+
+            th = pMT->GetApproxFieldDescListRaw()->GetApproxFieldTypeHandleThrowing();
+        }
+
+        return false;
+    }
+
+    static ConvertResult LowerTypeHandle(TypeHandle th)
     {
         uint32_t size = th.GetSize();
         CorElementType elemType = th.GetSignatureCorElementType();
@@ -949,6 +836,25 @@ namespace
         }
 
         MethodTable* pMT = th.AsMethodTable();
+
+        if (IsWasmV128TypeHandle(th))
+        {
+            return { ConvertType::ToV128, 0 };
+        }
+
+        // The known CoreLib multi-slot types are passed by value across several slots. Ordinary
+        // aggregates remain indirect even if their fields have the same shape. The size and
+        // alignment checks verify that each known type has the layout required by its ABI.
+        if (IsWasmMultiSlotTypeHandle(th) && ((uint32_t)pMT->GetFieldAlignmentRequirement() == size))
+        {
+            uint32_t slotSize = 0;
+            if (GetWasmSlotSize(TypeHandle(pMT), &slotSize) && (size > slotSize))
+            {
+                _ASSERTE((size % slotSize) == 0);
+                return { (slotSize == 8) ? ConvertType::ToSlotsI64 : ConvertType::ToSlotsV128, size };
+            }
+        }
+
         uint32_t numInstanceFields = pMT->GetNumInstanceFields();
 
         // WASM-TODO: Empty structs should return ToEmpty once .NET
@@ -966,10 +872,10 @@ namespace
             // One field with padding — treat as multi-field struct
         }
 
-        return { ConvertType::ToStruct, size };
+        return { ConvertType::ToStruct, size, CEEInfo::getClassAlignmentRequirementStatic(th) > INTERP_STACK_SLOT_SIZE };
     }
 
-    ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
+    static ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
     {
         // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
         switch (argType)
@@ -1015,7 +921,7 @@ namespace
     // Appends the encoding for a ConvertResult to keyBuffer.
     // Returns the number of characters that would be written (even if pos >= maxSize).
     // Only writes characters while pos < maxSize.
-    uint32_t AppendTypeCode(ConvertResult cr, char* keyBuffer, uint32_t pos, uint32_t maxSize)
+    static uint32_t AppendTypeCode(ConvertResult cr, char* keyBuffer, uint32_t pos, uint32_t maxSize)
     {
         char c;
         switch (cr.type)
@@ -1024,12 +930,32 @@ namespace
             case ConvertType::ToI64:       c = 'l'; break;
             case ConvertType::ToF32:       c = 'f'; break;
             case ConvertType::ToF64:       c = 'd'; break;
+            case ConvertType::ToV128:      c = 'V'; break;
+            case ConvertType::ToSlotsI64:
+            case ConvertType::ToSlotsV128:
+            {
+                // Passed by value across several wasm parameters, spelled '<slot><elevation>'.
+                // The elevation factor equals the slot count, so both come from the size.
+                bool     isInt128 = (cr.type == ConvertType::ToSlotsI64);
+                uint32_t slotSize = isInt128 ? 8 : 16;
+                _ASSERTE((cr.structSize % slotSize) == 0);
+                uint32_t slotCount = cr.structSize / slotSize;
+                _ASSERTE(slotCount >= 2 && slotCount <= 9);
+
+                if (pos < maxSize)
+                    keyBuffer[pos] = isInt128 ? 'l' : 'V';
+                if (pos + 1 < maxSize)
+                    keyBuffer[pos + 1] = (char)('0' + slotCount);
+                return 2;
+            }
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {
-                // Encode as S<N> where N is the struct size in decimal
+                // A struct whose alignment exceeds 8 is placed at a 16-byte aligned transition-block
+                // slot. The interpreter stack does not support a larger placement alignment.
                 char sizeBuf[16];
-                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "S%u", cr.structSize);
+                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "%c%u",
+                                    cr.requiresAlignedStructSlot ? 'A' : 'S', cr.structSize);
                 for (int j = 0; j < len; j++)
                 {
                     if (pos + (uint32_t)j < maxSize)
@@ -1038,7 +964,7 @@ namespace
                 return (uint32_t)len;
             }
             default:
-                PORTABILITY_ASSERT("Unknown type");
+                _ASSERT(!"Unknown type");
                 c = '?';
                 break;
         }
@@ -1055,7 +981,7 @@ namespace
     // Returns the total number of characters needed (excluding null terminator).
     // Only writes characters while pos < maxSize, so the buffer is never overflowed.
     // Callers should check if the return value >= maxSize and retry with a larger buffer.
-    uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
+    static uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
     {
         CONTRACTL
         {
@@ -1082,6 +1008,15 @@ namespace
             ConvertResult cr = ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */);
             if (cr.type == ConvertType::NotConvertible)
                 return UINT32_MAX;
+
+            // The multi-slot convention applies to parameters only; these types are returned
+            // through a hidden buffer like any other aggregate.
+            if ((cr.type == ConvertType::ToSlotsI64) || (cr.type == ConvertType::ToSlotsV128))
+            {
+                cr.type = ConvertType::ToStruct;
+            }
+            cr.requiresAlignedStructSlot = false;
+
             pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
         }
 
@@ -1096,6 +1031,13 @@ namespace
         {
             if (pos < maxSize)
                 keyBuffer[pos] = 'i';
+            pos++;
+        }
+
+        if (sig.HasAsyncContinuation())
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = 'a';
             pos++;
         }
 
@@ -1123,42 +1065,45 @@ namespace
         return pos;
     }
 
-    typedef StringToThunkHash StringToWasmSigThunkHash;
-    static StringToWasmSigThunkHash* thunkCache = nullptr;
-    static StringToWasmSigThunkHash* portableEntrypointThunkCache = nullptr;
+    typedef StringToThunkHash StringToPortableSigThunkHash;
+    static StringToPortableSigThunkHash* thunkCache = nullptr;
 
-    InterpreterCalliCookie LookupThunk(const char* key)
+    // The fixed set of interpreter->native thunks compiled into libcoreclr (g_portableCallHelperThunks). It covers the
+    // runtime's own interp->native calls - FCall/QCall/pinvoke and other runtime-native managed methods,
+    // plus unmanaged calli. crossgen2 does not emit these.
+    static InterpreterCalliCookie LookupThunkInLibcoreclr(const char* key)
     {
-        StringToWasmSigThunkHash* table = thunkCache;
+        StringToPortableSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         if (table->Lookup(key, &thunk))
             return (InterpreterCalliCookie)thunk;
 
-        PCODE r2rThunk = LookupPregeneratedThunkByString(key);
-        if (r2rThunk != NULL)
-            return (InterpreterCalliCookie)(size_t)r2rThunk;
-
-        return nullptr;
+        return NULL;
     }
 
-    void* LookupPortableEntryPointThunk(const char* key)
+    // For a managed method the interp->R2R thunk is emitted into the R2R image by crossgen2
+    // (WasmInterpreterToR2RThunkNode, keyed "M"+signature) for every R2R-compiled method body. Prefer that
+    // image (the common case with R2R), then fall back to g_portableCallHelperThunks, which is the only source for managed
+    // methods whose native code is not R2R (FCall/QCall/pinvoke/runtime stubs).
+    static InterpreterCalliCookie LookupManagedThunk(const char* key)
     {
-        StringToWasmSigThunkHash* table = portableEntrypointThunkCache;
-        _ASSERTE(table != nullptr && "Wasm portable entrypoint thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
-        void* thunk;
-        if (table->Lookup(key, &thunk))
-            return thunk;
+        InterpreterCalliCookie r2r = (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
+        if (r2r != NULL)
+            return r2r;
 
-        PCODE r2rThunk = LookupPregeneratedThunkByString(key);
-        if (r2rThunk != NULL)
-            return (void*)(size_t)r2rThunk;
+        return LookupThunkInLibcoreclr(key);
+    }
 
-        return nullptr;
+    static void* LookupPortableEntryPointThunk(const char* key)
+    {
+        // R2R->interpreter thunks are emitted into the R2R image by crossgen2
+        // (WasmR2RToInterpreterThunkNode) and discovered here by signature string.
+        return (void*)(size_t)LookupPregeneratedThunkByString(key);
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
-    InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig)
+    static InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
@@ -1192,15 +1137,20 @@ namespace
                 return NULL;
         }
 
-        InterpreterCalliCookie thunk = LookupThunk(keyBuffer);
+        // Managed methods (default calling convention) prefer the R2R image and fall back to g_portableCallHelperThunks;
+        // unmanaged calli are only ever in g_portableCallHelperThunks.
+        InterpreterCalliCookie thunk = (callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT)
+            ? LookupManagedThunk(keyBuffer)
+            : LookupThunkInLibcoreclr(keyBuffer);
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
 #endif
+
         return thunk;
     }
 
-    void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    static void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
     {
         CONTRACTL
         {
@@ -1238,17 +1188,11 @@ namespace
                 return NULL;
         }
 
-        void* thunk = LookupPortableEntryPointThunk(keyBuffer);
-#ifdef _DEBUG
-        if (thunk == NULL)
-        {
-            LOG((LF_STUBS, LL_INFO100000, "WASM R2R to interpreter call missing for key: %s\n", keyBuffer));
-        }
-#endif
-        return thunk;
+        // Returns null if no thunk is registered for this key yet; the caller then defers.
+        return LookupPortableEntryPointThunk(keyBuffer);
     }
 
-    ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
+    static ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
     {
         _ASSERTE(pMD != nullptr);
 
@@ -1297,7 +1241,7 @@ namespace
     typedef SHash<ReverseThunkHashTraits> ReverseThunkHash;
     ReverseThunkHash* reverseThunkCache = nullptr;
 
-    ReverseThunkHash* CreateReverseThunkHashTable()
+    static ReverseThunkHash* CreateReverseThunkHashTable()
     {
         ReverseThunkHash* newTable = new ReverseThunkHash();
         newTable->Reallocate(g_ReverseThunksCount * ReverseThunkHash::s_density_factor_denominator / ReverseThunkHash::s_density_factor_numerator + 1);
@@ -1315,7 +1259,7 @@ namespace
         return *ppCache;
     }
 
-    const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
+    static const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
     {
 #ifdef LOGGING
         {
@@ -1348,34 +1292,96 @@ namespace
 void InitializeWasmThunkCaches()
 {
     {
-        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-        for (size_t i = 0; i < g_wasmThunksCount; i++)
+        StringToPortableSigThunkHash* newTable = new StringToPortableSigThunkHash();
+        newTable->Reallocate(g_portableCallHelperThunksCount * StringToPortableSigThunkHash::s_density_factor_denominator / StringToPortableSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_portableCallHelperThunksCount; i++)
         {
-            newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
+            newTable->Add(g_portableCallHelperThunks[i].key, g_portableCallHelperThunks[i].value);
         }
         thunkCache = newTable;
     }
+}
 
+// Computes the interpreter->R2R thunk for calling a managed method. String constructors need special
+// handling: they are compiled (both the R2R body and the caller-side thunks in crossgen2, see
+// WasmLowering.GetStringCtorActualSignature) as static factory methods that allocate and return the
+// string, i.e. "String Ctor(args)" rather than the declared "void .ctor(this, args)", so the thunk must
+// match that factory shape. This mirrors the R2R->interpreter direction in
+// GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
+InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+
+    MetaSig metaSig(pMD);
+
+    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
     {
-        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-        for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
+        const char *thunkKey = nullptr;
+
+        if (metaSig.NumFixedArgs() == 1)
         {
-            newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
+            MetaSig ctorSig = metaSig;
+            if (ctorSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+            {
+                thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+            }
         }
-        portableEntrypointThunkCache = newTable;
+
+        if (thunkKey == nullptr)
+        {
+            switch (metaSig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Miip";
+                    break;
+                case 2:
+                    thunkKey = "Miiip";
+                    break;
+                case 3:
+                    thunkKey = "Miiiip";
+                    break;
+                case 4:
+                    thunkKey = "Miiiiip";
+                    break;
+                default:
+                    _ASSERT(!"GetCookieForManagedMethod: unknown thunk for string constructor");
+                    return nullptr;
+            }
+        }
+
+        InterpreterCalliCookie stringCtorThunk = LookupManagedThunk(thunkKey);
+        if (stringCtorThunk == NULL)
+        {
+            _ASSERT(!"GetCookieForManagedMethod: unknown thunk signature");
+        }
+        return stringCtorThunk;
     }
+
+    InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
+    if (thunk == NULL)
+    {
+        _ASSERT(!"GetCookieForManagedMethod: unknown thunk signature");
+    }
+
+    return thunk;
 }
 
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
+    UNREFERENCED_PARAMETER(pContextMD);
+
+    // Only unmanaged calli signatures reach here; managed methods (including string constructors) are
+    // dispatched through GetCookieForManagedMethod.
+    _ASSERTE(metaSig.GetCallingConvention() != IMAGE_CEE_CS_CALLCONV_DEFAULT);
+
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
     {
-        PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+        // TODO-WASM https://github.com/dotnet/runtime/issues/133124
+        _ASSERT(!"GetCookieForCalliSig: unknown thunk signature");
     }
 
     return thunk;
@@ -1390,6 +1396,13 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
         MODE_ANY;
     }
     CONTRACTL_END;
+
+#ifdef FEATURE_READYTORUN
+    // R2R->interpreter thunks exist only to let R2R-compiled code call an interpreted method. With
+    // ReadyToRun disabled no such caller exists, so callers must not request one (see
+    // EnsurePortableEntryPointIsCallableFromR2R). Reaching here in that state is a bug.
+    _ASSERTE(g_pConfig->ReadyToRun());
+#endif
 
     if (pMD->ContainsGenericVariables())
     {
@@ -1412,7 +1425,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     MetaSig sig(pMD);
     void* thunk;
 
-    if (pMD->IsCtor() && pMD->GetMethodTable()->IsString())
+    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
     {
         const char *thunkKey = nullptr;
 
@@ -1438,7 +1451,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
                     thunkKey = "Iiiiiip";
                     break;
                 default:
-                    PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
+                    _ASSERT(!"GetPortableEntryPointToInterpreterThunk: unknown signature of a string constructor");
                     return nullptr;
             }
         }
@@ -1486,7 +1499,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     const ReverseThunkMapValue* value = LookupThunk(pMD);
     if (value == NULL)
     {
-        PORTABILITY_ASSERT("GetUnmanagedCallersOnlyThunk: unknown thunk for unmanaged callers only method");
+        _ASSERT(!"GetUnmanagedCallersOnlyThunk: unknown thunk for unmanaged callers only method");
         return NULL;
     }
 
@@ -1505,14 +1518,16 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     InterpreterCalliCookie cookie = pMD->GetCalliCookie();
     if (cookie == NULL)
     {
-        MetaSig sig(pMD);
-        cookie = GetCookieForCalliSig(sig, pMD);
+        cookie = GetCookieForManagedMethod(pMD);
         _ASSERTE(cookie != NULL);
         pMD->SetCalliCookie(cookie);
         cookie = pMD->GetCalliCookie();
     }
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
+    // Only pass the continuation arg to async callees.
+    //
+    Object** pCalleeContinuationRet = pMD->IsAsyncMethod() ? pContinuationRet : nullptr;
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pCalleeContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
@@ -1574,7 +1589,7 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
 }
 
-static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry)
+static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry, bool callerIsNative = false)
 {
     TADDR sp = *pSP;
     TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
@@ -1587,7 +1602,9 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
     {
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
         *pSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
-        *pIP = GetWasmVirtualIPFromStackPointer(*pSP);
+        // A reverse-pinvoke frame's caller is native, not an R2R shadow frame; leave the IP unset so the walk
+        // continues via the Frame chain instead of reading the native caller SP as a shadow frame.
+        *pIP = callerIsNative ? 0 : GetWasmVirtualIPFromStackPointer(*pSP);
     }
 }
 
@@ -1659,7 +1676,23 @@ RtlVirtualUnwind (
     *HandlerData = 0;
     *EstablisherFrame = 0;
 
-    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry);
+    // Reverse-pinvoke frames (UnmanagedCallersOnly methods and reverse P/Invoke IL stubs) are called from
+    // native code, so terminate the R2R walk at this boundary. Funclets share their parent method's GC info,
+    // so exclude them: a funclet is entered either from managed code (a non-exceptional finally) or from the
+    // VM's CallFunclet helpers, never directly across the reverse-pinvoke boundary.
+    bool callerIsNative = false;
+    {
+        EECodeInfo codeInfo;
+        codeInfo.Init(static_cast<PCODE>(ControlPc));
+        if (codeInfo.IsValid())
+        {
+            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+            callerIsNative = (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME) &&
+                             !codeInfo.IsFunclet();
+        }
+    }
+
+    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry, callerIsNative);
 
     if (ContextRecord->InterpreterSP != 0)
     {

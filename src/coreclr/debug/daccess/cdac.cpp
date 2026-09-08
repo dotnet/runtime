@@ -136,7 +136,6 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     intptr_t handle;
     if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, &WriteThreadContext, allocCallback, target, &handle) != 0)
     {
-        ::FreeLibrary(cdacLib);
         return {};
     }
 
@@ -162,9 +161,6 @@ CDAC::~CDAC()
         _ASSERTE(free != nullptr);
         free(m_cdac_handle);
     }
-
-    if (m_module != NULL)
-        ::FreeLibrary(m_module);
 }
 
 void CDAC::CreateSosInterface(IUnknown** sos)

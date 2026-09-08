@@ -516,7 +516,6 @@ public:
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END
 
@@ -543,7 +542,6 @@ public:
         {
             THROWS;
             GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END;
 

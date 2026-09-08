@@ -66,6 +66,7 @@
     <Compile Include="../../Common/TypeSystem/IL/HelperExtensions.cs" Link="TypeSystem/IL/HelperExtensions.cs" />
     <Compile Include="../../Common/Compiler/VectorFieldLayoutAlgorithm.cs" Link="Compiler/VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="../../Common/Compiler/Int128FieldLayoutAlgorithm.cs" Link="Compiler/Int128FieldLayoutAlgorithm.cs" />
+    <Compile Include="../../Common/Compiler/DecimalFieldLayoutAlgorithm.cs" Link="Compiler/DecimalFieldLayoutAlgorithm.cs" />
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
     <Compile Include="CanonicalizationTests.cs" />
     <Compile Include="ConstraintsValidationTest.cs" />

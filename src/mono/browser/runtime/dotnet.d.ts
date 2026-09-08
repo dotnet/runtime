@@ -363,55 +363,6 @@ interface LoadingResource {
     url: string;
     response: Promise<Response>;
 }
-interface AssetEntry {
-    /**
-     * the name of the asset, including extension.
-     */
-    name: string;
-    /**
-     * determines how the asset will be handled once loaded
-     */
-    behavior: AssetBehaviors;
-    /**
-     * this should be absolute url to the asset
-     */
-    resolvedUrl?: string;
-    /**
-     * the integrity hash of the asset (if any)
-     */
-    hash?: string | null | "";
-    /**
-     * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
-     */
-    virtualPath?: string;
-    /**
-     * Culture code
-     */
-    culture?: string;
-    /**
-     * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
-     */
-    loadRemote?: boolean;
-    /**
-     * If true, the runtime startup would not fail if the asset download was not successful.
-     */
-    isOptional?: boolean;
-    /**
-     * If provided, runtime doesn't have to fetch the data.
-     * Runtime would set the buffer to null after instantiation to free the memory.
-     */
-    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
-    /**
-     * If provided, runtime doesn't have to import it's JavaScript modules.
-     * This will not work for multi-threaded runtime.
-     */
-    moduleExports?: any | Promise<any>;
-    /**
-     * It's metadata + fetch-like Promise<Response>
-     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
-     */
-    pendingDownload?: LoadingResource;
-}
 type SingleAssetBehaviors = 
 /**
  * The binary of the .NET runtime.
@@ -785,4 +736,4 @@ declare global {
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssemblyAsset, Asset, AssetBehaviors, AssetEntry, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoadingResource, ModuleAPI, MonoConfig, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };
+export type { AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoadingResource, ModuleAPI, MonoConfig, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

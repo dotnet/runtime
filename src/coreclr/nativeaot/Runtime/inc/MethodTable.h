@@ -82,12 +82,9 @@ enum EETypeField
 typedef DPTR(class MethodTable) PTR_EEType;
 typedef DPTR(PTR_EEType) PTR_PTR_EEType;
 
-extern "C" void PopulateDebugHeaders();
-
 class MethodTable
 {
     friend class AsmOffsets;
-    friend void PopulateDebugHeaders();
     friend struct ::cdac_data<MethodTable>;
 
 private:

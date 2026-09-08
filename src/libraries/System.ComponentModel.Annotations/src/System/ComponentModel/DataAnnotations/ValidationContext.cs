@@ -145,9 +145,15 @@ namespace System.ComponentModel.DataAnnotations
         ///     <para>Consume this instance with caution!</para>
         /// </summary>
         /// <remarks>
+        ///     <para>
         ///     During validation, especially property-level validation, the object instance might be in an indeterminate state.
         ///     For example, the property being validated, as well as other properties on the instance might not have been
         ///     updated to their new values.
+        ///     </para>
+        ///     <para>
+        ///     When validation is performed without an owning object (for example, validating standalone values),
+        ///     <see cref="ObjectInstance" /> might be a placeholder and should not be treated as the owner of the value.
+        ///     </para>
         /// </remarks>
         public object ObjectInstance { get; }
 

@@ -466,7 +466,7 @@ namespace {Namespace}
             for (var i = 0; i < RetElementCount; i++)
             {
                 {RetBaseType} element = Helpers.Load{RetBaseType}FromByteArray(secondOp, thirdOp[i]);
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : element);
+                {RetBaseType} gatherResult = ({RetBaseType})(Helpers.IsMaskInactive(firstOp[i]) ? 0 : element);
                 if ({ConvertFunc}(result[i]) != {ConvertFunc}(gatherResult))
                 {
                     succeeded = false;
@@ -569,7 +569,7 @@ namespace {Namespace}
             for (var i = 0; i < RetElementCount; i++)
             {
                 {RetBaseType} element = Helpers.Load{RetBaseType}FromByteArray(secondOp, thirdOp[i]);
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : element);
+                {RetBaseType} gatherResult = ({RetBaseType})(Helpers.IsMaskInactive(firstOp[i]) ? 0 : element);
                 {RetBaseType} iterResult = (maskOp[i] != 0) ? gatherResult : falseOp[i];
                 if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
                 {
@@ -619,7 +619,7 @@ namespace {Namespace}
             for (var i = 0; i < RetElementCount; i++)
             {
                 {RetBaseType} element = Helpers.Load{RetBaseType}FromByteArray(secondOp, thirdOp[i]);
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : element);
+                {RetBaseType} gatherResult = ({RetBaseType})(Helpers.IsMaskInactive(firstOp[i]) ? 0 : element);
                 {RetBaseType} iterResult = (maskOp[i] != 0) ? trueOp[i] : gatherResult;
                 if (maskOp[i] != 0)
                 {

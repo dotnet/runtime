@@ -43,9 +43,8 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -58,7 +57,7 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -142,7 +141,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -263,7 +262,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -377,35 +376,6 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     return UnlockedReservePages(dwMinSize);
 }
 
-#ifdef _DEBUG
-static DWORD ShouldInjectFault()
-{
-    static DWORD fInjectFault = 99;
-
-    if (fInjectFault == 99)
-        fInjectFault = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) != 0);
-    return fInjectFault;
-}
-
-#define SHOULD_INJECT_FAULT(return_statement)   \
-    do {                                        \
-        if (ShouldInjectFault() & 0x1)          \
-        {                                       \
-            char *a = new (nothrow) char;       \
-            if (a == NULL)                      \
-            {                                   \
-                return_statement;               \
-            }                                   \
-            delete a;                           \
-        }                                       \
-    } while (FALSE)
-
-#else
-
-#define SHOULD_INJECT_FAULT(return_statement) do { (void)((void *)0); } while (FALSE)
-
-#endif
-
 void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
                                             COMMA_INDEBUG(_In_ const char *szFile)
                                             COMMA_INDEBUG(int  lineNum)
@@ -416,7 +386,7 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     {
         INSTANCE_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -424,7 +394,6 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     // define Backout(NULL) be a legal NOP.
     if (pMem == NULL)
     {
-        return;
     }
 
     size_t dwSize = m_dwGranularity;
@@ -463,26 +432,18 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
                                                           INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
-
-        // Macro syntax can't handle this INJECT_FAULT expression - we'll use a precondition instead
-        //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
-
+        GC_NOTRIGGER;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     size_t dwRequestedSize = m_dwGranularity;
     size_t alignment = 1;
 
-    STATIC_CONTRACT_FAULT;
-
-    SHOULD_INJECT_FAULT(RETURN NULL);
-
     void *pResult;
 
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     _ASSERTE(m_dwGranularity >= sizeof(InterleavedStubFreeListNode));
 
@@ -500,7 +461,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
         {
             if (!GetMoreCommittedPages(dwRequestedSize))
             {
-                RETURN NULL;
+                return NULL;
             }
         }
 
@@ -537,7 +498,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     EtwAllocRequest(this, pResult, dwRequestedSize);
 #endif //_DEBUG
 
-    RETURN pResult;
+    return pResult;
 }
 
 void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
@@ -547,7 +508,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
     CONTRACTL
     {
         THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -571,4 +532,3 @@ void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stu
 }
 
 #endif // #ifndef DACCESS_COMPILE
-

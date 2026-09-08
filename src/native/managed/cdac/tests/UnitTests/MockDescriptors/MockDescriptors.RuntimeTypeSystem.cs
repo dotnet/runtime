@@ -132,6 +132,12 @@ internal sealed class MockEEClass : TypedView
         set => WritePointerField(MethodTableFieldName, value);
     }
 
+    public ulong MethodDescChunk
+    {
+        get => ReadPointerField(MethodDescChunkFieldName);
+        set => WritePointerField(MethodDescChunkFieldName, value);
+    }
+
     public uint CorTypeAttr
     {
         get => ReadUInt32Field(CorTypeAttrFieldName);
@@ -323,11 +329,13 @@ internal sealed class MockTypeVarTypeDesc : MockTypeDesc
 {
     private const string ModuleFieldName = nameof(Data.TypeVarTypeDesc.Module);
     private const string TokenFieldName = nameof(Data.TypeVarTypeDesc.Token);
+    private const string IndexFieldName = nameof(Data.TypeVarTypeDesc.Index);
 
     public new static Layout<MockTypeVarTypeDesc> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("TypeVarTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
             .AddPointerField(ModuleFieldName)
             .AddUInt32Field(TokenFieldName)
+            .AddUInt32Field(IndexFieldName)
             .Build<MockTypeVarTypeDesc>();
 
     public ulong Module
@@ -340,6 +348,12 @@ internal sealed class MockTypeVarTypeDesc : MockTypeDesc
     {
         get => ReadUInt32Field(TokenFieldName);
         set => WriteUInt32Field(TokenFieldName, value);
+    }
+
+    public uint Index
+    {
+        get => ReadUInt32Field(IndexFieldName);
+        set => WriteUInt32Field(IndexFieldName, value);
     }
 }
 

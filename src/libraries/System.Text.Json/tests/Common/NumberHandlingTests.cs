@@ -411,13 +411,9 @@ namespace System.Text.Json.Serialization.Tests
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
 #if NET
-                // https://github.com/dotnet/runtime/issues/119143
-                if (!PlatformDetection.IsBrowser)
-                {
-                    await RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
-                    await RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
-                    await RunAsCollectionElementTest(JsonNumberTestData.NullableHalfs);
-                }
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableHalfs);
 #endif
             }
         }

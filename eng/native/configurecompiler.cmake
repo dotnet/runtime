@@ -8,6 +8,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable C99 inttypes.h format macros (PRI*, SCN*) for C++ translation units.
+# Some C++ standard library implementations gate these macros behind
+# __STDC_FORMAT_MACROS in C++ mode (e.g. glibc prior to C++11 conformance).
+add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:__STDC_FORMAT_MACROS>)
+
 # We need to set this to Release as there's no way to intercept configuration-specific linker flags
 # for try_compile-style tests (like check_c_source_compiles) and some of the default Debug flags
 # (ie. /INCREMENTAL) conflict with our own flags.
@@ -94,9 +99,9 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
-  if (NOT CLR_CMAKE_PGO_INSTRUMENT)
+  if (NOT CLR_CMAKE_PGO_INSTRUMENT AND NOT CLR_CMAKE_ENABLE_SANITIZERS)
     # Load all imported DLLs from the System32 directory.
-    # Don't do this when instrumenting for PGO as a local DLL dependency is introduced by the instrumentation
+    # Don't do this when instrumenting for PGO or when a sanitizer is enabled as a local DLL dependency is introduced by the instrumentation
     add_linker_flag(/DEPENDENTLOADFLAG:0x800)
   endif()
 
@@ -505,6 +510,8 @@ if (CLR_CMAKE_HOST_UNIX)
       message("Detected FreeBSD aarch64")
     elseif(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected FreeBSD amd64")
+    elseif(CLR_CMAKE_HOST_UNIX_POWERPC64)
+      message("Detected FreeBSD ppc64le")
     else()
       message(FATAL_ERROR "Unsupported FreeBSD architecture")
     endif()

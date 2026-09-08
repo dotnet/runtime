@@ -207,6 +207,16 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
 
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // The ARM/ARM64 CRT implementation of `powf` returns `0` rather than `x` for
+    // subnormal `x` when `y` is exactly `1`; `powf(x, 1)` is `x` for all `x`
+    // https://github.com/dotnet/runtime/issues/12139
+    if (y == 1.0f)
+    {
+        return x;
+    }
+#endif
+
     return powf(x, y);
 FCIMPLEND
 

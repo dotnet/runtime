@@ -98,6 +98,13 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     # consumption (libnethost, libhostfxr), so LTCG must be disabled to ensure
     # that non-MSVC toolchains can work with them.
     set_target_properties(minipal_objects PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+    if (MSVC)
+        # Embed debug info in the object files (/Z7). CMake does not assign a
+        # compile PDB to OBJECT libraries, so the objects archived into the shipped
+        # libnethost/libhostfxr would otherwise reference an absent vc140.pdb,
+        # producing LNK4099 for consumers.
+        set_target_properties(minipal_objects PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+    endif()
 
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)

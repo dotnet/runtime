@@ -53,7 +53,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 
         if (!isSafeToContainMem)
         {
-            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                     m_compiler->dspTreeID(parentNode));
             assert(isSafeToContainMem);
         }
@@ -82,7 +82,7 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 
     if (!isSafeToMarkRegOptional)
     {
-        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                 m_compiler->dspTreeID(parentNode));
         assert(isSafeToMarkRegOptional);
     }
@@ -535,6 +535,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
+#if TARGET_MASKS_SHIFTS
+            // These targets mask the rotate amount implicitly, so strip a redundant
+            // AND(amount, mask) before lowering the rotate.
+            TryRemoveShiftRotateMask(node->AsOp());
+#endif
+
             LowerRotate(node);
             break;
         }
@@ -556,7 +562,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_MASKS_SHIFTS
             LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
@@ -1306,15 +1312,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 bool           profileInconsistent = false;
                 for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = uniqueSuccs[i];
-                    weight_t const  oldEdgeWeight = edge->getLikelyWeight();
+                    FlowEdge* const edge = uniqueSuccs[i];
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
-                    weight_t const newEdgeWeight = edge->getLikelyWeight();
 
                     if (afterDefaultCondBlock->hasProfileWeight())
                     {
+                        // Recompute the target's weight from its incoming edges rather than adjusting
+                        // it incrementally: the earlier default-peel scaled afterDefaultCondBlock's
+                        // weight but left the switch targets' weights stale, so an incremental update
+                        // would accumulate on top of a stale value (see #130785).
                         BasicBlock* const targetBlock = edge->getDestinationBlock();
-                        targetBlock->increaseBBProfileWeight(newEdgeWeight - oldEdgeWeight);
+                        targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -1427,8 +1435,8 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 
     //
     // Build a bit table where a bit set to 0 corresponds to bbCase0 and a bit set to 1 corresponds to
-    // bbCase1. Simply use the first block in the jump table as bbCase1, later we can invert the bit
-    // table and/or swap the blocks if it's beneficial.
+    // bbCase1. Simply use the first edge in the jump table as case1Edge, later we can invert the bit
+    // table and/or swap the edges if it's beneficial.
     //
 
     FlowEdge* case0Edge = nullptr;
@@ -1454,11 +1462,6 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
         }
     }
 
-    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
-    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
-
-    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
-
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
     // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
@@ -1471,9 +1474,14 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     if (~bitTable <= UINT32_MAX)
     {
         bitTable = ~bitTable;
-        std::swap(bbCase0, bbCase1);
+        std::swap(case0Edge, case1Edge);
     }
 #endif
+
+    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
+    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
+
+    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
 
     //
     // Set successor edge dup counts to 1 each
@@ -1717,7 +1725,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
     if (arg->OperIsFieldList())
     {
-        JITDUMP("Argument is a FIELD_LIST\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a FIELD_LIST\n");
 
         GenTreeFieldList::Use* splitPoint = nullptr;
         // Split the field list into its register and stack parts.
@@ -1740,7 +1748,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
         if (splitPoint == nullptr)
         {
-            JITDUMP("No clean split point found, spilling FIELD_LIST\n", splitPoint->GetOffset());
+            JITDUMP("No clean split point found, spilling FIELD_LIST\n");
 
             unsigned int newLcl =
                 StoreFieldListToNewLocal(m_compiler->typGetObjLayout(callArg->GetSignatureClassHandle()),
@@ -1779,7 +1787,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     }
     else if (arg->OperIs(GT_BLK))
     {
-        JITDUMP("Argument is a BLK\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a BLK\n");
 
         GenTree*       blkAddr = arg->AsBlk()->Addr();
         target_ssize_t offset  = 0;
@@ -1794,12 +1802,12 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             !m_compiler->lvaGetDesc(addrUse.Def()->AsLclVarCommon())->IsAddressExposed() &&
             IsInvariantInRange(addrUse.Def(), arg))
         {
-            JITDUMP("Reusing LCL_VAR\n", numRegs, stackSeg.Size);
+            JITDUMP("Reusing LCL_VAR\n");
             addrLcl = addrUse.Def()->AsLclVarCommon()->GetLclNum();
         }
         else
         {
-            JITDUMP("Spilling address\n", numRegs, stackSeg.Size);
+            JITDUMP("Spilling address\n");
             addrLcl = addrUse.ReplaceWithLclVar(m_compiler);
         }
 
@@ -1841,7 +1849,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     {
         assert(arg->OperIsLocalRead());
 
-        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a local\n");
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
@@ -2042,7 +2050,10 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
         // which will be first in the list.
         // The this parameter is always passed in registers, so we can ignore it.
         unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
-        assert(call->gtArgs.CountUserArgs() == m_compiler->info.compILargsCount);
+        // The arguments of the unmanaged call are the leading arguments of the IL stub, so the stub
+        // cannot have fewer of them. It can have more: an unmanaged CALLI stub takes the call target
+        // as an extra trailing argument that is not passed on to the unmanaged call.
+        assert(call->gtArgs.CountUserArgs() <= m_compiler->info.compILargsCount);
         bool checkForUnmanagedThisArg = call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall;
         for (CallArg& arg : call->gtArgs.Args())
         {
@@ -2452,7 +2463,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // TODO-CQ: drop the whole thing in case of 0
         if ((cnsSize > 0) && (cnsSize <= (ssize_t)m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
@@ -2542,7 +2553,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // The case of 0 has been handled earlier with VN
         if (cnsSize > 0)
         {
@@ -2901,11 +2912,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
                 {
                     controlExpr = LowerNonvirtPinvokeCall(call);
                 }
-                else if (call->gtCallType == CT_INDIRECT)
-                {
-                    controlExpr = LowerIndirectNonvirtCall(call);
-                }
-                else
+                else if (call->gtCallType != CT_INDIRECT)
                 {
                     controlExpr = LowerDirectCall(call);
                 }
@@ -3186,7 +3193,6 @@ size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
     {
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
-            assert(operand.GetNode()->OperIsPutArg());
             result += MarkPutArgAndFieldListNodes(operand.GetNode());
         }
     }
@@ -4235,6 +4241,34 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             test->gtOp2 = bitOp->gtGetOp2();
             return true;
         }
+
+#ifdef TARGET_XARCH
+        // Also recognize the arithmetic form `(x >> y) & 1`, i.e. AND(RSH|RSZ(x, y), 1), which
+        // tests bit `y` of `x` just like `x & (1 << y)`. Only bit 0 of the shifted value is kept so
+        // the shift kind is irrelevant, and `bt` masks the bit index modulo the operand size, which
+        // matches the C# masked-shift semantics even for an out-of-range `y`. Restricted to a
+        // variable index because a constant index keeps the shift, and `bt` has no immediate form
+        // here (a constant mask `test` is already optimal).
+        GenTree* shiftOp = test->gtOp1;
+        GenTree* oneOp   = test->gtOp2;
+        if (!oneOp->IsIntegralConst(1))
+            std::swap(shiftOp, oneOp);
+
+        if (oneOp->IsIntegralConst(1) && shiftOp->OperIs(GT_RSH, GT_RSZ) && varTypeIsIntOrI(shiftOp) &&
+            !shiftOp->gtGetOp2()->IsIntegralConst())
+        {
+            BlockRange().Remove(oneOp);
+            BlockRange().Remove(shiftOp);
+            test->gtOp1 = shiftOp->gtGetOp1();
+            test->gtOp2 = shiftOp->gtGetOp2();
+
+            // ContainCheckCompare is skipped when this transform succeeds, so clear any containment
+            // the value operand picked up from the removed shift (e.g. a `shrx` memory source) --
+            // the reg,reg `bt` form requires it in a register.
+            test->gtOp1->ClearContained();
+            return true;
+        }
+#endif // TARGET_XARCH
         return false;
     };
 
@@ -6629,14 +6663,6 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
     DISPTREERANGE(BlockRange(), call);
 }
 
-GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
-{
-    // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
-    // Hence we should never see this type of call in lower.
-    noway_assert(call->gtCallCookie == nullptr);
-    return nullptr;
-}
-
 //------------------------------------------------------------------------
 // CreateReturnTrapSeq: Create a tree to perform a "return trap", used in PInvoke
 // epilogs to invoke a GC under a condition. The return trap checks some global
@@ -7019,18 +7045,14 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     if (callType == CT_INDIRECT)
     {
-#if !defined(TARGET_64BIT)
-        // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
+#ifdef TARGET_X86
+        // On x86 targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
         const unsigned stackByteOffset = call->gtArgs.OutgoingArgsStackSize();
         src                            = m_compiler->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
-        // On 64-bit targets, indirect calls may need the stub parameter value in InlinedCallFrame.m_Datum.
-        // If the stub parameter value is not needed, m_Datum will be initialized by the VM.
-        if (m_compiler->info.compPublishStubParam)
-        {
-            src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
-        }
-#endif // !defined(TARGET_64BIT)
+        // On non-x86 targets, indirect calls clear InlinedCallFrame.m_Datum.
+        src = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+#endif // TARGET_X86
     }
     else
     {
@@ -7798,12 +7820,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     DISPNODE(base);
     if (index != nullptr)
     {
-        JITDUMP("  + Index * %u + %d\n    ", scale, offset);
+        JITDUMP("  + Index * %u + %zd\n    ", scale, offset);
         DISPNODE(index);
     }
     else
     {
-        JITDUMP("  + %d\n", offset);
+        JITDUMP("  + %zd\n", offset);
     }
 
     // Save the (potentially) unused operands before changing the address to LEA.
@@ -8209,7 +8231,7 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     }
 
     // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_HAS_MULHI
     if (!m_compiler->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
@@ -8517,7 +8539,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             return false;
         }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_HAS_MULHI
         ssize_t magic;
         int     shift;
 
@@ -8810,30 +8832,30 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerShift: Lower shift nodes
+// TryRemoveShiftRotateMask: Remove a redundant mask on a shift or rotate count.
 //
 // Arguments:
-//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
+//    op - the shift or rotate node (GT_LSH, GT_RSH, GT_RSZ, GT_ROL or GT_ROR)
 //
 // Notes:
-//    Remove unnecessary shift count masking, xarch shift instructions
-//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//    Some targets' shift/rotate instructions mask their count to bitsize.
+//    Remove the explicit AND(count, mask) that keeps at least those low bits.
 //
-void Lowering::LowerShift(GenTreeOp* shift)
+void Lowering::TryRemoveShiftRotateMask(GenTreeOp* op)
 {
-    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+    assert(op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
 
     size_t mask = 0x1f;
-#ifdef TARGET_64BIT
-    if (varTypeIsLong(shift->TypeGet()))
+#if !LOWER_DECOMPOSE_LONGS
+    if (varTypeIsLong(op->TypeGet()))
     {
         mask = 0x3f;
     }
 #else
-    assert(!varTypeIsLong(shift->TypeGet()));
+    assert(!varTypeIsLong(op->TypeGet()));
 #endif
 
-    for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
+    for (GenTree* andOp = op->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
     {
         GenTree* maskOp = andOp->gtGetOp2();
 
@@ -8847,12 +8869,29 @@ void Lowering::LowerShift(GenTreeOp* shift)
             break;
         }
 
-        shift->gtOp2 = andOp->gtGetOp1();
+        op->gtOp2 = andOp->gtGetOp1();
         BlockRange().Remove(andOp);
         BlockRange().Remove(maskOp);
         // The parent was replaced, clear contain and regOpt flag.
-        shift->gtOp2->ClearContained();
+        op->gtOp2->ClearContained();
     }
+}
+
+//------------------------------------------------------------------------
+// LowerShift: Lower shift nodes
+//
+// Arguments:
+//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
+//
+// Notes:
+//    Remove unnecessary shift count masking, shift instructions on some targets
+//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//
+void Lowering::LowerShift(GenTreeOp* shift)
+{
+    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+
+    TryRemoveShiftRotateMask(shift);
 
     ContainCheckShiftRotate(shift);
 
@@ -9287,7 +9326,23 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
+#ifdef TARGET_WASM
+        if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
+        {
+            // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+            const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+            const unsigned scalarSize = genTypeSize(fld);
+            assert((laneOffset % scalarSize) == 0);
+
+            const unsigned laneIndex = laneOffset / scalarSize;
+            value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                           m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
+                                                                           fld->TypeGet(), genTypeSize(value));
+        }
+        else if (varTypeUsesFloatReg(value))
+#else
         if (varTypeUsesFloatReg(value))
+#endif // TARGET_WASM
         {
             assert(fld->GetLclOffs() == regSegment->Offset);
 
@@ -9573,7 +9628,6 @@ bool Lowering::CheckBlock(Compiler* compiler, BasicBlock* block)
         CheckNode(compiler, node);
     }
 
-    assert(blockRange.CheckLIR(compiler, true));
     return true;
 }
 #endif
@@ -10031,6 +10085,117 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
     }
 #endif // FEATURE_MULTIREG_RET
 }
+
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+//------------------------------------------------------------------------
+// TryLowerBitwiseOpToBitOp: Recognizes the single-bit-manipulation idioms with a variable
+//    (non-constant) bit index and rewrites them in place to the shared GT_BIT_* nodes:
+//
+//        OR (X, LSH(1, Y))       -> BIT_SET    (set bit Y of X)
+//        XOR(X, LSH(1, Y))       -> BIT_INVERT (complement bit Y of X)
+//        AND(X, NOT(LSH(1, Y)))  -> BIT_CLEAR  (reset bit Y of X)
+//
+//    where op1 becomes the value (read-modify-write destination) and op2 becomes the bit index Y.
+//    The `1 << Y` sub-tree may appear on either side of the commutative operation.
+//
+// Arguments:
+//    binOp - a GT_OR, GT_XOR, or GT_AND node of TYP_INT or TYP_LONG
+//
+// Return Value:
+//    The rewritten node (== binOp) on success, or nullptr if the pattern did not match.
+//
+// Notes:
+//    Only the variable-index form is handled. A constant index folds to a constant mask that the
+//    plain `or`/`xor`/`and`-with-immediate form already handles optimally.
+//
+//    The bit index is left as-is; callers are responsible for any target-specific masking of the
+//    index. x86's `bts`/`btr`/`btc` reg,reg form masks the index modulo the operand width (matching
+//    the C# masked-shift semantics of `1 << Y`), whereas RISC-V's `Zbs` ops operate on the full
+//    register and need an explicit `& 31` for 32-bit operands.
+GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
+{
+    assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+
+    if (!binOp->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return nullptr;
+    }
+
+    GenTree*& op1 = binOp->gtOp1;
+    GenTree*& op2 = binOp->gtOp2;
+
+    bool isOp1Negated = op1->OperIs(GT_NOT);
+    bool isOp2Negated = op2->OperIs(GT_NOT);
+
+    // For AND/`btr` the `1 << Y` must be negated (`~(1 << Y)`); for OR/XOR it must not be.
+    const bool wantNegated = binOp->OperIs(GT_AND);
+    GenTree*   opp1        = isOp1Negated ? op1->AsUnOp()->gtGetOp1() : op1;
+    GenTree*   opp2        = isOp2Negated ? op2->AsUnOp()->gtGetOp1() : op2;
+
+    bool isOp1SingleBit = (isOp1Negated == wantNegated) && opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1);
+    bool isOp2SingleBit = (isOp2Negated == wantNegated) && opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1);
+
+    if (!isOp1SingleBit && !isOp2SingleBit)
+    {
+        return nullptr;
+    }
+
+    // Canonicalize so the `1 << Y` sub-tree is op2 and the value is op1.
+    if (isOp1SingleBit)
+    {
+        std::swap(op1, op2);
+        std::swap(isOp1Negated, isOp2Negated);
+    }
+
+    GenTree* notNode = isOp2Negated ? op2 : nullptr;
+    GenTree* lshNode = (notNode != nullptr) ? op2->AsUnOp()->gtGetOp1() : op2;
+
+    // The shifted value must match the width of the operation.
+    if (!lshNode->TypeIs(binOp->TypeGet()))
+    {
+        return nullptr;
+    }
+
+    // A constant index folds to a constant mask, which the plain form already handles optimally.
+    GenTree* indexNode = lshNode->gtGetOp2();
+    if (indexNode->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
+    // Subsequent nodes may rely on CPU flags set by these nodes, in which case we cannot remove them.
+    if (((binOp->gtFlags & GTF_SET_FLAGS) != 0) || ((lshNode->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((notNode != nullptr) && ((notNode->gtFlags & GTF_SET_FLAGS) != 0)))
+    {
+        return nullptr;
+    }
+
+    static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+    constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+    const genTreeOps     newOper          = singleBitOpers[binOp->OperGet() - GT_OR];
+
+    JITDUMP("Lower: optimize %s(X, %s)\n", GenTree::OpName(binOp->OperGet()),
+            (notNode != nullptr) ? "NOT(LSH(1, Y))" : "LSH(1, Y)");
+    DISPNODE(binOp);
+
+    // Rewrite in place: op1 stays the value, op2 becomes the bit index. Drop the `1`, the shift, and
+    // the optional NOT.
+    if (notNode != nullptr)
+    {
+        BlockRange().Remove(notNode);
+    }
+    BlockRange().Remove(lshNode->gtGetOp1());
+    BlockRange().Remove(lshNode);
+
+    op2 = indexNode;
+    binOp->ChangeOper(newOper);
+
+    JITDUMP("to:\n");
+    DISPNODE(binOp);
+
+    return binOp;
+}
+#endif // TARGET_XARCH || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // TryRemoveCast:
@@ -11403,7 +11568,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         // Later stores must overwrite any overlapping bytes from earlier stores.
         uint64_t currBitsMask = (currMask << currShift) & newMask;
         uint64_t val          = (prevBits & ~currBitsMask) | currBits;
-        JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+        JITDUMP("Coalesced two stores into a single store with value %lld\n", (long long)(int64_t)val);
 
         assert(currData.value->OperIs(GT_CNS_INT));
         auto* intCon = currData.value->AsIntCon();

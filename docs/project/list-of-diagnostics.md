@@ -120,6 +120,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0063`__ | This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead. |
 |  __`SYSLIB0064`__ | RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a Boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead. |
 |  __`SYSLIB0065`__ | Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead. |
+|  __`SYSLIB0066`__ | Implement IAsyncStartupValidator instead. |
 
 ## Analyzer Warnings
 
@@ -191,8 +192,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1060`__ | Specified marshaller type is invalid |
 |  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
 |  __`SYSLIB1062`__ | Project must be updated with '\<AllowUnsafeBlocks\>true\</AllowUnsafeBlocks\>' |
-|  __`SYSLIB1063`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
-|  __`SYSLIB1064`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1063`__ | Unnecessary marshalling info |
+|  __`SYSLIB1064`__ | Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe' |
 |  __`SYSLIB1065`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1066`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1067`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
@@ -265,7 +266,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1216`__ | C# language version not supported by the options validation source generator. |
 |  __`SYSLIB1217`__ | The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types. |
 |  __`SYSLIB1218`__ | _`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration._ |
-|  __`SYSLIB1219`__ | _`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration._ |
+|  __`SYSLIB1219`__ | Options validation generator: A type already includes an implementation of the 'ValidateAsync' method. |
 |  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |
 |  __`SYSLIB1221`__ | JsonSourceGenerator does not support this C# language version. |
 |  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
@@ -289,8 +290,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1240`__ | Derived type is not a supported polymorphic derived type. |
 |  __`SYSLIB1241`__ | Inferred derived type is less accessible than the polymorphic base type. |
 |  __`SYSLIB1242`__ | Derived types produce a duplicate type discriminator. |
-|  __`SYSLIB1243`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
-|  __`SYSLIB1244`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1243`__ | Inferred closed type polymorphism is enabled on a type that is not a closed type. |
+|  __`SYSLIB1244`__ | Inferred closed type polymorphism has no effect on a type that registers derived types explicitly. |
 |  __`SYSLIB1245`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1246`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1247`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
@@ -330,3 +331,5 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
 |  __`SYSLIB5005`__ |     .NET 9 | .NET 10 | `System.Formats.Nrbf` is experimental |
 |  __`SYSLIB5006`__ |    .NET 10 |     TBD | Types for Post-Quantum Cryptography (PQC) are experimental. |
+|  __`SYSLIB5007`__ |    .NET 11 |     TBD | Low-level TLS engine types (`TlsContext`, `TlsSession`) in `System.Net.Security` are experimental. |
+|  __`SYSLIB5008`__ |    .NET 11 |     TBD | `SocketsHttpHandler` connection eviction control and `HttpRequestMessage.ConnectionId` APIs are experimental. |

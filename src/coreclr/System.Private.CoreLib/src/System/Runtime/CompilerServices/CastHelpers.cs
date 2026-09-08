@@ -14,6 +14,7 @@ namespace System.Runtime.CompilerServices
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
         private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
 
@@ -32,6 +33,7 @@ namespace System.Runtime.CompilerServices
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
@@ -695,7 +697,9 @@ namespace System.Runtime.CompilerServices
 #endif // FEATURE_TYPEEQUIVALENCE
                 )
             {
-                CastHelpers.ThrowInvalidCastException(pMT1, pMT2);
+                // The JIT passes (target, source) to match Unbox, but ThrowInvalidCastException
+                // takes (source, target) and names them in that order in the message.
+                CastHelpers.ThrowInvalidCastException(pMT2, pMT1);
             }
         }
 

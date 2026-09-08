@@ -26,3 +26,5 @@ public class MultipleTypeMapAssemblies { }
 public class DuplicateTypeMapEntriesAcrossAssemblies { }
 
 public class UnknownAssemblyReference { }
+
+public class BlobOnlyAttributeTypeNames { }

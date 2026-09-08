@@ -76,6 +76,11 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task SslStream_StreamToStream_Authentication_Success(X509Certificate serverCert = null, X509Certificate clientCert = null)
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled() && clientCert is not null && clientCert is not X509Certificate2)
+            {
+                throw new SkipTestException("Network.framework PAL does not yet support legacy X509Certificate client certificates for mTLS (SecIdentityRef cannot be reconstructed from the legacy handle).");
+            }
+
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var server = new SslStream(stream2, false, delegate { return true; }))
@@ -297,9 +302,14 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SslStream_StreamToStream_EOFDuringFrameRead_ThrowsIOException()
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("Transport reads happen on a separate task, so partial-frame data is consumed from NW's buffer before the EOF condition is observable to the SslStream caller.");
+            }
+
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
             using (serverStream)
