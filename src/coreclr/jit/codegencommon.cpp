@@ -2983,12 +2983,12 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall, GenTreeCall* t
         if ((tailCallNode != nullptr) &&
             (tailCallNode->gtArgs.FindWellKnownArg(WellKnownArg::SecretStubParam) != nullptr))
         {
-            return RBM_RAX;
+            return RBM_R11;
         }
 
         // If we are tailcalling then arg regs cannot be used. For both SysV and winx64 that
-        // leaves rax, r10, r11. RAX and r11 are used for indirection cells, so we pick r10
-        // unless it is used for the secret stub argument.
+        // leaves rax, r10, r11. Rax and r11 are used for indirection cells, so we pick r10
+        // unless it is used for the secret stub argument, in which case we pick r11.
         return RBM_R10;
     }
     // Otherwise on x64 (win-x64, SysV and Swift) r9 is never used for return values
