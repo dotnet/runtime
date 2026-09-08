@@ -16,7 +16,7 @@ The report is emitted as a compact platform log and can also be written as a JSO
 
 An in-process crash reporter operates under different constraints than _createdump_. The external utility can attach to a stopped target, load the Data Access Component (DAC), allocate memory, and use general-purpose operating system and C++ runtime services. The in-process reporter runs while handling a fatal signal, when the process may have corrupted state, may hold runtime or allocator locks, and may have exhausted its stack.
 
-When crash reporting is enabled, the design divides the work into two phases:
+For reports triggered by fatal signals, the design divides the work into two phases:
 
 1. During normal runtime startup, after configuration has enabled the reporter, it allocates its fixed state, captures process and platform information, and initializes optional services such as file lifecycle management and the watchdog.
 2. If a terminal fatal signal subsequently reaches PAL while the reporter is enabled, the reporter uses only preallocated buffers and operations selected for that execution context. It streams output directly to the platform log and, when configured, to a temporary report file.
@@ -38,6 +38,16 @@ CoreCLR chooses the crash-reporting mechanism as follows:
 The in-process reporter is not currently enabled on Windows, Browser, or WASI. Windows uses its existing dump and Windows Error Reporting mechanisms, while Browser and WASI do not provide the required native fatal-signal process model.
 
 The in-process reporter is also not supported by NativeAOT. NativeAOT represents managed frames using the platform ABI and unwind information, so platform crash reporting facilities such as Android tombstones and Apple crash reports already produce mixed call stacks containing both native and managed frames. On mobile platforms, an in-process NativeAOT reporter would not add enough information beyond those platform reports to justify a separate reporting mechanism. NativeAOT support can be reconsidered if the in-process reporter provides additional diagnostic information that is not available from the platform tooling.
+
+## On-demand reports ##
+
+CoreCLR also provides the internal `InProcCrashReportCreateReport` API for generating an in-process crash report on demand. The reporter must be initialized before this API can be used. The normal startup path performs that initialization only when crash reporting is enabled through configuration, but an internal consumer can instead call `CrashReportInitialize` explicitly without setting `DOTNET_EnableCrashReport`.
+
+`CrashReportInitialize` initializes the reporter and its VM callbacks, but it does not register the reporter for fatal signals or start the additional crash-reporting services. The on-demand caller selects either the compact-log or JSON format and provides a callback that receives the generated report.
+
+On-demand reports use the same thread enumeration, stack walking, formatting, and serialization code as reports triggered by fatal signals. Once the reporter has been initialized, they can be generated multiple times during the lifetime of a process, although only one report can be generated at a time.
+
+The additional services used during fatal-signal reporting are not enabled for on-demand reports. The on-demand API does not start the watchdog or use the file lifecycle manager, report directory, temporary-file publishing, or retention limit. The caller receiving the output is responsible for storing or processing it.
 
 ## Signal chaining ##
 
@@ -99,7 +109,7 @@ The JSON output uses a createdump-shaped payload so crash-processing systems can
 
 For ordinary stack walks, the JSON report records every frame returned by the stack walker. `DOTNET_CrashReportFrameLimitPerThread` limits only the compact log because the JSON file is the more complete postmortem artifact and is streamed directly to disk. Stack-overflow reports are an exception: their preallocated trace snapshot is limited to 128 entries, and the JSON records when frames were truncated.
 
-JSON file output is enabled when `DOTNET_CrashReportRootPath` specifies an existing absolute directory. The reporter creates the following private subdirectories below that root:
+For reports triggered by fatal signals, JSON file output is enabled when `DOTNET_CrashReportRootPath` specifies an existing absolute directory. The reporter creates the following private subdirectories below that root:
 
 ```text
 <root>/.dotnet/crash-reports/
@@ -115,13 +125,13 @@ The report is streamed to a file with a `.tmp` suffix. After the JSON document h
 
 # Report lifecycle #
 
-Report directory setup and retention pruning run during normal startup, not during a crash. Startup removes stale temporary files and retains only the newest configured number of completed reports. If the directory is already at the retention limit, the oldest report path is cached so the crash path can remove it before publishing the next report without rescanning the directory.
+Report directory setup and retention pruning apply only to reports triggered by fatal signals. They run during normal startup, not during a crash. Startup removes stale temporary files and retains only the newest configured number of completed reports. If the directory is already at the retention limit, the oldest report path is cached so the crash path can remove it before publishing the next report without rescanning the directory.
 
 The reporter never creates the configured root itself. The root must already exist, be an absolute path, and be writable. If lifecycle initialization fails, JSON file output is disabled, but compact log output remains available.
 
 # Watchdog #
 
-Walking damaged process state can hang. Unless the watchdog is disabled through configuration, the reporter creates a detached watchdog thread and a non-blocking pipe during startup. The watchdog blocks the fatal signals handled by the runtime so a process-directed fatal signal is not delivered to the watchdog instead of an application thread.
+Walking damaged process state after a fatal signal can hang. Unless the watchdog is disabled through configuration, the reporter creates a detached watchdog thread and a non-blocking pipe during startup. The watchdog blocks the fatal signals handled by the runtime so a process-directed fatal signal is not delivered to the watchdog instead of an application thread. On-demand reports do not use this watchdog.
 
 Some platforms already provide watchdogs that monitor application responsiveness, such as whether the main thread continues to pump messages. Those watchdogs do not necessarily detect a crash reporter that hangs on another thread while the monitored thread remains responsive. The in-process crash reporter therefore uses its own watchdog, which monitors report generation regardless of which runtime thread encountered the crash.
 
@@ -129,7 +139,7 @@ The crash path sends a start notification before collection and a finish notific
 
 # Configuration/Policy #
 
-The following settings control the in-process reporter:
+The following settings control reports triggered by fatal signals. On-demand reports do not require these settings:
 
 | Setting | Meaning |
 |---------|---------|
