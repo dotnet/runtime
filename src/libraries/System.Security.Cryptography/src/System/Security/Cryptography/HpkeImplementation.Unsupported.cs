@@ -86,6 +86,20 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info) =>
             throw new PlatformNotSupportedException();
 
+        protected override HpkeSender CreatePskSenderCore(
+            Span<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId) =>
+            throw new PlatformNotSupportedException();
+
+        protected override HpkeRecipient CreatePskRecipientCore(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId) =>
+            throw new PlatformNotSupportedException();
+
         protected override void Dispose(bool disposing)
         {
             Debug.Fail("Platform validation should not permit this call.");

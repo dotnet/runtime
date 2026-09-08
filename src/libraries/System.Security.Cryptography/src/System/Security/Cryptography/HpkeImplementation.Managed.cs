@@ -166,6 +166,25 @@ namespace System.Security.Cryptography
 
         protected override HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info)
         {
+            return CreateSenderContext(mode: 0, encapsulatedSecret, info, psk: default, pskId: default);
+        }
+
+        protected override HpkeSender CreatePskSenderCore(
+            Span<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId)
+        {
+            return CreateSenderContext(mode: 1, encapsulatedSecret, info, psk, pskId);
+        }
+
+        private HpkeSenderImplementation CreateSenderContext(
+            byte mode,
+            Span<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId)
+        {
             const int MaxStackSecretLength = 64;
             Span<byte> sharedSecretBuffer = stackalloc byte[MaxStackSecretLength];
             Span<byte> keyBuffer = stackalloc byte[MaxStackSecretLength];
@@ -182,11 +201,11 @@ namespace System.Security.Cryptography
 
                 HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
                 kdf.DeriveSecrets(
-                    mode: 0,
+                    mode,
                     sharedSecret,
                     info,
-                    psk: default,
-                    pskId: default,
+                    psk,
+                    pskId,
                     key,
                     baseNonce,
                     exporterSecret);
@@ -214,7 +233,22 @@ namespace System.Security.Cryptography
 
         protected override HpkeRecipient CreateRecipientCore(
             ReadOnlySpan<byte> encapsulatedSecret,
-            ReadOnlySpan<byte> info)
+            ReadOnlySpan<byte> info) =>
+            CreateRecipientContext(mode: 0, encapsulatedSecret, info, psk: default, pskId: default);
+
+        protected override HpkeRecipient CreatePskRecipientCore(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId) =>
+            CreateRecipientContext(mode: 1, encapsulatedSecret, info, psk, pskId);
+
+        private HpkeRecipientImplementation CreateRecipientContext(
+            byte mode,
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId)
         {
             const int MaxStackSecretLength = 64;
             Span<byte> sharedSecretBuffer = stackalloc byte[MaxStackSecretLength];
@@ -232,11 +266,11 @@ namespace System.Security.Cryptography
 
                 HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
                 kdf.DeriveSecrets(
-                    mode: 0,
+                    mode,
                     sharedSecret,
                     info,
-                    psk: default,
-                    pskId: default,
+                    psk,
+                    pskId,
                     key,
                     baseNonce,
                     exporterSecret);

@@ -10,6 +10,8 @@ namespace System.Security.Cryptography
         internal bool IsTwoStage { get; }
         internal string Name { get; }
         internal int? MaximumInfoLength { get; }
+        internal int? MaximumPskLength { get; }
+        internal int? MaximumPskIdLength { get; }
 
         // HKDF is limited to 255 hash blocks; HPKE encodes SHAKE output lengths in two bytes.
         // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.4
@@ -24,16 +26,12 @@ namespace System.Security.Cryptography
 
             if (!IsTwoStage)
             {
-                // One stage (SHAKE) uses a 16-bit integer to encode the info length. Practically that means the info is limited
-                // to 65,535. See CombineSecrets_OneStage. info is described as lengthPrefixed(info).
-                // > lengthPrefixed(x): The two-byte length of the byte string x, concatenated with x itself.
-                // > (lengthPrefixed(x) = concat(I2OSP(len(x), 2), x)) It is an error to call this function with an x
-                // > value that is more than 65535 bytes long.
-                // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-pq-05#section-5
-                // We'll track that is the KDF having a maximum info length.
-                // Other KDFs have a maximum input length however they far exceed 32-bit integers which is limited by a
-                // Span's input limit.
+                // One-stage KDFs length-prefix each of these inputs with a 16-bit length.
+                // HKDF input limits exceed the length representable by a span.
+                // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.1
                 MaximumInfoLength = ushort.MaxValue;
+                MaximumPskLength = ushort.MaxValue;
+                MaximumPskIdLength = ushort.MaxValue;
             }
         }
 

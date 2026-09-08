@@ -1893,6 +1893,13 @@ namespace System.Security.Cryptography
     {
         protected Hpke(System.Security.Cryptography.HpkeSuite suite) { }
         public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
+        public System.Security.Cryptography.HpkeRecipient CreatePskRecipient(byte[] encapsulatedSecret, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeRecipient CreatePskRecipient(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeRecipient CreatePskRecipientCore(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
+        public System.Security.Cryptography.HpkeSender CreatePskSender(byte[] psk, byte[] pskId, out byte[] encapsulatedSecret, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeSender CreatePskSender(System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, out byte[] encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSender CreatePskSender(System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.Span<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeSender CreatePskSenderCore(System.Span<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
         public System.Security.Cryptography.HpkeRecipient CreateRecipient(byte[] encapsulatedSecret, byte[]? info = null) { throw null; }
         public System.Security.Cryptography.HpkeRecipient CreateRecipient(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract System.Security.Cryptography.HpkeRecipient CreateRecipientCore(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> info);

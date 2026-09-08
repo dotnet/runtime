@@ -882,6 +882,353 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        // https://github.com/cfrg/draft-irtf-cfrg-hpke/blob/b1f7cb0cdeab6906c61b3d6574e8bdfdbe1cd3fb/test-vectors.json
+        [Theory]
+        [InlineData(
+            HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM,
+            "d42ef874c1913d9568c9405407c805baddaffd0898a00f1e84e154fa787b2429",
+            "04305d35563527bce037773d79a13deabed0e8e7cde61eecee403496959e89e4d0" +
+            "ca701726696d1485137ccb5341b3c1c7aaee90a4a02449725e744b1193b53b5f",
+            "90c4deb5b75318530194e4bb62f890b019b1397bbf9d0d6eb918890e1fb2be1ac2603193b60a49c2126b75d0eb",
+            "9e223384a3620f4a75b5a52f546b7262d8826dea18db5a365feb8b997180b22d72dc1287f7089a1073a7102c27")]
+        [InlineData(
+            HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA512, HpkeAead.AES_256_GCM,
+            "509212d2ac43d399abd9050ae3c41c030b82623da0494c0d9f8f26ac56b7e188",
+            "048739ebbaea3156cbd5e39b4ef41ee7e3b52c8cb4958d087112b17b778897152c" +
+            "7e99307095b1cee54b807077f6f5092970a27fbb57ce2835263132c75e52e7e0",
+            "351d83aa6f2ba77c4b9b89aa22fcb18aff3f792bb04e999de9f76f03f99e92c8d9203605cc0dcbb5eb08a9db6b",
+            "e9deb7896d9414ea4d3e01763e425b5bce3b43874d9121f33441f601a8f7faafb0687512f8782f23ea7aa25b4d")]
+        [InlineData(
+            HpkeKem.DHKEM_X25519_HKDF_SHA256, HpkeKdf.HKDF_SHA512, HpkeAead.ChaCha20Poly1305,
+            "92c0e581f1b0ad231dd7346d69071afa23eb4dacdf0b868b644a20bd5121dc07",
+            "bc441a64a700843a8efd5cd574c20e9909c3a2ff7d35e260f9328cbb8e555d56",
+            "65a46e483d921343f20cba85da69976b2e0e52f450db7919f7796604977d6708d884a40d5e4fd5b820211264aa",
+            "02019423af9256981bc0a8a7675494efee2244faa2be5b572d9470e451ea3f831e2c08cd47bfc78d6d1f11cfb1")]
+        public static void Psk_KnownAnswer(
+            HpkeKem kem, HpkeKdf kdf, HpkeAead aead, string ikmHex, string encHex,
+            string firstCiphertextHex, string secondCiphertextHex)
+        {
+            HpkeSuite suite = new(kem, kdf, aead);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            byte[] ikm = Convert.FromHexString(ikmHex);
+            byte[] psk = Convert.FromHexString("0247fd33b913760fa1fa51e1892d9f307fbe65eb171e8132c2af18555a738b82");
+            byte[] pskId = "Ennyn Durin aran Moria"u8.ToArray();
+            byte[] info = "Ode on a Grecian Urn"u8.ToArray();
+            byte[] enc = Convert.FromHexString(encHex);
+            byte[] plaintext = "Beauty is truth, truth beauty"u8.ToArray();
+
+            try
+            {
+                using (Hpke key = Hpke.DeriveKey(suite, ikm))
+                using (HpkeRecipient fromArray = key.CreatePskRecipient(enc, psk, pskId, info))
+                using (HpkeRecipient fromSpan = key.CreatePskRecipient(enc.AsSpan(), psk, pskId, info))
+                {
+                    byte[] firstCiphertext = Convert.FromHexString(firstCiphertextHex);
+                    byte[] secondCiphertext = Convert.FromHexString(secondCiphertextHex);
+                    Assert.Equal(plaintext, fromArray.Open(firstCiphertext, "Count-0"u8.ToArray()));
+                    Assert.Equal(plaintext, fromArray.Open(new ReadOnlySpan<byte>(secondCiphertext), "Count-1"u8));
+                    byte[] destination = new byte[plaintext.Length];
+                    fromSpan.Open(firstCiphertext, destination.AsSpan(), "Count-0"u8);
+                    Assert.Equal(plaintext, destination);
+                    Assert.Equal(plaintext, fromSpan.Open(secondCiphertext, "Count-1"u8.ToArray()));
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(ikm);
+                CryptographicOperations.ZeroMemory(psk);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenSuiteData))]
+        public static void Psk_RoundtripAndLifetime(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
+        {
+            HpkeSuite suite = new(kem, kdf, aead);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            for (int overload = 0; overload < 3; overload++)
+            {
+                byte[] psk = new byte[overload == 0 ? 32 : overload == 1 ? 33 : 64];
+                psk.AsSpan().Fill(0x3C);
+                byte[] originalPsk = (byte[])psk.Clone();
+                byte[] pskId = "psk identifier"u8.ToArray();
+                byte[] originalPskId = (byte[])pskId.Clone();
+                byte[] info = overload == 0 ? null : new byte[1024];
+
+                using (Hpke key = Hpke.GenerateKey(suite))
+                {
+                    HpkeSender sender;
+                    byte[] enc;
+
+                    if (overload == 0)
+                    {
+                        sender = key.CreatePskSender(psk, pskId, out enc, info);
+                    }
+                    else if (overload == 1)
+                    {
+                        sender = key.CreatePskSender(psk.AsSpan(), pskId, out enc, info);
+                    }
+                    else
+                    {
+                        byte[] buffer = new byte[suite.EncapsulatedSecretSizeInBytes + 2];
+                        buffer.AsSpan().Fill(0xA5);
+                        sender = key.CreatePskSender(psk, pskId, buffer.AsSpan(1, buffer.Length - 2), info);
+                        Assert.Equal(0xA5, buffer[0]);
+                        Assert.Equal(0xA5, buffer[^1]);
+                        enc = buffer.AsSpan(1, buffer.Length - 2).ToArray();
+                    }
+
+                    using (sender)
+                    using (HpkeRecipient recipient = overload == 1
+                        ? key.CreatePskRecipient(enc.AsSpan(), psk, pskId, info)
+                        : key.CreatePskRecipient(enc, psk, pskId, info))
+                    {
+                        Assert.Same(suite, sender.Suite);
+                        Assert.Same(suite, recipient.Suite);
+                        Assert.Equal(originalPsk, psk);
+                        Assert.Equal(originalPskId, pskId);
+                        key.Dispose();
+                        psk.AsSpan().Clear();
+                        pskId.AsSpan().Clear();
+                        enc.AsSpan().Clear();
+                        info?.AsSpan().Clear();
+
+                        foreach (int length in new[] { 0, 1, 257 })
+                        {
+                            byte[] plaintext = new byte[length];
+                            plaintext.AsSpan().Fill(0xA7);
+                            byte[] aad = length == 0 ? [] : "associated data"u8.ToArray();
+                            byte[] ciphertext = sender.Seal(plaintext, aad);
+                            byte[] destination = new byte[length + 2];
+                            destination.AsSpan().Fill(0xA5);
+                            recipient.Open(ciphertext, destination.AsSpan(1, length), aad);
+                            AssertExtensions.SequenceEqual(plaintext.AsSpan(), destination.AsSpan(1, length));
+                            Assert.Equal(0xA5, destination[0]);
+                            Assert.Equal(0xA5, destination[^1]);
+                        }
+                    }
+                }
+
+                CryptographicOperations.ZeroMemory(originalPsk);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenSuiteData))]
+        public static void Psk_AuthenticationAndModeSeparation(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
+        {
+            HpkeSuite suite = new(kem, kdf, aead);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            byte[] psk = new byte[32];
+            byte[] differentPsk = new byte[32];
+            differentPsk[0] = 1;
+            byte[] pskId = "identifier"u8.ToArray();
+            byte[] info = "info"u8.ToArray();
+            byte[] plaintext = "plaintext"u8.ToArray();
+            byte[] aad = "associated data"u8.ToArray();
+
+            using (Hpke key = Hpke.GenerateKey(suite))
+            using (Hpke wrongKey = Hpke.GenerateKey(suite))
+            using (HpkeSender sender = key.CreatePskSender(psk, pskId, out byte[] enc, info))
+            using (HpkeRecipient recipient = key.CreatePskRecipient(enc, psk, pskId, info))
+            using (HpkeRecipient badPsk = key.CreatePskRecipient(enc, differentPsk, pskId, info))
+            using (HpkeRecipient badId = key.CreatePskRecipient(enc, psk, "different identifier"u8.ToArray(), info))
+            using (HpkeRecipient badInfo = key.CreatePskRecipient(enc, psk, pskId, "different info"u8.ToArray()))
+            using (HpkeRecipient badKey = wrongKey.CreatePskRecipient(enc, psk, pskId, info))
+            using (HpkeRecipient baseRecipient = key.CreateRecipient(enc, info))
+            using (HpkeSender baseSender = key.CreateSender(out byte[] baseEnc, info))
+            using (HpkeRecipient pskRecipientForBase = key.CreatePskRecipient(baseEnc, psk, pskId, info))
+            {
+                byte[] ciphertext = sender.Seal(plaintext, aad);
+                foreach (HpkeRecipient incorrect in new[] { badPsk, badId, badInfo, badKey, baseRecipient })
+                {
+                    Assert.Throws<AuthenticationTagMismatchException>(() => incorrect.Open(ciphertext, aad));
+                }
+
+                byte[] baseCiphertext = baseSender.Seal(plaintext, aad);
+                Assert.Throws<AuthenticationTagMismatchException>(() => pskRecipientForBase.Open(baseCiphertext, aad));
+                byte[] tamperedCiphertext = (byte[])ciphertext.Clone();
+                tamperedCiphertext[^1] ^= 1;
+                byte[] destination = new byte[plaintext.Length];
+                destination.AsSpan().Fill(0xA5);
+                Assert.Throws<AuthenticationTagMismatchException>(
+                    () => recipient.Open(tamperedCiphertext, destination.AsSpan(), aad));
+                Assert.Equal(new byte[destination.Length], destination);
+                Assert.Equal(plaintext, recipient.Open(ciphertext, aad));
+                Assert.Equal(plaintext, recipient.Open(sender.Seal(plaintext, aad), aad));
+            }
+        }
+
+        [Fact]
+        public static void Psk_ArgumentValidation()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite))
+            {
+                byte[] psk = new byte[32];
+                byte[] pskId = [1];
+                byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+                AssertExtensions.Throws<ArgumentNullException>("psk", () => key.CreatePskSender((byte[])null, pskId, out _));
+                AssertExtensions.Throws<ArgumentNullException>("pskId", () => key.CreatePskSender(psk, (byte[])null, out _));
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "encapsulatedSecret", () => key.CreatePskRecipient((byte[])null, psk, pskId));
+                AssertExtensions.Throws<ArgumentNullException>("psk", () => key.CreatePskRecipient(enc, (byte[])null, pskId));
+                AssertExtensions.Throws<ArgumentNullException>("pskId", () => key.CreatePskRecipient(enc, psk, (byte[])null));
+
+                foreach (int length in new[] { 0, 1, 31 })
+                {
+                    AssertPskArgumentException(key, "psk", new byte[length], pskId, enc, []);
+                }
+
+                AssertPskArgumentException(key, "pskId", psk, [], enc, []);
+                foreach (int length in new[] { 0, enc.Length - 1, enc.Length + 1 })
+                {
+                    byte[] invalidEnc = new byte[length];
+                    AssertExtensions.Throws<ArgumentException>(
+                        "encapsulatedSecret", () => key.CreatePskSender(psk, pskId, invalidEnc.AsSpan()));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "encapsulatedSecret", () => key.CreatePskRecipient(invalidEnc, psk, pskId));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "encapsulatedSecret", () => key.CreatePskRecipient(invalidEnc.AsSpan(), psk, pskId));
+                }
+
+                key.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskSender(psk, pskId, out _));
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskSender(psk.AsSpan(), pskId, out _));
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskSender(psk, pskId, enc.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskRecipient(enc, psk, pskId));
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskRecipient(enc.AsSpan(), psk, pskId));
+                Assert.Equal(0, key.PskCalls);
+            }
+        }
+
+        public static IEnumerable<object[]> PskInputLengthData()
+        {
+            foreach (HpkeKdf kdf in Enum.GetValues<HpkeKdf>())
+            {
+                yield return new object[] { kdf, 32, 1, 0, null };
+                yield return new object[] { kdf, 33, 1, 0, null };
+                yield return new object[] { kdf, 65535, 65535, 65535, null };
+                bool shake = kdf is HpkeKdf.SHAKE128 or HpkeKdf.SHAKE256;
+                yield return new object[] { kdf, 65536, 1, 0, shake ? "psk" : null };
+                yield return new object[] { kdf, 32, 65536, 0, shake ? "pskId" : null };
+                yield return new object[] { kdf, 32, 1, 65536, shake ? "info" : null };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(PskInputLengthData))]
+        public static void Psk_InputLengths(HpkeKdf kdf, int pskLength, int idLength, int infoLength, string invalidParameter)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, kdf, HpkeAead.AES_128_GCM);
+            byte[] psk = new byte[pskLength];
+            psk.AsSpan().Fill(0x3C);
+            byte[] pskId = new byte[idLength];
+            pskId.AsSpan().Fill(0x1D);
+            byte[] info = new byte[infoLength];
+            info.AsSpan().Fill(0x39);
+            byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+
+            using (RecordingHpke key = new(suite))
+            {
+                if (invalidParameter is not null)
+                {
+                    AssertPskArgumentException(key, invalidParameter, psk, pskId, enc, info);
+                    Assert.Equal(0, key.PskCalls);
+                    return;
+                }
+
+                byte[] expectedEnc = new byte[enc.Length];
+                expectedEnc.AsSpan().Fill(0xD7);
+                using (HpkeSender sender = key.CreatePskSender(psk, pskId, out byte[] arrayEnc, info))
+                {
+                    Assert.Equal(expectedEnc, arrayEnc);
+                    Assert.Same(suite, sender.Suite);
+                }
+
+                using (HpkeSender sender = key.CreatePskSender(psk.AsSpan(), pskId, out byte[] spanEnc, info))
+                {
+                    Assert.Equal(expectedEnc, spanEnc);
+                }
+
+                using (HpkeSender sender = key.CreatePskSender(psk, pskId, enc.AsSpan(), info))
+                {
+                    Assert.Equal(expectedEnc, enc);
+                }
+
+                Assert.Equal(info, key.LastSenderInfo);
+                using (HpkeRecipient recipient = key.CreatePskRecipient(enc, psk, pskId, info))
+                using (HpkeRecipient spanRecipient = key.CreatePskRecipient(enc.AsSpan(), psk, pskId, info))
+                {
+                    Assert.Same(suite, recipient.Suite);
+                    Assert.Same(suite, spanRecipient.Suite);
+                    Assert.Equal(enc, key.LastRecipientEncapsulatedSecret);
+                    Assert.Equal(info, key.LastRecipientInfo);
+                    Assert.Equal(psk, key.LastPsk);
+                    Assert.Equal(pskId, key.LastPskId);
+                }
+
+                Assert.Equal(5, key.PskCalls);
+            }
+        }
+
+        private static void AssertPskArgumentException(
+            Hpke key, string parameter, byte[] psk, byte[] pskId, byte[] enc, byte[] info)
+        {
+            byte[] original = [0xA5];
+            byte[] result = original;
+            AssertExtensions.Throws<ArgumentException>(parameter, () => key.CreatePskSender(psk, pskId, out result, info));
+            Assert.Same(original, result);
+            AssertExtensions.Throws<ArgumentException>(
+                parameter, () => key.CreatePskSender(psk.AsSpan(), pskId, out result, info));
+            Assert.Same(original, result);
+            byte[] originalEnc = (byte[])enc.Clone();
+            AssertExtensions.Throws<ArgumentException>(parameter, () => key.CreatePskSender(psk, pskId, enc.AsSpan(), info));
+            Assert.Equal(originalEnc, enc);
+            AssertExtensions.Throws<ArgumentException>(parameter, () => key.CreatePskRecipient(enc, psk, pskId, info));
+            AssertExtensions.Throws<ArgumentException>(parameter, () => key.CreatePskRecipient(enc.AsSpan(), psk, pskId, info));
+        }
+
+        [Fact]
+        public static void Psk_CoreFailureDoesNotPublishOutput()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            using (RecordingHpke key = new(suite) { ThrowOnCreateSender = true })
+            {
+                byte[] psk = new byte[32];
+                byte[] pskId = [1];
+                byte[] original = [0xA5];
+                byte[] enc = original;
+                Assert.Throws<CryptographicException>(() => key.CreatePskSender(psk, pskId, out enc));
+                Assert.Same(original, enc);
+                Assert.Throws<CryptographicException>(() => key.CreatePskSender(psk.AsSpan(), pskId, out enc));
+                Assert.Same(original, enc);
+                Assert.Throws<CryptographicException>(
+                    () => key.CreatePskSender(psk, pskId, new byte[suite.EncapsulatedSecretSizeInBytes].AsSpan()));
+                Assert.Equal(3, key.PskCalls);
+            }
+        }
+
         private sealed class RecordingHpke : Hpke
         {
             internal bool OpenCoreCalled { get; private set; }
@@ -891,6 +1238,9 @@ namespace System.Security.Cryptography.Tests
             internal int CreateRecipientCalls { get; private set; }
             internal byte[] LastRecipientEncapsulatedSecret { get; private set; } = [];
             internal byte[] LastRecipientInfo { get; private set; } = [];
+            internal int PskCalls { get; private set; }
+            internal byte[] LastPsk { get; private set; } = [];
+            internal byte[] LastPskId { get; private set; } = [];
 
             internal RecordingHpke(HpkeSuite suite) : base(suite)
             {
@@ -929,6 +1279,33 @@ namespace System.Security.Cryptography.Tests
                 LastRecipientEncapsulatedSecret = encapsulatedSecret.ToArray();
                 LastRecipientInfo = info.ToArray();
                 return new RecordingHpkeRecipient(Suite);
+            }
+
+            protected override HpkeSender CreatePskSenderCore(
+                Span<byte> encapsulatedSecret,
+                ReadOnlySpan<byte> info,
+                ReadOnlySpan<byte> psk,
+                ReadOnlySpan<byte> pskId)
+            {
+                RecordPskInputs(psk, pskId);
+                return CreateSenderCore(encapsulatedSecret, info);
+            }
+
+            protected override HpkeRecipient CreatePskRecipientCore(
+                ReadOnlySpan<byte> encapsulatedSecret,
+                ReadOnlySpan<byte> info,
+                ReadOnlySpan<byte> psk,
+                ReadOnlySpan<byte> pskId)
+            {
+                RecordPskInputs(psk, pskId);
+                return CreateRecipientCore(encapsulatedSecret, info);
+            }
+
+            private void RecordPskInputs(ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+            {
+                PskCalls++;
+                LastPsk = psk.ToArray();
+                LastPskId = pskId.ToArray();
             }
 
             protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>

@@ -159,6 +159,18 @@
   <data name="Argument_HpkeKdfInfoLength" xml:space="preserve">
     <value>The specified info exceeds the maximum length of {0} bytes.</value>
   </data>
+  <data name="Argument_HpkePskIdEmpty" xml:space="preserve">
+    <value>The pre-shared key identifier must not be empty.</value>
+  </data>
+  <data name="Argument_HpkePskIdTooLong" xml:space="preserve">
+    <value>The pre-shared key identifier exceeds the maximum length of {0} bytes.</value>
+  </data>
+  <data name="Argument_HpkePskTooLong" xml:space="preserve">
+    <value>The pre-shared key exceeds the maximum length of {0} bytes.</value>
+  </data>
+  <data name="Argument_HpkePskTooShort" xml:space="preserve">
+    <value>The pre-shared key must be at least {0} bytes long.</value>
+  </data>
   <data name="Argument_MLDsaMuInvalidLength" xml:space="preserve">
     <value>The specified mu value is not the correct length for the ML-DSA algorithm.</value>
   </data>

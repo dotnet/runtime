@@ -810,6 +810,346 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info);
 
         /// <summary>
+        ///   Creates an HPKE sender context using a pre-shared key.
+        /// </summary>
+        /// <param name="psk">
+        ///   The pre-shared key, which must be at least 32 bytes long.
+        /// </param>
+        /// <param name="pskId">
+        ///   The nonempty identifier for the pre-shared key.
+        /// </param>
+        /// <param name="encapsulatedSecret">
+        ///   When this method returns, contains the encapsulated secret to send to the recipient.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient.
+        /// </param>
+        /// <returns>
+        ///   A new sender context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="psk" /> is shorter than 32 bytes, <paramref name="pskId" /> is empty,
+        ///   or an input exceeds the maximum length supported by the cipher suite's KDF.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a PSK sender is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        /// <remarks>
+        ///   The sender and recipient must use the same pre-shared key and identifier.
+        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy;
+        ///   length validation alone does not guarantee this. A low-entropy password is not a suitable pre-shared key.
+        /// </remarks>
+        public HpkeSender CreatePskSender(
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            out byte[] encapsulatedSecret,
+            ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInvalidPskInputs(psk, pskId);
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            byte[] encapsulatedSecretBuffer = new byte[Suite.EncapsulatedSecretSizeInBytes];
+            HpkeSender sender = CreatePskSenderCore(encapsulatedSecretBuffer, info, psk, pskId);
+            encapsulatedSecret = encapsulatedSecretBuffer;
+            return sender;
+        }
+
+        /// <summary>
+        ///   Creates an HPKE sender context using a pre-shared key.
+        /// </summary>
+        /// <param name="psk">
+        ///   The pre-shared key, which must be at least 32 bytes long.
+        /// </param>
+        /// <param name="pskId">
+        ///   The nonempty identifier for the pre-shared key.
+        /// </param>
+        /// <param name="encapsulatedSecret">
+        ///   When this method returns, contains the encapsulated secret to send to the recipient.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient,
+        ///   or <see langword="null" /> to use an empty context.
+        /// </param>
+        /// <returns>
+        ///   A new sender context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="psk" /> or <paramref name="pskId" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="psk" /> is shorter than 32 bytes, <paramref name="pskId" /> is empty,
+        ///   or an input exceeds the maximum length supported by the cipher suite's KDF.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a PSK sender is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        /// <remarks>
+        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy.
+        ///   The sender and recipient must use the same pre-shared key and identifier.
+        /// </remarks>
+        public HpkeSender CreatePskSender(
+            byte[] psk,
+            byte[] pskId,
+            out byte[] encapsulatedSecret,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(psk);
+            ArgumentNullException.ThrowIfNull(pskId);
+            return CreatePskSender(new ReadOnlySpan<byte>(psk), pskId, out encapsulatedSecret, info);
+        }
+
+        /// <summary>
+        ///   Creates an HPKE sender context using a pre-shared key and writes the encapsulated secret into the provided buffer.
+        /// </summary>
+        /// <param name="psk">
+        ///   The pre-shared key, which must be at least 32 bytes long.
+        /// </param>
+        /// <param name="pskId">
+        ///   The nonempty identifier for the pre-shared key.
+        /// </param>
+        /// <param name="encapsulatedSecret">
+        ///   The buffer to receive the encapsulated secret to send to the recipient.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient.
+        /// </param>
+        /// <returns>
+        ///   A new sender context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="psk" /> is shorter than 32 bytes, <paramref name="pskId" /> is empty,
+        ///   an input exceeds the maximum length supported by the cipher suite's KDF,
+        ///   or <paramref name="encapsulatedSecret" /> is not exactly
+        ///   <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a PSK sender is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        /// <remarks>
+        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy.
+        ///   The sender and recipient must use the same pre-shared key and identifier.
+        /// </remarks>
+        public HpkeSender CreatePskSender(
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            Span<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInvalidPskInputs(psk, pskId);
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+
+            if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedSecretSizeInBytes),
+                    nameof(encapsulatedSecret));
+            }
+
+            return CreatePskSenderCore(encapsulatedSecret, info, psk, pskId);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, creates an HPKE sender context using a pre-shared key.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The buffer to receive the encapsulated secret.
+        /// </param>
+        /// <param name="info">
+        ///   The application context.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The identifier for the pre-shared key.
+        /// </param>
+        /// <returns>
+        ///   A new sender context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a PSK sender is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The calling method has verified that this instance is not disposed, the encapsulated secret buffer
+        ///   has the exact required length, the pre-shared key is at least 32 bytes long, the identifier is nonempty,
+        ///   and all inputs satisfy the KDF's length limits. Implementations must fill the entire buffer
+        ///   and return an initialized sender for <see cref="Suite" />.
+        /// </remarks>
+        protected abstract HpkeSender CreatePskSenderCore(
+            Span<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId);
+
+        /// <summary>
+        ///   Creates an HPKE recipient context using a pre-shared key.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key, which must be at least 32 bytes long.
+        /// </param>
+        /// <param name="pskId">
+        ///   The nonempty identifier for the pre-shared key.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the sender.
+        /// </param>
+        /// <returns>
+        ///   A new recipient context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="psk" /> is shorter than 32 bytes, <paramref name="pskId" /> is empty,
+        ///   an input exceeds the maximum length supported by the cipher suite's KDF,
+        ///   or <paramref name="encapsulatedSecret" /> is not exactly
+        ///   <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred while creating the recipient.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a PSK recipient is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        /// <remarks>
+        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy.
+        ///   The sender and recipient must use the same pre-shared key and identifier.
+        /// </remarks>
+        public HpkeRecipient CreatePskRecipient(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            ReadOnlySpan<byte> info = default)
+        {
+            ThrowIfInvalidPskInputs(psk, pskId);
+            ThrowIfInfoExceedsLimit(info);
+            ThrowIfDisposed();
+            ThrowIfInvalidEncapsulatedSecretLength(encapsulatedSecret);
+            return CreatePskRecipientCore(encapsulatedSecret, info, psk, pskId);
+        }
+
+        /// <summary>
+        ///   Creates an HPKE recipient context using a pre-shared key.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key, which must be at least 32 bytes long.
+        /// </param>
+        /// <param name="pskId">
+        ///   The nonempty identifier for the pre-shared key.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the sender,
+        ///   or <see langword="null" /> to use an empty context.
+        /// </param>
+        /// <returns>
+        ///   A new recipient context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encapsulatedSecret" />, <paramref name="psk" />, or <paramref name="pskId" />
+        ///   is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="psk" /> is shorter than 32 bytes, <paramref name="pskId" /> is empty,
+        ///   an input exceeds the maximum length supported by the cipher suite's KDF,
+        ///   or <paramref name="encapsulatedSecret" /> is not exactly
+        ///   <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred while creating the recipient.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a PSK recipient is not supported on the current platform.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
+        /// <remarks>
+        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy.
+        ///   The sender and recipient must use the same pre-shared key and identifier.
+        /// </remarks>
+        public HpkeRecipient CreatePskRecipient(
+            byte[] encapsulatedSecret,
+            byte[] psk,
+            byte[] pskId,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(encapsulatedSecret);
+            ArgumentNullException.ThrowIfNull(psk);
+            ArgumentNullException.ThrowIfNull(pskId);
+            return CreatePskRecipient(new ReadOnlySpan<byte>(encapsulatedSecret), psk, pskId, info);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, creates an HPKE recipient context using a pre-shared key.
+        /// </summary>
+        /// <param name="encapsulatedSecret">
+        ///   The encapsulated secret produced by the sender.
+        /// </param>
+        /// <param name="info">
+        ///   The application context.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The identifier for the pre-shared key.
+        /// </param>
+        /// <returns>
+        ///   A new recipient context for this key's cipher suite.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///   or an error occurred while creating the recipient.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Creating a PSK recipient is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The calling method has verified that this instance is not disposed, the encapsulated secret
+        ///   has the exact required length, the pre-shared key is at least 32 bytes long, the identifier is nonempty,
+        ///   and all inputs satisfy the KDF's length limits. Implementations must return an initialized recipient
+        ///   for <see cref="Suite" />.
+        /// </remarks>
+        protected abstract HpkeRecipient CreatePskRecipientCore(
+            ReadOnlySpan<byte> encapsulatedSecret,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId);
+
+        /// <summary>
         ///   Releases all resources used by the <see cref="Hpke" /> class.
         /// </summary>
         public void Dispose()
@@ -849,6 +1189,37 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_HpkeKdfInfoLength, Suite.KdfMetadata.MaximumInfoLength),
                     nameof(info));
+            }
+        }
+
+        private void ThrowIfInvalidPskInputs(ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        {
+            // A shorter key cannot meet HPKE's requirement for 32 bytes of PSK entropy.
+            // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.1.2
+            const int MinimumPskLength = 32;
+
+            if (psk.Length < MinimumPskLength)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_HpkePskTooShort, MinimumPskLength), nameof(psk));
+            }
+
+            if (pskId.IsEmpty)
+            {
+                throw new ArgumentException(SR.Argument_HpkePskIdEmpty, nameof(pskId));
+            }
+
+            if (psk.Length > Suite.KdfMetadata.MaximumPskLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_HpkePskTooLong, Suite.KdfMetadata.MaximumPskLength),
+                    nameof(psk));
+            }
+
+            if (pskId.Length > Suite.KdfMetadata.MaximumPskIdLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_HpkePskIdTooLong, Suite.KdfMetadata.MaximumPskIdLength),
+                    nameof(pskId));
             }
         }
 
