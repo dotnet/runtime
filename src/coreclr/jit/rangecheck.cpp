@@ -1202,11 +1202,11 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                     limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
                     isUnsigned = false;
                 }
-                else if (addOpCns > INT32_MIN)
+                else if ((addOpCns > INT32_MIN) && pRange->LowerLimit().IsConstant() &&
+                         !IntAddOverflows(pRange->LowerLimit().GetConstant(), addOpCns))
                 {
-                    // (normalLclVN + negConst) u< bound, with bound non-negative.
-                    // Since the comparison is unsigned, (normalLclVN + negConst) must not have wrapped,
-                    // which means normalLclVN >= -negConst.
+                    // The known lower bound rules out underflow. Otherwise a negative index could
+                    // wrap to a nonnegative value and pass the unsigned comparison.
                     cmpOper    = GT_GE;
                     limit      = Limit(Limit::keConstant, -addOpCns);
                     isUnsigned = false;
