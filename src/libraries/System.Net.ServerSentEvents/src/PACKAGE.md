@@ -37,7 +37,7 @@ foreach (SseItem<Book> item in SseParser.Create(stream, (eventType, bytes) => Js
 }
 ```
 
-In case of connecting to untrusted event source, use buffer size limitation to handle oversized input. If you use multiple parser at the same time, consider more strict limits to limit growing memory usage unexpectedly:
+When connecting to an untrusted event source, use a buffer-size limit to handle oversized input. If you use multiple parsers at the same time, consider stricter limits to avoid unexpected memory growth:
 
 ```csharp
 using System.Net.ServerSentEvents;
