@@ -187,4 +187,10 @@
     <MicrosoftWixToolsetHeatVersion>6.0.3-dotnet.6</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 
+  <!-- Validation-only: use the VMR's manifest band without changing the existing .NET SDK host. -->
+  <PropertyGroup Condition="'$(MicrosoftNETWorkloadEmscriptenCurrentManifest120100alpha1PackageVersion)' == '12.0.100-alpha.1.26457.113'">
+    <SdkBandVersionForWorkload_FromRuntimeVersions>12.0.100-alpha.1</SdkBandVersionForWorkload_FromRuntimeVersions>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest120100alpha1PackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
+  </PropertyGroup>
+
 </Project>
