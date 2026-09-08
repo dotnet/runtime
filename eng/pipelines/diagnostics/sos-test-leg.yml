@@ -42,17 +42,28 @@ jobs:
           artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
           unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
           displayName: 'Runtime Build Artifacts'
-      # The cdac leg exercises the runtime-under-test's own cDAC through SOS's standard cDAC hosting.
-      # SOS resolves the cDAC from next to sos.dll, which is the copy restored from a referenced runtime
-      # package -- not the runtime being tested. Download the freshly built cDAC so the build can overlay
-      # it (see -cdacPath in runtime-diag-job.yml / eng/build.* in dotnet/diagnostics).
+      # The cdac leg exercises the runtime-under-test's matching cDAC and DBI pair. Download the
+      # transport package produced by the runtime build and expose it as a local NuGet source.
       - ${{ if eq(parameters.dacMode, 'cdac') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
             artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts/cdac
-            displayName: 'cDAC Build Artifacts'
+            displayName: 'cDAC Transport Package'
+        - powershell: |
+            $packageId = "runtime.win-$(archType).Microsoft.DotNet.Cdac.Transport"
+            $packages = @(Get-ChildItem -File -Path "$(Build.SourcesDirectory)\artifacts\cdac\$packageId.*.nupkg" | Where-Object Name -NotLike '*.symbols.nupkg')
+            if ($packages.Count -ne 1) {
+              throw "Expected one cDAC transport package, but found $($packages.Count)."
+            }
+
+            $packageNamePrefix = "$packageId."
+            $packageVersion = $packages[0].BaseName.Substring($packageNamePrefix.Length)
+
+            Write-Host "##vso[task.setvariable variable=cdacTransportSource]$($packages[0].DirectoryName)"
+            Write-Host "##vso[task.setvariable variable=cdacTransportVersion]$packageVersion"
+          displayName: 'Configure cDAC Transport Package'
       postBuildSteps:
       - task: PublishTestResults@2
         inputs:
