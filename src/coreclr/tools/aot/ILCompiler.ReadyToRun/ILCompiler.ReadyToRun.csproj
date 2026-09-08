@@ -199,8 +199,10 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSection.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmNameSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmNameSection.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\IWasmDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\IWasmDataSegment.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmByteArrayDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WasmByteArrayDataSegment.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilPayloadDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WebcilPayloadDataSegment.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSections.cs" Link="Compiler\ObjectWriter\Wasm\WasmSections.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilSection.cs" Link="Compiler\ObjectWriter\Wasm\WebcilSection.cs" />
@@ -241,6 +243,7 @@
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ReadyToRunExternalTypeMapNode.cs" />
     <Compile Include="Compiler\ReadyToRunProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\ReadyToRunTypeMapEncoding.cs" />
     <Compile Include="Compiler\ReadyToRunTypeMapManager.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
@@ -379,6 +382,13 @@
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
+    <Compile Include="PortableCallHelpers\PortableCallHelpersGenerator.cs" />
+    <Compile Include="PortableCallHelpers\InteropSignature.cs" />
+    <Compile Include="PortableCallHelpers\InternalCallSignatureCollector.cs" />
+    <Compile Include="PortableCallHelpers\InterpToNativeGenerator.cs" />
+    <Compile Include="PortableCallHelpers\PInvokeCollector.cs" />
+    <Compile Include="PortableCallHelpers\PInvokeTableGenerator.cs" />
+    <Compile Include="PortableCallHelpers\TypeNames.cs" />
     <Compile Include="JitInterface\WasmLowering.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
     <Compile Include="TypeSystem\MethodDescExtensions.cs" />

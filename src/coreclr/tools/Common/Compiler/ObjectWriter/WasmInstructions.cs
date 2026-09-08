@@ -122,6 +122,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         End = 0x0B,
         Call = 0x10,
         CallIndirect = 0x11,
+        ReturnCall = 0x12,
         LocalGet = 0x20,
         LocalSet = 0x21,
         LocalTee = 0x22,
@@ -447,6 +448,25 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             pos += DwarfHelper.WriteSLEB128(buffer.Slice(pos), ConstValue);
 
             return pos;
+        }
+    }
+
+    internal sealed class WasmPaddedI32ConstExpr : WasmExpr
+    {
+        private readonly int _value;
+
+        public WasmPaddedI32ConstExpr(int value) : base(WasmExprKind.I32Const)
+        {
+            _value = value;
+        }
+
+        public override int EncodeSize() => base.EncodeSize() + Relocation.WASM_PADDED_RELOC_SIZE_32;
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            DwarfHelper.WritePaddedSLEB128(buffer.Slice(pos, Relocation.WASM_PADDED_RELOC_SIZE_32), _value);
+            return pos + Relocation.WASM_PADDED_RELOC_SIZE_32;
         }
     }
 
@@ -816,6 +836,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         {
             return new WasmConstExpr(WasmExprKind.I32Const, value);
         }
+        public static WasmExpr PaddedConst(int value)
+        {
+            return new WasmPaddedI32ConstExpr(value);
+        }
         public static WasmExpr ConstRVA(ISymbolNode symbolNode)
         {
             return new WasmLEBConstantReloc(WasmExprKind.I32Const, symbolNode, RelocType.WASM_MEMORY_ADDR_REL_SLEB);
@@ -878,6 +902,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     {
         public static WasmExpr Unreachable => new WasmUnaryExpr(WasmExprKind.Unreachable);
         public static WasmExpr Call(ISymbolNode target) => new WasmLEBConstantReloc(WasmExprKind.Call, target, RelocType.WASM_FUNCTION_INDEX_LEB);
+        public static WasmExpr ReturnCall(ISymbolNode target) => new WasmLEBConstantReloc(WasmExprKind.ReturnCall, target, RelocType.WASM_FUNCTION_INDEX_LEB);
         public static WasmExpr CallIndirect(ISymbolNode funcType, uint tableIndex) => new WasmIndirectCallInstruction(WasmExprKind.CallIndirect, funcType, tableIndex);
     }
     internal static class Table

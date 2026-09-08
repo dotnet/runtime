@@ -26,45 +26,45 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:abc10e0395717f1d7dc92ac6c684ceb3a64d863f5679ed24fcee4d54e8622537
+        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:1eee8b5b9ae76dab5fb7cf14e581797ae47213999c4da743bf6a95cda7e5e2ed
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Ubuntu.2604.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:f75ca9a6b931e339b6232ffb1bb20c3968bc12495d8ea8cf5f8a24a16f110920
+        - (Ubuntu.2604.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:6ba6b48a55eab8fbac5de215a6f62e6efecbeebb724214bcd57ce69f6c6bd1bb
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (AzureLinux.3.0.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-arm64v8@sha256:1293e99cd19c3579f68cca91e2b7e769aa5cdda6d6acf04e6b77408af774cb81
+        - (AzureLinux.3.0.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-arm64v8@sha256:9adb455da84acff688fc6c6bcb5828e6b6449e0bade87686b37a671134866da2
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.Edge.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64@sha256:609629b0de79458c21030c453f73c264b6ff941c1091419842ed5e4c95ae61ed
+        - (Alpine.Edge.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64@sha256:5fe32af5cffe396daebbc3780009e7c372a4edb5940e623b2c3bc404bce29a94
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:bb86a22446b4f275a23a440b77072d386b1f58393b2d38cb833b506116295b38
+        - (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:27b4b25f2c1dde8d0349818f8a93adc8e797cd1fb5f0cbac07089c25abdce49d
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:d6b54a9cbf62650b668bb67080925391e2304921111b9eca830079ecb4def58c
+        - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:7229985457fd1fb60afe60d1550bc9ccf93c5d54d3429aba079f4de6a7ffe7cf
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
-        - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64@sha256:c46f071a63c6749981b12d3926ebc4834b7622e74ec7105abe8e534344ca6fae
+        - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64@sha256:e3602567bbc6b27befad2bf15c0616017b8ccd5c944b2c27b32b550e40c32360
 
       - ${{ else }}:
         - ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
           # Mono path - test minimal scenario
-          - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-amd64@sha256:824ed3a4f13a70219b60c704279c0dfb86f9cb31e497ea3a5f9faf875cea9100
+          - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-amd64@sha256:58ceb37e4f197dfdf58ca6b339a6ba6de66a07dacf46f1eb68a2080fe0f3c89b
         - ${{ else }}:
         # CoreCLR path
           - ${{ if and(eq(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.testScope, 'outerloop'))}}:
             # extra-platforms CoreCLR (inner loop only)
-            - (AzureLinux.4.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:f772fe98ed4d423ef702d18ac5c392c4043c8a77307ee415b20b0f6a7ce1f001
-            - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64@sha256:c46f071a63c6749981b12d3926ebc4834b7622e74ec7105abe8e534344ca6fae
-            - (Fedora.44.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-44-helix-amd64@sha256:df4aa661684d374de46223c8fc6c39c708157cb4a8d1a49e723022d9f080fe89
-            - (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64@sha256:d78699f264e2f7bf2c29eb46d0000b49989cd72993a0692fa3c657c21761a57c
+            - (AzureLinux.4.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:249f173377b348c19e2f4cffa59091ada2d6e9e14f529fa5fb36902d125e15ca
+            - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64@sha256:e3602567bbc6b27befad2bf15c0616017b8ccd5c944b2c27b32b550e40c32360
+            - (Fedora.44.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-44-helix-amd64@sha256:9a281e0164f82f65880f7e5d33adcccdc22b72aa398e0e3061d466395fe7d4a0
+            - (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64@sha256:d00ce4ba4be4b151c694596ac13356b4a5bf94a1a4bc93627efdc90228a90693
 
           - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               # outerloop only CoreCLR
@@ -76,8 +76,8 @@ jobs:
               - Ubuntu.2604.Amd64.Open
               # Additional distros on non-PR builds for broader coverage
               - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-                - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:dc088acabf11931111a8b77ea5191d043417c80bd0117273c720fc973ae5fffb
-                - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64@sha256:83618a77a566c1f2314c5ab6d320df062ed5daaac9121cf4ca28247de89f8dfa
+                - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:a1ac65ca3175945b2527477f5d9440dc38c8c35342ddb581113f29940a5d15a2
+                - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64@sha256:4e4264be84442a4f147305d97e94201a037c6a632606a80cbe87a5e97d9c456a
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
@@ -129,18 +129,18 @@ jobs:
             - Windows.Amd64.Server2022.Open
             - Windows.Server2025.Amd64.Open
             - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
-              - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:bcb63785d77922c0c50ccffb3b9883036ba5f3a10e3c513e380109b08b0844ad
+              - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:377831a7ccbdcbb1d71b5fd7dcf1a5e79314bd4d5e12f818cdc41815a3b3b2a6
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             # Primary Windows queues for all builds: latest + Nano (distinct environment)
             - $(helix_windows_x64_latest)
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-              - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64@sha256:94374f0a94846bc0f1d88c1fb3ad0872537b71c0bb3cf339d911964e2b4ab85b
+              - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64@sha256:d2d8804d22eb173947282a2aa24f73fbfe06e35ccbf26dcde3199368218158b8
             # Additional Windows versions on non-PR builds for broader coverage
             - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
               - Windows.Amd64.Server2022.Open
               - Windows.11.Amd64.Client.Open
               - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-                - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:bcb63785d77922c0c50ccffb3b9883036ba5f3a10e3c513e380109b08b0844ad
+                - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:377831a7ccbdcbb1d71b5fd7dcf1a5e79314bd4d5e12f818cdc41815a3b3b2a6
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
@@ -170,23 +170,23 @@ jobs:
 
     # WASI
     - ${{ if eq(parameters.platform, 'wasi_wasm') }}:
-      - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:fde50545eb067cd6e312743d39522746167aeed50ad60001b170b5a6281e915b
+      - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:8753904bd945ff4b2dc43499555d6aaa5706f2d594043de5456838122df03231
 
     # Browser WebAssembly
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:fde50545eb067cd6e312743d39522746167aeed50ad60001b170b5a6281e915b
+      - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:8753904bd945ff4b2dc43499555d6aaa5706f2d594043de5456838122df03231
 
     # Browser WebAssembly Firefox
     - ${{ if eq(parameters.platform, 'browser_wasm_firefox') }}:
-      - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:fde50545eb067cd6e312743d39522746167aeed50ad60001b170b5a6281e915b
+      - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:8753904bd945ff4b2dc43499555d6aaa5706f2d594043de5456838122df03231
 
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
       # Primary Windows version for all builds
-      - (Windows.Server2025.Amd64.Open)windows.server2025.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2025-helix-webassembly-amd64@sha256:16393e4fd41ab59cf942aabc8c168ba8f1ec5f311a13aa9e153ffe45924f718e
+      - (Windows.Server2025.Amd64.Open)windows.server2025.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2025-helix-webassembly-amd64@sha256:bd9d3febcd751f2d19b45f79bb908ce4e4d14e4f22acc5170998270f0355881b
       # Additional Windows version on non-PR builds or when all platforms are requested
       - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly@sha256:7db7a1eaeaf6e768f98aa37f83cff94abfd3213d38c4b65afd4e4eea9ba2d72d
+        - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly@sha256:18045d3628bbc1cbd3caefaf05637fb50b6edb52ea5329b862dbd7a326673faa
 
     # Browser WebAssembly macOS
     - ${{ if eq(parameters.platform, 'browser_wasm_mac') }}:

@@ -759,6 +759,17 @@
               Non-VMR builds normally use the crossgen2 built for the target host SDK from another build leg, but builds without one can opt in.
             -->
             <ProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser') and '$(TargetsLinuxBionic)' != 'true' and '$(BuildHostTools)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
+
+            <!--
+              The wasm-tools workload manifest declares the host crossgen2 pack, so the workload
+              testing legs need it in their local package feed. Those legs do not set
+              $(BuildHostTools), so the project above does not produce one for them. The Host variant
+              pins the RID to the build host, which is exactly the pack the workload resolves.
+
+              Opt-in only. The official build already publishes this pack from the host platform
+              legs, and building it here as well would produce a second package with the same id.
+            -->
+            <ProjectToBuild Condition="'$(BuildCrossgen2HostPackForWorkloadTesting)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(BuildHostTools)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
           </ItemGroup>
           <ItemGroup>
             <SharedFrameworkProjectToBuild Condition="'$(_BuildHostPack)' == 'true'" Include="$(InstallerProjectRoot)pkg\archives\dotnet-nethost.proj" />
