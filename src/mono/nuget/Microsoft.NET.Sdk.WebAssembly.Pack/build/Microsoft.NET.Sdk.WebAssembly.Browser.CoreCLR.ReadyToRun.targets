@@ -27,7 +27,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCrossgen2ToolsExe>$([MSBuild]::NormalizePath('$([MSBuild]::NormalizeDirectory('$(Crossgen2InBuildDir)', 'tools'))', 'crossgen2$(_WasmCrossgen2ExeSuffix)'))</_WasmCrossgen2ToolsExe>
       <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and Exists('$(_WasmCrossgen2RootExe)')">$(_WasmCrossgen2RootExe)</Crossgen2Path>
       <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and '$(Crossgen2Path)' == '' and Exists('$(_WasmCrossgen2ToolsExe)')">$(_WasmCrossgen2ToolsExe)</Crossgen2Path>
-      <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and '$(Crossgen2Path)' == ''">$(_WasmCrossgen2RootExe)</Crossgen2Path>
       <!-- Directory of the resolved crossgen2, so _WasmCoreClrConservativeR2RInputs can add the wasm JIT
            crossgen2 auto-loads to the R2R inputs. -->
       <_WasmResolvedCrossgen2Dir Condition="'$(Crossgen2Path)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetDirectoryName('$(Crossgen2Path)'))))</_WasmResolvedCrossgen2Dir>
@@ -40,8 +39,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmR2RTargetArch Condition="'$(_WasmR2RTargetArch)' == ''">wasm</_WasmR2RTargetArch>
     </PropertyGroup>
 
-    <!-- Preferred: the in-build crossgen2 (in-tree and dev out-of-tree builds that pass Crossgen2InBuildDir). -->
-    <ItemGroup Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true'">
+    <!-- Preferred: the in-build crossgen2 (in-tree and dev out-of-tree builds that pass Crossgen2InBuildDir).
+         When the dir is present but contains no crossgen2, Crossgen2Path stays empty and we fall through to the
+         pack fallback (and ultimately _WasmCoreClrValidateReadyToRun's actionable error) instead of naming a
+         non-existent executable. -->
+    <ItemGroup Condition="'$(Crossgen2Path)' != ''">
       <Crossgen2Tool Include="$(Crossgen2Path)"
                      TargetArch="$(_WasmR2RTargetArch)"
                      TargetOS="$(_WasmR2RTargetOS)"
@@ -50,7 +52,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Fallback: the SDK-resolved crossgen2 pack (restored when PublishReadyToRun is set, e.g. the no-workload
          Helix leg). Mirrors the resolver in Microsoft.NET.CrossGen.targets so the tool is never left empty. -->
-    <ResolveReadyToRunCompilers Condition="'$(_WasmCrossgen2InBuildUsable)' != 'true' and '@(ResolvedCrossgen2Pack)' != ''"
+    <ResolveReadyToRunCompilers Condition="'$(Crossgen2Path)' == '' and '@(ResolvedCrossgen2Pack)' != ''"
                                 RuntimePacks="@(ResolvedRuntimePack)"
                                 Crossgen2Packs="@(ResolvedCrossgen2Pack)"
                                 TargetingPacks="@(ResolvedTargetingPack)"

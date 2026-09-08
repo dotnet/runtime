@@ -221,14 +221,11 @@
     </PropertyGroup>
   </Target>
 
-  <!-- The four relink triggers below OR in WasmBuildNative because a Blazor app resolves the wasm RID too late
-       to have IsBrowserWasmProject set, which made WasmBuildNative=true a silent no-op (dotnet/runtime#133185). -->
-
   <!-- Build entry point: runs after Build. The inner _CoreCLRWasmBuildAppCore is
        gated on WasmBuildNative='true', so when no relink is needed this is a no-op. -->
   <Target Name="WasmBuildApp"
           AfterTargets="$(WasmBuildAppAfterThisTarget)"
-          Condition="('$(IsBrowserWasmProject)' == 'true' or '$(WasmBuildNative)' == 'true') and
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'"
@@ -237,7 +234,7 @@
   <!-- Publish entry point: triggers nested publish for browser-wasm projects -->
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
-          Condition="('$(IsBrowserWasmProject)' == 'true' or '$(WasmBuildNative)' == 'true') and
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'">
     <!-- Use a unique property, so the already run wasm targets can also run -->
@@ -280,7 +277,7 @@
   <Target Name="_CoreCLRWasmNativeForBuild"
           DependsOnTargets="WasmBuildApp"
           BeforeTargets="_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
-          Condition="('$(IsBrowserWasmProject)' == 'true' or '$(WasmBuildNative)' == 'true') and
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true' and
@@ -294,7 +291,7 @@
   <Target Name="_CoreCLRWasmNative"
           DependsOnTargets="WasmTriggerPublishApp"
           BeforeTargets="ProcessPublishFilesForWasm"
-          Condition="('$(IsBrowserWasmProject)' == 'true' or '$(WasmBuildNative)' == 'true') and
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(UsingBrowserRuntimeWorkload)' != 'true'" />
 

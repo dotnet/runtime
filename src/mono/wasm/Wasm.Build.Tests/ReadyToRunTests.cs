@@ -55,9 +55,9 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPages(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: false);
 
-        // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true. The relink triggers key on
-        // WasmBuildNative in addition to IsBrowserWasmProject, so a late-resolved wasm RID cannot make the
-        // relink a silent no-op. See dotnet/runtime#133185.
+        // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true; the relink is driven by the
+        // IsBrowserWasmProject triggers in BrowserWasmApp.CoreCLR.targets. AssertBundle(isNativeBuild: true)
+        // proves the served dotnet.native.wasm was relinked rather than the runtime-pack prebuilt.
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [InlineData(Configuration.Release, /*trimmed*/ true)]
         [InlineData(Configuration.Release, /*trimmed*/ false)]
@@ -238,11 +238,11 @@ namespace Wasm.Build.Tests
 
             var args = new List<string>();
             if (Directory.Exists(crossgenDir))
-                args.Add($"-p:Crossgen2InBuildDir={crossgenDir}");
+                args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
             if (File.Exists(shimProps))
-                args.Add($"-p:Crossgen2SdkOverridePropsPath={shimProps}");
+                args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
             if (File.Exists(shimTargets))
-                args.Add($"-p:Crossgen2SdkOverrideTargetsPath={shimTargets}");
+                args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
             return string.Join(" ", args);
         }
 
