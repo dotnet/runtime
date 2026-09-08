@@ -54,6 +54,8 @@
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
+    <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
@@ -107,6 +109,7 @@
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' != 'CoreCLR'">$(_XUnitTraitArg) -notrait category=coreclr</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -201,5 +204,34 @@
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg%</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg</RunScriptCommand>
     </PropertyGroup>
+  </Target>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateXunitTestClassList"
+             AssemblyFile="$(WasmBuildTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory" />
+
+  <!--
+    Generates the per-class Helix work item list consumed by src/libraries/sendtohelix-browser.targets,
+    so that adding a test class is enough to get it running on Helix.
+
+    This has to run before ZipTestArchive, because $(BundleDir) is $(OutDir) for this project and
+    ZipTestArchive deletes it once the archive is created in CI. AfterTargets="Build" covers the
+    local case where ArchiveTests is not set and ZipTestArchive never runs.
+  -->
+  <Target Name="GenerateHelixJobsList" AfterTargets="Build" BeforeTargets="ZipTestArchive">
+    <ItemGroup>
+      <!--
+        The lane that fans out per class always runs with these categories filtered out (see
+        $(_XUnitTraitArg) above and $(RunScriptCommand) below), so a class whose tests are all in
+        these categories would only produce a work item that runs nothing.
+      -->
+      <_HelixJobsListExcludedCategory Include="no-workload;IgnoreForCI;failing" />
+      <_HelixJobsListExcludedCategory Include="mono" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+      <_HelixJobsListExcludedCategory Include="coreclr" Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
+    </ItemGroup>
+
+    <GenerateXunitTestClassList Assembly="$(TargetPath)"
+                                OutputPath="$(WasmBuildTestsJobsListFile)"
+                                ExcludedTestCategories="@(_HelixJobsListExcludedCategory)" />
   </Target>
 </Project>

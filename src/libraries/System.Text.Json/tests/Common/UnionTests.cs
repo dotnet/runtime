@@ -1792,9 +1792,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         // The self-referential case is nullable, which makes it the union's null case as well:
-        // the generated null arm reports typeof(NullableNat?) while the payload arm still has
-        // to dispatch off Value. Covers the interaction between Nullable<T> case unwrapping
-        // and union-instance matching, since both apply to the same case here.
+        // the generated null arm reports typeof(NullableNat?) while the non-null arm matches
+        // the unwrapped NullableNat payload.
         public union NullableNat(bool, NullableNat?);
 
         [Theory]
@@ -1836,8 +1835,8 @@ namespace System.Text.Json.Serialization.Tests
         #region Class unions with subtype cases
 
         // A [Union] class is not sealed, so a case type can derive from the union itself.
-        // The union instance is then pattern compatible with the case type, exactly as it is
-        // for a self-referential case, but by the opposite subtyping direction.
+        // Root-level union type patterns still target the payload, even when an ordinary type
+        // pattern could match the union instance through that inheritance.
         //
         // Value is [JsonIgnore]d because CircleShape inherits it, and would otherwise carry it
         // into its own JSON object. That has no bearing on union recognition: ShapeUnion is
@@ -1914,18 +1913,14 @@ namespace System.Text.Json.Serialization.Tests
 
         #endregion
 
-        #region Class unions matched by their own case types
+        #region Class unions overlapping their own case types
 
         // ShapeUnion above covers a case type deriving from the union. This region covers the
         // opposite subtyping direction: the union derives from, or implements, one of its own
         // case types.
         //
-        // Both directions make the union instance pattern compatible with the case type, but the
-        // language treats them very differently. An explicit reference conversion (case derives
-        // from union) puts the compiler into Try-Both mode, which it reports. An implicit one
-        // (union derives from case) suppresses union matching altogether, so a bare type pattern
-        // binds the union instance rather than the payload, silently and with no diagnostic.
-        // These tests pin the payload as the observable result in that silent direction.
+        // In both directions, an ordinary type pattern could match the union instance. Union type
+        // patterns instead target the payload; these tests pin the payload as the observable result.
 
         [JsonConverter(typeof(JsonWritableConverter))]
         public interface IJsonWritable
@@ -1950,8 +1945,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         // The union implements the same interface it declares as a case. Because the converter is
-        // attached to the interface, a deconstructor that bound the union instance instead of the
-        // payload would still serialize successfully — through the union's own WriteTo — and
+        // attached to the interface, a root-level pattern that bound the union instance instead of
+        // the payload would still serialize successfully — through the union's own WriteTo — and
         // produce "union" instead of the payload's label. The union itself is unaffected by the
         // converter and continues to use built-in union serialization.
 #pragma warning disable SYSLIB1227
@@ -2034,8 +2029,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("payload", poco.Label);
         }
 
-        // The [Union] class equivalent: the union derives from one of its own case types, so the
-        // conversion from the union to the case is an implicit reference conversion.
+        // The [Union] class equivalent: the union derives from one of its own case types, so an
+        // ordinary type pattern could match the union instance through an implicit conversion.
         public class NodeCase
         {
             public string? Label { get; set; }

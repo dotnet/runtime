@@ -118,9 +118,8 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" Condition="'$(FeatureVarargs)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Array.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Attribute.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Buffer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
@@ -206,6 +205,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncHelpers.RuntimeAsyncYielder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncProfiler.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\QCallExceptionStatus.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeAsyncTaskContinuation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\StaticsHelpers.cs" />

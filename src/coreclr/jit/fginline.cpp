@@ -371,6 +371,10 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         LateDevirtualization(use, user);
+        if ((*use != nullptr) && (user != nullptr))
+        {
+            user->gtFlags |= (*use)->gtFlags & GTF_ALL_EFFECT;
+        }
         return fgWalkResult::WALK_CONTINUE;
     }
 

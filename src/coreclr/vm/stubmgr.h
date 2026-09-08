@@ -696,6 +696,7 @@ class CLRToCOMStubManager : public StubManager
 };
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_VARARGS
 // This is used to recognize
 //   VarargPInvokeStub()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
@@ -737,6 +738,7 @@ class InteropDispatchStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("InteropDispatchStub"); }
 #endif
 };
+#endif // FEATURE_VARARGS
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 //---------------------------------------------------------------------------------------
