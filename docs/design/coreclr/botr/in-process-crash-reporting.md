@@ -75,7 +75,7 @@ Initialization performs work that is unsuitable for a signal handler. This inclu
 
 The crash path does not allocate memory or load modules. Formatting uses bounded, fixed-size buffers and streams chunks through small JSON and console writers. File output uses operations such as `open`, `write`, `close`, `unlink`, and same-directory `rename`. The signal dispatcher preserves `errno` across report generation.
 
-The reporter deliberately tolerates missing information. Strings may be truncated to their fixed bounds, frames that cannot be classified remain native frames, and a failure to suspend the runtime limits collection to the crashing thread. An output failure stops or discards the affected output rather than attempting complex recovery from the crash path.
+The reporter deliberately tolerates missing information. Strings may be truncated to their fixed bounds, unavailable frame metadata is omitted, and a failure to suspend the runtime limits collection to the crashing thread. An output failure stops or discards the affected output rather than attempting complex recovery from the crash path.
 
 ## Thread enumeration and stack walking ##
 
@@ -83,7 +83,7 @@ The crashing managed thread is emitted first so that the most important diagnost
 
 Walking the remaining managed threads requires a completed runtime suspension. The reporter can either create its own suspension or reuse an existing one when the crashing thread owns it. This includes applicable Workstation and Server GC scenarios; a participating Server GC worker can also reuse the completed suspension. If no stable suspension can be used safely, the reporter includes only the information it can collect from the crashing thread.
 
-Each thread entry identifies whether it is managed and whether it is the crashing thread. The crashing thread begins with a native crash-site frame constructed from the signal's saved register context. Managed frames can include the method name, metadata token, IL offset, native offset, module name, module timestamp and size, and module MVID when those values are available.
+Each thread entry identifies whether it is managed and whether it is the crashing thread. In the JSON output, the crashing thread begins with a native crash-site entry constructed from the signal's saved register context. Managed frames can include the method name, metadata token, IL offset, native offset, module name, module timestamp and size, and module MVID when those values are available.
 
 The compact log uses a bounded module table so frames can refer to modules by a short numeric index. If the table is full or a module cannot be resolved, the frame includes the available module identity inline instead. The JSON output records the corresponding frame data directly.
 
@@ -139,7 +139,7 @@ The crash path sends a start notification before collection and a finish notific
 
 # Configuration/Policy #
 
-The following settings control reports triggered by fatal signals. On-demand reports do not require these settings:
+The following settings primarily control reports triggered by fatal signals. On-demand reports do not require any of these settings, although `DOTNET_CrashReportFrameLimitPerThread` also limits their compact-log output when it is set before explicit initialization:
 
 | Setting | Meaning |
 |---------|---------|
@@ -147,7 +147,7 @@ The following settings control reports triggered by fatal signals. On-demand rep
 | `DOTNET_CrashReportRootPath` | Existing absolute directory under which lifecycle-managed JSON reports are stored. If unset, only the compact log is emitted. |
 | `DOTNET_CrashReportMaxFileCount` | Maximum number of completed JSON reports to retain. The default is 32 and the value must be positive. |
 | `DOTNET_CrashReportTimeoutSeconds` | Watchdog timeout in seconds. The default is 30; `0` disables the watchdog. |
-| `DOTNET_CrashReportFrameLimitPerThread` | Maximum number of stack frames per thread in the compact log. The default is 32; `0` disables the limit. JSON frame collection is not limited by this setting. |
+| `DOTNET_CrashReportFrameLimitPerThread` | Maximum number of stack frames per thread in compact-log output, including on-demand compact logs. The default is 32; `0` disables the limit. JSON frame collection is not limited by this setting. |
 | `DOTNET_CrashReportBeforeSignalChaining` | When set to `1`, generates crash diagnostics before invoking a previously registered native signal handler. The default is to invoke the previous handler first. |
 | `System.Runtime.CrashReportBeforeSignalChaining` | Runtime configuration equivalent of `DOTNET_CrashReportBeforeSignalChaining`, specified as a Boolean in `runtimeconfig.json`. |
 
