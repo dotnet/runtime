@@ -18,15 +18,6 @@ namespace System
 {
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-        // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
-        // Do not change their values without updating the values in the calling convention converter component
-        private const int MulticastThunk = 0;
-        private const int ClosedStaticThunk = 1;
-        private const int OpenStaticThunk = 2;
-        private const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
-        private const int OpenInstanceThunk = 4;        // This may not exist
-        private const int ObjectArrayThunk = 5;         // This may not exist
-
         private object _helperObject;
         private object _target; // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
         private IntPtr _methodPtr;
@@ -106,7 +97,15 @@ namespace System
             return true;
         }
 
-        //
+        // WARNING: These constants are also declared in src/coreclr/tools/Common/TypeSystem/IL/DelegateInfo.cs
+        // Do not change their values without updating the values in the calling convention converter component
+        private const int MulticastThunk = 0;
+        private const int ClosedStaticThunk = 1;
+        private const int OpenStaticThunk = 2;
+        private const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
+        private const int OpenInstanceThunk = 4;        // This may not exist
+        private const int ObjectArrayThunk = 5;         // This may not exist
+
         // If the thunk does not exist, the function will return IntPtr.Zero.
         private protected virtual IntPtr GetThunk(int whichThunk)
         {
@@ -504,7 +503,7 @@ namespace System
                 RuntimeHelpers.GetHashCode(_helperObject),
                 FunctionPointerOps.GetHashCode(_extraFunctionPointerOrData),
                 FunctionPointerOps.GetHashCode(_methodPtr),
-                ReferenceEquals(_target, this) ? RuntimeHelpers.GetHashCode(_target) : 0);
+                ReferenceEquals(_target, this) ? 0 : RuntimeHelpers.GetHashCode(_target));
         }
     }
 }
