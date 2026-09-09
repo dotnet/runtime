@@ -174,17 +174,7 @@ namespace System.CommandLine
                 // Normalize instruction set format to include implied +.
                 for (int i = 0; i < instructionSetParamsInput.Length; i++)
                 {
-                    instructionSet = instructionSetParamsInput[i].Trim();
-
-                    if (string.IsNullOrEmpty(instructionSet))
-                        throw new CommandLineException(string.Format(mustNotBeMessage, ""));
-
-                    char firstChar = instructionSet[0];
-
-                    if ((firstChar != '+') && (firstChar != '-'))
-                    {
-                        instructionSet = "+" + instructionSet;
-                    }
+                    instructionSet = NormalizeInstructionSetSpecifier(instructionSetParamsInput[i], mustNotBeMessage);
 
                     if (instructionSet == "+optimistic")
                     {
@@ -202,19 +192,7 @@ namespace System.CommandLine
 
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
-                    instructionSet = instructionSetSpecifier.Substring(1);
-
-                    bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
-                    if (enabled)
-                    {
-                        if (!instructionSetSupportBuilder.AddSupportedInstructionSet(instructionSet))
-                            throw new CommandLineException(string.Format(mustNotBeMessage, instructionSet));
-                    }
-                    else
-                    {
-                        if (!instructionSetSupportBuilder.RemoveInstructionSetSupport(instructionSet))
-                            throw new CommandLineException(string.Format(mustNotBeMessage, instructionSet));
-                    }
+                    ApplyInstructionSetSpecifier(instructionSetSupportBuilder, instructionSetSpecifier, mustNotBeMessage);
                 }
             }
 
@@ -347,6 +325,40 @@ namespace System.CommandLine
                 optimisticInstructionSet,
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
                 targetArchitecture);
+        }
+
+        private static string NormalizeInstructionSetSpecifier(string instructionSet, string mustNotBeMessage)
+        {
+            instructionSet = instructionSet.Trim();
+
+            if (string.IsNullOrEmpty(instructionSet))
+                throw new CommandLineException(string.Format(mustNotBeMessage, ""));
+
+            char firstChar = instructionSet[0];
+
+            if ((firstChar != '+') && (firstChar != '-'))
+            {
+                instructionSet = "+" + instructionSet;
+            }
+
+            return instructionSet;
+        }
+
+        private static void ApplyInstructionSetSpecifier(InstructionSetSupportBuilder instructionSetSupportBuilder, string instructionSetSpecifier, string mustNotBeMessage)
+        {
+            string instructionSet = instructionSetSpecifier.Substring(1);
+
+            bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
+            if (enabled)
+            {
+                if (!instructionSetSupportBuilder.AddSupportedInstructionSet(instructionSet))
+                    throw new CommandLineException(string.Format(mustNotBeMessage, instructionSet));
+            }
+            else
+            {
+                if (!instructionSetSupportBuilder.RemoveInstructionSetSupport(instructionSet))
+                    throw new CommandLineException(string.Format(mustNotBeMessage, instructionSet));
+            }
         }
 
         // Produces an InstructionSetSupport where the instruction sets are fixed at compile time: every
