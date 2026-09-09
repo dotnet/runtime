@@ -1,4 +1,4 @@
-<Project TreatAsLocalProperty="RuntimeFlavor;BuildNativeAOTRuntimePack">
+<Project TreatAsLocalProperty="RuntimeFlavor;BuildNativeAOTRuntimePack;LibrariesRuntimeFlavor">
   <PropertyGroup>
     <RuntimeFlavor>CoreCLR</RuntimeFlavor>
     <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
@@ -18,12 +18,54 @@
     <IncludeStaticLibrariesInPack>true</IncludeStaticLibrariesInPack>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <CoreLibConfiguration>$(CoreCLRConfiguration)</CoreLibConfiguration>
+    <CoreLibProject>$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'nativeaot', 'System.Private.CoreLib', 'src', 'System.Private.CoreLib.csproj'))</CoreLibProject>
+    <LibrariesRuntimeFlavor>CoreCLR</LibrariesRuntimeFlavor>
+    <UseRuntimeManagedProjectReferences>true</UseRuntimeManagedProjectReferences>
+    <UseMibcProjectReference>true</UseMibcProjectReference>
+  </PropertyGroup>
+
   <ItemGroup>
     <IgnoredDuplicateType Include="Internal.Runtime.CompilerHelpers.LibraryInitializer" />
-    <FilesToPackage Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
-                    Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')" />
+    <ProjectReference Include="$(CoreClrProjectRoot)nativeaot\System.Private.*\src\*.csproj"
+                      AdditionalProperties="BuildAllProjects=true"
+                      Exclude="$(CoreLibProject)"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_NativeAotRuntimeAssembly"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreCLRConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
+  <Target Name="AddNativeAOTManagedAssembliesToRuntimeFiles"
+          BeforeTargets="AddRuntimeFilesToPackage"
+          DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <_NativeAotRuntimeManagedAssembly Include="@(_RuntimeCoreLibFile);@(_NativeAotRuntimeAssembly)" />
+      <_NativeAotRuntimeAssemblySymbol Include="@(_NativeAotRuntimeManagedAssembly->'%(RootDir)%(Directory)%(Filename).pdb')" />
+      <_NativeAotRuntimeAssemblySymbol Remove="@(_NativeAotRuntimeAssemblySymbol)"
+                                       Condition="!Exists('%(_NativeAotRuntimeAssemblySymbol.Identity)')" />
+      <RuntimeFiles Include="@(_NativeAotRuntimeManagedAssembly);@(_NativeAotRuntimeAssemblySymbol)"
+                    IsNative="true" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ResolveRuntimeMibcFile"
+          DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <RuntimeMibcFile Include="@(MergedMibcFile)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddMibcFileToNativeAOTPackage"
+          BeforeTargets="GetFilesToPackage"
+          DependsOnTargets="ResolveRuntimeMibcFile">
+    <ItemGroup>
+      <FilesToPackage Include="@(RuntimeMibcFile)"
+                      Condition="Exists('%(RuntimeMibcFile.Identity)')" />
+    </ItemGroup>
+  </Target>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
 

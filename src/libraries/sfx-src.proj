@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="@(NetCoreAppLibrarySourceProject)" />
+    <ProjectReference Update="$(CoreLibProject)"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor" />
   </ItemGroup>
 
 </Project>

@@ -44,6 +44,27 @@
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <CoreLibConfiguration>$(MonoConfiguration)</CoreLibConfiguration>
+    <LibrariesRuntimeFlavor Condition="'$(LibrariesRuntimeFlavor)' == ''">Mono</LibrariesRuntimeFlavor>
+    <UseRuntimeManagedProjectReferences>true</UseRuntimeManagedProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+  <Target Name="AddMonoCoreLibToRuntimeFiles"
+          BeforeTargets="AddRuntimeFilesToPackage"
+          DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <_RuntimeCoreLibSymbol Include="@(_RuntimeCoreLibFile->'%(RootDir)%(Directory)%(Filename).pdb')" />
+      <_RuntimeCoreLibSymbol Remove="@(_RuntimeCoreLibSymbol)"
+                             Condition="!Exists('%(_RuntimeCoreLibSymbol.Identity)')" />
+      <RuntimeFiles Include="@(_RuntimeCoreLibFile);@(_RuntimeCoreLibSymbol)"
+                    IsNative="true" />
+    </ItemGroup>
+  </Target>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
 
   <Target Name="AddMonoRuntimeFiles" AfterTargets="AddRuntimeFilesToPackage">

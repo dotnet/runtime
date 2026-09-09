@@ -1,20 +1,25 @@
 <Project>
-  <Import Project="$(LibrariesProjectRoot)NetCoreAppLibraryProjectReferences.props" />
-
   <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)"
+                      AdditionalProperties="BuildAllProjects=true"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_RuntimeCoreLibFile"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreLibConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="$(SharedNativeRoot)libs\build-native.proj"
-                      AdditionalProperties="RuntimeFlavor=$(_NetCoreAppLibrariesRuntimeFlavor)"
+                      AdditionalProperties="RuntimeFlavor=$(LibrariesRuntimeFlavor)"
                       GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
                       ReferenceOutputAssembly="false"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)"
                       SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)sfx-src.proj"
-                      AdditionalProperties="RuntimeFlavor=$(_NetCoreAppLibrariesRuntimeFlavor)"
-                      GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
+                      AdditionalProperties="RuntimeFlavor=$(LibrariesRuntimeFlavor)"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_NetCoreAppLibrarySourceAssembly"
                       ReferenceOutputAssembly="false"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)"
-                      SkipGetTargetFrameworkProperties="true"
-                      OutputItemType="_NetCoreAppLibrarySourceAssembly" />
+                      SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -52,7 +57,8 @@
     <_SymbolFilesToPackage Include="@(_HostSymbolFiles->Exists())" IsNative="true" />
   </ItemGroup>
 
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+  <Target Name="AddRuntimeFilesToPackage"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>

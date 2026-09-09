@@ -1,19 +1,7 @@
 <Project>
-  <!-- Accept override paths for live artifacts. -->
+  <!-- Set up live asset paths. -->
   <PropertyGroup>
-    <CoreCLRArtifactsPath Condition="'$(CoreCLROverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLRArtifactsPath>
-    <MonoArtifactsPath Condition="'$(MonoOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(MonoOverridePath)'))</MonoArtifactsPath>
-    <LibrariesArtifactsPath Condition="'$(LibrariesOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesOverridePath)'))</LibrariesArtifactsPath>
-    <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigurationsOverridePath)'))</LibrariesAllConfigurationsArtifactsPath>
-
-    <!-- Honor the RuntimeArtifactsPath property. -->
-    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</CoreCLRArtifactsPath>
-    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</MonoArtifactsPath>
     <LibrariesTargetOSConfigurationArchitecture Condition="'$(LibrariesTargetOSConfigurationArchitecture)' == ''">$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesTargetOSConfigurationArchitecture>
-  </PropertyGroup>
-
-  <!-- Set up default live asset paths if no overrides provided. -->
-  <PropertyGroup>
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
     <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(TargetOS).$(TargetArchitecture).$(MonoConfiguration)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesArtifactsPath>
@@ -101,7 +89,12 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
-      <_nativeAotRuntimeFiles Include="$(CoreCLRAotSdkDir)*" />
+      <_nativeAotProjectOutputFile Include="@(_RuntimeCoreLibFile);@(_NativeAotRuntimeAssembly)" />
+      <_nativeAotRuntimeAssemblyFiles Include="@(_nativeAotProjectOutputFile->'$(CoreCLRAotSdkDir)%(Filename)%(Extension)');
+                                               @(_nativeAotProjectOutputFile->'$(CoreCLRAotSdkDir)%(Filename).pdb')"
+                                      Condition="'$(UseRuntimeManagedProjectReferences)' == 'true'" />
+      <_nativeAotRuntimeFiles Include="$(CoreCLRAotSdkDir)*"
+                              Exclude="@(_nativeAotRuntimeAssemblyFiles)" />
       <RuntimeFiles Include="@(_nativeAotRuntimeFiles)" Condition="'%(Extension)' != '.xml'">
         <IsNative>true</IsNative>
       </RuntimeFiles>
@@ -114,20 +107,25 @@
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>
-      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
-                             Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')" />
-      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
-                             Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
-      <RuntimeFiles Include="@(_systemPrivateCoreLib)" />
       <RuntimeFiles
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
           $(CoreCLRSharedFrameworkPdbDir)*.dwarf" IsNative="true" />
-      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb')"
-        Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
-      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
-        Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb" />
+      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
+                             Condition="'$(UseRuntimeManagedProjectReferences)' != 'true' and
+                                        Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')" />
+      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
+                             Condition="'$(UseRuntimeManagedProjectReferences)' != 'true' and
+                                        Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and
+                                        '@(_systemPrivateCoreLib)' == ''" />
+      <RuntimeFiles Include="@(_systemPrivateCoreLib)" />
+      <RuntimeFiles Condition="'$(UseRuntimeManagedProjectReferences)' != 'true' and
+                               Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb')"
+                    Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
+      <RuntimeFiles Condition="'$(UseRuntimeManagedProjectReferences)' != 'true' and
+                               Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
+                    Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb" />
 
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
         Include="
@@ -141,7 +139,12 @@
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdac*" />
+      <_monoRuntimeManagedProjectFiles Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll;
+                                                $(MonoArtifactsPath)\System.Private.CoreLib.pdb"
+                                       Condition="'$(UseRuntimeManagedProjectReferences)' == 'true'" />
+      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*"
+                    Exclude="$(MonoArtifactsPath)\*cdac*;
+                             @(_monoRuntimeManagedProjectFiles)" />
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>
