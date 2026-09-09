@@ -5525,7 +5525,7 @@ AdjustContextForJITHelpers(
         //
         // Question: Why do we unwind before determining whether we will handle the exception or not?
         UnwindFrameChain(GetThread(), (Frame*)GetSP(pContext));
-        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext);
+        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord, pContext);
 
         if (fShouldHandleManagedFault)
         {
