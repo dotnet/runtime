@@ -106,7 +106,6 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(sharedSecretBuffer);
                 CryptographicOperations.ZeroMemory(keyBuffer);
-                CryptographicOperations.ZeroMemory(baseNonceBuffer);
                 CryptographicOperations.ZeroMemory(exporterSecretBuffer);
             }
         }
@@ -159,7 +158,6 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(sharedSecretBuffer);
                 CryptographicOperations.ZeroMemory(keyBuffer);
-                CryptographicOperations.ZeroMemory(baseNonceBuffer);
                 CryptographicOperations.ZeroMemory(exporterSecretBuffer);
             }
         }
@@ -214,7 +212,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    return new HpkeSenderImplementation(Suite, aead, baseNonce);
+                    return new HpkeSenderImplementation(Suite, aead, kdf, baseNonce, exporterSecret);
                 }
                 catch
                 {
@@ -226,7 +224,6 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(sharedSecretBuffer);
                 CryptographicOperations.ZeroMemory(keyBuffer);
-                CryptographicOperations.ZeroMemory(baseNonceBuffer);
                 CryptographicOperations.ZeroMemory(exporterSecretBuffer);
             }
         }
@@ -279,7 +276,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    return new HpkeRecipientImplementation(Suite, aead, baseNonce);
+                    return new HpkeRecipientImplementation(Suite, aead, kdf, baseNonce, exporterSecret);
                 }
                 catch
                 {
@@ -291,7 +288,6 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(sharedSecretBuffer);
                 CryptographicOperations.ZeroMemory(keyBuffer);
-                CryptographicOperations.ZeroMemory(baseNonceBuffer);
                 CryptographicOperations.ZeroMemory(exporterSecretBuffer);
             }
         }
@@ -310,19 +306,26 @@ namespace System.Security.Cryptography
     internal sealed class HpkeSenderImplementation : HpkeSender
     {
         private readonly HpkeManagedAeadAdapter _aeadAdapter;
+        private readonly HpkeManagedKdfAdapter _kdfAdapter;
         private readonly byte[] _baseNonce;
+        private readonly FixedMemoryKeyBox _exporterSecret;
         private ulong _sequenceNumber;
 
         internal HpkeSenderImplementation(
             HpkeSuite suite,
             HpkeManagedAeadAdapter aeadAdapter,
-            ReadOnlySpan<byte> baseNonce) : base(suite)
+            HpkeManagedKdfAdapter kdfAdapter,
+            ReadOnlySpan<byte> baseNonce,
+            ReadOnlySpan<byte> exporterSecret) : base(suite)
         {
             Debug.Assert(baseNonce.Length == suite.AeadMetadata.Nn);
             Debug.Assert(baseNonce.Length >= sizeof(ulong));
+            Debug.Assert(exporterSecret.Length == suite.KdfMetadata.Nh);
 
             _baseNonce = baseNonce.ToArray();
+            _exporterSecret = new FixedMemoryKeyBox(exporterSecret);
             _aeadAdapter = aeadAdapter;
+            _kdfAdapter = kdfAdapter;
         }
 
         protected override void SealCore(
@@ -337,35 +340,33 @@ namespace System.Security.Cryptography
 
             const int MaxStackNonceLength = 12;
             Span<byte> nonceBuffer = stackalloc byte[MaxStackNonceLength];
+            Span<byte> nonce = nonceBuffer.Slice(0, _baseNonce.Length);
+            _baseNonce.AsSpan().CopyTo(nonce);
 
-            try
-            {
-                Span<byte> nonce = nonceBuffer.Slice(0, _baseNonce.Length);
-                _baseNonce.AsSpan().CopyTo(nonce);
+            // The zero-padded sequence number only affects the final eight nonce bytes.
+            // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
+            Span<byte> sequenceBytes = nonce.Slice(nonce.Length - sizeof(ulong));
+            BinaryPrimitives.WriteUInt64BigEndian(
+                sequenceBytes,
+                BinaryPrimitives.ReadUInt64BigEndian(sequenceBytes) ^ _sequenceNumber);
 
-                // The zero-padded sequence number only affects the final eight nonce bytes.
-                // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
-                Span<byte> sequenceBytes = nonce.Slice(nonce.Length - sizeof(ulong));
-                BinaryPrimitives.WriteUInt64BigEndian(
-                    sequenceBytes,
-                    BinaryPrimitives.ReadUInt64BigEndian(sequenceBytes) ^ _sequenceNumber);
-
-                _aeadAdapter.Encrypt(
-                    plaintext,
-                    nonce,
-                    associatedData,
-                    ciphertext.Slice(0, plaintext.Length),
-                    ciphertext.Slice(plaintext.Length));
-                _sequenceNumber++;
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(nonceBuffer);
-            }
+            _aeadAdapter.Encrypt(
+                plaintext,
+                nonce,
+                associatedData,
+                ciphertext.Slice(0, plaintext.Length),
+                ciphertext.Slice(plaintext.Length));
+            _sequenceNumber++;
         }
 
-        protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination) =>
-            throw new NotImplementedException();
+        protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
+        {
+            _exporterSecret.UseKey(
+                _kdfAdapter,
+                exporterContext,
+                destination,
+                static (kdf, context, output, key) => kdf.ExportSecret(key, context, output));
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -377,7 +378,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    CryptographicOperations.ZeroMemory(_baseNonce);
+                    _exporterSecret.Dispose();
                 }
             }
 
@@ -388,19 +389,26 @@ namespace System.Security.Cryptography
     internal sealed class HpkeRecipientImplementation : HpkeRecipient
     {
         private readonly HpkeManagedAeadAdapter _aeadAdapter;
+        private readonly HpkeManagedKdfAdapter _kdfAdapter;
         private readonly byte[] _baseNonce;
+        private readonly FixedMemoryKeyBox _exporterSecret;
         private ulong _sequenceNumber;
 
         internal HpkeRecipientImplementation(
             HpkeSuite suite,
             HpkeManagedAeadAdapter aeadAdapter,
-            ReadOnlySpan<byte> baseNonce) : base(suite)
+            HpkeManagedKdfAdapter kdfAdapter,
+            ReadOnlySpan<byte> baseNonce,
+            ReadOnlySpan<byte> exporterSecret) : base(suite)
         {
             Debug.Assert(baseNonce.Length == suite.AeadMetadata.Nn);
             Debug.Assert(baseNonce.Length >= sizeof(ulong));
+            Debug.Assert(exporterSecret.Length == suite.KdfMetadata.Nh);
 
             _baseNonce = baseNonce.ToArray();
+            _exporterSecret = new FixedMemoryKeyBox(exporterSecret);
             _aeadAdapter = aeadAdapter;
+            _kdfAdapter = kdfAdapter;
         }
 
         protected override void OpenCore(
@@ -415,35 +423,33 @@ namespace System.Security.Cryptography
 
             const int MaxStackNonceLength = 12;
             Span<byte> nonceBuffer = stackalloc byte[MaxStackNonceLength];
+            Span<byte> nonce = nonceBuffer.Slice(0, _baseNonce.Length);
+            _baseNonce.AsSpan().CopyTo(nonce);
 
-            try
-            {
-                Span<byte> nonce = nonceBuffer.Slice(0, _baseNonce.Length);
-                _baseNonce.AsSpan().CopyTo(nonce);
+            // The zero-padded sequence number only affects the final eight nonce bytes.
+            // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
+            Span<byte> sequenceBytes = nonce.Slice(nonce.Length - sizeof(ulong));
+            BinaryPrimitives.WriteUInt64BigEndian(
+                sequenceBytes,
+                BinaryPrimitives.ReadUInt64BigEndian(sequenceBytes) ^ _sequenceNumber);
 
-                // The zero-padded sequence number only affects the final eight nonce bytes.
-                // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
-                Span<byte> sequenceBytes = nonce.Slice(nonce.Length - sizeof(ulong));
-                BinaryPrimitives.WriteUInt64BigEndian(
-                    sequenceBytes,
-                    BinaryPrimitives.ReadUInt64BigEndian(sequenceBytes) ^ _sequenceNumber);
-
-                _aeadAdapter.Decrypt(
-                    ciphertext.Slice(0, plaintext.Length),
-                    nonce,
-                    associatedData,
-                    ciphertext.Slice(plaintext.Length),
-                    plaintext);
-                _sequenceNumber++;
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(nonceBuffer);
-            }
+            _aeadAdapter.Decrypt(
+                ciphertext.Slice(0, plaintext.Length),
+                nonce,
+                associatedData,
+                ciphertext.Slice(plaintext.Length),
+                plaintext);
+            _sequenceNumber++;
         }
 
-        protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination) =>
-            throw new NotImplementedException();
+        protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
+        {
+            _exporterSecret.UseKey(
+                _kdfAdapter,
+                exporterContext,
+                destination,
+                static (kdf, context, output, key) => kdf.ExportSecret(key, context, output));
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -455,7 +461,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    CryptographicOperations.ZeroMemory(_baseNonce);
+                    _exporterSecret.Dispose();
                 }
             }
 
