@@ -13,6 +13,7 @@ namespace System.Formats.Cbor
 
         private ReadOnlyMemory<byte> _data;
         private int _offset;
+        private bool _isFinalBlock = true; // false iff the caller has declared that more data may follow via SlideData
 
         private Stack<StackFrame>? _nestedDataItems;
         private CborMajorType? _currentMajorType; // major type of the currently written data item. Null iff at the root context
@@ -57,6 +58,17 @@ namespace System.Formats.Cbor
         /// <param name="data">The CBOR-encoded data to read.</param>
         /// <param name="options">The options that control reading behavior.</param>
         public CborReader(ReadOnlyMemory<byte> data, CborReaderOptions? options)
+            : this(data, options, isFinalBlock: true)
+        {
+        }
+
+        /// <summary>Initializes a <see cref="CborReader" /> instance over the specified <paramref name="data" /> with the given options.</summary>
+        /// <param name="data">The CBOR-encoded data to read.</param>
+        /// <param name="options">The options that control reading behavior.</param>
+        /// <param name="isFinalBlock"><see langword="true" /> to indicate that <paramref name="data" /> contains the complete remainder of the document(s) to read;
+        /// <see langword="false" /> if more data may be supplied using <see cref="SlideData" />.</param>
+        /// <exception cref="ArgumentException"><paramref name="isFinalBlock" /> is <see langword="false" /> and the conformance mode is not <see cref="CborConformanceMode.Lax" />.</exception>
+        public CborReader(ReadOnlyMemory<byte> data, CborReaderOptions? options, bool isFinalBlock)
         {
             CborConformanceMode conformanceMode = CborConformanceMode.Strict;
             bool allowMultipleRootLevelValues = false;
@@ -71,7 +83,10 @@ namespace System.Formats.Cbor
                 Debug.Assert(maxDepth >= -1);
             }
 
+            ValidateIsFinalBlock(isFinalBlock, conformanceMode);
+
             _data = data;
+            _isFinalBlock = isFinalBlock;
             ConformanceMode = conformanceMode;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             MaxDepth = maxDepth < 0 ? DefaultMaxDepth : maxDepth;
@@ -101,6 +116,8 @@ namespace System.Formats.Cbor
         /// <exception cref="CborContentException"><para>The data item is not a valid CBOR data item encoding.</para>
         /// <para>-or-</para>
         /// <para>The CBOR encoding is not valid under the current conformance mode.</para></exception>
+        /// <remarks>The returned memory is a view over the buffer supplied to the reader. If the caller reuses that buffer,
+        /// for example when supplying new data with <see cref="SlideData" />, the contents of the returned memory may be overwritten.</remarks>
         public ReadOnlyMemory<byte> ReadEncodedValue(bool disableConformanceModeChecks = false)
         {
             // keep a snapshot of the current offset
@@ -118,12 +135,30 @@ namespace System.Formats.Cbor
         /// <see cref="ConformanceMode"/> and <see cref="AllowMultipleRootLevelValues"/> are unchanged.
         /// </summary>
         /// <param name="data">The CBOR-encoded data to read.</param>
+        /// <remarks><paramref name="data" /> is treated as the final block: subsequent calls to <see cref="SlideData" /> throw.
+        /// Use <see cref="Reset(ReadOnlyMemory{byte}, bool)" /> to start reading a new document incrementally.</remarks>
         public void Reset(ReadOnlyMemory<byte> data)
+        {
+            Reset(data, isFinalBlock: true);
+        }
+
+        /// <summary>
+        /// Resets the <see cref="CborReader"/> instance over the specified <paramref name="data"/> with unchanged configuration.
+        /// <see cref="ConformanceMode"/> and <see cref="AllowMultipleRootLevelValues"/> are unchanged.
+        /// </summary>
+        /// <param name="data">The CBOR-encoded data to read.</param>
+        /// <param name="isFinalBlock"><see langword="true" /> to indicate that <paramref name="data" /> contains the complete remainder of the document(s) to read;
+        /// <see langword="false" /> if more data may be supplied using <see cref="SlideData" />.</param>
+        /// <exception cref="ArgumentException"><paramref name="isFinalBlock" /> is <see langword="false" /> and the conformance mode is not <see cref="CborConformanceMode.Lax" />.</exception>
+        public void Reset(ReadOnlyMemory<byte> data, bool isFinalBlock)
         {
             // ConformanceMode and AllowMultipleRootLevelValues are set in ctor, they remain unchanged.
 
+            ValidateIsFinalBlock(isFinalBlock, ConformanceMode);
+
             _data = data;
             _offset = 0;
+            _isFinalBlock = isFinalBlock;
 
             _nestedDataItems?.Clear();
             _currentMajorType = default;
@@ -141,6 +176,49 @@ namespace System.Formats.Cbor
             // or _indefiniteLengthStringRangeAllocation.
         }
 
+        /// <summary>
+        /// Replaces the buffer with data that continues from the reader's current position, preserving the nesting context.
+        /// </summary>
+        /// <param name="data">The CBOR-encoded data to continue reading from. It must start with the unconsumed bytes
+        /// of the previous buffer (see <see cref="BytesRemaining" />), followed by any newly available data.</param>
+        /// <param name="isFinalBlock"><see langword="true" /> to indicate that <paramref name="data" /> contains the complete remainder of the document(s) to read;
+        /// <see langword="false" /> if more data may be supplied by a subsequent call to this method.</param>
+        /// <exception cref="InvalidOperationException">The reader's current data was supplied as the final block.</exception>
+        /// <exception cref="ArgumentException"><paramref name="data" /> is shorter than the unconsumed bytes of the current buffer (see <see cref="BytesRemaining" />).</exception>
+        /// <remarks>
+        /// <para>The caller is responsible for preserving all unread bytes, in order, at the beginning of <paramref name="data" />.
+        /// Only the length of the new buffer is validated, not its contents.</para>
+        /// <para><see cref="ReadOnlyMemory{T}" /> values previously returned by methods such as <see cref="ReadEncodedValue" /> are views
+        /// over the reader's previous buffer; if the caller reuses that buffer, their contents may be overwritten.</para>
+        /// <para>Calling this method after a complete document has been read does not resume reading; the reader continues to report
+        /// <see cref="CborReaderState.Finished" />. Use <see cref="Reset(ReadOnlyMemory{byte}, bool)" /> to begin reading a new document.</para>
+        /// </remarks>
+        public void SlideData(ReadOnlyMemory<byte> data, bool isFinalBlock)
+        {
+            if (_isFinalBlock)
+            {
+                throw new InvalidOperationException(SR.Cbor_Reader_CannotSlideDataOnFinalBlock);
+            }
+
+            if (data.Length < BytesRemaining)
+            {
+                throw new ArgumentException(SR.Cbor_Reader_SlideDataBufferTooSmall, nameof(data));
+            }
+
+            // Conformance bookkeeping (frame offsets, key encoding ranges) is buffer-relative
+            // and becomes stale after a slide. This is safe because non-final mode requires
+            // Lax conformance, which never dereferences it; enforced in the constructor
+            // and Reset, asserted below. A conformance mode that reads this bookkeeping
+            // must rebase it here before supporting non-final blocks.
+            Debug.Assert(ConformanceMode == CborConformanceMode.Lax);
+            Debug.Assert(_keyEncodingRanges is null);
+
+            _data = data;
+            _offset = 0;
+            _isFinalBlock = isFinalBlock;
+            _cachedState = CborReaderState.Undefined;
+        }
+
         private CborInitialByte PeekInitialByte()
         {
             if (_definiteLength - _itemsRead == 0)
@@ -150,7 +228,14 @@ namespace System.Formats.Cbor
 
             if (_offset == _data.Length)
             {
-                if (_currentMajorType is null && _definiteLength is null && _offset > 0)
+                if (!_isFinalBlock)
+                {
+                    // more data may follow; PeekState reports this position as NeedsMoreData
+                    throw new CborContentException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+                }
+
+                // check _itemsRead in addition to _offset since SlideData resets the offset to 0
+                if (_currentMajorType is null && _definiteLength is null && (_offset > 0 || _itemsRead > 0))
                 {
                     // we are at the end of a well-formed sequence of root-level CBOR values
                     throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
@@ -328,6 +413,17 @@ namespace System.Formats.Cbor
             }
         }
 
+        private static void ValidateIsFinalBlock(bool isFinalBlock, CborConformanceMode conformanceMode)
+        {
+            // Non-Lax modes currently track map key encodings as offsets into the buffer, which
+            // become stale when SlideData discards consumed bytes. Supporting them requires reader-owned
+            // key copies; so we are currently restricting incremental reading to Lax.
+            if (!isFinalBlock && conformanceMode != CborConformanceMode.Lax)
+            {
+                throw new ArgumentException(SR.Cbor_Reader_NotFinalBlockRequiresLaxConformance, nameof(isFinalBlock));
+            }
+        }
+
         private readonly struct StackFrame
         {
             public StackFrame(
@@ -385,6 +481,7 @@ namespace System.Formats.Cbor
                 int offset,
                 int frameOffset,
                 int itemsRead,
+                bool isTagContext,
                 int? currentKeyOffset,
                 (int Offset, int Length)? previousKeyEncodingRange)
 
@@ -393,6 +490,7 @@ namespace System.Formats.Cbor
                 Offset = offset;
                 FrameOffset = frameOffset;
                 ItemsRead = itemsRead;
+                IsTagContext = isTagContext;
                 CurrentKeyOffset = currentKeyOffset;
                 PreviousKeyEncodingRange = previousKeyEncodingRange;
             }
@@ -401,6 +499,7 @@ namespace System.Formats.Cbor
             public int Offset { get; }
             public int FrameOffset { get; }
             public int ItemsRead { get; }
+            public bool IsTagContext { get; }
 
             public int? CurrentKeyOffset { get; }
             public (int Offset, int Length)? PreviousKeyEncodingRange { get; }
@@ -413,6 +512,7 @@ namespace System.Formats.Cbor
                 offset: _offset,
                 frameOffset: _frameOffset,
                 itemsRead: _itemsRead,
+                isTagContext: _isTagContext,
                 currentKeyOffset: _currentKeyOffset,
                 previousKeyEncodingRange: _previousKeyEncodingRange);
         }
@@ -455,6 +555,7 @@ namespace System.Formats.Cbor
 
             _offset = checkpoint.Offset;
             _itemsRead = checkpoint.ItemsRead;
+            _isTagContext = checkpoint.IsTagContext;
             _previousKeyEncodingRange = checkpoint.PreviousKeyEncodingRange;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
             _cachedState = CborReaderState.Undefined;
