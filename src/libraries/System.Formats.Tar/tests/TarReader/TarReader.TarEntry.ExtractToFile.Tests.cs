@@ -15,24 +15,22 @@ namespace System.Formats.Tar.Tests
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream archiveStream = GetStrangeTarMemoryStream("prefixDotSlashAndCurrentFolderEntry");
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                string rootPath = Path.TrimEndingDirectorySeparator(root.Path);
-                TarEntry entry;
-                while ((entry = await GetNextEntry(reader, async: async)) != null)
+            string rootPath = Path.TrimEndingDirectorySeparator(root.Path);
+            TarEntry entry;
+            while ((entry = await GetNextEntry(reader, async: async)) != null)
+            {
+                Assert.NotNull(entry);
+                Assert.StartsWith("./", entry.Name);
+                string entryPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Join(rootPath, entry.Name)));
+                if (entryPath != rootPath)
                 {
-                    Assert.NotNull(entry);
-                    Assert.StartsWith("./", entry.Name);
-                    string entryPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Join(rootPath, entry.Name)));
-                    if (entryPath != rootPath)
-                    {
-                        await ExtractToFile(entry, entryPath, overwrite: true, async);
-                        Assert.True(Path.Exists(entryPath), $"Entry was not extracted: {entryPath}");
-                    }
+                    await ExtractToFile(entry, entryPath, overwrite: true, async);
+                    Assert.True(Path.Exists(entryPath), $"Entry was not extracted: {entryPath}");
                 }
-                        }
+            }
         }
     }
 }
