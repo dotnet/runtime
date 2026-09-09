@@ -25,6 +25,35 @@ namespace System.Reflection.Tests
 
         protected override bool IsExceptionWrapped => true;
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Invoke_AllocatingAndExistingInstanceAcrossTiers(bool valueArgument)
+        {
+            Type argumentType = valueArgument ? typeof(int) : typeof(object);
+            ConstructorInfo constructor = typeof(MutableConstructorTarget).GetConstructor(new[] { argumentType });
+            var existing = new MutableConstructorTarget(null);
+            object value = valueArgument ? 42 : new object();
+            object[] arguments = { value };
+
+            for (int i = 0; i < 150; i++)
+            {
+                var allocated = (MutableConstructorTarget)constructor.Invoke(arguments);
+                Assert.NotSame(existing, allocated);
+                Assert.Equal(value, allocated.Value);
+                Assert.Null(constructor.Invoke(existing, arguments));
+                Assert.Equal(value, existing.Value);
+            }
+        }
+
+        public sealed class MutableConstructorTarget
+        {
+            public object? Value;
+
+            public MutableConstructorTarget(object? value) => Value = value;
+            public MutableConstructorTarget(int value) => Value = value;
+        }
+
         [Fact]
         public void ConstructorName()
         {
