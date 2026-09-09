@@ -9,6 +9,7 @@
 //
 
 
+using System;
 using TestLibrary;
 namespace Runtime_76273;
 
@@ -31,9 +32,15 @@ public class Program
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90372", TestRuntimes.Mono)]
     public static void TestEntryPoint()
     {
+        string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return;
+        }
+
         CollectibleALC alc = new CollectibleALC();
 
-        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
         System.Reflection.MethodInfo mi = asm.GetType(typeof(Program).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
 
