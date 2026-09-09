@@ -11653,7 +11653,9 @@ public:
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
-#ifdef CONFIGURABLE_ARM_ABI
+#if defined(CONFIGURABLE_ARM_ABI) || defined(TARGET_RISCV64)
+        // On RISCV64 the lp64 soft-float ABI is selected per compilation by
+        // JIT_FLAG_SOFTFP_ABI (no-F targets); see compInitOptions.
         bool compUseSoftFP = false;
 #else
 #ifdef ARM_SOFTFP

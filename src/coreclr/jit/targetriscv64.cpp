@@ -78,7 +78,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             passedByRef = true;
             passedSize  = TARGET_POINTER_SIZE;
         }
-        else if (!structLayout->IsBlockLayout())
+        else if (!structLayout->IsBlockLayout() && !comp->opts.compUseSoftFP)
         {
             lowering = comp->GetFpStructLowering(structLayout->GetClassHandle());
             if (!lowering->byIntegerCallConv)
@@ -100,7 +100,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
     {
         passedSize = genTypeSize(type);
         assert(passedSize <= TARGET_POINTER_SIZE);
-        floatFields = varTypeIsFloating(type) ? 1 : 0;
+        floatFields = (varTypeIsFloating(type) && !comp->opts.compUseSoftFP) ? 1 : 0;
     }
 
     assert((floatFields > 0) || (intFields == 0));
