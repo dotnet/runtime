@@ -1134,6 +1134,15 @@ PhaseStatus AsyncTransformation::Run()
     if (awaits.NumNormalAwaits <= 0)
     {
         assert(continuationMemberOffsets.Empty());
+        if ((awaits.NumTailAwaits > 0) && m_compiler->doesMethodHavePatchpoints())
+        {
+            // Inlining a tail await can introduce non-tail awaits in the OSR version.
+            // Its continuations still resume through this method.
+            CreateResumptionSwitch(nullptr);
+            m_compiler->fgInvalidateDfsTree();
+            result = PhaseStatus::MODIFIED_EVERYTHING;
+        }
+
         return result;
     }
 
@@ -5009,6 +5018,30 @@ ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compile
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::CreateOSRJumpBB:
+//   Create a block that transfers control to the OSR version on resumption.
+//
+// Parameters:
+//   osrAddress - The address of the OSR version.
+//
+// Returns:
+//   The block containing the non-local jump.
+//
+BasicBlock* AsyncTransformation::CreateOSRJumpBB(GenTree* osrAddress)
+{
+    BasicBlock* jmpOSR = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
+    jmpOSR->bbSetRunRarely();
+    jmpOSR->clearTryIndex();
+    jmpOSR->clearHndIndex();
+
+    JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
+
+    GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
+    LIR::AsRange(jmpOSR).InsertAtEnd(LIR::SeqTree(m_compiler, jmpOsr));
+    return jmpOSR;
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::CreateResumptionSwitch:
 //   Create the IR for the entry of the function that checks the continuation
 //   and dispatches on its state number.
@@ -5026,7 +5059,17 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
 
     FlowEdge* resumingEdge;
 
-    if (m_states.size() == 1)
+    if (m_states.empty())
+    {
+        assert(m_compiler->doesMethodHavePatchpoints());
+
+        // Tier0 cannot create its own continuation, so a non-null continuation
+        // must belong to an OSR version that acquired awaits through inlining.
+        continuationArg     = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        GenTree* osrAddress = LoadFromOffset(continuationArg, OFFSETOF__CORINFO_Continuation__data, TYP_I_IMPL);
+        resumingEdge        = m_compiler->fgAddRefPred(CreateOSRJumpBB(osrAddress), newEntryBB);
+    }
+    else if (m_states.size() == 1)
     {
         JITDUMP("  Redirecting entry " FMT_BB " directly to " FMT_BB " as it is the only resumption block\n",
                 newEntryBB->bbNum, m_states[0].ResumptionBB->bbNum);
@@ -5119,16 +5162,13 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         StoreResumedDef(commonAsyncResumedDef, resumingEdge->getDestinationBlock());
     }
 
-    if (m_compiler->doesMethodHavePatchpoints())
+    if (m_compiler->doesMethodHavePatchpoints() && !m_states.empty())
     {
         JITDUMP("  Method has patch points...\n");
         // If we have patchpoints then first check if we need to resume in the OSR version.
-        BasicBlock* jmpOSR = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
-        jmpOSR->bbSetRunRarely();
-        jmpOSR->clearTryIndex();
-        jmpOSR->clearHndIndex();
-
-        JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
+        unsigned osrAddressLclNum = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
+        m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
+        BasicBlock* jmpOSR = CreateOSRJumpBB(m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL));
 
         BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
         BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
@@ -5152,9 +5192,7 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
         unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
         GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
-        unsigned osrAddressLclNum         = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
-        m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
-        GenTree* storeOsrAddress = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
+        GenTree* storeOsrAddress          = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
         LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOsrAddress));
 
         osrAddress      = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
@@ -5162,11 +5200,6 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         GenTree* neZero = m_compiler->gtNewOperNode(GT_NE, TYP_INT, osrAddress, zero);
         GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neZero);
         LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(osrAddress, zero, neZero, jtrue);
-
-        osrAddress = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
-
-        GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
-        LIR::AsRange(jmpOSR).InsertAtEnd(LIR::SeqTree(m_compiler, jmpOsr));
     }
     else if (m_compiler->opts.IsOSR())
     {
