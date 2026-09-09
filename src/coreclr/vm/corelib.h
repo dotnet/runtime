@@ -444,6 +444,8 @@ END_ILLINK_FEATURE_SWITCH()
 
 #ifdef FEATURE_COMWRAPPERS
 DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
+DEFINE_CLASS(COM_OBJECT_BASE,            Interop,          ComObjectBase)
+DEFINE_FIELD(COM_OBJECT_BASE, NATIVE_OBJECT_WRAPPER, _nativeObjectWrapper)
 DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
 DEFINE_CLASS(MANAGED_OBJECT_WRAPPER_HOLDER,Interop,         ComWrappers+ManagedObjectWrapperHolder)
 DEFINE_CLASS(NATIVE_OBJECT_WRAPPER,       Interop,         ComWrappers+NativeObjectWrapper) // cDAC depends on the exact namespace and name
