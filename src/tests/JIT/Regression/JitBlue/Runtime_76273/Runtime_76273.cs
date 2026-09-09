@@ -24,14 +24,13 @@ public class Program
 {
     public static IRuntime s_rt = new Runtime();
     public static ulong s_3;
-    public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90372", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90372", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(Program), nameof(IsBrowserReadyToRun))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBrowser), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     public static void TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();

@@ -20,7 +20,6 @@ public unsafe class Program
     private Guid field;
 
     private static Program s_Instance = new ();
-    public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
 
     private static Program GetClass() => throw new ProgramException();
 
@@ -158,7 +157,7 @@ public unsafe class Program
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133219", typeof(Program), nameof(IsBrowserReadyToRun))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133219", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBrowser), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     public static int TestEntryPoint()
     {
         foreach (var method in typeof(Program)
