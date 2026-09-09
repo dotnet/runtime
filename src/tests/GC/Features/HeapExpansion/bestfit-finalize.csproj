@@ -9,6 +9,8 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- The test timeouts when running tests in parallel -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133469 -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="bestfit-finalize.cs" />

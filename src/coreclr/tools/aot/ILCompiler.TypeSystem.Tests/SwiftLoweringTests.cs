@@ -1,26 +1,22 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Internal.IL;
+using System.Reflection.Metadata;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Xunit;
-using System.Reflection.Metadata;
 
-namespace ILCompiler.Compiler.Tests
+namespace TypeSystemTests
 {
     public class SwiftLoweringTests
     {
         // Keep in sync with ExpectedLoweringAttribute in SwiftTypesSupport.cs
-        enum ExpectedLowering
+        private enum ExpectedLowering
         {
             Float,
             Double,
@@ -32,22 +28,15 @@ namespace ILCompiler.Compiler.Tests
 
         public static IEnumerable<object[]> DiscoverSwiftTypes()
         {
-            var target = new TargetDetails(TargetArchitecture.X64, TargetOS.Windows, TargetAbi.NativeAot);
-            var context  = new CompilerTypeSystemContext(target, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
+            var context = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Windows);
+            ModuleDesc testModule = context.CreateModuleForSimpleName("CoreTestAssembly");
+            context.SetSystemModule(testModule);
 
-            context.InputFilePaths = new Dictionary<string, string> {
-                { "Test.CoreLib", @"Test.CoreLib.dll" },
-                { "ILCompiler.Compiler.Tests.Assets", @"ILCompiler.Compiler.Tests.Assets.dll" },
-                };
-            context.ReferenceFilePaths = new Dictionary<string, string>();
-
-            context.SetSystemModule(context.GetModuleForSimpleName("Test.CoreLib"));
-            var testModule = context.GetModuleForSimpleName("ILCompiler.Compiler.Tests.Assets");
-            foreach (var type in testModule.GetAllTypes())
+            foreach (MetadataType type in testModule.GetAllTypes())
             {
                 if (type is EcmaType { IsValueType: true } ecmaType
-                    && ecmaType.Namespace == "ILCompiler.Compiler.Tests.Assets.SwiftTypes"u8
-                    && ecmaType.GetDecodedCustomAttribute("ILCompiler.Compiler.Tests.Assets.SwiftTypes", "ExpectedLoweringAttribute") is { } expectedLoweringAttribute)
+                    && ecmaType.Namespace == "TypeSystemTests.TestData.SwiftTypes"u8
+                    && ecmaType.GetDecodedCustomAttribute("TypeSystemTests.TestData.SwiftTypes", "ExpectedLoweringAttribute") is { } expectedLoweringAttribute)
                 {
                     // By default, we assume that our lowered representation is meant to be naturally aligned.
                     // For types that are not naturally aligned, the test can specify the offsets.

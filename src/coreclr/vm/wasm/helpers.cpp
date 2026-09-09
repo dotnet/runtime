@@ -1641,15 +1641,15 @@ void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* p
             return nullptr;
     }
 
-    PCODE unboxingStub = LookupPregeneratedThunkByString(keyBuffer);
-    if (unboxingStub == (PCODE)NULL)
+    void* unboxingStub = LookupPortableEntryPointThunk(keyBuffer);
+    if (unboxingStub == nullptr)
     {
         return nullptr;
     }
 
     *ppTargetMethodDesc = pTargetMethodDesc;
     *pTargetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-    return (void*)unboxingStub;
+    return unboxingStub;
 }
 
 void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
