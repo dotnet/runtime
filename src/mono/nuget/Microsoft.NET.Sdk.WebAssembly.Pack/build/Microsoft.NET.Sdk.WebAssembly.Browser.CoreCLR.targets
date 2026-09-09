@@ -105,10 +105,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
       <!-- Tag every copy-local item with trimmed-closure membership (default false so the metadata is always
            defined), then set true for managed assemblies the linker kept. -->
-      <ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)">
         <_WasmInTrimmedClosure>false</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
-      <ReferenceCopyLocalPaths Condition="'%(Extension)' == '.dll' and Exists('$(_WasmTrimmedClosureDir)%(FileName).dll')">
+      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
+                               Condition="'%(Extension)' == '.dll' and Exists('$(_WasmTrimmedClosureDir)%(FileName).dll')">
         <_WasmInTrimmedClosure>true</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
       <!-- Drop assemblies the linker trimmed out of the app closure. -->
