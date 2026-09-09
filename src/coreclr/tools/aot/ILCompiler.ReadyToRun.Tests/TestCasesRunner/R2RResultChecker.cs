@@ -35,6 +35,55 @@ internal static class R2RAssert
         return methods;
     }
 
+    public static bool HasStringThunkWithPrefix(ReadyToRunReader reader, string prefix, out string diagnostic)
+    {
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Any(key => key.StartsWith(prefix, StringComparison.Ordinal) &&
+            (prefix != "U" || (!key.StartsWith("UG", StringComparison.Ordinal) && !key.StartsWith("UM", StringComparison.Ordinal))));
+        diagnostic = found
+            ? $"Found string thunk with prefix '{prefix}'."
+            : $"Expected string thunk with prefix '{prefix}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
+
+    public static bool HasStringThunk(ReadyToRunReader reader, string lookupString, out string diagnostic)
+    {
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Contains(lookupString, StringComparer.Ordinal);
+        diagnostic = found
+            ? $"Found string thunk '{lookupString}'."
+            : $"Expected string thunk '{lookupString}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
+
+    private static List<string> GetStringThunkKeys(ReadyToRunReader reader)
+    {
+        var keys = new List<string>();
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                string signature = entry.Signature.ToString(new SignatureFormattingOptions());
+                const string marker = " (INJECT_STRING_THUNKS";
+                if (!signature.Contains(marker, StringComparison.Ordinal))
+                    continue;
+
+                int start = 0;
+                while ((start = signature.IndexOf('"', start)) >= 0)
+                {
+                    int end = signature.IndexOf('"', start + 1);
+                    if (end < 0)
+                        break;
+
+                    keys.Add(signature.Substring(start + 1, end - start - 1));
+                    start = end + 1;
+                }
+            }
+        }
+
+        return keys;
+    }
+
     /// <summary>
     /// Returns true if the R2R image contains a manifest or MSIL assembly reference with the given name.
     /// </summary>
@@ -1070,10 +1119,21 @@ internal static class R2RAssert
     /// Optionally checks method-level generic instantiation args.
     /// </summary>
     public static bool HasCompiledMethod(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: false, out diagnostic);
+
+    /// <summary>
+    /// Returns true if the image contains a precompiled unboxing thunk with a body for a value type
+    /// method.
+    /// </summary>
+    public static bool HasUnboxingThunk(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: true, out diagnostic);
+
+    private static bool HasCompiledMethodCore(ReadyToRunReader reader, string declaringType, string methodName, string[]? instanceArgs, bool unboxingThunk, out string diagnostic)
     {
         List<ReadyToRunMethod> allMethods = GetAllMethods(reader);
         List<ReadyToRunMethod> matchingMethods = allMethods
             .Where(m => m.DeclaringType == declaringType && m.Name == methodName)
+            .Where(m => m.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal) == unboxingThunk)
             .Where(m =>
             {
                 if (instanceArgs is null)
@@ -1092,6 +1152,8 @@ internal static class R2RAssert
         string expected = instanceArgs is null
             ? $"'{declaringType}.{methodName}'"
             : $"'{declaringType}.{methodName}<{string.Join(",", instanceArgs)}>'";
+        if (unboxingThunk)
+            expected = $"unboxing thunk for {expected}";
 
         if (matchingMethods.Count > 0)
         {
@@ -1101,7 +1163,7 @@ internal static class R2RAssert
 
         diagnostic =
             $"Expected compiled method {expected} not found.\n" +
-            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name}"))}";
+            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name} {m.SignatureString}"))}";
         return false;
     }
 

@@ -205,6 +205,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncHelpers.RuntimeAsyncYielder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncProfiler.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\QCallExceptionStatus.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeAsyncTaskContinuation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\StaticsHelpers.cs" />

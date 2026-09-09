@@ -591,6 +591,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IUtf8SpanParsable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LazyOfTTMetadata.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ListBuilder.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimization.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimizationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LocalAppContextSwitches.cs" />
@@ -1035,6 +1036,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DispIdAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DllImportSearchPath.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ErrorHandlerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ErrorWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExtendedLayoutAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExtendedLayoutKind.cs" />
