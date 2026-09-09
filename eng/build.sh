@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic, ohos, tizen, or haiku."
+  echo "                                  linux-musl, linux-bionic, openharmony, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --targetrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -147,7 +147,7 @@ initDistroRid()
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
     # OpenHarmony uses its NDK toolchain, so no rootfs is required either.
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ohos" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "openharmony" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR:-}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
@@ -311,8 +311,8 @@ while [[ $# -gt 0 ]]; do
           os="linux"
           __PortableTargetOS=linux-musl
           ;;
-        ohos)
-          os="ohos" ;;
+        openharmony)
+          os="openharmony" ;;
         haiku)
           os="haiku" ;;
         *)
@@ -631,8 +631,8 @@ cmakeargs="${cmakeargs// /%20}"
 arguments+=("/p:TargetArchitecture=$arch" "/p:BuildArchitecture=$hostArch")
 # Propagate the portable target OS for the linux flavors (linux-musl / linux-bionic)
 # to MSBuild. TargetOS stays 'linux' for those; PortableOS in RuntimeIdentifier.props
-# derives from __PortableTargetOS. ohos needs none of this: its TargetOS is already
-# 'ohos', so PortableOS derives directly from TargetOS (like freebsd/haiku).
+# derives from __PortableTargetOS. openharmony needs none of this: its TargetOS is already
+# 'openharmony', so PortableOS derives directly from TargetOS (like freebsd/haiku).
 if [[ -n "${__PortableTargetOS:-}" ]]; then
   arguments+=("/p:__PortableTargetOS=$__PortableTargetOS")
 fi

@@ -9,7 +9,7 @@
     <!-- To determine PortableOS we use TargetOS.
          TargetOS is not a rid-OS. For example: for Windows it is 'windows' instead of 'win'.
          And, for flavors of Linux, like 'linux-musl' and 'linux-bionic', TargetOS is 'linux'.
-         ohos is its own TargetOS ('ohos'), so PortableOS derives directly from it,
+         openharmony is its own TargetOS ('openharmony'), so PortableOS derives directly from it,
          and it opts into the Linux family flags explicitly below. -->
 
     <PortableOS>$(TargetOS.ToLowerInvariant())</PortableOS>
@@ -49,12 +49,12 @@
     <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
     <TargetsSolaris Condition="'$(TargetOS)' == 'solaris'">true</TargetsSolaris>
     <TargetsHaiku Condition="'$(TargetOS)' == 'haiku'">true</TargetsHaiku>
-    <!-- ohos is its own TargetOS (kernel-agnostic name) but keeps the Linux
+    <!-- openharmony is its own TargetOS (kernel-agnostic name) but keeps the Linux
          family flags: its libc and syscall surface are Linux-compatible. -->
-    <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'ohos'">true</TargetsLinux>
+    <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'openharmony'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(PortableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(PortableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
-    <TargetsOpenHarmony Condition="'$(PortableOS)' == 'ohos'">true</TargetsOpenHarmony>
+    <TargetsOpenHarmony Condition="'$(PortableOS)' == 'openharmony'">true</TargetsOpenHarmony>
     <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(TargetsOpenHarmony)' != 'true'">true</TargetsLinuxGlibc>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
