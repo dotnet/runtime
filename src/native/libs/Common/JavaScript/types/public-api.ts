@@ -207,6 +207,9 @@ export interface Assets {
     coreAssembly: AssemblyAsset[];
     assembly: AssemblyAsset[];
     lazyAssembly?: AssemblyAsset[];
+    // Background-downloaded R2R native-code supplements (browser-wasm CoreCLR split). Each entry's
+    // virtualPath names the owning assembly it attaches to; the route ("name") is "<assembly>.r2r.wasm".
+    lazyR2R?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
     jsModuleDiagnostics?: JsAsset[];
