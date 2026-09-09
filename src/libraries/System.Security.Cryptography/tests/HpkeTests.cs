@@ -1690,9 +1690,13 @@ namespace System.Security.Cryptography.Tests
                         Assert.NotEqual(referenceExport, sender.Export(Array.Empty<byte>(), 32));
                         Assert.NotEqual(referenceExport, sender.Export(new byte[] { 0 }, 32));
                         Assert.False(referenceExport.AsSpan().SequenceEqual(sender.Export(context, 33).AsSpan(0, 32)));
-                        byte[] longContext = new byte[65536];
-                        longContext.AsSpan().Fill(0x39);
-                        Assert.Equal(sender.Export(longContext, 32), recipient.Export(longContext, 32));
+                        // HKDF export framing adds 22 bytes; the first two cases straddle the 256-byte stack limit.
+                        foreach (int contextLength in new[] { 234, 235, 65536 })
+                        {
+                            byte[] longContext = new byte[contextLength];
+                            longContext.AsSpan().Fill(0x39);
+                            Assert.Equal(sender.Export(longContext, 32), recipient.Export(longContext, 32));
+                        }
 
                         AssertExtensions.Throws<ArgumentOutOfRangeException>(
                             "length", () => sender.Export(context, maximumLength + 1));
@@ -2064,6 +2068,154 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(originalContext.AsSpan(), buffer.AsSpan(0, contextLength));
                 AssertExtensions.SequenceEqual(expected.AsSpan(), buffer.AsSpan(contextLength, outputLength));
                 Assert.Equal(0xA5, buffer[^1]);
+            }
+        }
+
+        [Fact]
+        public static void DisposedKey_ValidatesArgumentsFirst()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.SHAKE128, HpkeAead.AES_128_GCM);
+            using (RecordingHpke key = new(suite))
+            {
+                key.Dispose();
+                byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+                byte[] ciphertext = new byte[suite.GetCiphertextLength(1)];
+                byte[] plaintext = new byte[1];
+                byte[] psk = new byte[32];
+                byte[] pskId = [1];
+                byte[] invalidInfo = new byte[65536];
+
+                AssertExtensions.Throws<ArgumentException>("destination", () => key.ExportDecapsulationKey(Span<byte>.Empty));
+                AssertExtensions.Throws<ArgumentException>("destination", () => key.ExportEncapsulationKey(Span<byte>.Empty));
+                AssertExtensions.Throws<ArgumentNullException>("plaintext", () => key.Seal((byte[])null, out _, out _));
+                AssertExtensions.Throws<ArgumentException>(
+                    "encapsulatedSecret", () => key.Seal(plaintext, Span<byte>.Empty, ciphertext));
+                AssertExtensions.Throws<ArgumentException>(
+                    "ciphertext", () => key.Seal(plaintext, enc, Span<byte>.Empty));
+                Assert.Throws<CryptographicException>(() => key.Seal(enc.AsSpan(0, 1), enc, ciphertext));
+
+                AssertExtensions.Throws<ArgumentNullException>("encapsulatedSecret", () => key.Open((byte[])null, ciphertext));
+                AssertExtensions.Throws<ArgumentNullException>("ciphertext", () => key.Open(enc, (byte[])null));
+                AssertExtensions.Throws<ArgumentException>("encapsulatedSecret", () => key.Open(Array.Empty<byte>(), ciphertext));
+                AssertExtensions.Throws<ArgumentException>("encapsulatedSecret", () => key.Open(ReadOnlySpan<byte>.Empty, ciphertext));
+                AssertExtensions.Throws<ArgumentException>(
+                    "encapsulatedSecret", () => key.Open(ReadOnlySpan<byte>.Empty, ciphertext, plaintext.AsSpan()));
+                AssertExtensions.Throws<ArgumentException>("ciphertext", () => key.Open(enc, Array.Empty<byte>()));
+                AssertExtensions.Throws<ArgumentException>("ciphertext", () => key.Open(enc.AsSpan(), ReadOnlySpan<byte>.Empty));
+                AssertExtensions.Throws<ArgumentException>(
+                    "ciphertext", () => key.Open(enc, ReadOnlySpan<byte>.Empty, plaintext.AsSpan()));
+                AssertExtensions.Throws<ArgumentException>("plaintext", () => key.Open(enc, ciphertext, Span<byte>.Empty));
+                Assert.Throws<CryptographicException>(() => key.Open(enc, ciphertext, ciphertext.AsSpan(0, 1)));
+
+                AssertExtensions.Throws<ArgumentException>("encapsulatedSecret", () => key.CreateSender(Span<byte>.Empty));
+                Assert.Throws<CryptographicException>(() => key.CreateSender(enc, enc.AsSpan(0, 1)));
+                AssertExtensions.Throws<ArgumentNullException>("encapsulatedSecret", () => key.CreateRecipient((byte[])null));
+                AssertExtensions.Throws<ArgumentException>("encapsulatedSecret", () => key.CreateRecipient(Array.Empty<byte>()));
+                AssertExtensions.Throws<ArgumentException>("encapsulatedSecret", () => key.CreateRecipient(ReadOnlySpan<byte>.Empty));
+                AssertExtensions.Throws<ArgumentException>(
+                    "encapsulatedSecret", () => key.CreatePskSender(psk, pskId, Span<byte>.Empty));
+                Assert.Throws<CryptographicException>(() => key.CreatePskSender(enc.AsSpan(0, 32), pskId, enc));
+                AssertExtensions.Throws<ArgumentException>(
+                    "encapsulatedSecret", () => key.CreatePskRecipient(Array.Empty<byte>(), psk, pskId));
+                AssertExtensions.Throws<ArgumentException>(
+                    "encapsulatedSecret", () => key.CreatePskRecipient(ReadOnlySpan<byte>.Empty, psk, pskId));
+
+                AssertExtensions.Throws<ArgumentException>("info", () => key.Seal(plaintext, out _, out _, info: invalidInfo));
+                AssertExtensions.Throws<ArgumentException>("info", () => key.Seal(plaintext.AsSpan(), out _, out _, info: invalidInfo));
+                AssertExtensions.Throws<ArgumentException>("info", () => key.CreateSender(out _, invalidInfo));
+                AssertExtensions.Throws<ArgumentException>("info", () => key.CreateSender(enc, invalidInfo));
+                AssertExtensions.Throws<ArgumentException>("info", () => key.Open(enc, ciphertext, info: invalidInfo));
+                AssertExtensions.Throws<ArgumentException>("info", () => key.CreateRecipient(enc, invalidInfo));
+                AssertPskArgumentException(key, "psk", [], pskId, enc, []);
+                AssertPskArgumentException(key, "pskId", psk, [], enc, []);
+                AssertPskArgumentException(key, "info", psk, pskId, enc, invalidInfo);
+
+                Assert.Throws<ObjectDisposedException>(() => key.Seal(plaintext, out _, out _));
+                Assert.Throws<ObjectDisposedException>(() => key.Seal(plaintext.AsSpan(), out _, out _));
+                Assert.Throws<ObjectDisposedException>(() => key.Seal(plaintext, enc, ciphertext));
+                Assert.Throws<ObjectDisposedException>(() => key.Open(enc, ciphertext));
+                Assert.Throws<ObjectDisposedException>(() => key.Open(enc.AsSpan(), ciphertext));
+                Assert.Throws<ObjectDisposedException>(() => key.Open(enc, ciphertext, plaintext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => key.CreateSender(out _));
+                Assert.Throws<ObjectDisposedException>(() => key.CreateSender(enc));
+                Assert.Throws<ObjectDisposedException>(() => key.CreateRecipient(enc));
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskSender(psk, pskId, out _));
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskSender(psk, pskId, enc));
+                Assert.Throws<ObjectDisposedException>(() => key.CreatePskRecipient(enc, psk, pskId));
+                Assert.Equal(0, key.SealCalls);
+                Assert.False(key.OpenCoreCalled);
+                Assert.Equal(0, key.CreateSenderCalls);
+                Assert.Equal(0, key.CreateRecipientCalls);
+                Assert.Equal(0, key.PskCalls);
+            }
+        }
+
+        [Fact]
+        public static void DisposedSender_ValidatesArgumentsFirst()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            using (RecordingHpkeSender sender = new(suite))
+            {
+                sender.Dispose();
+                byte[] ciphertext = new byte[suite.GetCiphertextLength(1)];
+                AssertExtensions.Throws<ArgumentNullException>("plaintext", () => sender.Seal((byte[])null));
+                AssertExtensions.Throws<ArgumentException>(
+                    "ciphertext", () => sender.Seal(ReadOnlySpan<byte>.Empty, Span<byte>.Empty));
+                Assert.Throws<CryptographicException>(() => sender.Seal(ciphertext.AsSpan(0, 1), ciphertext.AsSpan()));
+                AssertExtensions.Throws<ArgumentNullException>("exporterContext", () => sender.Export((byte[])null, 1));
+
+                foreach (int length in new[] { -1, 8161 })
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => sender.Export(Array.Empty<byte>(), length));
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => sender.Export(ReadOnlySpan<byte>.Empty, length));
+                }
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "destination", () => sender.Export(ReadOnlySpan<byte>.Empty, new byte[8161].AsSpan()));
+                Assert.Throws<CryptographicException>(() => sender.Export(ciphertext.AsSpan(), ciphertext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => sender.Seal(ciphertext));
+                Assert.Throws<ObjectDisposedException>(() => sender.Seal(ciphertext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => sender.Seal(new byte[1], ciphertext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => sender.Export(Array.Empty<byte>(), 0));
+                Assert.Throws<ObjectDisposedException>(() => sender.Export(ReadOnlySpan<byte>.Empty, Span<byte>.Empty));
+                Assert.Equal(0, sender.SealCalls);
+                Assert.Equal(0, sender.ExportCalls);
+            }
+        }
+
+        [Fact]
+        public static void DisposedRecipient_ValidatesArgumentsFirst()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            using (RecordingHpkeRecipient recipient = new(suite))
+            {
+                recipient.Dispose();
+                byte[] ciphertext = new byte[suite.GetCiphertextLength(1)];
+                AssertExtensions.Throws<ArgumentNullException>("ciphertext", () => recipient.Open((byte[])null));
+                AssertExtensions.Throws<ArgumentException>("ciphertext", () => recipient.Open(Array.Empty<byte>()));
+                AssertExtensions.Throws<ArgumentException>("ciphertext", () => recipient.Open(ReadOnlySpan<byte>.Empty));
+                AssertExtensions.Throws<ArgumentException>(
+                    "ciphertext", () => recipient.Open(ReadOnlySpan<byte>.Empty, Span<byte>.Empty));
+                AssertExtensions.Throws<ArgumentException>("plaintext", () => recipient.Open(ciphertext, Span<byte>.Empty));
+                Assert.Throws<CryptographicException>(() => recipient.Open(ciphertext, ciphertext.AsSpan(0, 1)));
+                AssertExtensions.Throws<ArgumentNullException>("exporterContext", () => recipient.Export((byte[])null, 1));
+
+                foreach (int length in new[] { -1, 8161 })
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => recipient.Export(Array.Empty<byte>(), length));
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => recipient.Export(ReadOnlySpan<byte>.Empty, length));
+                }
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "destination", () => recipient.Export(ReadOnlySpan<byte>.Empty, new byte[8161].AsSpan()));
+                Assert.Throws<CryptographicException>(() => recipient.Export(ciphertext.AsSpan(), ciphertext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Open(ciphertext));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Open(ciphertext.AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Open(ciphertext, new byte[1].AsSpan()));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Export(Array.Empty<byte>(), 0));
+                Assert.Throws<ObjectDisposedException>(() => recipient.Export(ReadOnlySpan<byte>.Empty, Span<byte>.Empty));
+                Assert.Equal(0, recipient.OpenCalls);
+                Assert.Equal(0, recipient.ExportCalls);
             }
         }
 

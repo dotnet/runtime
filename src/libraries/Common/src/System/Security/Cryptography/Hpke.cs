@@ -483,9 +483,10 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info = default)
         {
             ThrowIfInfoExceedsLimit(info);
+            int ciphertextLength = Suite.GetCiphertextLength(plaintext.Length);
             ThrowIfDisposed();
 
-            byte[] ciphertextBuffer = new byte[Suite.GetCiphertextLength(plaintext.Length)];
+            byte[] ciphertextBuffer = new byte[ciphertextLength];
             byte[] encapsulatedSecretBuffer = new byte[Suite.EncapsulatedSecretSizeInBytes];
 
             SealCore(plaintext, encapsulatedSecretBuffer, ciphertextBuffer, associatedData, info);
@@ -540,9 +541,10 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(plaintext);
             ThrowIfInfoExceedsLimit(info);
+            int ciphertextLength = Suite.GetCiphertextLength(plaintext.Length);
             ThrowIfDisposed();
 
-            byte[] ciphertextBuffer = new byte[Suite.GetCiphertextLength(plaintext.Length)];
+            byte[] ciphertextBuffer = new byte[ciphertextLength];
             byte[] encapsulatedSecretBuffer = new byte[Suite.EncapsulatedSecretSizeInBytes];
 
             // associatedData and info null's implicity convert to empty span.
@@ -608,7 +610,6 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info = default)
         {
             ThrowIfInfoExceedsLimit(info);
-            ThrowIfDisposed();
 
             if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
             {
@@ -637,6 +638,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             SealCore(plaintext, encapsulatedSecret, ciphertext, associatedData, info);
         }
 
@@ -722,6 +724,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info = default)
         {
             int plaintextLength = ValidateOpenInputs(encapsulatedSecret, ciphertext, info);
+            ThrowIfDisposed();
             byte[] plaintext = new byte[plaintextLength];
 
             try
@@ -875,6 +878,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             OpenCore(encapsulatedSecret, ciphertext, plaintext, associatedData, info);
         }
 
@@ -992,7 +996,6 @@ namespace System.Security.Cryptography
         public HpkeSender CreateSender(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info = default)
         {
             ThrowIfInfoExceedsLimit(info);
-            ThrowIfDisposed();
 
             if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
             {
@@ -1006,6 +1009,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             return CreateSenderCore(encapsulatedSecret, info);
         }
 
@@ -1071,8 +1075,8 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info = default)
         {
             ThrowIfInfoExceedsLimit(info);
-            ThrowIfDisposed();
             ThrowIfInvalidEncapsulatedSecretLength(encapsulatedSecret);
+            ThrowIfDisposed();
             return CreateRecipientCore(encapsulatedSecret, info);
         }
 
@@ -1301,7 +1305,6 @@ namespace System.Security.Cryptography
         {
             ThrowIfInvalidPskInputs(psk, pskId);
             ThrowIfInfoExceedsLimit(info);
-            ThrowIfDisposed();
 
             if (encapsulatedSecret.Length != Suite.EncapsulatedSecretSizeInBytes)
             {
@@ -1317,6 +1320,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             return CreatePskSenderCore(encapsulatedSecret, info, psk, pskId);
         }
 
@@ -1402,8 +1406,8 @@ namespace System.Security.Cryptography
         {
             ThrowIfInvalidPskInputs(psk, pskId);
             ThrowIfInfoExceedsLimit(info);
-            ThrowIfDisposed();
             ThrowIfInvalidEncapsulatedSecretLength(encapsulatedSecret);
+            ThrowIfDisposed();
             return CreatePskRecipientCore(encapsulatedSecret, info, psk, pskId);
         }
 
@@ -1589,7 +1593,6 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info)
         {
             ThrowIfInfoExceedsLimit(info);
-            ThrowIfDisposed();
             ThrowIfInvalidEncapsulatedSecretLength(encapsulatedSecret);
 
             int tagSize = Suite.AeadTagSizeInBytes;

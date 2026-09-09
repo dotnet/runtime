@@ -65,8 +65,9 @@ namespace System.Security.Cryptography
         /// </remarks>
         public byte[] Open(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> associatedData = default)
         {
+            int plaintextLength = GetPlaintextLength(ciphertext);
             ThrowIfDisposed();
-            byte[] plaintext = new byte[GetPlaintextLength(ciphertext)];
+            byte[] plaintext = new byte[plaintextLength];
 
             try
             {
@@ -156,7 +157,6 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData = default)
         {
-            ThrowIfDisposed();
             int plaintextLength = GetPlaintextLength(ciphertext);
 
             if (plaintext.Length != plaintextLength)
@@ -171,6 +171,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             OpenCore(ciphertext, plaintext, associatedData);
         }
 
@@ -233,7 +234,6 @@ namespace System.Security.Cryptography
         public byte[] Export(ReadOnlySpan<byte> exporterContext, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-            ThrowIfDisposed();
             int maximumLength = Suite.KdfMetadata.MaximumExportLength;
 
             if (length > maximumLength)
@@ -243,6 +243,7 @@ namespace System.Security.Cryptography
                     SR.Format(SR.Argument_HpkeExportLengthTooLarge, maximumLength));
             }
 
+            ThrowIfDisposed();
             byte[] secret = new byte[length];
 
             try
@@ -322,7 +323,6 @@ namespace System.Security.Cryptography
         /// </remarks>
         public void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
         {
-            ThrowIfDisposed();
             int maximumLength = Suite.KdfMetadata.MaximumExportLength;
 
             if (destination.Length > maximumLength)
@@ -337,6 +337,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             ExportCore(exporterContext, destination);
         }
 

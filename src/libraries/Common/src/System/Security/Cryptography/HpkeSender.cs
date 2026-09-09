@@ -63,8 +63,9 @@ namespace System.Security.Cryptography
         /// </remarks>
         public byte[] Seal(ReadOnlySpan<byte> plaintext, ReadOnlySpan<byte> associatedData = default)
         {
+            int ciphertextLength = Suite.GetCiphertextLength(plaintext.Length);
             ThrowIfDisposed();
-            byte[] ciphertext = new byte[Suite.GetCiphertextLength(plaintext.Length)];
+            byte[] ciphertext = new byte[ciphertextLength];
             SealCore(plaintext, ciphertext, associatedData);
             return ciphertext;
         }
@@ -136,7 +137,6 @@ namespace System.Security.Cryptography
             Span<byte> ciphertext,
             ReadOnlySpan<byte> associatedData = default)
         {
-            ThrowIfDisposed();
             int ciphertextLength = Suite.GetCiphertextLength(plaintext.Length);
 
             if (ciphertext.Length != ciphertextLength)
@@ -151,6 +151,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             SealCore(plaintext, ciphertext, associatedData);
         }
 
@@ -208,7 +209,6 @@ namespace System.Security.Cryptography
         public byte[] Export(ReadOnlySpan<byte> exporterContext, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-            ThrowIfDisposed();
             int maximumLength = Suite.KdfMetadata.MaximumExportLength;
 
             if (length > maximumLength)
@@ -218,6 +218,7 @@ namespace System.Security.Cryptography
                     SR.Format(SR.Argument_HpkeExportLengthTooLarge, maximumLength));
             }
 
+            ThrowIfDisposed();
             byte[] secret = new byte[length];
 
             try
@@ -297,7 +298,6 @@ namespace System.Security.Cryptography
         /// </remarks>
         public void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
         {
-            ThrowIfDisposed();
             int maximumLength = Suite.KdfMetadata.MaximumExportLength;
 
             if (destination.Length > maximumLength)
@@ -312,6 +312,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
+            ThrowIfDisposed();
             ExportCore(exporterContext, destination);
         }
 
