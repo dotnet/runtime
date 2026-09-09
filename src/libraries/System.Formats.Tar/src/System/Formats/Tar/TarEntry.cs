@@ -769,15 +769,7 @@ namespace System.Formats.Tar
 
             if (length > 0 && _header._dataStream is SubReadStream subReadStream)
             {
-                long remainingDeclared = Math.Max(0, length - subReadStream.Position);
-                long? availableLength = subReadStream.AvailableLengthInSuperStream;
-                if (!availableLength.HasValue)
-                {
-                    return 0;
-                }
-
-                long availableFromCurrentPosition = Math.Max(0, availableLength.Value - subReadStream.Position);
-                return Math.Min(availableFromCurrentPosition, remainingDeclared);
+                return Math.Max(0, length - subReadStream.Position);
             }
 
             return length;

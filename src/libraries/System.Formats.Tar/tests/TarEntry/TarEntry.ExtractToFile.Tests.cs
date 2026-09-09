@@ -30,7 +30,7 @@ namespace System.Formats.Tar.Tests
             Assert.NotNull(entry);
             Assert.Equal(HeaderSize, entry.Length);
 
-            long preallocationSize = GetPreallocationSize(entry);
+            long preallocationSize = GetPreallocationSizeFromFileStreamOptions(entry);
             if (seekableArchive)
             {
                 Assert.Equal(archive.LongLength - entry.DataOffset, preallocationSize);
@@ -138,11 +138,12 @@ namespace System.Formats.Tar.Tests
             Verify_Extract(destination, entry, entryType);
         }
 
-        private static long GetPreallocationSize(TarEntry entry)
+        private static long GetPreallocationSizeFromFileStreamOptions(TarEntry entry)
         {
-            MethodInfo method = typeof(TarEntry).GetMethod("GetPreallocationSize", BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo method = typeof(TarEntry).GetMethod("CreateFileStreamOptions", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            return (long)method.Invoke(entry, null)!;
+            FileStreamOptions options = Assert.IsType<FileStreamOptions>(method.Invoke(entry, new object[] { false }));
+            return options.PreallocationSize;
         }
     }
 }
