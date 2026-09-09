@@ -32,34 +32,59 @@
         <target state="translated">記錄方法參數名稱的開頭不能為 _</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
+        <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
+        <target state="translated">引數 '{0}' 使用不支援的 'out' 參數修飾元</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported 'out' parameter modifier</source>
+        <target state="translated">引數使用不支援的 'out' 參數修飾元</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">記錄方法不能有主體</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="new">Logging methods cannot be generic</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="translated">記錄方法不可包含具有「允許 ref struct」限制條件的型別參數</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
-        <source>Logging methods must be partial</source>
-        <target state="new">Logging methods must be partial</target>
+        <source>Logging methods must be 'partial'</source>
+        <target state="translated">記錄方法必須是 'partial'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
-        <source>Logging methods must return void</source>
-        <target state="new">Logging methods must return void</target>
+        <source>Logging methods must return 'void'</source>
+        <target state="translated">記錄方法必須傳回 'void'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
-        <source>Logging methods must be static</source>
-        <target state="new">Logging methods must be static</target>
+        <source>Logging methods must be 'static'</source>
+        <target state="translated">記錄方法必須是 'static'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">記錄來源產生器在 C# {0} 中不可用。請使用語言版本 {1} 或更新版本。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">來源產生器不支援 C# 語言版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="translated">記錄方法 '{0}' 包含格式錯誤的格式字串</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="translated">記錄方法包含格式錯誤的格式字串</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -107,9 +132,19 @@
         <target state="translated">找到多個 Microsoft.Extensions.Logging.ILogger 類型的欄位</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
+        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
+        <target state="translated">類別 '{0}' 具有類型 Microsoft.Extensions.Logging.ILogger 的主要建構函式參數，其已由類別或基底類別中的欄位隱藏，因此無法使用</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
+        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
+        <target state="translated">類型 Microsoft.Extensions.Logging.ILogger 的主要建構函式參數由某欄位隱藏</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
-        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="new">Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</target>
+        <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="translated">從記錄訊息中移除備援限定詞 ('Info:', 'Warning:', 'Error:', 等等)，因為它在指定的記錄層級中為隱含。</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -147,6 +182,16 @@
         <target state="translated">多個記錄方法不能在類別內使用相同的事件識別碼</target>
         <note />
       </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">多個記錄方法是使用類別 {0} 中的事件名稱 {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">多個記錄方法不應在類別內使用相同的事件名稱</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
         <target state="translated">未將範本 '{0}' 提供做為記錄方法的引數</target>
@@ -155,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">記錄範本沒有對應的方法引數</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="translated">引數 '{0}' 使用不受支援的 'params' 或 'scoped' 參數修飾元</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="translated">引數使用不受支援的 'params' 或 'scoped' 參數修飾元</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
+        <target state="translated">參數 '{0}' 是個 'ref struct'，其不受記錄來源產生器支援</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a 'ref struct'</source>
+        <target state="translated">記錄方法參數是個 'ref struct'</target>
         <note />
       </trans-unit>
     </body>
