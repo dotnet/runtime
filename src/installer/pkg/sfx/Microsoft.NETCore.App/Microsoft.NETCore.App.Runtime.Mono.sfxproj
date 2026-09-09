@@ -50,9 +50,6 @@
     <UseRuntimeManagedProjectReferences>true</UseRuntimeManagedProjectReferences>
   </PropertyGroup>
 
-  <ItemGroup>
-  </ItemGroup>
-
   <Target Name="AddMonoCoreLibToRuntimeFiles"
           BeforeTargets="AddRuntimeFilesToPackage"
           DependsOnTargets="ResolveProjectReferences">

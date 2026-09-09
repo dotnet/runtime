@@ -33,7 +33,7 @@
     <ItemGroup>
       <_NetCoreAppRefPackGeneratorRelatedFile Include="@(_NetCoreAppRefPackGeneratorFile)" />
       <_NetCoreAppRefPackGeneratorRelatedFile Include="@(_NetCoreAppRefPackGeneratorFile->'%(RootDir)%(Directory)%(Filename).pdb')" />
-      <_NetCoreAppRefPackGeneratorRelatedFile Include="%(_NetCoreAppRefPackGeneratorFile.RootDir)%(_NetCoreAppRefPackGeneratorFile.Directory)*\%(_NetCoreAppRefPackGeneratorFile.Filename).resources.dll" />
+      <_NetCoreAppRefPackGeneratorRelatedFile Include="%(_NetCoreAppRefPackGeneratorFile.RootDir)%(_NetCoreAppRefPackGeneratorFile.Directory)**\%(_NetCoreAppRefPackGeneratorFile.Filename).resources.dll" />
       <_NetCoreAppRefPackGeneratorRelatedFile Remove="@(_NetCoreAppRefPackGeneratorRelatedFile)"
                                               Condition="!Exists('%(_NetCoreAppRefPackGeneratorRelatedFile.Identity)')" />
       <_NetCoreAppLibraryPublicSourceAssembly Include="@(_NetCoreAppLibrarySourceAssembly)"

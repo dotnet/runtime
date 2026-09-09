@@ -55,9 +55,6 @@
     <UseMibcProjectReference>true</UseMibcProjectReference>
   </PropertyGroup>
 
-  <ItemGroup>
-  </ItemGroup>
-
   <Target Name="AddCoreCLRRuntimeManagedFiles"
           BeforeTargets="AddRuntimeFilesToPackage"
           DependsOnTargets="ResolveProjectReferences">
