@@ -765,14 +765,12 @@ namespace System.Formats.Tar
                 return 0;
             }
 
-            long length = Length;
-
-            if (length > 0 && _header._dataStream is SubReadStream subReadStream)
+            if (Length > 0 && _header._dataStream is SubReadStream subReadStream)
             {
-                return Math.Max(0, length - subReadStream.Position);
+                return Math.Max(0, Length - subReadStream.Position);
             }
 
-            return length;
+            return Length;
         }
     }
 }
