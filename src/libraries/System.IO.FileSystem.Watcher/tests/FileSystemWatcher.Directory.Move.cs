@@ -78,6 +78,78 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Linux_Directory_Move_Colliding_Renames_DoesNotStopWatching()
+        {
+            string codeDirectory = CreateTestDirectory(TestDirectory, "code", "child");
+            string libDirectory = CreateTestDirectory(TestDirectory, "lib", "child");
+            string srcDirectory = Path.Combine(TestDirectory, "src");
+            string beaconDirectory = CreateTestDirectory(TestDirectory, "beacon");
+            string lockFilePath = Path.Combine(beaconDirectory, "lck");
+            AutoResetEvent canaryEvent = new AutoResetEvent(false);
+            using FileSystemWatcher watcher = new FileSystemWatcher(TestDirectory);
+            watcher.IncludeSubdirectories = true;
+            watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName |
+                NotifyFilters.LastWrite | NotifyFilters.CreationTime | NotifyFilters.Size;
+            watcher.Created += (object sender, FileSystemEventArgs e) =>
+            {
+                if (e.Name is not null && e.Name.StartsWith("canary_", StringComparison.Ordinal))
+                {
+                    canaryEvent.Set();
+                }
+            };
+            watcher.EnableRaisingEvents = true;
+
+            int stopWriter = 0;
+            Thread writer = new Thread(() =>
+            {
+                int i = 0;
+                while (Volatile.Read(ref stopWriter) == 0)
+                {
+                    try
+                    {
+                        File.WriteAllText(lockFilePath, i.ToString());
+                        i++;
+                    }
+                    catch
+                    {
+                    }
+
+                    Thread.Sleep(1);
+                }
+            });
+            writer.IsBackground = true;
+            writer.Start();
+
+            try
+            {
+                for (int round = 1; round <= 300; round++)
+                {
+                    Directory.Move(libDirectory, srcDirectory);
+                    Directory.Move(codeDirectory, libDirectory);
+                    Directory.Move(libDirectory, codeDirectory);
+                    Directory.Move(srcDirectory, libDirectory);
+
+                    if (round % 25 != 0)
+                    {
+                        continue;
+                    }
+
+                    string canaryPath = Path.Combine(TestDirectory, $"canary_{round}.txt");
+                    File.WriteAllText(canaryPath, "alive");
+                    Assert.True(
+                        canaryEvent.WaitOne(WaitForExpectedEventTimeout_NoRetry),
+                        $"Did not receive canary event after round {round}.");
+                }
+            }
+            finally
+            {
+                Volatile.Write(ref stopWriter, 1);
+                writer.Join(WaitForExpectedEventTimeout_NoRetry);
+            }
+        }
+
+        [Fact]
         public void Directory_Move_From_Unwatched_To_Watched()
         {
             DirectoryMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);
