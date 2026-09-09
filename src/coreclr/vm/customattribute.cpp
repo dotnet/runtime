@@ -935,7 +935,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     UINT cArgs = pSig->NumFixedArgs();
     UINT i = 0;
-    gc.ctorArgs = AllocateObjectArray(cArgs, g_pObjectClass);
+    gc.ctorArgs = static_cast<PTRARRAYREF>(AllocateObjectArray(cArgs, g_pObjectClass));
 
     if (pBlob)
     {
