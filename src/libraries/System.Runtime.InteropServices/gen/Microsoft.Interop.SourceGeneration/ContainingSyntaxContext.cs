@@ -4,69 +4,13 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
-    public enum ContainingDeclarationKind
+    public sealed record ContainingSyntaxContext(ImmutableArray<DeclarationHeader> ContainingSyntax, string? ContainingNamespace)
     {
-        Class,
-        Struct,
-        Interface,
-        Record,
-        RecordStruct,
-        Method
-    }
-
-    public readonly struct ContainingSyntax : IEquatable<ContainingSyntax>
-    {
-        public ContainingSyntax(ImmutableArray<string> modifiers, ContainingDeclarationKind typeKind, string identifier, string? typeParameters = null)
-        {
-            Modifiers = modifiers;
-            TypeKind = typeKind;
-            Identifier = identifier;
-            TypeParameters = typeParameters;
-        }
-
-        public ImmutableArray<string> Modifiers { get; init; }
-        public string Identifier { get; init; }
-        public ContainingDeclarationKind TypeKind { get; init; }
-        public string? TypeParameters { get; init; }
-
-        public string DeclarationKeyword => TypeKind switch
-        {
-            ContainingDeclarationKind.Class => "class",
-            ContainingDeclarationKind.Struct => "struct",
-            ContainingDeclarationKind.Interface => "interface",
-            ContainingDeclarationKind.Record => "record",
-            ContainingDeclarationKind.RecordStruct => "record struct",
-            _ => throw new UnreachableException(),
-        };
-
-        public override bool Equals(object? obj) => obj is ContainingSyntax other && Equals(other);
-
-        public bool Equals(ContainingSyntax other)
-        {
-            return Modifiers.SequenceEqual(other.Modifiers)
-                && TypeKind == other.TypeKind
-                && Identifier == other.Identifier
-                && TypeParameters == other.TypeParameters;
-        }
-
-        public override int GetHashCode()
-        {
-            int hash = HashCode.Combine(TypeKind, Identifier);
-            hash = HashCode.Combine(hash, TypeParameters);
-            foreach (string modifier in Modifiers)
-            {
-                hash = HashCode.Combine(hash, modifier);
-            }
-            return hash;
-        }
-    }
-
-    public sealed record ContainingSyntaxContext(ImmutableArray<ContainingSyntax> ContainingSyntax, string? ContainingNamespace)
-    {
-        public ContainingSyntaxContext AddContainingSyntax(ContainingSyntax nestedType)
+        public ContainingSyntaxContext AddContainingSyntax(DeclarationHeader nestedType)
         {
             return this with { ContainingSyntax = ContainingSyntax.Insert(0, nestedType) };
         }
@@ -81,7 +25,7 @@ namespace Microsoft.Interop
         public override int GetHashCode()
         {
             int hash = ContainingNamespace?.GetHashCode() ?? 0;
-            foreach (ContainingSyntax containingSyntax in ContainingSyntax)
+            foreach (DeclarationHeader containingSyntax in ContainingSyntax)
             {
                 hash = HashCode.Combine(hash, containingSyntax.GetHashCode());
             }
@@ -126,18 +70,15 @@ namespace Microsoft.Interop
             // Containing types are stored innermost-first.
             for (int i = ContainingSyntax.Length - 1; i >= 0; i--)
             {
-                ContainingSyntax syntax = ContainingSyntax[i];
+                DeclarationHeader syntax = ContainingSyntax[i];
                 ImmutableArray<string> modifiers = addUnsafe ? CodeWriterHelpers.AddModifier(syntax.Modifiers, "unsafe") : syntax.Modifiers;
                 if (!modifiers.IsEmpty)
                 {
                     writer.Write(string.Join(" ", modifiers));
                     writer.Write(' ');
                 }
-                writer.Write($"{syntax.DeclarationKeyword} {syntax.Identifier}");
-                if (syntax.TypeParameters is not null)
-                {
-                    writer.WriteVerbatim(syntax.TypeParameters);
-                }
+                writer.Write($"{syntax.Keyword} ");
+                writer.WriteVerbatim(syntax.Name);
                 writer.WriteLine();
                 writer.WriteLine('{');
                 writer.Indent++;

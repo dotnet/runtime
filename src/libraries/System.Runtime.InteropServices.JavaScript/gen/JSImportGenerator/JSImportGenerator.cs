@@ -9,6 +9,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
@@ -20,7 +21,7 @@ namespace Microsoft.Interop.JavaScript
         internal sealed record IncrementalStubGenerationContext(
             JSSignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
-            ContainingSyntax StubMethodSyntaxTemplate,
+            DeclarationHeader StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSImportData JSImportData);
 
@@ -100,7 +101,7 @@ namespace Microsoft.Interop.JavaScript
             JSImportData jsImportData = ProcessJSImportAttribute(jsImportAttr!) ?? new JSImportData("INVALID_CSHARP_SYNTAX", null);
             var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
             ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
-            ContainingSyntax methodTemplate = originalSyntax.GetDeclarationTemplate();
+            DeclarationHeader methodTemplate = originalSyntax.GetDeclarationTemplate();
 
             return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, methodTemplate, locations, jsImportData);
         }

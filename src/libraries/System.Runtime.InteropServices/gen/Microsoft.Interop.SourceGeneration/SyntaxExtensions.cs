@@ -8,33 +8,22 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
     public static class SyntaxExtensions
     {
-        public static ContainingSyntax GetDeclarationTemplate(this TypeDeclarationSyntax declaration)
-        {
-            return new ContainingSyntax(
-                CodeWriterHelpers.GetModifiers(declaration.Modifiers),
-                declaration.Kind().GetDeclarationKind(),
-                declaration.Identifier.Text,
-                GetTypeParameters(declaration.TypeParameterList));
-        }
+        public static DeclarationHeader GetDeclarationTemplate(this TypeDeclarationSyntax declaration)
+            => ContainingTypeUtilities.GetDeclarationHeader(declaration);
 
-        public static ContainingSyntax GetDeclarationTemplate(this MethodDeclarationSyntax declaration)
-        {
-            return new ContainingSyntax(
-                CodeWriterHelpers.GetModifiers(declaration.Modifiers),
-                ContainingDeclarationKind.Method,
-                declaration.Identifier.Text,
-                GetTypeParameters(declaration.TypeParameterList));
-        }
+        public static DeclarationHeader GetDeclarationTemplate(this MethodDeclarationSyntax declaration)
+            => ContainingTypeUtilities.GetDeclarationHeader(declaration);
 
         public static ContainingSyntaxContext GetContainingSyntaxContext(this MemberDeclarationSyntax memberDeclaration)
         {
-            var containingTypes = ImmutableArray.CreateBuilder<ContainingSyntax>();
-            for (SyntaxNode? parent = memberDeclaration.Parent; parent is TypeDeclarationSyntax typeDeclaration; parent = parent.Parent)
+            var containingTypes = ImmutableArray.CreateBuilder<DeclarationHeader>();
+            foreach (TypeDeclarationSyntax typeDeclaration in ContainingTypeUtilities.EnumerateContainingTypes(memberDeclaration.Parent as TypeDeclarationSyntax))
             {
                 containingTypes.Add(typeDeclaration.GetDeclarationTemplate());
             }
@@ -53,19 +42,6 @@ namespace Microsoft.Interop
                 }
             }
             return new ContainingSyntaxContext(containingTypes.ToImmutable(), containingNamespace?.ToString());
-        }
-
-        private static string? GetTypeParameters(TypeParameterListSyntax? typeParameters)
-        {
-            if (typeParameters is null)
-            {
-                return null;
-            }
-
-            return "<" + string.Join(", ", typeParameters.Parameters.Select(static parameter =>
-                (parameter.AttributeLists.Count == 0 ? "" : string.Join(" ", parameter.AttributeLists.Select(static attributes => attributes.ToString())) + " ")
-                + (parameter.VarianceKeyword.RawKind == 0 ? "" : parameter.VarianceKeyword.Text + " ")
-                + parameter.Identifier.Text)) + ">";
         }
 
         public static bool IsInPartialContext(this TypeDeclarationSyntax syntax, [NotNullWhen(false)] out SyntaxToken? nonPartialIdentifier)

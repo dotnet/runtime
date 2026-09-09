@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
+using SourceGenerators;
 using Xunit;
 
 namespace LibraryImportGenerator.UnitTests;
@@ -220,14 +221,14 @@ public class CodeWritingTests
     }
 
     [Theory]
-    [InlineData(ContainingDeclarationKind.Class, "class")]
-    [InlineData(ContainingDeclarationKind.Struct, "struct")]
-    [InlineData(ContainingDeclarationKind.Interface, "interface")]
-    [InlineData(ContainingDeclarationKind.Record, "record")]
-    [InlineData(ContainingDeclarationKind.RecordStruct, "record struct")]
-    public void ContainingDeclarationsCanBeWrittenFromValues(ContainingDeclarationKind kind, string keyword)
+    [InlineData("class")]
+    [InlineData("struct")]
+    [InlineData("interface")]
+    [InlineData("record")]
+    [InlineData("record struct")]
+    public void ContainingDeclarationsCanBeWrittenFromValues(string keyword)
     {
-        var declaration = new ContainingSyntax(["partial"], kind, "@event", "<T>");
+        var declaration = new DeclarationHeader(["partial"], keyword, "@event", "@event<T>");
         var context = new ContainingSyntaxContext([declaration], "Outer.@namespace");
         string expected = $$"""
             namespace Outer.@namespace
@@ -244,13 +245,13 @@ public class CodeWritingTests
     }
 
     [Theory]
-    [InlineData("class", ContainingDeclarationKind.Class)]
-    [InlineData("struct", ContainingDeclarationKind.Struct)]
-    [InlineData("interface", ContainingDeclarationKind.Interface)]
-    [InlineData("record", ContainingDeclarationKind.Record)]
-    [InlineData("record class", ContainingDeclarationKind.Record)]
-    [InlineData("record struct", ContainingDeclarationKind.RecordStruct)]
-    public void DeclarationExtractionPreservesInputDetails(string keyword, ContainingDeclarationKind kind)
+    [InlineData("class", "class")]
+    [InlineData("struct", "struct")]
+    [InlineData("interface", "interface")]
+    [InlineData("record", "record")]
+    [InlineData("record class", "record")]
+    [InlineData("record struct", "record struct")]
+    public void DeclarationExtractionPreservesInputDetails(string keyword, string expectedKeyword)
     {
         string source = $$"""
             namespace Outer
@@ -268,13 +269,13 @@ public class CodeWritingTests
         Assert.False(input.ContainsDiagnostics);
         MethodDeclarationSyntax method = input.DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
         ContainingSyntaxContext context = method.GetContainingSyntaxContext();
-        ContainingSyntax declaration = Assert.Single(context.ContainingSyntax);
+        DeclarationHeader declaration = Assert.Single(context.ContainingSyntax);
 
         Assert.Equal("Outer.@namespace.Inner", context.ContainingNamespace);
         Assert.Equal(["public", "partial"], declaration.Modifiers);
         Assert.Equal("@event", declaration.Identifier);
-        Assert.Equal("<T>", declaration.TypeParameters);
-        Assert.Equal(kind, declaration.TypeKind);
+        Assert.Equal("@event<T>", declaration.Name);
+        Assert.Equal(expectedKeyword, declaration.Keyword);
     }
 
     [Theory]
@@ -284,8 +285,8 @@ public class CodeWritingTests
     {
         var context = new ContainingSyntaxContext(
             [
-                new ContainingSyntax(["readonly", "ref", "partial"], ContainingDeclarationKind.Struct, "Nested", "<U>"),
-                new ContainingSyntax(["public", "partial"], ContainingDeclarationKind.Class, "Outer", "<T>")
+                new DeclarationHeader(["readonly", "ref", "partial"], "struct", "Nested", "Nested<U>"),
+                new DeclarationHeader(["public", "partial"], "class", "Outer", "Outer<T>")
             ],
             ContainingNamespace: null);
         string expected = $$"""
@@ -306,6 +307,18 @@ public class CodeWritingTests
 
         Assert.Equal(expected, actual);
         Assert.False(SyntaxFactory.ParseCompilationUnit(actual).ContainsDiagnostics);
+    }
+
+    [Fact]
+    public void DeclarationHeadersUseValueEquality()
+    {
+        var first = new DeclarationHeader(["public", "partial"], "class", "@class", "@class<T>");
+        var second = new DeclarationHeader(["public", "partial"], "class", "@class", "@class<T>");
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        Assert.Equal("public partial class @class<T>", first.ToString());
+        Assert.NotEqual(first, second with { Name = "@class<U>" });
     }
 
     [Fact]

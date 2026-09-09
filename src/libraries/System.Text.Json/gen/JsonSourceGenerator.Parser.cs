@@ -144,7 +144,7 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                if (!TryGetNestedTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
+                if (!ContainingTypeUtilities.TryGetContainingTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
                 {
                     // Class or one of its containing types is not partial so we can't add to it.
                     ReportDiagnostic(DiagnosticDescriptors.ContextClassesMustBePartial, _contextClassLocation, contextTypeSymbol.Name);
@@ -185,44 +185,6 @@ namespace System.Text.Json.SourceGeneration
                 _typesToGenerate.Clear();
                 _contextClassLocation = null;
                 return contextGenSpec;
-            }
-
-            private static bool TryGetNestedTypeDeclarations(ClassDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)
-            {
-                typeDeclarations = null;
-
-                for (TypeDeclarationSyntax? currentType = contextClassSyntax; currentType != null; currentType = currentType.Parent as TypeDeclarationSyntax)
-                {
-                    StringBuilder stringBuilder = new();
-                    bool isPartialType = false;
-
-                    foreach (SyntaxToken modifier in currentType.Modifiers)
-                    {
-                        stringBuilder.Append(modifier.Text);
-                        stringBuilder.Append(' ');
-                        isPartialType |= modifier.IsKind(SyntaxKind.PartialKeyword);
-                    }
-
-                    if (!isPartialType)
-                    {
-                        typeDeclarations = null;
-                        return false;
-                    }
-
-                    stringBuilder.Append(currentType.GetTypeKindKeyword());
-                    stringBuilder.Append(' ');
-
-                    INamedTypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(currentType, cancellationToken);
-                    Debug.Assert(typeSymbol != null);
-
-                    string typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                    stringBuilder.Append(typeName);
-
-                    (typeDeclarations ??= new()).Add(stringBuilder.ToString());
-                }
-
-                Debug.Assert(typeDeclarations?.Count > 0);
-                return true;
             }
 
             private TypeRef EnqueueType(ITypeSymbol type, JsonSourceGenerationMode? generationMode)

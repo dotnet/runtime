@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using SourceGenerators;
 
 namespace Microsoft.Interop;
 
@@ -33,7 +33,7 @@ public static class CodeWriterHelpers
     /// <returns>The modifier keywords without trivia.</returns>
     public static ImmutableArray<string> GetModifiers(SyntaxTokenList modifiers)
     {
-        return modifiers.Select(static token => token.Text).ToImmutableArray();
+        return ContainingTypeUtilities.GetModifiers(modifiers);
     }
 
     /// <summary>Adds a modifier before any trailing ref and partial keywords.</summary>

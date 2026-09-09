@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
@@ -13,10 +14,10 @@ namespace Microsoft.Interop
     {
         public string ClassName { get; init; }
         public ContainingSyntaxContext ContainingSyntaxContext { get; init; }
-        public ContainingSyntax ClassSyntax { get; init; }
+        public DeclarationHeader ClassSyntax { get; init; }
         public SequenceEqualImmutableArray<string> ImplementedInterfacesNames { get; init; }
 
-        private ComClassInfo(string className, ContainingSyntaxContext containingSyntaxContext, ContainingSyntax classSyntax, SequenceEqualImmutableArray<string> implementedInterfacesNames)
+        private ComClassInfo(string className, ContainingSyntaxContext containingSyntaxContext, DeclarationHeader classSyntax, SequenceEqualImmutableArray<string> implementedInterfacesNames)
         {
             ClassName = className;
             ContainingSyntaxContext = containingSyntaxContext;

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
@@ -84,7 +85,7 @@ namespace Microsoft.Interop
     internal sealed record SourceAvailableIncrementalMethodStubGenerationContext(
         SignatureContext SignatureContext,
         ContainingSyntaxContext ContainingSyntaxContext,
-        ContainingSyntax StubMethodSyntaxTemplate,
+        DeclarationHeader StubMethodSyntaxTemplate,
         ISignatureDiagnosticLocations DiagnosticLocation,
         SequenceEqualImmutableArray<string> CallingConvention,
         VirtualMethodIndexData VtableIndexData,

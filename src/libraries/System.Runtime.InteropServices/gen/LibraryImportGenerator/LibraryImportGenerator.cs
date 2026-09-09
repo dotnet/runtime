@@ -11,6 +11,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
@@ -22,7 +23,7 @@ namespace Microsoft.Interop
         internal sealed record IncrementalStubGenerationContext(
             SignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
-            ContainingSyntax StubMethodSyntaxTemplate,
+            DeclarationHeader StubMethodSyntaxTemplate,
             string MethodName,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             SequenceEqualImmutableArray<string> ForwardedAttributes,
@@ -143,7 +144,7 @@ namespace Microsoft.Interop
                 writer.WriteLine($"[{attribute}]");
             }
 
-            ContainingSyntax userDeclaredMethod = stub.StubMethodSyntaxTemplate;
+            DeclarationHeader userDeclaredMethod = stub.StubMethodSyntaxTemplate;
             writer.WriteLine($"{string.Join(" ", userDeclaredMethod.Modifiers)} {stub.SignatureContext.StubReturnType} {userDeclaredMethod.Identifier}({string.Join(", ", stub.SignatureContext.StubParameters)})");
 
             // Create stub function. The generated body performs unmanaged operations (pointers, fixed,
@@ -275,7 +276,7 @@ namespace Microsoft.Interop
 
             ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
-            ContainingSyntax methodSyntaxTemplate = originalSyntax.GetDeclarationTemplate();
+            DeclarationHeader methodSyntaxTemplate = originalSyntax.GetDeclarationTemplate();
 
             List<string> additionalAttributes = GenerateForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute, debuggerHiddenAttribute);
             return new IncrementalStubGenerationContext(
@@ -324,7 +325,7 @@ namespace Microsoft.Interop
             return pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntax(PrintGeneratedSource(pinvokeStub, stubGenerator));
         }
 
-        private static string PrintForwarderStub(ContainingSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
+        private static string PrintForwarderStub(DeclarationHeader userDeclaredMethod, IncrementalStubGenerationContext stub)
         {
             var writer = new IndentedTextWriter();
             ImmutableArray<string> modifiers = CodeWriterHelpers.AddModifier(userDeclaredMethod.Modifiers, "extern");

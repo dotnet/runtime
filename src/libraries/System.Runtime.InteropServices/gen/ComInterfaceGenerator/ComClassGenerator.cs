@@ -87,7 +87,7 @@ namespace Microsoft.Interop
                 data.ContainingSyntaxContext.WriteToWithUnsafeModifier(writer, data.ClassSyntax, static (writer, classSyntax) =>
                 {
                     writer.WriteLine($"[global::System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute<{ClassInfoTypeName}>]");
-                    writer.WriteLine($"{string.Join(" ", classSyntax.Modifiers)} class {classSyntax.Identifier}{classSyntax.TypeParameters} {{ }}");
+                    writer.WriteLine($"{string.Join(" ", classSyntax.Modifiers)} class {classSyntax.Name} {{ }}");
                 });
 
                 // Hint names cannot contain identifier escape markers or generic delimiters.

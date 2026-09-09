@@ -14,8 +14,11 @@ The interop generators share their text-emission infrastructure in
 `src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration`.
 Input analysis extracts type names, attributes, containing declarations, and marshalling
 information into value models. Emission operates on these models, not on syntax trees.
-`ContainingSyntaxContext` stores declaration text and `ContainingDeclarationKind` values;
-`SyntaxExtensions` extracts that data from input declarations before emission.
+`ContainingSyntaxContext` stores syntax-independent `DeclarationHeader` values shared
+with the JSON source generator. `ContainingTypeUtilities` in
+`src/libraries/Common/src/SourceGenerators` supplies containing-type traversal and
+declaration formatting; interop retains source-spelled names and type-parameter attributes,
+while JSON uses symbol-formatted names and requires every containing type to be partial.
 `GeneratedParameter` and `GeneratedMethodSignature` describe signatures, and
 `IndentedTextWriter` writes statements and scoped blocks with deterministic line endings.
 

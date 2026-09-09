@@ -11,6 +11,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
@@ -349,22 +350,20 @@ namespace Microsoft.Interop
                 return sourcelessStubInformation;
 
             ContainingSyntaxContext containingSyntaxContext = syntax.GetContainingSyntaxContext();
-            ContainingSyntax methodSyntaxTemplate = syntax switch
+            DeclarationHeader methodSyntaxTemplate = syntax switch
             {
-                MethodDeclarationSyntax methodSyntax => new ContainingSyntax(
+                MethodDeclarationSyntax methodSyntax => new DeclarationHeader(
                     CodeWriterHelpers.GetModifiers(methodSyntax.Modifiers)
                         .Where(static modifier => modifier is not ("new" or "partial" or "virtual" or "public" or "private" or "protected" or "internal"))
                         .ToImmutableArray(),
-                    ContainingDeclarationKind.Method,
-                    CodeWriterHelpers.EscapeIdentifier(symbol.Name),
-                    typeParameters: null),
+                    "",
+                    CodeWriterHelpers.EscapeIdentifier(symbol.Name)),
                 // Property / indexer accessors are emitted as plain methods named e.g. 'get_Foo' / 'set_Foo'
                 // ('get_Item' / 'set_Item' for indexers, or the [IndexerName]-renamed value).
-                PropertyDeclarationSyntax or IndexerDeclarationSyntax => new ContainingSyntax(
+                PropertyDeclarationSyntax or IndexerDeclarationSyntax => new DeclarationHeader(
                     ImmutableArray<string>.Empty,
-                    ContainingDeclarationKind.Method,
-                    symbol.Name,
-                    typeParameters: null),
+                    "",
+                    symbol.Name),
                 _ => throw new UnreachableException(),
             };
 
@@ -712,10 +711,10 @@ namespace Microsoft.Interop
         {
             data.Interface.Info.TypeDefinitionContext.WriteToWithUnsafeModifier(writer, (data.Interface.Info.ContainingSyntax, data.ShadowingMethods), static (writer, data) =>
             {
-                (ContainingSyntax syntax, IEnumerable<ComMethodContext>? shadowingMethods) = data;
+                (DeclarationHeader syntax, IEnumerable<ComMethodContext>? shadowingMethods) = data;
 
                 writer.WriteLine("[global::System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute<InterfaceInformation, InterfaceImplementation>]");
-                writer.WriteLine($"{string.Join(" ", CodeWriterHelpers.AddModifier(syntax.Modifiers, "unsafe"))} {syntax.DeclarationKeyword} {syntax.Identifier}{syntax.TypeParameters}");
+                writer.WriteLine($"{string.Join(" ", CodeWriterHelpers.AddModifier(syntax.Modifiers, "unsafe"))} {syntax.Keyword} {syntax.Name}");
                 writer.WriteLine('{');
                 writer.Indent++;
 

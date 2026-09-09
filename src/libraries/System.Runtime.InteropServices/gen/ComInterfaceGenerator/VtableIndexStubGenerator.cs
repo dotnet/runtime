@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Interop.Analyzers;
+using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
@@ -355,13 +356,12 @@ namespace Microsoft.Interop
 
             ContainingSyntaxContext containingSyntaxContext = syntax.GetContainingSyntaxContext();
 
-            var methodSyntaxTemplate = new ContainingSyntax(
+            var methodSyntaxTemplate = new DeclarationHeader(
                 CodeWriterHelpers.GetModifiers(syntax.Modifiers)
                     .Where(static modifier => modifier is not ("partial" or "virtual" or "public" or "private" or "protected" or "internal"))
                     .ToImmutableArray(),
-                ContainingDeclarationKind.Method,
-                CodeWriterHelpers.EscapeIdentifier(symbol.Name),
-                typeParameters: null);
+                "",
+                CodeWriterHelpers.EscapeIdentifier(symbol.Name));
 
             ImmutableArray<string> callConv = VirtualMethodPointerStubGenerator.GetCallingConventionsFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultCallingConventions: ImmutableArray<string>.Empty);
 
