@@ -253,7 +253,7 @@ public:
         _ASSERTE(r2rFunctionIndex < m_nRuntimeFunctions);
         return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
     }
-    void RegisterVirtualIPRange(Module* pModule);
+    void RegisterVirtualIPRange();
 #endif // TARGET_WASM
 
     void RegisterResumptionStub(PCODE stubEntryPoint);

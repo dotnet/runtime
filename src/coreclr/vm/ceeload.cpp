@@ -3535,7 +3535,7 @@ void Module::RunEagerFixups()
         // from multiple threads so we need to lock their resolution.
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
 #ifdef TARGET_WASM
-        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        GetReadyToRunInfo()->RegisterVirtualIPRange();
         if (nSections == 0)
             return;
 #endif // TARGET_WASM
@@ -3555,7 +3555,7 @@ void Module::RunEagerFixups()
     {
         // Per-module eager fixups don't need locking
 #ifdef TARGET_WASM
-        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        GetReadyToRunInfo()->RegisterVirtualIPRange();
         if (nSections == 0)
             return;
 #endif // TARGET_WASM

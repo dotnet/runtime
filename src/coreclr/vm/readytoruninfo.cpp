@@ -2881,12 +2881,11 @@ UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
     return result;
 }
 
-void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
+void ReadyToRunInfo::RegisterVirtualIPRange()
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pModule));
     } CONTRACTL_END;
 
     if (m_nRuntimeFunctions == 0)
@@ -2912,7 +2911,7 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
         m_pComposite->SetMinVirtualIP(ExecutionManager::AddVirtualIPRange(
             totalVirtualIPs,
             ExecutionManager::GetReadyToRunJitManager(),
-            pModule));
+            this));
 
         ExecutionManager::AddFunctionTableIndexRange(
             m_minFunctionTableIndex,
