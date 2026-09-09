@@ -254,6 +254,10 @@ public:
         return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
     }
     void RegisterVirtualIPRange();
+
+    // Attach a lazily-downloaded R2R code supplement (a webcil composite-of-one whose single component
+    // is pModule's assembly) as a supplemental ReadyToRunInfo on pModule. Runs at a quiesce point.
+    static ReadyToRunInfo *AttachSupplemental(Module *pModule, NativeImage *pLazyImage, AllocMemTracker *pamTracker);
 #endif // TARGET_WASM
 
     void RegisterResumptionStub(PCODE stubEntryPoint);

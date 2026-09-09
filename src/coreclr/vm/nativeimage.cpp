@@ -9,7 +9,9 @@
 #include "common.h"
 #include "nativeimage.h"
 #include "hostinformation.h"
-
+#ifdef TARGET_WASM
+#include "webcildecoder.h"
+#endif
 // --------------------------------------------------------------------------------
 // Headers
 // --------------------------------------------------------------------------------
@@ -319,6 +321,46 @@ NativeImage *NativeImage::Open(
     }
 }
 #endif
+
+#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE)
+NativeImage *NativeImage::OpenFromMemory(
+    TADDR imageBase,
+    uint32_t imageSize,
+    LPCUTF8 nativeImageFileName,
+    AssemblyBinder *pAssemblyBinder,
+    LoaderAllocator *pLoaderAllocator,
+    AllocMemTracker *pamTracker)
+{
+    STANDARD_VM_CONTRACT;
+
+    WebcilDecoder decoder;
+    decoder.Init((void *)imageBase, (COUNT_T)imageSize);
+    if (!decoder.HasReadyToRunHeader())
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    READYTORUN_HEADER *pHeader = decoder.GetReadyToRunHeader();
+    if (pHeader->Signature != READYTORUN_SIGNATURE)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+    if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    // The payload buffer has process lifetime (allocated by the host loader), so the image layout is
+    // a plain view over it with no cleanup callback.
+    NewHolder<ReadyToRunLoadedImage> loadedImageHolder = new ReadyToRunLoadedImage(imageBase, imageSize);
+    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, loadedImageHolder.Extract(), nativeImageFileName);
+    image->Initialize(pHeader, pLoaderAllocator, pamTracker);
+
+    // Supplemental images are not registered in the AppDomain native-image-by-name map; they are owned
+    // by the module they attach to (see ReadyToRunInfo::AttachSupplemental).
+    return image.Extract();
+}
+#endif // TARGET_WASM && !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, Assembly *pParentAssembly)

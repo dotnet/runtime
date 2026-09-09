@@ -2921,6 +2921,30 @@ void ReadyToRunInfo::RegisterVirtualIPRange()
 
     m_minVirtualIP = m_pComposite->GetMinVirtualIP();
 }
+
+ReadyToRunInfo *ReadyToRunInfo::AttachSupplemental(Module *pModule, NativeImage *pLazyImage, AllocMemTracker *pamTracker)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pModule != NULL);
+    _ASSERTE(pLazyImage != NULL);
+
+    // The lazy composite must carry a component matching this module's assembly; otherwise it is not a
+    // supplement for this module and the attach is declined.
+    if (pLazyImage->GetComponentAssemblyHeader(pModule->GetSimpleName()) == NULL)
+        return NULL;
+
+    LoaderAllocator *pLoaderAllocator = pModule->GetLoaderAllocator();
+    READYTORUN_HEADER *pHeader = pLazyImage->GetReadyToRunInfo()->GetReadyToRunHeader();
+
+    void *pMemory = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ReadyToRunInfo))));
+    ReadyToRunInfo *pInfo = new (pMemory) ReadyToRunInfo(pModule, pLoaderAllocator, pHeader, pLazyImage, /*pLayout*/ nullptr, pamTracker);
+
+    // Register the image's virtual-IP and function-table ranges so its code is unwindable, then publish
+    // it on the module so GetPrecompiledR2RCode resolves the complement methods' entrypoints.
+    pInfo->RegisterVirtualIPRange();
+    pModule->AttachSupplementalReadyToRunInfo(pInfo);
+    return pInfo;
+}
 #endif // TARGET_WASM
 
 #endif // DACCESS_COMPILE
