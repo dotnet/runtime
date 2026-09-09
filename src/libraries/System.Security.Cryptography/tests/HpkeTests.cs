@@ -1731,9 +1731,180 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public static void Seal_RejectsOverlappingBuffers(int offset)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            // Indices: plaintext, associatedData, info, encapsulatedSecret, ciphertext.
+            (int First, int Second)[] pairs = [(0, 3), (1, 3), (2, 3), (0, 4), (1, 4), (2, 4), (3, 4)];
+
+            foreach ((int first, int second) in pairs)
+            {
+                byte[][] buffers = [new byte[128], new byte[128], new byte[128], new byte[128], new byte[128]];
+                buffers[second] = buffers[first];
+                buffers[first].AsSpan().Fill(0xA5);
+                byte[] original = (byte[])buffers[first].Clone();
+                int[] starts = [16, 16, 16, 16, 16];
+                starts[second] += offset;
+
+                using (RecordingHpke key = new(suite))
+                {
+                    Assert.Throws<CryptographicException>(() => key.Seal(
+                        buffers[0].AsSpan(starts[0], 32),
+                        buffers[3].AsSpan(starts[3], suite.EncapsulatedSecretSizeInBytes),
+                        buffers[4].AsSpan(starts[4], suite.GetCiphertextLength(32)),
+                        buffers[1].AsSpan(starts[1], 32),
+                        buffers[2].AsSpan(starts[2], 32)));
+                    Assert.Equal(0, key.SealCalls);
+                    Assert.Equal(original, buffers[first]);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public static void CreateSender_RejectsOverlappingBuffers(int offset)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            byte[] buffer = new byte[128];
+            buffer.AsSpan().Fill(0xA5);
+            byte[] original = (byte[])buffer.Clone();
+
+            using (RecordingHpke key = new(suite))
+            {
+                Assert.Throws<CryptographicException>(() => key.CreateSender(
+                    buffer.AsSpan(16 + offset, suite.EncapsulatedSecretSizeInBytes),
+                    buffer.AsSpan(16, 32)));
+                Assert.Equal(0, key.CreateSenderCalls);
+                Assert.Equal(original, buffer);
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public static void CreatePskSender_RejectsOverlappingBuffers(int offset)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            for (int input = 0; input < 3; input++)
+            {
+                byte[][] inputs = [new byte[128], new byte[128], new byte[128]];
+                byte[] output = inputs[input];
+                output.AsSpan().Fill(0xA5);
+                byte[] original = (byte[])output.Clone();
+
+                using (RecordingHpke key = new(suite))
+                {
+                    Assert.Throws<CryptographicException>(() => key.CreatePskSender(
+                        inputs[0].AsSpan(16, 32),
+                        inputs[1].AsSpan(16, 32),
+                        output.AsSpan(16 + offset, suite.EncapsulatedSecretSizeInBytes),
+                        inputs[2].AsSpan(16, 32)));
+                    Assert.Equal(0, key.PskCalls);
+                    Assert.Equal(0, key.CreateSenderCalls);
+                    Assert.Equal(original, output);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public static void Sender_SealRejectsOverlappingBuffers(int offset)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            for (int input = 0; input < 2; input++)
+            {
+                byte[][] inputs = [new byte[128], new byte[128]];
+                byte[] output = inputs[input];
+                output.AsSpan().Fill(0xA5);
+                byte[] original = (byte[])output.Clone();
+
+                using (RecordingHpkeSender sender = new(suite))
+                {
+                    Assert.Throws<CryptographicException>(() => sender.Seal(
+                        inputs[0].AsSpan(16, 32),
+                        output.AsSpan(16 + offset, suite.GetCiphertextLength(32)),
+                        inputs[1].AsSpan(16, 32)));
+                    Assert.Equal(0, sender.SealCalls);
+                    Assert.Equal(original, output);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(32)]
+        public static void Seal_AllowsReadOnlyOverlapAndAdjacentOutputs(int inputLength)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            int encLength = suite.EncapsulatedSecretSizeInBytes;
+            int ciphertextLength = suite.GetCiphertextLength(inputLength);
+            byte[] buffer = new byte[inputLength + encLength + ciphertextLength];
+            buffer.AsSpan().Fill(0xA5);
+            byte[] originalInput = buffer.AsSpan(0, inputLength).ToArray();
+
+            using (RecordingHpke key = new(suite))
+            {
+                key.Seal(
+                    buffer.AsSpan(0, inputLength),
+                    buffer.AsSpan(inputLength, encLength),
+                    buffer.AsSpan(inputLength + encLength, ciphertextLength),
+                    buffer.AsSpan(0, inputLength),
+                    buffer.AsSpan(0, inputLength));
+                Assert.Equal(1, key.SealCalls);
+                AssertExtensions.SequenceEqual(originalInput.AsSpan(), buffer.AsSpan(0, inputLength));
+                Assert.Equal(0xD7, buffer[inputLength]);
+                Assert.Equal(0xC8, buffer[^1]);
+            }
+
+            using (RecordingHpkeSender sender = new(suite))
+            {
+                sender.Seal(
+                    buffer.AsSpan(0, inputLength),
+                    buffer.AsSpan(inputLength, ciphertextLength),
+                    buffer.AsSpan(0, inputLength));
+                Assert.Equal(1, sender.SealCalls);
+                AssertExtensions.SequenceEqual(originalInput.AsSpan(), buffer.AsSpan(0, inputLength));
+            }
+        }
+
+        [Fact]
+        public static void CreateSender_AllowsReadOnlyOverlapAndAdjacentOutput()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            byte[] buffer = new byte[32 + suite.EncapsulatedSecretSizeInBytes];
+            buffer.AsSpan().Fill(0xA5);
+            byte[] originalInput = buffer.AsSpan(0, 32).ToArray();
+
+            using (RecordingHpke key = new(suite))
+            using (HpkeSender sender = key.CreateSender(buffer.AsSpan(32), buffer.AsSpan(0, 32)))
+            using (HpkeSender pskSender = key.CreatePskSender(
+                buffer.AsSpan(0, 32), buffer.AsSpan(0, 32), buffer.AsSpan(32), buffer.AsSpan(0, 32)))
+            {
+                Assert.Equal(2, key.CreateSenderCalls);
+                Assert.Equal(1, key.PskCalls);
+                Assert.Equal(originalInput, key.LastPsk);
+                Assert.Equal(originalInput, key.LastPskId);
+                Assert.Equal(originalInput, key.LastSenderInfo);
+                AssertExtensions.SequenceEqual(originalInput.AsSpan(), buffer.AsSpan(0, 32));
+                Assert.Equal(0xD7, buffer[^1]);
+            }
+        }
+
         private sealed class RecordingHpke : Hpke
         {
             internal bool OpenCoreCalled { get; private set; }
+            internal int SealCalls { get; private set; }
             internal int CreateSenderCalls { get; private set; }
             internal byte[] LastSenderInfo { get; private set; } = [];
             internal bool ThrowOnCreateSender { get; set; }
@@ -1821,8 +1992,12 @@ namespace System.Security.Cryptography.Tests
                 Span<byte> encapsulatedSecret,
                 Span<byte> ciphertext,
                 ReadOnlySpan<byte> associatedData,
-                ReadOnlySpan<byte> info) =>
-                throw new InvalidOperationException("Unexpected encryption.");
+                ReadOnlySpan<byte> info)
+            {
+                SealCalls++;
+                encapsulatedSecret.Fill(0xD7);
+                ciphertext.Fill(0xC8);
+            }
         }
 
         [Theory]

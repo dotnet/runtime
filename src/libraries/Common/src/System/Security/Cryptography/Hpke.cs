@@ -483,6 +483,45 @@ namespace System.Security.Cryptography
             ciphertext = ciphertextBuffer;
         }
 
+        /// <summary>
+        ///   Encrypts and authenticates a single message into the provided buffers using Base mode.
+        /// </summary>
+        /// <param name="plaintext">
+        ///   The message to encrypt.
+        /// </param>
+        /// <param name="encapsulatedSecret">
+        ///   The buffer to receive the encapsulated secret to send to the recipient.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The buffer to receive the ciphertext followed by its authentication tag.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional data to authenticate without encrypting.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="encapsulatedSecret" /> is not exactly <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" />
+        ///   bytes long, <paramref name="ciphertext" /> is not exactly the length returned by
+        ///   <see cref="HpkeSuite.GetCiphertextLength" /> for <paramref name="plaintext" />,
+        ///   or <paramref name="info" /> exceeds the cipher suite's KDF length limit.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   The ciphertext length would exceed <see cref="int.MaxValue" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
         public void Seal(
             ReadOnlySpan<byte> plaintext,
             Span<byte> encapsulatedSecret,
@@ -507,6 +546,17 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, expectedCiphertextLength),
                     nameof(ciphertext));
+            }
+
+            if (encapsulatedSecret.Overlaps(ciphertext) ||
+                plaintext.Overlaps(encapsulatedSecret) ||
+                associatedData.Overlaps(encapsulatedSecret) ||
+                info.Overlaps(encapsulatedSecret) ||
+                plaintext.Overlaps(ciphertext) ||
+                associatedData.Overlaps(ciphertext) ||
+                info.Overlaps(ciphertext))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             SealCore(plaintext, encapsulatedSecret, ciphertext, associatedData, info);
@@ -807,7 +857,13 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a sender is not supported on the current platform.
@@ -825,6 +881,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedSecretSizeInBytes),
                     nameof(encapsulatedSecret));
+            }
+
+            if (info.Overlaps(encapsulatedSecret))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             return CreateSenderCore(encapsulatedSecret, info);
@@ -1096,7 +1157,13 @@ namespace System.Security.Cryptography
         ///   <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a PSK sender is not supported on the current platform.
@@ -1123,6 +1190,13 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedSecretSizeInBytes),
                     nameof(encapsulatedSecret));
+            }
+
+            if (psk.Overlaps(encapsulatedSecret) ||
+                pskId.Overlaps(encapsulatedSecret) ||
+                info.Overlaps(encapsulatedSecret))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             return CreatePskSenderCore(encapsulatedSecret, info, psk, pskId);

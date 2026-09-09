@@ -120,7 +120,13 @@ namespace System.Security.Cryptography
         ///   The ciphertext length would exceed <see cref="int.MaxValue" />.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The sender's message limit has been reached, or an error occurred during encryption.
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The sender's message limit has been reached, or an error occurred during encryption.
+        ///   </para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -138,6 +144,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, ciphertextLength),
                     nameof(ciphertext));
+            }
+
+            if (plaintext.Overlaps(ciphertext) || associatedData.Overlaps(ciphertext))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             SealCore(plaintext, ciphertext, associatedData);
