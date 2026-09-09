@@ -18,7 +18,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool allowOptimistic, bool isReadyToRun)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool allowOptimistic, bool isReadyToRun, string optimisticInstructionSetOverrides = null)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -219,6 +219,7 @@ namespace System.CommandLine
             // the optimistic set would be missing the explicitly unsupported sets. So we effectively clone the list and
             // tack on the additional optimistic bits after. This ensures the optimistic set remains an accurate superset
             InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(instructionSetSupportBuilder);
+            InstructionSetSupportBuilder optimisticInstructionSetOverrideBuilder = new(targetArchitecture);
 
             // Optimistically assume some instruction sets are present.
             if (allowOptimistic && targetArchitecture is TargetArchitecture.X86 or TargetArchitecture.X64)
@@ -283,9 +284,24 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
             }
 
+            if (optimisticInstructionSetOverrides != null)
+            {
+                string[] optimisticInstructionSetOverrideParams = optimisticInstructionSetOverrides.Split(',');
+                for (int i = 0; i < optimisticInstructionSetOverrideParams.Length; i++)
+                {
+                    string instructionSetSpecifier = NormalizeInstructionSetSpecifier(optimisticInstructionSetOverrideParams[i], mustNotBeMessage);
+                    ApplyInstructionSetSpecifier(optimisticInstructionSetOverrideBuilder, instructionSetSpecifier, mustNotBeMessage);
+                }
+            }
+
             // Vector<T> can always be part of the optimistic set, we only want to optionally exclude it from the supported set
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(maxVectorTBitWidth, skipAddingVectorT: false, out var optimisticInstructionSet, out _,
                 (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
+            optimisticInstructionSetOverrideBuilder.ComputeInstructionSetFlags(maxVectorTBitWidth, skipAddingVectorT: true, out var supportedOptimisticInstructionSetOverride, out var unsupportedOptimisticInstructionSetOverride,
+                (string specifiedInstructionSet, string impliedInstructionSet) =>
+                    throw new CommandLineException(string.Format(invalidImplicationMessage, specifiedInstructionSet, impliedInstructionSet)));
+            optimisticInstructionSet.Add(supportedOptimisticInstructionSetOverride);
+            optimisticInstructionSet.Remove(unsupportedOptimisticInstructionSetOverride);
             optimisticInstructionSet.Remove(unsupportedInstructionSet);
             optimisticInstructionSet.Add(supportedInstructionSet);
 
