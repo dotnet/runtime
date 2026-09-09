@@ -65,82 +65,11 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="PublishReadyToRun=true for CoreCLR browser-wasm requires a wasm-capable crossgen2, but none was resolved. Set Crossgen2InBuildDir to an in-build crossgen2 directory (or provide a ResolvedCrossgen2Pack) until wasm crossgen2 support flows through the base SDK (dotnet/sdk#55785)." />
   </Target>
 
-  <!-- The nested publish shares $(OutDir) with the outer build and its build-phase webcil conversion runs
-       before ILLink and crossgen, so it would stage the UNTRIMMED framework into the served directory beside
-       the outer build's trimmed R2R set. Only the outer build may populate that directory. The item metadata
-       is needed as well as the property because DefineStaticWebAssets prefers per-item CopyToOutputDirectory
-       over its parameter, and the xharness runner set carries its own. -->
-  <Target Name="_WasmCoreClrSuppressNestedPublishAssetCopy"
-          Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
-          BeforeTargets="_ComputeWasmBuildCandidates">
-    <PropertyGroup>
-      <_WasmFrameworkCopyToOutputDirectory>Never</_WasmFrameworkCopyToOutputDirectory>
-    </PropertyGroup>
-    <ItemGroup>
-      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)" CopyToOutputDirectory="Never" />
-    </ItemGroup>
-  </Target>
-
-  <!-- The metadata set above is STICKY: a native relink returns the nested publish's assembly set to the outer
-       build, metadata included, and the outer build would then define those assets in the manifest yet never
-       copy them - the boot config requests a fingerprint that is not on disk and startup fails on a 500. -->
-  <Target Name="_WasmCoreClrRestoreCopyToOutputDirectory"
-          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
-          BeforeTargets="_ComputeWasmBuildCandidates">
-    <ItemGroup>
-      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
-                               Condition="'%(ReferenceCopyLocalPaths.CopyToOutputDirectory)' == 'Never'"
-                               CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
-      <WasmAssembliesFinal Update="@(WasmAssembliesFinal)"
-                           Condition="'%(WasmAssembliesFinal.CopyToOutputDirectory)' == 'Never'"
-                           CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
-    </ItemGroup>
-  </Target>
-
   <!-- PublishTrimmed selects the staged closure (untrimmed pack vs linker output) exactly like
        PublishReadyToRun selects its flavour, so it belongs in the webcil staging stamp too. -->
   <ItemGroup>
     <_WasmWebcilStampProperty Include="PublishTrimmed" />
   </ItemGroup>
-
-  <!-- The webcil stamp only forces RE-CONVERSION; it never removes what the previous mode left behind. Because
-       static web assets are content-fingerprinted, newly staged copies land BESIDE the old ones instead of
-       replacing them - two copies of an assembly from two different version bubbles. Record the mode and drop
-       the derived outputs whenever it changes.
-       Outer pass only: the nested publish worker shares this IntermediateOutputPath but resolves WasmNativeStrip
-       and WasmNativeDebugSymbols differently, so letting it run too makes the two passes disagree on the mode
-       string and take turns wiping what the other just staged. -->
-  <Target Name="_WasmCoreClrInvalidateStaleModeOutputs"
-          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
-          BeforeTargets="_ComputeWasmBuildCandidates;_PrepareForReadyToRunCompilation">
-    <PropertyGroup>
-      <_WasmCoreClrModeStamp>$(IntermediateOutputPath)wasm-coreclr-mode.stamp</_WasmCoreClrModeStamp>
-      <_WasmCoreClrMode>PublishReadyToRun=$(PublishReadyToRun);PublishTrimmed=$(PublishTrimmed);WasmBuildNative=$(WasmBuildNative);WasmNativeDebugSymbols=$(WasmNativeDebugSymbols);WasmNativeStrip=$(WasmNativeStrip)</_WasmCoreClrMode>
-      <!-- Only clear the served directory when it is the default one: WasmRuntimeAssetsLocation may be './',
-           where the app's own content sits next to the staged assets and a recursive delete would take it. -->
-      <_WasmCoreClrServedAssetsDir Condition="'$(WasmRuntimeAssetsLocation)' == '' or '$(WasmRuntimeAssetsLocation)' == '_framework'">$(OutDir)wwwroot\_framework\</_WasmCoreClrServedAssetsDir>
-    </PropertyGroup>
-    <ReadLinesFromFile File="$(_WasmCoreClrModeStamp)" Condition="Exists('$(_WasmCoreClrModeStamp)')">
-      <Output TaskParameter="Lines" ItemName="_WasmCoreClrPreviousMode" />
-    </ReadLinesFromFile>
-    <ItemGroup Condition="'@(_WasmCoreClrPreviousMode)' != '' and '@(_WasmCoreClrPreviousMode)' != '$(_WasmCoreClrMode)'">
-      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)R2R\*.wasm;$(IntermediateOutputPath)R2R\*.dll" />
-      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)webcil\**\*.wasm" />
-      <!-- Just the link outputs, not the .o files: the emcc link rsp is an Input to the link target, so only
-           that step has to re-run for a native flag change. -->
-      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)wasm\for-build\dotnet.native.*" />
-      <_WasmCoreClrStaleModeOutput Include="$(IntermediateOutputPath)wasm\for-publish\dotnet.native.*" />
-      <!-- Only the fingerprinted assemblies we stage (webcil-in-wasm and their .dll aliases): these accumulate
-           beside their predecessors on a mode flip. Scoped to *.wasm/*.dll rather than a recursive wipe so the
-           SDK never removes app-authored content that may live under the served directory. -->
-      <_WasmCoreClrStaleModeOutput Include="$(_WasmCoreClrServedAssetsDir)*.wasm;$(_WasmCoreClrServedAssetsDir)*.dll" Condition="'$(_WasmCoreClrServedAssetsDir)' != ''" />
-    </ItemGroup>
-    <Delete Files="@(_WasmCoreClrStaleModeOutput)" ContinueOnError="true" />
-    <WriteLinesToFile File="$(_WasmCoreClrModeStamp)" Lines="$(_WasmCoreClrMode)" Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <ItemGroup>
-      <FileWrites Include="$(_WasmCoreClrModeStamp)" />
-    </ItemGroup>
-  </Target>
 
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
        loose in bin/; the managed .dll stays and ConvertDllsToWebcil stages the image. The _WasmRuntimePackR2RDir
