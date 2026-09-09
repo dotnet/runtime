@@ -8210,6 +8210,9 @@ public class f8192
     { }
     [OuterLoop]
     [Fact]
+#if WASM_R2R_EXCLUSION
+    [System.Runtime.BypassReadyToRun]
+#endif
     public static void TestEntryPoint()
     {
         Callee(

@@ -66,7 +66,7 @@ public class Test22888
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static int TestEntryPoint()
     {

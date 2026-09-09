@@ -2,8 +2,6 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133467 -->
-    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DevDiv_902271.il" />

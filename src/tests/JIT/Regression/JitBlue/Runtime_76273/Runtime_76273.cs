@@ -30,7 +30,7 @@ public class Program
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90372", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     public static void TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();

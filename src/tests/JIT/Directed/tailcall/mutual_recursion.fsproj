@@ -6,8 +6,6 @@
   <PropertyGroup>
     <Optimize>True</Optimize>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133464 -->
-    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
     <!-- F# does not emit tail calls in Debug builds, leading to stack overflow. See https://github.com/dotnet/runtime/issues/127437 -->
     <DisableProjectBuild Condition="'$(Configuration)' == 'Debug'">true</DisableProjectBuild>
     <!-- F# test that relies on the merged-runner adding [<EntryPoint>];
