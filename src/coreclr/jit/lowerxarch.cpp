@@ -1313,6 +1313,12 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
             continue;
         }
 
+        if (isScalar && (i == 1))
+        {
+            // Scalar FMA copies the upper elements of its first operand, including any vector negation.
+            continue;
+        }
+
         if (!arg->OperIsHWIntrinsic())
         {
             continue;
