@@ -442,8 +442,6 @@ namespace ILCompiler
                         continue;
                     }
 
-                    CustomAttributeValue<TypeWithSerializedName> attrValue = attr.DecodeValue(new TypeMapCustomAttributeTypeProvider(currentAssembly));
-
                     TypeDesc typeMapGroup = type.Instantiation[0];
 
                     Map typeMapState;
@@ -483,6 +481,8 @@ namespace ILCompiler
 
                     try
                     {
+                        CustomAttributeValue<TypeWithSerializedName> attrValue = attr.DecodeValue(new TypeMapCustomAttributeTypeProvider(currentAssembly));
+
                         switch (attrKind)
                         {
                             case TypeMapAttributeKind.TypeMapAssemblyTarget:
