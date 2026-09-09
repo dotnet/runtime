@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Tests
@@ -175,6 +176,9 @@ namespace System.Tests
             RunTest(StringComparer.OrdinalIgnoreCase, true, true);
             RunTest(StringComparer.InvariantCulture, false, false); // not ordinal
             RunTest(StringComparer.InvariantCultureIgnoreCase, false, false); // not ordinal
+            RunTest(GetNonRandomizedComparer("WrappedAroundDefaultComparer"), true, false); // EC<string>.Default is Ordinal-equivalent
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinal"), true, false);
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinalIgnoreCase"), true, true);
             RunTest(new CustomStringComparer(), false, false); // not an inbox comparer
             RunTest(ci_enUS.GetStringComparer(CompareOptions.None), false, false); // linguistic
             RunTest(ci_enUS.GetStringComparer(CompareOptions.Ordinal), true, false);
@@ -216,6 +220,9 @@ namespace System.Tests
             RunTest(StringComparer.OrdinalIgnoreCase, null, default);
             RunTest(StringComparer.InvariantCulture, ci_inv, CompareOptions.None);
             RunTest(StringComparer.InvariantCultureIgnoreCase, ci_inv, CompareOptions.IgnoreCase);
+            RunTest(GetNonRandomizedComparer("WrappedAroundDefaultComparer"), null, default); // EC<string>.Default is Ordinal-equivalent
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinal"), null, default);
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinalIgnoreCase"), null, default);
             RunTest(new CustomStringComparer(), null, default); // not an inbox comparer
             RunTest(ci_enUS.GetStringComparer(CompareOptions.None), ci_enUS, CompareOptions.None);
             if (PlatformDetection.IsNumericComparisonSupported)
@@ -328,6 +335,17 @@ namespace System.Tests
                 Assert.True(alternateComparer.Equals("hello".AsSpan(), "HELLO"));
                 Assert.True(alternateComparer.Equals("HELLO".AsSpan(), "hello"));
             }
+        }
+
+        private static IEqualityComparer<string> GetNonRandomizedComparer(string name)
+        {
+            Type nonRandomizedComparerType = typeof(StringComparer).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer");
+            Assert.NotNull(nonRandomizedComparerType);
+
+            FieldInfo fi = nonRandomizedComparerType.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(fi);
+
+            return (IEqualityComparer<string>)fi.GetValue(null);
         }
 
         private class CustomStringComparer : StringComparer
