@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 namespace Runtime_133101;
 
 public class Runtime_133101
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133442", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX64Process), nameof(PlatformDetection.IsMonoMiniJIT))]
     [Fact]
     public static void TestEntryPoint()
     {

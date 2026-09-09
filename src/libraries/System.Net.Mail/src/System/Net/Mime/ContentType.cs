@@ -191,8 +191,7 @@ namespace System.Net.Mime
 
         private static void EncodeToBuffer(string value, StringBuilder builder, bool allowUnicode)
         {
-            Encoding? encoding = MimeBasePart.DecodeEncoding(value);
-            if (encoding != null) // Manually encoded elsewhere, pass through
+            if (MimeBasePart.IsFullyEncoded(value)) // Manually encoded elsewhere, pass through
             {
                 builder.Append('\"').Append(value).Append('"');
             }
@@ -204,7 +203,7 @@ namespace System.Net.Mime
             else
             {
                 // MIME Encoding required
-                encoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
+                Encoding encoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
                 builder.Append('"').Append(MimeBasePart.EncodeHeaderValue(value, encoding, MimeBasePart.ShouldUseBase64Encoding(encoding))).Append('"');
             }
         }
