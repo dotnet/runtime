@@ -138,7 +138,7 @@ namespace System.Net.Mime
                 {
                     return (value, null);
                 }
-                if (!allowQuoteAndEscape & data.ContainsAny('\\', '"'))
+                if (!allowQuoteAndEscape && data.ContainsAny('\\', '"'))
                 {
                     return (value, null);
                 }
