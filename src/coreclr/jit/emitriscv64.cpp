@@ -4994,7 +4994,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             }
             else
             {
-                bool needTemp = indir->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indir);
+                bool needTemp = indir->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeUsesFloatReg(indir);
                 if (addr->AsIntCon()->FitsInAddrBase(m_compiler) && addr->AsIntCon()->AddrNeedsReloc(m_compiler))
                 {
                     regNumber addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;

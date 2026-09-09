@@ -53,6 +53,9 @@ MethodSet* Compiler::s_pJitMethodSet               = nullptr;
 bool GlobalJitOptions::compFeatureHfa          = false;
 LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
 #endif // CONFIGURABLE_ARM_ABI
+#ifdef TARGET_RISCV64
+LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
+#endif // TARGET_RISCV64
 
 /*****************************************************************************
  *
@@ -2502,6 +2505,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (compIsForInlining())
     {
+#ifdef TARGET_RISCV64
+        // The soft-float mode is decided by the root compilation (see below); the
+        // importer of an inlinee needs it too, for the intrinsics and casts it expands.
+        opts.compUseSoftFP = impInlineInfo->InlinerCompiler->opts.compUseSoftFP;
+#endif // TARGET_RISCV64
         return;
     }
 
@@ -2907,10 +2915,50 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     GlobalJitOptions::compFeatureHfa = !opts.compUseSoftFP;
 #elif defined(TARGET_RISCV64)
-    // lp64 soft-float ABI: FP scalars and FP struct fields are passed by the
-    // integer calling convention and fa* registers are never used. Set by the
-    // VM / AOT driver for targets without the F extension.
+    // Soft-float, for targets without the F/D extensions (set by the AOT driver):
+    // the lp64 calling convention passes FP values in integer registers, and
+    // TYP_FLOAT/TYP_DOUBLE values live in the integer register file altogether;
+    // the FP arithmetic is done by helper calls (see fgMorphSmpOp). The register
+    // class of a type is a process-wide table, so the setting cannot change
+    // during the lifetime of the process.
     opts.compUseSoftFP = jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI);
+
+    // The first compilation of the process fixes the mode: it claims the
+    // configuration, initializes the table and then publishes the mode. Every
+    // other compilation waits for the publication and must request the same
+    // mode, so the table is never written while another compilation may read it.
+    enum SoftFPConfig : LONG
+    {
+        SoftFPConfigUnset        = 0,
+        SoftFPConfigHard         = 1,
+        SoftFPConfigSoft         = 2,
+        SoftFPConfigInitializing = 3,
+    };
+    const LONG softFPConfig    = opts.compUseSoftFP ? SoftFPConfigSoft : SoftFPConfigHard;
+    LONG       oldSoftFPConfig = InterlockedCompareExchange(&GlobalJitOptions::compUseSoftFPConfigured,
+                                                            SoftFPConfigInitializing, SoftFPConfigUnset);
+    if (oldSoftFPConfig == SoftFPConfigUnset)
+    {
+        if (opts.compUseSoftFP)
+        {
+            varTypeRegister[TYP_FLOAT]  = VTR_INT;
+            varTypeRegister[TYP_DOUBLE] = VTR_INT;
+        }
+        InterlockedExchange(&GlobalJitOptions::compUseSoftFPConfigured, softFPConfig);
+    }
+    else
+    {
+        while (oldSoftFPConfig == SoftFPConfigInitializing)
+        {
+            // Atomic read; the initialization window is two byte stores long.
+            oldSoftFPConfig = InterlockedCompareExchange(&GlobalJitOptions::compUseSoftFPConfigured, SoftFPConfigUnset,
+                                                         SoftFPConfigUnset);
+        }
+        if (oldSoftFPConfig != softFPConfig)
+        {
+            NO_WAY("SoftFP setting changed during lifetime of process");
+        }
+    }
 #elif defined(ARM_SOFTFP) && defined(TARGET_ARM)
     // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
     assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));

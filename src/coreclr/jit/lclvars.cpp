@@ -676,7 +676,10 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
         }
 #endif
 
-        if (info.compIsVarArgs || (opts.compUseSoftFP && varTypeIsFloating(varDsc)))
+        // Under a soft-float ABI a parameter that lives in a floating-point register
+        // arrives in an integer one (armel); a parameter whose type is itself in the
+        // integer register file (RISC-V lp64) is an ordinary integer parameter.
+        if (info.compIsVarArgs || (opts.compUseSoftFP && varTypeIsFloating(varDsc) && varTypeUsesFloatReg(varDsc)))
         {
 #ifndef TARGET_X86
             // TODO-CQ: We shouldn't have to go as far as to declare these
@@ -897,7 +900,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     }
 
     var_types type = JITtype2varType(corInfoType);
-    if (varTypeIsFloating(type))
+    if (varTypeIsFloating(type) && varTypeUsesFloatReg(type))
     {
         compFloatingPointUsed = true;
     }

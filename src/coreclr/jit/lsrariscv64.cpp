@@ -145,7 +145,9 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             emitAttr size = emitActualTypeSize(tree);
             int64_t  bits;
-            if (emitter::isSingleInstructionFpImm(tree->AsDblCon()->DconValue(), size, &bits) && bits != 0)
+            // Under soft-float the bit pattern is materialized directly into the (integer) target register.
+            if (!m_compiler->opts.compUseSoftFP &&
+                emitter::isSingleInstructionFpImm(tree->AsDblCon()->DconValue(), size, &bits) && bits != 0)
             {
                 buildInternalIntRegisterDefForNode(tree);
                 buildInternalRegisterUses();
@@ -858,7 +860,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 addr->AsIntCon()->FitsInAddrBase(m_compiler) && addr->AsIntCon()->AddrNeedsReloc(m_compiler);
             if (needsReloc || !emitter::isValidSimm12(indirTree->Offset()))
             {
-                bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indirTree);
+                bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeUsesFloatReg(indirTree);
                 if (needTemp)
                 {
                     // This offset can't be contained in the ld/sd instruction, so we need an internal register

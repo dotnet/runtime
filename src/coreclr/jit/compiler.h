@@ -7285,6 +7285,15 @@ private:
     bool fgIsBlockCold(BasicBlock* block);
 
     GenTree* fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* oper);
+#ifdef TARGET_RISCV64
+    // Soft-float expansion of the FP operations into helper calls
+    GenTree*        fgMorphSoftFloatArith(GenTreeOp* tree);
+    GenTree*        fgMorphSoftFloatCast(GenTreeCast* tree, CorInfoHelpFunc helper, GenTree* oper);
+    GenTree*        fgMorphSoftFloatNeg(GenTreeOp* neg);
+    GenTree*        fgMorphSoftFloatRelop(GenTreeOp* relop);
+    GenTree*        fgMorphSoftFloatCkFinite(GenTreeOp* ckFinite);
+    GenTree*        fgMorphSoftFloatCastToInt32(GenTree* src, bool toUnsigned);
+#endif // TARGET_RISCV64
 
     GenTree* fgMorphIntoHelperCall(
         GenTree* tree, int helper, bool morphArgs, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr);

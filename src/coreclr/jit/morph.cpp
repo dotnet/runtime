@@ -253,6 +253,337 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     return tree;
 }
 
+#ifdef TARGET_RISCV64
+
+//------------------------------------------------------------------------
+// Soft-float (RISC-V without the F/D extensions)
+//
+// Under opts.compUseSoftFP there are no floating-point instructions or
+// registers: float/double values live in integer registers (see
+// Compiler::compInitOptions), and every floating-point arithmetic operation,
+// comparison and conversion is expanded during global morph into a call to
+// one of the soft-float helpers, so that no such node survives into the
+// backend. The IR keeps its floating-point types, so value numbering,
+// constant folding and CSE work unchanged; the helpers are modelled as the
+// operations they implement (see fgValueNumberJitHelperMethodVNFunc).
+//
+
+//------------------------------------------------------------------------
+// fgMorphSoftFloatArith: expand an FP arithmetic operation into a helper call
+//
+// Arguments:
+//    tree - the GT_ADD, GT_SUB, GT_MUL or GT_DIV node
+//
+// Return Value:
+//    The morphed replacement tree.
+//
+// Notes:
+//    Unlike USE_HELPER_FOR_ARITH this builds a new call node: the importer
+//    only allocates add/sub as small nodes, which cannot be turned into a
+//    call in place.
+//
+GenTree* Compiler::fgMorphSoftFloatArith(GenTreeOp* tree)
+{
+    assert(opts.compUseSoftFP && tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV) && varTypeIsFloating(tree));
+
+    const var_types type = tree->TypeGet();
+
+    // The IL stack has a single F type, so the operands may differ in size
+    // from the result; the helpers take operands of the result type.
+    for (GenTree** use : {&tree->gtOp1, &tree->gtOp2})
+    {
+        if ((*use)->TypeGet() != type)
+        {
+            *use = gtNewCastNode(type, *use, false, type);
+        }
+    }
+
+    GenTree* folded = gtFoldExpr(tree);
+    if (folded != tree)
+    {
+        return fgMorphTree(folded);
+    }
+    if (folded->OperIsLeaf())
+    {
+        return fgMorphLeaf(folded);
+    }
+
+    const bool      isFloat = (type == TYP_FLOAT);
+    CorInfoHelpFunc helper;
+    switch (tree->OperGet())
+    {
+        case GT_ADD:
+            helper = isFloat ? CORINFO_HELP_FLTADD : CORINFO_HELP_DBLADD;
+            break;
+        case GT_SUB:
+            helper = isFloat ? CORINFO_HELP_FLTSUB : CORINFO_HELP_DBLSUB;
+            break;
+        case GT_MUL:
+            helper = isFloat ? CORINFO_HELP_FLTMUL : CORINFO_HELP_DBLMUL;
+            break;
+        default:
+            helper = isFloat ? CORINFO_HELP_FLTDIV : CORINFO_HELP_DBLDIV;
+            break;
+    }
+
+    GenTreeCall* call = gtNewHelperCallNode(helper, type, tree->gtGetOp1(), tree->gtGetOp2());
+    return fgMorphTree(call);
+}
+
+//------------------------------------------------------------------------
+// fgMorphSoftFloatCast: expand a conversion into a helper call
+//
+// Arguments:
+//    tree   - the cast node
+//    helper - the conversion helper
+//    oper   - the (possibly widened) operand, tree's cast operand
+//
+// Return Value:
+//    The morphed replacement tree.
+//
+// Notes:
+//    The counterpart of fgMorphCastIntoHelper that builds a new node: casts
+//    created after import (impImplicitR4orR8Cast, the widening in
+//    fgMorphExpandCast) are not large enough to become a call in place.
+//
+GenTree* Compiler::fgMorphSoftFloatCast(GenTreeCast* tree, CorInfoHelpFunc helper, GenTree* oper)
+{
+    assert(opts.compUseSoftFP && (tree->CastOp() == oper));
+
+    if (oper->OperIsConst())
+    {
+        GenTree* folded = gtFoldExprConst(tree);
+        if (folded != tree)
+        {
+            return fgMorphTree(folded);
+        }
+        if (folded->OperIsConst())
+        {
+            return fgMorphConst(folded);
+        }
+    }
+
+    GenTreeCall* call = gtNewHelperCallNode(helper, genActualType(tree->CastToType()), oper);
+    return fgMorphTree(call);
+}
+
+//------------------------------------------------------------------------
+// fgMorphSoftFloatNeg: expand an FP negation into a sign-bit flip
+//
+// Arguments:
+//    neg - the GT_NEG node
+//
+// Return Value:
+//    The replacement tree, not yet morphed.
+//
+GenTree* Compiler::fgMorphSoftFloatNeg(GenTreeOp* neg)
+{
+    assert(opts.compUseSoftFP && neg->OperIs(GT_NEG) && varTypeIsFloating(neg));
+
+    const var_types type = neg->TypeGet();
+    GenTree*        op   = neg->gtGetOp1();
+
+    if (op->IsCnsFltOrDbl())
+    {
+        return gtNewDconNode(-op->AsDblCon()->DconValue(), type);
+    }
+
+    // -x == x ^ signBit, computed in the integer domain.
+    const var_types intType = (type == TYP_FLOAT) ? TYP_INT : TYP_LONG;
+    GenTree*        signBit = (type == TYP_FLOAT) ? gtNewIconNode(INT32_MIN, TYP_INT) : gtNewLconNode(INT64_MIN);
+    GenTree*        bits    = gtNewOperNode(GT_XOR, intType, gtNewBitCastNode(intType, op), signBit);
+    return gtNewBitCastNode(type, bits);
+}
+
+//------------------------------------------------------------------------
+// fgMorphSoftFloatRelop: expand an FP comparison into a compare helper call
+//
+// Arguments:
+//    relop - the comparison node
+//
+// Return Value:
+//    The replacement tree, an integer comparison of the helper result, not yet morphed.
+//
+// Notes:
+//    The helpers return a three-way result and differ only for unordered
+//    operands (CMP_LE returns 1, CMP_GE returns -1), which lets each IL form
+//    be expressed with a single call and a comparison of its result with 0:
+//
+//        oeq: LE == 0   une: LE != 0
+//        olt: LE <  0   ult: GE <  0
+//        ole: LE <= 0   ule: GE <= 0
+//        ogt: GE >  0   ugt: LE >  0
+//        oge: GE >= 0   uge: LE >= 0
+//
+//    ueq and one need both results:
+//
+//        ueq = (LE >= 0) && (GE <= 0)   one = (LE < 0) || (GE > 0)
+//
+GenTree* Compiler::fgMorphSoftFloatRelop(GenTreeOp* relop)
+{
+    assert(opts.compUseSoftFP && relop->OperIsCompare());
+
+    GenTree* op1 = relop->gtGetOp1();
+    GenTree* op2 = relop->gtGetOp2();
+    assert(varTypeIsFloating(op1) && (op1->TypeGet() == op2->TypeGet()));
+
+    const bool            isFloat     = op1->TypeIs(TYP_FLOAT);
+    const bool            isUnordered = (relop->gtFlags & GTF_RELOP_NAN_UN) != 0;
+    const genTreeOps      oper        = relop->OperGet();
+    const CorInfoHelpFunc cmpLE       = isFloat ? CORINFO_HELP_FLTCMP_LE : CORINFO_HELP_DBLCMP_LE;
+    const CorInfoHelpFunc cmpGE       = isFloat ? CORINFO_HELP_FLTCMP_GE : CORINFO_HELP_DBLCMP_GE;
+
+    GenTree* result;
+    if (oper == (isUnordered ? GT_EQ : GT_NE))
+    {
+        // ueq / one: both helpers are needed, so the operands go into temps.
+        // The stores are placed in the first operand of the AND/OR; the two
+        // operands both contain calls, so their evaluation order is fixed.
+        TempInfo tmp1 = fgMakeTemp(op1);
+        TempInfo tmp2 = fgMakeTemp(op2);
+
+        GenTree* le = gtNewHelperCallNode(cmpLE, TYP_INT, tmp1.load, tmp2.load);
+        le          = gtNewOperNode(GT_COMMA, TYP_INT, tmp1.store, gtNewOperNode(GT_COMMA, TYP_INT, tmp2.store, le));
+        GenTree* ge = gtNewHelperCallNode(cmpGE, TYP_INT, gtCloneExpr(tmp1.load), gtCloneExpr(tmp2.load));
+
+        GenTree* cmp;
+        if (oper == GT_EQ)
+        {
+            cmp = gtNewOperNode(GT_AND, TYP_INT, gtNewOperNode(GT_GE, TYP_INT, le, gtNewIconNode(0)),
+                                gtNewOperNode(GT_LE, TYP_INT, ge, gtNewIconNode(0)));
+        }
+        else
+        {
+            cmp = gtNewOperNode(GT_OR, TYP_INT, gtNewOperNode(GT_LT, TYP_INT, le, gtNewIconNode(0)),
+                                gtNewOperNode(GT_GT, TYP_INT, ge, gtNewIconNode(0)));
+        }
+        // Keep the tree rooted at a comparison, for GT_JTRUE users.
+        result = gtNewOperNode(GT_NE, TYP_INT, cmp, gtNewIconNode(0));
+    }
+    else
+    {
+        CorInfoHelpFunc helper;
+        switch (oper)
+        {
+            case GT_EQ:
+            case GT_NE:
+                helper = cmpLE;
+                break;
+            case GT_LT:
+            case GT_LE:
+                helper = isUnordered ? cmpGE : cmpLE;
+                break;
+            default:
+                assert((oper == GT_GT) || (oper == GT_GE));
+                helper = isUnordered ? cmpLE : cmpGE;
+                break;
+        }
+        GenTree* call = gtNewHelperCallNode(helper, TYP_INT, op1, op2);
+        result        = gtNewOperNode(oper, TYP_INT, call, gtNewIconNode(0));
+    }
+
+    // A JTRUE/QMARK condition carries GTF_RELOP_JMP_USED and GTF_DONT_CSE (set by
+    // the parent before its operands are morphed); the replacement must keep both
+    // so that CSE does not turn the condition into a local.
+    result->gtFlags |= (relop->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE));
+    return result;
+}
+
+//------------------------------------------------------------------------
+// fgMorphSoftFloatCkFinite: expand GT_CKFINITE into an exponent check
+//
+// Arguments:
+//    ckFinite - the GT_CKFINITE node
+//
+// Return Value:
+//    The replacement tree, not yet morphed:
+//
+//        COMMA(tmp = x, COMMA(BOUNDS_CHECK((bits(tmp) >> expShift) & expMask, expMask), tmp))
+//
+//    NaN and the infinities have all exponent bits set, so the bounds check
+//    (index >= length) throws exactly for them.
+//
+GenTree* Compiler::fgMorphSoftFloatCkFinite(GenTreeOp* ckFinite)
+{
+    assert(opts.compUseSoftFP && ckFinite->OperIs(GT_CKFINITE));
+
+    const var_types type    = ckFinite->TypeGet();
+    const bool      isFloat = (type == TYP_FLOAT);
+    const var_types intType = isFloat ? TYP_INT : TYP_LONG;
+    const int       expBits = isFloat ? 8 : 11;
+    const int       expMask = (1 << expBits) - 1;
+
+    TempInfo tmp  = fgMakeTemp(ckFinite->gtGetOp1());
+    GenTree* bits = gtNewBitCastNode(intType, tmp.load);
+    GenTree* exp  = gtNewOperNode(GT_RSZ, intType, bits, gtNewIconNode(genTypeSize(type) * 8 - 1 - expBits));
+    exp           = gtNewOperNode(GT_AND, intType, exp, isFloat ? gtNewIconNode(expMask) : gtNewLconNode(expMask));
+    if (!isFloat)
+    {
+        exp = gtNewCastNode(TYP_INT, exp, false, TYP_INT);
+    }
+    GenTree* check = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(exp, gtNewIconNode(expMask), SCK_ARITH_EXCPN);
+
+    GenTree* result = gtNewOperNode(GT_COMMA, type, check, gtCloneExpr(tmp.load));
+    return gtNewOperNode(GT_COMMA, type, tmp.store, result);
+}
+
+//------------------------------------------------------------------------
+// fgMorphSoftFloatCastToInt32: expand a non-overflow double -> int/uint cast
+//
+// Arguments:
+//    src        - the TYP_DOUBLE source
+//    toUnsigned - true for uint
+//
+// Return Value:
+//    The replacement tree, not yet morphed.
+//
+// Notes:
+//    The 64-bit conversion helpers implement the .NET semantics (NaN -> 0,
+//    saturation); their result is saturated to the 32-bit range here. The
+//    clamping is branchless and does not use GT_SELECT, which on RISC-V needs
+//    Zicond. The temps are stored first in an explicit COMMA chain since the
+//    store-before-use dependency is not otherwise expressed in the IR.
+//
+GenTree* Compiler::fgMorphSoftFloatCastToInt32(GenTree* src, bool toUnsigned)
+{
+    assert(opts.compUseSoftFP && src->TypeIs(TYP_DOUBLE));
+
+    GenTreeCall* cvt    = gtNewHelperCallNode(toUnsigned ? CORINFO_HELP_DBL2ULNG : CORINFO_HELP_DBL2LNG, TYP_LONG, src);
+    TempInfo     tmpVal = fgMakeTemp(cvt);
+
+    if (toUnsigned)
+    {
+        // result = (uint)val | -(val > UINT32_MAX); the helper never returns a negative value.
+        GenTree* isHi = gtNewOperNode(GT_GT, TYP_INT, gtCloneExpr(tmpVal.load), gtNewLconNode((int64_t)UINT32_MAX));
+        isHi->gtFlags |= GTF_UNSIGNED;
+        GenTree* trunc  = gtNewCastNode(TYP_INT, tmpVal.load, false, TYP_UINT);
+        GenTree* result = gtNewOperNode(GT_OR, TYP_INT, trunc, gtNewOperNode(GT_NEG, TYP_INT, isHi));
+        return gtNewOperNode(GT_COMMA, TYP_INT, tmpVal.store, result);
+    }
+
+    // maskHi = -(val > INT32_MAX); maskLo = -(val < INT32_MIN);
+    // result = ((int)val & ~(maskHi | maskLo)) | (INT32_MAX & maskHi) | (INT32_MIN & maskLo)
+    TempInfo tmpHi =
+        fgMakeTemp(gtNewOperNode(GT_NEG, TYP_INT,
+                                 gtNewOperNode(GT_GT, TYP_INT, gtCloneExpr(tmpVal.load), gtNewLconNode(INT32_MAX))));
+    TempInfo tmpLo =
+        fgMakeTemp(gtNewOperNode(GT_NEG, TYP_INT,
+                                 gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(tmpVal.load), gtNewLconNode(INT32_MIN))));
+
+    GenTree* trunc   = gtNewCastNode(TYP_INT, tmpVal.load, false, TYP_INT);
+    GenTree* outMask = gtNewOperNode(GT_OR, TYP_INT, tmpHi.load, tmpLo.load);
+    GenTree* inVal   = gtNewOperNode(GT_AND, TYP_INT, trunc, gtNewOperNode(GT_NOT, TYP_INT, outMask));
+    GenTree* hiVal   = gtNewOperNode(GT_AND, TYP_INT, gtNewIconNode(INT32_MAX, TYP_INT), gtCloneExpr(tmpHi.load));
+    GenTree* loVal   = gtNewOperNode(GT_AND, TYP_INT, gtNewIconNode(INT32_MIN, TYP_INT), gtCloneExpr(tmpLo.load));
+    GenTree* result  = gtNewOperNode(GT_OR, TYP_INT, gtNewOperNode(GT_OR, TYP_INT, inVal, hiVal), loVal);
+
+    result = gtNewOperNode(GT_COMMA, TYP_INT, tmpLo.store, result);
+    result = gtNewOperNode(GT_COMMA, TYP_INT, tmpHi.store, result);
+    return gtNewOperNode(GT_COMMA, TYP_INT, tmpVal.store, result);
+}
+
+#endif // TARGET_RISCV64
+
 //------------------------------------------------------------------------
 // fgMorphExpandCast: Performs the pre-order (required) morphing for a cast.
 //
@@ -282,6 +613,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
 //    in which case the cast may be transformed into an unchecked one
 //    and its operand changed (the cast "expanded" into two).
 //
+
 GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 {
     GenTree*  oper    = tree->CastOp();
@@ -445,6 +777,23 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     case TYP_ULONG:
                         helper = CORINFO_HELP_DBL2ULNG;
                         break;
+#ifdef TARGET_RISCV64
+                    case TYP_INT:
+                    case TYP_UINT:
+                    {
+                        // Soft-float: convert with the 64-bit helper and saturate to 32 bits.
+                        assert(opts.compUseSoftFP);
+                        if (tree->CastOp()->OperIsConst())
+                        {
+                            GenTree* folded = gtFoldExprConst(tree);
+                            if (folded != tree)
+                            {
+                                return fgMorphTree(folded);
+                            }
+                        }
+                        return fgMorphTree(fgMorphSoftFloatCastToInt32(oper, dstType == TYP_UINT));
+                    }
+#endif // TARGET_RISCV64
                     default:
                         unreached();
                 }
@@ -468,6 +817,42 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
         return fgMorphTree(oper);
     }
+
+#ifdef TARGET_RISCV64
+    else if (opts.compUseSoftFP && varTypeIsFloating(dstType))
+    {
+        // Soft-float: conversions to floating point are helper calls.
+        if (varTypeIsFloating(srcType))
+        {
+            if (srcType == dstType)
+            {
+                return fgMorphTree(oper);
+            }
+            return fgMorphSoftFloatCast(tree, (dstType == TYP_DOUBLE) ? CORINFO_HELP_FLT2DBL : CORINFO_HELP_DBL2FLT,
+                                        oper);
+        }
+
+        assert(varTypeIsIntegral(srcType));
+        if (!varTypeIsLong(srcType))
+        {
+            // Widen to 64 bits first; a zero-extended uint is exact in the signed helper.
+            oper = gtNewCastNode(TYP_LONG, oper, tree->IsUnsigned(), TYP_LONG);
+            tree->ClearUnsigned();
+            tree->CastOp() = oper;
+        }
+
+        CorInfoHelpFunc helper;
+        if (dstType == TYP_FLOAT)
+        {
+            helper = tree->IsUnsigned() ? CORINFO_HELP_ULNG2FLT : CORINFO_HELP_LNG2FLT;
+        }
+        else
+        {
+            helper = tree->IsUnsigned() ? CORINFO_HELP_ULNG2DBL : CORINFO_HELP_LNG2DBL;
+        }
+        return fgMorphSoftFloatCast(tree, helper, oper);
+    }
+#endif // TARGET_RISCV64
 
 #ifndef TARGET_64BIT
     else if (varTypeIsLong(srcType))
@@ -7011,6 +7396,40 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         // Some arithmetic operators need to use a helper call to the EE
         int helper;
 
+#ifdef TARGET_RISCV64
+        // Soft-float: expand the FP operations into helper calls before morphing their operands.
+        case GT_ADD:
+        case GT_SUB:
+            if (opts.compUseSoftFP && varTypeIsFloating(typ))
+            {
+                return fgMorphSoftFloatArith(tree->AsOp());
+            }
+            break;
+
+        case GT_NEG:
+            if (opts.compUseSoftFP && varTypeIsFloating(typ))
+            {
+                return fgMorphTree(fgMorphSoftFloatNeg(tree->AsOp()));
+            }
+            break;
+
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
+            if (opts.compUseSoftFP && varTypeIsFloating(op1))
+            {
+                return fgMorphTree(fgMorphSoftFloatRelop(tree->AsOp()));
+            }
+            break;
+
+        case GT_CKFINITE:
+            if (opts.compUseSoftFP)
+            {
+                return fgMorphTree(fgMorphSoftFloatCkFinite(tree->AsOp()));
+            }
+            break;
+#endif // TARGET_RISCV64
+
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         {
@@ -7084,6 +7503,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
 
         case GT_MUL:
             noway_assert(op2 != nullptr);
+
+#ifdef TARGET_RISCV64
+            if (opts.compUseSoftFP && varTypeIsFloating(typ))
+            {
+                return fgMorphSoftFloatArith(tree->AsOp());
+            }
+#endif // TARGET_RISCV64
 
 #if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             if (typ == TYP_LONG)
@@ -7189,6 +7615,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             break;
 
         case GT_DIV:
+#ifdef TARGET_RISCV64
+            if (opts.compUseSoftFP && varTypeIsFloating(typ))
+            {
+                return fgMorphSoftFloatArith(tree->AsOp());
+            }
+#endif // TARGET_RISCV64
+
             // Convert DIV to UDIV if both op1 and op2 are known to be never negative
             if (varTypeIsIntegral(tree) && op1->IsNeverNegative(this) && op2->IsNeverNegative(this))
             {
@@ -7484,6 +7917,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         case GT_EQ:
         case GT_NE:
         {
+#ifdef TARGET_RISCV64
+            if (opts.compUseSoftFP && varTypeIsFloating(op1))
+            {
+                return fgMorphTree(fgMorphSoftFloatRelop(tree->AsOp()));
+            }
+#endif // TARGET_RISCV64
+
             if (opts.OptimizationEnabled())
             {
                 GenTree* optimizedTree = gtFoldTypeCompare(tree);
@@ -7545,6 +7985,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
 
         case GT_GT:
         {
+#ifdef TARGET_RISCV64
+            if (opts.compUseSoftFP && varTypeIsFloating(op1))
+            {
+                return fgMorphTree(fgMorphSoftFloatRelop(tree->AsOp()));
+            }
+#endif // TARGET_RISCV64
+
             // Try and optimize nullable boxes feeding compares
             GenTree* optimizedTree = gtFoldBoxNullable(tree);
 

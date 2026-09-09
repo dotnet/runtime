@@ -2156,8 +2156,9 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             else
                 ins = INS_lh;
         }
-        else if (TYP_INT == srcType)
+        else if ((TYP_INT == srcType) || (TYP_FLOAT == srcType))
         {
+            // TYP_FLOAT: soft-float, the value lives in an integer register.
             ins = INS_lw;
         }
         else
@@ -2521,8 +2522,8 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             ins = INS_sb;
         else if (varTypeIsShort(dstType))
             ins = INS_sh;
-        else if (TYP_INT == dstType)
-            ins = INS_sw;
+        else if ((TYP_INT == dstType) || (TYP_FLOAT == dstType))
+            ins = INS_sw; // TYP_FLOAT: soft-float, the value lives in an integer register.
         else
             ins = INS_sd;
 #else

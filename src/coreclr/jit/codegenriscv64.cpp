@@ -1008,6 +1008,26 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
 
+            if (m_compiler->opts.compUseSoftFP)
+            {
+                // No FP registers: the constant is its IEEE 754 bit pattern in an integer register.
+                assert(genIsValidIntReg(targetReg));
+                int64_t bits;
+                if (size == EA_4BYTE)
+                {
+                    float   fltValue = (float)constValue;
+                    int32_t fltBits;
+                    memcpy(&fltBits, &fltValue, sizeof(fltBits));
+                    bits = fltBits;
+                }
+                else
+                {
+                    memcpy(&bits, &constValue, sizeof(bits));
+                }
+                instGen_Set_Reg_To_Imm(size, targetReg, bits);
+                break;
+            }
+
             assert(emitter::isFloatReg(targetReg));
             int64_t bits;
             if (emitter::isSingleInstructionFpImm(constValue, size, &bits))

@@ -5846,7 +5846,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_RISCV64
-                if (!isMagnitude)
+                // Soft-float: no fmin/fmax, the managed implementation is called instead.
+                if (!isMagnitude && !opts.compUseSoftFP)
                 {
                     GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
                     GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
@@ -11491,6 +11492,15 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
     assert(callType != TYP_STRUCT);
     assert(IsMathIntrinsic(intrinsicName));
     assert(isSpecial != nullptr);
+
+#ifdef TARGET_RISCV64
+    if (opts.compUseSoftFP && varTypeIsFloating(callType))
+    {
+        // No FP instructions: leave the call to the managed implementation.
+        JITDUMP("Soft-float: math intrinsic %d is left as a call\n", (int)intrinsicName);
+        return nullptr;
+    }
+#endif // TARGET_RISCV64
 
     op1 = nullptr;
 
