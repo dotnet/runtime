@@ -221,6 +221,7 @@ jobs:
           -architecture ${{ parameters.archType }} `
           -privatebuild `
           $(_DacModeArgs) `
+          $(_TestInterpreterArgs) `
           -liveRuntimeDir ${{ parameters.liveRuntimeDir }} `
           $(_InternalInstallArgs) `
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
