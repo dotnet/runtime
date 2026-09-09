@@ -63,7 +63,8 @@ namespace System.Net.Mime
         //
         // The entire value must consist of one or more well-formed RFC 2047 encoded-words
         // separated by linear whitespace (folding); otherwise the value is returned unchanged
-        // with a null Encoding.
+        // with a null Encoding. If the value is well-formed but cannot be decoded (unsupported charset,
+        // invalid Base64/Q encoding), this method may throw.
         internal static (string Value, Encoding? Encoding) DecodeHeaderValue(string? value, bool allowQuoteAndEscape)
         {
             const int MaxEncodedWordLength = 75;
