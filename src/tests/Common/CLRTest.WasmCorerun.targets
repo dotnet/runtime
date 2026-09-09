@@ -189,7 +189,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            and corerun.wasm below belong in the output directory. -->
       <_WasmCorerunDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'wasm-corerun'))</_WasmCorerunDir>
       <_WasmCorerunInputManifest>$(_WasmCorerunDir)inputs.txt</_WasmCorerunInputManifest>
-      <_WasmCorerunGeneratorRsp>$(_WasmCorerunDir)callhelpers-generator.rsp</_WasmCorerunGeneratorRsp>
+      <_Crossgen2GeneratorRsp>$(_WasmCorerunDir)callhelpers-generator.rsp</_Crossgen2GeneratorRsp>
 
       <!-- Consumed straight out of the kit: the paths in them are relative to the kit directory,
            which is why both em++ invocations below run from there. -->
@@ -322,8 +322,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </FilterManagedAssemblies>
 
     <PropertyGroup>
-      <_WasmCorerunGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmCorerunGeneratorExeSuffix>
-      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCorerunGeneratorExeSuffix)'))</Crossgen2Path>
+      <_Crossgen2ExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_Crossgen2ExeSuffix>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_Crossgen2ExeSuffix)'))</Crossgen2Path>
     </PropertyGroup>
 
     <Error Condition="'$(Crossgen2Path)' == ''"
@@ -336,19 +336,19 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <ItemGroup>
       <!-- This file is only imported for browser, so $(TargetOS) is that; naming it rather than
            repeating the literal keeps the two from drifting if wasi ever links a test corerun. -->
-      <_WasmCorerunGeneratorArg Include="--targetos:$(TargetOS)" />
-      <_WasmCorerunGeneratorArg Include="--targetarch:wasm" />
-      <_WasmCorerunGeneratorArg Include="--generate-portable-callhelpers:$(_WasmCorerunDir)" />
-      <_WasmCorerunGeneratorArg Include="@(_WasmCorerunPInvokeModule->'--directpinvoke:%(Identity)')" />
-      <_WasmCorerunGeneratorArg Include="@(_WasmCorerunManagedAssembly->'%(FullPath)')" />
+      <_Crossgen2GeneratorArg Include="--targetos:$(TargetOS)" />
+      <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
+      <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmCorerunDir)" />
+      <_Crossgen2GeneratorArg Include="@(_WasmCorerunPInvokeModule->'--directpinvoke:%(Identity)')" />
+      <_Crossgen2GeneratorArg Include="@(_WasmCorerunManagedAssembly->'%(FullPath)')" />
     </ItemGroup>
 
-    <WriteLinesToFile File="$(_WasmCorerunGeneratorRsp)" Lines="@(_WasmCorerunGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_Crossgen2GeneratorRsp)" Lines="@(_Crossgen2GeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Exec Command="&quot;$(Crossgen2Path)&quot; &quot;@$(_WasmCorerunGeneratorRsp)&quot;" />
+    <Exec Command="&quot;$(Crossgen2Path)&quot; &quot;@$(_Crossgen2GeneratorRsp)&quot;" />
 
     <ItemGroup>
-      <FileWrites Include="$(_WasmCorerunGeneratorRsp)" />
+      <FileWrites Include="$(_Crossgen2GeneratorRsp)" />
       <FileWrites Include="@(_WasmCorerunGeneratedSource)" />
     </ItemGroup>
   </Target>
