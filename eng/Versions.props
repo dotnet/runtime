@@ -4,9 +4,9 @@
 
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>11.0.0</ProductVersion>
+    <ProductVersion>12.0.0</ProductVersion>
     <!-- File version numbers -->
-    <MajorVersion>11</MajorVersion>
+    <MajorVersion>12</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <PackageVersionNet10>10.0.0</PackageVersionNet10>
@@ -14,20 +14,18 @@
     <PackageVersionNet8>8.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet9)').Build),11))</PackageVersionNet8>
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.36</PackageVersionNet6>
-    <PreReleaseVersionLabel>rc</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
          The published manifests are built in dotnet/sdk so these values are for testing purposes only.
-         We use the manifest transport package version number unless it is lower
-         than the sdk version specified in global.json
-      -->
+         Use an SDK-versioned VMR package if it is newer than the SDK specified in global.json. -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
     <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
     <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
-    <_DotnetSdkVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</_DotnetSdkVersion>
+    <_DotnetSdkVersion>$(MicrosoftDotNetGenAPITaskPackageVersion)</_DotnetSdkVersion>
     <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
@@ -38,7 +36,13 @@
 
     <!-- Set assembly version to align with major and minor version,
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->
-    <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
+
+    <!-- Pin the assembly version to the previous major during early branding. The bootstrap SDK's
+         reference packs and checked-in API compatibility suppressions still reference the previous
+         major, so bumping the assembly version ahead of the retargeting work breaks source-build
+         (CS1705) and package validation (CP0004). Unpin to $(MajorVersion).$(MinorVersion).0.0 when
+         the stack is retargeted to net12.0. -->
+    <AssemblyVersion>11.0.0.0</AssemblyVersion>
 
     <!-- Arcade features -->
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>

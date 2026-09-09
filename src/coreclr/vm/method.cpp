@@ -2927,10 +2927,27 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 
         PCODE entryPoint;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)pamTrackerPrecode->Track(
-            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }));
+        SIZE_T portableEntryPointSize = sizeof(PortableEntryPoint);
+        if (IsUnboxingStub())
+        {
+            portableEntryPointSize = sizeof(UnboxingStubPortableEntryPoint);
+        }
+        void* portableEntryPointAllocation = pamTrackerPrecode->Track(
+            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ portableEntryPointSize }));
+        PortableEntryPoint* portableEntryPoint;
+        if (IsUnboxingStub())
+        {
+            UnboxingStubPortableEntryPoint* unboxingStubEntryPoint =
+                reinterpret_cast<UnboxingStubPortableEntryPoint*>(portableEntryPointAllocation);
+            unboxingStubEntryPoint->Init(this);
+            portableEntryPoint = unboxingStubEntryPoint->GetEntryPoint();
+        }
+        else
+        {
+            portableEntryPoint = reinterpret_cast<PortableEntryPoint*>(portableEntryPointAllocation);
+            SetPortableEntrypointInitialStateForMethod(portableEntryPoint);
+        }
 
-        SetPortableEntrypointInitialStateForMethod(portableEntryPoint);
         entryPoint = (PCODE)portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -3033,6 +3050,12 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
+
+    if (IsUnboxingStub())
+    {
+        UnboxingStubPortableEntryPoint::FromEntryPoint((PCODE)portableEntry)->Init(this);
+        return;
+    }
 
     bool installInterpreterThunk = !IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked();
 #ifdef FEATURE_READYTORUN
