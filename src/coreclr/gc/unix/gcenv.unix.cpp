@@ -184,13 +184,14 @@ bool GCToOSInterface::Initialize()
 
     {
         // Use a dynamically allocated cpu_set_t to support systems with more than CPU_SETSIZE (typically 1024) CPUs.
-        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
         if (pCpuSet == nullptr)
         {
             return false;
         }
 
-        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
         CPU_ZERO_S(cpuSetSize, pCpuSet);
 
         int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
@@ -900,8 +901,9 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
 #if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 
-    size_t cpuSetSize = CPU_ALLOC_SIZE(g_configuredCpuCount);
-    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
+    uint32_t cpusToAllocate = std::max(g_configuredCpuCount, (uint32_t)CPU_SETSIZE);
+    size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
+    cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
     if (pCpuSet == nullptr)
     {
         return false;
