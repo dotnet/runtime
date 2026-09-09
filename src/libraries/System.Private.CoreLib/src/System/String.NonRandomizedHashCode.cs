@@ -78,6 +78,13 @@ namespace System
             // Non-letters are also folded; equality resolves the additional collisions.
             public static ulong LowercaseMask => 0x0020002000200020;
         }
+        // For input already run through ToUpperOrdinal: nothing left to reject, and the
+        // fold happens as part of hashing rather than in a pass of its own.
+        private readonly struct UpperNormalizedHashing : IHashCasing
+        {
+            public static ulong NonAsciiMask => 0;
+            public static ulong LowercaseMask => IgnoreCaseHashing.LowercaseMask;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetNonRandomizedHashCodeCore<TCasing>(ReadOnlySpan<byte> span) where TCasing : struct, IHashCasing
@@ -278,32 +285,25 @@ namespace System
         private static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ReadOnlySpan<byte> remaining, int byteLength,
             ulong h0 = 0, ulong h1 = 0, ulong h2 = 0, ulong h3 = 0, uint tailHash = 0)
         {
-            int length = remaining.Length / sizeof(char);
-            char[]? borrowedSource = null, borrowedScratch = null;
-            Span<char> source = (uint)length < 256 ? stackalloc char[256] :
-                (borrowedSource = ArrayPool<char>.Shared.Rent(length));
+            // The bytes came from a char span, so reinterpreting avoids copying them just
+            // to hand them to ToUpperOrdinal.
+            ReadOnlySpan<char> source = MemoryMarshal.Cast<byte, char>(remaining);
+            int length = source.Length;
+            char[]? borrowed = null;
+            Span<char> scratch = (uint)length < 256 ? stackalloc char[256] :
+                (borrowed = ArrayPool<char>.Shared.Rent(length));
             try
             {
-                // Separate buffers avoid a 2 * length allocation exceeding Array.MaxLength.
-                Span<char> scratch = (uint)length < 256 ? stackalloc char[256] :
-                    (borrowedScratch = ArrayPool<char>.Shared.Rent(length));
-                source = source.Slice(0, length);
-                scratch = scratch.Slice(0, length);
-                remaining.CopyTo(MemoryMarshal.AsBytes(source));
-                int charsWritten = Ordinal.ToUpperOrdinal(source, scratch);
+                int charsWritten = Ordinal.ToUpperOrdinal(source, scratch.Slice(0, length));
                 Debug.Assert(charsWritten == length);
-                for (int i = 0; i < charsWritten; i++)
-                    scratch[i] |= (char)0x20;
                 ReadOnlySpan<byte> normalized = MemoryMarshal.AsBytes(scratch.Slice(0, charsWritten));
-                return byteLength <= 64 ? GetNonRandomizedHashCodeCore<CaseSensitiveHashing>(normalized) :
-                    GetNonRandomizedHashCodeLong<CaseSensitiveHashing>(normalized, byteLength, h0, h1, h2, h3, tailHash);
+                return byteLength <= 64 ? GetNonRandomizedHashCodeCore<UpperNormalizedHashing>(normalized) :
+                    GetNonRandomizedHashCodeLong<UpperNormalizedHashing>(normalized, byteLength, h0, h1, h2, h3, tailHash);
             }
             finally
             {
-                if (borrowedScratch != null)
-                    ArrayPool<char>.Shared.Return(borrowedScratch);
-                if (borrowedSource != null)
-                    ArrayPool<char>.Shared.Return(borrowedSource);
+                if (borrowed != null)
+                    ArrayPool<char>.Shared.Return(borrowed);
             }
         }
     }
