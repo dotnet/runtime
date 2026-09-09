@@ -6505,12 +6505,9 @@ public:
     // tree node).
     PhaseStatus fgValueNumber();
 
-    void fgValueNumberLocalStore(GenTree*             storeNode,
-                                 GenTreeLclVarCommon* lclDefNode,
-                                 ssize_t              offset,
-                                 ValueSize            storeSize,
-                                 ValueNumPair         value,
-                                 bool                 normalize = true);
+    template <typename TDef>
+    void fgValueNumberLocalStore(
+        GenTree* storeNode, const TDef& def, ValueNumPair value, bool normalize = true);
 
     void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
@@ -8064,7 +8061,10 @@ public:
                      LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
+    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
+                            unsigned             lclNum,
+                            unsigned             ssaNum,
+                            LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
