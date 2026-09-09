@@ -1559,6 +1559,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 
         CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
+        CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
     }
 
     public struct CORJIT_FLAGS

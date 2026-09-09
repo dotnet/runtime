@@ -357,6 +357,9 @@
   <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
     <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
   </data>
+  <data name="VerifyGCModeTransitionsOption" xml:space="preserve">
+    <value>Emit the diagnostic helpers that verify GC mode transitions are legal, and mark the image as using them. Use only for diagnostic purposes.</value>
+  </data>
   <data name="HotColdSplittingOption" xml:space="preserve">
     <value>Turn on hot cold splitting optimization.</value>
   </data>

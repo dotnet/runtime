@@ -23,6 +23,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
         READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
+        READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
     }
 
     public enum ReadyToRunImportSectionType : byte

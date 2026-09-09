@@ -168,6 +168,8 @@
       <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-type-and-field-layout</CrossGenDllCmd>
       <!-- Enable Cached Interface Dispatch layout rules for the StubDispatch import section. This allows testing of this path on platforms that do not require CachedInterface Dispatch -->
       <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --enable-cached-interface-dispatch-support</CrossGenDllCmd>
+      <!-- Enable the GC mode transition verification scaffolding so that illegal transitions assert where they happen rather than corrupting the thread's GC mode -->
+      <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-gc-mode-transitions</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) @(CoreLib)</CrossGenDllCmd>
     </PropertyGroup>
 

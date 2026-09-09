@@ -445,6 +445,12 @@ typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
 // Only asserts consume this, so it costs nothing in release builds beyond the two stores.
 extern thread_local bool t_gcModeSwitchPermitted;
 
+#ifdef TARGET_WASM
+// Record the frame a catch is about to resume into, so that RtlRestoreContext knows whether that
+// code will call CORINFO_HELP_JIT_RESUME_AFTER_CATCH. See vm/wasm/helpers.cpp.
+void NoteCatchResumeTarget(PCODE handlerFrameControlPC);
+#endif // TARGET_WASM
+
 // Assert that a cooperative/preemptive GC mode transition is legal at this point.
 #define ASSERT_GC_MODE_SWITCH_PERMITTED()                                                                              \
     _ASSERTE_MSG(t_gcModeSwitchPermitted,                                                                              \

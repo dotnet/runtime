@@ -271,6 +271,15 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
+    // True when this image was compiled with the GC mode transition verification scaffolding, which
+    // means its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch. See the comment on
+    // t_gcModeSwitchPermitted in vm/threads.h.
+    BOOL VerifiesGCModeTransitions()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+    }
+
     BOOL HasStrippedILBodies()
     {
         LIMITED_METHOD_CONTRACT;

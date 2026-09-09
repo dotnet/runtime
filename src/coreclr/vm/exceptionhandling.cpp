@@ -3291,6 +3291,9 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     if (pHandlerIP != NULL)
     {
         pCodeManager = exInfo->m_frameIter.m_crawl.GetCodeManager();
+#ifdef TARGET_WASM
+        NoteCatchResumeTarget(exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC);
+#endif // TARGET_WASM
 #ifdef _DEBUG
         pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
