@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <cwchar>
-#include <algorithm> 
+#include <algorithm>
 #include <sal.h>
 #include "config.h"
 #include <pthread.h>

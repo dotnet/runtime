@@ -211,6 +211,11 @@ bool GCToOSInterface::Initialize()
             // We should not get any of the errors that the sched_getaffinity can return since none
             // of them applies for the current thread, so this is an unexpected kind of failure.
             assert(false);
+            // Fallback: if sched_getaffinity fails, assume all CPUs are available.
+            for (int i = 0; i < configuredCpuCount; i++)
+            {
+                g_processAffinitySet.Add(i);
+            }
         }
 
         CPU_FREE(pCpuSet);
