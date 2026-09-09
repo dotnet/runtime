@@ -3106,10 +3106,12 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 // gated rather than Wasm-gated, so a future wider-pointer target may exceed this
                 // range. In that case, leave the import cell on its delay-load thunk so it continues
                 // resolving through ExternalMethodFixupWorker.
-                static_assert(VTABLE_SLOTS_PER_CHUNK == 8);
-                _ASSERTE(slot <= UINT16_MAX);
-                static_assert((VTABLE_SLOTS_PER_CHUNK - 1) * TARGET_POINTER_SIZE <= UINT16_MAX);
-                if (offsetOfIndirection <= UINT16_MAX && offsetAfterIndirection <= UINT16_MAX)
+                bool offsetsFit =
+                    offsetOfIndirection <= UINT16_MAX && offsetAfterIndirection <= UINT16_MAX;
+#ifdef TARGET_32BIT
+                _ASSERTE(offsetsFit);
+#endif // TARGET_32BIT
+                if (offsetsFit)
                 {
                     virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
                     if (virtualDispatchTarget == nullptr)

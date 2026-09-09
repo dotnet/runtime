@@ -1601,13 +1601,7 @@ void* GetVirtualDispatchThunk(MethodDesc *pMD)
 
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMD->IsUnboxingStub());
     _ASSERTE(ppTargetMethodDesc != nullptr);
