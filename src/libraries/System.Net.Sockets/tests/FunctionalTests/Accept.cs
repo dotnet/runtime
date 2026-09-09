@@ -493,4 +493,55 @@ namespace System.Net.Sockets.Tests
     {
         public AcceptEap(ITestOutputHelper output) : base(output) {}
     }
+
+    public sealed class AcceptDualStackResetTests
+    {
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
+        [SkipOnPlatform(TestPlatforms.Wasi | TestPlatforms.OpenBSD, "These platforms don't support dual-mode sockets")]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Accept_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy(bool useAsync)
+        {
+            for (int i = 0; i < 200; i++)
+            {
+                using Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                listener.DualMode = true;
+                listener.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+                listener.Listen(2);
+
+                using Socket ipv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                using Socket ipv4 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+
+                await ipv4.ConnectAsync(IPAddress.Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
+                ipv4.LingerState = new LingerOption(true, 0);
+                ipv4.Close();
+
+                await ipv6.ConnectAsync(IPAddress.IPv6Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
+                byte[] message = [42];
+                Assert.Equal(message.Length, ipv6.Send(message));
+
+                bool receivedMessage = false;
+                for (int acceptCount = 0; acceptCount < 2 && !receivedMessage; acceptCount++)
+                {
+                    using Socket accepted = useAsync
+                        ? await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5))
+                        : listener.Accept();
+
+                    try
+                    {
+                        byte[] received = new byte[message.Length];
+                        int receivedCount = await accepted.ReceiveAsync(received).WaitAsync(TimeSpan.FromSeconds(5));
+                        receivedMessage = receivedCount == message.Length && received.AsSpan().SequenceEqual(message);
+                    }
+                    catch (SocketException)
+                    {
+                        // Some platforms surface the reset connection from accept(), while others discard it.
+                    }
+                }
+
+                Assert.True(receivedMessage);
+            }
+        }
+    }
 }
