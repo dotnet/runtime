@@ -70,6 +70,9 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
+#ifdef TARGET_WASM
+#include "pregeneratedstringthunks.h"
+#endif
 
 #include "interpexec.h"
 
@@ -3635,6 +3638,54 @@ void Module::AttachSupplementalReadyToRunInfo(ReadyToRunInfo *pInfo)
         pInfo->SetNextSupplemental(pOld);
     } while (InterlockedCompareExchangeT(&m_pSupplementalReadyToRunInfos, PTR_ReadyToRunInfo(pInfo), pOld) != pOld);
 }
+
+#ifdef TARGET_WASM
+void Module::RunSupplementalEagerFixups(ReadyToRunInfo *pInfo)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pInfo != NULL);
+
+    COUNT_T nSections;
+    PTR_READYTORUN_IMPORT_SECTION pSections = pInfo->GetImportSections(&nSections);
+    ReadyToRunLoadedImage *pImage = pInfo->GetImage();
+
+    for (COUNT_T iSection = 0; iSection < nSections; iSection++)
+    {
+        PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
+        if ((pSection->Flags & ReadyToRunImportSectionFlags::Eager) != ReadyToRunImportSectionFlags::Eager)
+            continue;
+
+        COUNT_T tableSize;
+        TADDR tableBase = pImage->GetDirectoryData(&pSection->Section, &tableSize);
+        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pImage->GetRvaData(pSection->Signatures));
+
+        for (SIZE_T *fixupCell = (SIZE_T *)tableBase; fixupCell < (SIZE_T *)(tableBase + tableSize); fixupCell++)
+        {
+            SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
+            PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)pImage->GetRvaData(pSignatures[fixupIndex]);
+            BYTE kind = *pBlob++;
+            if (kind & READYTORUN_FIXUP_ModuleOverride)
+            {
+                CorSigUncompressData(pBlob);
+                kind &= ~READYTORUN_FIXUP_ModuleOverride;
+            }
+
+            // The string-thunk fixup is image-specific and must register the supplemental image's thunks
+            // against the supplemental info. Every other fixup in the lazy composite is delay-loaded and
+            // resolves against this module on first use, so only this kind is processed eagerly here.
+            if (kind == READYTORUN_FIXUP_InjectStringThunks)
+            {
+                ProcessInjectStringThunksFixup(pInfo, pBlob);
+                VolatileStore(fixupCell, (SIZE_T)1);
+            }
+            else
+            {
+                _ASSERTE(!"Unexpected eager fixup kind in a supplemental R2R image");
+            }
+        }
+    }
+}
+#endif // TARGET_WASM
 #endif // FEATURE_READYTORUN
 
 //-----------------------------------------------------------------------------

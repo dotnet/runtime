@@ -10,6 +10,7 @@
 #include "callingconvention.h"
 #include "cgensys.h"
 #include "readytorun.h"
+#include "nativeimage.h"
 
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
@@ -1895,3 +1896,69 @@ RtlVirtualUnwind (
 
     return nullptr;
 }
+
+#ifdef FEATURE_READYTORUN
+// Attach a lazily-downloaded R2R code supplement to a loaded assembly. The payload is the webcil
+// composite-of-one already resident at payloadPtr (as produced by the host loader for a "<name>.r2r.wasm"
+// asset). Called from the browser host at a quiesce point (from the fetch continuation, so there are no
+// managed frames of the target module on the stack). Returns 0 on success, a negative code on failure;
+// failure is always non-fatal (the app keeps running with the eager partial image).
+extern "C" int32_t CoreCLR_AttachLazyR2RImage(const char *assemblySimpleName, void *payloadPtr, int32_t payloadSize)
+{
+    if (assemblySimpleName == NULL || payloadPtr == NULL || payloadSize <= 0)
+        return -1;
+
+    HRESULT hr = S_OK;
+    Thread *pThread = SetupThreadNoThrow(&hr);
+    if (pThread == NULL)
+        return -2;
+
+    int32_t result = 0;
+    EX_TRY
+    {
+        Module *pTargetModule = NULL;
+        AppDomain::AssemblyIterator it = AppDomain::GetCurrentDomain()->IterateAssembliesEx(
+            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (it.Next(pAssembly.This()))
+        {
+            Module *pModule = pAssembly->GetModule();
+            if (pModule != NULL && pModule->IsReadyToRun() &&
+                strcmp(pModule->GetSimpleName(), assemblySimpleName) == 0)
+            {
+                pTargetModule = pModule;
+                break;
+            }
+        }
+
+        if (pTargetModule == NULL)
+        {
+            result = -3;
+        }
+        else
+        {
+            AllocMemTracker amTracker;
+            AssemblyBinder *pBinder = pTargetModule->GetPEAssembly()->GetAssemblyBinder();
+            LoaderAllocator *pLoaderAllocator = pTargetModule->GetLoaderAllocator();
+
+            NativeImage *pLazyImage = NativeImage::OpenFromMemory(
+                (TADDR)payloadPtr, (uint32_t)payloadSize, assemblySimpleName, pBinder, pLoaderAllocator, &amTracker);
+
+            ReadyToRunInfo *pInfo = (pLazyImage != NULL)
+                ? ReadyToRunInfo::AttachSupplemental(pTargetModule, pLazyImage, &amTracker)
+                : NULL;
+
+            if (pInfo == NULL)
+                result = -4;
+            else
+                amTracker.SuppressRelease();
+        }
+    }
+    EX_CATCH
+    {
+        result = -100;
+    }
+    EX_END_CATCH
+    return result;
+}
+#endif // FEATURE_READYTORUN

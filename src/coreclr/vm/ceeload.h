@@ -1510,6 +1510,11 @@ public:
                            ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
+#ifdef TARGET_WASM
+    // Run the eager fixups of a lazily-attached supplemental R2R image (as opposed to this module's
+    // primary image), resolving them against that image rather than the module's primary one.
+    void RunSupplementalEagerFixups(ReadyToRunInfo *pInfo);
+#endif
 
     ModuleBase *GetModuleFromIndex(DWORD ix);
     ModuleBase *GetModuleFromIndexIfLoaded(DWORD ix);

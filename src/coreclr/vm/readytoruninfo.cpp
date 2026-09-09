@@ -2939,9 +2939,11 @@ ReadyToRunInfo *ReadyToRunInfo::AttachSupplemental(Module *pModule, NativeImage 
     void *pMemory = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ReadyToRunInfo))));
     ReadyToRunInfo *pInfo = new (pMemory) ReadyToRunInfo(pModule, pLoaderAllocator, pHeader, pLazyImage, /*pLayout*/ nullptr, pamTracker);
 
-    // Register the image's virtual-IP and function-table ranges so its code is unwindable, then publish
-    // it on the module so GetPrecompiledR2RCode resolves the complement methods' entrypoints.
+    // Register the image's virtual-IP and function-table ranges so its code is unwindable, run its
+    // eager fixups (notably InjectStringThunks) so its thunks resolve, then publish it on the module
+    // so GetPrecompiledR2RCode resolves the complement methods' entrypoints.
     pInfo->RegisterVirtualIPRange();
+    pModule->RunSupplementalEagerFixups(pInfo);
     pModule->AttachSupplementalReadyToRunInfo(pInfo);
     return pInfo;
 }
