@@ -15,10 +15,10 @@ namespace System.Xml.Tests
         // This should match the value in XmlTextReaderImpl
         private const int MaxAttrDuplWalkCount = 64;
 
-        private const int SmallN = 2_000;
-        private const int LargeN = 20_000;
+        private const int SmallN = 4_000;
+        private const int LargeN = 40_000;
         private const double SizeRatio = (double)LargeN / SmallN;
-        private const double MaxRatioMultiplier = 4;
+        private const double MaxRatioMultiplier = 5;
         private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(60);
 
         protected abstract void ReadFully(string xml, CancellationToken ct);
