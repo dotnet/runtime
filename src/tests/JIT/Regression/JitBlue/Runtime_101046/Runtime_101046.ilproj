@@ -10,8 +10,6 @@
     <!-- Excluded on x64 Unix due to LLVM non-standard ABI handling for small integer upper bits:
          https://github.com/llvm/llvm-project/issues/43573 -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetsUnix)' == 'true'">true</CLRTestTargetUnsupported>
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133506 -->
-    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
