@@ -240,6 +240,14 @@ public class ResourcesData
     public ResourceHashesByNameDictionary lazyAssembly { get; set; }
 
     /// <summary>
+    /// ReadyToRun native-code supplements (browser-wasm CoreCLR split) downloaded in the background
+    /// after startup and attached to their owning eager (partial) assembly. Keyed by the supplement
+    /// route (e.g. "System.Console.r2r.wasm").
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary lazyR2R { get; set; }
+
+    /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
@@ -336,6 +344,15 @@ public class AssetsData
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public List<WebcilAsset> lazyAssembly { get; set; }
+
+    /// <summary>
+    /// ReadyToRun native-code supplements (browser-wasm CoreCLR split) downloaded in the background
+    /// after startup and attached to their owning eager (partial) assembly. Each entry's
+    /// <see cref="GeneralAsset.virtualPath"/> names the owning assembly file so the loader can derive
+    /// the target module; <see cref="GeneralAsset.name"/> is the supplement route ("...r2r.wasm").
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<WebcilAsset> lazyR2R { get; set; }
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.

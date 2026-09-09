@@ -382,6 +382,14 @@ public class GenerateWasmBootJson : Task
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
                 }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(assetTraitValue, "lazy-r2r", StringComparison.OrdinalIgnoreCase))
+                {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a lazy R2R supplement.", resource.ItemSpec);
+                    resourceData.lazyR2R ??= new ResourceHashesByNameDictionary();
+                    resourceList = resourceData.lazyR2R;
+                }
                 else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) && assetTraitValue.StartsWith("vfs:", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as VFS resource '{1}'.", resource.ItemSpec, assetTraitValue);
