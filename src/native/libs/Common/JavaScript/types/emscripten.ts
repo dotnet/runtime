@@ -31,6 +31,8 @@ export interface EmscriptenModule {
     _free(ptr: VoidPtr): void;
     _sbrk(size: number): VoidPtr;
     _posix_memalign(res: VoidPtrPtr, alignment: number, size: number): number;
+    // Attach a lazily-downloaded R2R code supplement to a loaded assembly (browser-wasm CoreCLR).
+    _CoreCLR_AttachLazyR2RImage(assemblyNamePtr: CharPtr, payloadPtr: VoidPtr, payloadSize: number): number;
 
     // this should match emcc -s EXPORTED_RUNTIME_METHODS
     out(message: string): void;
