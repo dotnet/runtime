@@ -134,6 +134,22 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsAssignableFrom_NullableOverGenericParameter()
+        {
+            // The reflection rule that T is assignable to Nullable<T> does not apply when T is a
+            // generic parameter. This matches the behavior of all shipped versions and of
+            // System.Reflection.MetadataLoadContext.
+            Type genericParam = typeof(GStruct<>).GetGenericArguments()[0];
+            Type nullableOverParam = typeof(Nullable<>).MakeGenericType(genericParam);
+
+            Assert.False(nullableOverParam.IsAssignableFrom(genericParam));
+            Assert.False(genericParam.IsAssignableTo(nullableOverParam));
+
+            Assert.False(genericParam.IsAssignableFrom(nullableOverParam));
+            Assert.False(nullableOverParam.IsAssignableTo(genericParam));
+        }
+
+        [Fact]
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));

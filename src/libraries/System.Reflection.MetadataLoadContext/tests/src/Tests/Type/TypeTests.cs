@@ -127,6 +127,12 @@ namespace System.Reflection.Tests
             b = dst.IsAssignableFrom(src);
             Assert.False(b);
 
+            // The rule that T is assignable to Nullable<T> does not apply when T is a generic parameter.
+            src = typeof(GenericClass1<>).Project().GetGenericArguments()[0];
+            dst = typeof(Nullable<>).Project().MakeGenericType(src);
+            b = dst.IsAssignableFrom(src);
+            Assert.False(b);
+
             return;
         }
 
