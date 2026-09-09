@@ -86,7 +86,11 @@ const BYTE varTypeClassification[] = {
 #undef DEF_TP
 };
 
+#ifdef TARGET_RISCV64
+BYTE varTypeRegister[] = {
+#else
 const BYTE varTypeRegister[] = {
+#endif
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) regTyp,
 #include "typelist.h"
 #undef DEF_TP
