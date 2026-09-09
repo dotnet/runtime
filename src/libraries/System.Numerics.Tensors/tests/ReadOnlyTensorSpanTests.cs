@@ -12,7 +12,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void ReadOnlyTensorSpanSystemArrayConstructorTests()
         {
-            // When using System.Array constructor make sure the type of the array matches T[]
+            // When using the System.Array constructor make sure the array element type matches T
             Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<double>(array: new[] { 1 }));
             Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<double>(array: new[] { 1 }, start: [0], lengths: [1], strides: [1]));
 
