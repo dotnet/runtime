@@ -974,9 +974,14 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     {
         RtlCaptureContext(ex.GetContextRecord());
     }
-    GCX_COOP();
+    GCX_COOP_REGION_BEGIN();
+
     OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE);
     DispatchManagedException(throwable, ex.GetContextRecord());
+
+    GCX_COOP_REGION_END();
+
+    UNREACHABLE();
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
