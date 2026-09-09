@@ -172,10 +172,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(NeedsUnboxingStub(targetMethod));
 
-            // Managed unboxing thunks handle ABI conversions that can arise between an interface
-            // signature and its implementation. Use an assembly stub only for the MethodDesc
-            // generic context that the managed thunk cannot support.
-            if (Target.Architecture == TargetArchitecture.Wasm32 && targetMethod.RequiresInstMethodDescArg())
+            if (Target.Architecture == TargetArchitecture.Wasm32)
             {
                 return _wasmUnboxingStubTargets.GetOrAdd(targetMethod);
             }
@@ -198,9 +195,11 @@ namespace ILCompiler.DependencyAnalysis
                 ? UnboxingStubKind.MethodDesc
                 : (targetMethod.RequiresInstMethodTableArg() ? UnboxingStubKind.MethodTable : UnboxingStubKind.Normal);
             WasmSignature signature = WasmLowering.GetSignature(thunk.Signature, WasmLowering.LoweringFlags.None);
+            WasmSignature targetSignature = WasmLowering.GetSignature(targetMethod);
+            WasmTypeNode targetType = WasmTypeNode(targetSignature);
             bool hasReturnBuffer = kind != UnboxingStubKind.Normal && signature.SignatureString[0] == 'S';
             WasmUnboxingStubNode stub = _wasmUnboxingStubs.GetOrAdd(
-                new WasmUnboxingStubKey(signature, WasmTypeNode(targetMethod), kind, hasReturnBuffer));
+                new WasmUnboxingStubKey(signature, targetType, kind, hasReturnBuffer));
             return new WasmUnboxingStubTargetNode(targetMethod, signature, stub);
         }
 

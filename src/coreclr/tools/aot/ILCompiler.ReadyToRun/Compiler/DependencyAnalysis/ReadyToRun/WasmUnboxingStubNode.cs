@@ -252,6 +252,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             DependencyList dependencies = new DependencyList();
             dependencies.Add(_stub, "Wasm unboxing stub for target method");
             dependencies.Add(context.CompiledMethodNode(_targetMethod), "Target method for Wasm unboxing stub");
+            dependencies.Add(context.WasmR2RToInterpreterThunk(WasmLowering.GetSignature(_targetMethod)), "Interpreter fallback for Wasm unboxing target");
             dependencies.Add(context.WasmInterpreterToR2RThunk(_signature), "Interpreter-to-R2R thunk for Wasm unboxing stub target");
             return dependencies;
         }

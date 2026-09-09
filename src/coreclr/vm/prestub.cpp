@@ -2509,16 +2509,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
         else
         {
-#ifdef FEATURE_READYTORUN
-            // Crossgen2 can emit a managed unboxing thunk when the generated assembly stub
-            // cannot preserve the ABI conversion between the interface and implementation.
-            PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
-            pCode = GetPrecompiledR2RCode(&config);
-#endif // FEATURE_READYTORUN
-            if (pCode == (PCODE)NULL)
-            {
-                pStub = MakeUnboxingStubWorker(this);
-            }
+            pStub = MakeUnboxingStubWorker(this);
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_READYTORUN
