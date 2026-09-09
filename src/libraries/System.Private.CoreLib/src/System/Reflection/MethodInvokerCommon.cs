@@ -18,8 +18,7 @@ namespace System.Reflection
         {
             if (LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke)
             {
-                // Always use the native interpreted invoke.
-                // Useful for testing, to avoid startup overhead of emit, or for calling a ctor on already initialized object.
+                // Keep using the slow path instead of promoting to a specialized invoke stub.
                 strategy = GetStrategyForUsingInterpreted();
             }
             else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
@@ -72,7 +71,7 @@ namespace System.Reflection
 
         internal static InvokerStrategy GetStrategyForUsingInterpreted()
         {
-            // This causes the default strategy, which is interpreted, to always be used.
+            // Keep the default strategy instead of promoting to a specialized invoke stub.
             return InvokerStrategy.StrategyDetermined_Obj4Args | InvokerStrategy.StrategyDetermined_ObjSpanArgs | InvokerStrategy.StrategyDetermined_RefArgs;
         }
 
@@ -113,10 +112,13 @@ namespace System.Reflection
                 // If ByRefs are used, we can't use this strategy.
                 strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
             }
-            else if (((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0) && !Debugger.IsAttached)
+            else if ((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0
+#if MONO
+                && !Debugger.IsAttached
+#endif
+                )
             {
-                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
-                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
+                // Start with the slow path unless a forced strategy has already been selected.
                 strategy |= InvokerStrategy.HasBeenInvoked_ObjSpanArgs;
             }
             else
@@ -142,10 +144,13 @@ namespace System.Reflection
                 // If ByRefs are used, we can't use this strategy.
                 strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
             }
-            else if (((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0) && !Debugger.IsAttached)
+            else if ((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0
+#if MONO
+                && !Debugger.IsAttached
+#endif
+                )
             {
-                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
-                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
+                // Start with the slow path unless a forced strategy has already been selected.
                 strategy |= InvokerStrategy.HasBeenInvoked_Obj4Args;
             }
             else
@@ -165,10 +170,13 @@ namespace System.Reflection
             MethodBase method,
             bool backwardsCompat)
         {
-            if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
+            if ((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0
+#if MONO
+                && !Debugger.IsAttached
+#endif
+                )
             {
-                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
-                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
+                // Start with the slow path unless a forced strategy has already been selected.
                 strategy |= InvokerStrategy.HasBeenInvoked_RefArgs;
             }
             else
