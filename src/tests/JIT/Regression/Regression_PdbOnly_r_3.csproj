@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">$(DefineConstants);WASM_R2R_EXCLUSION</DefineConstants>
     <DebugType>PdbOnly</DebugType>
     <HasMergedInTests>True</HasMergedInTests>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/132855 -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\Methodical\BypassReadyToRunAttribute.cs" />
     <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b80764\b80764.cs" />
     <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b81618\b81618.cs" />
     <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b82048\b82048.cs" />

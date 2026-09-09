@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <HasMergedInTests>true</HasMergedInTests>
-    <DefineConstants Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">$(DefineConstants);WASM_R2R_EXCLUSION</DefineConstants>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/132855 -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
   </PropertyGroup>
@@ -21,7 +22,6 @@
     <CMakeProjectReference Include="structs/systemvbringup/CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BypassReadyToRunAttribute.cs" />
     <Compile Include="Arrays\misc\IndexingSideEffects.cs" />
     <Compile Include="Boxing\boxunbox\BoxPatternMatchAndSideEffects.cs" />
     <Compile Include="Boxing\misc\unusedindir.cs" />

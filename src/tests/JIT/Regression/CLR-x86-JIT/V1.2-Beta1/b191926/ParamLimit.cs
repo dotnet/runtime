@@ -10,9 +10,6 @@ using Xunit;
 
 public class f8192
 {
-#if WASM_R2R_EXCLUSION
-    [System.Runtime.BypassReadyToRun]
-#endif
     internal static void Callee(
         int a1,
         int a2,
@@ -8210,9 +8207,6 @@ public class f8192
     { }
     [OuterLoop]
     [Fact]
-#if WASM_R2R_EXCLUSION
-    [System.Runtime.BypassReadyToRun]
-#endif
     public static void TestEntryPoint()
     {
         Callee(

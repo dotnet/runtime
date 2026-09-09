@@ -34,9 +34,6 @@ namespace BigFrames
         public static int iret = 1;
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-#if WASM_R2R_EXCLUSION
-        [System.Runtime.BypassReadyToRun]
-#endif
         public static void BigArgSpace(
 
 			long i0,
@@ -8060,9 +8057,6 @@ namespace BigFrames
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-#if WASM_R2R_EXCLUSION
-        [System.Runtime.BypassReadyToRun]
-#endif
         public unsafe static void Test1(int n)
         {
             Console.WriteLine("Enter Test1");
@@ -12099,9 +12093,6 @@ namespace BigFrames
 
         [Fact]
             [OuterLoop]
-#if WASM_R2R_EXCLUSION
-            [System.Runtime.BypassReadyToRun]
-#endif
             public static int TestEntryPoint()
         {
             Test1(1); // force JIT of this
