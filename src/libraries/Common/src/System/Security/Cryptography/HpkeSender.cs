@@ -279,7 +279,13 @@ namespace System.Security.Cryptography
         ///   The length of <paramref name="destination" /> exceeds the maximum export length supported by the cipher suite's KDF.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while deriving the exported secret.
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     An error occurred while deriving the exported secret.
+        ///   </para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -299,6 +305,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_HpkeExportLengthTooLarge, maximumLength),
                     nameof(destination));
+            }
+
+            if (exporterContext.Overlaps(destination))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             ExportCore(exporterContext, destination);

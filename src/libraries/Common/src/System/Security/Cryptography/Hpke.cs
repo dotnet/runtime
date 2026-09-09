@@ -839,8 +839,14 @@ namespace System.Security.Cryptography
         ///   The authentication tag could not be verified.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
-        ///   or an error occurred during decryption.
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
+        ///     or an error occurred during decryption.
+        ///   </para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -859,6 +865,14 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, plaintextLength),
                     nameof(plaintext));
+            }
+
+            if (encapsulatedSecret.Overlaps(plaintext) ||
+                ciphertext.Overlaps(plaintext) ||
+                associatedData.Overlaps(plaintext) ||
+                info.Overlaps(plaintext))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             OpenCore(encapsulatedSecret, ciphertext, plaintext, associatedData, info);

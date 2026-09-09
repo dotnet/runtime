@@ -140,7 +140,13 @@ namespace System.Security.Cryptography
         ///   The authentication tag could not be verified.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The recipient's message limit has been reached, or an error occurred during decryption.
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The recipient's message limit has been reached, or an error occurred during decryption.
+        ///   </para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -158,6 +164,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, plaintextLength),
                     nameof(plaintext));
+            }
+
+            if (ciphertext.Overlaps(plaintext) || associatedData.Overlaps(plaintext))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             OpenCore(ciphertext, plaintext, associatedData);
@@ -293,7 +304,13 @@ namespace System.Security.Cryptography
         ///   The length of <paramref name="destination" /> exceeds the maximum export length supported by the cipher suite's KDF.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while deriving the exported secret.
+        ///   <para>
+        ///     One or more provided buffers overlap.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     An error occurred while deriving the exported secret.
+        ///   </para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -313,6 +330,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_HpkeExportLengthTooLarge, maximumLength),
                     nameof(destination));
+            }
+
+            if (exporterContext.Overlaps(destination))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             ExportCore(exporterContext, destination);
