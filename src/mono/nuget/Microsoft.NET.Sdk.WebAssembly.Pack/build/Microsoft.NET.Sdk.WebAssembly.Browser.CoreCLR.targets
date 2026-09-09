@@ -23,11 +23,27 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <!-- Default non-composite when unset; an explicit composite request is rejected below. -->
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
-    <!-- Compile every assembly into one shared (large) version bubble. -->
-    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <!-- NYI/SIMD methods crossgen2 can't emit into R2R fall back to the runtime JIT. -->
-    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- Codegen flags shared by both the eager (profile subset) and the lazy (complement) passes:
+         one shared (large) version bubble, plus NYI/SIMD methods crossgen2 can't emit falling back to the
+         runtime JIT. -->
+    <_WasmR2RSharedCrossgen2Args>--opt-cross-module:*;--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</_WasmR2RSharedCrossgen2Args>
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);$(_WasmR2RSharedCrossgen2Args)</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- Eager/lazy split: the eager per-app image carries only the profiled method subset (empty profile =>
+         IL-only), and the disjoint complement ships in a background-downloaded lazy R2R supplement
+         (_WasmCoreClrCreateLazyR2RImages). See dotnet/runtime#121257. -->
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- Lazy pass args: the complement of the eager profile subset, emitted as a bare composite-of-one with
+         no ECMA metadata (the suppress-component-rewrite flag) so the runtime attaches it by simple name. -->
+    <_WasmLazyR2RCrossgen2Args>$(_WasmR2RSharedCrossgen2Args);--partial-complement;--suppress-component-rewrite</_WasmLazyR2RCrossgen2Args>
   </PropertyGroup>
+
+  <!-- Optional external method profile (.mibc) that drives the eager/lazy split. When set, eager compiles the
+       profiled subset and lazy compiles the complement; when unset, eager is IL-only and lazy carries all code.
+       Feeds the base SDK's PGO input, so the eager pass picks it up and the lazy pass reuses the same set. -->
+  <ItemGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmReadyToRunProfile)' != ''">
+    <PublishReadyToRunPgoFiles Include="$(WasmReadyToRunProfile)" />
+  </ItemGroup>
+
 
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:
        publish always crossgens the whole closure, so framework and app R2R both come from obj/R2R. Only the
@@ -211,20 +227,123 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <!-- Capture the full R2R compile closure into non-batched items so the per-assembly lazy pass below
+       (batched by Outputs) can still reference every OTHER assembly. Inside a batched target
+       @(_ReadyToRunCompileList) collapses to the current item, so the closure must be snapshot here. -->
+  <Target Name="_WasmCoreClrPrepareLazyR2R"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          AfterTargets="_CreateR2RImages"
+          BeforeTargets="_WasmCoreClrCreateLazyR2RImages">
+    <ItemGroup>
+      <_WasmLazyR2RAllInputs Include="@(_ReadyToRunCompileList)" />
+      <_WasmLazyR2RFrameworkRefs Include="@(_ReadyToRunAssembliesToReference)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Second crossgen pass: the lazy R2R supplement. For each eager per-app image, emit a composite-of-one
+       over the same trimmed IL carrying the COMPLEMENT of the eager (profiled) method set
+       the disjoint complement. The suppress-component-rewrite flag keeps it a bare composite with no ECMA metadata,
+       so at runtime it attaches to the already-loaded eager assembly by simple name (CoreCLR_AttachLazyR2RImage).
+       Batched per compile-list assembly via Outputs, mirroring _CreateR2RImages. -->
+  <Target Name="_WasmCoreClrCreateLazyR2RImages"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrPrepareLazyR2R"
+          AfterTargets="_CreateR2RImages"
+          Inputs="@(Crossgen2Tool);@(_ReadyToRunCompilerInputs);@(_ReadyToRunCompileList);@(_ReadyToRunPgoFiles)"
+          Outputs="$(_WasmPublishR2RDir)%(_ReadyToRunCompileList.FileName).r2r.wasm">
+    <ItemGroup>
+      <!-- Current batch's single IL input, tagged as a composite-of-one with its lazy output name. -->
+      <_WasmLazyR2RCompileEntry Include="@(_ReadyToRunCompileList)">
+        <CreateCompositeImage>true</CreateCompositeImage>
+        <OutputR2RImage>$(_WasmPublishR2RDir)%(_ReadyToRunCompileList.FileName).r2r.wasm</OutputR2RImage>
+      </_WasmLazyR2RCompileEntry>
+      <!-- References = the rest of the closure (other app IL, minus the current input) plus framework refs. -->
+      <_WasmLazyR2RReferences Include="@(_WasmLazyR2RAllInputs)" Exclude="@(_ReadyToRunCompileList)" />
+      <_WasmLazyR2RReferences Include="@(_WasmLazyR2RFrameworkRefs)" />
+    </ItemGroup>
+
+    <RunReadyToRunCompiler Crossgen2Tool="@(Crossgen2Tool)"
+                           UseCrossgen2="true"
+                           Crossgen2PgoFiles="@(_ReadyToRunPgoFiles)"
+                           Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
+                           Crossgen2ExtraCommandLineArgs="$(_WasmLazyR2RCrossgen2Args)"
+                           CompilationEntry="@(_WasmLazyR2RCompileEntry)"
+                           ReadyToRunCompositeBuildInput="@(_ReadyToRunCompileList)"
+                           ReadyToRunCompositeBuildReferences="@(_WasmLazyR2RReferences)"
+                           ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
+                           ContinueOnError="ErrorAndContinue">
+      <Output TaskParameter="ExitCode" PropertyName="_WasmLazyR2RExitCode" />
+    </RunReadyToRunCompiler>
+
+    <Error Condition="'$(_WasmLazyR2RExitCode)' != '' and '$(_WasmLazyR2RExitCode)' != '0'"
+           Text="Lazy R2R crossgen failed for '%(_ReadyToRunCompileList.FileName)' (exit code $(_WasmLazyR2RExitCode))." />
+
+    <ItemGroup>
+      <FileWrites Include="$(_WasmPublishR2RDir)%(_ReadyToRunCompileList.FileName).r2r.wasm" />
+    </ItemGroup>
+  </Target>
+
   <!-- Delete per-app R2R images left in obj/R2R by a previous build whose assembly is no longer in the compile
        closure. A stale orphan would otherwise be staged and fail-fast at load. Mirrors the framework build's
        sfxproj _WasmFrameworkR2RLayoutObsolete. -->
   <Target Name="_WasmCoreClrPruneStalePerAppR2R"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
-          AfterTargets="_CreateR2RImages">
+          AfterTargets="_CreateR2RImages;_WasmCoreClrCreateLazyR2RImages">
     <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
       <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the
-           R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. -->
+           R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. The current
+           lazy supplements (<name>.r2r.wasm) are excluded so this prune drops only true orphans. -->
       <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm;$(_WasmPublishR2RDir)*.dll"
-                           Exclude="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+                           Exclude="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'$(_WasmPublishR2RDir)%(FileName).r2r.wasm')" />
     </ItemGroup>
     <Delete Files="@(_WasmStalePerAppR2R)" />
+  </Target>
+
+  <!-- Stage the lazy R2R supplements (obj/R2R/*.r2r.wasm) as WasmResource/lazy-r2r static web assets so they
+       flow through AttachWebcilSizes (payload/table sizes) and GenerateWasmBootJson (the lazyR2R boot-config
+       list). They are already webcil-in-wasm R2R images (crossgen2 wasm object format), so no ConvertDllsToWebcil
+       pass is needed. Fingerprinting is disabled: the loader derives the owning assembly by stripping the
+       ".r2r" infix from the route, which a fingerprint hash would break. Publish-only, since the dev-loop build
+       stages the runtime pack's full R2R and never invokes crossgen. -->
+  <Target Name="_WasmCoreClrStageLazyR2R"
+          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          AfterTargets="ProcessPublishFilesForWasm"
+          BeforeTargets="_ResolvePublishWasmBootJsonInputs">
+    <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
+      <_WasmLazyR2RStagedFile Include="$(_WasmPublishR2RDir)*.r2r.wasm" />
+      <_WasmLazyR2RCandidate Include="@(_WasmLazyR2RStagedFile)">
+        <SourceId>$(PackageId)</SourceId>
+        <SourceType>Computed</SourceType>
+        <ContentRoot>$(_WasmPublishR2RDir)</ContentRoot>
+        <BasePath>$(StaticWebAssetBasePath)</BasePath>
+        <RelativePath>%(FileName)%(Extension)</RelativePath>
+        <AssetKind>Publish</AssetKind>
+        <AssetMode>All</AssetMode>
+        <AssetRole>Primary</AssetRole>
+        <AssetTraitName>WasmResource</AssetTraitName>
+        <AssetTraitValue>lazy-r2r</AssetTraitValue>
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_WasmLazyR2RCandidate>
+    </ItemGroup>
+
+    <DefineStaticWebAssets Condition="'@(_WasmLazyR2RCandidate)' != ''"
+                           CandidateAssets="@(_WasmLazyR2RCandidate)"
+                           FingerprintCandidates="false">
+      <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+      <Output TaskParameter="Assets" ItemName="_WasmLazyR2RStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <DefineStaticWebAssetEndpoints Condition="'@(_WasmLazyR2RStaticWebAsset)' != ''"
+                                   CandidateAssets="@(_WasmLazyR2RStaticWebAsset)"
+                                   ExistingEndpoints="@(StaticWebAssetEndpoint)"
+                                   ContentTypeMappings="@(StaticWebAssetContentTypeMapping)">
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
   </Target>
 
 </Project>
