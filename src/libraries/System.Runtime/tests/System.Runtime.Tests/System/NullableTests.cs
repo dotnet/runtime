@@ -115,6 +115,31 @@ namespace System.Tests
             Assert.Same(genericParam, Nullable.GetUnderlyingType(nullableOverParam));
         }
 
+        public static IEnumerable<object[]> IsAssignableFrom_OpenNullable_TestData()
+        {
+            // Nullable<> (generic type definition) and Nullable<T> instantiated over a generic
+            // variable have a generic variable as their type argument.
+            yield return new object[] { typeof(Nullable<>), typeof(int) };
+            yield return new object[] { typeof(Nullable<>), typeof(int?) };
+            yield return new object[] { typeof(Nullable<>), typeof(GStruct<int>) };
+            yield return new object[] { typeof(Nullable<>).MakeGenericType(typeof(GStruct<>).GetGenericArguments()[0]), typeof(int) };
+            yield return new object[] { typeof(Nullable<>).MakeGenericType(typeof(GStruct<>).GetGenericArguments()[0]), typeof(GStruct<int>) };
+        }
+
+        [Theory]
+        [MemberData(nameof(IsAssignableFrom_OpenNullable_TestData))]
+        public static void IsAssignableFrom_OpenNullable_ReturnsFalse(Type nullableType, Type fromType)
+        {
+            Assert.False(nullableType.IsAssignableFrom(fromType));
+        }
+
+        [Fact]
+        public static void IsAssignableFrom_OpenNullable_SameTypeReturnsTrue()
+        {
+            Assert.True(typeof(Nullable<>).IsAssignableFrom(typeof(Nullable<>)));
+            Assert.True(typeof(int?).IsAssignableFrom(typeof(int)));
+        }
+
         [Fact]
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
