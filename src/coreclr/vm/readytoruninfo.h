@@ -258,6 +258,10 @@ public:
     // Attach a lazily-downloaded R2R code supplement (a webcil composite-of-one whose single component
     // is pModule's assembly) as a supplemental ReadyToRunInfo on pModule. Runs at a quiesce point.
     static ReadyToRunInfo *AttachSupplemental(Module *pModule, NativeImage *pLazyImage, AllocMemTracker *pamTracker);
+
+    // Re-point already-loaded, interpreter-resolved instances of the methods this (supplemental) image
+    // provides so their next call re-runs the prestub and picks up the newly attached native code.
+    void RebindLoadedInterpretedMethods();
 #endif // TARGET_WASM
 
     void RegisterResumptionStub(PCODE stubEntryPoint);

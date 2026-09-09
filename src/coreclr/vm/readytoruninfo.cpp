@@ -14,6 +14,7 @@
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 #include "method.hpp"
+#include "methoditer.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 #include "dn-stdio.h"
@@ -2945,7 +2946,53 @@ ReadyToRunInfo *ReadyToRunInfo::AttachSupplemental(Module *pModule, NativeImage 
     pInfo->RegisterVirtualIPRange();
     pModule->RunSupplementalEagerFixups(pInfo);
     pModule->AttachSupplementalReadyToRunInfo(pInfo);
+
+    // The caller re-points already-loaded interpreted methods (RebindLoadedInterpretedMethods) only after
+    // committing the allocation, so a rebind failure cannot release an image already linked on the module.
     return pInfo;
+}
+
+// After a supplemental (lazy) image is attached, any method that was already called resolved to the
+// interpreter and cached its byte code, so INTOP_CALL no longer consults the portable entrypoint and
+// would keep interpreting instead of using the newly available native code. Re-point every already-loaded,
+// interpreter-resolved instance of the methods this image provides: poison the cached interpreter code so
+// the interpreter dispatches through the portable entrypoint, and reset the entrypoint so its next
+// invocation re-runs the prestub -> GetPrecompiledR2RCode -> this image's entrypoint. Methods not yet
+// called are left alone (their first call naturally finds the native code); methods this image does not
+// provide are never touched (poisoning one with no native code would trap when the prestub falls back to
+// the interpreter). UnmanagedCallersOnly methods are excluded to match the carve-out in
+// GetPrecompiledR2RCode: their reverse-P/Invoke thunk requires interpreter byte code, so they stay
+// interpreted. Generic method instantiations (m_instMethodEntryPoints) are not handled here yet.
+void ReadyToRunInfo::RebindLoadedInterpretedMethods()
+{
+    STANDARD_VM_CONTRACT;
+
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    AppDomain *pAppDomain = AppDomain::GetCurrentDomain();
+    uint count = m_methodDefEntryPoints.GetCount();
+    for (uint index = 0; index < count; index++)
+    {
+        uint offset;
+        if (!m_methodDefEntryPoints.TryGetAt(index, &offset))
+            continue;
+
+        mdMethodDef token = mdtMethodDef | (index + 1);
+        LoadedMethodDescIterator mdIt(pAppDomain, m_pModule, token);
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (mdIt.Next(pAssembly.This()))
+        {
+            MethodDesc *pMD = mdIt.Current();
+            if (pMD == NULL)
+                continue;
+
+            if (pMD->GetInterpreterCode() != NULL && !pMD->HasUnmanagedCallersOnlyAttribute())
+            {
+                pMD->PoisonInterpreterCode();
+                pMD->ResetPortableEntryPoint();
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER && FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // TARGET_WASM
 

@@ -1951,7 +1951,12 @@ extern "C" int32_t CoreCLR_AttachLazyR2RImage(const char *assemblySimpleName, vo
             if (pInfo == NULL)
                 result = -4;
             else
+            {
+                // Commit the attach first: SuppressRelease keeps the image's allocations alive, then the
+                // rebind (best-effort) re-points already-loaded interpreted methods to the new native code.
                 amTracker.SuppressRelease();
+                pInfo->RebindLoadedInterpretedMethods();
+            }
         }
     }
     EX_CATCH

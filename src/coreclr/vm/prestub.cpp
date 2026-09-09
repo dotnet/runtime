@@ -489,7 +489,13 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     // Lazily-attached supplemental R2R images for this module (native code downloaded after load
     // whose metadata/IL live in the module's primary image). The list is empty for all modules
     // today, so this walk is a no-op until such an image is attached.
-    if (pCode == (PCODE)NULL)
+    //
+    // UnmanagedCallersOnly carve-out: a reverse-P/Invoke thunk (the stable Call_<sym> address handed to
+    // native/JS by GetUnmanagedCallersOnlyThunk) dispatches through ExecuteInterpretedMethodFromUnmanaged,
+    // which requires interpreter byte code. Letting a UCO method pick up native code from a supplement
+    // attached after that thunk was handed out would break that path, so supplemental images never provide
+    // code for UCO methods (they stay interpreted). The primary image probe above is unaffected.
+    if (pCode == (PCODE)NULL && !HasUnmanagedCallersOnlyAttribute())
     {
         for (ReadyToRunInfo* pSupplemental = pModule->GetSupplementalReadyToRunInfos();
              pSupplemental != NULL && pCode == (PCODE)NULL;
