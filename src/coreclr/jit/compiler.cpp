@@ -867,7 +867,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         useType             = TYP_UNKNOWN;
     }
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    if (structSize <= (TARGET_POINTER_SIZE * 2))
+    if ((structSize <= (TARGET_POINTER_SIZE * 2)) && !opts.compUseSoftFP)
     {
         const CORINFO_FPSTRUCT_LOWERING* lowering = GetFpStructLowering(clsHnd);
         if (!lowering->byIntegerCallConv)
@@ -2906,6 +2906,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     GlobalJitOptions::compFeatureHfa = !opts.compUseSoftFP;
+#elif defined(TARGET_RISCV64)
+    // lp64 soft-float ABI: FP scalars and FP struct fields are passed by the
+    // integer calling convention and fa* registers are never used. Set by the
+    // VM / AOT driver for targets without the F extension.
+    opts.compUseSoftFP = jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI);
 #elif defined(ARM_SOFTFP) && defined(TARGET_ARM)
     // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
     assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
