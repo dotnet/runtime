@@ -200,7 +200,7 @@ internal static class NativeCommandLine
 
         void AddModernOption(string name, Option option)
         {
-            if (!name.StartsWith("-", StringComparison.Ordinal))
+            if (!name.StartsWith('-', StringComparison.Ordinal))
             {
                 return;
             }
