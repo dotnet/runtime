@@ -174,7 +174,7 @@ namespace ILCompiler.DependencyAnalysis
                     // If a method's signature refers to a type with an indeterminate size,
                     // the compilation will eventually fail when we generate the GCRefMap.
                     //
-                    // Therefore we need to avoid adding these method into the graph
+                    // Therefore we need to avoid adding these methods into the graph
                     //
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }

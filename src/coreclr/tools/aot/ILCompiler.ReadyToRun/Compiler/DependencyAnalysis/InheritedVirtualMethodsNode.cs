@@ -194,8 +194,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             try
             {
+                if (!factory.TryGetCompilableMethodNode(method, out MethodWithGCInfo methodNode))
+                    return null;
                 factory.DetectGenericCycles(method, method);
-                return factory.TryGetCompilableMethodNode(method, out MethodWithGCInfo methodNode) ? methodNode : null;
+                return methodNode;
             }
             catch (TypeSystemException)
             {
