@@ -1566,20 +1566,22 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
 {
     SmallHashTable<unsigned, bool> excludedLocals(m_compiler->getAllocator(CMK_Async));
 
-    // As a special case exclude locals that are fully defined by the call if
-    // we don't have internal EH. Liveness does this automatically, but this
-    // improves tier0 and also address exposed locals.
+    // The current live set accounts for uses after the call, so a local defined
+    // by the call appears live when its result is used. Its previous value is
+    // overwritten on normal flow and only needs to be preserved if it is live
+    // into an EH successor.
     auto visitDef = [&](const LocalDef& def) {
         if (def.IsEntire)
         {
-            if (m_compiler->ehIsInsideNonAsyncContextRestoreRegion(block))
+            unsigned lclNum = def.Def->GetLclNum();
+            if (IsCallDefLiveInEHSucc(block, lclNum))
             {
-                JITDUMP("  V%02u is fully defined but the block has exceptional flow\n", def.Def->GetLclNum());
+                JITDUMP("  V%02u is fully defined but live into an EH successor\n", lclNum);
             }
             else
             {
-                JITDUMP("  V%02u is fully defined and will not be considered live\n", def.Def->GetLclNum());
-                excludedLocals.AddOrUpdate(def.Def->GetLclNum(), true);
+                JITDUMP("  V%02u is fully defined and will not be considered live\n", lclNum);
+                excludedLocals.AddOrUpdate(lclNum, true);
             }
         }
         return GenTree::VisitResult::Continue;
@@ -1626,6 +1628,39 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::IsCallDefLiveInEHSucc:
+//   Check whether a local's value before an async call is live into an EH
+//   successor of the call.
+//
+// Parameters:
+//   block  - The block containing the async call.
+//   lclNum - The local defined by the async call.
+//
+// Returns:
+//   True if the local must be preserved for exceptional flow.
+//
+bool AsyncTransformation::IsCallDefLiveInEHSucc(BasicBlock* block, unsigned lclNum)
+{
+    if (!m_compiler->ehIsInsideNonAsyncContextRestoreRegion(block))
+    {
+        return false;
+    }
+
+    LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+    if (!dsc->lvTracked)
+    {
+        return true;
+    }
+
+    auto visitSucc = [this, dsc](BasicBlock* succ) {
+        return VarSetOps::IsMember(m_compiler, succ->bbLiveIn, dsc->lvVarIndex) ? BasicBlockVisit::Abort
+                                                                                : BasicBlockVisit::Continue;
+    };
+
+    return block->VisitEHSuccs(m_compiler, visitSucc) == BasicBlockVisit::Abort;
 }
 
 //------------------------------------------------------------------------

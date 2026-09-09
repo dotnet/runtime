@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.Mono.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.Mono.cs" Condition="'$(RuntimeFlavor)' == 'Mono'" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.CoreCLR.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.CoreCLR.cs" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Libraries.cs" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />

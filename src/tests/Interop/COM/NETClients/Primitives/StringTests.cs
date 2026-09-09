@@ -193,7 +193,27 @@ namespace NetClient
                 Assert.Equal(expected, actual);
 
                 actual = local;
-                Assert.Throws<MarshalDirectiveException>( () => this.server.Reverse_LPWStr_OutAttr(local, actual));
+                MarshalDirectiveException exception = Assert.Throws<MarshalDirectiveException>(() => this.server.Reverse_LPWStr_OutAttr(local, actual));
+                string[] expectedStackTrace =
+                {
+                    "System.StubHelpers.StubHelpers.ThrowInteropParamException",
+                    "Server.Contract.IStringTesting.Reverse_LPWStr_OutAttr",
+                    "Xunit.Assert.RecordException",
+                };
+                string[] actualStackTrace = exception.StackTrace!
+                    .Split(Environment.NewLine)
+                    .Select(static frame => frame.TrimStart())
+                    .Where(static frame => frame.StartsWith("at ", StringComparison.Ordinal) && frame.Contains('('))
+                    .Select(static frame => frame.Substring("at ".Length, frame.IndexOf('(') - "at ".Length))
+                    .ToArray();
+
+                int actualFrameIndex = 0;
+                foreach (string expectedFrame in expectedStackTrace)
+                {
+                    actualFrameIndex = Array.IndexOf(actualStackTrace, expectedFrame, actualFrameIndex);
+                    Assert.True(actualFrameIndex >= 0, $"Expected stack frame '{expectedFrame}' was not found in order.");
+                    actualFrameIndex++;
+                }
             }
 
             foreach (var s in reversibleStrings)
