@@ -823,7 +823,7 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerializing = _knownSymbols.IJsonOnSerializingType.IsAssignableFrom(type);
                     implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
 
-                    ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers, ref experimentalIds);
+                    ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, constructorIsInaccessible, out constructionStrategy, out constructorSetsRequiredMembers, ref experimentalIds);
                     propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, typeNamingPolicy, out hasExtensionDataProperty, out fastPathPropertyIndices, ref experimentalIds);
 
                     if (!constructorIsInaccessible)
@@ -909,6 +909,12 @@ namespace System.Text.Json.SourceGeneration
                     classType = ClassType.TypeUnsupportedBySourceGen;
                 }
 
+                // Used for generating a generic wrapper class required by [UnsafeAccessor] for generic types with inaccessible constructors.
+                INamedTypeSymbol? openGenericAccessorType = constructorIsInaccessible
+                    && type is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
+                    ? namedType.OriginalDefinition
+                    : null;
+
                 return new TypeGenerationSpec
                 {
                     TypeRef = typeRef,
@@ -939,14 +945,11 @@ namespace System.Text.Json.SourceGeneration
                     ConstructorIsInaccessible = constructorIsInaccessible,
                     CanUseUnsafeAccessorForConstructor = constructorIsInaccessible
                         && _knownSymbols.UnsafeAccessorAttributeType is not null
-                        && (type is not INamedTypeSymbol { IsGenericType: true }
-                            || _knownSymbols.SupportsGenericUnsafeAccessors),
-                    TypeParameterNames = type is INamedTypeSymbol { IsGenericType: true } genericType && _knownSymbols.SupportsGenericUnsafeAccessors
-                        ? genericType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
-                    OpenTypeFQN = type is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
-                        ? type.OriginalDefinition.GetFullyQualifiedName() : null,
-                    TypeParameterConstraintClauses = type is INamedTypeSymbol { IsGenericType: true } genericType2 && _knownSymbols.SupportsGenericUnsafeAccessors
-                        ? GetTypeParameterConstraintClauses(genericType2.OriginalDefinition) : null,
+                        && (type is not INamedTypeSymbol { IsGenericType: true } || _knownSymbols.SupportsGenericUnsafeAccessors),
+                    TypeParameterNames = openGenericAccessorType?.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray(),
+                    OpenTypeFQN = openGenericAccessorType?.GetFullyQualifiedName(),
+                    TypeParameterConstraintClauses = openGenericAccessorType is not null
+                        ? GetTypeParameterConstraintClauses(openGenericAccessorType) : null,
                     NullableUnderlyingType = nullableUnderlyingType,
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
@@ -2809,6 +2812,7 @@ namespace System.Text.Json.SourceGeneration
             private ParameterGenerationSpec[]? ParseConstructorParameters(
                 in TypeToGenerate typeToGenerate,
                 IMethodSymbol? constructor,
+                bool constructorIsInaccessible,
                 out ObjectConstructionStrategy constructionStrategy,
                 out bool constructorSetsRequiredMembers,
                 ref HashSet<string>? experimentalIds)
@@ -2844,7 +2848,8 @@ namespace System.Text.Json.SourceGeneration
 
                     // Generic types with an inaccessible constructor use a generic wrapper class for the UnsafeAccessor
                     // (.NET 9+); its extern signature references the parameter types in open (type-parameter) form.
-                    bool useOpenParameterTypes = type is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors;
+                    bool useOpenParameterTypes = constructorIsInaccessible
+                        && type is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors;
 
                     // Compute ArgsIndex for each parameter.
                     // out parameters don't have entries in the args array.
