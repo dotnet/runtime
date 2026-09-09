@@ -5525,8 +5525,7 @@ AdjustContextForJITHelpers(
         //
         // Question: Why do we unwind before determining whether we will handle the exception or not?
         UnwindFrameChain(GetThread(), (Frame*)GetSP(pContext));
-        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext
-                               );
+        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext);
 
         if (fShouldHandleManagedFault)
         {
@@ -5936,8 +5935,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     {
         CantAllocHolder caHolder;
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionInfo->ExceptionRecord,
-                                                             pExceptionInfo->ContextRecord
-                                                            );
+                                                             pExceptionInfo->ContextRecord);
     }
 
     if (fShouldHandleManagedFault)
