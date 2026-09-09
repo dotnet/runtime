@@ -161,9 +161,15 @@ namespace ILCompiler.ObjectWriter
                         }
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
                         {
-                            WasmDataSegmentEmitter segment = (WasmDataSegmentEmitter)_sections[definedSymbol.SectionIndex];
-                            int targetOffsetFromMemoryBase = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend));
-                            Relocation.WriteValue(reloc.Type, pData, targetOffsetFromMemoryBase);
+                            if (_sections[definedSymbol.SectionIndex] is WasmDataSegmentEmitter segment)
+                            {
+                                int targetOffsetFromMemoryBase = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend));
+                                Relocation.WriteValue(reloc.Type, pData, targetOffsetFromMemoryBase);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException();
+                            }
                             break;
                         }
 

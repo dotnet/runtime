@@ -79,7 +79,8 @@ internal sealed class WasmSymbolManager
 
     public void AddAlias(Utf8String alias, Utf8String target)
     {
-        Debug.Assert(!_entries.ContainsKey(alias));
+        Debug.Assert(!_entries.ContainsKey(alias), "Alias symbol name must not already exist.");
+        Debug.Assert(_entries.ContainsKey(target), "Target symbol name must exist before adding an alias.");
         Entry entry = _entries[target];
         _aliases.Add(alias, entry with { Name = alias });
     }

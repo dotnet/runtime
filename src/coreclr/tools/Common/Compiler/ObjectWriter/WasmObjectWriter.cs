@@ -50,7 +50,7 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
-            // Data section is not emitted as a single ObjectNodeSection, and must be handled separately by the derived class.
+            WasmObjectNodeSection.DataSection.Name,
         ];
 
         private protected readonly Dictionary<string, WasmGlobal> _definedGlobals = new();
