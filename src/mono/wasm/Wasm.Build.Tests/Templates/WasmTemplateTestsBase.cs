@@ -175,7 +175,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         """;
         insertAtEnd +=
         $$"""
-            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences"
+            <Target Name="_UpdateKnownCoreClrWebAssemblyPacks" BeforeTargets="ProcessFrameworkReferences"
                     Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
                 <ItemGroup>
                 <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
