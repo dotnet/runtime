@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -164,7 +165,8 @@ namespace ILCompiler
             }
 
             Parallel.ForEach(
-                methodsToCompile,
+                // Method compilation costs vary widely, so avoid buffering work into imbalanced partitions.
+                Partitioner.Create(methodsToCompile, EnumerablePartitionerOptions.NoBuffering),
                 new ParallelOptions { MaxDegreeOfParallelism = _parallelism },
                 CompileSingleMethod);
         }
