@@ -178,7 +178,7 @@ namespace Wasm.Build.Tests
                                Text="Expected PublishReadyToRun=false." />
                         <Error Condition="'$(Crossgen2InBuildDir)' != '' or '$(Crossgen2ToolPath)' != ''"
                                Text="Expected SDK resolution without crossgen2 path overrides." />
-                        <Error Condition="'@(Crossgen2Tool)' == '' or '$(PortableCallHelpersGeneratorPath)' != '@(Crossgen2Tool)'"
+                        <Error Condition="'@(Crossgen2Tool)' == '' or '$(Crossgen2Path)' != '@(Crossgen2Tool)'"
                                Text="Expected the generator path to match the SDK Crossgen2Tool item." />
                         <Error Condition="!Exists('$(_WasmPInvokeTablePath)') or !Exists('$(_WasmReversePInvokeTablePath)') or !Exists('$(_WasmInterpToNativeTablePath)')"
                                Text="A generated call-helper table is missing." />
@@ -215,7 +215,7 @@ namespace Wasm.Build.Tests
                 ? PublishProject(info, Configuration.Debug, new PublishOptions(ExpectSuccess: false)).buildOutput
                 : BuildProject(info, Configuration.Debug, new BuildOptions(ExpectSuccess: false)).buildOutput;
 
-            Assert.Contains("Could not resolve crossgen2. Update the .NET SDK and restore the project, or set $(PortableCallHelpersGeneratorPath) to a crossgen2 executable.", output);
+            Assert.Contains("Could not resolve crossgen2. Update the .NET SDK and restore the project, or set $(Crossgen2Path) to a crossgen2 executable.", output);
             Assert.DoesNotContain("NETSDK1094", output);
         }
 
