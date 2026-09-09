@@ -342,6 +342,7 @@ namespace System.Security.Cryptography
         private readonly byte[] _baseNonce;
         private readonly FixedMemoryKeyBox _exporterSecret;
         private ulong _sequenceNumber;
+        private ConcurrencyBlock _block;
 
         internal HpkeSenderImplementation(
             HpkeSuite suite,
@@ -365,30 +366,34 @@ namespace System.Security.Cryptography
             Span<byte> ciphertext,
             ReadOnlySpan<byte> associatedData)
         {
-            if (_sequenceNumber == ulong.MaxValue)
+            // While this API is not documented as thread-safe, we block concurrent calls to prevent silent nonce reuse.
+            using (ConcurrencyBlock.Enter(ref _block))
             {
-                throw new CryptographicException(SR.Cryptography_HpkeMessageLimitReached);
+                if (_sequenceNumber == ulong.MaxValue)
+                {
+                    throw new CryptographicException(SR.Cryptography_HpkeMessageLimitReached);
+                }
+
+                const int MaxStackNonceLength = 12;
+                Span<byte> nonceBuffer = stackalloc byte[MaxStackNonceLength];
+                Span<byte> nonce = nonceBuffer.Slice(0, _baseNonce.Length);
+                _baseNonce.AsSpan().CopyTo(nonce);
+
+                // The zero-padded sequence number only affects the final eight nonce bytes.
+                // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
+                Span<byte> sequenceBytes = nonce.Slice(nonce.Length - sizeof(ulong));
+                BinaryPrimitives.WriteUInt64BigEndian(
+                    sequenceBytes,
+                    BinaryPrimitives.ReadUInt64BigEndian(sequenceBytes) ^ _sequenceNumber);
+
+                _aeadAdapter.Encrypt(
+                    plaintext,
+                    nonce,
+                    associatedData,
+                    ciphertext.Slice(0, plaintext.Length),
+                    ciphertext.Slice(plaintext.Length));
+                _sequenceNumber++;
             }
-
-            const int MaxStackNonceLength = 12;
-            Span<byte> nonceBuffer = stackalloc byte[MaxStackNonceLength];
-            Span<byte> nonce = nonceBuffer.Slice(0, _baseNonce.Length);
-            _baseNonce.AsSpan().CopyTo(nonce);
-
-            // The zero-padded sequence number only affects the final eight nonce bytes.
-            // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.2
-            Span<byte> sequenceBytes = nonce.Slice(nonce.Length - sizeof(ulong));
-            BinaryPrimitives.WriteUInt64BigEndian(
-                sequenceBytes,
-                BinaryPrimitives.ReadUInt64BigEndian(sequenceBytes) ^ _sequenceNumber);
-
-            _aeadAdapter.Encrypt(
-                plaintext,
-                nonce,
-                associatedData,
-                ciphertext.Slice(0, plaintext.Length),
-                ciphertext.Slice(plaintext.Length));
-            _sequenceNumber++;
         }
 
         protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
