@@ -957,6 +957,7 @@ namespace Mono.Linker.Steps
                     "IOS" => "IsIOS",
                     "MACCATALYST" => "IsMacCatalyst",
                     "TVOS" => "IsTvOS",
+                    "WATCHOS" => "IsWatchOS",
                     "FREEBSD" => "IsFreeBSD",
                     _ => null, // unknown/custom platform: leave the guard untouched
                 };
