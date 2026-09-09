@@ -1862,22 +1862,11 @@ namespace System.Reflection
 
         [UnmanagedCallersOnly]
         private static void InvokeCustomAttributeCtor(
-            RuntimeConstructorInfo* pConstructor, object?[]* pArguments, object* pResult, Exception* pException)
+            RuntimeConstructorInfo* pConstructor, IntPtr* pArguments, object* pResult, Exception* pException)
         {
             try
             {
-                RuntimeConstructorInfo constructor = *pConstructor;
-                object?[] arguments = *pArguments;
-                Debug.Assert(arguments.Length == constructor.ArgumentTypes.Length);
-
-                MethodBaseInvoker invoker = constructor.Invoker;
-                *pResult = arguments.Length switch
-                {
-                    0 => invoker.InvokeWithNoArgs(obj: null, BindingFlags.DoNotWrapExceptions)!,
-                    1 => invoker.InvokeWithOneArg(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, arguments, culture: null)!,
-                    2 or 3 or 4 => invoker.InvokeWithFewArgs(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, arguments, culture: null)!,
-                    _ => invoker.InvokeWithManyArgs(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, arguments, culture: null)!,
-                };
+                *pResult = (*pConstructor).Invoker.InvokeDirectByRef(obj: null, pArguments)!;
             }
             catch (Exception ex)
             {
