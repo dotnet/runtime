@@ -21,11 +21,14 @@ public struct Yak
 
 public class Complex2_Array_Test
 {
+    public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+
     internal static void test(Yak[,,,,,,] Odd_Variable)
     {
         Console.Write(Odd_Variable.Length);
     }
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133307", typeof(Complex2_Array_Test), nameof(IsBrowserReadyToRun))]
     [Fact]
     public static int TestEntryPoint()
     {

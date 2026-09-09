@@ -14,6 +14,8 @@ namespace JitTest_lcs_gcref_port
 
     public struct LCSV
     {
+        public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+
         private int _v;
         private LCSO[] _gcref;
         private const int RANK = 4;
@@ -100,6 +102,7 @@ namespace JitTest_lcs_gcref_port
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133307", typeof(LCSV), nameof(IsBrowserReadyToRun))]
         [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {

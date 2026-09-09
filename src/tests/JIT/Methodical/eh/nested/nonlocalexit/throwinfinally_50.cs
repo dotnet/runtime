@@ -9,6 +9,8 @@ namespace Test_throwinfinally_50_cs
 // levels of nesting = 50
 public class Class1
 {
+    public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+
     private static TestUtil.TestLog testLog;
 
     static Class1()
@@ -833,6 +835,7 @@ public class Class1
 
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(Class1), nameof(IsBrowserReadyToRun))]
     static public int TestEntryPoint()
     {
         //Start recording

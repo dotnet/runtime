@@ -2,6 +2,8 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133305 -->
+    <R2RIncompatible Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DevDiv_902271.il" />

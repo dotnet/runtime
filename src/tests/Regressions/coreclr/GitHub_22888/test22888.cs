@@ -21,6 +21,8 @@ class TestAssemblyLoadContext : AssemblyLoadContext
 }
 public class Test22888
 {
+    public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Stream LoadGetResourceStreamAndUnload(string assemblyPath, out WeakReference alcWeakRef)
     {
@@ -66,6 +68,7 @@ public class Test22888
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(Test22888), nameof(IsBrowserReadyToRun))]
     [Fact]
     public static int TestEntryPoint()
     {

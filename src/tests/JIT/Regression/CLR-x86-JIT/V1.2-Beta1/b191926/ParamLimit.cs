@@ -7,8 +7,12 @@ namespace b191926;
 
 using System;
 using Xunit;
+
 public class f8192
 {
+#if BROWSER_WASM_R2R_EXCLUSION
+    [System.Runtime.BypassReadyToRun]
+#endif
     internal static void Callee(
         int a1,
         int a2,

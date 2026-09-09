@@ -13,8 +13,11 @@ using Xunit;
 
 public class InterpreterTester
 {
+    public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+
     [SkipOnCoreClr("Temporarily disabled due to problems generating interpreter bytecode for methods with an existing prestub.", RuntimeTestModes.AnyJitOptimizationStress)]
     [SkipOnCoreClr("Temporarily disabled due to https://github.com/dotnet/runtime/issues/112827.", RuntimeTestModes.AnyGCStress)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133307", typeof(InterpreterTester), nameof(IsBrowserReadyToRun))]
     [Fact]
     public static void RunTests()
     {

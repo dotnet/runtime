@@ -13,8 +13,11 @@ namespace VariantStaticInterfaceDispatchRegressionTest
 {
     public class Test
     {
+        public static bool IsBrowserReadyToRun => OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/88689", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133305", typeof(Test), nameof(IsBrowserReadyToRun))]
         public static void TestEntryPoint()
         {
             Console.WriteLine("Test cases");
