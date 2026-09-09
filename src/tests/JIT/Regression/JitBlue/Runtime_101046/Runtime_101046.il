@@ -5,16 +5,10 @@
 .assembly extern xunit.core { }
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly Runtime_101046 { }
-.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .class public auto ansi beforefieldinit Runtime_101046
        extends [System.Runtime]System.Object
 {
-  .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = {
-      string('https://github.com/dotnet/runtime/issues/131811')
-      type([TestLibrary]TestLibrary.PlatformDetection)
-      string[1] ('IsWasmReadyToRun')
-  }
   .method public hidebysig static int32  TestEntryPoint() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )

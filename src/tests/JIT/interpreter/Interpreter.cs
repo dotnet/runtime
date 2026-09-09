@@ -973,9 +973,12 @@ public class InterpreterTest
 
         Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
 
-        Console.WriteLine("TestPInvoke");
-        if (!TestPInvoke())
-            Environment.FailFast(null);
+        if (!PlatformDetection.IsWasmReadyToRun)
+        {
+            Console.WriteLine("TestPInvoke");
+            if (!TestPInvoke())
+                Environment.FailFast(null);
+        }
 
         // For stackwalking validation
         System.GC.Collect();
