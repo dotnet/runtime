@@ -69,6 +69,30 @@
   <data name="Argument_HashImprecise" xml:space="preserve">
     <value>Hash must be exactly {0} bytes.</value>
   </data>
+  <data name="Argument_HpkeCiphertextTooShort" xml:space="preserve">
+    <value>The ciphertext must be at least {0} bytes long to contain the authentication tag.</value>
+  </data>
+  <data name="Argument_HpkeEncapsulatedSecretLength" xml:space="preserve">
+    <value>The encapsulated secret must be exactly {0} bytes long.</value>
+  </data>
+  <data name="Argument_HpkeExportLengthTooLarge" xml:space="preserve">
+    <value>The exported secret length can be at most {0} bytes.</value>
+  </data>
+  <data name="Argument_HpkeKdfInfoLength" xml:space="preserve">
+    <value>The specified info exceeds the maximum length of {0} bytes.</value>
+  </data>
+  <data name="Argument_HpkePskIdEmpty" xml:space="preserve">
+    <value>The pre-shared key identifier must not be empty.</value>
+  </data>
+  <data name="Argument_HpkePskIdTooLong" xml:space="preserve">
+    <value>The pre-shared key identifier exceeds the maximum length of {0} bytes.</value>
+  </data>
+  <data name="Argument_HpkePskTooLong" xml:space="preserve">
+    <value>The pre-shared key exceeds the maximum length of {0} bytes.</value>
+  </data>
+  <data name="Argument_HpkePskTooShort" xml:space="preserve">
+    <value>The pre-shared key must be at least {0} bytes long.</value>
+  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>

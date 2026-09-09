@@ -21,7 +21,9 @@
     <BuildX25519 Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</BuildX25519>
     <!-- Composite ML-KEM is new in .NET 11. For this package, build it only for .NET Framework. -->
     <BuildCompositeMLKem Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</BuildCompositeMLKem>
-    <OmitResources Condition="'$(BuildX509Loader)' != 'true' and '$(BuildPqc)' != 'true' and '$(BuildX25519)' != 'true' and '$(BuildCompositeMLKem)' != 'true'">true</OmitResources>
+    <!-- HPKE is new in .NET 11. For this package, build it only for .NET Framework. -->
+    <BuildHpke Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</BuildHpke>
+    <OmitResources Condition="'$(BuildX509Loader)' != 'true' and '$(BuildPqc)' != 'true' and '$(BuildX25519)' != 'true' and '$(BuildCompositeMLKem)' != 'true' and '$(BuildHpke)' != 'true'">true</OmitResources>
   </PropertyGroup>
 
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildX25519)' == 'true'" />
@@ -35,7 +37,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateKeyAccessors.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+  <ItemGroup Condition="'$(BuildHpke)' == 'true'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\Hpke.cs"
              Link="Common\System\Security\Cryptography\Hpke.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAead.cs"
@@ -50,8 +52,14 @@
              Link="Common\System\Security\Cryptography\HpkeKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKemMetadata.cs"
              Link="Common\System\Security\Cryptography\HpkeKemMetadata.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeRecipient.cs"
+             Link="Common\System\Security\Cryptography\HpkeRecipient.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSender.cs"
+             Link="Common\System\Security\Cryptography\HpkeSender.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
              Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System\Security\Cryptography\HpkeImplementation.Unsupported.cs"
+             Link="System\Security\Cryptography\HpkeImplementation.Unsupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true' ">
@@ -666,7 +674,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)"
-                      Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
+                      Condition="'$(BuildHpke)' == 'true'" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
