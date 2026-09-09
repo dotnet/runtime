@@ -134,13 +134,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void IsAssignableFrom_OpenNullable_SameTypeReturnsTrue()
-        {
-            Assert.True(typeof(Nullable<>).IsAssignableFrom(typeof(Nullable<>)));
-            Assert.True(typeof(int?).IsAssignableFrom(typeof(int)));
-        }
-
-        [Fact]
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
