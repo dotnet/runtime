@@ -3075,21 +3075,34 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             if (!pMT->IsInterface())
             {
-                virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
-                if (virtualDispatchTarget == nullptr)
-                {
-                    _ASSERTE(!"ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
-                }
-
                 DWORD offsetOfIndirection =
                     MethodTable::GetVtableOffset() +
                     MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
                 DWORD offsetAfterIndirection =
                     MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-                _ASSERTE(offsetOfIndirection <= UINT16_MAX);
-                _ASSERTE(offsetAfterIndirection <= UINT16_MAX);
-                packedVirtualDispatchOffsets =
-                    offsetOfIndirection | (offsetAfterIndirection << 16);
+
+                // The virtual dispatch thunk decodes both byte offsets from 16-bit fields.
+                // Wasm32 offsets always fit because MethodTable supports at most 65,536 virtual
+                // slots grouped into chunks of eight. This code is FEATURE_PORTABLE_ENTRYPOINTS
+                // gated rather than Wasm-gated, so a future wider-pointer target may exceed this
+                // range. In that case, leave the import cell on its delay-load thunk so it continues
+                // resolving through ExternalMethodFixupWorker.
+                static_assert(VTABLE_SLOTS_PER_CHUNK == 8);
+                _ASSERTE(slot <= UINT16_MAX);
+                static_assert((VTABLE_SLOTS_PER_CHUNK - 1) * TARGET_POINTER_SIZE <= UINT16_MAX);
+                if (offsetOfIndirection <= UINT16_MAX && offsetAfterIndirection <= UINT16_MAX)
+                {
+                    virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
+                    if (virtualDispatchTarget == nullptr)
+                    {
+                        // A missing thunk leaves the import cell on the correct, slower helper path.
+                        // Crossgen2 emits the required thunk dependency, so this should not happen in practice.
+                        _ASSERTE(!"ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
+                    }
+
+                    packedVirtualDispatchOffsets =
+                        offsetOfIndirection | (offsetAfterIndirection << 16);
+                }
             }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
             _ASSERTE(pCode != (PCODE)NULL);
