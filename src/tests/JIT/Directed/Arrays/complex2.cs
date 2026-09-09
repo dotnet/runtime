@@ -26,7 +26,7 @@ public class Complex2_Array_Test
         Console.Write(Odd_Variable.Length);
     }
     [OuterLoop]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133307", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBrowser), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133307", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static int TestEntryPoint()
     {

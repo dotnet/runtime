@@ -833,7 +833,7 @@ public class Class1
 
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133465", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBrowser), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133465", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     static public int TestEntryPoint()
     {
         //Start recording

@@ -34,7 +34,7 @@ namespace BigFrames
         public static int iret = 1;
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-#if BROWSER_WASM_R2R_EXCLUSION
+#if WASM_R2R_EXCLUSION
         [System.Runtime.BypassReadyToRun]
 #endif
         public static void BigArgSpace(

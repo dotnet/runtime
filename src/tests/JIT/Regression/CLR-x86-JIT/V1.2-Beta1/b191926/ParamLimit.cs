@@ -10,7 +10,7 @@ using Xunit;
 
 public class f8192
 {
-#if BROWSER_WASM_R2R_EXCLUSION
+#if WASM_R2R_EXCLUSION
     [System.Runtime.BypassReadyToRun]
 #endif
     internal static void Callee(

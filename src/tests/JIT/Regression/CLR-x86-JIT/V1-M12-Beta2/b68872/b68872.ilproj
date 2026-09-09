@@ -3,7 +3,7 @@
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133468 -->
-    <R2RIncompatible Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />

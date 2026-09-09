@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">$(DefineConstants);BROWSER_WASM_R2R_EXCLUSION</DefineConstants>
+    <DefineConstants Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">$(DefineConstants);WASM_R2R_EXCLUSION</DefineConstants>
     <DebugType>PdbOnly</DebugType>
     <HasMergedInTests>True</HasMergedInTests>
   </PropertyGroup>

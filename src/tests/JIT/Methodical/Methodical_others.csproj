@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <HasMergedInTests>true</HasMergedInTests>
-    <DefineConstants Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">$(DefineConstants);BROWSER_WASM_R2R_EXCLUSION</DefineConstants>
+    <DefineConstants Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">$(DefineConstants);WASM_R2R_EXCLUSION</DefineConstants>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
   </PropertyGroup>
