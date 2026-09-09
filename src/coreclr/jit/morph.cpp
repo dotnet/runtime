@@ -737,6 +737,62 @@ void CallArg::Dump(Compiler* comp)
 #endif
 
 //------------------------------------------------------------------------
+// ArgHasVolatileAccess: Check whether an argument tree contains a volatile
+//    memory access.
+//
+// Parameters:
+//   comp - The compiler object.
+//   argx - The argument tree.
+//
+// Returns:
+//   True if the tree contains a volatile load or store.
+//
+// Remarks:
+//   Volatile accesses must not be reordered with respect to other memory
+//   accesses, which constrains the order in which arguments may be evaluated.
+//   Other users of GTF_ORDER_SIDEEFF (bounds checks, null checks and the
+//   address computations tied to them) only need to preserve their ordering
+//   within a single argument tree, so they are not interesting here.
+//
+static bool ArgHasVolatileAccess(Compiler* comp, GenTree* argx)
+{
+    if ((argx->gtFlags & GTF_ORDER_SIDEEFF) == 0)
+    {
+        return false;
+    }
+
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        bool HasVolatileAccess = false;
+
+        Visitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->OperIsIndir() && (*use)->AsIndir()->IsVolatile())
+            {
+                HasVolatileAccess = true;
+                return Compiler::WALK_ABORT;
+            }
+
+            return Compiler::WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(comp);
+    visitor.WalkTree(&argx, nullptr);
+    return visitor.HasVolatileAccess;
+}
+
+//------------------------------------------------------------------------
 // ArgsComplete: Make final decisions on which arguments to evaluate into temporaries.
 //
 void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
@@ -748,6 +804,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     // Exceptions previous tree with GTF_EXCEPT may throw (computed lazily, may
     // be empty)
     ExceptionSetFlags prevExceptionFlags = ExceptionSetFlags::None;
+    // Whether we have seen an argument with a volatile memory access
+    bool hasVolatileAccess = false;
 
     for (CallArg& arg : Args())
     {
@@ -811,6 +869,41 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
                 if (((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
                     comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
+                {
+                    SetNeedsTemp(&prevArg);
+                }
+            }
+        }
+
+        // Volatile accesses must not be reordered with respect to other memory accesses.
+        // Once we have seen one, every argument that accesses memory - before or after it -
+        // forces all preceding memory-accessing arguments into temps so that the sort below
+        // cannot reorder them.
+        //
+        if (ArgHasVolatileAccess(comp, argx))
+        {
+            hasVolatileAccess = true;
+        }
+
+        if (hasVolatileAccess && ((argx->gtFlags & GTF_ALL_EFFECT) != 0))
+        {
+            for (CallArg& prevArg : Args())
+            {
+                if (&prevArg == &arg)
+                {
+                    break;
+                }
+
+#if !FEATURE_FIXED_OUT_ARGS
+                if (!prevArg.AbiInfo.HasAnyRegisterSegment())
+                {
+                    // All stack args are already evaluated and placed in order
+                    // in this case.
+                    continue;
+                }
+#endif
+
+                if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0))
                 {
                     SetNeedsTemp(&prevArg);
                 }
