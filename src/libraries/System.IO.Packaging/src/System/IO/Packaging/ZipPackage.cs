@@ -1152,6 +1152,17 @@ namespace System.IO.Packaging
                 // If the content type stream is interleaved, validate the piece numbering.
                 else if (partPieces != null)
                 {
+                    long totalLength = 0;
+                    foreach (ZipPackagePartPiece piece in partPieces)
+                    {
+                        totalLength += piece.ZipArchiveEntry.Length;
+                    }
+
+                    if (totalLength > MaxContentTypesXmlSize)
+                    {
+                        throw new FileFormatException(SR.Format(SR.ContentTypeStreamTooLarge, MaxContentTypesXmlSize));
+                    }
+
                     _contentTypeStreamExists = true;
                     _contentTypeStreamPieces = partPieces;
 
