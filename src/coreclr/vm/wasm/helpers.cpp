@@ -1592,13 +1592,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
 
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMD->IsUnboxingStub());
     _ASSERTE(ppTargetMethodDesc != nullptr);
@@ -1638,8 +1632,8 @@ void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* p
             return nullptr;
     }
 
-    PCODE unboxingStub = LookupPregeneratedThunkByString(keyBuffer);
-    if (unboxingStub == (PCODE)NULL)
+    void* unboxingStub = LookupPortableEntryPointThunk(keyBuffer);
+    if (unboxingStub == nullptr)
     {
         return nullptr;
     }
@@ -1660,7 +1654,7 @@ void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* p
 
     *ppTargetMethodDesc = pTargetMethodDesc;
     *pTargetEntryPoint = targetEntryPoint;
-    return (void*)unboxingStub;
+    return unboxingStub;
 }
 
 void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
