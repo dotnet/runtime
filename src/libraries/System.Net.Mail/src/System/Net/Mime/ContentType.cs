@@ -116,10 +116,10 @@ namespace System.Net.Mime
             get
             {
                 string? value = Parameters["name"];
-                Encoding? nameEncoding = MimeBasePart.DecodeEncoding(value);
+                (string decodedValue, Encoding? nameEncoding) = MimeBasePart.DecodeHeaderValue(value, false);
                 if (nameEncoding != null)
                 {
-                    value = MimeBasePart.DecodeHeaderValue(value);
+                    value = decodedValue;
                 }
                 return value!;
             }
@@ -191,10 +191,26 @@ namespace System.Net.Mime
 
         private static void EncodeToBuffer(string value, StringBuilder builder, bool allowUnicode)
         {
-            Encoding? encoding = MimeBasePart.DecodeEncoding(value);
+            Encoding? encoding;
+            try
+            {
+                (_, encoding) = MimeBasePart.DecodeHeaderValue(value, false);
+            }
+            catch (FormatException)
+            {
+                // The value looks like an encoded-word but its content isn't actually decodable;
+                // treat it as not pre-encoded so it gets properly quoted/escaped below.
+                encoding = null;
+            }
+            catch (ArgumentException)
+            {
+                // Unsupported charset; treat it as not pre-encoded so it gets properly quoted/escaped below.
+                encoding = null;
+            }
+
             if (encoding != null) // Manually encoded elsewhere, pass through
             {
-                builder.Append('\"').Append(value).Append('"');
+                builder.Append('"').Append(value).Append('"');
             }
             else if ((allowUnicode && !MailBnfHelper.HasCROrLF(value)) // Unicode without CL or LF's
                 || MimeBasePart.IsAscii(value, false)) // Ascii
