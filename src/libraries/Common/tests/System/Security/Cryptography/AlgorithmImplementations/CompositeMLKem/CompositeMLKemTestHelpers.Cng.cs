@@ -49,18 +49,22 @@ namespace System.Security.Cryptography.Tests
         internal static CngKey ImportCngDecapsulationKey(
             CompositeMLKemAlgorithm algorithm,
             ReadOnlySpan<byte> source,
-            CngExportPolicies exportPolicies)
+            CngExportPolicies exportPolicies,
+            string? keyName = null)
         {
             return PqcBlobHelpers.EncodeCompositeMLKemBlob(
                 GetCngParameterSet(algorithm),
                 source,
                 Interop.BCrypt.KeyBlobType.BCRYPT_COMPOSITE_MLKEM_PRIVATE_BLOB,
-                exportPolicies,
-                static (exportPoliciesArg, blobKind, blob) =>
+                (exportPolicies, keyName),
+                static (state, blobKind, blob) =>
                 {
                     CngKeyCreationParameters creationParameters = new()
                     {
-                        ExportPolicy = exportPoliciesArg,
+                        ExportPolicy = state.exportPolicies,
+                        KeyCreationOptions = state.keyName is null
+                            ? CngKeyCreationOptions.None
+                            : CngKeyCreationOptions.OverwriteExistingKey,
                     };
 
                     creationParameters.Parameters.Add(
@@ -69,7 +73,7 @@ namespace System.Security.Cryptography.Tests
                             blob.ToArray(),
                             CngPropertyOptions.None));
 
-                    return CngKey.Create(CngAlgorithm.CompositeMLKem, keyName: null, creationParameters);
+                    return CngKey.Create(CngAlgorithm.CompositeMLKem, state.keyName, creationParameters);
                 });
         }
 

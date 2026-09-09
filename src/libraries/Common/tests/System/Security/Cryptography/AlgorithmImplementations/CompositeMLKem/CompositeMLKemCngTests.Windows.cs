@@ -112,32 +112,11 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLKemTestData.AllIetfVectors
                     .First(v => v.Algorithm == CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256);
 
-            CngKey key = PqcBlobHelpers.EncodeCompositeMLKemBlob(
-                PqcBlobHelpers.TryGetCompositeMLKemParameterSet(vector.Algorithm, out string? parameterSet)
-                    ? parameterSet
-                    : throw new CryptographicException(),
+            CngKey key = CompositeMLKemTestHelpers.ImportCngDecapsulationKey(
+                vector.Algorithm,
                 vector.DecapsulationKey,
-                Interop.BCrypt.KeyBlobType.BCRYPT_COMPOSITE_MLKEM_PRIVATE_BLOB,
-                state: default(object),
-                static (_, blobKind, blob) =>
-                {
-                    CngProperty kemBlob = new CngProperty(
-                        blobKind,
-                        blob.ToArray(),
-                        CngPropertyOptions.None);
-
-                    CngKeyCreationParameters creationParams = new();
-                    creationParams.Parameters.Add(kemBlob);
-                    creationParams.ExportPolicy = CngExportPolicies.AllowPlaintextExport;
-                    creationParams.KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey;
-
-                    CngKey key = CngKey.Create(
-                        CngAlgorithm.CompositeMLKem,
-                        $"{nameof(CompositeMLKemCngTests)}_{nameof(ImportDecapsulationKey_Persisted)}",
-                        creationParams);
-
-                    return key;
-                });
+                CngExportPolicies.AllowPlaintextExport,
+                $"{nameof(CompositeMLKemCngTests)}_{nameof(ImportDecapsulationKey_Persisted)}");
 
             try
             {
