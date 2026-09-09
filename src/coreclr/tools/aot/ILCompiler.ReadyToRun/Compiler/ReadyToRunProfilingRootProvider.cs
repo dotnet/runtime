@@ -65,7 +65,7 @@ namespace ILCompiler
 
                     if (!CorInfoImpl.ShouldSkipCompilation(_instructionSetSupport, method))
                     {
-                        ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(method);
+                        DependencyAnalysis.NodeFactory.CheckCanGenerateMethod(method);
                         rootProvider.AddCompilationRoot(method, rootMinimalDependencies: true, reason: "Profile triggered method");
                     }
                 }

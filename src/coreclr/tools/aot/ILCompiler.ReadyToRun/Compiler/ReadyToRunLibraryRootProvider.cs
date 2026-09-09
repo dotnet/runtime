@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 using Internal.JitInterface;
-using System.Reflection.Metadata;
 
 namespace ILCompiler
 {
@@ -64,7 +63,7 @@ namespace ILCompiler
                 {
                     if (!CorInfoImpl.ShouldSkipCompilation(_instructionSetSupport, method))
                     {
-                        CheckCanGenerateMethod(methodToRoot);
+                        DependencyAnalysis.NodeFactory.CheckCanGenerateMethod(methodToRoot);
                         rootProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: reason);
                     }
                 }
@@ -75,52 +74,6 @@ namespace ILCompiler
                     continue;
                 }
             }
-        }
-
-        /// <summary>
-        /// Validates that it will be possible to generate '<paramref name="method"/>' based on the types
-        /// in its signature. Unresolvable types in a method's signature prevent RyuJIT from generating
-        /// even a stubbed out throwing implementation.
-        /// </summary>
-        public static void CheckCanGenerateMethod(MethodDesc method)
-        {
-            // Ensure the method is loadable
-            ((CompilerTypeSystemContext)method.Context).EnsureLoadableMethod(method);
-
-            MethodSignature signature = method.Signature;
-
-            // Vararg methods are not supported in .NET Core
-            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
-                ThrowHelper.ThrowBadImageFormatException();
-
-            CheckTypeCanBeUsedInSignature(signature.ReturnType);
-
-            for (int i = 0; i < signature.Length; i++)
-            {
-                CheckTypeCanBeUsedInSignature(signature[i]);
-            }
-        }
-
-        private static void CheckTypeCanBeUsedInSignature(TypeDesc type)
-        {
-            DefType defType = type as DefType;
-
-            if (defType != null)
-            {
-                defType.ComputeTypeContainsGCPointers();
-                if (defType.InstanceFieldSize.IsIndeterminate)
-                {
-                    //
-                    // If a method's signature refers to a type with an indeterminate size,
-                    // the compilation will eventually fail when we generate the GCRefMap.
-                    //
-                    // Therefore we need to avoid adding these method into the graph
-                    //
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
-            }
-
-            ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type);
         }
 
         private static Instantiation GetInstantiationThatMeetsConstraints(Instantiation definition)

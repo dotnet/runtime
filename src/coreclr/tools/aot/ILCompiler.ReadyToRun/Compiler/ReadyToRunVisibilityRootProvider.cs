@@ -106,7 +106,7 @@ namespace ILCompiler
                 {
                     if (!CorInfoImpl.ShouldSkipCompilation(_instructionSetSupport, method))
                     {
-                        ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(methodToRoot);
+                        DependencyAnalysis.NodeFactory.CheckCanGenerateMethod(methodToRoot);
                         rootProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: reason);
                     }
                 }

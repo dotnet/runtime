@@ -66,11 +66,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     MethodDesc helperMethod = factory.TypeSystemContext.GetInstantiatedMethod(helperMethodDef, new Instantiation(elementType));
                     MethodDesc canonHelperMethod = helperMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-                    if (!factory.CompilationModuleGroup.ContainsMethodBody(canonHelperMethod, false))
+                    if (!factory.TryGetCompilableMethodNode(canonHelperMethod, out MethodWithGCInfo methodNode))
                         continue;
 
                     result.Add(new CombinedDependencyListEntry(
-                        factory.CompiledMethodNode(canonHelperMethod),
+                        methodNode,
                         factory.VirtualMethodUse(interfaceMethod),
                         "Array generic interface method implemented by SZArrayHelper"));
                 }

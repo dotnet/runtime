@@ -137,6 +137,76 @@ namespace ILCompiler.DependencyAnalysis
             return _localMethodCache.GetOrAdd(method);
         }
 
+        /// <summary>
+        /// Validates that it will be possible to generate '<paramref name="method"/>' based on the types
+        /// in its signature. Unresolvable types in a method's signature prevent RyuJIT from generating
+        /// even a stubbed out throwing implementation.
+        /// </summary>
+        public static void CheckCanGenerateMethod(MethodDesc method)
+        {
+            // Ensure the method is loadable
+            ((CompilerTypeSystemContext)method.Context).EnsureLoadableMethod(method);
+
+            MethodSignature signature = method.Signature;
+
+            // Vararg methods are not supported in .NET Core
+            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
+                ThrowHelper.ThrowBadImageFormatException();
+
+            CheckTypeCanBeUsedInSignature(signature.ReturnType);
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                CheckTypeCanBeUsedInSignature(signature[i]);
+            }
+        }
+
+        private static void CheckTypeCanBeUsedInSignature(TypeDesc type)
+        {
+            DefType defType = type as DefType;
+
+            if (defType != null)
+            {
+                defType.ComputeTypeContainsGCPointers();
+                if (defType.InstanceFieldSize.IsIndeterminate)
+                {
+                    //
+                    // If a method's signature refers to a type with an indeterminate size,
+                    // the compilation will eventually fail when we generate the GCRefMap.
+                    //
+                    // Therefore we need to avoid adding these method into the graph
+                    //
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+            }
+
+            ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type);
+        }
+
+        // Filters the uncommon methods whose validation throws TypeSystemException. These methods are
+        // left for runtime handling so invalid metadata is reported only when the method is used.
+        public bool TryGetCompilableMethodNode(MethodDesc method, out MethodWithGCInfo methodNode)
+        {
+            methodNode = null;
+
+            if (!CompilationModuleGroup.ContainsMethodBody(method, false))
+                return false;
+
+            // Validation failures are exceptional, so reuse the throwing validator instead of
+            // maintaining a separate bool-returning validation path.
+            try
+            {
+                CheckCanGenerateMethod(method);
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+
+            methodNode = CompiledMethodNode(method);
+            return true;
+        }
+
         private bool CanPrecompileUnboxingStub(MethodDesc targetMethod)
         {
             if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
