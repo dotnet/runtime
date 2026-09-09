@@ -3,9 +3,7 @@
 
 using namespace System;
 
-#pragma unmanaged
 __declspec(thread) int s_tlsFieldData = 32;
-#pragma managed
 
 static void Function1(int value, int remaining)
 {

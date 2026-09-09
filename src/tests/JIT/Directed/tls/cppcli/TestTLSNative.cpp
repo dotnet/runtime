@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma unmanaged
-__declspec(thread) int s_tlsFieldData = 51966;
-#pragma managed
+__declspec(thread) volatile int s_tlsFieldData = 51966;
 
 public ref class TlsTest
 {

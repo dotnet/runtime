@@ -6,6 +6,7 @@ using Xunit;
 
 public class TestTLS
 {
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/133538", RuntimeConfiguration.Checked)]
     [Fact]
     public static int TestEntryPoint()
     {
