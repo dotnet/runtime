@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wa
 /// <c>ExecutionManager::{FindFunctionTableIndexRangeSection,
 /// GetWasmVirtualIPFromFunctionTableIndex}</c> in <c>src/coreclr/vm/codeman.cpp</c>. It resolves an
 /// R2R function table entry index against the <c>FunctionTableIndexRangeList</c> to its owning
-/// module's <see cref="Data.ReadyToRunInfo"/>, then reads the corresponding
+/// image's <see cref="Data.ReadyToRunInfo"/>, then reads the corresponding
 /// <c>RUNTIME_FUNCTION</c> for the funclet flag, base virtual IP, and unwind data.
 /// </summary>
 internal sealed class WasmR2RInfo : IWasmR2RInfo
@@ -52,8 +52,7 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
 
     private Data.ReadyToRunInfo GetReadyToRunInfo(Data.FunctionTableIndexRangeSection section)
     {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(section.R2RModule);
-        return _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
+        return _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(section.R2RInfo);
     }
 
     private Data.RuntimeFunction GetRuntimeFunction(Data.ReadyToRunInfo r2rInfo, uint localIndex)

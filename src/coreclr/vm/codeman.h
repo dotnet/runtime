@@ -2434,14 +2434,14 @@ struct VirtualIPRangeSection
 
 struct FunctionTableIndexRangeSection
 {
-    FunctionTableIndexRangeSection(DWORD minIndex, DWORD count, PTR_Module pModule)
-        : minFunctionTableIndex(minIndex), numRuntimeFunctions(count), pR2RModule(pModule), pNext(nullptr)
+    FunctionTableIndexRangeSection(DWORD minIndex, DWORD count, PTR_ReadyToRunInfo pR2RInfo)
+        : minFunctionTableIndex(minIndex), numRuntimeFunctions(count), pR2RInfo(pR2RInfo), pNext(nullptr)
     {
     }
 
     DWORD               minFunctionTableIndex;  // Start of the function table index range
     DWORD               numRuntimeFunctions;    // Number of RUNTIME_FUNCTION entries
-    PTR_Module          pR2RModule;             // Module owning this range
+    PTR_ReadyToRunInfo  pR2RInfo;               // R2R image owning this range
     FunctionTableIndexRangeSection* pNext;      // Next entry in the linked list
 };
 #endif // TARGET_WASM
@@ -2607,7 +2607,7 @@ public:
     // Register a function table index range for a WASM R2R module.
     static void           AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
                                                      DWORD numRuntimeFunctions,
-                                                     PTR_Module pModule);
+                                                     PTR_ReadyToRunInfo pR2RInfo);
 
     // Find the FunctionTableIndexRangeSection for a given function table index.
     static FunctionTableIndexRangeSection* FindFunctionTableIndexRangeSection(DWORD functionIndex);
@@ -2813,7 +2813,7 @@ struct cdac_data<FunctionTableIndexRangeSection>
 {
     static constexpr size_t MinFunctionTableIndex = offsetof(FunctionTableIndexRangeSection, minFunctionTableIndex);
     static constexpr size_t NumRuntimeFunctions = offsetof(FunctionTableIndexRangeSection, numRuntimeFunctions);
-    static constexpr size_t R2RModule = offsetof(FunctionTableIndexRangeSection, pR2RModule);
+    static constexpr size_t R2RInfo = offsetof(FunctionTableIndexRangeSection, pR2RInfo);
     static constexpr size_t Next = offsetof(FunctionTableIndexRangeSection, pNext);
 };
 #endif // TARGET_WASM

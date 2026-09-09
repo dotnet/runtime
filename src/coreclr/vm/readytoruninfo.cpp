@@ -804,7 +804,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
     m_pPersistentInlineTrackingMap(NULL),
-    m_pNextR2RForUnrelatedCode(NULL)
+    m_pNextR2RForUnrelatedCode(NULL),
+    m_pNextSupplemental(NULL)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2916,7 +2917,7 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
         ExecutionManager::AddFunctionTableIndexRange(
             m_minFunctionTableIndex,
             m_nRuntimeFunctions,
-            pModule);
+            this);
     }
 
     m_minVirtualIP = m_pComposite->GetMinVirtualIP();

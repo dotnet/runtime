@@ -853,6 +853,10 @@ public:
 private:
     PTR_ReadyToRunInfo      m_pReadyToRunInfo;
     PTR_NativeImage         m_pNativeImage;
+    // Head of a singly-linked list of supplemental R2R images attached to this module after load
+    // (lazily downloaded native code for methods whose metadata/IL live in this module's primary
+    // image). Linked through ReadyToRunInfo::m_pNextSupplemental. Empty for all modules today.
+    PTR_ReadyToRunInfo      m_pSupplementalReadyToRunInfos;
 #endif
 
 #if PROFILING_SUPPORTED_DATA
@@ -1539,6 +1543,18 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pNativeImage;
     }
+
+    PTR_ReadyToRunInfo GetSupplementalReadyToRunInfos() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pSupplementalReadyToRunInfos;
+    }
+
+#ifndef DACCESS_COMPILE
+    // Attach a lazily-downloaded supplemental R2R image to this module. Callable only at a quiesce
+    // point (no managed frames of this module on the stack). Lock-free push onto the list head.
+    void AttachSupplementalReadyToRunInfo(ReadyToRunInfo *pInfo);
+#endif
 #endif
 
 #ifdef _DEBUG

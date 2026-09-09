@@ -6049,17 +6049,17 @@ VirtualIPRangeSection* ExecutionManager::FindVirtualIPRangeSection(TADDR virtual
 
 void ExecutionManager::AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
                                                    DWORD numRuntimeFunctions,
-                                                   PTR_Module pModule)
+                                                   PTR_ReadyToRunInfo pR2RInfo)
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(numRuntimeFunctions > 0);
-        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(pR2RInfo));
     } CONTRACTL_END;
 
     FunctionTableIndexRangeSection* pNewRange = new FunctionTableIndexRangeSection(
-        minFunctionTableIndex, numRuntimeFunctions, pModule);
+        minFunctionTableIndex, numRuntimeFunctions, pR2RInfo);
 
     FunctionTableIndexRangeSection* pOldRangeSection = nullptr;
     do
@@ -6096,8 +6096,7 @@ BOOL ExecutionManager::IsFuncletFunctionIndex(DWORD functionIndex)
         return FALSE;
     }
 
-    Module* pModule = pSection->pR2RModule;
-    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+    ReadyToRunInfo* pR2RInfo = pSection->pR2RInfo;
 
     DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
     PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
@@ -6114,8 +6113,7 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         return 0;
     }
 
-    Module* pModule = pSection->pR2RModule;
-    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+    ReadyToRunInfo* pR2RInfo = pSection->pR2RInfo;
 
     DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
     do

@@ -486,6 +486,19 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
         pCode = pAlreadyExaminedInfos[0]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
     }
 
+    // Lazily-attached supplemental R2R images for this module (native code downloaded after load
+    // whose metadata/IL live in the module's primary image). The list is empty for all modules
+    // today, so this walk is a no-op until such an image is attached.
+    if (pCode == (PCODE)NULL)
+    {
+        for (ReadyToRunInfo* pSupplemental = pModule->GetSupplementalReadyToRunInfos();
+             pSupplemental != NULL && pCode == (PCODE)NULL;
+             pSupplemental = pSupplemental->GetNextSupplemental())
+        {
+            pCode = pSupplemental->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+        }
+    }
+
     //  Generics may be located in several places
     if (pCode == (PCODE)NULL && HasClassOrMethodInstantiation())
     {

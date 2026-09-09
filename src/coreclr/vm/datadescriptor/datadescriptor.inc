@@ -963,7 +963,7 @@ CDAC_TYPE_BEGIN(FunctionTableIndexRangeSection)
 CDAC_TYPE_INDETERMINATE(FunctionTableIndexRangeSection)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, MinFunctionTableIndex, cdac_data<FunctionTableIndexRangeSection>::MinFunctionTableIndex)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, NumRuntimeFunctions, cdac_data<FunctionTableIndexRangeSection>::NumRuntimeFunctions)
-CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, R2RModule, cdac_data<FunctionTableIndexRangeSection>::R2RModule)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, R2RInfo, cdac_data<FunctionTableIndexRangeSection>::R2RInfo)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, Next, cdac_data<FunctionTableIndexRangeSection>::Next)
 CDAC_TYPE_END(FunctionTableIndexRangeSection)
 #endif // TARGET_WASM

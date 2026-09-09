@@ -459,6 +459,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
+    m_pSupplementalReadyToRunInfos = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
         if (m_pReadyToRunInfo->SkipTypeValidation())
@@ -3617,6 +3618,24 @@ void Module::RunEagerFixupsUnlocked()
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
+
+#ifdef FEATURE_READYTORUN
+// Attach a lazily-downloaded supplemental R2R image to this module. Lock-free push onto the list
+// head; attach runs at a quiesce point so contention is not expected but the CAS keeps it safe.
+void Module::AttachSupplementalReadyToRunInfo(ReadyToRunInfo *pInfo)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pInfo != NULL);
+    _ASSERTE(pInfo->GetNextSupplemental() == NULL);
+
+    PTR_ReadyToRunInfo pOld;
+    do
+    {
+        pOld = VolatileLoadWithoutBarrier(&m_pSupplementalReadyToRunInfos);
+        pInfo->SetNextSupplemental(pOld);
+    } while (InterlockedCompareExchangeT(&m_pSupplementalReadyToRunInfos, PTR_ReadyToRunInfo(pInfo), pOld) != pOld);
+}
+#endif // FEATURE_READYTORUN
 
 //-----------------------------------------------------------------------------
 
