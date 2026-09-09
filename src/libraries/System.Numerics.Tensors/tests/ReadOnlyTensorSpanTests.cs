@@ -13,10 +13,12 @@ namespace System.Numerics.Tensors.Tests
         public static void ReadOnlyTensorSpanSystemArrayConstructorTests()
         {
             // When using System.Array constructor make sure the type of the array matches T[]
-            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<double>(array: new[] { 1 }));
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<double>(array: new[] { 1 }));
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<double>(array: new[] { 1 }, start: [0], lengths: [1], strides: [1]));
 
             string[] stringArray = { "a", "b", "c" };
-            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>(array: stringArray));
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<object>(array: (Array)stringArray));
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<object>(array: (Array)stringArray, start: [0], lengths: [3], strides: [1]));
 
             // Make sure basic T[,] constructor works
             int[,] a = new int[,] { { 91, 92, -93, 94 } };
@@ -223,6 +225,25 @@ namespace System.Numerics.Tensors.Tests
             // Assert.Equal(94, spanInt[1, 1]);
         }
 
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(1, false)]
+        [InlineData(1, true)]
+        public static void ReadOnlyTensorSpanSystemArrayConstructorMismatchedElementType(int length, bool withShape)
+        {
+            Array array = new byte[length, 1];
+
+            if (withShape)
+            {
+                Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<long>(array, start: [], lengths: [], strides: []));
+            }
+            else
+            {
+                Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<long>(array));
+            }
+        }
+
         [Fact]
         public static void ReadOnlyTensorSpanArrayConstructorTests()
         {
@@ -230,6 +251,16 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[0], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
             Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[1], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
             Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[2], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 2 }));
+
+            string[] stringArray = { "a", "b", "c" };
+            ReadOnlyTensorSpan<object> spanObject = new ReadOnlyTensorSpan<object>(stringArray);
+            Assert.Same(stringArray[0], spanObject[0]);
+            spanObject = new ReadOnlyTensorSpan<object>(stringArray, lengths: [3]);
+            Assert.Same(stringArray[2], spanObject[2]);
+            spanObject = new ReadOnlyTensorSpan<object>(stringArray, lengths: [2], strides: [2]);
+            Assert.Same(stringArray[2], spanObject[1]);
+            spanObject = new ReadOnlyTensorSpan<object>(stringArray, start: 1, lengths: [2], strides: [1]);
+            Assert.Same(stringArray[1], spanObject[0]);
 
             // Make sure basic T[] constructor works
             int[] a = { 91, 92, -93, 94 };
