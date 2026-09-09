@@ -128,7 +128,7 @@ public unsafe class IXCLRDataProcessTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ModuleGetVersionId(MockTarget.Architecture arch)
     {
-        Guid expected = new("0f389ec2-bdb0-4487-b3e1-b9a749fa7bdd");
+        System.Guid expected = new("0f389ec2-bdb0-4487-b3e1-b9a749fa7bdd");
         byte[] metadataBytes = BuildMethodDefinitionMetadata(expected);
         fixed (byte* metadata = metadataBytes)
         {
@@ -146,7 +146,7 @@ public unsafe class IXCLRDataProcessTests
             builder.AddMockContract(ecmaMetadata.Object);
             IXCLRDataModule module = new ClrDataModule(moduleHandle.Address, builder.Build(), legacyImpl: null, new());
 
-            Guid actual;
+            System.Guid actual;
             Assert.Equal(HResults.S_OK, module.GetVersionId(&actual));
             Assert.Equal(expected, actual);
             Assert.Equal(HResults.E_POINTER, module.GetVersionId(null));
@@ -512,13 +512,13 @@ public unsafe class IXCLRDataProcessTests
         Assert.Equal(expectedStart, address);
     }
 
-    private static byte[] BuildMethodDefinitionMetadata(Guid? mvid = null)
+    private static byte[] BuildMethodDefinitionMetadata(System.Guid? mvid = null)
     {
         MetadataBuilder builder = new();
         builder.AddModule(
             0,
             builder.GetOrAddString("TestModule"),
-            builder.GetOrAddGuid(mvid ?? Guid.Empty),
+            builder.GetOrAddGuid(mvid ?? System.Guid.Empty),
             default,
             default);
 
