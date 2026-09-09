@@ -169,6 +169,7 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls12, false)]
         [InlineData(SslProtocols.Tls13, true)]
         [InlineData(SslProtocols.Tls13, false)]
+        [SkipOnPlatform(TestPlatforms.Android, "JSSE server-side session cache / ticket issuance is not wired up, so resumption never measurably shrinks the second handshake.")]
         public async Task ServerSession_TlsResume_HonorsAllowTlsResumeOption(SslProtocols protocol, bool allowResume)
         {
             if (OperatingSystem.IsMacOS())
@@ -422,6 +423,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
+        [SkipOnPlatform(TestPlatforms.Android, "JSSE's trust manager has no retry-verify equivalent, so the rejection is deferred and no alert reaches the client.")]
         public async Task SslStreamServer_RejectsClientCert_ClientObservesAlert(SslProtocols protocol)
         {
             if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
@@ -650,7 +652,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not surface a deferred client-credential prompt; SslStream supplies the certificate up-front.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Android, "Neither SecureTransport nor JSSE surfaces a deferred client-credential prompt; the certificate must be supplied up-front.")]
         public async Task ClientSession_WantCredentials_SetClientCertificateContext_ResumesHandshake(SslProtocols protocol)
         {
             // Server (SslStream) demands a client certificate. The client TlsContext is
@@ -2412,6 +2414,7 @@ namespace System.Net.Security.Tests
         // with the client's ClientHello must fail the handshake cleanly (no crash, no hang)
         // via the socket-replay BIO path.
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "JSSE does not fail the handshake on a protocol mismatch through the socket-replay BIO path; the peer hangs instead.")]
         public async Task SocketBoundSession_DeferredOptions_ProtocolMismatch_Fails()
         {
             if (!PlatformDetection.SupportsTls13)
@@ -2767,7 +2770,7 @@ namespace System.Net.Security.Tests
         // TlsContext, each supplying a distinct cert via SetClientCertificateContext,
         // and verify every server sees the correct client cert.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not surface deferred client-credential prompts.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Android, "Neither SecureTransport nor JSSE surfaces deferred client-credential prompts.")]
         public async Task SetClientCertificateContext_ConcurrentSessionsOnSharedContext_DoNotRace()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
