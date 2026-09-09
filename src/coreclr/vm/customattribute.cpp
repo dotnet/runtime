@@ -15,6 +15,7 @@
 #include "reflectioninvocation.h"
 #include "runtimehandles.h"
 #include "typestring.h"
+#include "callhelpers.h"
 
 static TypeHandle GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Assembly* pAssembly)
 {
@@ -913,33 +914,28 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     GCX_COOP();
 
-    MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
+    struct
+    {
+        PTRARRAYREF ctorArgs;
+        REFLECTMETHODREF ctorMethod;
+        OBJECTREF ctorResult;
+    } gc;
+    gc.ctorArgs = nullptr;
+    gc.ctorMethod = nullptr;
+    gc.ctorResult = nullptr;
+    GCPROTECT_BEGIN(gc);
+
+    gc.ctorMethod = static_cast<REFLECTMETHODREF>(pMethod.Get());
+    MethodDesc* pCtorMD = gc.ctorMethod->GetMethod();
     TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
 
-    PCODE pCallTarget;
-
-    {
-        GCX_PREEMP();
-        pCallTarget = pCtorMD->GetSingleCallableAddrOfCode();
-    }
-
-    MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget, th);
-    MetaSig* pSig = ctorCallSite.GetMetaSig();
+    MetaSig ctorSig(pCtorMD, th);
+    MetaSig* pSig = &ctorSig;
     BYTE* pBlob = *ppBlob;
 
-    // get the number of arguments and allocate an array for the args
-    ARG_SLOT *args = NULL;
-    UINT cArgs = pSig->NumFixedArgs() + 1; // make room for the this pointer
-    UINT i = 1; // used to flag that we actually get the right number of arg from the blob
-
-    args = (ARG_SLOT*)_alloca(cArgs * sizeof(ARG_SLOT));
-    memset((void*)args, 0, cArgs * sizeof(ARG_SLOT));
-
-    OBJECTREF *argToProtect = (OBJECTREF*)_alloca(cArgs * sizeof(OBJECTREF));
-    memset((void*)argToProtect, 0, cArgs * sizeof(OBJECTREF));
-
-    // load the this pointer
-    argToProtect[0] = th.GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
+    UINT cArgs = pSig->NumFixedArgs();
+    UINT i = 0;
+    gc.ctorArgs = AllocateObjectArray(cArgs, g_pObjectClass);
 
     if (pBlob)
     {
@@ -955,44 +951,39 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
             pBlob += 2;
         }
 
-        if (cArgs > 1)
+        for (i = 0; i < cArgs; i++)
         {
-            GCPROTECT_ARRAY_BEGIN(*argToProtect, cArgs);
-            {
-                // loop through the args
-                for (i = 1; i < cArgs; i++) {
-                    CorElementType type = pSig->NextArg();
-                    if (type == ELEMENT_TYPE_END)
-                        break;
-                    BOOL bObjectCreated = FALSE;
-                    TypeHandle th = pSig->GetLastTypeHandleThrowing();
-                    if (th.IsArray())
-                        // get the array element
-                        th = th.GetArrayElementTypeHandle();
-                    ARG_SLOT data = GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, pModule, &bObjectCreated);
-                    if (bObjectCreated)
-                        argToProtect[i] = ArgSlotToObj(data);
-                    else
-                        args[i] = data;
-                }
-            }
-            GCPROTECT_END();
+            CorElementType type = pSig->NextArg();
+            if (type == ELEMENT_TYPE_END)
+                break;
 
-            // We have borrowed the signature from MethodDescCallSite. We have to put it back into the initial position
-            // because of that's where MethodDescCallSite expects to find it below.
-            pSig->Reset();
+            TypeHandle paramType = pSig->GetLastTypeHandleThrowing();
+            TypeHandle parseType = paramType.IsArray() ? paramType.GetArrayElementTypeHandle() : paramType;
+            BOOL objectCreated = FALSE;
+            ARG_SLOT data = GetDataFromBlob(
+                pCtorMD->GetAssembly(),
+                static_cast<CorSerializationType>(type),
+                parseType,
+                &pBlob,
+                pEndBlob,
+                pModule,
+                &objectCreated);
 
-            for (i = 1; i < cArgs; i++)
+            OBJECTREF argument;
+            if (objectCreated || !paramType.IsValueType())
             {
-                if (argToProtect[i] != NULL)
-                {
-                    _ASSERTE(args[i] == (ARG_SLOT)NULL);
-                    args[i] = ObjToArgSlot(argToProtect[i]);
-                }
+                _ASSERTE(objectCreated || data == 0);
+                argument = ArgSlotToObj(data);
             }
+            else
+            {
+                MethodTable* pValueMT = paramType.GetMethodTable();
+                argument = pValueMT->Box(ArgSlotEndiannessFixup(&data, pValueMT->GetNumInstanceFieldBytes()));
+            }
+
+            gc.ctorArgs->SetAt(i, argument);
         }
     }
-    args[0] = ObjToArgSlot(argToProtect[0]);
 
     if (i != cArgs)
         COMPlusThrow(kCustomAttributeFormatException);
@@ -1017,12 +1008,11 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     if (*pcNamedArgs == 0 && pBlob != pEndBlob)
         COMPlusThrow(kCustomAttributeFormatException);
 
-    // make the invocation to the ctor
-    result.Set(ArgSlotToObj(args[0]));
-    if (pCtorMD->GetMethodTable()->IsValueType())
-        args[0] = PtrToArgSlot(OBJECTREFToObject(result.Get())->UnBox());
+    UnmanagedCallersOnlyCaller invokeCtor{METHOD__CUSTOMATTRIBUTE__INVOKE_CUSTOM_ATTRIBUTE_CTOR};
+    invokeCtor.InvokeThrowing(&gc.ctorMethod, &gc.ctorArgs, &gc.ctorResult);
+    result.Set(gc.ctorResult);
 
-    ctorCallSite.CallWithValueTypes(args);
+    GCPROTECT_END();
 
     END_QCALL;
 }

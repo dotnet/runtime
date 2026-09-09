@@ -1860,6 +1860,31 @@ namespace System.Reflection
             return result != 0;
         }
 
+        [UnmanagedCallersOnly]
+        private static void InvokeCustomAttributeCtor(
+            RuntimeConstructorInfo* pConstructor, object?[]* pArguments, object* pResult, Exception* pException)
+        {
+            try
+            {
+                RuntimeConstructorInfo constructor = *pConstructor;
+                object?[] arguments = *pArguments;
+                Debug.Assert(arguments.Length == constructor.ArgumentTypes.Length);
+
+                MethodBaseInvoker invoker = constructor.Invoker;
+                *pResult = arguments.Length switch
+                {
+                    0 => invoker.InvokeWithNoArgs(obj: null, BindingFlags.DoNotWrapExceptions)!,
+                    1 => invoker.InvokeWithOneArg(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, arguments, culture: null)!,
+                    2 or 3 or 4 => invoker.InvokeWithFewArgs(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, arguments, culture: null)!,
+                    _ => invoker.InvokeWithManyArgs(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, arguments, culture: null)!,
+                };
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
         private static partial void CreateCustomAttributeInstance(
@@ -1878,11 +1903,16 @@ namespace System.Reflection
                 throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             }
 
+            if (RuntimeType.GetMethodBase(ctor) is not RuntimeConstructorInfo constructor)
+            {
+                throw new CustomAttributeFormatException();
+            }
+
             object? result = null;
             CreateCustomAttributeInstance(
                 new QCallModule(ref module),
                 ObjectHandleOnStack.Create(ref type),
-                ObjectHandleOnStack.Create(ref ctor),
+                ObjectHandleOnStack.Create(ref constructor),
                 ref blob,
                 blobEnd,
                 out namedArgs,
