@@ -1904,10 +1904,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out string diag), diag);
-            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "UG", out diag), diag);
-            Assert.True(R2RAssert.HasStringThunk(reader, "UGviiii", out diag), diag);
-            Assert.True(R2RAssert.HasStringThunk(reader, "UGvriiii", out diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<__Canon>", "Test9Method", out string diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test11`1<__Canon>", "GetValue", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "MS56Tp", out diag), diag);
         }
     }
 
