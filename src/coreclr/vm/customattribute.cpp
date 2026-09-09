@@ -916,11 +916,9 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     struct
     {
-        PTRARRAYREF ctorArgs;
         REFLECTMETHODREF ctorMethod;
         OBJECTREF ctorResult;
     } gc;
-    gc.ctorArgs = nullptr;
     gc.ctorMethod = nullptr;
     gc.ctorResult = nullptr;
     GCPROTECT_BEGIN(gc);
@@ -935,7 +933,19 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     UINT cArgs = pSig->NumFixedArgs();
     UINT i = 0;
-    gc.ctorArgs = static_cast<PTRARRAYREF>(AllocateObjectArray(cArgs, g_pObjectClass));
+
+    // Keep primitives unboxed and references rooted while managed invocation may collect.
+    constexpr SIZE_T ArgStorageSize = sizeof(ARG_SLOT) + sizeof(OBJECTREF) + sizeof(PVOID);
+    SIZE_T storageSize;
+    if (!ClrSafeInt<SIZE_T>::multiply(cArgs, ArgStorageSize, storageSize))
+        ThrowOutOfMemory();
+
+    CQuickBytesSpecifySize<4 * ArgStorageSize> storage;
+    ARG_SLOT* values = static_cast<ARG_SLOT*>(storage.AllocThrows(storageSize));
+    memset(values, 0, storageSize);
+    OBJECTREF* references = reinterpret_cast<OBJECTREF*>(values + cArgs);
+    PVOID* arguments = reinterpret_cast<PVOID*>(references + cArgs);
+    GCPROTECT_ARRAY_BEGIN(*references, cArgs);
 
     if (pBlob)
     {
@@ -969,19 +979,17 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
                 pModule,
                 &objectCreated);
 
-            OBJECTREF argument;
             if (objectCreated || !paramType.IsValueType())
             {
                 _ASSERTE(objectCreated || data == 0);
-                argument = ArgSlotToObj(data);
+                references[i] = ArgSlotToObj(data);
+                arguments[i] = &references[i];
             }
             else
             {
-                MethodTable* pValueMT = paramType.GetMethodTable();
-                argument = pValueMT->Box(ArgSlotEndiannessFixup(&data, pValueMT->GetNumInstanceFieldBytes()));
+                values[i] = data;
+                arguments[i] = ArgSlotEndiannessFixup(&values[i], paramType.GetSize());
             }
-
-            gc.ctorArgs->SetAt(i, argument);
         }
     }
 
@@ -1009,9 +1017,10 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
         COMPlusThrow(kCustomAttributeFormatException);
 
     UnmanagedCallersOnlyCaller invokeCtor{METHOD__CUSTOMATTRIBUTE__INVOKE_CUSTOM_ATTRIBUTE_CTOR};
-    invokeCtor.InvokeThrowing(&gc.ctorMethod, &gc.ctorArgs, &gc.ctorResult);
+    invokeCtor.InvokeThrowing(&gc.ctorMethod, arguments, &gc.ctorResult);
     result.Set(gc.ctorResult);
 
+    GCPROTECT_END();
     GCPROTECT_END();
 
     END_QCALL;
