@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -20,6 +21,93 @@ namespace System.Reflection.Tests
         }
 
         protected override bool SupportsMissing => false;
+
+        public static IEnumerable<object[]> Invoke_ReturnValueAcrossTiers_TestData()
+        {
+            yield return new object[] { typeof(bool), true };
+            yield return new object[] { typeof(byte), (byte)42 };
+            yield return new object[] { typeof(sbyte), (sbyte)-42 };
+            yield return new object[] { typeof(char), 'x' };
+            yield return new object[] { typeof(short), (short)-1234 };
+            yield return new object[] { typeof(ushort), (ushort)1234 };
+            yield return new object[] { typeof(int), -12345 };
+            yield return new object[] { typeof(uint), 12345u };
+            yield return new object[] { typeof(long), -1234567890123L };
+            yield return new object[] { typeof(ulong), 1234567890123UL };
+            yield return new object[] { typeof(float), 12.5f };
+            yield return new object[] { typeof(double), -25.5 };
+            yield return new object[] { typeof(nint), (nint)12345 };
+            yield return new object[] { typeof(nuint), (nuint)54321 };
+            yield return new object[] { typeof(string), "returned value" };
+            yield return new object[] { typeof(object), new object() };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [MemberData(nameof(Invoke_ReturnValueAcrossTiers_TestData))]
+        public void Invoke_ReturnValueAcrossTiers(Type returnType, object expected)
+        {
+            Type target = typeof(ReturnValueTarget<>).MakeGenericType(returnType);
+            target.GetField(nameof(ReturnValueTarget<int>.Value)).SetValue(null, expected);
+            MethodInfo method = target.GetMethod(nameof(ReturnValueTarget<int>.GetValue));
+            MethodInvoker invoker = MethodInvoker.Create(method);
+
+            for (int i = 0; i < 150; i++)
+            {
+                Assert.Equal(expected, method.Invoke(null, null));
+                Assert.Equal(expected, invoker.Invoke(null));
+            }
+        }
+
+        public static class ReturnValueTarget<T>
+        {
+            public static T Value;
+
+            public static T GetValue() => Value;
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void Invoke_CollectibleMethodCanUnload(bool useMethodInvoker, bool referenceArgument)
+        {
+            WeakReference assembly = CreateAndInvokeCollectibleMethod(useMethodInvoker, referenceArgument);
+            for (int i = 0; i < 10 && assembly.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.False(assembly.IsAlive);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference CreateAndInvokeCollectibleMethod(bool useMethodInvoker, bool referenceArgument)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(nameof(CreateAndInvokeCollectibleMethod)), AssemblyBuilderAccess.RunAndCollect);
+            ModuleBuilder module = assembly.DefineDynamicModule("Module");
+            TypeBuilder typeBuilder = module.DefineType("Target", TypeAttributes.Public);
+            Type argumentType = referenceArgument ? typeof(object) : typeof(int);
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+                "Echo", MethodAttributes.Public | MethodAttributes.Static, argumentType, new[] { argumentType });
+            ILGenerator il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ret);
+            Type type = typeBuilder.CreateType();
+            MethodInfo method = type.GetMethod("Echo");
+            MethodInvoker? invoker = useMethodInvoker ? MethodInvoker.Create(method) : null;
+            object expected = referenceArgument ? new object() : 42;
+            object[] arguments = { expected };
+
+            for (int i = 0; i < 150; i++)
+            {
+                Assert.Equal(expected, invoker is not null ? invoker.Invoke(null, expected) : method.Invoke(null, arguments));
+            }
+
+            return new WeakReference(type.Assembly);
+        }
 
         [Fact]
         public void CreateDelegate_PublicMethod()
