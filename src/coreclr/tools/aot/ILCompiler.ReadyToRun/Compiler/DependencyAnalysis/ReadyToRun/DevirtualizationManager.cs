@@ -163,10 +163,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (implType.IsWellKnownType(WellKnownType.Array))
                 {
                     ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)declMethod.Context;
-                    SimpleArrayOfTRuntimeInterfacesAlgorithm runtimeInterfacesAlgorithm =
-                        (SimpleArrayOfTRuntimeInterfacesAlgorithm)context.GetRuntimeInterfacesAlgorithmForType(context.GetArrayType(context.GetWellKnownType(WellKnownType.Object)));
+                    ArrayType arrayType = context.GetArrayType(context.GetWellKnownType(WellKnownType.Object));
+                    RuntimeInterfacesAlgorithm runtimeInterfacesAlgorithm = context.GetRuntimeInterfacesAlgorithmForType(arrayType);
 
-                    if (runtimeInterfacesAlgorithm.IsGenericRuntimeInterface(declMethod.OwningType))
+                    if (runtimeInterfacesAlgorithm.ImplementsGenericInterfaceDefinition(declMethod.OwningType, arrayType))
                     {
                         if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                         {
