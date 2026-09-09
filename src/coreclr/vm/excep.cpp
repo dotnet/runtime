@@ -5525,9 +5525,7 @@ AdjustContextForJITHelpers(
         //
         // Question: Why do we unwind before determining whether we will handle the exception or not?
         UnwindFrameChain(GetThread(), (Frame*)GetSP(pContext));
-        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext,
-                               NULL, // establisher frame (x86 only)
-                               NULL  // pThread           (x86 only)
+        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext
                                );
 
         if (fShouldHandleManagedFault)
@@ -5645,9 +5643,7 @@ void FaultingExceptionFrame::InitAndLink(CONTEXT *pContext)
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
-                        CONTEXT*                        pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread)
+                        CONTEXT*                        pContext)
 {
     CONTRACTL
     {
@@ -5701,7 +5697,7 @@ bool ShouldHandleManagedFault(
             return false;
     }
 
-    Thread *pCurrentThread = pThread != nullptr ? pThread : GetThreadNULLOk();
+    Thread *pCurrentThread = GetThreadNULLOk();
     if (pCurrentThread != nullptr &&
         !pCurrentThread->PreemptiveGCDisabled() &&
         InlinedCallFrame::FrameHasActiveCall(pCurrentThread->GetFrame()))
@@ -5940,9 +5936,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     {
         CantAllocHolder caHolder;
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionInfo->ExceptionRecord,
-                                                             pExceptionInfo->ContextRecord,
-                                                             NULL, // establisher frame (x86 only)
-                                                             NULL  // pThread           (x86 only)
+                                                             pExceptionInfo->ContextRecord
                                                             );
     }
 
