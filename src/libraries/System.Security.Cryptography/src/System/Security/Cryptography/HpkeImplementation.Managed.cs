@@ -52,6 +52,38 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static HpkeImplementation ImportDecapsulationKeyImpl(HpkeSuite suite, ReadOnlySpan<byte> source)
+        {
+            HpkeManagedKemAdapter adapter = HpkeManagedKemAdapter.Create(suite);
+
+            try
+            {
+                adapter.ImportDecapsulationKey(source);
+                return new HpkeImplementation(suite, adapter);
+            }
+            catch
+            {
+                adapter.Dispose();
+                throw;
+            }
+        }
+
+        internal static HpkeImplementation ImportEncapsulationKeyImpl(HpkeSuite suite, ReadOnlySpan<byte> source)
+        {
+            HpkeManagedKemAdapter adapter = HpkeManagedKemAdapter.Create(suite);
+
+            try
+            {
+                adapter.ImportEncapsulationKey(source);
+                return new HpkeImplementation(suite, adapter);
+            }
+            catch
+            {
+                adapter.Dispose();
+                throw;
+            }
+        }
+
         protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>
             _kemAdapter.ExportDecapsulationKey(destination);
 

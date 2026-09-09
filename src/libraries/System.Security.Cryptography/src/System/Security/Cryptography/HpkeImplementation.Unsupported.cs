@@ -32,6 +32,12 @@ namespace System.Security.Cryptography
             throw new CryptographicException();
         }
 
+        internal static HpkeImplementation ImportDecapsulationKeyImpl(HpkeSuite suite, ReadOnlySpan<byte> source) =>
+            throw new PlatformNotSupportedException();
+
+        internal static HpkeImplementation ImportEncapsulationKeyImpl(HpkeSuite suite, ReadOnlySpan<byte> source) =>
+            throw new PlatformNotSupportedException();
+
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
             _ = destination;

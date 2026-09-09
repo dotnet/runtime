@@ -64,6 +64,30 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal override void ImportDecapsulationKey(ReadOnlySpan<byte> decapsulationKey)
+        {
+            Debug.Assert(_ecdh is null);
+
+            if (decapsulationKey.Length != Suite.DecapsulationKeySizeInBytes ||
+                !IsValidScalar(decapsulationKey, Order))
+            {
+                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+            }
+
+            byte[] privateKey = decapsulationKey.ToArray();
+
+            using (PinAndClear.Track(privateKey))
+            {
+#pragma warning disable CA1416 // Not supported on browser
+                _ecdh = ECDiffieHellman.Create(new ECParameters
+                {
+                    Curve = _curve,
+                    D = privateKey,
+                });
+#pragma warning restore CA1416 // Not supported on browser
+            }
+        }
+
         internal override void ImportEncapsulationKey(ReadOnlySpan<byte> encapsulationKey)
         {
             Debug.Assert(_ecdh is null);

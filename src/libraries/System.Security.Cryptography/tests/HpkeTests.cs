@@ -105,6 +105,21 @@ namespace System.Security.Cryptography.Tests
                         Assert.Equal(arrayPrivateKey, spanPrivateKey);
                         Assert.Equal(expectedPublicKey, arrayPublicKey);
                         Assert.Equal(arrayPublicKey, spanPublicKey);
+
+                        using (Hpke privateFromArray = Hpke.ImportDecapsulationKey(suite, expectedPrivateKey))
+                        using (Hpke privateFromSpan = Hpke.ImportDecapsulationKey(suite, expectedPrivateKey.AsSpan()))
+                        using (Hpke publicFromArray = Hpke.ImportEncapsulationKey(suite, expectedPublicKey))
+                        using (Hpke publicFromSpan = Hpke.ImportEncapsulationKey(suite, expectedPublicKey.AsSpan()))
+                        {
+                            privateFromArray.ExportDecapsulationKey(spanPrivateKey);
+                            Assert.Equal(expectedPrivateKey, spanPrivateKey);
+                            privateFromSpan.ExportDecapsulationKey(spanPrivateKey);
+                            Assert.Equal(expectedPrivateKey, spanPrivateKey);
+                            Assert.Equal(expectedPublicKey, privateFromArray.ExportEncapsulationKey());
+                            Assert.Equal(expectedPublicKey, privateFromSpan.ExportEncapsulationKey());
+                            Assert.Equal(expectedPublicKey, publicFromArray.ExportEncapsulationKey());
+                            Assert.Equal(expectedPublicKey, publicFromSpan.ExportEncapsulationKey());
+                        }
                     }
                     finally
                     {
@@ -117,6 +132,281 @@ namespace System.Security.Cryptography.Tests
             {
                 CryptographicOperations.ZeroMemory(ikm);
                 CryptographicOperations.ZeroMemory(expectedPrivateKey);
+            }
+        }
+
+        [Fact]
+        public static void ImportKey_ArgumentValidation()
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_P256_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Hpke.ImportDecapsulationKey(suite, (byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Hpke.ImportEncapsulationKey(suite, (byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("suite", () => Hpke.ImportDecapsulationKey(null, Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentNullException>("suite", () => Hpke.ImportDecapsulationKey(null, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentNullException>("suite", () => Hpke.ImportEncapsulationKey(null, Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentNullException>("suite", () => Hpke.ImportEncapsulationKey(null, ReadOnlySpan<byte>.Empty));
+
+            foreach (HpkeKem kem in Enum.GetValues<HpkeKem>())
+            {
+                suite = new HpkeSuite(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+                foreach (int length in new[] { 0, suite.DecapsulationKeySizeInBytes - 1, suite.DecapsulationKeySizeInBytes + 1 })
+                {
+                    byte[] source = new byte[length];
+                    AssertExtensions.Throws<ArgumentException>("source", () => Hpke.ImportDecapsulationKey(suite, source));
+                    AssertExtensions.Throws<ArgumentException>("source", () => Hpke.ImportDecapsulationKey(suite, source.AsSpan()));
+                }
+
+                foreach (int length in new[] { 0, suite.EncapsulationKeySizeInBytes - 1, suite.EncapsulationKeySizeInBytes + 1 })
+                {
+                    byte[] source = new byte[length];
+                    AssertExtensions.Throws<ArgumentException>("source", () => Hpke.ImportEncapsulationKey(suite, source));
+                    AssertExtensions.Throws<ArgumentException>("source", () => Hpke.ImportEncapsulationKey(suite, source.AsSpan()));
+                }
+
+                if (!Hpke.IsSupported(suite))
+                {
+                    byte[] privateKey = new byte[suite.DecapsulationKeySizeInBytes];
+                    byte[] publicKey = new byte[suite.EncapsulationKeySizeInBytes];
+                    Assert.Throws<PlatformNotSupportedException>(() => Hpke.ImportDecapsulationKey(suite, privateKey));
+                    Assert.Throws<PlatformNotSupportedException>(() => Hpke.ImportDecapsulationKey(suite, privateKey.AsSpan()));
+                    Assert.Throws<PlatformNotSupportedException>(() => Hpke.ImportEncapsulationKey(suite, publicKey));
+                    Assert.Throws<PlatformNotSupportedException>(() => Hpke.ImportEncapsulationKey(suite, publicKey.AsSpan()));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
+        public static void ImportDecapsulationKey_ScalarBoundaries(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            byte[] order = kem switch
+            {
+                HpkeKem.DHKEM_P256_HKDF_SHA256 => EccTestData.GetNistP256ExplicitCurve().Order,
+                HpkeKem.DHKEM_P384_HKDF_SHA384 => EccTestData.GetNistP384ExplicitCurve().Order,
+                HpkeKem.DHKEM_P521_HKDF_SHA512 => EccTestData.GetNistP521ExplicitCurve().Order,
+                _ => throw new InvalidOperationException(),
+            };
+            byte[] allBitsSet = new byte[order.Length];
+            allBitsSet.AsSpan().Fill(0xFF);
+            byte[] orderPlusOne = (byte[])order.Clone();
+            orderPlusOne[^1]++;
+
+            foreach (byte[] invalid in new[] { new byte[order.Length], order, orderPlusOne, allBitsSet })
+            {
+                Assert.Throws<CryptographicException>(() => Hpke.ImportDecapsulationKey(suite, invalid));
+                Assert.Throws<CryptographicException>(() => Hpke.ImportDecapsulationKey(suite, invalid.AsSpan()));
+            }
+
+            byte[] one = new byte[order.Length];
+            one[^1] = 1;
+            byte[] orderMinusOne = (byte[])order.Clone();
+            orderMinusOne[^1]--;
+
+            foreach (byte[] valid in new[] { one, orderMinusOne })
+            {
+                byte[] exported = new byte[valid.Length];
+
+                using (Hpke fromArray = Hpke.ImportDecapsulationKey(suite, valid))
+                using (Hpke fromSpan = Hpke.ImportDecapsulationKey(suite, valid.AsSpan()))
+                {
+                    fromArray.ExportDecapsulationKey(exported);
+                    Assert.Equal(valid, exported);
+                    fromSpan.ExportDecapsulationKey(exported);
+                    Assert.Equal(valid, exported);
+                    fromArray.Seal("message"u8, out byte[] enc, out byte[] ciphertext);
+                    AssertExtensions.SequenceEqual("message"u8, fromSpan.Open(enc, ciphertext));
+                }
+
+                CryptographicOperations.ZeroMemory(exported);
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKem.DHKEM_P256_HKDF_SHA256)]
+        [InlineData(HpkeKem.DHKEM_P384_HKDF_SHA384)]
+        [InlineData(HpkeKem.DHKEM_P521_HKDF_SHA512)]
+        public static void ImportEncapsulationKey_InvalidNistPoint(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            foreach (byte prefix in new byte[] { 0, 2, 3, 4, 6, 7, 0xFF })
+            {
+                byte[] source = new byte[suite.EncapsulationKeySizeInBytes];
+                source[0] = prefix;
+                byte[] original = (byte[])source.Clone();
+                Assert.ThrowsAny<CryptographicException>(() => Hpke.ImportEncapsulationKey(suite, source));
+                Assert.ThrowsAny<CryptographicException>(() => Hpke.ImportEncapsulationKey(suite, source.AsSpan()));
+                Assert.Equal(original, source);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenSuiteData))]
+        public static void ImportKey_OperationsAndOwnership(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
+        {
+            HpkeSuite suite = new(kem, kdf, aead);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(
+                    () => Hpke.ImportDecapsulationKey(suite, new byte[suite.DecapsulationKeySizeInBytes]));
+                Assert.Throws<PlatformNotSupportedException>(
+                    () => Hpke.ImportEncapsulationKey(suite, new byte[suite.EncapsulationKeySizeInBytes]));
+                return;
+            }
+
+            using (Hpke original = Hpke.GenerateKey(suite))
+            {
+                byte[] privateKey = original.ExportDecapsulationKey();
+                byte[] publicKey = original.ExportEncapsulationKey();
+
+                try
+                {
+                    foreach (bool useSpan in new[] { false, true })
+                    {
+                        int padding = useSpan ? 2 : 0;
+                        int offset = useSpan ? 1 : 0;
+                        byte[] privateSource = new byte[privateKey.Length + padding];
+                        byte[] publicSource = new byte[publicKey.Length + padding];
+                        privateSource.AsSpan().Fill(0xA5);
+                        publicSource.AsSpan().Fill(0xA5);
+                        privateKey.CopyTo(privateSource, offset);
+                        publicKey.CopyTo(publicSource, offset);
+
+                        try
+                        {
+                            using (Hpke importedPrivate = useSpan
+                                ? Hpke.ImportDecapsulationKey(suite, privateSource.AsSpan(1, privateKey.Length))
+                                : Hpke.ImportDecapsulationKey(suite, privateSource))
+                            using (Hpke importedPublic = useSpan
+                                ? Hpke.ImportEncapsulationKey(suite, publicSource.AsSpan(1, publicKey.Length))
+                                : Hpke.ImportEncapsulationKey(suite, publicSource))
+                            {
+                                Assert.Same(suite, importedPrivate.Suite);
+                                Assert.Same(suite, importedPublic.Suite);
+                                Assert.Equal(publicKey, importedPrivate.ExportEncapsulationKey());
+                                Assert.Equal(publicKey, importedPublic.ExportEncapsulationKey());
+                                AssertExtensions.SequenceEqual(privateKey.AsSpan(), privateSource.AsSpan(offset, privateKey.Length));
+                                AssertExtensions.SequenceEqual(publicKey.AsSpan(), publicSource.AsSpan(offset, publicKey.Length));
+
+                                if (useSpan)
+                                {
+                                    Assert.Equal(0xA5, privateSource[0]);
+                                    Assert.Equal(0xA5, privateSource[^1]);
+                                    Assert.Equal(0xA5, publicSource[0]);
+                                    Assert.Equal(0xA5, publicSource[^1]);
+                                }
+
+                                privateSource.AsSpan().Clear();
+                                publicSource.AsSpan().Clear();
+                                original.Dispose();
+                                byte[] plaintext = "message"u8.ToArray();
+                                byte[] aad = "associated data"u8.ToArray();
+                                byte[] info = "application context"u8.ToArray();
+                                importedPublic.Seal(plaintext, out byte[] enc, out byte[] ciphertext, aad, info);
+                                Assert.Equal(plaintext, importedPrivate.Open(enc, ciphertext, aad, info));
+                                byte[] opened = new byte[plaintext.Length];
+                                importedPrivate.Open(enc, ciphertext, opened.AsSpan(), aad, info);
+                                Assert.Equal(plaintext, opened);
+
+                                byte[] psk = new byte[32];
+                                byte[] pskId = [1];
+                                using (HpkeSender sender = importedPublic.CreateSender(out byte[] contextEnc, info))
+                                using (HpkeRecipient recipient = importedPrivate.CreateRecipient(contextEnc, info))
+                                using (HpkeSender pskSender = importedPublic.CreatePskSender(psk, pskId, out byte[] pskEnc, info))
+                                using (HpkeRecipient pskRecipient = importedPrivate.CreatePskRecipient(pskEnc, psk, pskId, info))
+                                {
+                                    Assert.ThrowsAny<CryptographicException>(() => importedPublic.ExportDecapsulationKey());
+                                    Assert.ThrowsAny<CryptographicException>(
+                                        () => importedPublic.ExportDecapsulationKey(new byte[privateKey.Length]));
+                                    Assert.ThrowsAny<CryptographicException>(() => importedPublic.Open(enc, ciphertext, aad, info));
+                                    Assert.ThrowsAny<CryptographicException>(
+                                        () => importedPublic.Open(enc, ciphertext, opened.AsSpan(), aad, info));
+                                    Assert.ThrowsAny<CryptographicException>(() => importedPublic.CreateRecipient(contextEnc, info));
+                                    Assert.ThrowsAny<CryptographicException>(
+                                        () => importedPublic.CreatePskRecipient(pskEnc, psk, pskId, info));
+
+                                    for (int i = 0; i < 2; i++)
+                                    {
+                                        Assert.Equal(plaintext, recipient.Open(sender.Seal(plaintext, aad), aad));
+                                        Assert.Equal(plaintext, pskRecipient.Open(pskSender.Seal(plaintext, aad), aad));
+                                    }
+
+                                    Assert.Equal(sender.Export([], 32), recipient.Export([], 32));
+                                    Assert.Equal(pskSender.Export([], 32), pskRecipient.Export([], 32));
+                                    importedPublic.Dispose();
+                                    importedPrivate.Dispose();
+                                    Assert.Throws<ObjectDisposedException>(() => importedPublic.ExportEncapsulationKey());
+                                    Assert.Throws<ObjectDisposedException>(() => importedPrivate.ExportDecapsulationKey());
+                                    Assert.Equal(plaintext, recipient.Open(sender.Seal(plaintext, aad), aad));
+                                    Assert.Equal(plaintext, pskRecipient.Open(pskSender.Seal(plaintext, aad), aad));
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            CryptographicOperations.ZeroMemory(privateSource);
+                        }
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(privateKey);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(255)]
+        public static void ImportDecapsulationKey_X25519RawKey(byte value)
+        {
+            HpkeSuite suite = new(HpkeKem.DHKEM_X25519_HKDF_SHA256, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+            if (!Hpke.IsSupported(suite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Hpke.GenerateKey(suite));
+                return;
+            }
+
+            byte[] source = new byte[suite.DecapsulationKeySizeInBytes];
+            source.AsSpan().Fill(value);
+            byte[] exported = new byte[source.Length];
+
+            try
+            {
+                using (Hpke fromArray = Hpke.ImportDecapsulationKey(suite, source))
+                using (Hpke fromSpan = Hpke.ImportDecapsulationKey(suite, source.AsSpan()))
+                {
+                    fromArray.ExportDecapsulationKey(exported);
+                    Assert.Equal(source, exported);
+                    fromSpan.ExportDecapsulationKey(exported);
+                    Assert.Equal(source, exported);
+                    fromArray.Seal("message"u8, out byte[] enc, out byte[] ciphertext);
+                    AssertExtensions.SequenceEqual("message"u8, fromSpan.Open(enc, ciphertext));
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(source);
+                CryptographicOperations.ZeroMemory(exported);
             }
         }
 

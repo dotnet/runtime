@@ -1917,6 +1917,10 @@ namespace System.Security.Cryptography
         public void ExportEncapsulationKey(System.Span<byte> destination) { }
         protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
         public static System.Security.Cryptography.Hpke GenerateKey(System.Security.Cryptography.HpkeSuite suite) { throw null; }
+        public static System.Security.Cryptography.Hpke ImportDecapsulationKey(System.Security.Cryptography.HpkeSuite suite, byte[] source) { throw null; }
+        public static System.Security.Cryptography.Hpke ImportDecapsulationKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.Hpke ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, byte[] source) { throw null; }
+        public static System.Security.Cryptography.Hpke ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> source) { throw null; }
         public static bool IsSupported(System.Security.Cryptography.HpkeSuite suite) { throw null; }
         public byte[] Open(byte[] encapsulatedSecret, byte[] ciphertext, byte[]? associatedData = null, byte[]? info = null) { throw null; }
         public byte[] Open(System.ReadOnlySpan<byte> encapsulatedSecret, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }

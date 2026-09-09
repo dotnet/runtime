@@ -13,6 +13,12 @@ namespace System.Security.Cryptography
         {
         }
 
+        internal override void ImportDecapsulationKey(ReadOnlySpan<byte> decapsulationKey)
+        {
+            Debug.Assert(_x25519 is null);
+            _x25519 = X25519DiffieHellman.ImportPrivateKey(decapsulationKey);
+        }
+
         internal override void ImportEncapsulationKey(ReadOnlySpan<byte> encapsulationKey)
         {
             Debug.Assert(_x25519 is null);

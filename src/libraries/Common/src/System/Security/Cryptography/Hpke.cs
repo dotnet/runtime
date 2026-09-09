@@ -126,6 +126,164 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Imports an HPKE key pair from a serialized decapsulation key.
+        /// </summary>
+        /// <param name="suite">
+        ///   The cipher suite associated with the key.
+        /// </param>
+        /// <param name="source">
+        ///   The serialized decapsulation key.
+        /// </param>
+        /// <returns>
+        ///   A new HPKE key containing the decapsulation key and its corresponding encapsulation key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="suite" /> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> is not exactly <see cref="HpkeSuite.DecapsulationKeySizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The decapsulation key is invalid, or an error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="suite" /> is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The key must use the format returned by <see cref="ExportDecapsulationKey()" />,
+        ///   not the input keying material accepted by <see cref="DeriveKey(HpkeSuite, byte[])" />.
+        ///   The imported key does not retain a reference to <paramref name="source" />.
+        ///   The caller remains responsible for protecting and clearing the source key bytes.
+        /// </remarks>
+        public static Hpke ImportDecapsulationKey(HpkeSuite suite, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return ImportDecapsulationKey(suite, new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///   Imports an HPKE key pair from a serialized decapsulation key.
+        /// </summary>
+        /// <param name="suite">
+        ///   The cipher suite associated with the key.
+        /// </param>
+        /// <param name="source">
+        ///   The serialized decapsulation key.
+        /// </param>
+        /// <returns>
+        ///   A new HPKE key containing the decapsulation key and its corresponding encapsulation key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="suite" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> is not exactly <see cref="HpkeSuite.DecapsulationKeySizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The decapsulation key is invalid, or an error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="suite" /> is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The key must use the format returned by <see cref="ExportDecapsulationKey()" />,
+        ///   not the input keying material accepted by <see cref="DeriveKey(HpkeSuite, ReadOnlySpan{byte})" />.
+        ///   The imported key does not retain a reference to <paramref name="source" />.
+        ///   The caller remains responsible for protecting and clearing the source key bytes.
+        /// </remarks>
+        public static Hpke ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
+        {
+            ArgumentNullException.ThrowIfNull(suite);
+
+            if (source.Length != suite.DecapsulationKeySizeInBytes)
+            {
+                throw new ArgumentException(SR.Argument_PrivateKeyWrongSizeForAlgorithm, nameof(source));
+            }
+
+            ThrowIfNotSupported(suite);
+            return HpkeImplementation.ImportDecapsulationKeyImpl(suite, source);
+        }
+
+        /// <summary>
+        ///   Imports an HPKE key from a serialized encapsulation key.
+        /// </summary>
+        /// <param name="suite">
+        ///   The cipher suite associated with the key.
+        /// </param>
+        /// <param name="source">
+        ///   The serialized encapsulation key.
+        /// </param>
+        /// <returns>
+        ///   A new HPKE key containing only the encapsulation key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="suite" /> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> is not exactly <see cref="HpkeSuite.EncapsulationKeySizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The encapsulation key is invalid, or an error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="suite" /> is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The key must use the format returned by <see cref="ExportEncapsulationKey()" />.
+        ///   The imported key can encrypt messages and create sender contexts, but cannot decrypt messages,
+        ///   create recipient contexts, or export a decapsulation key.
+        ///   The imported key does not retain a reference to <paramref name="source" />.
+        /// </remarks>
+        public static Hpke ImportEncapsulationKey(HpkeSuite suite, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return ImportEncapsulationKey(suite, new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///   Imports an HPKE key from a serialized encapsulation key.
+        /// </summary>
+        /// <param name="suite">
+        ///   The cipher suite associated with the key.
+        /// </param>
+        /// <param name="source">
+        ///   The serialized encapsulation key.
+        /// </param>
+        /// <returns>
+        ///   A new HPKE key containing only the encapsulation key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="suite" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> is not exactly <see cref="HpkeSuite.EncapsulationKeySizeInBytes" /> bytes long.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The encapsulation key is invalid, or an error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="suite" /> is not supported on the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   The key must use the format returned by <see cref="ExportEncapsulationKey()" />.
+        ///   The imported key can encrypt messages and create sender contexts, but cannot decrypt messages,
+        ///   create recipient contexts, or export a decapsulation key.
+        ///   The imported key does not retain a reference to <paramref name="source" />.
+        /// </remarks>
+        public static Hpke ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
+        {
+            ArgumentNullException.ThrowIfNull(suite);
+
+            if (source.Length != suite.EncapsulationKeySizeInBytes)
+            {
+                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm, nameof(source));
+            }
+
+            ThrowIfNotSupported(suite);
+            return HpkeImplementation.ImportEncapsulationKeyImpl(suite, source);
+        }
+
+        /// <summary>
         ///   Exports the decapsulation key.
         /// </summary>
         /// <returns>
