@@ -431,7 +431,7 @@ PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(_DEBUG)
 // Tracks whether the current thread is allowed to transition between cooperative and preemptive
 // GC mode.
 //
@@ -442,14 +442,9 @@ typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
 // there would leave the thread in the wrong mode when managed code resumes.
 // CORINFO_HELP_JIT_RESUME_AFTER_CATCH sets it back to true at the resumption point.
 //
-// Only asserts consume this, so it costs nothing in release builds beyond the two stores.
+// Only asserts consume this, so the whole mechanism is debug-only; a release runtime neither
+// tracks nor checks it.
 extern thread_local bool t_gcModeSwitchPermitted;
-
-#ifdef TARGET_WASM
-// Record the frame a catch is about to resume into, so that RtlRestoreContext knows whether that
-// code will call CORINFO_HELP_JIT_RESUME_AFTER_CATCH. See vm/wasm/helpers.cpp.
-void NoteCatchResumeTarget(PCODE handlerFrameControlPC);
-#endif // TARGET_WASM
 
 // Assert that a cooperative/preemptive GC mode transition is legal at this point.
 #define ASSERT_GC_MODE_SWITCH_PERMITTED()                                                                              \
@@ -458,7 +453,20 @@ void NoteCatchResumeTarget(PCODE handlerFrameControlPC);
                  "RtlRestoreContext and the managed catch continuation, where the mode must not change.")
 #else
 #define ASSERT_GC_MODE_SWITCH_PERMITTED()
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && _DEBUG
+
+#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE) && defined(_DEBUG)
+// True when a catch resuming into the frame at handlerFrameControlPC will call
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH, and so is able to lift a GC mode switch restriction
+// imposed for the duration of the restore-context unwind. See vm/wasm/helpers.cpp.
+bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC);
+#else
+inline bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
+{
+    UNREFERENCED_PARAMETER(handlerFrameControlPC);
+    return false;
+}
+#endif // TARGET_WASM && !DACCESS_COMPILE && _DEBUG
 
 // #ThreadClass
 //

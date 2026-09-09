@@ -128,7 +128,9 @@ thread_local int t_ForbidGCLoaderUseCount;
 
 // See the declaration in threads.h. Transitions are permitted by default; only the WebAssembly
 // restore-context unwind clears this.
+#ifdef _DEBUG
 thread_local bool t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
 
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 

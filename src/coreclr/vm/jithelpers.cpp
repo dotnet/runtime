@@ -2194,7 +2194,9 @@ EXTERN_C void JIT_ResumeAfterCatch(void* sp, PCODE portableEntryPoint);
 // everywhere.
 extern "C" void JIT_ResumeAfterCatch()
 {
+#ifdef _DEBUG
     t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
 }
 #endif
 

@@ -232,15 +232,13 @@ extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint3
         "return\n" ::);
 }
 
-// Set while dispatching a catch whose handler frame runs code compiled with
-// --verify-gc-mode-transitions. See NoteCatchResumeTarget.
-static thread_local bool t_resumeTargetVerifiesGCModeTransitions = false;
-
-// Called just before a catch funclet runs, with the control PC of the frame the catch will resume
-// into. The CONTEXT handed to RtlRestoreContext does not carry a usable IP on wasm (the resume point
-// is a dispatcher case index, not a code address), so the resume target has to be identified here,
-// while the handler frame's virtual IP is still available.
-void NoteCatchResumeTarget(PCODE handlerFrameControlPC)
+#ifdef _DEBUG
+// Answers whether the code at handlerFrameControlPC lives in a ReadyToRun image compiled with
+// --verify-gc-mode-transitions, and so ends its catch resumption points with a call to
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH. Only such an image can lift a GC mode switch restriction
+// once managed code resumes; forbidding switches for any other resume target would leave them
+// forbidden for the rest of the thread's life.
+bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -262,8 +260,9 @@ void NoteCatchResumeTarget(PCODE handlerFrameControlPC)
     }
 #endif // FEATURE_READYTORUN
 
-    t_resumeTargetVerifiesGCModeTransitions = verifies;
+    return verifies;
 }
+#endif // _DEBUG
 
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
@@ -271,19 +270,8 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
     UNREFERENCED_PARAMETER(ExceptionRecord);
 
     // Resuming managed code at a catch continuation is done by throwing a native exception tag.
-    // Native cleanup that runs during that unwind must not change the thread's GC mode, or managed
-    // code resumes in the wrong mode.
-    //
-    // Only forbid transitions when the code we are resuming into will actually lift the restriction
-    // again; that is done by CORINFO_HELP_JIT_RESUME_AFTER_CATCH, which is only emitted into images
-    // compiled with --verify-gc-mode-transitions. Clearing the flag for any other resume target
-    // would leave it clear for the rest of the thread's life.
-    if (t_resumeTargetVerifiesGCModeTransitions)
-    {
-        t_resumeTargetVerifiesGCModeTransitions = false;
-        t_gcModeSwitchPermitted = false;
-    }
-
+    // Any GC mode restriction for the duration of that unwind is installed by
+    // ClrRestoreNonvolatileContext, which is the only caller that resumes into managed code.
     ThrowRtlRestoreContextTag();
 
     __builtin_unreachable();
@@ -506,7 +494,9 @@ EXTERN_C void JIT_ResumeAfterCatchImpl(uintptr_t callersStackPointer)
 {
     UNREFERENCED_PARAMETER(callersStackPointer);
 
+#ifdef _DEBUG
     t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
 }
 
 // R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale, so publish the

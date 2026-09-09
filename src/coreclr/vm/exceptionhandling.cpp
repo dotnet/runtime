@@ -3292,13 +3292,20 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 #endif
 
     ICodeManager* pCodeManager = NULL;
+#ifdef _DEBUG
+    bool forbidGCModeSwitch = false;
+#endif // _DEBUG
 
     if (pHandlerIP != NULL)
     {
         pCodeManager = exInfo->m_frameIter.m_crawl.GetCodeManager();
-#ifdef TARGET_WASM
-        NoteCatchResumeTarget(exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC);
-#endif // TARGET_WASM
+
+#ifdef _DEBUG
+        // The context handed to the resume path below no longer identifies the frame being resumed
+        // into (on wasm the SetIP further down stores a resume case index rather than a code
+        // address), so ask the question here, while the handler frame's control PC is available.
+        forbidGCModeSwitch = ResumeTargetVerifiesGCModeTransitions(exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC);
+#endif // _DEBUG
 #ifdef _DEBUG
         pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
@@ -3388,6 +3395,18 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
+#ifdef _DEBUG
+        // Nothing between here and the resumption point may change the thread's GC mode. On wasm
+        // the resume is performed by throwing a native exception tag, so native cleanup runs in
+        // between, and a transition there would leave managed code resuming in the wrong mode.
+        // Only do this when the resumed code will call CORINFO_HELP_JIT_RESUME_AFTER_CATCH to lift
+        // the restriction; otherwise it would stay in force for the rest of the thread's life.
+        // The frame popping above is the last thing that legitimately transitions.
+        if (forbidGCModeSwitch)
+        {
+            t_gcModeSwitchPermitted = false;
+        }
+#endif // _DEBUG
         pCodeManager->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, fIntercepted);
     }
     else
