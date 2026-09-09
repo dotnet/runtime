@@ -12,7 +12,16 @@ jobs:
     if: >
       github.repository == 'dotnet/runtime' &&
       github.event.pull_request.merged &&
-      contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')
+      (
+        (
+          github.event.action == 'closed' &&
+          contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')
+        ) ||
+        (
+          github.event.action == 'labeled' &&
+          github.event.label.name == 'needs-breaking-change-doc-created'
+        )
+      )
     runs-on: ubuntu-slim
     steps:
       - name: Dispatch breaking change documentation workflow
