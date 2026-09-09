@@ -1155,7 +1155,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS; // For GetXxxException
+        if (GetThreadNULLOk() != NULL) GC_TRIGGERS; else GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
