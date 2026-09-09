@@ -9,6 +9,117 @@ namespace System.Reflection.Tests
 {
     public class CustomAttributeTests
     {
+        public static IEnumerable<object[]> ConstructorArguments_TestData()
+        {
+            yield return new object[] { typeof(NoConstructorArguments), Array.Empty<object>() };
+            yield return new object[] { typeof(OneConstructorArgument), new object[] { int.MinValue } };
+            yield return new object[] { typeof(TwoConstructorArguments), new object[] { "value", typeof(string) } };
+            yield return new object[] { typeof(ThreeConstructorArguments), new object?[] { 42, ConstructorEnum.Negative, null } };
+            yield return new object[]
+            {
+                typeof(ArrayConstructorArguments),
+                new object[]
+                {
+                    new string?[] { null, "value" },
+                    new Type?[] { typeof(int), null },
+                    new[] { int.MinValue, int.MaxValue },
+                    new[] { ConstructorEnum.Negative }
+                }
+            };
+            yield return new object[] { typeof(NullArrayConstructorArguments), new object?[4] };
+            yield return new object[]
+            {
+                typeof(ManyConstructorArguments),
+                new object[]
+                {
+                    true, byte.MaxValue, sbyte.MinValue, '\u03bb', short.MinValue, ushort.MaxValue,
+                    int.MinValue, uint.MaxValue, long.MinValue, ulong.MaxValue, 12.5f, -25.5,
+                    ConstructorEnum.Negative
+                }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(ConstructorArguments_TestData))]
+        public void ConstructorsPreserveArgumentsAcrossTiers(Type target, object?[] expected)
+        {
+            for (int i = 0; i < 150; i++)
+            {
+                ConstructorArgumentsAttribute attribute = target.GetCustomAttribute<ConstructorArgumentsAttribute>();
+                Assert.Equal(expected, attribute.Arguments);
+            }
+        }
+
+        [Fact]
+        public void ConstructorExceptionsAreNotWrapped()
+        {
+            for (int i = 0; i < 150; i++)
+            {
+                InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                    () => typeof(ThrowingConstructorTarget).GetCustomAttribute<ThrowingConstructorAttribute>());
+                Assert.Equal("Attribute constructor failure", exception.Message);
+            }
+        }
+
+        public enum ConstructorEnum : long
+        {
+            Negative = long.MinValue
+        }
+
+        public sealed class ConstructorArgumentsAttribute : Attribute
+        {
+            public object?[] Arguments { get; }
+
+            public ConstructorArgumentsAttribute() => Arguments = Capture([]);
+            public ConstructorArgumentsAttribute(int value) => Arguments = Capture([value]);
+            public ConstructorArgumentsAttribute(string value, Type type) => Arguments = Capture([value, type]);
+            public ConstructorArgumentsAttribute(object? first, object? second, object? third) => Arguments = Capture([first, second, third]);
+            public ConstructorArgumentsAttribute(string?[]? strings, Type?[]? types, int[]? integers, ConstructorEnum[]? enums)
+                => Arguments = Capture([strings, types, integers, enums]);
+            public ConstructorArgumentsAttribute(
+                bool boolean, byte unsignedByte, sbyte signedByte, char character, short shortInteger, ushort unsignedShort,
+                int integer, uint unsignedInteger, long longInteger, ulong unsignedLong, float single, double dbl, ConstructorEnum enumeration)
+                => Arguments = Capture([boolean, unsignedByte, signedByte, character, shortInteger, unsignedShort,
+                    integer, unsignedInteger, longInteger, unsignedLong, single, dbl, enumeration]);
+
+            private static object?[] Capture(object?[] arguments)
+            {
+                GC.Collect(0, GCCollectionMode.Forced, blocking: true, compacting: true);
+                return arguments;
+            }
+        }
+
+        [ConstructorArguments]
+        private sealed class NoConstructorArguments { }
+
+        [ConstructorArguments(int.MinValue)]
+        private sealed class OneConstructorArgument { }
+
+        [ConstructorArguments("value", typeof(string))]
+        private sealed class TwoConstructorArguments { }
+
+        [ConstructorArguments(42, ConstructorEnum.Negative, null)]
+        private sealed class ThreeConstructorArguments { }
+
+        [ConstructorArguments(new string[] { null, "value" }, new Type[] { typeof(int), null },
+            new[] { int.MinValue, int.MaxValue }, new[] { ConstructorEnum.Negative })]
+        private sealed class ArrayConstructorArguments { }
+
+        [ConstructorArguments(null, null, null, null)]
+        private sealed class NullArrayConstructorArguments { }
+
+        [ConstructorArguments(true, byte.MaxValue, sbyte.MinValue, '\u03bb', short.MinValue, ushort.MaxValue,
+            int.MinValue, uint.MaxValue, long.MinValue, ulong.MaxValue, 12.5f, -25.5, ConstructorEnum.Negative)]
+        private sealed class ManyConstructorArguments { }
+
+        public sealed class ThrowingConstructorAttribute : Attribute
+        {
+            public ThrowingConstructorAttribute(string message) => throw new InvalidOperationException(message);
+        }
+
+        [ThrowingConstructor("Attribute constructor failure")]
+        private sealed class ThrowingConstructorTarget { }
+
         private class SameTypesAttribute : Attribute
         {
             public object[] ObjectArray1 { get; set; }
