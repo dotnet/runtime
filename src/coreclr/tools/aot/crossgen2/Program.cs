@@ -593,7 +593,8 @@ namespace ILCompiler
                         Get(_command.SynthesizeRandomMibc));
 
                     bool partial = Get(_command.Partial);
-                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, partial);
+                    ProfileRestrictionMode profileMode = partial ? ProfileRestrictionMode.ProfileOnly : ProfileRestrictionMode.None;
+                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, profileMode);
 
                     if ((singleMethod == null) && !compileNoMethods)
                     {
