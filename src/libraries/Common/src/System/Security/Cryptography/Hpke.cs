@@ -443,6 +443,38 @@ namespace System.Security.Cryptography
         /// </remarks>
         protected abstract void ExportEncapsulationKeyCore(Span<byte> destination);
 
+        /// <summary>
+        ///   Encrypts and authenticates a single message using Base mode.
+        /// </summary>
+        /// <param name="plaintext">
+        ///   The message to encrypt.
+        /// </param>
+        /// <param name="encapsulatedSecret">
+        ///   When this method returns, contains a new byte array containing the encapsulated secret to send
+        ///   to the recipient. This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   When this method returns, contains a new byte array containing the ciphertext followed by its
+        ///   authentication tag. This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional data to authenticate without encrypting.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   The ciphertext length would exceed <see cref="int.MaxValue" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
         public void Seal(
             ReadOnlySpan<byte> plaintext,
             out byte[] encapsulatedSecret,
@@ -462,6 +494,43 @@ namespace System.Security.Cryptography
             ciphertext = ciphertextBuffer;
         }
 
+        /// <summary>
+        ///   Encrypts and authenticates a single message using Base mode.
+        /// </summary>
+        /// <param name="plaintext">
+        ///   The message to encrypt.
+        /// </param>
+        /// <param name="encapsulatedSecret">
+        ///   When this method returns, contains a new byte array containing the encapsulated secret to send
+        ///   to the recipient. This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   When this method returns, contains a new byte array containing the ciphertext followed by its
+        ///   authentication tag. This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional data to authenticate without encrypting,
+        ///   or <see langword="null" /> to use no additional authenticated data.
+        /// </param>
+        /// <param name="info">
+        ///   The application context, which must match the value used by the recipient,
+        ///   or <see langword="null" /> to use an empty context.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="plaintext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   The ciphertext length would exceed <see cref="int.MaxValue" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        /// </exception>
         public void Seal(
             byte[] plaintext,
             out byte[] encapsulatedSecret,
@@ -502,10 +571,19 @@ namespace System.Security.Cryptography
         ///   The application context, which must match the value used by the recipient.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="encapsulatedSecret" /> is not exactly <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" />
-        ///   bytes long, <paramref name="ciphertext" /> is not exactly the length returned by
-        ///   <see cref="HpkeSuite.GetCiphertextLength" /> for <paramref name="plaintext" />,
-        ///   or <paramref name="info" /> exceeds the cipher suite's KDF length limit.
+        ///   <para>
+        ///     <paramref name="encapsulatedSecret" /> is not exactly
+        ///     <see cref="HpkeSuite.EncapsulatedSecretSizeInBytes" /> bytes long.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="ciphertext" /> is not exactly the length returned by
+        ///     <see cref="HpkeSuite.GetCiphertextLength" /> for <paramref name="plaintext" />.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
+        ///   </para>
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   The ciphertext length would exceed <see cref="int.MaxValue" />.
@@ -562,6 +640,32 @@ namespace System.Security.Cryptography
             SealCore(plaintext, encapsulatedSecret, ciphertext, associatedData, info);
         }
 
+        /// <summary>
+        ///   When overridden in a derived class, encrypts and authenticates a single message using Base mode.
+        /// </summary>
+        /// <param name="plaintext">
+        ///   The message to encrypt.
+        /// </param>
+        /// <param name="encapsulatedSecret">
+        ///   The buffer to receive the encapsulated secret.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The buffer to receive the ciphertext followed by its authentication tag.
+        /// </param>
+        /// <param name="associatedData">
+        ///   The additional data to authenticate without encrypting.
+        /// </param>
+        /// <param name="info">
+        ///   The application context.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        /// </exception>
+        /// <remarks>
+        ///   The calling method has verified that this instance is not disposed, the output buffers
+        ///   have the exact required lengths for <see cref="Suite" />, and <paramref name="info" />
+        ///   satisfies the KDF's length limit. Implementations must fill both output buffers on success.
+        /// </remarks>
         protected abstract void SealCore(
             ReadOnlySpan<byte> plaintext,
             Span<byte> encapsulatedSecret,
