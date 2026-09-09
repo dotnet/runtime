@@ -5639,11 +5639,6 @@ void FaultingExceptionFrame::InitAndLink(CONTEXT *pContext)
     WRAPPER_NO_CONTRACT;
 
     Init(pContext);
-
-    // We may enter here from preemptive mode with an unwalkable stack,
-    // so we can't transition to co-op mode reliably.
-    PERMANENT_CONTRACT_VIOLATION(ModeViolation);
-
     Push();
 }
 
@@ -5704,6 +5699,20 @@ bool ShouldHandleManagedFault(
 
         if (!ExecutionManager::IsManagedCode(GetIP(pContext)))
             return false;
+    }
+
+    Thread *pCurrentThread = pThread != nullptr ? pThread : GetThreadNULLOk();
+    if (pCurrentThread != nullptr &&
+        !pCurrentThread->PreemptiveGCDisabled() &&
+        InlinedCallFrame::FrameHasActiveCall(pCurrentThread->GetFrame()))
+    {
+        // If the user tries to call an invalid function pointer, some addresses on some architectures trigger a fault
+        // with the IP at the caller's address, not the invalid target address.
+        // If this case occurs after a GC transition to preemptive mode (ie a call to a function pointer with an unmanaged calling convention),
+        // we have semantically already left managed code.
+        // We will consider this a non-managed code address to align the "IP is caller's address" and "IP is callee's address"
+        // user experiences.
+        return false;
     }
 
     // caller should call HandleManagedFault and resume execution.
