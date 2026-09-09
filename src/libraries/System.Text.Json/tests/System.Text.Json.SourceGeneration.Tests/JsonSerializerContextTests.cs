@@ -146,6 +146,38 @@ namespace System.Text.Json.SourceGeneration.Tests
         internal partial class GenericInaccessibleCtorContext : JsonSerializerContext { }
 
         [Fact]
+        public static void GenericTypeWithConstraintsAndInaccessibleConstructor_IsSupported()
+        {
+            // The generic UnsafeAccessor wrapper emitted for an inaccessible constructor must carry the type's
+            // constraint clauses; otherwise the generated wrapper class does not compile.
+            ConstrainedInaccessibleCtor<int, string> deserialized = JsonSerializer.Deserialize(
+                """{"Key":1,"Value":"hi"}""", ConstrainedInaccessibleCtorContext.Default.ConstrainedInaccessibleCtorInt32String);
+            Assert.Equal(1, deserialized.Key);
+            Assert.Equal("hi", deserialized.Value);
+
+            string json = JsonSerializer.Serialize(deserialized, ConstrainedInaccessibleCtorContext.Default.ConstrainedInaccessibleCtorInt32String);
+            Assert.Equal("""{"Key":1,"Value":"hi"}""", json);
+        }
+
+        public class ConstrainedInaccessibleCtor<TKey, TValue>
+            where TKey : struct, IComparable<TKey>
+            where TValue : class
+        {
+            [JsonConstructor]
+            private ConstrainedInaccessibleCtor(TKey key, TValue value)
+            {
+                Key = key;
+                Value = value;
+            }
+
+            public TKey Key { get; }
+            public TValue Value { get; }
+        }
+
+        [JsonSerializable(typeof(ConstrainedInaccessibleCtor<int, string>))]
+        internal partial class ConstrainedInaccessibleCtorContext : JsonSerializerContext { }
+
+        [Fact]
         [RequiresUnreferencedCode("Tests reflection-based JsonSerializer APIs.")]
         [RequiresDynamicCode("Tests reflection-based JsonSerializer APIs.")]
         public static async Task SupportsBoxedRootLevelValues()
