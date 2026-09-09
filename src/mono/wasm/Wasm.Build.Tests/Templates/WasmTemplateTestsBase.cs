@@ -182,7 +182,7 @@ public class WasmTemplateTestsBase : BuildTestBase
                     <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
                 </KnownWebAssemblySdkPack>
                 <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
-                    <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</Crossgen2PackVersion>
+                    <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</Crossgen2PackVersion>
                 </KnownCrossgen2Pack>
                 </ItemGroup>
             </Target>
