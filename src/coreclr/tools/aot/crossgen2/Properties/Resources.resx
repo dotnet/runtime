@@ -237,6 +237,12 @@
   <data name="PartialImageOption" xml:space="preserve">
     <value>Generate partial image driven by profile</value>
   </data>
+  <data name="PartialComplementOption" xml:space="preserve">
+    <value>Generate an image with only the methods NOT selected by the profile (the complement of --partial)</value>
+  </data>
+  <data name="SuppressComponentRewriteOption" xml:space="preserve">
+    <value>In composite mode, emit the composite image but do not rewrite inputs into component stubs</value>
+  </data>
   <data name="ProgramError" xml:space="preserve">
     <value>Error: {0}</value>
   </data>
