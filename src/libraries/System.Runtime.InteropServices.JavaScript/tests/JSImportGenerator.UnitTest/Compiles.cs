@@ -165,6 +165,39 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Fact]
+        public void ChangingMarshallingTypeArgumentsRegeneratesAffectedSources()
+        {
+            string source = CodeSnippets.TaskAndDelegateSignatures;
+            Compilation compilation = TestUtils.CreateCompilation(source);
+            GeneratorDriver driver = CreateTrackedDriver(compilation);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation generatedCompilation, out var diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
+            GeneratorDriverRunResult originalResult = driver.GetRunResult();
+
+            string updatedSource = source.Replace("JSType.BigInt", "JSType.Number", StringComparison.Ordinal);
+            SyntaxTree originalTree = compilation.SyntaxTrees.Single();
+            compilation = compilation.ReplaceSyntaxTree(originalTree, CSharpSyntaxTree.ParseText(updatedSource, (CSharpParseOptions)originalTree.Options));
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out generatedCompilation, out diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
+            GeneratorDriverRunResult updatedResult = driver.GetRunResult();
+
+            Assert.Equal(2, updatedResult.Results.Length);
+            for (int i = 0; i < updatedResult.Results.Length; i++)
+            {
+                GeneratorRunResult generated = updatedResult.Results[i];
+                var outputs = generated.TrackedSteps["GenerateSingleStub"].SelectMany(static step => step.Outputs).ToArray();
+                Assert.Equal(4, outputs.Length);
+                Assert.Equal(2, outputs.Count(static output => output.Reason == IncrementalStepRunReason.Modified));
+                Assert.Equal(2, outputs.Count(static output => output.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged));
+                Assert.NotEqual(
+                    Assert.Single(originalResult.Results[i].GeneratedSources).SourceText.ToString(),
+                    Assert.Single(generated.GeneratedSources).SourceText.ToString());
+            }
+        }
+
+        [Fact]
         public void NoAttributedMethodsDoNotGenerateSources()
         {
             Compilation compilation = TestUtils.CreateCompilation("public class Basic { }");

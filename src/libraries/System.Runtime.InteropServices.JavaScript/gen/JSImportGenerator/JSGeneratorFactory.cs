@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis;
@@ -54,7 +55,7 @@ namespace Microsoft.Interop.JavaScript
 
                 // primitive
                 case { TypeInfo: JSSimpleTypeInfo simple }:
-                    return Create(info, context, isToJs, simple.KnownType, [], jsMarshalingInfo.JSType, []);
+                    return Create(info, context, isToJs, simple.KnownType, [], jsMarshalingInfo.JSType, new(ImmutableArray<JSTypeFlags>.Empty));
 
                 // nullable
                 case { TypeInfo: JSNullableTypeInfo nullable }:
@@ -87,7 +88,7 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        private static ResolvedGeneratorAndType Create(TypePositionInfo info, StubCodeContext context, bool isToJs, KnownManagedType marshaledType, KnownManagedType[] argumentTypes, JSTypeFlags jsType, JSTypeFlags[] jsTypeArguments)
+        private static ResolvedGeneratorAndType Create(TypePositionInfo info, StubCodeContext context, bool isToJs, KnownManagedType marshaledType, KnownManagedType[] argumentTypes, JSTypeFlags jsType, SequenceEqualImmutableArray<JSTypeFlags>? jsTypeArguments)
         {
             return (marshaledType, jsType, argumentTypes, jsTypeArguments) switch
             {
@@ -262,13 +263,13 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Single], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
 
                 // function + action
-                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, var argJSTypes) when argTypes.Length != argJSTypes.Length
+                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, { } argJSTypes) when argTypes.Length != argJSTypes.Length
                     => failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName)),
 
                 (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function or JSTypeFlags.Missing, var argTypes, _) when FindFirstInvalidArgType(argTypes) is KnownManagedType invalidArgType
                     => failWithReason(SR.Format(SR.FuncArgumentNotSupported, invalidArgType)),
 
-                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, var argJSTypes) => ResolveCallback(marshaledType, argTypes, argJSTypes),
+                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, { } argJSTypes) => ResolveCallback(marshaledType, argTypes, argJSTypes),
 
                 // function + action forced
                 (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Missing, _, _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
@@ -300,14 +301,14 @@ namespace Microsoft.Interop.JavaScript
                 return null;
             }
 
-            ResolvedGeneratorAndType ResolveCallback(KnownManagedType managedType, KnownManagedType[] argTypes, JSTypeFlags[] argJSTypes)
+            ResolvedGeneratorAndType ResolveCallback(KnownManagedType managedType, KnownManagedType[] argTypes, SequenceEqualImmutableArray<JSTypeFlags> argJSTypes)
             {
                 var argsMarshalers = new List<MarshalerType>();
                 for (int i = 0; i < argTypes.Length; i++)
                 {
                     var isReturn = managedType == KnownManagedType.Function && i == argJSTypes.Length - 1;
 
-                    var gen = Create(info, context, isToJs ^ (!isReturn), argTypes[i], Array.Empty<KnownManagedType>(), argJSTypes[i], Array.Empty<JSTypeFlags>());
+                    var gen = Create(info, context, isToJs ^ (!isReturn), argTypes[i], Array.Empty<KnownManagedType>(), argJSTypes[i], new(ImmutableArray<JSTypeFlags>.Empty));
                     argsMarshalers.Add(gen.Type);
                 }
                 var maxArgs = managedType == KnownManagedType.Action ? 3 : 4;
