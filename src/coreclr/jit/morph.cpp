@@ -9905,6 +9905,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            if (node->GetOperandCount() != 2)
+            {
+                // These simplifications are not worth specializing for explicit rounding modes.
+                break;
+            }
+
             double multiplier = op2Cns->ToScalarFloating(simdBaseType);
 
             if (multiplier == -1.0)
@@ -9987,7 +9993,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 ExtractEffectiveOp(GT_NEG, node, /* destroyNodes */ true);
                 return result;
             }
-            else if ((op1Oper == GT_MUL) || (op1Oper == GT_DIV))
+            else if (((op1Oper == GT_MUL) || (op1Oper == GT_DIV)) && (op1Intrin->GetOperandCount() == 2))
             {
                 GenTree* op2 = op1Intrin->Op(2);
 
