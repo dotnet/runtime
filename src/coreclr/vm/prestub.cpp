@@ -32,6 +32,9 @@
 #ifdef TARGET_WASM
 #include "wasmasynccontinuation.h"
 #endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#include "wasm/helpers.hpp"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
@@ -2494,7 +2497,34 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     /**************************   CODE CREATION  *************************/
     if (IsUnboxingStub())
     {
-        pStub = MakeUnboxingStubWorker(this);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        MethodDesc* targetMethodDesc;
+        PCODE targetEntryPoint;
+        void* unboxingStub = GetUnboxingStub(this, &targetMethodDesc, &targetEntryPoint);
+        if (unboxingStub != NULL)
+        {
+            pCode = GetPortableEntryPoint();
+            UnboxingStubPortableEntryPoint::SetStubTargetAndActualCode(
+                pCode, targetMethodDesc, targetEntryPoint, unboxingStub);
+        }
+        else
+        {
+            pStub = MakeUnboxingStubWorker(this);
+        }
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_READYTORUN
+        // Crossgen2 can emit the body of an unboxing stub into the R2R image. Prefer it over
+        // generating one here, which without a JIT means creating and interpreting an IL stub.
+        // Publish it as pCode rather than pStub: it is ordinary precompiled code, whereas the
+        // pStub path assumes an interpreter entry point when FEATURE_PORTABLE_ENTRYPOINTS is on.
+        PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+        pCode = GetPrecompiledR2RCode(&config);
+#endif // FEATURE_READYTORUN
+        if (pCode == (PCODE)NULL)
+        {
+            pStub = MakeUnboxingStubWorker(this);
+        }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     else if (IsInstantiatingStub())
@@ -2529,7 +2559,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // Update the PortableEntryPoint to point to the actual code for the FCall implementation.
             // Return the PortableEntryPoint as the PCODE.
             PCODE entryPoint = GetPortableEntryPoint();
-            PortableEntryPoint::SetActualCode(entryPoint, pCode);
+            PortableEntryPoint::SetActualCode(entryPoint, (void*)pCode);
             pCode = entryPoint;
         }
         else
@@ -2558,7 +2588,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
                 // entrypoint so callers dispatch directly to it instead of looping back into the prestub.
                 // In this path helperMD comes from an FCall helper entrypoint, so native code must exist.
                 _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(pCode));
-                PortableEntryPoint::SetActualCode(entryPoint, (PCODE)(TADDR)PortableEntryPoint::GetActualCode(pCode));
+                PortableEntryPoint::SetActualCode(entryPoint, PortableEntryPoint::GetActualCode(pCode));
             }
             pCode = entryPoint;
         }

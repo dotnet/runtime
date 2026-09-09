@@ -150,9 +150,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // recognizes a union by the attribute plus a public object-typed Value property,
             // and derives its cases from the public single-parameter constructors.
             //
-            // Diagnostic validation is off because the same version has no union pattern
-            // matching either, so it rejects the emitted `bool` arm against a Nat operand.
-            VerifyAgainstBaseline("""
+            // These test projects run against Roslyn versions that predate union pattern matching.
+            // Pin the resulting generated-code diagnostics instead of ignoring them entirely.
+            JsonSourceGeneratorResult result = VerifyAgainstBaseline("""
                 using System.Runtime.CompilerServices;
                 using System.Text.Json.Serialization;
                 namespace TestApp
@@ -169,15 +169,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     }
                 }
                 """, nameof(RecursiveUnionType), disableDiagnosticValidation: true);
+
+            AssertLegacyCompilerDiagnostics(result, "CS0037", "CS8121");
         }
 
         [Fact]
         public void RecursiveNullableUnionType()
         {
             // Same as RecursiveUnionType, but the self-referential case is nullable, so it is
-            // also the union's null case. The emitted arm has to pattern match the unwrapped
-            // Nat while still reporting typeof(Nat?) as the case type.
-            VerifyAgainstBaseline("""
+            // also the union's null case. The emitted root-level arm has to pattern match the
+            // unwrapped Nat while still reporting typeof(Nat?) as the case type.
+            JsonSourceGeneratorResult result = VerifyAgainstBaseline("""
                 using System.Runtime.CompilerServices;
                 using System.Text.Json.Serialization;
                 namespace TestApp
@@ -194,15 +196,16 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     }
                 }
                 """, nameof(RecursiveNullableUnionType), disableDiagnosticValidation: true);
+
+            AssertLegacyCompilerDiagnostics(result, "CS0037", "CS8121");
         }
 
         [Fact]
         public void SubclassCaseUnionType()
         {
             // A class union is not sealed, so a case type can derive from the union itself.
-            // The union instance is pattern compatible with Circle by the opposite subtyping
-            // direction to a self-referential case, and needs the same property-pattern arm.
-            VerifyAgainstBaseline("""
+            // The root-level union pattern must match its payload rather than the union instance.
+            JsonSourceGeneratorResult result = VerifyAgainstBaseline("""
                 using System.Runtime.CompilerServices;
                 using System.Text.Json.Serialization;
                 namespace TestApp
@@ -227,6 +230,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     }
                 }
                 """, nameof(SubclassCaseUnionType), disableDiagnosticValidation: true);
+
+            AssertLegacyCompilerDiagnostics(result, "CS8121");
         }
 
         [Fact]
@@ -441,7 +446,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         /// generated file matches the corresponding baseline in
         /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
         /// </summary>
-        private void VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false, CSharpParseOptions? parseOptions = null)
+        private JsonSourceGeneratorResult VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false, CSharpParseOptions? parseOptions = null)
         {
             Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: disableDiagnosticValidation, logger: logger);
@@ -491,7 +496,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     IO.File.WriteAllText(absPath, generatedSourceText.ToString());
                 }
 
-                return;
+                return result;
             }
 #else
             // Collect expected baseline files from disk.
@@ -523,6 +528,23 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 bool matches = RoslynTestUtils.CompareLines(expectedLines, generatedSourceText, out string errorMessage);
                 Assert.True(matches, $"Baseline mismatch for {baselineFileName}.\n{errorMessage}");
             }
+
+            return result;
+#endif
+        }
+
+        private static void AssertLegacyCompilerDiagnostics(JsonSourceGeneratorResult result, params string[] expectedIds)
+        {
+#if NET
+            string[] actualIds = result.NewCompilation.GetDiagnostics()
+                .Where(diagnostic =>
+                    diagnostic.Severity is DiagnosticSeverity.Error &&
+                    diagnostic.Location.SourceTree?.FilePath.EndsWith(".g.cs", StringComparison.Ordinal) is true)
+                .Select(diagnostic => diagnostic.Id)
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.Equal(expectedIds.OrderBy(id => id, StringComparer.Ordinal), actualIds);
 #endif
         }
 

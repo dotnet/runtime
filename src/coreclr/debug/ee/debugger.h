@@ -2288,6 +2288,7 @@ public:
 private:
     void DoNotCallDirectlyPrivateLock(void);
     void DoNotCallDirectlyPrivateUnlock(void);
+    void ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(Thread *pThread);
 
     // This function gets the jit debugger launched and waits for the native attach to complete
     // Make sure you called PreJitAttach and it returned TRUE before you call this
