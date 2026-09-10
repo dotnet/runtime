@@ -57,6 +57,14 @@
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
+    <!-- Referenced so dotnet-pgo is restored and built for _AddDotnetPgoToTestPayload. Private="false"
+         keeps its apphost and dependencies out of $(OutDir) so they don't collide with the dotnet-pgo/
+         subfolder that target creates there. -->
+    <ProjectReference Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
+                      Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false" />
+
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
