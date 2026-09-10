@@ -9,10 +9,12 @@ namespace System.Security.Cryptography
     internal sealed class HpkeImplementation : Hpke
     {
         private readonly HpkeManagedKemAdapter _kemAdapter;
+        private readonly HpkeManagedKdfAdapter _kdfAdapter;
 
         private HpkeImplementation(HpkeSuite suite, HpkeManagedKemAdapter kemAdapter) : base(suite)
         {
             _kemAdapter = kemAdapter;
+            _kdfAdapter = HpkeManagedKdfAdapter.Create(suite);
         }
 
         internal static bool IsSupportedImpl(HpkeSuite suite) =>
@@ -111,8 +113,7 @@ namespace System.Security.Cryptography
                 Span<byte> exporterSecret = exporterSecretBuffer.Slice(0, Suite.KdfMetadata.Nh);
                 _kemAdapter.Encapsulate(encapsulatedSecret, sharedSecret);
 
-                HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
-                kdf.DeriveSecrets(
+                _kdfAdapter.DeriveSecrets(
                     mode: 0,
                     sharedSecret,
                     info,
@@ -163,8 +164,7 @@ namespace System.Security.Cryptography
                 Span<byte> exporterSecret = exporterSecretBuffer.Slice(0, Suite.KdfMetadata.Nh);
                 _kemAdapter.Decapsulate(encapsulatedSecret, sharedSecret);
 
-                HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
-                kdf.DeriveSecrets(
+                _kdfAdapter.DeriveSecrets(
                     mode: 0,
                     sharedSecret,
                     info,
@@ -229,8 +229,7 @@ namespace System.Security.Cryptography
                 Span<byte> exporterSecret = exporterSecretBuffer.Slice(0, Suite.KdfMetadata.Nh);
                 _kemAdapter.Encapsulate(encapsulatedSecret, sharedSecret);
 
-                HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
-                kdf.DeriveSecrets(
+                _kdfAdapter.DeriveSecrets(
                     mode,
                     sharedSecret,
                     info,
@@ -244,7 +243,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    return new HpkeSenderImplementation(Suite, aead, kdf, baseNonce, exporterSecret);
+                    return new HpkeSenderImplementation(Suite, aead, _kdfAdapter, baseNonce, exporterSecret);
                 }
                 catch
                 {
@@ -293,8 +292,7 @@ namespace System.Security.Cryptography
                 Span<byte> exporterSecret = exporterSecretBuffer.Slice(0, Suite.KdfMetadata.Nh);
                 _kemAdapter.Decapsulate(encapsulatedSecret, sharedSecret);
 
-                HpkeManagedKdfAdapter kdf = HpkeManagedKdfAdapter.Create(Suite);
-                kdf.DeriveSecrets(
+                _kdfAdapter.DeriveSecrets(
                     mode,
                     sharedSecret,
                     info,
@@ -308,7 +306,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    return new HpkeRecipientImplementation(Suite, aead, kdf, baseNonce, exporterSecret);
+                    return new HpkeRecipientImplementation(Suite, aead, _kdfAdapter, baseNonce, exporterSecret);
                 }
                 catch
                 {
