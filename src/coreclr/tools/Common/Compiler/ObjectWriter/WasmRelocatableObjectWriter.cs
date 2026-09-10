@@ -10,6 +10,7 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem.TypesDebugInfo;
 using ILCompiler.DependencyAnalysis.Wasm;
+using System.Linq;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -262,20 +263,23 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteExports()
         {
-            // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
-            IEnumerable<WasmSymbol> functionSymbols = _wasmSymbolManager.GetDefinitions(
-                WasmIndexSpace.Function,
-                Comparer<WasmSymbol>.Create(static (x, y) => x.Name.CompareTo(y.Name)));
-            foreach (WasmSymbol symbol in functionSymbols)
+            WasmSection codeSection = GetOrCreateSection<WasmSection>(ObjectNodeSection.WasmCodeSection, out _);
+            int codeSectionIndex = codeSection.SectionIndex;
+            foreach (var symbol in _definedSymbols)
             {
-                WriteFunctionExport(symbol.Name.ToString(), symbol.Index);
+                // We only export methods for now
+                if (!symbol.Value.Global || symbol.Value.SectionIndex != codeSectionIndex)
+                    continue;
+
+                WasmSymbol methodEntry = _wasmSymbolManager.GetSymbol(symbol.Key);
+                Debug.Assert(methodEntry.IndexSpace == WasmIndexSpace.Function);
+                WriteFunctionExport(symbol.Key.ToString(), methodEntry.Index);
             }
         }
 
         private protected override void WriteElements()
         {
         }
-
 
         // ObjectWriter.Aot.cs methods
         private protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo, Utf8String currentSymbolName)

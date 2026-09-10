@@ -144,7 +144,15 @@ namespace ILCompiler.ObjectWriter
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
             WriteSignatureIndexForFunction(node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+            Utf8String methodName = new(node.GetMangledName(_nodeFactory.NameMangler));
+            RegisterFunctionSymbol(methodName);
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+            if (!alternateName.IsNull)
+            {
+                _wasmSymbolManager.AddAlias(ExternCName(alternateName), methodName);
+            }
+
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
@@ -361,13 +369,13 @@ namespace ILCompiler.ObjectWriter
             IDictionary<Utf8String, SymbolDefinition> definedSymbols,
             SortedSet<Utf8String> undefinedSymbols)
         {
+            // Register defined symbols for future use during relocation resolution.
+            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
+
             WriteImports();
             WriteGlobalSection();
             WriteExports();
             WriteElements();
-
-            // Register defined symbols for future use during relocation resolution.
-            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
         }
 
         private protected abstract void WriteImports();
