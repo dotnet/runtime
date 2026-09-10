@@ -53,7 +53,7 @@ namespace System.Reflection.Tests
             MethodInfo method = target.GetMethod(nameof(ReturnValueTarget<int>.GetValue));
             MethodInvoker invoker = MethodInvoker.Create(method);
 
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
                 Assert.Equal(expected, method.Invoke(null, null));
                 Assert.Equal(expected, invoker.Invoke(null));
@@ -797,7 +797,7 @@ namespace System.Reflection.Tests
             object expected = referenceArgument ? new object() : 42;
             object[] arguments = { expected };
 
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
                 Assert.Equal(expected, invoker is not null ? invoker.Invoke(null, expected) : method.Invoke(null, arguments));
             }
@@ -1578,7 +1578,7 @@ namespace System.Reflection.Tests
 
     internal static class IntrinsicInvokeSelectionAssertions
     {
-        private const int SpecializationThreshold = 100;
+        internal const int SpecializationThreshold = 10_000;
         private const string ForceEmitInvokeSwitch = "Switch.System.Reflection.ForceEmitInvoke";
         private const string ForceInterpretedInvokeSwitch = "Switch.System.Reflection.ForceInterpretedInvoke";
         private const string SharedThunkMethodName = "InvokeWithSharedThunk";
@@ -1626,8 +1626,14 @@ namespace System.Reflection.Tests
 
         internal static void AssertPromoted(object invoker)
         {
+            if (!ShouldAssertSharedSelection)
+            {
+                return;
+            }
+
             if (!ShouldAssertPromotion)
             {
+                AssertNotPromoted(invoker, 0);
                 return;
             }
 
@@ -1638,12 +1644,25 @@ namespace System.Reflection.Tests
                 GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs") is not null);
         }
 
+        internal static void AssertNotPromoted(object invoker, int invocationCount)
+        {
+            if (!ShouldAssertSharedSelection)
+            {
+                return;
+            }
+
+            AssertShared(invoker);
+            Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_Obj4Args"));
+            Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs"));
+            Assert.Equal(ShouldAssertPromotion ? invocationCount : 0, GetInvokeStateField<int>(invoker, "InvocationCount"));
+        }
+
         private static bool ShouldAssertSharedSelection =>
-            PlatformDetection.IsCoreCLR && !IsForceEmitOnly;
+            PlatformDetection.IsCoreCLR && (!IsForceEmitOnly || !RuntimeFeature.IsDynamicCodeCompiled);
 
         private static bool ShouldAssertPromotion =>
             ShouldAssertSharedSelection &&
-            RuntimeFeature.IsDynamicCodeSupported &&
+            RuntimeFeature.IsDynamicCodeCompiled &&
             !IsForceInterpretedOnly;
 
         private static bool IsForceEmitOnly =>

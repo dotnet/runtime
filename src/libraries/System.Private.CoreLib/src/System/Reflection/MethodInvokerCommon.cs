@@ -23,7 +23,7 @@ namespace System.Reflection
             }
             else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
             {
-                // Always use emit invoke (if IsDynamicCodeSupported == true); useful for testing.
+                // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
                 strategy = GetStrategyForUsingEmit();
             }
             else
@@ -123,7 +123,7 @@ namespace System.Reflection
             }
             else
             {
-                if (RuntimeFeature.IsDynamicCodeSupported)
+                if (RuntimeFeature.IsDynamicCodeCompiled)
                 {
                     invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method, backwardsCompat);
                 }
@@ -155,7 +155,7 @@ namespace System.Reflection
             }
             else
             {
-                if (RuntimeFeature.IsDynamicCodeSupported)
+                if (RuntimeFeature.IsDynamicCodeCompiled)
                 {
                     invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method, backwardsCompat);
                 }
@@ -181,7 +181,7 @@ namespace System.Reflection
             }
             else
             {
-                if (RuntimeFeature.IsDynamicCodeSupported)
+                if (RuntimeFeature.IsDynamicCodeCompiled)
                 {
                     invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method, backwardsCompat);
                 }
