@@ -1155,7 +1155,8 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS; // For GetXxxException
+        // Self-abort and reentrant waits can collect; a native debugger helper does neither.
+        if (GetThreadNULLOk() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
     }
     CONTRACTL_END;
 

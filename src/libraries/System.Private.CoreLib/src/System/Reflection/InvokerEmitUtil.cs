@@ -16,6 +16,62 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, Span<object?> arguments);
         internal delegate object? InvokeFunc_Obj4Args(object? obj, object? arg1, object? arg2, object? arg3, object? arg4);
 
+#if !MONO
+        internal unsafe delegate void InvokeFunc_Debugger(IntPtr* storage);
+
+        internal static InvokeFunc_Debugger CreateInvokeDelegate_Debugger(MethodBase method)
+        {
+            Debug.Assert(!method.ContainsGenericParameters);
+
+            Type[] delegateParameters = [typeof(object), typeof(IntPtr*)];
+            string declaringTypeName = method.DeclaringType is not null ? method.DeclaringType.Name + "." : string.Empty;
+            var dm = new DynamicMethod(
+                InvokeStubPrefix + declaringTypeName + method.Name,
+                returnType: typeof(void),
+                delegateParameters,
+                typeof(object).Module,
+                skipVisibility: true);
+
+            ILGenerator il = dm.GetILGenerator();
+
+            // Storage contains the receiver, explicit arguments, and return destination, all as byrefs.
+            if (!method.IsStatic)
+            {
+                EmitLoadRefArgument(il, 0, argumentArrayIndex: 1);
+                if (!method.DeclaringType!.IsValueType)
+                {
+                    il.Emit(OpCodes.Ldind_Ref);
+                }
+            }
+
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
+            EmitLoadRefArguments(il, parameters, argumentArrayIndex: 1, argumentOffset: 1);
+            EmitCall(il, method, emitNew: false, backwardsCompat: true);
+
+            if (method is MethodInfo methodInfo && methodInfo.ReturnType != typeof(void))
+            {
+                Type returnType = methodInfo.ReturnType;
+                LocalBuilder result = il.DeclareLocal(returnType);
+                il.Emit(OpCodes.Stloc, result);
+                EmitLoadRefArgument(il, parameters.Length + 1, argumentArrayIndex: 1);
+                il.Emit(OpCodes.Ldloc, result);
+
+                // Preserve byref identity and true nullable storage instead of reflection's boxing semantics.
+                if (returnType.IsByRef)
+                {
+                    il.Emit(OpCodes.Stind_I);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Stobj, returnType.IsPointer || returnType.IsFunctionPointer ? typeof(IntPtr) : returnType);
+                }
+            }
+
+            il.Emit(OpCodes.Ret);
+            return (InvokeFunc_Debugger)dm.CreateDelegate(typeof(InvokeFunc_Debugger), target: null);
+        }
+#endif
+
         public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method, bool backwardsCompat)
         {
             Debug.Assert(!method.ContainsGenericParameters);
@@ -196,18 +252,25 @@ namespace System.Reflection
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
         }
 
-        private static void EmitLoadRefArguments(ILGenerator il, ReadOnlySpan<ParameterInfo> parameters)
+        private static void EmitLoadRefArgument(ILGenerator il, int argumentIndex, int argumentArrayIndex)
+        {
+            Debug.Assert(argumentArrayIndex is 1 or 2);
+            il.Emit(argumentArrayIndex == 1 ? OpCodes.Ldarg_1 : OpCodes.Ldarg_2);
+            if (argumentIndex != 0)
+            {
+                il.Emit(OpCodes.Ldc_I4, checked(argumentIndex * IntPtr.Size));
+                il.Emit(OpCodes.Add);
+            }
+
+            il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
+        }
+
+        private static void EmitLoadRefArguments(
+            ILGenerator il, ReadOnlySpan<ParameterInfo> parameters, int argumentArrayIndex = 2, int argumentOffset = 0)
         {
             for (int i = 0; i < parameters.Length; i++)
             {
-                il.Emit(OpCodes.Ldarg_2);
-                if (i != 0)
-                {
-                    il.Emit(OpCodes.Ldc_I4, i * IntPtr.Size);
-                    il.Emit(OpCodes.Add);
-                }
-
-                il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
+                EmitLoadRefArgument(il, i + argumentOffset, argumentArrayIndex);
 
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
@@ -226,7 +289,7 @@ namespace System.Reflection
             il.Emit(OpCodes.Ldobj, parameterType);
         }
 
-        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+        private static void EmitCall(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
         {
             // For CallStack reasons, don't inline target method.
             // Mono interpreter does not support\need this.
@@ -257,6 +320,11 @@ namespace System.Reflection
             {
                 il.Emit(OpCodes.Callvirt, (MethodInfo)method);
             }
+        }
+
+        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+        {
+            EmitCall(il, method, emitNew, backwardsCompat);
 
             // Handle the return.
             if (emitNew)

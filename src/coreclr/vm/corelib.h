@@ -1058,6 +1058,7 @@ DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
+DEFINE_METHOD(DEBUGGER,             INVOKE_FUNCTION,        InvokeFunction,     SM_IntPtr_IntPtr_PtrIntPtr_RetVoid)
 DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
