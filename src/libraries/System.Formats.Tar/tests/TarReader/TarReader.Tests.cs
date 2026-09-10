@@ -40,7 +40,7 @@ namespace System.Formats.Tar.Tests
                         dataStreams.Add(entry.DataStream);
                     }
                 }
-                        }
+            }
 
             Assert.Throws<ObjectDisposedException>(() => ms.ReadByte());
 
@@ -69,7 +69,7 @@ namespace System.Formats.Tar.Tests
                         dataStreams.Add(entry.DataStream);
                     }
                 }
-                        }
+            }
 
             ms.ReadByte(); // Should not throw
 
@@ -99,7 +99,7 @@ namespace System.Formats.Tar.Tests
                         dataStreams.Add(entry.DataStream);
                     }
                 }
-                        }
+            }
 
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)
@@ -123,15 +123,13 @@ namespace System.Formats.Tar.Tests
             }
 
             stream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(stream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(stream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                PaxTarEntry entry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
-                Assert.Equal(3, entry.ExtendedAttributes.Count);
-                Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
-                Assert.Null(await GetNextEntry(reader, async: async));
-            }
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
+            Assert.Equal(3, entry.ExtendedAttributes.Count);
+            Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         [Theory]

@@ -61,14 +61,12 @@ namespace System.Formats.Tar.Tests
             }
 
             ms.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                entry = await GetNextEntry(reader, async: async);
-                Assert.Null(await GetNextEntry(reader, async: async));
-                Assert.Equal(name, entry.Name);
-            }
+            entry = await GetNextEntry(reader, async: async);
+            Assert.Null(await GetNextEntry(reader, async: async));
+            Assert.Equal(name, entry.Name);
         }
 
         public static IEnumerable<object[]> LinkNameRoundtripsTheoryData()
@@ -117,15 +115,13 @@ namespace System.Formats.Tar.Tests
             }
 
             ms.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                entry = await GetNextEntry(reader, async: async);
-                Assert.Null(await GetNextEntry(reader, async: async));
-                Assert.Equal(name, entry.Name);
-                Assert.Equal(linkName, entry.LinkName);
-            }
+            entry = await GetNextEntry(reader, async: async);
+            Assert.Null(await GetNextEntry(reader, async: async));
+            Assert.Equal(name, entry.Name);
+            Assert.Equal(linkName, entry.LinkName);
         }
 
         public static IEnumerable<object[]> UserNameGroupNameRoundtripsTheoryData()
@@ -167,18 +163,16 @@ namespace System.Formats.Tar.Tests
             }
 
             ms.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                entry = await GetNextEntry(reader, async: async);
-                posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
-                Assert.Null(await GetNextEntry(reader, async: async));
+            entry = await GetNextEntry(reader, async: async);
+            posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            Assert.Null(await GetNextEntry(reader, async: async));
 
-                Assert.Equal(name, posixEntry.Name);
-                Assert.Equal(userGroupName, posixEntry.UserName);
-                Assert.Equal(userGroupName, posixEntry.GroupName);
-            }
+            Assert.Equal(name, posixEntry.Name);
+            Assert.Equal(userGroupName, posixEntry.UserName);
+            Assert.Equal(userGroupName, posixEntry.GroupName);
         }
 
         public static IEnumerable<object[]> PaxExtendedAttributesEntryTypeAndBooleanData()
@@ -232,22 +226,20 @@ namespace System.Formats.Tar.Tests
             }
             ms.Position = 0;
 
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
-                Assert.Null(await GetNextEntry(reader, async: async));
+            PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
+            Assert.Null(await GetNextEntry(reader, async: async));
 
-                Assert.Equal(writeEntry.Name, readEntry.Name);
-                Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
-                Assert.Equal(writeEntry.UserName, readEntry.UserName);
-                Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
-                Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
+            Assert.Equal(writeEntry.Name, readEntry.Name);
+            Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
+            Assert.Equal(writeEntry.UserName, readEntry.UserName);
+            Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
+            Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
 
-                Assert.Equal(0, writeEntry.Length);
-                Assert.Equal(0, readEntry.Length);
-            }
+            Assert.Equal(0, writeEntry.Length);
+            Assert.Equal(0, readEntry.Length);
         }
 
         [Theory]
@@ -284,19 +276,17 @@ namespace System.Formats.Tar.Tests
             }
             ms.Position = 0;
 
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
-                Assert.Null(await GetNextEntry(reader, async: async));
+            PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
+            Assert.Null(await GetNextEntry(reader, async: async));
 
-                Assert.Equal(writeEntry.Name, readEntry.Name);
-                Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
-                Assert.Equal(writeEntry.UserName, readEntry.UserName);
-                Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
-                Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
-            }
+            Assert.Equal(writeEntry.Name, readEntry.Name);
+            Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
+            Assert.Equal(writeEntry.UserName, readEntry.UserName);
+            Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
+            Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
         }
     }
 }

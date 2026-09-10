@@ -221,19 +221,17 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             using (GZipStream compressor = new GZipStream(archive, CompressionMode.Compress, leaveOpen: true))
             {
+                await using TarWriterHolder writerHolder = CreateTarWriter(compressor, async);
+                TarWriter writer = writerHolder;
+
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file")
                 {
-                    await using TarWriterHolder writerHolder = CreateTarWriter(compressor, async);
-                    TarWriter writer = writerHolder;
+                    DataStream = new MemoryStream(fileContents)
+                };
+                await WriteEntry(writer, entry1, async);
 
-                    var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file")
-                    {
-                        DataStream = new MemoryStream(fileContents)
-                    };
-                    await WriteEntry(writer, entry1, async);
-
-                    var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "next-file");
-                    await WriteEntry(writer, entry2, async);
-                }
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "next-file");
+                await WriteEntry(writer, entry2, async);
             }
 
             archive.Position = 0;

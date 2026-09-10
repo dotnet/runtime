@@ -45,13 +45,11 @@ namespace System.Formats.Tar.Tests
         public async Task FileName_NullOrEmpty(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
-                TarWriter writer = writerHolder;
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
+            TarWriter writer = writerHolder;
 
-                await Assert.ThrowsAsync<ArgumentNullException>(() => WriteEntry(writer, null, "entryName", async));
-                await Assert.ThrowsAsync<ArgumentException>(() => WriteEntry(writer, string.Empty, "entryName", async));
-                        }
+            await Assert.ThrowsAsync<ArgumentNullException>(() => WriteEntry(writer, null, "entryName", async));
+            await Assert.ThrowsAsync<ArgumentException>(() => WriteEntry(writer, string.Empty, "entryName", async));
         }
 
         [Theory]
@@ -76,23 +74,21 @@ namespace System.Formats.Tar.Tests
 
                 await WriteEntry(writer, file1Path, null, async);
                 await WriteEntry(writer, file2Path, string.Empty, async);
-                        }
+            }
 
             archiveStream.Seek(0, SeekOrigin.Begin);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry first = await GetNextEntry(reader, async: async);
-                Assert.NotNull(first);
-                Assert.Equal(file1Name, first.Name);
+            TarEntry first = await GetNextEntry(reader, async: async);
+            Assert.NotNull(first);
+            Assert.Equal(file1Name, first.Name);
 
-                TarEntry second = await GetNextEntry(reader, async: async);
-                Assert.NotNull(second);
-                Assert.Equal(file2Name, second.Name);
+            TarEntry second = await GetNextEntry(reader, async: async);
+            Assert.NotNull(second);
+            Assert.Equal(file2Name, second.Name);
 
-                Assert.Null(await GetNextEntry(reader, async: async));
-                        }
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -118,29 +114,27 @@ namespace System.Formats.Tar.Tests
             }
 
             archive.Seek(0, SeekOrigin.Begin);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry entry = await GetNextEntry(reader, async: async);
-                Assert.NotNull(entry);
-                Assert.Equal(format, entry.Format);
-                Assert.Equal(fileName, entry.Name);
-                TarEntryType expectedEntryType = GetRegularFileEntryTypeForFormat(format);
-                Assert.Equal(expectedEntryType, entry.EntryType);
-                Assert.True(entry.Length > 0);
-                Assert.NotNull(entry.DataStream);
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
+            TarEntryType expectedEntryType = GetRegularFileEntryTypeForFormat(format);
+            Assert.Equal(expectedEntryType, entry.EntryType);
+            Assert.True(entry.Length > 0);
+            Assert.NotNull(entry.DataStream);
 
-                entry.DataStream.Seek(0, SeekOrigin.Begin);
-                using StreamReader dataReader = new StreamReader(entry.DataStream);
-                string dataContents = dataReader.ReadLine();
+            entry.DataStream.Seek(0, SeekOrigin.Begin);
+            using StreamReader dataReader = new StreamReader(entry.DataStream);
+            string dataContents = dataReader.ReadLine();
 
-                Assert.Equal(fileContents, dataContents);
+            Assert.Equal(fileContents, dataContents);
 
-                VerifyPlatformSpecificMetadata(filePath, entry);
+            VerifyPlatformSpecificMetadata(filePath, entry);
 
-                Assert.Null(await GetNextEntry(reader, async: async));
-            }
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -168,22 +162,20 @@ namespace System.Formats.Tar.Tests
             }
 
             archive.Seek(0, SeekOrigin.Begin);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry entry = await GetNextEntry(reader, async: async);
-                Assert.Equal(format, entry.Format);
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            Assert.Equal(format, entry.Format);
 
-                Assert.NotNull(entry);
-                Assert.Equal(dirName, entry.Name);
-                Assert.Equal(TarEntryType.Directory, entry.EntryType);
-                Assert.Null(entry.DataStream);
+            Assert.NotNull(entry);
+            Assert.Equal(dirName, entry.Name);
+            Assert.Equal(TarEntryType.Directory, entry.EntryType);
+            Assert.Null(entry.DataStream);
 
-                VerifyPlatformSpecificMetadata(dirPath, entry);
+            VerifyPlatformSpecificMetadata(dirPath, entry);
 
-                Assert.Null(await GetNextEntry(reader, async: async));
-            }
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -213,23 +205,21 @@ namespace System.Formats.Tar.Tests
             }
 
             archive.Seek(0, SeekOrigin.Begin);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry entry = await GetNextEntry(reader, async: async);
-                Assert.Equal(format, entry.Format);
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            Assert.Equal(format, entry.Format);
 
-                Assert.NotNull(entry);
-                Assert.Equal(linkName, entry.Name);
-                Assert.Equal(targetName, entry.LinkName);
-                Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
-                Assert.Null(entry.DataStream);
+            Assert.NotNull(entry);
+            Assert.Equal(linkName, entry.Name);
+            Assert.Equal(targetName, entry.LinkName);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            Assert.Null(entry.DataStream);
 
-                VerifyPlatformSpecificMetadata(linkPath, entry);
+            VerifyPlatformSpecificMetadata(linkPath, entry);
 
-                Assert.Null(await GetNextEntry(reader, async: async));
-            }
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]

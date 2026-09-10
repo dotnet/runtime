@@ -25,16 +25,14 @@ namespace System.Formats.Tar.Tests
                 SetRegularFile(oldRegularFile);
                 VerifyRegularFile(oldRegularFile, isWritable: true);
                 await WriteEntry(writer, oldRegularFile, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                V7TarEntry oldRegularFile = await GetNextEntry(reader, async: async) as V7TarEntry;
-                VerifyRegularFile(oldRegularFile, isWritable: false);
-                        }
+            V7TarEntry oldRegularFile = await GetNextEntry(reader, async: async) as V7TarEntry;
+            VerifyRegularFile(oldRegularFile, isWritable: false);
         }
 
         [Theory]
@@ -50,16 +48,14 @@ namespace System.Formats.Tar.Tests
                 SetHardLink(hardLink);
                 VerifyHardLink(hardLink);
                 await WriteEntry(writer, hardLink, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                V7TarEntry hardLink = await GetNextEntry(reader, async: async) as V7TarEntry;
-                VerifyHardLink(hardLink);
-                        }
+            V7TarEntry hardLink = await GetNextEntry(reader, async: async) as V7TarEntry;
+            VerifyHardLink(hardLink);
         }
 
         [Theory]
@@ -75,16 +71,14 @@ namespace System.Formats.Tar.Tests
                 SetSymbolicLink(symbolicLink);
                 VerifySymbolicLink(symbolicLink);
                 await WriteEntry(writer, symbolicLink, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                V7TarEntry symbolicLink = await GetNextEntry(reader, async: async) as V7TarEntry;
-                VerifySymbolicLink(symbolicLink);
-                        }
+            V7TarEntry symbolicLink = await GetNextEntry(reader, async: async) as V7TarEntry;
+            VerifySymbolicLink(symbolicLink);
         }
 
         [Theory]
@@ -100,16 +94,14 @@ namespace System.Formats.Tar.Tests
                 SetDirectory(directory);
                 VerifyDirectory(directory);
                 await WriteEntry(writer, directory, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                V7TarEntry directory = await GetNextEntry(reader, async: async) as V7TarEntry;
-                VerifyDirectory(directory);
-                        }
+            V7TarEntry directory = await GetNextEntry(reader, async: async) as V7TarEntry;
+            VerifyDirectory(directory);
         }
 
         [Theory]
@@ -120,12 +112,10 @@ namespace System.Formats.Tar.Tests
         public async Task Write_LinkEntry_EmptyLinkName_Throws(TarEntryType entryType, bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: false);
-                TarWriter writer = writerHolder;
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: false);
+            TarWriter writer = writerHolder;
 
-                await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, new V7TarEntry(entryType, "link"), async));
-                        }
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, new V7TarEntry(entryType, "link"), async));
         }
     }
 }

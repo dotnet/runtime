@@ -88,18 +88,16 @@ namespace System.Formats.Tar.Tests
 
                 PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
                 await WriteEntry(writer, gea, async);
-                        }
+            }
 
             archiveStream.Position = 0;
 
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry entry = await GetNextEntry(reader, async: async);
-                Assert.NotNull(entry);
-                await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, Path.Join(root.Path, "file"), overwrite: true, async));
-                        }
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            Assert.NotNull(entry);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, Path.Join(root.Path, "file"), overwrite: true, async));
         }
 
         [Theory]

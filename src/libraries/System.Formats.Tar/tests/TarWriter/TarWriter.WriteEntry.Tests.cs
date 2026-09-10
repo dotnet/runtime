@@ -76,39 +76,35 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(entry.DataStream);
                 entry.DataStream.ReadByte(); // Advance one byte, now the expected string would be "ello file"
 
-                {
-                    await using TarWriterHolder writerHolder = CreateTarWriter(destination, async, format, leaveOpen: true);
-                    TarWriter writer = writerHolder;
+                await using TarWriterHolder writerHolder = CreateTarWriter(destination, async, format, leaveOpen: true);
+                TarWriter writer = writerHolder;
 
-                    await WriteEntry(writer, entry, async);
-                    TarEntry dirEntry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
-                    await WriteEntry(writer, dirEntry, async); // To validate that next entry is not affected
-                }
+                await WriteEntry(writer, entry, async);
+                TarEntry dirEntry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
+                await WriteEntry(writer, dirEntry, async); // To validate that next entry is not affected
             }
 
             destination.Seek(0, SeekOrigin.Begin);
+            await using TarReaderHolder reader2Holder = CreateTarReader(destination, async, leaveOpen: false);
+            TarReader reader2 = reader2Holder;
+
+            TarEntry entry = await GetNextEntry(reader2, async: async);
+            Assert.NotNull(entry);
+            Assert.NotNull(entry.DataStream);
+
+            using (StreamReader streamReader = new StreamReader(entry.DataStream, leaveOpen: true))
             {
-                await using TarReaderHolder reader2Holder = CreateTarReader(destination, async, leaveOpen: false);
-                TarReader reader2 = reader2Holder;
-
-                TarEntry entry = await GetNextEntry(reader2, async: async);
-                Assert.NotNull(entry);
-                Assert.NotNull(entry.DataStream);
-
-                using (StreamReader streamReader = new StreamReader(entry.DataStream, leaveOpen: true))
-                {
-                    string contents = streamReader.ReadLine();
-                    Assert.Equal("ello file", contents);
-                }
-
-                TarEntry dirEntry = await GetNextEntry(reader2, async: async);
-                Assert.NotNull(dirEntry);
-                Assert.Equal(format, dirEntry.Format);
-                Assert.Equal(TarEntryType.Directory, dirEntry.EntryType);
-                Assert.Equal("dir", dirEntry.Name);
-
-                Assert.Null(await GetNextEntry(reader2, async: async));
+                string contents = streamReader.ReadLine();
+                Assert.Equal("ello file", contents);
             }
+
+            TarEntry dirEntry = await GetNextEntry(reader2, async: async);
+            Assert.NotNull(dirEntry);
+            Assert.Equal(format, dirEntry.Format);
+            Assert.Equal(TarEntryType.Directory, dirEntry.EntryType);
+            Assert.Equal("dir", dirEntry.Name);
+
+            Assert.Null(await GetNextEntry(reader2, async: async));
         }
 
         [Theory]
@@ -275,29 +271,27 @@ namespace System.Formats.Tar.Tests
             }
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
+            TarWriter writer = writerHolder;
+
+            await WriteEntry(writer, entry, async);
+                        }
+
+        archiveStream.Position = 0;
+        {
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+
+            TarEntry readEntry = await GetNextEntry(reader, async: async);
+            Assert.NotNull(readEntry);
+
+            Assert.Equal(timestamp, readEntry.ModificationTime);
+
+            if (readEntry is GnuTarEntry gnuReadEntry)
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
-                TarWriter writer = writerHolder;
-
-                await WriteEntry(writer, entry, async);
-                            }
-
-            archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
-
-                TarEntry readEntry = await GetNextEntry(reader, async: async);
-                Assert.NotNull(readEntry);
-
-                Assert.Equal(timestamp, readEntry.ModificationTime);
-
-                if (readEntry is GnuTarEntry gnuReadEntry)
-                {
-                    Assert.Equal(timestamp, gnuReadEntry.AccessTime);
-                    Assert.Equal(timestamp, gnuReadEntry.ChangeTime);
-        }
-            }
+                Assert.Equal(timestamp, gnuReadEntry.AccessTime);
+                Assert.Equal(timestamp, gnuReadEntry.ChangeTime);
+    }
         }
 
         [Theory]
@@ -502,28 +496,26 @@ namespace System.Formats.Tar.Tests
         public async Task WriteEntry_TooLongName_Throws(TarEntryFormat entryFormat, TarEntryType entryType, string name, bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
-                TarWriter writer = writerHolder;
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
+            TarWriter writer = writerHolder;
 
-                TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
-                await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
-        }
-        }
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
+    }
+    }
 
-        public static IEnumerable<object[]> WriteEntry_TooLongLinkName_Throws_TheoryData()
+    public static IEnumerable<object[]> WriteEntry_TooLongLinkName_Throws_TheoryData()
+    {
+        foreach (TarEntryType entryType in new[] { TarEntryType.SymbolicLink, TarEntryType.HardLink })
         {
-            foreach (TarEntryType entryType in new[] { TarEntryType.SymbolicLink, TarEntryType.HardLink })
+            foreach (string name in GetTooLongNamesTestData(NameCapabilities.Name))
             {
-                foreach (string name in GetTooLongNamesTestData(NameCapabilities.Name))
-                {
-                    yield return new object[] { TarEntryFormat.V7, entryType, name };
-                }
+                yield return new object[] { TarEntryFormat.V7, entryType, name };
+            }
 
-                foreach (string name in GetTooLongNamesTestData(NameCapabilities.NameAndPrefix))
-                {
-                    yield return new object[] { TarEntryFormat.Ustar, entryType, name };
-                }
+            foreach (string name in GetTooLongNamesTestData(NameCapabilities.NameAndPrefix))
+            {
+                yield return new object[] { TarEntryFormat.Ustar, entryType, name };
             }
         }
 
@@ -532,31 +524,29 @@ namespace System.Formats.Tar.Tests
         public async Task WriteEntry_TooLongLinkName_Throws(TarEntryFormat entryFormat, TarEntryType entryType, string linkName, bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
-                TarWriter writer = writerHolder;
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
+            TarWriter writer = writerHolder;
 
-                TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
-                entry.LinkName = linkName;
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
+            entry.LinkName = linkName;
 
-                await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
-        }
-        }
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
+    }
+    }
 
-        public static IEnumerable<object[]> WriteEntry_TooLongUserGroupName_Throws_TheoryData()
+    public static IEnumerable<object[]> WriteEntry_TooLongUserGroupName_Throws_TheoryData()
+    {
+        // Not testing Pax as it supports unlimited size uname/gname.
+        foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.Ustar, TarEntryFormat.Gnu })
         {
-            // Not testing Pax as it supports unlimited size uname/gname.
-            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.Ustar, TarEntryFormat.Gnu })
-            {
-                // Last character doesn't fit fully.
-                yield return new object[] { entryFormat, Repeat(OneByteCharacter, 32 + 1) };
-                yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 / 2 + 1) };
-                yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 / 4 + 1) };
+            // Last character doesn't fit fully.
+            yield return new object[] { entryFormat, Repeat(OneByteCharacter, 32 + 1) };
+            yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 / 2 + 1) };
+            yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 / 4 + 1) };
 
-                // Last character doesn't fit by one byte.
-                yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 - 2 + 1) + TwoBytesCharacter };
-                yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 - 4 + 1) + FourBytesCharacter };
-            }
+            // Last character doesn't fit by one byte.
+            yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 - 2 + 1) + TwoBytesCharacter };
+            yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 - 4 + 1) + FourBytesCharacter };
         }
 
         [Theory]
@@ -564,47 +554,45 @@ namespace System.Formats.Tar.Tests
         public async Task WriteEntry_TooLongUserName_Throws(TarEntryFormat entryFormat, string userName, bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
-                TarWriter writer = writerHolder;
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
+            TarWriter writer = writerHolder;
 
-                TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
-                PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
-                posixEntry.UserName = userName;
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.UserName = userName;
 
-                await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
-        }
-        }
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
+    }
+    }
 
-        [Theory]
-        [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_TheoryDataAndBoolean))]
-        public async Task WriteEntry_TooLongGroupName_Throws(TarEntryFormat entryFormat, string groupName, bool async)
+    [Theory]
+    [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_TheoryDataAndBoolean))]
+    public async Task WriteEntry_TooLongGroupName_Throws(TarEntryFormat entryFormat, string groupName, bool async)
+    {
+        using MemoryStream archiveStream = new MemoryStream();
         {
-            using MemoryStream archiveStream = new MemoryStream();
-            {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
-                TarWriter writer = writerHolder;
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async);
+            TarWriter writer = writerHolder;
 
-                TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
-                PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
-                posixEntry.GroupName = groupName;
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.GroupName = groupName;
 
-                await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
-        }
-        }
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
+    }
+    }
 
-        public static IEnumerable<object[]> WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_TheoryData()
+    public static IEnumerable<object[]> WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_TheoryData()
+    {
+        foreach (var entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
         {
-            foreach (var entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            foreach (var entryType in new[] { GetRegularFileEntryTypeForFormat(entryFormat), TarEntryType.Directory, TarEntryType.SymbolicLink })
             {
-                foreach (var entryType in new[] { GetRegularFileEntryTypeForFormat(entryFormat), TarEntryType.Directory, TarEntryType.SymbolicLink })
+                foreach (object[] asyncData in GetBooleanData())
                 {
-                    foreach (object[] asyncData in GetBooleanData())
-                    {
-                        bool async = (bool)asyncData[0];
-                        yield return new object[] { entryFormat, entryType, false, async };
-                        yield return new object[] { entryFormat, entryType, true, async };
-                    }
+                    bool async = (bool)asyncData[0];
+                    yield return new object[] { entryFormat, entryType, false, async };
+                    yield return new object[] { entryFormat, entryType, true, async };
                 }
             }
         }
@@ -622,23 +610,21 @@ namespace System.Formats.Tar.Tests
             Stream source = new WrappedStream(msSource, msSource.CanRead, msSource.CanWrite, canSeek: !unseekableStream);
             Stream destination = new WrappedStream(msDestination, msDestination.CanRead, msDestination.CanWrite, canSeek: !unseekableStream);
 
+            await using TarReaderHolder readerHolder = CreateTarReader(source, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+
             {
-                await using TarReaderHolder readerHolder = CreateTarReader(source, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+                await using TarWriterHolder writerHolder = CreateTarWriter(destination, async);
+                TarWriter writer = writerHolder;
 
+                TarEntry entry;
+                while ((entry = await GetNextEntry(reader, async: async)) != null)
                 {
-                    await using TarWriterHolder writerHolder = CreateTarWriter(destination, async);
-                    TarWriter writer = writerHolder;
+                    await WriteEntry(writer, entry, async);
+    }
+                            }
 
-                    TarEntry entry;
-                    while ((entry = await GetNextEntry(reader, async: async)) != null)
-                    {
-                        await WriteEntry(writer, entry, async);
-        }
-                                }
-
-                AssertExtensions.SequenceEqual(msSource.ToArray(), msDestination.ToArray());
-            }
+            AssertExtensions.SequenceEqual(msSource.ToArray(), msDestination.ToArray());
         }
 
         [Theory]

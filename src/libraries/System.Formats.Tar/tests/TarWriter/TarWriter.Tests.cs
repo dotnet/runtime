@@ -107,20 +107,18 @@ namespace System.Formats.Tar.Tests
 
                 PaxTarEntry paxEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt");
                 await WriteEntry(writer, paxEntry, async);
-                        }
+            }
             // The final records should get written, and the length should not be set because position cannot be read
 
             inner.Seek(0, SeekOrigin.Begin); // Rewind the base stream (wrapped cannot be rewound)
 
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(wrapped, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(wrapped, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry entry = await GetNextEntry(reader, async: async);
-                Assert.Equal(TarEntryFormat.Pax, entry.Format);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
-                Assert.Null(await GetNextEntry(reader, async: async));
-                        }
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            Assert.Equal(TarEntryFormat.Pax, entry.Format);
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -273,13 +271,11 @@ namespace System.Formats.Tar.Tests
             }
 
             archive.Seek(0, SeekOrigin.Begin);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry readEntry = await GetNextEntry(reader, async: async);
-                Assert.Equal(expectedChecksum, readEntry.Checksum);
-            }
+            TarEntry readEntry = await GetNextEntry(reader, async: async);
+            Assert.Equal(expectedChecksum, readEntry.Checksum);
         }
 
         private TarEntry CreateTarEntryAndGetExpectedChecksum(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, bool testEpoch, out int expectedChecksum)
@@ -480,7 +476,7 @@ namespace System.Formats.Tar.Tests
                             // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
                             expectedTimestampToTest = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
                             return;
-                        }
+            }
 
                         expectedTimestampChecksumToTest = 0;
                         // '\0\0\0\0\0\0\0\0\0\0\0\0' = 0

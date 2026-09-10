@@ -25,16 +25,14 @@ namespace System.Formats.Tar.Tests
                 SetRegularFile(regularFile);
                 VerifyRegularFile(regularFile, isWritable: true);
                 await WriteEntry(writer, regularFile, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry regularFile = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                VerifyRegularFile(regularFile, isWritable: false);
-                        }
+            GnuTarEntry regularFile = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            VerifyRegularFile(regularFile, isWritable: false);
         }
 
         [Theory]
@@ -50,16 +48,14 @@ namespace System.Formats.Tar.Tests
                 SetHardLink(hardLink);
                 VerifyHardLink(hardLink);
                 await WriteEntry(writer, hardLink, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry hardLink = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                VerifyHardLink(hardLink);
-                        }
+            GnuTarEntry hardLink = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            VerifyHardLink(hardLink);
         }
 
         [Theory]
@@ -75,16 +71,14 @@ namespace System.Formats.Tar.Tests
                 SetSymbolicLink(symbolicLink);
                 VerifySymbolicLink(symbolicLink);
                 await WriteEntry(writer, symbolicLink, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry symbolicLink = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                VerifySymbolicLink(symbolicLink);
-                        }
+            GnuTarEntry symbolicLink = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            VerifySymbolicLink(symbolicLink);
         }
 
         [Theory]
@@ -100,16 +94,14 @@ namespace System.Formats.Tar.Tests
                 SetDirectory(directory);
                 VerifyDirectory(directory);
                 await WriteEntry(writer, directory, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry directory = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                VerifyDirectory(directory);
-                        }
+            GnuTarEntry directory = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            VerifyDirectory(directory);
         }
 
         [Theory]
@@ -125,16 +117,14 @@ namespace System.Formats.Tar.Tests
                 SetCharacterDevice(charDevice);
                 VerifyCharacterDevice(charDevice);
                 await WriteEntry(writer, charDevice, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry charDevice = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                VerifyCharacterDevice(charDevice);
-                        }
+            GnuTarEntry charDevice = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            VerifyCharacterDevice(charDevice);
         }
 
         [Theory]
@@ -150,16 +140,14 @@ namespace System.Formats.Tar.Tests
                 SetBlockDevice(blockDevice);
                 VerifyBlockDevice(blockDevice);
                 await WriteEntry(writer, blockDevice, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry blockDevice = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                VerifyBlockDevice(blockDevice);
-                        }
+            GnuTarEntry blockDevice = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            VerifyBlockDevice(blockDevice);
         }
 
         [Theory]
@@ -175,16 +163,14 @@ namespace System.Formats.Tar.Tests
                 SetFifo(fifo);
                 VerifyFifo(fifo);
                 await WriteEntry(writer, fifo, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry fifo = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                VerifyFifo(fifo);
-                        }
+            GnuTarEntry fifo = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            VerifyFifo(fifo);
         }
 
         [Theory]
@@ -212,17 +198,15 @@ namespace System.Formats.Tar.Tests
                     entry.LinkName = "linktarget";
                 }
                 await WriteEntry(writer, entry, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                Assert.Equal(entryType, entry.EntryType);
-                Assert.Equal(longName, entry.Name);
-                        }
+            GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            Assert.Equal(entryType, entry.EntryType);
+            Assert.Equal(longName, entry.Name);
         }
 
         [Theory]
@@ -243,18 +227,16 @@ namespace System.Formats.Tar.Tests
                 GnuTarEntry entry = new GnuTarEntry(entryType, "file.txt");
                 entry.LinkName = longLinkName;
                 await WriteEntry(writer, entry, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                Assert.Equal(entryType, entry.EntryType);
-                Assert.Equal("file.txt", entry.Name);
-                Assert.Equal(longLinkName, entry.LinkName);
-                        }
+            GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            Assert.Equal(entryType, entry.EntryType);
+            Assert.Equal("file.txt", entry.Name);
+            Assert.Equal(longLinkName, entry.LinkName);
         }
 
         [Theory]
@@ -276,18 +258,16 @@ namespace System.Formats.Tar.Tests
                 GnuTarEntry entry = new GnuTarEntry(entryType, longName);
                 entry.LinkName = longLinkName;
                 await WriteEntry(writer, entry, async);
-                        }
+            }
 
             archiveStream.Position = 0;
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
-                Assert.Equal(entryType, entry.EntryType);
-                Assert.Equal(longName, entry.Name);
-                Assert.Equal(longLinkName, entry.LinkName);
-                        }
+            GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
+            Assert.Equal(entryType, entry.EntryType);
+            Assert.Equal(longName, entry.Name);
+            Assert.Equal(longLinkName, entry.LinkName);
         }
 
         [Theory]
@@ -298,12 +278,10 @@ namespace System.Formats.Tar.Tests
         public async Task Write_LinkEntry_EmptyLinkName_Throws(TarEntryType entryType, bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: false);
-                TarWriter writer = writerHolder;
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: false);
+            TarWriter writer = writerHolder;
 
-                await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, new GnuTarEntry(entryType, "link"), async));
-                        }
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, new GnuTarEntry(entryType, "link"), async));
         }
     }
 }

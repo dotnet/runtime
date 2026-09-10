@@ -33,22 +33,20 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
         }
 
         archive.Position = 0;
-        {
-            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
-            TarReader reader = readerHolder;
+        await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+        TarReader reader = readerHolder;
 
-            TarEntry entry = await GetNextEntry(reader, async: async);
-            Assert.NotNull(entry);
-            Assert.Equal(format, entry.Format);
-            Assert.Equal(junctionPath, entry.Name);
-            Assert.Equal(targetPath, entry.LinkName);
-            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
-            Assert.Null(entry.DataStream);
+        TarEntry entry = await GetNextEntry(reader, async: async);
+        Assert.NotNull(entry);
+        Assert.Equal(format, entry.Format);
+        Assert.Equal(junctionPath, entry.Name);
+        Assert.Equal(targetPath, entry.LinkName);
+        Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+        Assert.Null(entry.DataStream);
 
-            VerifyPlatformSpecificMetadata(junctionPath, entry);
+        VerifyPlatformSpecificMetadata(junctionPath, entry);
 
-            Assert.Null(await GetNextEntry(reader, async: async));
-        }
+        Assert.Null(await GetNextEntry(reader, async: async));
     }
 
     [ConditionalTheory]
@@ -62,11 +60,9 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
         }
 
         using MemoryStream archive = new MemoryStream();
-        {
-            await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, format);
-            TarWriter writer = writerHolder;
+        await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, format);
+        TarWriter writer = writerHolder;
 
-            await Assert.ThrowsAsync<IOException>(() => WriteEntry(writer, appExecLinkPath, "NonSymlinkReparsePoint", async));
-        }
+        await Assert.ThrowsAsync<IOException>(() => WriteEntry(writer, appExecLinkPath, "NonSymlinkReparsePoint", async));
     }
 }
