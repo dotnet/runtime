@@ -33,12 +33,10 @@ namespace System.Formats.Tar.Tests
             using (FileStream streamToCompress = File.Open(archivePath, createOptions))
             using (GZipStream compressorStream = new GZipStream(streamToCompress, CompressionMode.Compress))
             {
-                {
-                    await using TarWriterHolder writerHolder = CreateTarWriter(compressorStream, async);
-                    TarWriter writer = writerHolder;
+                await using TarWriterHolder writerHolder = CreateTarWriter(compressorStream, async);
+                TarWriter writer = writerHolder;
 
-                    await WriteEntry(writer, filePath, fileName, async);
-                                }
+                await WriteEntry(writer, filePath, fileName, async);
             }
 
             FileInfo fileInfo = new FileInfo(archivePath);
@@ -56,16 +54,14 @@ namespace System.Formats.Tar.Tests
             using (FileStream streamToDecompress = File.Open(archivePath, readOptions))
             using (GZipStream decompressorStream = new GZipStream(streamToDecompress, CompressionMode.Decompress))
             {
-                {
-                    await using TarReaderHolder readerHolder = CreateTarReader(decompressorStream, async, leaveOpen: false);
-                    TarReader reader = readerHolder;
+                await using TarReaderHolder readerHolder = CreateTarReader(decompressorStream, async, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    TarEntry entry = await GetNextEntry(reader, async: async);
-                    Assert.NotNull(entry);
-                    Assert.Equal(TarEntryFormat.Pax, entry.Format);
-                    Assert.Equal(fileName, entry.Name);
-                    Assert.Null(await GetNextEntry(reader, async: async));
-                                }
+                TarEntry entry = await GetNextEntry(reader, async: async);
+                Assert.NotNull(entry);
+                Assert.Equal(TarEntryFormat.Pax, entry.Format);
+                Assert.Equal(fileName, entry.Name);
+                Assert.Null(await GetNextEntry(reader, async: async));
             }
         }
 

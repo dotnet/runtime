@@ -21,10 +21,10 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry regularFile = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
-                SetRegularFile(regularFile);
-                VerifyRegularFile(regularFile, isWritable: true);
-                await WriteEntry(writer, regularFile, async);
+                GnuTarEntry regularFileToWrite = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                SetRegularFile(regularFileToWrite);
+                VerifyRegularFile(regularFileToWrite, isWritable: true);
+                await WriteEntry(writer, regularFileToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -44,10 +44,10 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry hardLink = new GnuTarEntry(TarEntryType.HardLink, InitialEntryName);
-                SetHardLink(hardLink);
-                VerifyHardLink(hardLink);
-                await WriteEntry(writer, hardLink, async);
+                GnuTarEntry hardLinkToWrite = new GnuTarEntry(TarEntryType.HardLink, InitialEntryName);
+                SetHardLink(hardLinkToWrite);
+                VerifyHardLink(hardLinkToWrite);
+                await WriteEntry(writer, hardLinkToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -67,10 +67,10 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry symbolicLink = new GnuTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
-                SetSymbolicLink(symbolicLink);
-                VerifySymbolicLink(symbolicLink);
-                await WriteEntry(writer, symbolicLink, async);
+                GnuTarEntry symbolicLinkToWrite = new GnuTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
+                SetSymbolicLink(symbolicLinkToWrite);
+                VerifySymbolicLink(symbolicLinkToWrite);
+                await WriteEntry(writer, symbolicLinkToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -90,10 +90,10 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry directory = new GnuTarEntry(TarEntryType.Directory, InitialEntryName);
-                SetDirectory(directory);
-                VerifyDirectory(directory);
-                await WriteEntry(writer, directory, async);
+                GnuTarEntry directoryToWrite = new GnuTarEntry(TarEntryType.Directory, InitialEntryName);
+                SetDirectory(directoryToWrite);
+                VerifyDirectory(directoryToWrite);
+                await WriteEntry(writer, directoryToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -113,10 +113,10 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry charDevice = new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
-                SetCharacterDevice(charDevice);
-                VerifyCharacterDevice(charDevice);
-                await WriteEntry(writer, charDevice, async);
+                GnuTarEntry charDeviceToWrite = new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
+                SetCharacterDevice(charDeviceToWrite);
+                VerifyCharacterDevice(charDeviceToWrite);
+                await WriteEntry(writer, charDeviceToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -136,10 +136,10 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry blockDevice = new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName);
-                SetBlockDevice(blockDevice);
-                VerifyBlockDevice(blockDevice);
-                await WriteEntry(writer, blockDevice, async);
+                GnuTarEntry blockDeviceToWrite = new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName);
+                SetBlockDevice(blockDeviceToWrite);
+                VerifyBlockDevice(blockDeviceToWrite);
+                await WriteEntry(writer, blockDeviceToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -159,10 +159,10 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry fifo = new GnuTarEntry(TarEntryType.Fifo, InitialEntryName);
-                SetFifo(fifo);
-                VerifyFifo(fifo);
-                await WriteEntry(writer, fifo, async);
+                GnuTarEntry fifoToWrite = new GnuTarEntry(TarEntryType.Fifo, InitialEntryName);
+                SetFifo(fifoToWrite);
+                VerifyFifo(fifoToWrite);
+                await WriteEntry(writer, fifoToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -192,12 +192,12 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry entry = new GnuTarEntry(entryType, longName);
+                GnuTarEntry entryToWrite = new GnuTarEntry(entryType, longName);
                 if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
                 {
-                    entry.LinkName = "linktarget";
+                    entryToWrite.LinkName = "linktarget";
                 }
-                await WriteEntry(writer, entry, async);
+                await WriteEntry(writer, entryToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -224,9 +224,9 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry entry = new GnuTarEntry(entryType, "file.txt");
-                entry.LinkName = longLinkName;
-                await WriteEntry(writer, entry, async);
+                GnuTarEntry entryToWrite = new GnuTarEntry(entryType, "file.txt");
+                entryToWrite.LinkName = longLinkName;
+                await WriteEntry(writer, entryToWrite, async);
             }
 
             archiveStream.Position = 0;
@@ -255,9 +255,9 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                GnuTarEntry entry = new GnuTarEntry(entryType, longName);
-                entry.LinkName = longLinkName;
-                await WriteEntry(writer, entry, async);
+                GnuTarEntry entryToWrite = new GnuTarEntry(entryType, longName);
+                entryToWrite.LinkName = longLinkName;
+                await WriteEntry(writer, entryToWrite, async);
             }
 
             archiveStream.Position = 0;
