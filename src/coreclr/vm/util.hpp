@@ -201,8 +201,8 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
 // THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_COOP_REGION_BEGIN/END block.
-#define GCX_COOP_REGION_BEGIN()         GCX_COOP_NO_DTOR(); try { do {} while (0)
-#define GCX_COOP_REGION_END()           } catch (...) { GCX_COOP_NO_DTOR_END(); throw; } GCX_COOP_NO_DTOR_END(); do {} while (0)
+#define GCX_COOP_REGION_BEGIN()         { GCX_COOP_NO_DTOR(); try { do {} while (0)
+#define GCX_COOP_REGION_END()           } catch (...) { GCX_COOP_NO_DTOR_END(); throw; } GCX_COOP_NO_DTOR_END(); } do {} while (0)
 #else
 #define GCX_COOP_REGION_BEGIN()         { GCX_COOP(); { do {} while (0)
 #define GCX_COOP_REGION_END()           } } do {} while (0)
@@ -227,8 +227,8 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
 // THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_PREEMP_REGION_BEGIN/END block.
-#define GCX_PREEMP_REGION_BEGIN()       GCX_PREEMP_NO_DTOR(); try { do {} while (0)
-#define GCX_PREEMP_REGION_END()         } catch (...) { GCX_PREEMP_NO_DTOR_END(); throw; } GCX_PREEMP_NO_DTOR_END(); do {} while (0)
+#define GCX_PREEMP_REGION_BEGIN()       { GCX_PREEMP_NO_DTOR(); try { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } catch (...) { GCX_PREEMP_NO_DTOR_END(); throw; } GCX_PREEMP_NO_DTOR_END(); } do {} while (0)
 #else
 #define GCX_PREEMP_REGION_BEGIN()       { GCX_PREEMP(); { do {} while (0)
 #define GCX_PREEMP_REGION_END()         } } do {} while (0)
@@ -263,8 +263,8 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
 // THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_MAYBE_COOP_REGION_BEGIN/END block.
-#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  GCX_MAYBE_COOP_NO_DTOR(_cond); try { do {} while (0)
-#define GCX_MAYBE_COOP_REGION_END()         } catch (...) { GCX_MAYBE_COOP_NO_DTOR_END(); throw; } GCX_MAYBE_COOP_NO_DTOR_END(); do {} while (0)
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { GCX_MAYBE_COOP_NO_DTOR(_cond); try { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } catch (...) { GCX_MAYBE_COOP_NO_DTOR_END(); throw; } GCX_MAYBE_COOP_NO_DTOR_END(); } do {} while (0)
 #else
 #define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { GCX_MAYBE_COOP(_cond); { do {} while (0)
 #define GCX_MAYBE_COOP_REGION_END()         } } do {} while (0)
