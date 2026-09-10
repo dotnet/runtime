@@ -192,12 +192,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static DependencyNodeCore<NodeFactory> GetVirtualMethodImplNode(NodeFactory factory, MethodDesc method)
         {
+            if (!factory.CompilationModuleGroup.ContainsMethodBody(method, false))
+                return null;
+
             try
             {
-                if (!factory.TryGetCompilableMethodNode(method, out MethodWithGCInfo methodNode))
-                    return null;
                 factory.DetectGenericCycles(method, method);
-                return methodNode;
+                return factory.CompiledMethodNode(method);
             }
             catch (TypeSystemException)
             {

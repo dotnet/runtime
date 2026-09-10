@@ -43,10 +43,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     try
                     {
                         context.DetectGenericCycles(Type, method);
-                        if (context.TryGetCompilableMethodNode(method, out MethodWithGCInfo methodNode))
-                        {
-                            dependencies.Add(methodNode, $"Method on type {Type.ToString()}");
-                        }
+                        dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
                     }
                     catch (TypeSystemException)
                     {

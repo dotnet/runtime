@@ -22,7 +22,7 @@ namespace ILCompiler
         {
         }
 
-        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
+        protected sealed override bool ContainsMethodBodyCore(MethodDesc method, bool unboxingStub)
         {
             if (!_profileGuidedCompileRestrictionSet)
                 throw new InternalCompilerErrorException("Called ContainsMethodBody without setting profile guided restriction");

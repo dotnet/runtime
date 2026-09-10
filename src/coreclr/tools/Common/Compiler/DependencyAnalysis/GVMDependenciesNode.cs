@@ -277,7 +277,10 @@ namespace ILCompiler.DependencyAnalysis
 #if !READYTORUN
             return factory.GenericVirtualMethodImpl(method);
 #else
-            return factory.TryGetCompilableMethodNode(method, out MethodWithGCInfo methodNode) ? methodNode : null;
+            if (!factory.CompilationModuleGroup.ContainsMethodBody(method, false))
+                return null;
+
+            return factory.CompiledMethodNode(method);
 #endif
         }
     }
