@@ -38,7 +38,7 @@ namespace System.Reflection.Tests
             object value = valueArgument ? 42 : new object();
             object[] arguments = { value };
 
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
                 var allocated = (MutableConstructorTarget)constructor.Invoke(arguments);
                 Assert.NotSame(existing, allocated);

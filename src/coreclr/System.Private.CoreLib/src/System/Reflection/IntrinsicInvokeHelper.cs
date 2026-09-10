@@ -12,7 +12,7 @@ namespace System.Reflection
     // This type is included in SystemDomain::IsReflectionInvocationMethod for caller stack walks.
     internal static unsafe class IntrinsicInvokeHelper
     {
-        private const int SpecializationThreshold = 100;
+        private const int SpecializationThreshold = 10_000;
         private const MethodBase.InvokerStrategy StrategyDetermined =
             MethodBase.InvokerStrategy.StrategyDetermined_Obj4Args |
             MethodBase.InvokerStrategy.StrategyDetermined_ObjSpanArgs |
@@ -53,7 +53,7 @@ namespace System.Reflection
                 Volatile.Write(ref state.Thunk, (IntPtr)thunk);
             }
 
-            if (RuntimeFeature.IsDynamicCodeSupported &&
+            if (RuntimeFeature.IsDynamicCodeCompiled &&
                 !(LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke) &&
                 Interlocked.Increment(ref state.InvocationCount) >= SpecializationThreshold)
             {
