@@ -562,13 +562,20 @@ typedef INT32 FC_BOOL_ARG;
 
 #define FC_ACCESS_BOOL(x) ((BYTE)x != 0)
 
-// FCALL contracts come in two forms:
+// FCALL contracts come in three forms:
 //
 // Short form that should be used if the FCALL contract does not have any extras like preconditions, failure injection. Example:
 //
 // FCIMPL0(void, foo)
 // {
 //     FCALL_CONTRACT;
+//     ...
+//
+// Short form for FCALLs that set up a frame before throwing or triggering GC:
+//
+// FCIMPL0(void, foo)
+// {
+//     FCALL_CONTRACT_WITH_FRAME;
 //     ...
 //
 // Long form that should be used otherwise. Example:
@@ -584,19 +591,15 @@ typedef INT32 FC_BOOL_ARG;
 // FCALL_CHECK defines the actual contract conditions required for FCALLs
 //
 #define FCALL_CHECK \
-        THROWS; \
-        DISABLED(GC_TRIGGERS); /* FCALLS with HELPER frames have issues with GC_TRIGGERS */ \
+        NOTHROW; \
+        GC_NOTRIGGER; \
         MODE_COOPERATIVE;
 
-//
-// FCALL_CONTRACT should be the following shortcut:
-//
-// #define FCALL_CONTRACT   CONTRACTL { FCALL_CHECK; } CONTRACTL_END;
-//
-#define FCALL_CONTRACT \
+#define FCALL_CONTRACT CONTRACTL { FCALL_CHECK; } CONTRACTL_END
+
+#define FCALL_CONTRACT_WITH_FRAME \
     STATIC_CONTRACT_THROWS; \
-    /* FCALLS are a special case contract wise, they are "NOTRIGGER, unless you setup a frame" */ \
-    STATIC_CONTRACT_GC_NOTRIGGER; \
+    STATIC_CONTRACT_GC_TRIGGERS; \
     STATIC_CONTRACT_MODE_COOPERATIVE
 
 #endif //__FCall_h__
