@@ -25,7 +25,6 @@ namespace Internal.Runtime.InteropServices
         private static readonly Dictionary<string, ComponentLoadContext> s_loadContextsByIdentifier = new();
 
         private static readonly HashSet<string> s_defaultResolversByPath = new(s_pathComparer);
-        private static readonly HashSet<string> s_loadedAssembliesByPath = new(s_pathComparer);
 
         // Keep in sync with coreclr_load_context in src/native/corehost/coreclr_delegates.h.
         [StructLayout(LayoutKind.Sequential)]
@@ -100,21 +99,7 @@ namespace Internal.Runtime.InteropServices
         }
 
         [RequiresUnreferencedCode("The trimmer might remove assemblies that are loaded by this method", Url = "https://aka.ms/dotnet-illink/nativehost")]
-        internal static void LoadInDefaultContext(string componentAssemblyPath)
-        {
-            lock (s_loadedAssembliesByPath)
-            {
-                if (s_loadedAssembliesByPath.Contains(componentAssemblyPath))
-                    return;
-
-                AddResolverToDefaultContext(componentAssemblyPath);
-                AssemblyLoadContext.Default.LoadFromAssemblyPath(componentAssemblyPath);
-                s_loadedAssembliesByPath.Add(componentAssemblyPath);
-            }
-        }
-
-        [RequiresUnreferencedCode("The trimmer might remove assemblies that are loaded by this method", Url = "https://aka.ms/dotnet-illink/nativehost")]
-        private static void AddResolverToDefaultContext(string componentAssemblyPath)
+        internal static void AddResolverToDefaultContext(string componentAssemblyPath)
         {
             lock (s_defaultResolversByPath)
             {

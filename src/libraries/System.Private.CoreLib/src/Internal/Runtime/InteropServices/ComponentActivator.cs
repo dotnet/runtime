@@ -124,7 +124,11 @@ namespace Internal.Runtime.InteropServices
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
-            static void LoadAssemblyLocal(string assemblyPath) => ComponentLoadContextManager.LoadInDefaultContext(assemblyPath);
+            static void LoadAssemblyLocal(string assemblyPath)
+            {
+                ComponentLoadContextManager.AddResolverToDefaultContext(assemblyPath);
+                AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+            }
         }
 
         /// <summary>
