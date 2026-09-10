@@ -143,7 +143,6 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(contextBuffer);
                 CryptographicOperations.ZeroMemory(secretBuffer);
             }
         }
@@ -269,23 +268,15 @@ namespace System.Security.Cryptography
             int length = checked(VersionLabel.Length + SuiteId.Length + sizeof(ushort) + label.Length + sizeof(ushort));
             const int MaxStackPrefixLength = 64;
             Span<byte> prefixBuffer = stackalloc byte[MaxStackPrefixLength];
+            Span<byte> prefix = prefixBuffer.Slice(0, length);
+            VersionLabel.CopyTo(prefix);
+            int offset = VersionLabel.Length;
+            SuiteId.CopyTo(prefix.Slice(offset));
+            offset += SuiteId.Length;
+            offset += WriteLengthPrefixed(label, prefix.Slice(offset));
+            BinaryPrimitives.WriteUInt16BigEndian(prefix.Slice(offset), checked((ushort)output.Length));
 
-            try
-            {
-                Span<byte> prefix = prefixBuffer.Slice(0, length);
-                VersionLabel.CopyTo(prefix);
-                int offset = VersionLabel.Length;
-                SuiteId.CopyTo(prefix.Slice(offset));
-                offset += SuiteId.Length;
-                offset += WriteLengthPrefixed(label, prefix.Slice(offset));
-                BinaryPrimitives.WriteUInt16BigEndian(prefix.Slice(offset), checked((ushort)output.Length));
-
-                Derive(ikm, prefix, context, output);
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(prefixBuffer);
-            }
+            Derive(ikm, prefix, context, output);
         }
 
         private static int WriteLengthPrefixed(ReadOnlySpan<byte> value, Span<byte> destination)

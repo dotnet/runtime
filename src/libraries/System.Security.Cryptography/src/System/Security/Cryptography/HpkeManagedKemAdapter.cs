@@ -133,26 +133,18 @@ namespace System.Security.Cryptography
                 checked(sizeof(ushort) + VersionLabel.Length + suiteId.Length + label.Length + info.Length);
             const int MaxStackLabeledInfoLength = 512;
             Span<byte> labeledInfoBuffer = stackalloc byte[MaxStackLabeledInfoLength];
+            Span<byte> destination = labeledInfoBuffer.Slice(0, labeledInfoLength);
+            BinaryPrimitives.WriteUInt16BigEndian(destination, checked((ushort)output.Length));
+            int offset = sizeof(ushort);
+            VersionLabel.CopyTo(destination.Slice(offset));
+            offset += VersionLabel.Length;
+            suiteId.CopyTo(destination.Slice(offset));
+            offset += suiteId.Length;
+            label.CopyTo(destination.Slice(offset));
+            offset += label.Length;
+            info.CopyTo(destination.Slice(offset));
 
-            try
-            {
-                Span<byte> destination = labeledInfoBuffer.Slice(0, labeledInfoLength);
-                BinaryPrimitives.WriteUInt16BigEndian(destination, checked((ushort)output.Length));
-                int offset = sizeof(ushort);
-                VersionLabel.CopyTo(destination.Slice(offset));
-                offset += VersionLabel.Length;
-                suiteId.CopyTo(destination.Slice(offset));
-                offset += suiteId.Length;
-                label.CopyTo(destination.Slice(offset));
-                offset += label.Length;
-                info.CopyTo(destination.Slice(offset));
-
-                HKDF.Expand(KeyDerivationKdf.HkdfHashAlgorithm, prk, output, destination);
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(labeledInfoBuffer);
-            }
+            HKDF.Expand(KeyDerivationKdf.HkdfHashAlgorithm, prk, output, destination);
         }
 
         internal abstract void DeriveKeyPair(ReadOnlySpan<byte> ikm);
