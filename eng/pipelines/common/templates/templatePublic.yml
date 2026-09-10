@@ -20,7 +20,7 @@ resources:
 
 # Test-only: do not allocate agents for unrelated public pipelines.
 stages:
-- ${{ if in(variables['Build.DefinitionName'], 'runtime', 'runtime-ioslike') }}:
+- ${{ if eq(variables['Build.DefinitionName'], 'runtime') }}:
   - ${{ parameters.stages }}
 - ${{ else }}:
   - stage: Skipped
