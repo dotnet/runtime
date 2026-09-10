@@ -92,7 +92,18 @@ public class AttributeFilteringTests
     public void OuterLoopPriority(string attribute, int priority, Disposition expected)
         => Verify(attribute, "windows", "mono", priority, expected, TestPlatforms.Windows);
 
-    private static void Verify(string attribute, string? targetOS, string? runtime, int priority, Disposition expected, TestPlatforms platforms, string? skipReason = null, bool? conditionRuns = null)
+    [Theory]
+    [InlineData("windows", "mono", Disposition.Skip)]
+    [InlineData("windows", "coreclr", Disposition.Run)]
+    [InlineData("linux", "mono", Disposition.Run)]
+    [InlineData("linux", "coreclr", Disposition.Run)]
+    [InlineData("anyos", "mono", Disposition.Conditional)]
+    [InlineData("anyos", "coreclr", Disposition.Run)]
+    public void ActiveIssueOnReferencedEntryPoint(string targetOS, string runtime, Disposition expected)
+        => Verify($"ActiveIssue({ReasonArgument}, TestPlatforms.Windows, TargetFrameworkMonikers.Any, TestRuntimes.Mono)",
+            targetOS, runtime, 0, expected, TestPlatforms.Windows, $"ActiveIssue: {Reason}", fromReference: true);
+
+    private static void Verify(string attribute, string? targetOS, string? runtime, int priority, Disposition expected, TestPlatforms platforms, string? skipReason = null, bool? conditionRuns = null, bool fromReference = false)
     {
         string source = $$"""
             using Xunit;
@@ -103,7 +114,7 @@ public class AttributeFilteringTests
                 public static bool FalseCondition => false;
                 [Fact]
                 [{{attribute}}]
-                public static void TestBody() { Calls++; }
+                {{(fromReference ? "public static int TestBody() { Calls++; return 100; }" : "public static void TestBody() { Calls++; }")}}
             }
             """;
 
@@ -113,12 +124,12 @@ public class AttributeFilteringTests
             typeof(object).Assembly.Location,
             typeof(Console).Assembly.Location,
             typeof(FactAttribute).Assembly.Location,
+            typeof(Assert).Assembly.Location,
             typeof(ActiveIssueAttribute).Assembly.Location,
             typeof(XUnitWrapperLibrary.TestSummary).Assembly.Location,
             Path.Combine(runtimeDirectory, "System.Runtime.dll"),
             Path.Combine(runtimeDirectory, "System.Collections.dll"),
-            Path.Combine(runtimeDirectory, "System.Diagnostics.TraceSource.dll"),
-            Path.Combine(runtimeDirectory, "System.Console.dll")
+            Path.Combine(runtimeDirectory, "System.Diagnostics.TraceSource.dll")
         ];
         CSharpCompilation input = CSharpCompilation.Create(
             "AttributeTest",
@@ -126,6 +137,16 @@ public class AttributeFilteringTests
             referencePaths.Distinct().Select(path => MetadataReference.CreateFromFile(path)),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         AssertNoErrors(input.GetDiagnostics());
+        byte[]? testAssemblyImage = null;
+        if (fromReference)
+        {
+            using var testAssembly = new MemoryStream();
+            Assert.True(input.Emit(testAssembly).Success);
+            testAssemblyImage = testAssembly.ToArray();
+            input = CSharpCompilation.Create("ReferencedAttributeTest",
+                references: input.References.Append(MetadataReference.CreateFromImage(testAssemblyImage)),
+                options: input.Options);
+        }
         input = input.WithOptions(input.Options.WithOutputKind(OutputKind.ConsoleApplication));
 
         // Exercise the ordinary, process-isolated, and merged runner reporters.
@@ -182,6 +203,12 @@ public class AttributeFilteringTests
                 var loadContext = new AssemblyLoadContext("AttributeTest", isCollectible: true);
                 try
                 {
+                    Assembly? testAssembly = null;
+                    if (testAssemblyImage is not null)
+                    {
+                        using var referencePe = new MemoryStream(testAssemblyImage);
+                        testAssembly = loadContext.LoadFromStream(referencePe);
+                    }
                     pe.Position = 0;
                     Assembly assembly = loadContext.LoadFromStream(pe);
                     Assert.Equal(100, assembly.EntryPoint!.Invoke(null, null));
@@ -189,7 +216,7 @@ public class AttributeFilteringTests
                         || (platforms.HasFlag(TestPlatforms.Linux) && OperatingSystem.IsLinux());
                     bool runs = expected == Disposition.Run
                         || (expected == Disposition.Conditional && (conditionRuns ?? !platformMatches));
-                    Assert.Equal(runs ? 1 : 0, assembly.GetType("TestClass")!.GetField("Calls")!.GetValue(null));
+                    Assert.Equal(runs ? 1 : 0, (testAssembly ?? assembly).GetType("TestClass")!.GetField("Calls")!.GetValue(null));
                 }
                 finally
                 {

@@ -854,11 +854,14 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
                         else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
                         {
-                            testInfos = FilterForSkippedRuntime(
-                                FilterForSkippedTargetFrameworkMonikers(
-                                    DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason),
-                                    (int)filterAttribute.ConstructorArguments[2].Value!, skipReason),
-                                (int)filterAttribute.ConstructorArguments[3].Value!, options, skipReason);
+                            var skippedFrameworks = (Xunit.TargetFrameworkMonikers)(int)filterAttribute.ConstructorArguments[2].Value!;
+                            // All dimensions must match. Leave platform checks to the decorator,
+                            // which can defer them to execution time for multi-platform builds.
+                            if (skippedFrameworks.HasFlag(Xunit.TargetFrameworkMonikers.Netcoreapp)
+                                && IsRuntimeSkipped((int)filterAttribute.ConstructorArguments[3].Value!, options))
+                            {
+                                testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason);
+                            }
                         }
                         else
                         {
@@ -1132,17 +1135,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options, string? skipReason = null)
     {
-        Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
-        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
-        if (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
-        {
-            if (skipReason != null)
-            {
-                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
-            }
-            return ImmutableArray<ITestInfo>.Empty;
-        }
-        else if (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
+        if (IsRuntimeSkipped(skippedRuntimeValue, options))
         {
             if (skipReason != null)
             {
@@ -1151,6 +1144,14 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return ImmutableArray<ITestInfo>.Empty;
         }
         return testInfos;
+    }
+
+    private static bool IsRuntimeSkipped(int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
+    {
+        Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
+        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
+        return (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
+            || (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR));
     }
 
     private static ImmutableArray<ITestInfo> DecorateWithSkipOnPlatform(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options, string? skipReason = null)
