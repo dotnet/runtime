@@ -4,9 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace ILCompiler.Compiler.Tests.Assets.SwiftTypes;
+namespace TypeSystemTests.TestData.SwiftTypes;
 
-[AttributeUsage(AttributeTargets.Struct)]
 public sealed class ExpectedLoweringAttribute : Attribute
 {
     public ExpectedLoweringAttribute()

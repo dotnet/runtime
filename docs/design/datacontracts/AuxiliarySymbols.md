@@ -7,6 +7,9 @@ This contract provides name resolution for helper functions. It may include othe
 ## APIs of contract
 
 ``` csharp
+// Enumerates all known auxiliary symbols and their code addresses.
+IEnumerable<(TargetCodePointer Address, string Name)> EnumerateAuxiliarySymbols();
+
 // Attempts to resolve a code address to a helper function name.
 // Returns true if the address matches a known helper, with the name in symbolName.
 // Returns false if the address does not match any known helper.
@@ -40,15 +43,10 @@ bool TryGetAuxiliarySymbolName(TargetPointer ip, out string symbolName);
 
 
 ``` csharp
-bool TryGetAuxiliarySymbolName(TargetPointer ip, out string? symbolName)
+IEnumerable<(TargetCodePointer Address, string Name)> EnumerateAuxiliarySymbols()
 {
-    symbolName = null;
-
-    TargetCodePointer codePointer = CodePointerFromAddress(ip);
-
     TargetPointer helperArray = target.ReadGlobalPointer("AuxiliarySymbols");
     uint count = target.Read<uint>(target.ReadGlobalPointer("AuxiliarySymbolCount"));
-
     uint entrySize = /* AuxiliarySymbolInfo size */;
 
     for (uint i = 0; i < count; i++)
@@ -57,9 +55,21 @@ bool TryGetAuxiliarySymbolName(TargetPointer ip, out string? symbolName)
         TargetCodePointer address = target.ReadCodePointer(entryAddr + /* AuxiliarySymbolInfo::Address offset */);
         TargetPointer namePointer = target.ReadPointer(entryAddr + /* AuxiliarySymbolInfo::Name offset */);
 
-        if (address == codePointer && namePointer != TargetPointer.Null)
+        if (namePointer != TargetPointer.Null)
+            yield return (address, target.ReadUtf8String(namePointer));
+    }
+}
+
+bool TryGetAuxiliarySymbolName(TargetPointer ip, out string? symbolName)
+{
+    symbolName = null;
+    TargetCodePointer codePointer = CodePointerFromAddress(ip);
+
+    foreach ((TargetCodePointer address, string name) in EnumerateAuxiliarySymbols())
+    {
+        if (address == codePointer)
         {
-            symbolName = target.ReadUtf8String(namePointer);
+            symbolName = name;
             return true;
         }
     }
