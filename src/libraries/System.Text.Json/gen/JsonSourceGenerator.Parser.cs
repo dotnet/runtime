@@ -181,7 +181,7 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
-                    TargetFramework = _knownSymbols.TargetFramework,
+                    SupportsDoNotWrapExceptions = _knownSymbols.SupportsDoNotWrapExceptions,
                     UseUpdatedMemorySafetyRules = contextClassDeclaration.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules"),
                 };
 

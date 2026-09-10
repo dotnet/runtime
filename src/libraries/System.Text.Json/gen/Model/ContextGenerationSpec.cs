@@ -37,7 +37,7 @@ namespace System.Text.Json.SourceGeneration
 
         public required SourceGenerationOptionsSpec? GeneratedOptionsSpec { get; init; }
 
-        public required TargetFramework TargetFramework { get; init; }
+        public required bool SupportsDoNotWrapExceptions { get; init; }
 
         public required bool UseUpdatedMemorySafetyRules { get; init; }
     }

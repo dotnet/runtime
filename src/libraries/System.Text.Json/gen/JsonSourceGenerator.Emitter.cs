@@ -2044,13 +2044,13 @@ namespace System.Text.Json.SourceGeneration
 
                 if (emitConstructorInvokeUnwrapped)
                 {
-                    GenerateConstructorInvokeUnwrapped(writer, contextSpec.TargetFramework);
+                    GenerateConstructorInvokeUnwrapped(writer, contextSpec.SupportsDoNotWrapExceptions);
                     writer.WriteLine();
                 }
 
                 if (emitMethodInvokeUnwrapped)
                 {
-                    GenerateMethodInvokeUnwrapped(writer, contextSpec.TargetFramework);
+                    GenerateMethodInvokeUnwrapped(writer, contextSpec.SupportsDoNotWrapExceptions);
                     writer.WriteLine();
                 }
 
@@ -2101,9 +2101,9 @@ namespace System.Text.Json.SourceGeneration
                 return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static void GenerateConstructorInvokeUnwrapped(SourceWriter writer, TargetFramework targetFramework)
+            private static void GenerateConstructorInvokeUnwrapped(SourceWriter writer, bool supportsDoNotWrapExceptions)
             {
-                writer.WriteLine(targetFramework is TargetFramework.NetCoreApp
+                writer.WriteLine(supportsDoNotWrapExceptions
                     ? """
                         private static object InvokeUnwrapped(global::System.Reflection.ConstructorInfo constructor, object?[]? parameters) => constructor.Invoke(global::System.Reflection.BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
                         """
@@ -2123,9 +2123,9 @@ namespace System.Text.Json.SourceGeneration
                         """);
             }
 
-            private static void GenerateMethodInvokeUnwrapped(SourceWriter writer, TargetFramework targetFramework)
+            private static void GenerateMethodInvokeUnwrapped(SourceWriter writer, bool supportsDoNotWrapExceptions)
             {
-                writer.WriteLine(targetFramework is TargetFramework.NetCoreApp
+                writer.WriteLine(supportsDoNotWrapExceptions
                     ? """
                         private static object? InvokeUnwrapped(global::System.Reflection.MethodInfo method, object obj) => method.Invoke(obj, global::System.Reflection.BindingFlags.DoNotWrapExceptions, binder: null, parameters: null, culture: null);
                         """
