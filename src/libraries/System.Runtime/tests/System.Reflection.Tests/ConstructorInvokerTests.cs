@@ -22,6 +22,32 @@ namespace System.Reflection.Tests
 
         protected override bool IsExceptionWrapped => false;
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(8)]
+        public void SharedThunk_CachedInvokerPromotes(int argumentCount)
+        {
+            Type[] parameterTypes = new Type[argumentCount];
+            Array.Fill(parameterTypes, typeof(CachedInvokerArgument));
+            ConstructorInfo constructor = typeof(CachedInvokerTarget).GetConstructor(parameterTypes)!;
+            ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
+            var argument = new CachedInvokerArgument();
+            object?[] arguments = new object?[argumentCount];
+            Array.Fill(arguments, argument);
+
+            for (int i = 0; i < 150; i++)
+            {
+                var result = (CachedInvokerTarget)(argumentCount == 1 ? invoker.Invoke(argument) : invoker.Invoke(arguments.AsSpan()));
+                Assert.Same(argument, result.Value);
+                if (i == 0)
+                {
+                    IntrinsicInvokeSelectionAssertions.AssertShared(invoker);
+                }
+            }
+
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
+        }
+
         [Fact]
         public void Args_0()
         {
@@ -226,6 +252,44 @@ namespace System.Reflection.Tests
                 throw new InvalidOperationException();
             public TestClassThrowsOnCreate(string arg1, string arg2, string arg3, string arg4, string arg5) =>
                 throw new InvalidOperationException();
+        }
+
+        private sealed class CachedInvokerArgument
+        {
+            private bool _collected;
+
+            internal void CollectOnce()
+            {
+                if (!_collected)
+                {
+                    GC.Collect();
+                    _collected = true;
+                }
+            }
+        }
+
+        private sealed class CachedInvokerTarget
+        {
+            internal CachedInvokerArgument Value { get; }
+
+            public CachedInvokerTarget(CachedInvokerArgument value)
+            {
+                value.CollectOnce();
+                Value = value;
+            }
+
+            public CachedInvokerTarget(CachedInvokerArgument first, CachedInvokerArgument second,
+                CachedInvokerArgument third, CachedInvokerArgument fourth, CachedInvokerArgument fifth,
+                CachedInvokerArgument sixth, CachedInvokerArgument seventh, CachedInvokerArgument eighth) : this(first)
+            {
+                Assert.Same(first, second);
+                Assert.Same(first, third);
+                Assert.Same(first, fourth);
+                Assert.Same(first, fifth);
+                Assert.Same(first, sixth);
+                Assert.Same(first, seventh);
+                Assert.Same(first, eighth);
+            }
         }
     }
 }
