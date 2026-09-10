@@ -1592,13 +1592,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
 
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMD->IsUnboxingStub());
     _ASSERTE(ppTargetMethodDesc != nullptr);
@@ -1638,15 +1632,29 @@ void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* p
             return nullptr;
     }
 
-    PCODE unboxingStub = LookupPregeneratedThunkByString(keyBuffer);
-    if (unboxingStub == (PCODE)NULL)
+    void* unboxingStub = LookupPortableEntryPointThunk(keyBuffer);
+    if (unboxingStub == nullptr)
+    {
+        return nullptr;
+    }
+
+    // Structural sharing can find a stub even when this particular managed signature
+    // was never compiled. Do not publish native code that the interpreter cannot call.
+    MetaSig unboxingSig(pMD);
+    if (ComputeCalliSigThunk(unboxingSig) == nullptr)
+    {
+        return nullptr;
+    }
+
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+    if (!PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
     {
         return nullptr;
     }
 
     *ppTargetMethodDesc = pTargetMethodDesc;
-    *pTargetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-    return (void*)unboxingStub;
+    *pTargetEntryPoint = targetEntryPoint;
+    return unboxingStub;
 }
 
 void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)

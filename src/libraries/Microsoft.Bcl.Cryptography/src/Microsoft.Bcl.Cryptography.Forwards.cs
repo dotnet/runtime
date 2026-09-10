@@ -23,6 +23,7 @@
 #if NET11_0_OR_GREATER
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CompositeMLKem))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CompositeMLKemAlgorithm))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CompositeMLKemCng))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.X25519DiffieHellman))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.X25519DiffieHellmanCng))]
 #endif

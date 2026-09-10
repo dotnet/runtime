@@ -228,6 +228,9 @@ public enum DataType
     EnCAddedStaticField,
     EnCSyncBlockInfo,
     UnorderedArrayBase,
+
+    LayoutEEClass,
+    EEClassLayoutInfo,
 }
 
 public static class DataTypeTargetExtensions

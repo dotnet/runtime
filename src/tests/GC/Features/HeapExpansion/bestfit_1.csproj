@@ -8,6 +8,8 @@
     <CLRTestExecutionArguments>1 1000 50000</CLRTestExecutionArguments>
 
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133469 -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
