@@ -4,9 +4,8 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
 
     <PackageType>Template</PackageType>
-    <!-- Version-dependent values here and in the templates' template.json are validated by _ValidateTemplateVersions below.
-         When changing the net version, also change 'NetVersion' in Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj
-         and the package name in eng/Signing.props. -->
+    <!-- Version-dependent values here, in the templates' template.json, in eng/Signing.props and in the
+         workload manifest are validated against $(NetCoreAppCurrentVersion) by _ValidateTemplateVersions below. -->
     <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net11</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>
@@ -50,6 +49,17 @@
 
     <Error Condition="'$(PackageId)' != '$(_ExpectedPackageId)'"
            Text="PackageId is '$(PackageId)' but NetCoreAppCurrentVersion is '$(NetCoreAppCurrentVersion)'. Expected '$(_ExpectedPackageId)'." />
+
+    <PropertyGroup>
+      <_SigningPropsText>$([System.IO.File]::ReadAllText('$([MSBuild]::NormalizePath('$(RepoRoot)eng/Signing.props'))'))</_SigningPropsText>
+      <_WorkloadManifestPkgprojText>$([System.IO.File]::ReadAllText('$([MSBuild]::NormalizePath('$(RepoRoot)src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj'))'))</_WorkloadManifestPkgprojText>
+    </PropertyGroup>
+
+    <Error Condition="!$([System.String]::Copy('$(_SigningPropsText)').Contains('$(PackageId).'))"
+           Text="eng/Signing.props does not reference '$(PackageId)', so the templates package would not be signed." />
+
+    <Error Condition="!$([System.String]::Copy('$(_WorkloadManifestPkgprojText)').Contains('&quot;NetVersion&quot; Value=&quot;net$(_NetCoreAppCurrentMajorVersion)&quot;'))"
+           Text="Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj 'NetVersion' does not match '$(PackageId)', so the workload would reference a non-existent templates pack." />
 
     <ItemGroup>
       <_TemplateConfigFile Include="templates\**\.template.config\template.json" />
