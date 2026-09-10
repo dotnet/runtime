@@ -66,15 +66,7 @@ namespace System.Security.Cryptography
             Span<byte> destination)
         {
             Debug.Assert(exporterSecret.Length == Suite.KdfMetadata.Nh);
-
-            int maximumLength = Suite.KdfMetadata.MaximumExportLength;
-
-            if (destination.Length > maximumLength)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_HpkeExportLengthTooLarge, maximumLength),
-                    nameof(destination));
-            }
+            Debug.Assert(destination.Length <= Suite.KdfMetadata.MaximumExportLength);
 
             // HPKE allows a zero-length export; HKDF.Expand requires a nonempty output.
             if (!destination.IsEmpty)
