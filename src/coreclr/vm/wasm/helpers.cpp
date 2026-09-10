@@ -487,35 +487,6 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     }
 }
 
-// Called at a catch resumption point, once the restore-context unwind has completed and managed
-// code is about to run again. Unlike the other wasm R2R helpers this does not touch the thread's
-// GC mode; it only lifts the restriction installed by RtlRestoreContext.
-EXTERN_C void JIT_ResumeAfterCatchImpl(uintptr_t callersStackPointer)
-{
-    UNREFERENCED_PARAMETER(callersStackPointer);
-
-#ifdef _DEBUG
-    t_gcModeSwitchPermitted = true;
-#endif // _DEBUG
-}
-
-// R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale, so publish the
-// incoming sp before any native code runs, and restore it afterwards.
-EXTERN_C __attribute__((naked)) void JIT_ResumeAfterCatch(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
-{
-    asm(
-        "global.get __stack_pointer\n"
-        "local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
-        "local.get 0\n"                 /* callersStackPointer */
-        "global.set __stack_pointer\n"
-        "local.get 0\n"                 /* sp argument for the implementation */
-        "call %[JIT_ResumeAfterCatchImpl]\n"
-        "local.get 1\n"                 /* restore previous __stack_pointer */
-        "global.set __stack_pointer\n"
-        "return\n"
-        :: [JIT_ResumeAfterCatchImpl] "i" (JIT_ResumeAfterCatchImpl));
-}
-
 EXTERN_C FCDECL0(void, JIT_PollGC);
 EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
 {

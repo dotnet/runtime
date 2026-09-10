@@ -2186,19 +2186,21 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
-#ifdef TARGET_WASM
-EXTERN_C void JIT_ResumeAfterCatch(void* sp, PCODE portableEntryPoint);
-#else
-// Only WebAssembly emits this helper; see the wasm implementation in vm/wasm/helpers.cpp and
-// the comment on t_gcModeSwitchPermitted. The definition exists so the helper table links
-// everywhere.
-extern "C" void JIT_ResumeAfterCatch()
+// Called at a catch resumption point, once the restore-context unwind has completed and managed
+// code is about to run again. This does not touch the thread's GC mode; it only lifts the
+// restriction installed before ResumeAfterCatch -- see the comment on t_gcModeSwitchPermitted.
+// Only WebAssembly emits a call to this helper, but the definition is unconditional so the helper
+// table links everywhere.
+EXTERN_C FCDECL0(void, JIT_ResumeAfterCatch);
+FCIMPL0(void, JIT_ResumeAfterCatch)
 {
+    FCALL_CONTRACT;
+
 #ifdef _DEBUG
     t_gcModeSwitchPermitted = true;
 #endif // _DEBUG
 }
-#endif
+FCIMPLEND
 
 #ifdef DEBUGGING_SUPPORTED
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
