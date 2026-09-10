@@ -95,6 +95,38 @@ internal sealed class MockMethodTable : TypedView
     }
 }
 
+internal sealed class MockEEClassLayoutInfo : TypedView
+{
+    private const string LayoutTypeFieldName = nameof(Data.EEClassLayoutInfo.LayoutType);
+    private const string AlignmentRequirementFieldName = nameof(Data.EEClassLayoutInfo.AlignmentRequirement);
+    private const string FlagsFieldName = nameof(Data.EEClassLayoutInfo.Flags);
+
+    public static Layout<MockEEClassLayoutInfo> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("EEClassLayoutInfo", architecture)
+            .AddByteField(LayoutTypeFieldName)
+            .AddByteField(AlignmentRequirementFieldName)
+            .AddByteField(FlagsFieldName)
+            .Build<MockEEClassLayoutInfo>();
+
+    public byte LayoutType
+    {
+        get => ReadByteField(LayoutTypeFieldName);
+        set => WriteByteField(LayoutTypeFieldName, value);
+    }
+
+    public byte AlignmentRequirement
+    {
+        get => ReadByteField(AlignmentRequirementFieldName);
+        set => WriteByteField(AlignmentRequirementFieldName, value);
+    }
+
+    public byte Flags
+    {
+        get => ReadByteField(FlagsFieldName);
+        set => WriteByteField(FlagsFieldName, value);
+    }
+}
+
 internal sealed class MockEEClass : TypedView
 {
     private const string MethodTableFieldName = nameof(Data.EEClass.MethodTable);
@@ -109,6 +141,7 @@ internal sealed class MockEEClass : TypedView
     private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
     private const string BaseSizePaddingFieldName = nameof(Data.EEClass.BaseSizePadding);
     private const string OptionalFieldsFieldName = nameof(Data.EEClass.OptionalFields);
+    private const string VMFlagsFieldName = nameof(Data.EEClass.VMFlags);
 
     public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEClass", architecture)
@@ -124,7 +157,14 @@ internal sealed class MockEEClass : TypedView
             .AddUInt16Field(NumNonVirtualSlotsFieldName)
             .AddByteField(BaseSizePaddingFieldName)
             .AddPointerField(OptionalFieldsFieldName)
+            .AddUInt32Field(VMFlagsFieldName)
             .Build<MockEEClass>();
+
+    public uint VMFlags
+    {
+        get => ReadUInt32Field(VMFlagsFieldName);
+        set => WriteUInt32Field(VMFlagsFieldName, value);
+    }
 
     public ulong MethodTable
     {
@@ -384,6 +424,9 @@ internal partial class MockDescriptors
         internal Layout<MockTypeVarTypeDesc> TypeVarTypeDescLayout { get; }
         internal Layout<MockFieldDesc> FieldDescLayout { get; }
         internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout { get; }
+        internal Layout<MockEEClassLayoutInfo> EEClassLayoutInfoLayout { get; }
+
+        internal Layout<TypedView> LayoutEEClassLayout { get; }
 
         internal MockEEClass SystemObjectEEClass { get; private set; } = null!;
         internal MockMethodTable SystemObjectMethodTable { get; private set; } = null!;
@@ -420,6 +463,11 @@ internal partial class MockDescriptors
             TypeVarTypeDescLayout = MockTypeVarTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
             FieldDescLayout = MockFieldDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
             GCCoverageInfoLayout = MockGCCoverageInfo.CreateLayout(Builder.TargetTestHelpers.Arch);
+            EEClassLayoutInfoLayout = MockEEClassLayoutInfo.CreateLayout(Builder.TargetTestHelpers.Arch);
+            LayoutEEClassLayout = new SequentialLayoutBuilder("LayoutEEClass", Builder.TargetTestHelpers.Arch)
+                .AddField("EEClassFields", EEClassLayout.Size)
+                .AddField("LayoutInfo", EEClassLayoutInfoLayout.Size)
+                .Build<TypedView>();
 
             AddGlobalPointers();
             AddDefaultTypes();
@@ -530,6 +578,21 @@ internal partial class MockDescriptors
 
         internal MockEEClass AddEEClass(string name)
             => Add(EEClassLayout, $"EEClass '{name}'");
+
+        internal MockEEClass AddLayoutEEClass(string name, byte layoutType, byte alignmentRequirement, byte flags)
+        {
+            MockEEClass eeClass = Add(EEClassLayout, (ulong)LayoutEEClassLayout.Size, $"LayoutEEClass '{name}'");
+            eeClass.VMFlags = HasLayoutVMFlag;
+
+            ulong layoutInfoAddress = eeClass.Address + (ulong)LayoutEEClassLayout.GetField("LayoutInfo").Offset;
+            Span<byte> layoutInfoBytes = Builder.BorrowAddressRange(layoutInfoAddress, EEClassLayoutInfoLayout.Size);
+            layoutInfoBytes[EEClassLayoutInfoLayout.GetField(nameof(Data.EEClassLayoutInfo.LayoutType)).Offset] = layoutType;
+            layoutInfoBytes[EEClassLayoutInfoLayout.GetField(nameof(Data.EEClassLayoutInfo.AlignmentRequirement)).Offset] = alignmentRequirement;
+            layoutInfoBytes[EEClassLayoutInfoLayout.GetField(nameof(Data.EEClassLayoutInfo.Flags)).Offset] = flags;
+            return eeClass;
+        }
+
+        internal const uint HasLayoutVMFlag = 0x00000040;
 
         internal MockMethodTable AddMethodTable(string name)
             => Add(MethodTableLayout, $"MethodTable '{name}'");
