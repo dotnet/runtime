@@ -332,11 +332,16 @@ Copyright (c) .NET Foundation. All rights reserved.
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         <OriginalItemSpec>%(Identity)</OriginalItemSpec>
       </_WasmLazyR2RCandidate>
+      <!-- Fingerprint the .wasm route like the eager webcils (cache-busting). The boot-config owner
+           derivation de-fingerprints the route first, so "Foo.r2r.<hash>.wasm" still yields owner "Foo.wasm". -->
+      <_WasmLazyR2RFingerprintPatterns Include="WasmLazyR2R" Pattern="*.wasm" Expression="#[.{fingerprint}]!" Condition="'$(_WasmFingerprintAssets)' == 'true'" />
+      <_WasmLazyR2RFingerprintPatterns Include="WasmLazyR2R" Pattern="*.wasm" Expression="#[.{fingerprint}]?" Condition="'$(_WasmFingerprintAssets)' != 'true'" />
     </ItemGroup>
 
     <DefineStaticWebAssets Condition="'@(_WasmLazyR2RCandidate)' != ''"
                            CandidateAssets="@(_WasmLazyR2RCandidate)"
-                           FingerprintCandidates="false">
+                           FingerprintCandidates="$(_WasmFingerprintAssets)"
+                           FingerprintPatterns="@(_WasmLazyR2RFingerprintPatterns)">
       <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
       <Output TaskParameter="Assets" ItemName="_WasmLazyR2RStaticWebAsset" />
     </DefineStaticWebAssets>

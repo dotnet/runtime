@@ -349,10 +349,12 @@ namespace Microsoft.NET.Sdk.WebAssembly
             {
                 // The loader derives the owning assembly by stripping the file extension from virtualPath,
                 // so virtualPath must name the owner ("System.Console.wasm"), not the supplement route
-                // ("System.Console.r2r.wasm") that name carries.
+                // ("System.Console.r2r.wasm") that name carries. Derive the owner from the DE-fingerprinted
+                // route so a hashed name (e.g. "System.Console.r2r.<hash>.wasm") still yields "System.Console.wasm".
+                string baseRoute = resources.fingerprinting?[a.Key] ?? a.Key;
                 var asset = new WebcilAsset()
                 {
-                    virtualPath = DeriveLazyR2ROwner(a.Key),
+                    virtualPath = DeriveLazyR2ROwner(baseRoute),
                     name = a.Key,
                     hash = a.Value,
                     cache = GetCacheControl(a.Key, resources)
