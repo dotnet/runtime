@@ -1,14 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using CustomAttributeDataParser = System.Reflection.CustomAttributeEncodedArgument.CustomAttributeDataParser;
 
 namespace System.Reflection
 {
@@ -496,7 +499,7 @@ namespace System.Reflection
     public readonly partial struct CustomAttributeTypedArgument
     {
         #region Private Static Methods
-        private static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
+        internal static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
         {
             return encodedType switch
             {
@@ -910,10 +913,11 @@ namespace System.Reflection
         /// <summary>
         /// Used to parse CustomAttribute data. See ECMA-335 II.23.3.
         /// </summary>
-        private ref struct CustomAttributeDataParser
+        internal ref struct CustomAttributeDataParser
         {
             private int _curr;
-            private ReadOnlySpan<byte> _blob;
+            private readonly ReadOnlySpan<byte> _blob;
+            private readonly bool _throwOnInvalidBlob;
 
             public CustomAttributeDataParser(ConstArray attributeBlob)
             {
@@ -922,11 +926,30 @@ namespace System.Reflection
                     _blob = new ReadOnlySpan<byte>((void*)attributeBlob.Signature, attributeBlob.Length);
                 }
                 _curr = 0;
+                _throwOnInvalidBlob = false;
             }
 
-            private ReadOnlySpan<byte> PeekData(int size) => _blob.Slice(_curr, size);
+            internal CustomAttributeDataParser(ReadOnlySpan<byte> blob)
+            {
+                _blob = blob;
+                _curr = 0;
+                _throwOnInvalidBlob = true;
+            }
 
-            private ReadOnlySpan<byte> ReadData(int size)
+            internal int Consumed => _curr;
+            internal int Remaining => _blob.Length - _curr;
+
+            private ReadOnlySpan<byte> PeekData(int size)
+            {
+                if (_throwOnInvalidBlob && (uint)size > (uint)Remaining)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+
+                return _blob.Slice(_curr, size);
+            }
+
+            internal ReadOnlySpan<byte> ReadData(int size)
             {
                 ReadOnlySpan<byte> tmp = PeekData(size);
                 Debug.Assert(size <= (_blob.Length - _curr));
@@ -993,6 +1016,12 @@ namespace System.Reflection
 
             public string? GetString()
             {
+                ReadOnlySpan<byte> utf8Bytes = GetStringBytes(out bool isNull);
+                return isNull ? null : utf8Bytes.IsEmpty ? string.Empty : Encoding.UTF8.GetString(utf8Bytes);
+            }
+
+            internal ReadOnlySpan<byte> GetStringBytes(out bool isNull)
+            {
                 byte packedLengthBegin = PeekData(sizeof(byte))[0];
 
                 // Check if the embedded string indicates a 'null' string (0xff).
@@ -1000,19 +1029,13 @@ namespace System.Reflection
                 {
                     // Consume the indicator.
                     ReadData(1);
-                    return null;
+                    isNull = true;
+                    return default;
                 }
 
-                // Not a null string, return a non-null string value.
-                // The embedded string a UTF-8 prefixed by an ECMA-335 packed integer.
+                isNull = false;
                 int length = GetPackedLength(packedLengthBegin);
-                if (length == 0)
-                {
-                    return string.Empty;
-                }
-
-                ReadOnlySpan<byte> utf8ByteSpan = ReadData(length);
-                return Encoding.UTF8.GetString(utf8ByteSpan);
+                return ReadData(length);
             }
 
             private int GetPackedLength(byte firstByte)
@@ -1042,6 +1065,11 @@ namespace System.Reflection
                     len += data[1] << 16;
                     len += data[2] << 8;
                     return len + data[3];
+                }
+
+                if (_throwOnInvalidBlob)
+                {
+                    throw new CustomAttributeFormatException();
                 }
 
                 throw new OverflowException();
@@ -1539,22 +1567,13 @@ namespace System.Reflection
                     }
                     else
                     {
-                        int data = Unsafe.ReadUnaligned<int>((void*)blobStart);
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            // Metadata is always written in little-endian format. Must account for this on
-                            // big-endian platforms.
-                            data = BinaryPrimitives.ReverseEndianness(data);
-                        }
-
-                        const int CustomAttributeVersion = 0x0001;
-                        if ((data & 0xffff) != CustomAttributeVersion)
+                        var parser = new CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
+                        if (!parser.ValidateProlog())
                         {
                             throw new CustomAttributeFormatException();
                         }
-                        cNamedArgs = data >> 16;
-
-                        blobStart = (IntPtr)((byte*)blobStart + 4); // skip version and namedArgs count
+                        cNamedArgs = parser.GetI2();
+                        blobStart += parser.Consumed;
                     }
                 }
 
@@ -1860,88 +1879,320 @@ namespace System.Reflection
             return result != 0;
         }
 
-        [UnmanagedCallersOnly]
-        private static void InvokeCustomAttributeCtor(
-            RuntimeConstructorInfo* pConstructor, IntPtr* pArguments, object* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = (*pConstructor).Invoker.InvokeDirectByRef(obj: null, pArguments)!;
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
-        private static partial void CreateCustomAttributeInstance(
-            QCallModule pModule,
-            ObjectHandleOnStack type,
-            ObjectHandleOnStack pCtor,
-            ref IntPtr ppBlob,
-            IntPtr pEndBlob,
-            out int pcNamedArgs,
-            ObjectHandleOnStack instance);
-
         private static object CreateCustomAttributeInstance(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
-            if (module is null)
-            {
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
-            }
-
             if (RuntimeType.GetMethodBase(ctor) is not RuntimeConstructorInfo constructor)
             {
                 throw new CustomAttributeFormatException();
             }
 
-            object? result = null;
-            CreateCustomAttributeInstance(
-                new QCallModule(ref module),
-                ObjectHandleOnStack.Create(ref type),
-                ObjectHandleOnStack.Create(ref constructor),
-                ref blob,
-                blobEnd,
-                out namedArgs,
-                ObjectHandleOnStack.Create(ref result));
-            return result!;
+            RuntimeType[] argumentTypes = constructor.ArgumentTypes;
+            int argumentCount = argumentTypes.Length;
+            var parser = new CustomAttributeDataParser(GetAttributeBlob(blob, blobEnd));
+            if (!parser.ValidateProlog())
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            // Keep fixed primitives unboxed. Only the bounded common case uses stack storage.
+            AttributeReferenceStorage referenceStorage = default;
+            Span<object?> references = argumentCount <= MaxStackAttributeArguments
+                ? ((Span<object?>)referenceStorage).Slice(0, argumentCount)
+                : new object?[argumentCount];
+            Span<ulong> primitives = argumentCount <= MaxStackAttributeArguments
+                ? stackalloc ulong[MaxStackAttributeArguments]
+                : new ulong[argumentCount];
+            Span<IntPtr> byrefs = argumentCount <= MaxStackAttributeArguments
+                ? stackalloc IntPtr[MaxStackAttributeArguments]
+                : new IntPtr[argumentCount];
+            byrefs.Clear();
+
+            fixed (IntPtr* argumentStorage = byrefs)
+            {
+                GCFrameRegistration registration = new((void**)argumentStorage, (uint)argumentCount, areByRefs: true);
+                try
+                {
+                    GCFrameRegistration.RegisterForGCReporting(&registration);
+                    for (int i = 0; i < argumentCount; i++)
+                    {
+                        RuntimeType argumentType = argumentTypes[i];
+                        CustomAttributeEncoding encoding = GetPrimitiveEncoding(argumentType);
+                        int size = GetPrimitiveSize(encoding);
+                        if (size != 0)
+                        {
+                            primitives[i] = ReadPrimitiveValue(ref parser, encoding);
+                            ref byte data = ref Unsafe.As<ulong, byte>(ref primitives[i]);
+                            ref byte value = ref Unsafe.Add(ref data, BitConverter.IsLittleEndian ? 0 : sizeof(ulong) - size);
+                            StoreArgumentReference(argumentStorage + i, ref value);
+                        }
+                        else
+                        {
+                            references[i] = ReadAttributeValue(ref parser, argumentType, module);
+                            StoreArgumentReference(argumentStorage + i, ref references[i]);
+                        }
+                    }
+
+                    namedArgs = parser.Remaining == 0 ? 0 : parser.GetU2();
+                    if (namedArgs == 0 && parser.Remaining != 0)
+                    {
+                        throw new CustomAttributeFormatException();
+                    }
+
+                    blob += parser.Consumed;
+                    return constructor.Invoker.InvokeDirectByRef(obj: null, argumentStorage)!;
+                }
+                finally
+                {
+                    GCFrameRegistration.UnregisterForGCReporting(&registration);
+                    GC.KeepAlive(module);
+                    GC.KeepAlive(type);
+                }
+            }
         }
 
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreatePropertyOrFieldData", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void CreatePropertyOrFieldData(
-            QCallModule pModule,
-            ref IntPtr ppBlobStart,
-            IntPtr pBlobEnd,
-            StringHandleOnStack name,
-            [MarshalAs(UnmanagedType.Bool)] out bool bIsProperty,
-            ObjectHandleOnStack type,
-            ObjectHandleOnStack value);
+        private const int MaxStackAttributeArguments = 16;
+
+        // The caller registers this native vector as byrefs for the lifetime of the invocation.
+        private static void StoreArgumentReference<T>(IntPtr* storage, scoped ref T value) =>
+            *storage = (IntPtr)Unsafe.AsPointer(ref value);
+
+        [InlineArray(MaxStackAttributeArguments)]
+        private struct AttributeReferenceStorage
+        {
+            private object? _element0;
+        }
 
         private static void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
         {
-            if (module is null)
+            try
             {
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
+                var parser = new CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
+                CustomAttributeEncoding memberKind = parser.GetTag();
+                if (memberKind is not CustomAttributeEncoding.Field and not CustomAttributeEncoding.Property)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+                isProperty = memberKind == CustomAttributeEncoding.Property;
+
+                CustomAttributeEncoding encoding = parser.GetTag();
+                RuntimeType declaredType = ReadAttributeType(ref parser, encoding, module);
+                name = parser.GetString()!;
+                value = ReadAttributeValue(ref parser, declaredType, module);
+
+                type = encoding is CustomAttributeEncoding.Object or CustomAttributeEncoding.Enum ? declaredType : null;
+                if (value is null && encoding is CustomAttributeEncoding.String or CustomAttributeEncoding.Type or CustomAttributeEncoding.Array)
+                {
+                    // A null enum array leaves type unspecified for the existing named-member lookup.
+                    if (encoding != CustomAttributeEncoding.Array || !declaredType.GetElementType()!.IsEnum)
+                    {
+                        type = declaredType;
+                    }
+                }
+
+                blobStart += parser.Consumed;
+            }
+            finally
+            {
+                GC.KeepAlive(module);
+            }
+        }
+
+        private static ReadOnlySpan<byte> GetAttributeBlob(IntPtr start, IntPtr end)
+        {
+            nuint length = (nuint)end - (nuint)start;
+            if (length > int.MaxValue)
+            {
+                throw new CustomAttributeFormatException();
             }
 
-            string? nameLocal = null;
-            RuntimeType? typeLocal = null;
-            object? valueLocal = null;
-            CreatePropertyOrFieldData(
-                new QCallModule(ref module),
-                ref blobStart,
-                blobEnd,
-                new StringHandleOnStack(ref nameLocal),
-                out isProperty,
-                ObjectHandleOnStack.Create(ref typeLocal),
-                ObjectHandleOnStack.Create(ref valueLocal));
-            name = nameLocal!;
-            type = typeLocal;
-            value = valueLocal;
+            return new ReadOnlySpan<byte>((void*)start, (int)length);
+        }
+
+        private static CustomAttributeEncoding GetPrimitiveEncoding(RuntimeType type) =>
+            RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(type.IsActualEnum
+                ? (RuntimeType)type.GetEnumUnderlyingType()
+                : type);
+
+        private static int GetPrimitiveSize(CustomAttributeEncoding encoding) => encoding switch
+        {
+            CustomAttributeEncoding.Boolean or CustomAttributeEncoding.SByte or CustomAttributeEncoding.Byte => 1,
+            CustomAttributeEncoding.Char or CustomAttributeEncoding.Int16 or CustomAttributeEncoding.UInt16 => 2,
+            CustomAttributeEncoding.Int32 or CustomAttributeEncoding.UInt32 or CustomAttributeEncoding.Float => 4,
+            CustomAttributeEncoding.Int64 or CustomAttributeEncoding.UInt64 or CustomAttributeEncoding.Double => 8,
+            _ => 0
+        };
+
+        private static ulong ReadPrimitiveValue(ref CustomAttributeDataParser parser, CustomAttributeEncoding encoding) =>
+            GetPrimitiveSize(encoding) switch
+            {
+                1 => parser.GetU1(),
+                2 => parser.GetU2(),
+                4 => parser.GetU4(),
+                8 => parser.GetU8(),
+                _ => throw new CustomAttributeFormatException()
+            };
+
+        private static object? ReadAttributeValue(ref CustomAttributeDataParser parser, RuntimeType type, RuntimeModule module)
+        {
+            CustomAttributeEncoding encoding = GetPrimitiveEncoding(type);
+            int size = GetPrimitiveSize(encoding);
+            if (size != 0)
+            {
+                ulong bits = ReadPrimitiveValue(ref parser, encoding);
+                ref byte data = ref Unsafe.As<ulong, byte>(ref bits);
+                return RuntimeHelpers.Box(ref Unsafe.Add(ref data, BitConverter.IsLittleEndian ? 0 : sizeof(ulong) - size), type.TypeHandle);
+            }
+
+            if (type == typeof(string))
+            {
+                return parser.GetString();
+            }
+
+            if (type == typeof(Type))
+            {
+                return ReadAttributeTypeName(ref parser, module);
+            }
+
+            if (type == typeof(object))
+            {
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+                RuntimeType valueType = ReadAttributeType(ref parser, parser.GetTag(), module);
+                return ReadAttributeValue(ref parser, valueType, module);
+            }
+
+            if (type.IsSZArray)
+            {
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+                return ReadAttributeArray(ref parser, (RuntimeType)type.GetElementType()!, module);
+            }
+
+            throw new CustomAttributeFormatException();
+        }
+
+        private static RuntimeType ReadAttributeType(
+            ref CustomAttributeDataParser parser, CustomAttributeEncoding encoding, RuntimeModule module, bool allowArray = true)
+        {
+            if (GetPrimitiveSize(encoding) != 0 || encoding is CustomAttributeEncoding.String or CustomAttributeEncoding.Type or CustomAttributeEncoding.Object)
+            {
+                return (RuntimeType)CustomAttributeTypedArgument.CustomAttributeEncodingToType(encoding);
+            }
+
+            if (encoding == CustomAttributeEncoding.Enum)
+            {
+                RuntimeType? enumType = ReadAttributeTypeName(ref parser, module);
+                if (enumType is null || !enumType.IsActualEnum)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+                return enumType;
+            }
+
+            if (allowArray && encoding == CustomAttributeEncoding.Array)
+            {
+                RuntimeType elementType = ReadAttributeType(ref parser, parser.GetTag(), module, allowArray: false);
+                return (RuntimeType)elementType.MakeArrayType();
+            }
+
+            throw new CustomAttributeFormatException();
+        }
+
+        private static RuntimeType? ReadAttributeTypeName(ref CustomAttributeDataParser parser, RuntimeModule module)
+        {
+            ReadOnlySpan<byte> utf8Name = parser.GetStringBytes(out bool isNull);
+            if (isNull)
+            {
+                return null;
+            }
+            if (utf8Name.IsEmpty)
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            // Type names in the native metadata path are null-terminated, unlike string values.
+            int terminator = utf8Name.IndexOf((byte)0);
+            if (terminator >= 0)
+            {
+                utf8Name = utf8Name.Slice(0, terminator);
+            }
+
+            const int StackNameLength = 128;
+            char[]? rented = null;
+            Span<char> name = utf8Name.Length <= StackNameLength
+                ? stackalloc char[StackNameLength]
+                : (rented = ArrayPool<char>.Shared.Rent(utf8Name.Length));
+            try
+            {
+                int written = Encoding.UTF8.GetChars(utf8Name, name);
+                // This is the span-based CA resolver used by the native decoder as well.
+                return TypeNameResolver.GetTypeHelper(name.Slice(0, written), module.GetRuntimeAssembly(),
+                    throwOnError: true, requireAssemblyQualifiedName: false);
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    ArrayPool<char>.Shared.Return(rented);
+                }
+            }
+        }
+
+        private static Array? ReadAttributeArray(ref CustomAttributeDataParser parser, RuntimeType elementType, RuntimeModule module)
+        {
+            int length = parser.GetI4();
+            if (length == -1)
+            {
+                return null;
+            }
+            if (length < 0)
+            {
+                throw new OverflowException();
+            }
+
+            CustomAttributeEncoding encoding = GetPrimitiveEncoding(elementType);
+            int elementSize = GetPrimitiveSize(encoding);
+            if (elementSize != 0)
+            {
+                if (length > parser.Remaining / elementSize)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+
+                Array array = Array.CreateInstance(elementType, length);
+                Span<byte> data = new(ref MemoryMarshal.GetArrayDataReference(array), length * elementSize);
+                if (BitConverter.IsLittleEndian || elementSize == 1)
+                {
+                    parser.ReadData(data.Length).CopyTo(data);
+                }
+                else
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        ulong bits = ReadPrimitiveValue(ref parser, encoding);
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<ulong>(in bits));
+                        bytes.Slice(sizeof(ulong) - elementSize).CopyTo(data.Slice(i * elementSize, elementSize));
+                    }
+                }
+                return array;
+            }
+
+            if (elementType != typeof(string) && elementType != typeof(Type) &&
+                elementType != typeof(object) && !elementType.IsSZArray)
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            // Every reference element consumes at least a string/tag/array-length byte.
+            if (length > parser.Remaining)
+            {
+                throw new CustomAttributeFormatException();
+            }
+            var references = (object?[])Array.CreateInstance(elementType, length);
+            for (int i = 0; i < references.Length; i++)
+            {
+                references[i] = ReadAttributeValue(ref parser, elementType, module);
+            }
+            return references;
         }
     }
 
