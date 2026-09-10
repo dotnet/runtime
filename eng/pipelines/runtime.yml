@@ -1965,9 +1965,6 @@ extends:
           - browser_wasm
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          # Keep known failures visible without blocking the runtime pipeline.
-          # Tracked by https://github.com/dotnet/runtime/issues/133305.
-          shouldContinueOnError: true
           jobParameters:
             testGroup: innerloop
             readyToRun: true
@@ -1975,8 +1972,7 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
-            # The shared monitor would turn this non-blocking lane into a pipeline failure.
-            useHelixMonitor: false
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraBuildArgs: -os browser -p:HostConfiguration=Release
             condition: >-
               or(
