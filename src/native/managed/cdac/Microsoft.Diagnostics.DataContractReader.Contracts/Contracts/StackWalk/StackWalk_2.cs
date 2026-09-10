@@ -92,6 +92,10 @@ internal sealed class StackWalk_2 : StackWalk_1
         if (depth > MaxValueClassRecursionDepth)
             return;
 
+        uint totalSize = rts.GetNumInstanceFieldBytes(typeHandle);
+        if (totalSize > rts.GetBaseSize(typeHandle))
+            return;
+
         bool isInlineArray = IsInlineArray(typeHandle);
         foreach (TargetPointer fieldDesc in rts.GetFieldDescList(typeHandle))
         {
@@ -117,7 +121,7 @@ internal sealed class StackWalk_2 : StackWalk_1
                 isInlineArray,
                 offset,
                 elementSize,
-                rts.GetNumInstanceFieldBytes(typeHandle)))
+                totalSize))
             {
                 TargetPointer fieldData = data + fieldOffset;
                 if (fieldType == CorElementType.Byref)
