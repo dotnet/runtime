@@ -32,7 +32,7 @@ For a simple test using optimized compilation without debug information, add the
 src/tests/JIT/Regression_ro_2/Runtime_<issue_number>.cs
 ```
 
-`Regression/Regression_ro_2.csproj` recursively includes its matching sibling directory. Do not edit its source list or create a project for the test. Use a `Runtime_<issue_number>/` subdirectory only when keeping multiple related files together.
+`Regression_ro_2/Regression_ro_2.csproj` recursively includes sources in its directory. Do not edit its source list or create a project for the test. Use a `Runtime_<issue_number>/` subdirectory only when keeping multiple related files together.
 
 If the test needs its own project (see Step 4), use a separate directory outside the globbed source directories:
 
@@ -111,7 +111,7 @@ A custom `.csproj` file is **only required** when:
 - Special compilation settings are required
 - Separate assemblies, native dependencies, or process isolation are required
 
-Otherwise, the source glob in `Regression_ro_2.csproj` includes the test automatically. Keep custom projects and their sources under `src/tests/JIT/Regression_2/Runtime_<issue_number>/`. `Regression/Regression_2.csproj` discovers those projects recursively without compiling their sources directly. Do not place them in source-glob directories such as `src/tests/JIT/Regression_ro_2/`, where they would also be compiled with the runner's settings.
+Otherwise, the source glob in `Regression_ro_2.csproj` includes the test automatically. Keep custom projects and their sources under `src/tests/JIT/Regression_2/Runtime_<issue_number>/`. `Regression_2/Regression_2.csproj` discovers those projects recursively without compiling their sources directly. Do not place them in source-glob directories such as `src/tests/JIT/Regression_ro_2/`, where they would also be compiled with the runner's settings.
 
 If a custom .csproj file is needed, it should be located next to the test source file with the following name: `Runtime_<issue_number>.csproj`. Example:
 

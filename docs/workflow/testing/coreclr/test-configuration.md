@@ -73,8 +73,8 @@ should simply `throw new PlatformNotSupportedException()` in its dummy method im
 
 Add tests that use optimized compilation without debug information directly to
 `src/tests/JIT/Regression_ro_2/Runtime_<issue_number>.cs`. The
-`Regression/Regression_ro_2.csproj` runner recursively includes all `.cs` files in its
-matching sibling directory, so adding a test requires neither a
+`Regression_ro_2/Regression_ro_2.csproj` runner recursively includes all `.cs` files in its
+directory, so adding a test requires neither a
 project-file edit nor a directory for a single source file. Related files can be
 grouped in a subdirectory.
 Other source-compiling regression runners use the same convention for their
