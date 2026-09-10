@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -249,6 +250,207 @@ namespace System.Reflection.Emit.Tests
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
             AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => assembly.SetCustomAttribute(constructor, null));
+        }
+
+        public static IEnumerable<object[]> MalformedIntBlob_TestData()
+        {
+            // Truncated prolog: completely empty blob.
+            yield return new object[] { Array.Empty<byte>(), typeof(CustomAttributeFormatException) };
+            // Truncated prolog: only 1 of the required 2 bytes.
+            yield return new object[] { new byte[] { 0x01 }, typeof(CustomAttributeFormatException) };
+            // Invalid prolog value (0x0000 instead of the required 0x0001).
+            yield return new object[] { CustomAttributeBlob.Concat(new byte[] { 0x00, 0x00 }, CustomAttributeBlob.I4(5), CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
+            // Truncated fixed Int32 argument: only 2 of the required 4 bytes.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { 0x05, 0x00 }), typeof(CustomAttributeFormatException) };
+            // 1 stray byte remains after the fixed argument: not enough for the 2-byte named-argument count.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, CustomAttributeBlob.I4(5), new byte[] { 0xFF }), typeof(CustomAttributeFormatException) };
+            // Named count says 1, but the blob ends before the member-kind tag byte.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, CustomAttributeBlob.I4(5), CustomAttributeBlob.U2(1)), typeof(CustomAttributeFormatException) };
+            // Invalid member-kind tag: neither Field (0x53) nor Property (0x54).
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, CustomAttributeBlob.I4(5), CustomAttributeBlob.U2(1), new byte[] { 0x00 }), typeof(CustomAttributeFormatException) };
+            // Invalid value-type tag for an otherwise well-formed named Field entry.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, CustomAttributeBlob.I4(5), CustomAttributeBlob.U2(1), new byte[] { CustomAttributeBlob.TagField, 0xAB }), typeof(CustomAttributeFormatException) };
+            // Extra trailing byte after an otherwise well-formed, zero-named-argument blob.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, CustomAttributeBlob.I4(5), CustomAttributeBlob.U2(0), new byte[] { 0x00 }), typeof(CustomAttributeFormatException) };
+        }
+
+        [Theory]
+        [MemberData(nameof(MalformedIntBlob_TestData))]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_MalformedBlob_Throws(byte[] blob, Type expectedExceptionType)
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
+            assembly.SetCustomAttribute(constructor, blob);
+
+            Assert.Throws(expectedExceptionType, () => assembly.GetCustomAttributes().ToArray());
+        }
+
+        public static IEnumerable<object[]> MalformedTaggedObjectBlob_TestData()
+        {
+            // Invalid tag byte for the tagged `object` argument itself.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { 0xAB }, CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
+            // An enum tag must resolve to an enum, not just a loadable type.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagEnum }, CustomAttributeBlob.PackedString("System.String"), CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
+            // Type tag with an empty (zero-length) packed type name.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString(""), CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
+            // Type tag whose packed name starts with an embedded NUL, truncating it to empty.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString("\0System.Int32"), CustomAttributeBlob.U2(0)), typeof(TypeLoadException) };
+            // Type tag, assembly-qualified name pointing at a nonexistent assembly.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString("Ca.Managed.Test.NoSuchType, Ca_Managed_Test_NoSuchAssembly_12345"), CustomAttributeBlob.U2(0)), typeof(FileNotFoundException) };
+            // Type tag, unqualified name that does not resolve against the requesting assembly or corelib.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString("Ca_Managed_Test_NoSuchNamespace.Ca_Managed_Test_NoSuchType_12345"), CustomAttributeBlob.U2(0)), typeof(TypeLoadException) };
+            // Array tag with a negative-but-not-(-1) length.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagArray, CustomAttributeBlob.TagInt32 }, CustomAttributeBlob.I4(-5), CustomAttributeBlob.U2(0)), typeof(OverflowException) };
+            // Array tag (primitive elements) whose declared length overflows the remaining bytes.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagArray, CustomAttributeBlob.TagInt32 }, CustomAttributeBlob.I4(5), CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
+            // Array tag (reference elements) whose declared length overflows the remaining bytes.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagArray, CustomAttributeBlob.TagString }, CustomAttributeBlob.I4(5), CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
+            // Invalid packed-string-length prefix byte (matches none of the 1/2/4-byte encodings, nor the 0xFF null marker).
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagString, 0xE0 }), typeof(CustomAttributeFormatException) };
+            // Packed-string length prefix signals the 2-byte form, but the blob ends before its continuation byte.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagString, 0x80 }), typeof(CustomAttributeFormatException) };
+            // Packed string declares 10 UTF8 bytes, but only 3 remain in the blob.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagString, 0x0A }, new byte[] { (byte)'a', (byte)'b', (byte)'c' }), typeof(CustomAttributeFormatException) };
+        }
+
+        [Theory]
+        [MemberData(nameof(MalformedTaggedObjectBlob_TestData))]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_MalformedTaggedObjectBlob_Throws(byte[] blob, Type expectedExceptionType)
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ConstructorInfo constructor = typeof(ObjectAllAttribute).GetConstructor(new Type[] { typeof(object) });
+            assembly.SetCustomAttribute(constructor, blob);
+
+            Assert.Throws(expectedExceptionType, () => assembly.GetCustomAttributes().ToArray());
+        }
+
+        [Fact]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_DuplicateNamedField_LastAssignmentWins()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
+
+            // Two named "Field _i" entries with different values. C# cannot express a duplicate named
+            // attribute argument (CS0643 at compile time), so this can only be built as a raw blob.
+            byte[] blob = CustomAttributeBlob.Concat(
+                CustomAttributeBlob.Prolog,
+                CustomAttributeBlob.I4(1),
+                CustomAttributeBlob.U2(2),
+                new byte[] { CustomAttributeBlob.TagField, CustomAttributeBlob.TagInt32 }, CustomAttributeBlob.PackedString("_i"), CustomAttributeBlob.I4(10),
+                new byte[] { CustomAttributeBlob.TagField, CustomAttributeBlob.TagInt32 }, CustomAttributeBlob.PackedString("_i"), CustomAttributeBlob.I4(20));
+            assembly.SetCustomAttribute(constructor, blob);
+
+            IntAllAttribute attribute = (IntAllAttribute)assembly.GetCustomAttributes().Single();
+            Assert.Equal(20, attribute._i);
+        }
+
+        [Fact]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_NamedFieldTypeMismatch_WrapsArgumentException()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
+
+            // "_i" is declared int, but the named entry tags its value as a string. FieldInfo.SetValue
+            // throws a plain ArgumentException here - unlike a property setter, there is no
+            // TargetInvocationException wrapping layer first.
+            byte[] blob = CustomAttributeBlob.Concat(
+                CustomAttributeBlob.Prolog,
+                CustomAttributeBlob.I4(1),
+                CustomAttributeBlob.U2(1),
+                new byte[] { CustomAttributeBlob.TagField, CustomAttributeBlob.TagString }, CustomAttributeBlob.PackedString("_i"), CustomAttributeBlob.PackedString("oops"));
+            assembly.SetCustomAttribute(constructor, blob);
+
+            CustomAttributeFormatException exception = Assert.Throws<CustomAttributeFormatException>(() => assembly.GetCustomAttributes().ToArray());
+            Assert.IsType<ArgumentException>(exception.InnerException);
+        }
+
+        public static IEnumerable<object[]> MalformedParameterlessBlob_TestData()
+        {
+            // A non-empty blob for a parameterless attribute constructor must contain at least the 2-byte
+            // prolog plus the 2-byte named-argument count (4 bytes total); shorter non-empty blobs must be
+            // rejected with a bounded read, not read past the end of the blob. Only a truly empty (0-byte)
+            // blob is treated as "zero named arguments" per the ECMA spec; that positive case is already
+            // covered by existing SetCustomAttribute(ConstructorInfo, byte[]) fixtures using empty blobs.
+            yield return new object[] { new byte[] { 0x01 } };
+            yield return new object[] { new byte[] { 0x01, 0x00 } };
+            yield return new object[] { new byte[] { 0x01, 0x00, 0x00 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(MalformedParameterlessBlob_TestData))]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_MalformedParameterlessBlob_Throws(byte[] blob)
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ConstructorInfo constructor = typeof(EmptyAttribute).GetConstructor(Type.EmptyTypes);
+            assembly.SetCustomAttribute(constructor, blob);
+
+            Assert.Throws<CustomAttributeFormatException>(() => assembly.GetCustomAttributes().ToArray());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(127)]
+        [InlineData(128)]
+        [InlineData(16383)]
+        [InlineData(16384)]
+        public void SetCustomAttribute_PackedStringBoundaries(int length)
+        {
+            string expected = new string('x', length);
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            assembly.SetCustomAttribute(typeof(ObjectAllAttribute).GetConstructor(new[] { typeof(object) }),
+                CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new[] { CustomAttributeBlob.TagString },
+                    CustomAttributeBlob.PackedString(expected), CustomAttributeBlob.U2(0)));
+
+            ObjectAllAttribute attribute = Assert.IsType<ObjectAllAttribute>(assembly.GetCustomAttributes().Single());
+            Assert.Equal(expected, attribute._o);
+        }
+
+        [Theory]
+        [InlineData(true, 0x80000000L)]
+        [InlineData(true, 0x7fc01234L)]
+        [InlineData(true, 0x7f800000L)]
+        [InlineData(false, long.MinValue)]
+        [InlineData(false, 0x7ff8000000001234L)]
+        [InlineData(false, 0x7ff0000000000000L)]
+        public void SetCustomAttribute_FloatingPointBits(bool single, long bits)
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            byte tag = single ? CustomAttributeBlob.TagFloat : CustomAttributeBlob.TagDouble;
+            byte[] value = single ? CustomAttributeBlob.I4(unchecked((int)bits)) : CustomAttributeBlob.U8(unchecked((ulong)bits));
+            assembly.SetCustomAttribute(typeof(ObjectAllAttribute).GetConstructor(new[] { typeof(object) }),
+                CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new[] { tag }, value, CustomAttributeBlob.U2(0)));
+
+            object actual = Assert.IsType<ObjectAllAttribute>(assembly.GetCustomAttributes().Single())._o;
+            if (single)
+            {
+                Assert.Equal(unchecked((int)bits), BitConverter.SingleToInt32Bits(Assert.IsType<float>(actual)));
+            }
+            else
+            {
+                Assert.Equal(bits, BitConverter.DoubleToInt64Bits(Assert.IsType<double>(actual)));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetCustomAttribute_InvalidUtf8(bool typeName)
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            assembly.SetCustomAttribute(typeof(ObjectAllAttribute).GetConstructor(new[] { typeof(object) }),
+                CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog,
+                    new[] { typeName ? CustomAttributeBlob.TagType : CustomAttributeBlob.TagString, (byte)1, (byte)0xff },
+                    CustomAttributeBlob.U2(0)));
+
+            if (typeName)
+            {
+                Assert.Throws<TypeLoadException>(() => assembly.GetCustomAttributes().ToArray());
+            }
+            else
+            {
+                ObjectAllAttribute attribute = Assert.IsType<ObjectAllAttribute>(assembly.GetCustomAttributes().Single());
+                Assert.Equal("\ufffd", attribute._o);
+            }
         }
 
         [Theory]
