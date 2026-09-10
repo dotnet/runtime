@@ -47,26 +47,15 @@ namespace System.Security.Cryptography
             Span<byte> baseNonce,
             Span<byte> exporterSecret)
         {
-            int secretLength = checked(key.Length + baseNonce.Length + exporterSecret.Length);
-            const int MaxStackSecretLength = 128;
-            Span<byte> secretBuffer = stackalloc byte[MaxStackSecretLength];
-
             try
             {
-                Span<byte> secret = secretBuffer.Slice(0, secretLength);
-                Span<byte> derivedKey = secret.Slice(0, key.Length);
-                Span<byte> derivedNonce = secret.Slice(key.Length, baseNonce.Length);
-                Span<byte> derivedExporterSecret = secret.Slice(key.Length + baseNonce.Length);
-
-                DeriveSecretsCore(mode, sharedSecret, info, psk, pskId, derivedKey, derivedNonce, derivedExporterSecret);
-
-                derivedKey.CopyTo(key);
-                derivedNonce.CopyTo(baseNonce);
-                derivedExporterSecret.CopyTo(exporterSecret);
+                DeriveSecretsCore(mode, sharedSecret, info, psk, pskId, key, baseNonce, exporterSecret);
             }
-            finally
+            catch
             {
-                CryptographicOperations.ZeroMemory(secretBuffer);
+                CryptographicOperations.ZeroMemory(key);
+                CryptographicOperations.ZeroMemory(exporterSecret);
+                throw;
             }
         }
 
