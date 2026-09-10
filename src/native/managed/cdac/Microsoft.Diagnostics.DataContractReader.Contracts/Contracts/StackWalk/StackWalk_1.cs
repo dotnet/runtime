@@ -432,6 +432,7 @@ internal partial class StackWalk_1 : IStackWalk
     private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
     {
         ulong pointerSize = (ulong)_target.PointerSize;
+        uint valueClassFlag = _target.ReadGlobal<uint>(Constants.Globals.GCFrameValueClassFlag);
         HashSet<TargetPointer> seen = [];
         TargetPointer pGCFrame = threadData.GCFrame;
         while (pGCFrame != TargetPointer.Null)
@@ -444,12 +445,45 @@ internal partial class StackWalk_1 : IStackWalk
             // A GCFrame node lives on the stack but is a separate chain from the explicit Frame chain.
             scanContext.UpdateScanContext(pGCFrame, TargetCodePointer.Null, pGCFrame, StackRefData.SourceTypes.StackSourceOther);
             GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
-            for (uint i = 0; i < gcFrame.NumObjRefs; i++)
+            if ((gcFrame.GCFlags & valueClassFlag) != 0)
             {
-                TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
-                scanContext.GCReportCallback(slot, flags);
+                ReportValueClassFrameRoots(pGCFrame, scanContext);
+            }
+            else
+            {
+                for (uint i = 0; i < gcFrame.NumObjRefs; i++)
+                {
+                    TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
+                    scanContext.GCReportCallback(slot, flags);
+                }
             }
             pGCFrame = gcFrame.Next;
+        }
+    }
+
+    private void ReportValueClassFrameRoots(TargetPointer frame, GcScanContext scanContext)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        Data.ProtectValueClassFrame valueClassFrame = _target.ProcessedData.GetOrAdd<Data.ProtectValueClassFrame>(frame);
+        HashSet<TargetPointer> seen = [];
+        TargetPointer infoAddress = valueClassFrame.ValueClassInfoList;
+        while (infoAddress != TargetPointer.Null)
+        {
+            if (!seen.Add(infoAddress))
+                throw new InvalidOperationException("Found a cycle when processing a ProtectValueClassFrame list.");
+
+            Data.ValueClassInfo info = _target.ProcessedData.GetOrAdd<Data.ValueClassInfo>(infoAddress);
+            ITypeHandle typeHandle = rts.GetTypeHandle(info.MethodTable);
+            foreach ((uint offset, uint size) in rts.GetGCDescSeries(typeHandle))
+            {
+                ulong unboxedOffset = offset - (uint)_target.PointerSize;
+                for (ulong innerOffset = 0; innerOffset < size; innerOffset += (uint)_target.PointerSize)
+                {
+                    scanContext.GCReportCallback(info.Data + unboxedOffset + innerOffset, GcScanFlags.None);
+                }
+            }
+
+            infoAddress = info.Next;
         }
     }
 

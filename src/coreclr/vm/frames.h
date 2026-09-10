@@ -77,8 +77,6 @@
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectValueClassFrame
-//    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
 //    |
 //    +-DebuggerExitFrame - marker frame to indicate control flow has left the runtime
@@ -1678,6 +1676,7 @@ struct cdac_data<DynamicHelperFrame>
 class GCFrame
 {
 public:
+    static const UINT GCFRAME_FLAG_VALUECLASS = 0x80000000;
 
 #ifndef DACCESS_COMPILE
     //--------------------------------------------------------------------
@@ -1784,26 +1783,22 @@ struct ValueClassInfo
 
 typedef DPTR(class ProtectValueClassFrame) PTR_ProtectValueClassFrame;
 
-class ProtectValueClassFrame : public Frame
+class ProtectValueClassFrame : public GCFrame
 {
 public:
 #ifndef DACCESS_COMPILE
     ProtectValueClassFrame()
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(NULL)
+        : GCFrame(GetThread(), NULL, 0, GCFRAME_FLAG_VALUECLASS), m_pVCInfo(NULL)
     {
         WRAPPER_NO_CONTRACT;
-        Frame::Push();
     }
 
     ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(vcInfo)
+        : GCFrame(pThread, NULL, 0, GCFRAME_FLAG_VALUECLASS), m_pVCInfo(vcInfo)
     {
         WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
     }
 #endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
 
     ValueClassInfo ** GetValueClassInfoList()
     {
@@ -1814,8 +1809,15 @@ public:
 private:
 
     ValueClassInfo *m_pVCInfo;
+
+    friend struct ::cdac_data<ProtectValueClassFrame>;
 };
 
+template<>
+struct cdac_data<ProtectValueClassFrame>
+{
+    static constexpr size_t ValueClassInfoList = offsetof(ProtectValueClassFrame, m_pVCInfo);
+};
 
 #ifdef _DEBUG
 BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef);

@@ -123,6 +123,7 @@ public static class Constants
         public const string GCInfoVersion = nameof(GCInfoVersion);
         public const string GCLowestAddress = nameof(GCLowestAddress);
         public const string GCHighestAddress = nameof(GCHighestAddress);
+        public const string GCFrameValueClassFlag = nameof(GCFrameValueClassFlag);
 
         // Globals found on GCDescriptor
         // see src/coreclr/gc/datadescriptors/datadescriptor.inc

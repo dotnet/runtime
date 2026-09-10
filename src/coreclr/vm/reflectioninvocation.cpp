@@ -723,7 +723,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     }
 
     if (pProtectValueClassFrame != NULL)
-        pProtectValueClassFrame->Pop(pThread);
+        pProtectValueClassFrame->Pop();
 
     }
 

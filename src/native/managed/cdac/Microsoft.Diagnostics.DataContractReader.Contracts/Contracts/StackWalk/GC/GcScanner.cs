@@ -173,10 +173,6 @@ internal class GcScanner
                 // TODO(stackref): Implement HijackFrame scanning (X86 only with FEATURE_HIJACK)
                 break;
 
-            case FrameType.ProtectValueClassFrame:
-                // TODO(stackref): Implement ProtectValueClassFrame scanning
-                break;
-
             default:
                 break;
         }

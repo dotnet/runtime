@@ -1322,6 +1322,19 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
+    if ((m_gcFlags & GCFRAME_FLAG_VALUECLASS) != 0)
+    {
+        ProtectValueClassFrame *pProtectValueClassFrame = static_cast<ProtectValueClassFrame *>(this);
+        ValueClassInfo *pVCInfo = *pProtectValueClassFrame->GetValueClassInfoList();
+        while (pVCInfo != NULL)
+        {
+            _ASSERTE(pVCInfo->pMT->IsValueType());
+            ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
+            pVCInfo = pVCInfo->pNext;
+        }
+        return;
+    }
+
     PTR_PTR_Object pRefs = dac_cast<PTR_PTR_Object>(m_pObjRefs);
 
     for (UINT i = 0; i < m_numObjRefs; i++)
@@ -1467,24 +1480,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 }
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
-
-void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ValueClassInfo *pVCInfo = m_pVCInfo;
-    while (pVCInfo != NULL)
-    {
-        _ASSERTE(pVCInfo->pMT->IsValueType());
-        ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
-        pVCInfo = pVCInfo->pNext;
-    }
-}
 
 //
 // Promote Caller Stack

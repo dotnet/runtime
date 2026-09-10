@@ -71,7 +71,7 @@ struct GCFrameRegistration
     GCFrameRegistration* m_pNext;
     void** m_pObjRefs;
     uint32_t m_numObjRefs;
-    int m_MaybeInterior;
+    uint32_t m_gcFlags;
 };
 
 struct InlinedThreadStaticRoot

@@ -3846,12 +3846,6 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION)
             {
                 Frame* pFrame = pThis->m_crawl.GetFrame();
-                // If the frame is ProtectValueClassFrame, move to the next one as we want to report the FuncEvalFrame
-                if (pFrame->GetFrameIdentifier() == FrameIdentifier::ProtectValueClassFrame)
-                {
-                    pFrame = pFrame->PtrNextFrame();
-                    _ASSERTE(pFrame != FRAME_TOP);
-                }
                 if ((pFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
                 {
                     EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pFrame);
