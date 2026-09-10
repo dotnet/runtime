@@ -5558,7 +5558,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_BitConverter_Int32BitsToSingle:
             {
                 GenTree* op1 = impPopStack().val;
-                assert(varTypeIsInt(op1));
+                // The IL stack value may be a small typed node (e.g. IND<ubyte>); it is
+                // normalized to its int value whenever it is materialized in a register.
+                assert(genActualTypeIsInt(op1));
 
                 if (op1->IsIntegralConst())
                 {
