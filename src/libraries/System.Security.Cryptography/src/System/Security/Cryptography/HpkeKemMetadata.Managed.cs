@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -18,47 +19,38 @@ namespace System.Security.Cryptography
             switch (Kem)
             {
                 case HpkeKem.DHKEM_P256_HKDF_SHA256:
-                    SuiteId = [.."KEM"u8, 0x00, 0x10];
-                    KemKdf = CreateKemKdf(HpkeKdf.HKDF_SHA256);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.HKDF_SHA256);
                     break;
                 case HpkeKem.DHKEM_P384_HKDF_SHA384:
-                    SuiteId = [.."KEM"u8, 0x00, 0x11];
-                    KemKdf = CreateKemKdf(HpkeKdf.HKDF_SHA384);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.HKDF_SHA384);
                     break;
                 case HpkeKem.DHKEM_P521_HKDF_SHA512:
-                    SuiteId = [.."KEM"u8, 0x00, 0x12];
-                    KemKdf = CreateKemKdf(HpkeKdf.HKDF_SHA512);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.HKDF_SHA512);
                     break;
                 case HpkeKem.DHKEM_X25519_HKDF_SHA256:
-                    SuiteId = [.."KEM"u8, 0x00, 0x20];
-                    KemKdf = CreateKemKdf(HpkeKdf.HKDF_SHA256);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.HKDF_SHA256);
                     break;
                 case HpkeKem.MLKEM_512:
-                    SuiteId = [.."KEM"u8, 0x00, 0x40];
-                    KemKdf = CreateKemKdf(HpkeKdf.SHAKE256);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.SHAKE256);
                     break;
                 case HpkeKem.MLKEM_768:
-                    SuiteId = [.."KEM"u8, 0x00, 0x41];
-                    KemKdf = CreateKemKdf(HpkeKdf.SHAKE256);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.SHAKE256);
                     break;
                 case HpkeKem.MLKEM_1024:
-                    SuiteId = [.."KEM"u8, 0x00, 0x42];
-                    KemKdf = CreateKemKdf(HpkeKdf.SHAKE256);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.SHAKE256);
                     break;
                 case HpkeKem.MLKEM768_P256:
-                    SuiteId = [.."KEM"u8, 0x00, 0x50];
-                    KemKdf = CreateKemKdf(HpkeKdf.SHAKE256);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.SHAKE256);
                     break;
                 case HpkeKem.MLKEM1024_P384:
-                    SuiteId = [.."KEM"u8, 0x00, 0x51];
-                    KemKdf = CreateKemKdf(HpkeKdf.SHAKE256);
+                    (KemKdf, SuiteId) = CreateMetadata(Kem, HpkeKdf.SHAKE256);
                     break;
                 default:
                     Debug.Fail($"Missing KEM KDF mapping for {Kem}.");
                     throw new CryptographicException();
             }
 
-            static HpkeKdfMetadata CreateKemKdf(HpkeKdf kdf)
+            static (HpkeKdfMetadata Metadata, byte[] SuiteId) CreateMetadata(HpkeKem kem, HpkeKdf kdf)
             {
                 HpkeKdfMetadata? metadata = HpkeKdfMetadata.Create(kdf);
 
@@ -68,7 +60,9 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                return metadata;
+                byte[] suiteId = [.."KEM"u8, 0x00, 0x00];
+                BinaryPrimitives.WriteUInt16BigEndian(suiteId.AsSpan(^2), checked((ushort)kem));
+                return (metadata, suiteId);
             }
         }
 
