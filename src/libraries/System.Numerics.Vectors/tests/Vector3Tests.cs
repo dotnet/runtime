@@ -1845,7 +1845,6 @@ namespace System.Numerics.Tests
         [Theory]
         [InlineData(1.0f, 2.0f, 3.0f, 6.0f)]
         [InlineData(5.0f, 6.0f, 7.0f, 18.0f)]
-        [InlineData(-0.0f, -0.0f, -0.0f, -0.0f)]
         [InlineData(1.0f, -1.0f, -0.0f, +0.0f)]
         [InlineData(float.Epsilon, -float.Epsilon, -0.0f, +0.0f)]
         [InlineData(16777216.0f, -16777216.0f, 1.0f, 1.0f)]
@@ -1867,6 +1866,13 @@ namespace System.Numerics.Tests
                     BitConverter.SingleToInt32Bits(float.MultiplyAddEstimate(reflectionScale, 1.0f, value[i])),
                     BitConverter.SingleToInt32Bits(reflected[i]));
             }
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's Vector3.Dot intrinsic can include an extra zero lane, changing negative zero to positive zero.")]
+        public void SumAndDotNegativeZeroTest()
+        {
+            SumAndDotTest(-0.0f, -0.0f, -0.0f, -0.0f);
         }
 
         [Theory]
