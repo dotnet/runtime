@@ -49,6 +49,11 @@ namespace System.Security.Cryptography
         {
             try
             {
+                // Callers slice these buffers to the suite's exact output sizes.
+                Debug.Assert(key.Length == Suite.AeadMetadata.Nk);
+                Debug.Assert(baseNonce.Length == Suite.AeadMetadata.Nn);
+                Debug.Assert(exporterSecret.Length == Suite.KdfMetadata.Nh);
+
                 DeriveSecretsCore(mode, sharedSecret, info, psk, pskId, key, baseNonce, exporterSecret);
             }
             catch
@@ -116,6 +121,7 @@ namespace System.Security.Cryptography
             Span<byte> exporterSecret)
         {
             int hashLength = Suite.KdfMetadata.Nh;
+            // One mode byte plus psk_id_hash and info_hash; SHA-512 has the largest supported hash size.
             const int MaxStackContextLength = 1 + 2 * SHA512.HashSizeInBytes;
             Span<byte> contextBuffer = stackalloc byte[MaxStackContextLength];
             Span<byte> secretBuffer = stackalloc byte[SHA512.HashSizeInBytes];
@@ -151,6 +157,8 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> ikm,
             Span<byte> prk)
         {
+            // This is HPKE-Extract, but using HMAC directly so we don't need a contiguous buffer of all of
+            // these components. HKDF-Extract is defined as `PRK = HMAC-Hash(salt, IKM)`.
             using (IncrementalHash hmac = IncrementalHash.CreateHMAC(_hashAlgorithm, salt))
             {
                 hmac.AppendData(VersionLabel);
@@ -189,7 +197,8 @@ namespace System.Security.Cryptography
         }
     }
 
-    internal abstract class HpkeManagedShakeKdfAdapter : HpkeManagedKdfAdapter
+    internal abstract class HpkeManagedShakeKdfAdapter<TShake> : HpkeManagedKdfAdapter
+        where TShake : class, IDisposable
     {
         protected HpkeManagedShakeKdfAdapter(HpkeSuite suite) : base(suite)
         {
@@ -207,31 +216,28 @@ namespace System.Security.Cryptography
         {
             // The single-stage schedule length-prefixes both secrets and application context.
             // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.1
-            int secretsLength = checked(2 * sizeof(ushort) + psk.Length + sharedSecret.Length);
-            int contextLength = checked(1 + 2 * sizeof(ushort) + pskId.Length + info.Length);
             int outputLength = checked(key.Length + baseNonce.Length + exporterSecret.Length);
-            const int MaxStackInputLength = 256;
             const int MaxStackOutputLength = 128;
 
-            using (CryptoPoolLease secrets = CryptoPoolLease.RentConditionally(
-                secretsLength, stackalloc byte[MaxStackInputLength]))
+            // Current suites require at most 32 + 12 + 64 bytes for these outputs.
+            Debug.Assert(outputLength <= MaxStackOutputLength);
+
+            using (TShake shake = CreateShake())
             {
-                Span<byte> context = contextLength <= MaxStackInputLength
-                    ? stackalloc byte[MaxStackInputLength]
-                    : new byte[contextLength];
-                context = context.Slice(0, contextLength);
                 Span<byte> outputBuffer = stackalloc byte[MaxStackOutputLength];
 
                 try
                 {
                     Span<byte> output = outputBuffer.Slice(0, outputLength);
-                    int offset = WriteLengthPrefixed(psk, secrets.Span);
-                    WriteLengthPrefixed(sharedSecret, secrets.Span.Slice(offset));
-                    context[0] = mode;
-                    offset = 1 + WriteLengthPrefixed(pskId, context.Slice(1));
-                    WriteLengthPrefixed(info, context.Slice(offset));
 
-                    LabeledDerive(secrets.Span, "secret"u8, context, output);
+                    AppendLengthPrefixed(shake, psk);
+                    AppendLengthPrefixed(shake, sharedSecret);
+                    AppendLabeledDerivePrefix(shake, "secret"u8, outputLength);
+                    Append(shake, new ReadOnlySpan<byte>(in mode));
+                    AppendLengthPrefixed(shake, pskId);
+                    AppendLengthPrefixed(shake, info);
+
+                    GetHashAndReset(shake, output);
                     output.Slice(0, key.Length).CopyTo(key);
                     output.Slice(key.Length, baseNonce.Length).CopyTo(baseNonce);
                     output.Slice(key.Length + baseNonce.Length).CopyTo(exporterSecret);
@@ -246,86 +252,69 @@ namespace System.Security.Cryptography
         protected override void ExportSecretCore(
             ReadOnlySpan<byte> exporterSecret,
             ReadOnlySpan<byte> exporterContext,
-            Span<byte> destination) =>
-            LabeledDerive(exporterSecret, "sec"u8, exporterContext, destination);
-
-        private void LabeledDerive(
-            ReadOnlySpan<byte> ikm,
-            ReadOnlySpan<byte> label,
-            ReadOnlySpan<byte> context,
-            Span<byte> output)
+            Span<byte> destination)
         {
-            // ikm || "HPKE-v1" || suite_id || lengthPrefixed(label) || I2OSP(L, 2) || context
-            // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.4
-            int length = checked(VersionLabel.Length + SuiteId.Length + sizeof(ushort) + label.Length + sizeof(ushort));
-            const int MaxStackPrefixLength = 64;
-            Span<byte> prefixBuffer = stackalloc byte[MaxStackPrefixLength];
-            Span<byte> prefix = prefixBuffer.Slice(0, length);
-            VersionLabel.CopyTo(prefix);
-            int offset = VersionLabel.Length;
-            SuiteId.CopyTo(prefix.Slice(offset));
-            offset += SuiteId.Length;
-            offset += WriteLengthPrefixed(label, prefix.Slice(offset));
-            BinaryPrimitives.WriteUInt16BigEndian(prefix.Slice(offset), checked((ushort)output.Length));
-
-            Derive(ikm, prefix, context, output);
+            using (TShake shake = CreateShake())
+            {
+                Append(shake, exporterSecret);
+                AppendLabeledDerivePrefix(shake, "sec"u8, destination.Length);
+                Append(shake, exporterContext);
+                GetHashAndReset(shake, destination);
+            }
         }
 
-        private static int WriteLengthPrefixed(ReadOnlySpan<byte> value, Span<byte> destination)
+        // "HPKE-v1" || suite_id || lengthPrefixed(label) || I2OSP(L, 2)
+        // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.4
+        private void AppendLabeledDerivePrefix(TShake shake, ReadOnlySpan<byte> label, int outputLength)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(destination, checked((ushort)value.Length));
-            value.CopyTo(destination.Slice(sizeof(ushort)));
-            return sizeof(ushort) + value.Length;
+            Append(shake, VersionLabel);
+            Append(shake, SuiteId);
+            AppendLengthPrefixed(shake, label);
+            Span<byte> lengthBytes = stackalloc byte[sizeof(ushort)];
+            BinaryPrimitives.WriteUInt16BigEndian(lengthBytes, checked((ushort)outputLength));
+            Append(shake, lengthBytes);
         }
 
-        protected abstract void Derive(
-            ReadOnlySpan<byte> ikm,
-            ReadOnlySpan<byte> prefix,
-            ReadOnlySpan<byte> context,
-            Span<byte> output);
+        private void AppendLengthPrefixed(TShake shake, ReadOnlySpan<byte> value)
+        {
+            Span<byte> lengthBytes = stackalloc byte[sizeof(ushort)];
+            BinaryPrimitives.WriteUInt16BigEndian(lengthBytes, checked((ushort)value.Length));
+            Append(shake, lengthBytes);
+            Append(shake, value);
+        }
+
+        protected abstract TShake CreateShake();
+        protected abstract void Append(TShake shake, ReadOnlySpan<byte> data);
+        protected abstract void GetHashAndReset(TShake shake, Span<byte> destination);
     }
 
-    internal sealed class HpkeManagedShake128KdfAdapter : HpkeManagedShakeKdfAdapter
+    internal sealed class HpkeManagedShake128KdfAdapter : HpkeManagedShakeKdfAdapter<Shake128>
     {
         internal HpkeManagedShake128KdfAdapter(HpkeSuite suite) : base(suite)
         {
         }
 
-        protected override void Derive(
-            ReadOnlySpan<byte> ikm,
-            ReadOnlySpan<byte> prefix,
-            ReadOnlySpan<byte> context,
-            Span<byte> output)
-        {
-            using (Shake128 shake = new Shake128())
-            {
-                shake.AppendData(ikm);
-                shake.AppendData(prefix);
-                shake.AppendData(context);
-                shake.GetHashAndReset(output);
-            }
-        }
+        protected override Shake128 CreateShake() => new Shake128();
+
+        protected override void Append(Shake128 shake, ReadOnlySpan<byte> data) =>
+            shake.AppendData(data);
+
+        protected override void GetHashAndReset(Shake128 shake, Span<byte> destination) =>
+            shake.GetHashAndReset(destination);
     }
 
-    internal sealed class HpkeManagedShake256KdfAdapter : HpkeManagedShakeKdfAdapter
+    internal sealed class HpkeManagedShake256KdfAdapter : HpkeManagedShakeKdfAdapter<Shake256>
     {
         internal HpkeManagedShake256KdfAdapter(HpkeSuite suite) : base(suite)
         {
         }
 
-        protected override void Derive(
-            ReadOnlySpan<byte> ikm,
-            ReadOnlySpan<byte> prefix,
-            ReadOnlySpan<byte> context,
-            Span<byte> output)
-        {
-            using (Shake256 shake = new Shake256())
-            {
-                shake.AppendData(ikm);
-                shake.AppendData(prefix);
-                shake.AppendData(context);
-                shake.GetHashAndReset(output);
-            }
-        }
+        protected override Shake256 CreateShake() => new Shake256();
+
+        protected override void Append(Shake256 shake, ReadOnlySpan<byte> data) =>
+            shake.AppendData(data);
+
+        protected override void GetHashAndReset(Shake256 shake, Span<byte> destination) =>
+            shake.GetHashAndReset(destination);
     }
 }
