@@ -117,15 +117,23 @@ internal static partial class Interop
         /// <returns>true if the limit was read successfully; otherwise, false.</returns>
         internal static bool TryGetMemoryLimitV2(out ulong limit)
         {
+            return TryGetMemoryLimitV2(s_cgroupMemoryPath, s_cgroupMemoryHierarchyMountPath, out limit);
+        }
+
+        /// <summary>Tries to read the memory limit from a cgroup v2 path hierarchy.</summary>
+        /// <param name="currentCGroupMemoryPath">The current cgroup memory path.</param>
+        /// <param name="cgroupMemoryHierarchyMountPath">The cgroup memory hierarchy mount path.</param>
+        /// <param name="limit">The read limit, or 0 if it couldn't be read.</param>
+        /// <returns>true if the limit was read successfully; otherwise, false.</returns>
+        internal static bool TryGetMemoryLimitV2(string? currentCGroupMemoryPath, string? cgroupMemoryHierarchyMountPath, out ulong limit)
+        {
             bool foundAnyLimit = false;
             ulong minLimit = ulong.MaxValue;
-            string? currentCGroupMemoryPath = s_cgroupMemoryPath;
-            string? cgroupMemoryHierarchyMountPath = s_cgroupMemoryHierarchyMountPath;
             if (currentCGroupMemoryPath != null && cgroupMemoryHierarchyMountPath != null)
             {
                 // Iterate over the directory hierarchy representing the cgroup hierarchy until reaching the
-                // mount directory. The mount directory doesn't contain the memory.max.
-                do
+                // mount directory. The mount directory can contain memory.max when it is not the global root.
+                while (currentCGroupMemoryPath != null && IsPathAtOrBelowMount(currentCGroupMemoryPath, cgroupMemoryHierarchyMountPath))
                 {
                     if (TryReadMemoryValueFromFile(currentCGroupMemoryPath + "/memory.max", out ulong currentLevelLimit))
                     {
@@ -135,14 +143,28 @@ internal static partial class Interop
                             minLimit = currentLevelLimit;
                         }
                     }
+                    if (string.Equals(currentCGroupMemoryPath, cgroupMemoryHierarchyMountPath, StringComparison.Ordinal))
+                    {
+                        break;
+                    }
+
                     currentCGroupMemoryPath = Path.GetDirectoryName(currentCGroupMemoryPath);
                 }
-                while (currentCGroupMemoryPath!.Length != cgroupMemoryHierarchyMountPath.Length);
             }
 
             limit = minLimit;
 
             return foundAnyLimit;
+        }
+
+        private static bool IsPathAtOrBelowMount(string path, string mount)
+        {
+            if (string.Equals(path, mount, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return mount == "/" || path.StartsWith(mount + "/", StringComparison.Ordinal);
         }
 
         /// <summary>Tries to parse a memory limit from the specified file.</summary>
