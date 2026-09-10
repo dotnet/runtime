@@ -60,6 +60,7 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
             FinalizeSectionEntryCounts();
+            _dataSection?.AssignSegmentLayout();
             ResolveSectionRelocations();
 
             EmitWasmHeader(outputFileStream);
