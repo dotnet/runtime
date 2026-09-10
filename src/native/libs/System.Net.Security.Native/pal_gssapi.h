@@ -226,7 +226,9 @@ peer principal, such as "urn:mspac:logon-info" for the Kerberos PAC logon inform
 
 Name attributes are an optional GSSAPI feature (RFC 6680) and individual attributes are
 frequently absent, so neither condition is reported as an error. Both are reported by
-setting isAvailable to 0 and returning GSS_S_COMPLETE with an empty outBuffer.
+setting isAvailable to 0 and returning GSS_S_COMPLETE with an empty outBuffer. Failures
+while querying the established context or retrieving an available attribute are returned
+to the caller.
 
 isAuthenticated reports whether the GSSAPI mechanism vouches for the attribute value. A
 value of 0 means the mechanism could not verify it and it must not be trusted.
