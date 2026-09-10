@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <MergedWrapperProjectReference Include="JitBlue/Runtime_*/**/*.??proj" />
+    <MergedWrapperProjectReference Include="JitBlue/Regression_2/**/*.??proj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
