@@ -566,13 +566,21 @@ uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
 
         if (majorStatus == GSS_S_COMPLETE)
         {
-            *isAvailable = 1;
-            *isAuthenticated = authenticated != 0 ? 1 : 0;
+            if (complete != 0)
+            {
+                *isAvailable = 1;
+                *isAuthenticated = authenticated != 0 ? 1 : 0;
 
-            // Only the first value is returned. The attributes consumed by this shim are
-            // single-valued, and a mechanism reporting more of them is not something the
-            // caller can act on.
-            NetSecurityNative_MoveBuffer(&value, outBuffer);
+                // Only the first value is returned. The attributes consumed by this shim are
+                // single-valued, and a mechanism reporting more of them is not something the
+                // caller can act on.
+                NetSecurityNative_MoveBuffer(&value, outBuffer);
+            }
+            else
+            {
+                gss_release_buffer(&ignoredMinor, &value);
+            }
+
             gss_release_buffer(&ignoredMinor, &displayValue);
         }
         else if (majorStatus == GSS_S_UNAVAILABLE)
