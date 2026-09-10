@@ -26,8 +26,8 @@
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
 
     <!-- Request crossgen2 here: WebAssembly.Pack is not imported before the first restore.
-         WasmBuildNative is determined too late to gate this request. -->
-    <RequiresCrossgen2Pack Condition="'$(RequiresCrossgen2Pack)' == ''">true</RequiresCrossgen2Pack>
+         Only skip an explicit opt-out; otherwise native relinking may be inferred later. -->
+    <RequiresCrossgen2Pack Condition="'$(RequiresCrossgen2Pack)' == '' and '$(WasmBuildNative)' != 'false'">true</RequiresCrossgen2Pack>
 
     <!-- EH and SIMD are always enabled for CoreCLR — detect user overrides before forcing true -->
     <_CoreCLRInvalidEH Condition="'$(WasmEnableExceptionHandling)' != '' and '$(WasmEnableExceptionHandling)' != 'true'">true</_CoreCLRInvalidEH>
