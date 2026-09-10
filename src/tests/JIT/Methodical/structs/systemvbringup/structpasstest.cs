@@ -46,7 +46,7 @@ namespace structinreg
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/133565", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBrowser), nameof(TestLibrary.PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133565", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm), nameof(TestLibrary.PlatformDetection.IsCoreCLR))]
         [Fact]
         [OuterLoop]
         public static int TestPInvokeCallbacks()
