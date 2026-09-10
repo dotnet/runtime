@@ -8088,7 +8088,7 @@ DONE_MORPHING_CHILDREN:
                 if ((op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle()) || op1op2->IsCnsFltOrDbl())
                 {
                     // NEG(MUL(a, C)) => MUL(a, NEG(C))
-                    // NEG(DIV(a, C)) => DIV(a, NEG(C)), except when C = {-1, 1} for integral
+                    // NEG(DIV(a, C)) => DIV(a, NEG(C)), except when C = {-1, 1, MIN} for integral
 
                     bool canTransform = true;
 
@@ -8096,8 +8096,22 @@ DONE_MORPHING_CHILDREN:
                     {
                         if (mulOrDiv->OperIs(GT_DIV))
                         {
-                            ssize_t constVal = op1op2->AsIntCon()->IconValue();
-                            canTransform     = (constVal != -1) && (constVal != 1);
+                            int64_t constVal = op1op2->AsIntCon()->IconValue();
+                            int64_t minVal   = INT64_MIN;
+
+                            if (mulOrDiv->TypeIs(TYP_INT))
+                            {
+                                constVal = static_cast<int32_t>(constVal);
+                                minVal   = INT32_MIN;
+                            }
+
+                            // Negating the divisor must be exact and must throw for exactly the same
+                            // inputs as the original expression:
+                            //  * C == 1: DIV(a, -1) throws for a == MIN, NEG(DIV(a, 1)) does not.
+                            //  * C == -1: NEG(DIV(a, -1)) throws for a == MIN, DIV(a, 1) does not.
+                            //  * C == MIN: -C is not representable and wraps back to MIN, which would
+                            //    silently drop the negation.
+                            canTransform = (constVal != -1) && (constVal != 1) && (constVal != minVal);
                         }
                         else
                         {
