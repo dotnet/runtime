@@ -5378,7 +5378,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             // `rank` is guaranteed to be <=32 (see MAX_RANK in vm\array.h). Any constant argument
                             // is `int` sized.
                             INT64 dimValue = gtDim->AsIntConCommon()->IntegralValue();
-                            assert((unsigned int)dimValue == dimValue);
+                            assert((int)dimValue == dimValue);
                             unsigned dim = (unsigned int)dimValue;
                             if (dim < rank)
                             {
