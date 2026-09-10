@@ -5,8 +5,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -16,8 +14,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal partial class StackWalk_1 : IStackWalk
 {
-    private const int MaxValueClassRecursionDepth = 64;
-
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly GcScanner _gcScanner;
@@ -431,12 +427,9 @@ internal partial class StackWalk_1 : IStackWalk
     // Reports each object reference protected by the thread's GCFrame (GCPROTECT) chain.
     // GCFrame::GcScanRoots reports m_pObjRefs[0..m_numObjRefs), using an interior promotion when
     // m_gcFlags != 0; the GC reports the same set in gcenv.ee.cpp ScanStackRoots.
-    private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
+    protected virtual void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
     {
         ulong pointerSize = (ulong)_target.PointerSize;
-        uint valueClassFlag = _target.TryReadGlobal<uint>(Constants.Globals.GCFrameValueClassFlag, out uint? valueClassFlagValue)
-            ? valueClassFlagValue.GetValueOrDefault()
-            : 0;
         HashSet<TargetPointer> seen = [];
         TargetPointer pGCFrame = threadData.GCFrame;
         while (pGCFrame != TargetPointer.Null)
@@ -449,82 +442,12 @@ internal partial class StackWalk_1 : IStackWalk
             // A GCFrame node lives on the stack but is a separate chain from the explicit Frame chain.
             scanContext.UpdateScanContext(pGCFrame, TargetCodePointer.Null, pGCFrame, StackRefData.SourceTypes.StackSourceOther);
             GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
-            if ((gcFrame.GCFlags & valueClassFlag) != 0)
+            for (uint i = 0; i < gcFrame.NumObjRefs; i++)
             {
-                ReportValueClassFrameRoots(pGCFrame, scanContext);
-            }
-            else
-            {
-                for (uint i = 0; i < gcFrame.NumObjRefs; i++)
-                {
-                    TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
-                    scanContext.GCReportCallback(slot, flags);
-                }
+                TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
+                scanContext.GCReportCallback(slot, flags);
             }
             pGCFrame = gcFrame.Next;
-        }
-    }
-
-    private void ReportValueClassFrameRoots(TargetPointer frame, GcScanContext scanContext)
-    {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        Data.ProtectValueClassFrame valueClassFrame = _target.ProcessedData.GetOrAdd<Data.ProtectValueClassFrame>(frame);
-        HashSet<TargetPointer> seen = [];
-        TargetPointer infoAddress = valueClassFrame.ValueClassInfoList;
-        while (infoAddress != TargetPointer.Null)
-        {
-            if (!seen.Add(infoAddress))
-                throw new InvalidOperationException("Found a cycle when processing a ProtectValueClassFrame list.");
-
-            Data.ValueClassInfo info = _target.ProcessedData.GetOrAdd<Data.ValueClassInfo>(infoAddress);
-            ITypeHandle typeHandle = rts.GetTypeHandle(info.MethodTable);
-            if (rts.IsByRefLike(typeHandle))
-            {
-                ReportByRefLikeValueClassRoots(rts, typeHandle, info.Data, scanContext, 0);
-            }
-
-            foreach ((uint offset, uint size) in rts.GetGCDescSeries(typeHandle))
-            {
-                ulong unboxedOffset = offset - (uint)_target.PointerSize;
-                for (ulong innerOffset = 0; innerOffset < size; innerOffset += (uint)_target.PointerSize)
-                {
-                    scanContext.GCReportCallback(info.Data + unboxedOffset + innerOffset, GcScanFlags.None);
-                }
-            }
-
-            infoAddress = info.Next;
-        }
-    }
-
-    private static void ReportByRefLikeValueClassRoots(
-        IRuntimeTypeSystem rts,
-        ITypeHandle typeHandle,
-        TargetPointer data,
-        GcScanContext scanContext,
-        int depth)
-    {
-        if (depth > MaxValueClassRecursionDepth)
-            return;
-
-        foreach (TargetPointer fieldDesc in rts.GetFieldDescList(typeHandle))
-        {
-            if (rts.IsFieldDescStatic(fieldDesc))
-                continue;
-
-            uint offset = rts.GetFieldDescOffset(fieldDesc, fieldDef: null);
-            CorElementType fieldType = rts.GetFieldDescType(fieldDesc);
-            if (fieldType == CorElementType.Byref)
-            {
-                scanContext.GCReportCallback(data + offset, GcScanFlags.GC_CALL_INTERIOR);
-            }
-            else if (fieldType == CorElementType.ValueType)
-            {
-                ITypeHandle? nestedType = rts.GetFieldDescApproxTypeHandle(fieldDesc);
-                if (nestedType is not null && rts.IsByRefLike(nestedType))
-                {
-                    ReportByRefLikeValueClassRoots(rts, nestedType, data + offset, scanContext, depth + 1);
-                }
-            }
         }
     }
 

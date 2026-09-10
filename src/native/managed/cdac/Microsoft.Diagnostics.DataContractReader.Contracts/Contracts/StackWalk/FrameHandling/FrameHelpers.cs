@@ -38,6 +38,7 @@ internal enum FrameType
     TailCallFrame,
 
     /* Other Frame Types not handled by the iterator */
+    ProtectValueClassFrame,
     DebuggerClassInitMarkFrame,
     DebuggerExitFrame,
     DebuggerU2MCatchHandlerFrame,

@@ -415,7 +415,7 @@ public unsafe partial class TargetTests
             ["RuntimeTypeSystem"] = "c1",
             ["SHash"] = "c1",
             ["Signature"] = "c1",
-            ["StackWalk"] = "c1",
+            ["StackWalk"] = "c2",
             ["StressLog"] = "c2",
             ["SyncBlock"] = "c1",
             ["Thread"] = "c1",
