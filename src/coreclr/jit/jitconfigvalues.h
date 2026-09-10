@@ -137,6 +137,8 @@ CONFIG_INTEGER(JitAwaitHashBreak, "JitAwaitHashBreak", -1)    // Break on jittin
 
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
+// Restore the pre-.NET 11 unchecked float/double-to-small-integral conversion behavior.
+RELEASE_CONFIG_INTEGER(JitUseLegacySmallFpToIntConversion, "JitUseLegacySmallFpToIntConversion", 0)
 #if defined(TARGET_ARM64)
 RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 0)
 #endif

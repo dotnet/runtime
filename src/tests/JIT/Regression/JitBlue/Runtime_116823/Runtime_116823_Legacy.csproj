@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <DefineConstants>$(DefineConstants);LEGACY_SMALL_FP_TO_INT_CONVERSION</DefineConstants>
+    <CrossGenTest>false</CrossGenTest>
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Runtime_116823.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitUseLegacySmallFpToIntConversion" Value="1" />
+  </ItemGroup>
+</Project>

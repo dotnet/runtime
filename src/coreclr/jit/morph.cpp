@@ -293,6 +293,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // Do we need to do it in two steps R -> I -> smallType?
         if (varTypeIsSmall(dstType))
         {
+            const bool useLegacySmallFpToIntConversion = JitConfig.JitUseLegacySmallFpToIntConversion() != 0;
+
             // For non-overflow casts of float/double -> smallType, clamp the float
             // source to [smallMin, smallMax] before the R -> int conversion so that
             // the truncating CAST(smallType <- int) produces saturating results,
@@ -315,7 +317,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
             // when the value is out of range.
 #if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_WASM)
-            if (!tree->gtOverflow())
+            if (!tree->gtOverflow() && !useLegacySmallFpToIntConversion)
             {
                 double smallMin;
                 double smallMax;
@@ -374,7 +376,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // clamp the int32 result of the R -> int cast to the small type range.
             // NaN input maps to 0 via the saturating R -> int cast above, which is
             // already in range for any small type.
-            if (!tree->gtOverflow())
+            if (!tree->gtOverflow() && !useLegacySmallFpToIntConversion)
             {
                 NamedIntrinsic satIntrinsic;
                 switch (dstType)

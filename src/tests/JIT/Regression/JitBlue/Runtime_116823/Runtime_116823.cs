@@ -45,6 +45,17 @@ public class Runtime_116823
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static char FloatToChar(float v) => (char)v;
 
+#if LEGACY_SMALL_FP_TO_INT_CONVERSION
+    [Fact]
+    [SkipOnMono("The compatibility switch is specific to the CoreCLR JIT.")]
+    public static void TestEntryPoint()
+    {
+        Assert.Equal((ushort)4714, DoubleToUShort(70250.0));
+        Assert.Equal((ushort)65526, DoubleToUShort(-10.0));
+        Assert.Equal((ushort)4714, FloatToUShort(70250.0f));
+        Assert.Equal((ushort)65526, FloatToUShort(-10.0f));
+    }
+#else
     [Fact]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
     public static void TestEntryPoint()
@@ -140,4 +151,5 @@ public class Runtime_116823
         Assert.Equal((char)0, FloatToChar(float.NegativeInfinity));
         Assert.Equal((char)0, FloatToChar(float.NaN));
     }
+#endif
 }
