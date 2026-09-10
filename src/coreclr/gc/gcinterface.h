@@ -658,10 +658,7 @@ class IGCHeap {
 public:
     /*
     ===========================================================================
-    Hosting APIs. These are used by GC hosting. The code that
-    calls these methods may possibly be moved behind the interface -
-    today, the VM handles the setting of segment size and max gen 0 size.
-    (See src/vm/corehost.cpp)
+    Heap sizing and virtual memory limit APIs.
     ===========================================================================
     */
 
