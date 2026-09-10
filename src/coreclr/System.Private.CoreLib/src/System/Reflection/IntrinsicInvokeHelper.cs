@@ -161,6 +161,7 @@ namespace System.Reflection
                         argumentTypes[1].IsByRef && IsReferenceType(argumentTypes[1].GetElementType()!) &&
                         returnType == typeof(bool))
                     {
+                        // Thunk for the .NET TryParse pattern with reference-type results.
                         thunk = &Static_Bool_ObjByRefObj;
                     }
                 }
