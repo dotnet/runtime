@@ -2022,7 +2022,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake client authentication.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Android, "Neither SecureTransport nor JSSE supports post-handshake client authentication.")]
         public async Task ServerSession_RequestClientCertificate_DrivesSecondHandshakeToCompletion(SslProtocols protocol)
         {
             if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
@@ -2107,7 +2107,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake client authentication.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Android, "Neither SecureTransport nor JSSE supports post-handshake client authentication.")]
         public async Task ServerSession_RequestClientCertificate_SessionRemainsUsable(SslProtocols protocol)
         {
             if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
@@ -2179,7 +2179,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake client authentication.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Android, "Neither SecureTransport nor JSSE supports post-handshake client authentication.")]
         public async Task ServerSession_RequestClientCertificate_ReadWriteDuringSecondHandshake_Throws(SslProtocols protocol)
         {
             if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
@@ -2799,7 +2799,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake client authentication.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Android, "Neither SecureTransport nor JSSE supports post-handshake client authentication.")]
         public async Task SocketBoundSession_RequestClientCertificate_DrivesSecondHandshakeToCompletion(SslProtocols protocol)
         {
             if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
