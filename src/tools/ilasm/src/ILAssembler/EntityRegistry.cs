@@ -374,24 +374,24 @@ namespace ILAssembler
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
-                    bool forceFatHeader = (methodDef.MaxStack < 8 || methodDef.BodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
+                    bool requiresFatHeaderWhenExceptionRegionsAreOmitted =
+                        (methodDef.MaxStack < 8 || methodDef.BodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
                         && methodDef.MethodBody.CodeBuilder.Count < 64
-                        && localsSigHandle.IsNil
-                        && methodDef.ExceptionRegions.Count == 0;
+                        && localsSigHandle.IsNil;
+                    if (requiresFatHeaderWhenExceptionRegionsAreOmitted && methodDef.ExceptionRegions.Count == 0)
+                    {
+                        // A non-nil empty locals signature forces a fat header without changing InitLocals.
+                        localsSigHandle = GetOrCreateEmptyLocalsSignature();
+                    }
+
                     try
                     {
-                        MethodBodyAttributes encodingAttributes = methodDef.BodyAttributes;
-                        if (forceFatHeader)
-                        {
-                            encodingAttributes |= MethodBodyAttributes.InitLocals;
-                        }
-
                         bodyOffset = bodyStreamEncoder.AddMethodBody(
                             methodDef.MethodBody,
                             methodDef.MaxStack,
                             localsSigHandle,
-                            encodingAttributes,
-                            methodDef.HasDynamicStackAllocation || forceFatHeader);
+                            methodDef.BodyAttributes,
+                            methodDef.HasDynamicStackAllocation);
                     }
                     catch (InvalidOperationException)
                     {
@@ -403,9 +403,9 @@ namespace ILAssembler
                             methodDef.MaxStack,
                             exceptionRegionCount: 0,
                             hasSmallExceptionRegions: true,
-                            localsSigHandle,
-                            forceFatHeader ? methodDef.BodyAttributes | MethodBodyAttributes.InitLocals : methodDef.BodyAttributes,
-                            hasDynamicStackAllocation: methodDef.HasDynamicStackAllocation || forceFatHeader);
+                            requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
+                            methodDef.BodyAttributes,
+                            methodDef.HasDynamicStackAllocation);
                         bodyOffset = fallbackBody.Offset;
                         var writer1 = new BlobWriter(fallbackBody.Instructions);
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer1);
@@ -420,9 +420,9 @@ namespace ILAssembler
                             methodDef.MaxStack,
                             exceptionRegionCount: 0,
                             hasSmallExceptionRegions: true,
-                            localsSigHandle,
-                            forceFatHeader ? methodDef.BodyAttributes | MethodBodyAttributes.InitLocals : methodDef.BodyAttributes,
-                            hasDynamicStackAllocation: methodDef.HasDynamicStackAllocation || forceFatHeader);
+                            requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
+                            methodDef.BodyAttributes,
+                            methodDef.HasDynamicStackAllocation);
                         bodyOffset = fallbackBody.Offset;
                         var writer2 = new BlobWriter(fallbackBody.Instructions);
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
@@ -1646,6 +1646,13 @@ namespace ILAssembler
         public StandaloneSignatureEntity GetOrCreateStandaloneSignature(BlobBuilder signature)
         {
             return GetOrCreateEntity(signature, TableIndex.StandAloneSig, _seenStandaloneSignatures, (sig) => new(sig), _ => { });
+        }
+
+        private StandaloneSignatureHandle GetOrCreateEmptyLocalsSignature()
+        {
+            BlobBuilder signature = new();
+            new BlobEncoder(signature).LocalVariableSignature(0);
+            return (StandaloneSignatureHandle)GetOrCreateStandaloneSignature(signature).Handle;
         }
 
         public DeclarativeSecurityAttributeEntity CreateDeclarativeSecurityAttribute(DeclarativeSecurityAction action, BlobBuilder permissionSet)
