@@ -1895,17 +1895,19 @@ namespace System.Reflection
             }
 
             // Keep fixed primitives unboxed. Only the bounded common case uses stack storage.
-            AttributeReferenceStorage referenceStorage = default;
+            const int MaxStackAttributeArguments = 16;
+            InlineArray16<object?> referenceStorage = default;
+            InlineArray16<ulong> primitiveStorage = default;
+            InlineArray16<IntPtr> byrefStorage = default;
             Span<object?> references = argumentCount <= MaxStackAttributeArguments
                 ? ((Span<object?>)referenceStorage).Slice(0, argumentCount)
                 : new object?[argumentCount];
             Span<ulong> primitives = argumentCount <= MaxStackAttributeArguments
-                ? stackalloc ulong[MaxStackAttributeArguments]
+                ? primitiveStorage
                 : new ulong[argumentCount];
             Span<IntPtr> byrefs = argumentCount <= MaxStackAttributeArguments
-                ? stackalloc IntPtr[MaxStackAttributeArguments]
+                ? byrefStorage
                 : new IntPtr[argumentCount];
-            byrefs.Clear();
 
             fixed (IntPtr* argumentStorage = byrefs)
             {
@@ -1950,17 +1952,9 @@ namespace System.Reflection
             }
         }
 
-        private const int MaxStackAttributeArguments = 16;
-
         // The caller registers this native vector as byrefs for the lifetime of the invocation.
         private static void StoreArgumentReference<T>(IntPtr* storage, scoped ref T value) =>
             *storage = (IntPtr)Unsafe.AsPointer(ref value);
-
-        [InlineArray(MaxStackAttributeArguments)]
-        private struct AttributeReferenceStorage
-        {
-            private object? _element0;
-        }
 
         private static void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
