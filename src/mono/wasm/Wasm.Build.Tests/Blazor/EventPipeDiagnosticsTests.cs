@@ -262,7 +262,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         string referenceDir = Path.Combine(_projectDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor);
         Assert.True(Directory.Exists(referenceDir), $"Reference assembly directory {referenceDir} was not found");
 
-        // dotnet-pgo is copied next to the test by the _CopyDotnetPgoToTestOutput target.
+        // dotnet-pgo is deployed next to the test by the _AddDotnetPgoToTestPayload target.
         string pgoTool = Path.Combine(AppContext.BaseDirectory, "dotnet-pgo", "dotnet-pgo.dll");
         Assert.True(File.Exists(pgoTool), $"dotnet-pgo was not found at {pgoTool}");
 
