@@ -13,10 +13,6 @@ namespace System.Runtime
         public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
         {
         }
-
-        public GCFrameRegistration(void* valueClassInfo)
-        {
-        }
 #pragma warning restore IDE0060
 
         [Conditional("unnecessary")]

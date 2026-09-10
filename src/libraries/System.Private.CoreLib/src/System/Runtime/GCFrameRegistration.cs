@@ -10,7 +10,9 @@ namespace System.Runtime
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct GCFrameRegistration
     {
+#if CORECLR
         private const uint GCFrameValueClassFlag = 0x80000000;
+#endif
 
         private nuint _reserved1;
         private nuint _reserved2;
@@ -20,7 +22,9 @@ namespace System.Runtime
 #if FEATURE_INTERPRETER
         private nuint _osStackLocation;
 #endif
+#if CORECLR
         private void* _pValueClassInfo;
+#endif
 
         public GCFrameRegistration(void** allocation, uint elemCount, bool areByRefs = true)
         {
@@ -32,9 +36,12 @@ namespace System.Runtime
 #if FEATURE_INTERPRETER
             _osStackLocation = 0;
 #endif
+#if CORECLR
             _pValueClassInfo = null;
+#endif
         }
 
+#if CORECLR
         public GCFrameRegistration(void* valueClassInfo)
         {
             _reserved1 = 0;
@@ -47,6 +54,7 @@ namespace System.Runtime
 #endif
             _pValueClassInfo = valueClassInfo;
         }
+#endif
 
 #if CORECLR
         [MethodImpl(MethodImplOptions.InternalCall)]

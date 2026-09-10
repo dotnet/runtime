@@ -590,7 +590,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         for (uint32_t i = 0; i < pCurGCFrame->m_numObjRefs; i++)
         {
             EnumGcRef(dac_cast<PTR_OBJECTREF>(pCurGCFrame->m_pObjRefs + i),
-                (pCurGCFrame->m_gcFlags & GC_CALL_INTERIOR) != 0 ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
+                pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
         }
     }
 }

@@ -16,6 +16,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal partial class StackWalk_1 : IStackWalk
 {
+    private const int MaxValueClassRecursionDepth = 64;
+
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly GcScanner _gcScanner;
@@ -474,6 +476,11 @@ internal partial class StackWalk_1 : IStackWalk
 
             Data.ValueClassInfo info = _target.ProcessedData.GetOrAdd<Data.ValueClassInfo>(infoAddress);
             ITypeHandle typeHandle = rts.GetTypeHandle(info.MethodTable);
+            if (rts.IsByRefLike(typeHandle))
+            {
+                ReportByRefLikeValueClassRoots(rts, typeHandle, info.Data, scanContext, 0);
+            }
+
             foreach ((uint offset, uint size) in rts.GetGCDescSeries(typeHandle))
             {
                 ulong unboxedOffset = offset - (uint)_target.PointerSize;
@@ -484,6 +491,38 @@ internal partial class StackWalk_1 : IStackWalk
             }
 
             infoAddress = info.Next;
+        }
+    }
+
+    private static void ReportByRefLikeValueClassRoots(
+        IRuntimeTypeSystem rts,
+        ITypeHandle typeHandle,
+        TargetPointer data,
+        GcScanContext scanContext,
+        int depth)
+    {
+        if (depth > MaxValueClassRecursionDepth)
+            return;
+
+        foreach (TargetPointer fieldDesc in rts.GetFieldDescList(typeHandle))
+        {
+            if (rts.IsFieldDescStatic(fieldDesc))
+                continue;
+
+            uint offset = rts.GetFieldDescOffset(fieldDesc, fieldDef: null);
+            CorElementType fieldType = rts.GetFieldDescType(fieldDesc);
+            if (fieldType == CorElementType.Byref)
+            {
+                scanContext.GCReportCallback(data + offset, GcScanFlags.GC_CALL_INTERIOR);
+            }
+            else if (fieldType == CorElementType.ValueType)
+            {
+                ITypeHandle? nestedType = rts.GetFieldDescApproxTypeHandle(fieldDesc);
+                if (nestedType is not null && rts.IsByRefLike(nestedType))
+                {
+                    ReportByRefLikeValueClassRoots(rts, nestedType, data + offset, scanContext, depth + 1);
+                }
+            }
         }
     }
 
