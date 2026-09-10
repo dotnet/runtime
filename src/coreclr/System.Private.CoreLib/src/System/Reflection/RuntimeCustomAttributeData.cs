@@ -2118,7 +2118,6 @@ namespace System.Reflection
             try
             {
                 int written = Encoding.UTF8.GetChars(utf8Name, name);
-                // This is the span-based CA resolver used by the native decoder as well.
                 return TypeNameResolver.GetTypeHelper(name.Slice(0, written), module.GetRuntimeAssembly(),
                     throwOnError: true, requireAssemblyQualifiedName: false);
             }
