@@ -13,9 +13,7 @@ set(CLR_CMAKE_HOST_OS ${CMAKE_SYSTEM_NAME})
 string(TOLOWER ${CLR_CMAKE_HOST_OS} CLR_CMAKE_HOST_OS)
 # OpenHarmony uses the OHOS NDK CMake toolchain which sets
 # CMAKE_SYSTEM_NAME=OHOS. Its libc is musl-based, so treat it as a linux/musl target.
-# NOTE: 'ohos' here is the NDK toolchain's contract name (lowercased
-# CMAKE_SYSTEM_NAME) - not the .NET RID, which is 'openharmony'. Keep matching
-# the NDK's 'OHOS'; the NDK does not rename with the .NET RID.
+# NOTE: 'ohos' here is the NDK toolchain's contract name (lowercased CMAKE_SYSTEM_NAME)
 if(CLR_CMAKE_HOST_OS STREQUAL ohos)
     set(CLR_CMAKE_HOST_OS linux)
     set(CLR_CMAKE_HOST_LINUX_MUSL 1)
