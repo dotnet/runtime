@@ -1935,6 +1935,25 @@ extern "C" int32_t CoreCLR_AttachLazyR2RImage(const char *assemblySimpleName, vo
 
         if (pTargetModule == NULL)
         {
+            // The assembly is downloaded and registered but not loaded yet (no type used). Force-load it by
+            // simple name so its supplement is still attached and ready for future use, rather than
+            // discarding the downloaded image (we do not know which assemblies the app will touch next).
+            // A simple-name spec still requires a (zeroed) metadata context, and an explicit binder so it
+            // resolves against the app's default load context (there is no managed caller on this stack).
+            AssemblySpec spec;
+            AssemblyMetaDataInternal asmContext;
+            memset(&asmContext, 0, sizeof(asmContext));
+            spec.Init(assemblySimpleName, &asmContext, NULL, 0, 0);
+            Assembly *pRoot = AppDomain::GetCurrentDomain()->GetRootAssembly();
+            if (pRoot != NULL)
+                spec.SetExplicitBinder(pRoot->GetPEAssembly()->GetAssemblyBinder());
+            Assembly *pForced = spec.LoadAssembly(FILE_LOADED, FALSE /* fThrowOnFileNotFound */);
+            if (pForced != NULL)
+                pTargetModule = pForced->GetModule();
+        }
+
+        if (pTargetModule == NULL)
+        {
             result = -3;
         }
         else
@@ -1943,12 +1962,21 @@ extern "C" int32_t CoreCLR_AttachLazyR2RImage(const char *assemblySimpleName, vo
             AssemblyBinder *pBinder = pTargetModule->GetPEAssembly()->GetAssemblyBinder();
             LoaderAllocator *pLoaderAllocator = pTargetModule->GetLoaderAllocator();
 
-            NativeImage *pLazyImage = NativeImage::OpenFromMemory(
-                (TADDR)payloadPtr, (uint32_t)payloadSize, assemblySimpleName, pBinder, pLoaderAllocator, &amTracker);
+            ReadyToRunInfo *pInfo = NULL;
+            {
+                // The supplemental attach builds a ReadyToRunInfo for the composite-of-one image, which
+                // declares MVID dependencies and therefore requires the AppDomain file-load lock to be held
+                // (the normal composite-load path holds it). We are called from a fetch continuation outside
+                // that path, so acquire it explicitly around the attach.
+                AppDomain::LoadLockHolder loadLock(AppDomain::GetCurrentDomain());
 
-            ReadyToRunInfo *pInfo = (pLazyImage != NULL)
-                ? ReadyToRunInfo::AttachSupplemental(pTargetModule, pLazyImage, &amTracker)
-                : NULL;
+                NativeImage *pLazyImage = NativeImage::OpenFromMemory(
+                    (TADDR)payloadPtr, (uint32_t)payloadSize, assemblySimpleName, pBinder, pLoaderAllocator, &amTracker);
+
+                pInfo = (pLazyImage != NULL)
+                    ? ReadyToRunInfo::AttachSupplemental(pTargetModule, pLazyImage, &amTracker)
+                    : NULL;
+            }
 
             if (pInfo == NULL)
                 result = -4;
