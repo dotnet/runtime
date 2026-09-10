@@ -349,6 +349,9 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
+// Selects the APX jmpabs stub encoding; set by EEJitManager::SetCpuInfo() when APX is available.
+GVAL_IMPL_INIT(bool, g_isJmpAbsAvailable, false);
+
 bool isBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
@@ -410,18 +413,6 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 
 
 #ifndef DACCESS_COMPILE
-
-bool IsJmpAbsAvailable()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Cache the result in a static local - initialized once on first call
-    static const bool s_isJmpAbsAvailable =
-        ExecutionManager::GetEEJitManager()->GetCPUCompileFlags()
-            .GetInstructionSetFlags().HasInstructionSet(InstructionSet_APX);
-
-    return s_isJmpAbsAvailable;
-}
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
