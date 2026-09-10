@@ -4,7 +4,9 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
 
     <PackageType>Template</PackageType>
-    <!-- when changing the net version also change it in template.json in the templates -->
+    <!-- Version-dependent values here and in the templates' template.json are validated by _ValidateTemplateVersions below.
+         When changing the net version, also change 'NetVersion' in Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj
+         and the package name in eng/Signing.props. -->
     <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net11</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>
@@ -26,6 +28,46 @@
   <ItemGroup>
     <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
   </ItemGroup>
+
+  <!--
+    The version-dependent values in the templates are not generated at pack time because the templates are
+    also installed straight from source during development (see src/mono/browser/README.md), so they have to
+    stay valid on disk. They are validated against $(NetCoreAppCurrentVersion) instead.
+
+    'precedence' has to grow with the .NET version: when several versions of this package are installed side
+    by side, 'dotnet new' resolves a template group by precedence and only then evaluates constraints, so
+    equal values make 'dotnet new wasmbrowser' fail as ambiguous instead of picking the newest template.
+  -->
+  <Target Name="_ValidateTemplateVersions" BeforeTargets="Build;Pack">
+    <PropertyGroup>
+      <_NetCoreAppCurrentMajorVersion>$([System.String]::Copy('$(NetCoreAppCurrentVersion)').Split('.')[0])</_NetCoreAppCurrentMajorVersion>
+      <_ExpectedPackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net$(_NetCoreAppCurrentMajorVersion)</_ExpectedPackageId>
+      <_ExpectedPrecedence>$([MSBuild]::Multiply($(_NetCoreAppCurrentMajorVersion), 1000))</_ExpectedPrecedence>
+      <_ExpectedSdkConstraint>[$(_NetCoreAppCurrentMajorVersion).0.100-0,)</_ExpectedSdkConstraint>
+      <_NetCoreAppCurrentVersionRegex>$([System.Text.RegularExpressions.Regex]::Escape('$(NetCoreAppCurrentVersion)'))</_NetCoreAppCurrentVersionRegex>
+      <_NetCoreAppCurrentRegex>$([System.Text.RegularExpressions.Regex]::Escape('$(NetCoreAppCurrent)'))</_NetCoreAppCurrentRegex>
+    </PropertyGroup>
+
+    <Error Condition="'$(PackageId)' != '$(_ExpectedPackageId)'"
+           Text="PackageId is '$(PackageId)' but NetCoreAppCurrentVersion is '$(NetCoreAppCurrentVersion)'. Expected '$(_ExpectedPackageId)'." />
+
+    <ItemGroup>
+      <_TemplateConfigFile Include="templates\**\.template.config\template.json" />
+      <_TemplateConfigFile Text="$([System.IO.File]::ReadAllText('%(FullPath)'))" />
+    </ItemGroup>
+
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_TemplateConfigFile.Text)', '&quot;precedence&quot;\s*:\s*$(_ExpectedPrecedence)\b'))"
+           Text="%(_TemplateConfigFile.Identity): 'precedence' does not match NetCoreAppCurrentVersion '$(NetCoreAppCurrentVersion)'. Expected $(_ExpectedPrecedence)." />
+
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_TemplateConfigFile.Text)', '&quot;identity&quot;\s*:\s*&quot;[^&quot;]*\.$(_NetCoreAppCurrentVersionRegex)&quot;'))"
+           Text="%(_TemplateConfigFile.Identity): 'identity' does not end with NetCoreAppCurrentVersion '$(NetCoreAppCurrentVersion)'." />
+
+    <Error Condition="!$([System.String]::Copy('%(_TemplateConfigFile.Text)').Contains('$(_ExpectedSdkConstraint)'))"
+           Text="%(_TemplateConfigFile.Identity): the 'sdk-version' constraint does not match NetCoreAppCurrentVersion '$(NetCoreAppCurrentVersion)'. Expected '$(_ExpectedSdkConstraint)'." />
+
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_TemplateConfigFile.Text)', '&quot;choice&quot;\s*:\s*&quot;$(_NetCoreAppCurrentRegex)&quot;')) or !$([System.Text.RegularExpressions.Regex]::IsMatch('%(_TemplateConfigFile.Text)', '&quot;defaultValue&quot;\s*:\s*&quot;$(_NetCoreAppCurrentRegex)&quot;'))"
+           Text="%(_TemplateConfigFile.Identity): the 'framework' choice does not match NetCoreAppCurrent '$(NetCoreAppCurrent)'." />
+  </Target>
 
   <Target Name="CreateManifestResourceNames" />
   <Target Name="CoreCompile" />

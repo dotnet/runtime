@@ -4,7 +4,7 @@
   "classifications": [ "Web", "WebAssembly", "Browser" ],
   "generatorVersions": "[1.0.0.0-*)",
   "groupIdentity": "WebAssembly.Browser",
-  "precedence": 9000,
+  "precedence": 11000,
   "identity": "WebAssembly.Browser.11.0",
   "name": "WebAssembly Browser App",
   "description": "A project template for creating a .NET app that runs on WebAssembly in a browser",
@@ -14,6 +14,12 @@
   "tags": {
     "language": "C#",
     "type": "project"
+  },
+  "constraints": {
+    "sdk-version": {
+      "type": "sdk-version",
+      "args": "[11.0.100-0,)"
+    }
   },
   "symbols": {
     "kestrelHttpPortGenerated": {
