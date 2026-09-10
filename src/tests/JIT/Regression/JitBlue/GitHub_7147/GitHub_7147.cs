@@ -68,6 +68,20 @@ namespace GitHub_7147
             return x == y;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        static int boundsCheck(int[] array, int index, int dividend, int divisor, int count)
+        {
+            int result = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                result += array[index];
+                result += dividend / divisor;
+            }
+
+            return result;
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
@@ -110,6 +124,20 @@ namespace GitHub_7147
             catch (DivideByZeroException)
             {
                 // This is the expected exception
+            }
+
+            try
+            {
+                boundsCheck(new int[1], 5, 1, 0, 5);
+                errors |= 8;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                // This is the expected exception
+            }
+            catch
+            {
+                errors |= 8;
             }
 
             return 100 + errors;
