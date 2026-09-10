@@ -8,7 +8,7 @@
     <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b55197\b55197.cs" />
     <Compile Include="CLR-x86-JIT\V2.0-RTM\b491215\b491215.cs" />
     <Compile Include="CLR-x86-JIT\v2.1\b152292\b152292.cs" />
-    <Compile Include="*\$(MSBuildProjectName)\**\*.cs" />
+    <Compile Include="..\$(MSBuildProjectName)\**\*.cs" />
   </ItemGroup>
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>
