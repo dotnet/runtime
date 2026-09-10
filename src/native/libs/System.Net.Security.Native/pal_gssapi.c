@@ -553,7 +553,7 @@ uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
 
     if (majorStatus == GSS_S_COMPLETE)
     {
-        GssBuffer attribute = {.length = attributeNameLen, .value = (void*)attributeName};
+        GssBuffer attribute = {.length = attributeNameLen, .value = CONST_CAST(void*, attributeName)};
         GssBuffer value = {.length = 0, .value = NULL};
         GssBuffer displayValue = {.length = 0, .value = NULL};
         int authenticated = 0;
