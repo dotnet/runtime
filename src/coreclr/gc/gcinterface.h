@@ -4,9 +4,11 @@
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
 
+#include "writebarrier.h"
+
 // The major version of the IGCHeap interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 5
+#define GC_INTERFACE_MAJOR_VERSION 6
 
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
@@ -15,7 +17,7 @@
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 5
+#define EE_INTERFACE_MAJOR_VERSION 6
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -44,76 +46,6 @@ typedef enum
     walk_for_bgc = 2,
     walk_for_uoh = 3
 } walk_surv_type;
-
-// Different operations that can be done by GCToEEInterface::StompWriteBarrier
-enum class WriteBarrierOp
-{
-    StompResize,
-    StompEphemeral,
-    Initialize,
-    SwitchToWriteWatch,
-    SwitchToNonWriteWatch
-};
-
-// Arguments to GCToEEInterface::StompWriteBarrier
-struct WriteBarrierParameters
-{
-    // The operation that StompWriteBarrier will perform.
-    WriteBarrierOp operation;
-
-    // Whether or not the runtime is currently suspended. If it is not,
-    // the EE will need to suspend it before bashing the write barrier.
-    // Used for all operations.
-    bool is_runtime_suspended;
-
-    // Whether or not the GC has moved the ephemeral generation to no longer
-    // be at the top of the heap. When the ephemeral generation is at the top
-    // of the heap, and the write barrier observes that a pointer is greater than
-    // g_ephemeral_low, it does not need to check that the pointer is less than
-    // g_ephemeral_high because there is nothing in the GC heap above the ephemeral
-    // generation. When this is not the case, however, the GC must inform the EE
-    // so that the EE can switch to a write barrier that checks that a pointer
-    // is both greater than g_ephemeral_low and less than g_ephemeral_high.
-    // Used for WriteBarrierOp::StompResize.
-    bool requires_upper_bounds_check;
-
-    // The new card table location. May or may not be the same as the previous
-    // card table. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
-    uint32_t* card_table;
-
-    // The new card bundle table location. May or may not be the same as the previous
-    // card bundle table. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
-    uint32_t* card_bundle_table;
-
-    // The heap's new low boundary. May or may not be the same as the previous
-    // value. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
-    uint8_t* lowest_address;
-
-    // The heap's new high boundary. May or may not be the same as the previous
-    // value. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
-    uint8_t* highest_address;
-
-    // The new start of the ephemeral generation.
-    // Used for WriteBarrierOp::StompEphemeral.
-    uint8_t* ephemeral_low;
-
-    // The new end of the ephemeral generation.
-    // Used for WriteBarrierOp::StompEphemeral.
-    uint8_t* ephemeral_high;
-
-    // The new write watch table, if we are using our own write watch
-    // implementation. Used for WriteBarrierOp::SwitchToWriteWatch only.
-    uint8_t* write_watch_table;
-
-    // mapping table from region index to generation
-    uint8_t* region_to_generation_table;
-
-    // shift count - how many bits to shift right to obtain region index from address
-    uint8_t  region_shr;
-
-    // whether to use the more precise but slower write barrier
-    bool region_use_bitwise_write_barrier;
-};
 
 struct FinalizerWorkItem
 {
@@ -650,6 +582,20 @@ enum class GCConfigurationType
 
 using ConfigurationValueFunc = void (*)(void* context, const char* name, const char* publicKey, GCConfigurationType type, int64_t data);
 
+enum class WriteBarrierResult : uint8_t
+{
+    None = 0,
+    DestinationInHeap = 1,
+    DestinationInEphemeralRange = 2,
+    ReferenceInEphemeralRange = 4,
+    CardMarked = 8,
+};
+
+inline WriteBarrierResult operator|(WriteBarrierResult left, WriteBarrierResult right)
+{
+    return static_cast<WriteBarrierResult>(static_cast<uint8_t>(left) | static_cast<uint8_t>(right));
+}
+
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 // NOTE!
 // Only add methods to the end.
@@ -1074,6 +1020,25 @@ public:
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
+
+    // Returns true if the address is within the range reserved for the GC heap.
+    virtual bool IsInGCHeap(void* address) PURE_VIRTUAL
+
+    // Moves a range of object references and updates the write barrier state for the destination.
+    virtual void BulkMoveWithWriteBarrier(void* destination, const void* source, size_t length) PURE_VIRTUAL
+
+    // Updates the write barrier state after storing a pointer-sized value.
+    // The reference controls generational tracking and can differ from the stored value.
+    // The destination bounds check is omitted when the caller guarantees that it is in the GC heap.
+    virtual WriteBarrierResult PostWriteBarrier(
+        void** destination,
+        void* value,
+        Object* reference,
+        bool requiresGenerationalTracking,
+        bool destinationMustBeInHeap) PURE_VIRTUAL
+
+    // Gets specialized write barrier callbacks for performance-sensitive callers.
+    virtual void GetWriteBarrierFunctions(WriteBarrierFunctions* functions) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

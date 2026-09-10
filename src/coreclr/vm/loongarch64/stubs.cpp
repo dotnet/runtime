@@ -526,39 +526,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
-#if !defined(DACCESS_COMPILE)
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
-
-extern "C" void STDCALL JIT_PatchedCodeStart();
-extern "C" void STDCALL JIT_PatchedCodeLast();
-
-static void UpdateWriteBarrierState(bool skipEphemeralCheck)
-{
-    if (IsWriteBarrierCopyEnabled())
-    {
-        BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-        BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-        ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
-        if (IsWriteBarrierCopyEnabled())
-        {
-            writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-            writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
-        }
-        JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
-    }
-}
-
-void InitJITWriteBarrierHelpers()
-{
-    STANDARD_VM_CONTRACT;
-
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-}
-
-#else
-void UpdateWriteBarrierState(bool) {}
-#endif // !defined(DACCESS_COMPILE)
-
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -655,37 +622,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 {
     return EXCEPTION_CONTINUE_SEARCH;
 }
-
-void FlushWriteBarrierInstructionCache()
-{
-    // this wouldn't be called in loongarch64, just to comply with gchelpers.h
-}
-
-int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-
-int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-
-int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifndef DACCESS_COMPILE
 // ----------------------------------------------------------------

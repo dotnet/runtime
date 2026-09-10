@@ -4,7 +4,7 @@
 ; ***********************************************************************
 ; File: JitHelpers_Slow.asm
 ;
-; Notes: These are ASM routinues which we believe to be cold in normal
+; Notes: This is the debug write barrier, which is cold in normal
 ;        AMD64 scenarios, mainly because they have other versions which
 ;        have some more performant nature which will be used in the best
 ;        cases.
@@ -152,4 +152,3 @@ LEAF_END_MARKED JIT_WriteBarrier_Debug, _TEXT
 endif
 
         end
-

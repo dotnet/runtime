@@ -321,3 +321,217 @@ LEAF_ENTRY RhpCheckedXchg, _TEXT
         jirl  $r0, $ra, 0
 
 LEAF_END RhpCheckedXchg, _TEXT
+
+#ifndef FEATURE_NATIVEAOT
+
+//-----------------------------------------------------------------------------
+// The following Macros help in WRITE_BARRIER Implementations
+// WRITE_BARRIER_ENTRY
+//
+// Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
+// to declare a write barrier function.
+//
+.macro WRITE_BARRIER_ENTRY name
+    LEAF_ENTRY \name, _TEXT
+.endm
+
+// WRITE_BARRIER_END
+//
+// The partner to WRITE_BARRIER_ENTRY, used like NESTED_END.
+//
+.macro WRITE_BARRIER_END name
+    LEAF_END_MARKED \name, _TEXT
+.endm
+
+.balign 64
+LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
+    jirl  $r0, $ra, 0
+LEAF_END JIT_PatchedCodeStart, _TEXT
+
+//-----------------------------------------------------------------------------
+// Simple WriteBarriers
+// void JIT_CheckedWriteBarrier(Object** dst, Object* src)
+//
+// On entry:
+//   t6 : the destination address (LHS of the assignment)
+//   t7 : the object reference (RHS of the assignment)
+//
+// On exit:
+//   $t1  : trashed
+//   $t0  : trashed
+//   $t3  : trashed
+//   $t4  : trashed
+//   $t6  : preserved (the destination address is not modified)
+//   $t7  : trashed
+//
+WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
+
+    // load the address wbs_card_table to $t3
+.Lchecked_barrier_table:
+    pcaddi $t3, 0
+    .reloc .Lchecked_barrier_table, R_LARCH_PCREL20_S2, wbs_card_table
+    // wbs_highest_address = wbs_card_table + 48
+    ld.d  $t1, $t3, 48
+    // wbs_lowest_address  = wbs_card_table + 40
+    ld.d  $t3, $t3, 40
+    slt  $t4, $t6, $t3
+
+    slt  $t0, $t1, $t6
+    or  $t4, $t0, $t4
+    beq  $t4, $zero, C_FUNC(JIT_WriteBarrier)
+
+    st.d  $t7, $t6, 0
+    jirl  $r0, $ra, 0
+WRITE_BARRIER_END JIT_CheckedWriteBarrier
+
+// void JIT_WriteBarrier(Object** dst, Object* src)
+// On entry:
+//   t6  : the destination address (LHS of the assignment)
+//   t7  : the object reference (RHS of the assignment)
+//
+// On exit:
+//   $t0  : trashed
+//   $t1  : trashed
+//   $t3  : trashed
+//   $t4  : trashed
+//   $t6  : preserved (the destination address is not modified)
+//   $t7  : trashed
+//
+WRITE_BARRIER_ENTRY JIT_WriteBarrier
+
+    dbar 0 // TODO: sync_release (runtime detection required)
+
+    st.d  $t7, $t6, 0
+
+    // load the address wbs_card_table to the $t3
+    // and will cache the wbs_card_table by $t3 within the JIT_WriteBarrier.
+    // So please DONT'T overwrite the $t3 within the JIT_WriteBarrier !!!
+.Lwrite_barrier_table:
+    pcaddi $t3, 0
+    .reloc .Lwrite_barrier_table, R_LARCH_PCREL20_S2, wbs_card_table
+
+#ifdef WRITE_BARRIER_CHECK
+    // Update GC Shadow Heap
+
+    // the wbs_GCShadow = $t3 + 56
+    ld.d $t1, $t3, 56
+
+    // Do not perform the work if g_GCShadow is 0
+    beq  $t1, $zero, 22f
+
+    // Compute address of shadow heap location:
+    //   pShadow = g_GCShadow + ($t6 - g_lowest_address)
+    // the wbs_lowest_address = $t3 + 40
+    ld.d $t0, $t3, 40
+    sub.d  $t0, $t6, $t0
+    add.d  $t0, $t0, $t1
+
+    // if (pShadow >= g_GCShadowEnd) goto end.
+    // load the wbs_GCShadowEnd = $t3 + 64
+    ld.d $t1, $t3, 64
+    slt  $t4, $t0, $t1
+    beq  $t4, $zero, 22f
+
+    // *pShadow = $t7
+    st.d  $t7, $t0, 0
+
+    // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
+    // conditions are caught by INVALIDGCVALUE.
+    dbar 0
+
+    // if (*$t6 == $t7) goto end
+    ld.d  $t1, $t6, 0
+    beq  $t1, $t7, 22f
+
+    // *pShadow = INVALIDGCVALUE (0xcccccccd)
+    lu12i.w  $t1, -209716
+    ori  $t1, $t1, 0xccd
+    st.d $t1, $t0, 0
+22:
+#endif
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    // Update the write watch table if necessary
+
+    // the wbs_sw_ww_table = $t3 + 16
+    ld.d  $t4, $t3, 16
+    beq  $t4, $zero, 1f
+
+    srli.d  $t0, $t6, 0xc
+    add.d  $t4, $t4, $t0  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    ld.b  $t0, $t4, 0
+    bne  $t0, $zero, 1f
+
+    ori  $t0, $zero, 0xFF
+    st.b  $t0, $t4, 0
+1:
+#endif
+
+    // Branch to Exit if the reference is not in the Gen0 heap
+    // the wbs_ephemeral_low = $t3 + 24
+    ld.d  $t0, $t3, 24
+    beq  $t0, $zero, LOCAL_LABEL(SkipEphemeralCheck)
+
+    slt  $t4, $t7, $t0
+    // the wbs_ephemeral_high = $t3 + 32
+    ld.d  $t1, $t3, 32
+    slt  $t0, $t1, $t7
+    or  $t4, $t0, $t4
+    bne  $t4, $zero, LOCAL_LABEL(Exit)
+LOCAL_LABEL(SkipEphemeralCheck):
+    // Check if we need to update the card table
+    // the wbs_card_table = $t3
+    ld.d  $t0, $t3, 0
+    srli.d  $t4, $t6, 11
+    add.d  $t7, $t0, $t4
+    ld.bu  $t1, $t7, 0
+    ori  $t4, $zero, 0xFF
+    beq  $t1, $t4, LOCAL_LABEL(Exit)
+
+    st.b  $t4, $t7, 0
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    // Check if we need to update the card bundle table
+    // the wbs_card_bundle_table = $t3 + 8
+    ld.d  $t0, $t3, 8
+    srli.d  $t4, $t6, 21
+    add.d  $t7, $t0, $t4
+
+    ld.bu  $t1, $t7, 0
+    ori  $t4, $zero, 0xFF
+    beq  $t1, $t4, LOCAL_LABEL(Exit)
+
+    st.b  $t4, $t7, 0
+#endif
+LOCAL_LABEL(Exit):
+    jirl  $r0, $ra, 0
+WRITE_BARRIER_END JIT_WriteBarrier
+
+// Begin patchable literal pool
+.balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
+WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
+wbs_card_table:
+    .quad 0
+//wbs_card_bundle_table: =wbs_card_table+8
+    .quad 0
+//wbs_sw_ww_table:       =wbs_card_table+16
+    .quad 0
+//wbs_ephemeral_low:     =wbs_card_table+24
+    .quad 0
+//wbs_ephemeral_high:    =wbs_card_table+32
+    .quad 0
+//wbs_lowest_address:    =wbs_card_table+40
+    .quad 0
+//wbs_highest_address:   =wbs_card_table+48
+    .quad 0
+//wbs_GCShadow:          =wbs_card_table+56
+    .quad 0
+//wbs_GCShadowEnd:       =wbs_card_table+64
+    .quad 0
+WRITE_BARRIER_END JIT_WriteBarrier_Table
+
+LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
+    jirl  $r0, $ra, 0
+LEAF_END JIT_PatchedCodeLast, _TEXT
+
+#endif // !FEATURE_NATIVEAOT

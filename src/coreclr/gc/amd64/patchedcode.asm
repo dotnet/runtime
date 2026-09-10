@@ -4,7 +4,7 @@
 ; ***********************************************************************
 ; File: patchedcode.asm
 ;
-; Notes: routinues which are patched at runtime and need to be linked in
+; Notes: routines which are patched at runtime and need to be linked in
 ;        their declared order.
 ; ***********************************************************************
 
@@ -12,10 +12,52 @@
 include AsmMacros.inc
 include asmconstants.inc
 
+EXTERN  g_lowest_address:QWORD
+EXTERN  g_highest_address:QWORD
+
 ifdef _DEBUG
 extern JIT_WriteBarrier_Debug:proc
 endif
 
+
+Section segment para 'DATA'
+
+        align   16
+
+        public  JIT_WriteBarrier_Loc
+JIT_WriteBarrier_Loc:
+        dq 0
+
+; There is an even more optimized version of these helpers possible which takes
+; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
+; that check (this is more significant in the JIT_WriteBarrier case).
+;
+; Additionally we can look into providing helpers which will take the src/dest from
+; specific registers (like x86) which _could_ (??) make for easier register allocation
+; for the JIT64, however it might lead to having to have some nasty code that treats
+; these guys really special like... :(.
+;
+; Version that does the move, checks whether or not it's in the GC and whether or not
+; it needs to have it's card updated
+;
+; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
+LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
+
+        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
+        ; but if it isn't then it will just return.
+        ;
+        ; See if this is in GCHeap
+        cmp     rcx, [g_lowest_address]
+        jb      NotInHeap
+        cmp     rcx, [g_highest_address]
+        jnb     NotInHeap
+
+        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
+
+    NotInHeap:
+        mov     [rcx], rdx
+        ret
+LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
 ; Mark start of the code region that we patch at runtime
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT

@@ -206,7 +206,7 @@ inline void SoftwareWriteWatch::EnableForGCHeap()
     args.operation = WriteBarrierOp::SwitchToWriteWatch;
     args.write_watch_table = g_gc_sw_ww_table;
     args.is_runtime_suspended = true;
-    GCToEEInterface::StompWriteBarrier(&args);
+    ::StompWriteBarrier(&args);
 }
 
 inline void SoftwareWriteWatch::DisableForGCHeap()
@@ -221,7 +221,7 @@ inline void SoftwareWriteWatch::DisableForGCHeap()
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::SwitchToNonWriteWatch;
     args.is_runtime_suspended = true;
-    GCToEEInterface::StompWriteBarrier(&args);
+    ::StompWriteBarrier(&args);
 }
 
 inline void *SoftwareWriteWatch::GetHeapStartAddress()

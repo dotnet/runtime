@@ -183,8 +183,9 @@
 #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH)
 #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED | RBM_MSK_CALLEE_SAVED)
 
-// AMD64 write barrier ABI (see vm\amd64\JitHelpers_FastWriteBarriers.{asm,S},
-// vm\amd64\patchedcode.{asm,S}, vm\amd64\JitHelpers_Slow.asm,
+// AMD64 write barrier ABI (see gc\amd64\JitHelpers_FastWriteBarriers.{asm,S},
+// gc\amd64\patchedcode.{asm,S}, gc\amd64\JitHelpers_Slow.asm,
+// gc\amd64\jithelpers_slow.S,
 // runtime\amd64\WriteBarriers.{asm,S}):
 //
 // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):

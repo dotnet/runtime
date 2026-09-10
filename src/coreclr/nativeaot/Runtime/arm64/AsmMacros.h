@@ -85,20 +85,6 @@ OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocCont
     EXTERN RhRethrow
 
     EXTERN RhpTrapThreads
-    EXTERN g_lowest_address
-    EXTERN g_highest_address
-    EXTERN g_ephemeral_low
-    EXTERN g_ephemeral_high
-    EXTERN g_card_table
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    EXTERN g_card_bundle_table
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    EXTERN g_write_watch_table
-#endif
-
     EXTERN g_cpuFeatures
 
 ;; -----------------------------------------------------------------------------

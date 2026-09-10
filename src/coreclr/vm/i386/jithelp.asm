@@ -19,25 +19,12 @@
 
         option  casemap:none
         .code
-;
-; <TODO>@TODO Switch to g_ephemeral_low and g_ephemeral_high
-; @TODO instead of g_lowest_address, g_highest address</TODO>
-;
-
 ARGUMENT_REG1           equ     ecx
 ARGUMENT_REG2           equ     edx
-g_ephemeral_low                 TEXTEQU <_g_ephemeral_low>
-g_ephemeral_high                TEXTEQU <_g_ephemeral_high>
-g_lowest_address                TEXTEQU <_g_lowest_address>
-g_highest_address               TEXTEQU <_g_highest_address>
-g_card_table                    TEXTEQU <_g_card_table>
-WriteBarrierAssert              TEXTEQU <_WriteBarrierAssert@8>
 JIT_LLsh                        TEXTEQU <_JIT_LLsh@0>
 JIT_LRsh                        TEXTEQU <_JIT_LRsh@0>
 JIT_LRsz                        TEXTEQU <_JIT_LRsz@0>
 JIT_LMul                        TEXTEQU <@JIT_LMul@16>
-JIT_WriteBarrierReg_PreGrow     TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
-JIT_WriteBarrierReg_PostGrow    TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
 JIT_TailCall                    TEXTEQU <_JIT_TailCall@0>
 JIT_TailCallLeave               TEXTEQU <_JIT_TailCallLeave@0>
 JIT_TailCallVSDLeave            TEXTEQU <_JIT_TailCallVSDLeave@0>
@@ -47,14 +34,6 @@ JIT_TailCallReturnFromVSD       TEXTEQU <_JIT_TailCallReturnFromVSD@0>
 g_pPollGC                       TEXTEQU <_g_pPollGC>
 g_TrapReturningThreads          TEXTEQU <_g_TrapReturningThreads>
 
-EXTERN  g_ephemeral_low:DWORD
-EXTERN  g_ephemeral_high:DWORD
-EXTERN  g_lowest_address:DWORD
-EXTERN  g_highest_address:DWORD
-EXTERN  g_card_table:DWORD
-ifdef _DEBUG
-EXTERN  WriteBarrierAssert:PROC
-endif ; _DEBUG
 ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
@@ -63,15 +42,6 @@ EXTERN @JIT_FailFast@0:PROC
 EXTERN g_pPollGC:DWORD
 EXTERN g_TrapReturningThreads:DWORD
 
-
-ifdef WRITE_BARRIER_CHECK
-; Those global variables are always defined, but should be 0 for Server GC
-g_GCShadow                      TEXTEQU <?g_GCShadow@@3PAEA>
-g_GCShadowEnd                   TEXTEQU <?g_GCShadowEnd@@3PAEA>
-EXTERN  g_GCShadow:DWORD
-EXTERN  g_GCShadowEnd:DWORD
-INVALIDGCVALUE equ 0CCCCCCCDh
-endif
 
 .686P
 .XMM
@@ -98,224 +68,6 @@ $nop3 MACRO
 ENDM
 
 
-
-;***
-;JIT_WriteBarrier* - GC write barrier helper
-;
-;Purpose:
-;   Helper calls in order to assign an object to a field
-;   Enables book-keeping of the GC.
-;
-;Entry:
-;   EDX - address of ref-field (assigned to)
-;   the resp. other reg - RHS of assignment
-;
-;Exit:
-;
-;Uses:
-;       EDX is destroyed.
-;
-;Exceptions:
-;
-;*******************************************************************************
-
-; The code here is tightly coupled with AdjustContextForJITHelpers, if you change
-; anything here, you might need to change AdjustContextForJITHelpers as well
-; Note that beside the AV case, we might be unwinding inside the region where we have
-; already push ecx and ebp in the branch under FEATURE_DATABREAKPOINT
-WriteBarrierHelper MACRO rg
-        ALIGN 4
-
-    ;; The entry point is the fully 'safe' one in which we check if EDX (the REF
-    ;; begin updated) is actually in the GC heap
-
-PUBLIC _JIT_CheckedWriteBarrier&rg&@0
-_JIT_CheckedWriteBarrier&rg&@0 PROC
-        ;; check in the REF being updated is in the GC heap
-        cmp             edx, g_lowest_address
-        jb              WriteBarrier_NotInHeap_&rg
-        cmp             edx, g_highest_address
-        jae             WriteBarrier_NotInHeap_&rg
-
-        ;; fall through to unchecked routine
-        ;; note that its entry point also happens to be aligned
-
-ifdef WRITE_BARRIER_CHECK
-    ;; This entry point is used when you know the REF pointer being updated
-    ;; is in the GC heap
-PUBLIC _JIT_DebugWriteBarrier&rg&@0
-_JIT_DebugWriteBarrier&rg&@0:
-endif
-
-ifdef _DEBUG
-        push    edx
-        push    ecx
-        push    eax
-
-        push    rg
-        push    edx
-        call    WriteBarrierAssert
-
-        pop     eax
-        pop     ecx
-        pop     edx
-endif ;_DEBUG
-
-        ; in the !WRITE_BARRIER_CHECK case this will be the move for all
-        ; addresses in the GCHeap, addresses outside the GCHeap will get
-        ; taken care of below at WriteBarrier_NotInHeap_&rg
-
-ifndef WRITE_BARRIER_CHECK
-        mov     DWORD PTR [edx], rg
-endif
-
-ifdef WRITE_BARRIER_CHECK
-        ; Test dest here so if it is bad AV would happen before we change register/stack
-        ; status. This makes job of AdjustContextForJITHelpers easier.
-        cmp     [edx], 0
-        ;; ALSO update the shadow GC heap if that is enabled
-        ; Make ebp into the temporary src register. We need to do this so that we can use ecx
-        ; in the calculation of the shadow GC address, but still have access to the src register
-        push    ecx
-        push    ebp
-        mov     ebp, rg
-
-        ; if g_GCShadow is 0, don't perform the check
-        cmp     g_GCShadow, 0
-        je      WriteBarrier_NoShadow_&rg
-
-        mov     ecx, edx
-        sub     ecx, g_lowest_address   ; U/V
-        jb      WriteBarrier_NoShadow_&rg
-        add     ecx, [g_GCShadow]
-        cmp     ecx, [g_GCShadowEnd]
-        jae     WriteBarrier_NoShadow_&rg
-
-        ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
-        ; mfence barriers on either side of these two writes to make sure that
-        ; they stay as close together as possible
-
-        ; edx contains address in GC
-        ; ecx contains address in ShadowGC
-        ; ebp temporarially becomes the src register
-
-        ;; When we're writing to the shadow GC heap we want to be careful to minimize
-        ;; the risk of a race that can occur here where the GC and ShadowGC don't match
-        mov     DWORD PTR [edx], ebp
-        mov     DWORD PTR [ecx], ebp
-
-        ;; We need a scratch register to verify the shadow heap.  We also need to
-        ;; construct a memory barrier so that the write to the shadow heap happens
-        ;; before the read from the GC heap.  We can do both by using SUB/XCHG
-        ;; rather than PUSH.
-        ;;
-        ;; TODO: Should be changed to a push if the mfence described above is added.
-        ;;
-        sub     esp, 4
-        xchg    [esp], eax
-
-        ;; As part of our race avoidance (see above) we will now check whether the values
-        ;; in the GC and ShadowGC match. There is a possibility that we're wrong here but
-        ;; being overaggressive means we might mask a case where someone updates GC refs
-        ;; without going to a write barrier, but by its nature it will be indeterminant
-        ;; and we will find real bugs whereas the current implementation is indeterminant
-        ;; but only leads to investigations that find that this code is fundamentally flawed
-        mov     eax, [edx]
-        cmp     [ecx], eax
-        je      WriteBarrier_CleanupShadowCheck_&rg
-        mov     [ecx], INVALIDGCVALUE
-
-WriteBarrier_CleanupShadowCheck_&rg:
-        pop     eax
-
-        jmp     WriteBarrier_ShadowCheckEnd_&rg
-
-WriteBarrier_NoShadow_&rg:
-        ; If we come here then we haven't written the value to the GC and need to.
-        ;   ebp contains rg
-        ; We restore ebp/ecx immediately after this, and if either of them is the src
-        ; register it will regain its value as the src register.
-        mov     DWORD PTR [edx], ebp
-WriteBarrier_ShadowCheckEnd_&rg:
-        pop     ebp
-        pop     ecx
-endif
-        cmp     rg, g_ephemeral_low
-        jb      WriteBarrier_NotInEphemeral_&rg
-        cmp     rg, g_ephemeral_high
-        jae     WriteBarrier_NotInEphemeral_&rg
-
-        shr     edx, 10
-        add     edx, [g_card_table]
-        cmp     BYTE PTR [edx], 0FFh
-        jne     WriteBarrier_UpdateCardTable_&rg
-        ret
-
-WriteBarrier_UpdateCardTable_&rg:
-        mov     BYTE PTR [edx], 0FFh
-        ret
-
-WriteBarrier_NotInHeap_&rg:
-        ; If it wasn't in the heap then we haven't updated the dst in memory yet
-        mov     DWORD PTR [edx], rg
-WriteBarrier_NotInEphemeral_&rg:
-        ; If it is in the GC Heap but isn't in the ephemeral range we've already
-        ; updated the Heap with the Object*.
-        ret
-_JIT_CheckedWriteBarrier&rg&@0 ENDP
-
-ENDM
-
-
-;*******************************************************************************
-; Write barrier wrappers with fcall calling convention
-;
-
-        .data
-        ALIGN 4
-        public  _JIT_WriteBarrierEAX_Loc
-_JIT_WriteBarrierEAX_Loc dd 0
-
-        .code
-
-; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
-; WriteBarrier functions so can determine if got AV in them.
-;
-PUBLIC _JIT_WriteBarrierGroup@0
-_JIT_WriteBarrierGroup@0 PROC
-ret
-_JIT_WriteBarrierGroup@0 ENDP
-
-
-UniversalWriteBarrierHelper MACRO name
-        ALIGN 4
-PUBLIC @JIT_&name&@8
-@JIT_&name&@8 PROC
-        mov eax,edx
-        mov edx,ecx
-        jmp _JIT_&name&EAX@0
-@JIT_&name&@8 ENDP
-ENDM
-
-ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-; Only define these if we're using the ASM GC write barriers; if this flag is not defined,
-; we'll use C++ versions of these write barriers.
-UniversalWriteBarrierHelper <CheckedWriteBarrier>
-UniversalWriteBarrierHelper <WriteBarrier>
-endif
-
-WriteBarrierHelper <EAX>
-WriteBarrierHelper <EBX>
-WriteBarrierHelper <ECX>
-WriteBarrierHelper <ESI>
-WriteBarrierHelper <EDI>
-WriteBarrierHelper <EBP>
-
-; This is the first function outside the "keep together range". Used by BBT scripts.
-PUBLIC _JIT_WriteBarrierGroup_End@0
-_JIT_WriteBarrierGroup_End@0 PROC
-ret
-_JIT_WriteBarrierGroup_End@0 ENDP
 
 ;*********************************************************************/
 ;llshl - long shift left
@@ -483,70 +235,6 @@ LMul_hard:
         ret     16              ; callee restores the stack
 
 JIT_LMul ENDP
-
-;*********************************************************************/
-; This is the small write barrier thunk we use when we know the
-; ephemeral generation is higher in memory than older generations.
-; The 0x0F0F0F0F values are bashed by the two functions above.
-; This the generic version - wherever the code says ECX,
-; the specific register is patched later into a copy
-; Note: do not replace ECX by EAX - there is a smaller encoding for
-; the compares just for EAX, which won't work for other registers.
-;
-; READ THIS!!!!!!
-; it is imperative that the addresses of the values that we overwrite
-; (card table, ephemeral region ranges, etc) are naturally aligned since
-; there are codepaths that will overwrite these values while the EE is running.
-;
-PUBLIC JIT_WriteBarrierReg_PreGrow
-JIT_WriteBarrierReg_PreGrow PROC
-        mov     DWORD PTR [edx], ecx
-        cmp     ecx, 0F0F0F0F0h
-        jb      NoWriteBarrierPre
-
-        shr     edx, 10
-        nop ; padding for alignment of constant
-        cmp     byte ptr [edx+0F0F0F0F0h], 0FFh
-        jne     WriteBarrierPre
-NoWriteBarrierPre:
-        ret
-        nop ; padding for alignment of constant
-        nop ; padding for alignment of constant
-WriteBarrierPre:
-        mov     byte ptr [edx+0F0F0F0F0h], 0FFh
-        ret
-JIT_WriteBarrierReg_PreGrow ENDP
-
-;*********************************************************************/
-; This is the larger write barrier thunk we use when we know that older
-; generations may be higher in memory than the ephemeral generation
-; The 0x0F0F0F0F values are bashed by the two functions above.
-; This the generic version - wherever the code says ECX,
-; the specific register is patched later into a copy
-; Note: do not replace ECX by EAX - there is a smaller encoding for
-; the compares just for EAX, which won't work for other registers.
-; NOTE: we need this aligned for our validation to work properly
-        ALIGN 4
-PUBLIC JIT_WriteBarrierReg_PostGrow
-JIT_WriteBarrierReg_PostGrow PROC
-        mov     DWORD PTR [edx], ecx
-        cmp     ecx, 0F0F0F0F0h
-        jb      NoWriteBarrierPost
-        cmp     ecx, 0F0F0F0F0h
-        jae     NoWriteBarrierPost
-
-        shr     edx, 10
-        nop ; padding for alignment of constant
-        cmp     byte ptr [edx+0F0F0F0F0h], 0FFh
-        jne     WriteBarrierPost
-NoWriteBarrierPost:
-        ret
-        nop ; padding for alignment of constant
-        nop ; padding for alignment of constant
-WriteBarrierPost:
-        mov     byte ptr [edx+0F0F0F0F0h], 0FFh
-        ret
-JIT_WriteBarrierReg_PostGrow ENDP
 
 ;*********************************************************************/
 ;
@@ -874,56 +562,6 @@ JIT_TailCallVSDLeave:
 JIT_TailCall ENDP
 
 ;------------------------------------------------------------------------------
-
-; PatchedCodeStart and PatchedCodeEnd are used to determine bounds of patched code.
-;
-
-            ALIGN 4
-
-_JIT_PatchedCodeStart@0 proc public
-ret
-_JIT_PatchedCodeStart@0 endp
-
-            ALIGN 4
-
-;**********************************************************************
-; Write barriers generated at runtime
-
-PUBLIC _JIT_PatchedWriteBarrierGroup@0
-_JIT_PatchedWriteBarrierGroup@0 PROC
-ret
-_JIT_PatchedWriteBarrierGroup@0 ENDP
-
-PatchedWriteBarrierHelper MACRO rg
-        ALIGN 8
-PUBLIC _JIT_WriteBarrier&rg&@0
-_JIT_WriteBarrier&rg&@0 PROC
-        ; Just allocate space that will be filled in at runtime
-        db (48) DUP (0CCh)
-_JIT_WriteBarrier&rg&@0 ENDP
-
-ENDM
-
-PatchedWriteBarrierHelper <EAX>
-PatchedWriteBarrierHelper <EBX>
-PatchedWriteBarrierHelper <ECX>
-PatchedWriteBarrierHelper <ESI>
-PatchedWriteBarrierHelper <EDI>
-PatchedWriteBarrierHelper <EBP>
-
-PUBLIC _JIT_PatchedWriteBarrierGroup_End@0
-_JIT_PatchedWriteBarrierGroup_End@0 PROC
-ret
-_JIT_PatchedWriteBarrierGroup_End@0 ENDP
-
-_JIT_PatchedCodeLast@0 proc public
-ret
-_JIT_PatchedCodeLast@0 endp
-
-; This is the first function outside the "keep together range". Used by BBT scripts.
-_JIT_PatchedCodeEnd@0 proc public
-ret
-_JIT_PatchedCodeEnd@0 endp
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath esp down to the one pointed to by eax.

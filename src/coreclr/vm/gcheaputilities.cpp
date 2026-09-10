@@ -10,36 +10,13 @@
 #include "../gc/env/gcenv.ee.h"
 #include "../gc/env/gctoeeinterface.standalone.inl"
 
-// These globals are variables used within the GC and maintained
-// by the EE for use in write barriers. It is the responsibility
-// of the GC to communicate updates to these globals to the EE through
-// GCToEEInterface::StompWriteBarrierResize and GCToEEInterface::StompWriteBarrierEphemeral.
-GPTR_IMPL_INIT(uint32_t, g_card_table,      nullptr);
-GPTR_IMPL_INIT(uint8_t,  g_lowest_address,  nullptr);
-GPTR_IMPL_INIT(uint8_t,  g_highest_address, nullptr);
 GVAL_IMPL_INIT(GCHeapType, g_heap_type,     GC_HEAP_INVALID);
-uint8_t* g_ephemeral_low  = (uint8_t*)1;
-uint8_t* g_ephemeral_high = (uint8_t*)~0;
-uint8_t* g_region_to_generation_table = nullptr;
-uint8_t  g_region_shr = 0;
-bool g_region_use_bitwise_write_barrier = false;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-uint32_t* g_card_bundle_table = nullptr;
-#endif
 
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
 
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-uint8_t* g_write_watch_table = nullptr;
-bool g_sw_ww_enabled_for_gc_heap = false;
-
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 // Unused - kept for GC data contract c1 compatibility, see datadescriptor/datadescriptor.inc.
 GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
@@ -66,6 +43,20 @@ VersionInfo g_gc_version_info;
 
 // The module that contains the GC.
 PTR_VOID g_gc_module_base;
+
+#ifndef DACCESS_COMPILE
+WriteBarrierFunctions GCHeapUtilities::s_writeBarrierFunctions = {};
+
+void GCHeapUtilities::InitializeWriteBarrierFunctions(IGCHeap* gcHeap)
+{
+    gcHeap->GetWriteBarrierFunctions(&s_writeBarrierFunctions);
+    assert(s_writeBarrierFunctions.context != nullptr);
+    assert(s_writeBarrierFunctions.write_barrier != nullptr);
+    assert(s_writeBarrierFunctions.checked_write_barrier != nullptr);
+    assert(s_writeBarrierFunctions.is_in_gc_heap != nullptr);
+    assert(s_writeBarrierFunctions.bulk_move_with_write_barrier != nullptr);
+}
+#endif // !DACCESS_COMPILE
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
@@ -111,6 +102,7 @@ BOOL g_gcEventTracingInitialized = FALSE;
 // This function can proceed concurrently with StashKeywordAndLevel below.
 void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModuleBase)
 {
+    GCHeapUtilities::InitializeWriteBarrierFunctions(gcHeap);
     g_pGCHeap = gcHeap;
 
     {

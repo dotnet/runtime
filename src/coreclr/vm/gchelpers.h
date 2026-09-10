@@ -72,12 +72,6 @@ inline OBJECTREF AllocateObject(MethodTable *pMT
         );
 }
 
-extern int StompWriteBarrierEphemeral(bool isRuntimeSuspended);
-extern int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
-extern int SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
-extern int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
-extern void FlushWriteBarrierInstructionCache();
-
 extern void ThrowOutOfMemoryDimensionsExceeded();
 
 //========================================================================

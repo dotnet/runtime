@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "unixasmmacros.inc"
-#include "asmconstants.h"
 
 .syntax unified
 .thumb
@@ -16,8 +15,8 @@
 // ------------------------------------------------------------------
 // GC write barrier support.
 //
-// GC Write barriers are defined in asmhelpers.asm. The following functions are used to define
-// patchable location where the write-barriers are copied over at runtime
+// GC write barriers are defined in writebarriers.S. The following functions are used to define
+// patchable locations where the write barriers are copied over at runtime.
 
     LEAF_ENTRY JIT_PatchedWriteBarrierStart, _TEXT
     LEAF_END JIT_PatchedWriteBarrierStart, _TEXT

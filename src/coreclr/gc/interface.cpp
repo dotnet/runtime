@@ -1079,6 +1079,12 @@ bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
     return !!hs;
 }
 
+bool GCHeap::IsInGCHeap(void* address)
+{
+    uint8_t* gcAddress = static_cast<uint8_t*>(address);
+    return gcAddress >= g_gc_lowest_address && gcAddress < g_gc_highest_address;
+}
+
 void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 {
     THREAD_NUMBER_FROM_CONTEXT;

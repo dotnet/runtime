@@ -11,8 +11,6 @@
 #include "virtualcallstub.h"
 #include "jitinterface.h"
 #include "ecall.h"
-#include "writebarriermanager.h"
-
 #include "perfmap.h"
 
 #ifndef DACCESS_COMPILE

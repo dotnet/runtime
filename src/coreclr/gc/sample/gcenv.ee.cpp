@@ -262,7 +262,73 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 {
 }
 
-void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+bool GCToEEInterface::SupportsWriteBarrierBitwiseRegion()
+{
+    return true;
+}
+
+uint8_t* GCToEEInterface::GetWriteBarrierCodeCopy()
+{
+    return nullptr;
+}
+
+void GCToEEInterface::SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor&)
+{
+}
+
+bool GCToEEInterface::IsWriteBarrierCodeCopyEnabled()
+{
+    return false;
+}
+
+bool GCToEEInterface::IsServerGC()
+{
+    return false;
+}
+
+bool GCToEEInterface::UseSlowDebugWriteBarrier()
+{
+    return false;
+}
+
+void GCToEEInterface::CopyWriteBarrierCode(uint8_t*, const uint8_t*, size_t)
+{
+}
+
+void GCToEEInterface::PatchWriteBarrierPointer(uint8_t*, uint8_t*)
+{
+}
+
+void GCToEEInterface::UpdateWriteBarrierValue(uint8_t*, uint64_t, size_t)
+{
+}
+
+bool GCToEEInterface::EnterWriteBarrierPatchMode()
+{
+    return false;
+}
+
+void GCToEEInterface::ExitWriteBarrierPatchMode(bool)
+{
+}
+
+void GCToEEInterface::SuspendForWriteBarrier()
+{
+}
+
+void GCToEEInterface::RestartForWriteBarrier()
+{
+}
+
+void GCToEEInterface::FlushWriteBarrierInstructionCache(uint8_t*, size_t)
+{
+}
+
+void GCToEEInterface::WriteBarrierAssert(void*, void*)
+{
+}
+
+void GCToEEInterface::UpdateRuntimeWriteBarrierState(const WriteBarrierParameters&)
 {
 }
 

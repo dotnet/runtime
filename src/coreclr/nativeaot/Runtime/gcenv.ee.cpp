@@ -355,130 +355,87 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif // FEATURE_EVENT_TRACE
 }
 
-void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+bool GCToEEInterface::SupportsWriteBarrierBitwiseRegion()
 {
-    // NativeAOT doesn't patch the write barrier like CoreCLR does, but it
-    // still needs to record the changes in the GC heap.
+    return false;
+}
 
-    bool is_runtime_suspended = args->is_runtime_suspended;
+uint8_t* GCToEEInterface::GetWriteBarrierCodeCopy()
+{
+    return nullptr;
+}
 
-    switch (args->operation)
-    {
-    case WriteBarrierOp::StompResize:
-        // StompResize requires a new card table, a new lowest address, and
-        // a new highest address
-        assert(args->card_table != nullptr);
-        assert(args->lowest_address != nullptr);
-        assert(args->highest_address != nullptr);
+void GCToEEInterface::SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers)
+{
+    GCHeapUtilities::SetWriteBarrierHelpers(helpers);
+}
 
-        // We are sensitive to the order of writes here(more comments on this further in the method)
-        // In particular g_card_table must be written before writing the heap bounds.
-        // For platforms with weak memory ordering we will issue fences, for x64/x86 we are ok
-        // as long as compiler does not reorder these writes.
-        // That is unlikely since we have method calls in between.
-        // Just to be robust agains possible refactoring/inlining we will do a compiler-fenced store here.
-        VolatileStore(&g_card_table, args->card_table);
+bool GCToEEInterface::IsWriteBarrierCodeCopyEnabled()
+{
+    return false;
+}
 
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        assert(args->card_bundle_table != nullptr);
-        g_card_bundle_table = args->card_bundle_table;
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        if (g_sw_ww_enabled_for_gc_heap && (args->write_watch_table != nullptr))
-        {
-            assert(args->is_runtime_suspended);
-            g_write_watch_table = args->write_watch_table;
-        }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-        // IMPORTANT: managed heap segments may surround unmanaged/stack segments. In such cases adding another managed
-        //     heap segment may put a stack/unmanaged write inside the new heap range. However the old card table would
-        //     not cover it. Therefore we must ensure that the write barriers see the new table before seeing the new bounds.
-        //
-        //     On architectures with strong ordering, we only need to prevent compiler reordering.
-        //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
-
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
-        if (!is_runtime_suspended)
-        {
-            // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
-            // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            minipal_memory_barrier_process_wide();
-        }
-#endif
-
-        g_lowest_address = args->lowest_address;
-        g_highest_address = args->highest_address;
-
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
-        if (!is_runtime_suspended)
-        {
-            // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            minipal_memory_barrier_process_wide();
-        }
-#endif
-        return;
-    case WriteBarrierOp::StompEphemeral:
-        // StompEphemeral requires a new ephemeral low and a new ephemeral high
-        assert(args->ephemeral_low != nullptr);
-        assert(args->ephemeral_high != nullptr);
-        g_ephemeral_low = args->ephemeral_low;
-        g_ephemeral_high = args->ephemeral_high;
-        return;
-    case WriteBarrierOp::Initialize:
-        // This operation should only be invoked once, upon initialization.
-        assert(g_card_table == nullptr);
-        assert(g_lowest_address == nullptr);
-        assert(g_highest_address == nullptr);
-        assert(args->card_table != nullptr);
-        assert(args->lowest_address != nullptr);
-        assert(args->highest_address != nullptr);
-        assert(args->ephemeral_low != nullptr);
-        assert(args->ephemeral_high != nullptr);
-        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-
-        g_card_table = args->card_table;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        assert(g_card_bundle_table == nullptr);
-        g_card_bundle_table = args->card_bundle_table;
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        assert(g_write_watch_table == nullptr);
-        g_write_watch_table = args->write_watch_table;
-#endif
-
-        g_lowest_address = args->lowest_address;
-        g_highest_address = args->highest_address;
-        g_ephemeral_low = args->ephemeral_low;
-        g_ephemeral_high = args->ephemeral_high;
-        return;
-    case WriteBarrierOp::SwitchToWriteWatch:
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        assert(args->write_watch_table != nullptr);
-        g_write_watch_table = args->write_watch_table;
-        g_sw_ww_enabled_for_gc_heap = true;
+bool GCToEEInterface::IsServerGC()
+{
+#ifdef FEATURE_SVR_GC
+    return g_heap_type == GC_HEAP_SVR;
 #else
-        assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        break;
+    return false;
+#endif // FEATURE_SVR_GC
+}
 
-    case WriteBarrierOp::SwitchToNonWriteWatch:
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        g_write_watch_table = nullptr;
-        g_sw_ww_enabled_for_gc_heap = false;
-#else
-        assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        return;
-    default:
-        assert(!"Unknokwn WriteBarrierOp enum");
-        return;
-    }
+bool GCToEEInterface::UseSlowDebugWriteBarrier()
+{
+    return false;
+}
+
+void GCToEEInterface::CopyWriteBarrierCode(uint8_t*, const uint8_t*, size_t)
+{
+    ASSERT(!"NativeAOT does not copy write barrier code");
+}
+
+void GCToEEInterface::PatchWriteBarrierPointer(uint8_t*, uint8_t*)
+{
+    ASSERT(!"NativeAOT does not patch write barrier code");
+}
+
+void GCToEEInterface::UpdateWriteBarrierValue(uint8_t*, uint64_t, size_t)
+{
+    ASSERT(!"NativeAOT does not patch write barrier code");
+}
+
+bool GCToEEInterface::EnterWriteBarrierPatchMode()
+{
+    return false;
+}
+
+void GCToEEInterface::ExitWriteBarrierPatchMode(bool modeChanged)
+{
+    ASSERT(!modeChanged);
+}
+
+void GCToEEInterface::SuspendForWriteBarrier()
+{
+    ASSERT(!"NativeAOT static write barriers do not suspend for patching");
+}
+
+void GCToEEInterface::RestartForWriteBarrier()
+{
+    ASSERT(!"NativeAOT static write barriers do not suspend for patching");
+}
+
+void GCToEEInterface::FlushWriteBarrierInstructionCache(uint8_t*, size_t)
+{
+}
+
+void GCToEEInterface::WriteBarrierAssert(void*, void*)
+{
+}
+
+void GCToEEInterface::UpdateRuntimeWriteBarrierState(const WriteBarrierParameters& state)
+{
+    WriteBarrierParameters runtimeState = state;
+    StompWriteBarrier(&runtimeState);
 }
 
 void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)

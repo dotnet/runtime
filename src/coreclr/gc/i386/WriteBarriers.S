@@ -246,3 +246,111 @@ LEAF_ENTRY RhpCheckedXchg, _TEXT
     ret
 LEAF_END RhpCheckedXchg, _TEXT
 
+#ifndef FEATURE_NATIVEAOT
+
+// *********************************************************************/
+//  This is the small write barrier thunk we use when we know the
+//  ephemeral generation is higher in memory than older generations.
+//  The 0x0F0F0F0F values are patched by the write barrier manager.
+//  This the generic version - wherever the code says ECX,
+//  the specific register is patched later into a copy
+//  Note: do not replace ECX by EAX - there is a smaller encoding for
+//  the compares just for EAX, which won't work for other registers.
+//
+//  READ THIS!!!!!!
+//  it is imperative that the addresses of the values that we overwrite
+//  (card table, ephemeral region ranges, etc) are naturally aligned since
+//  there are codepaths that will overwrite these values while the EE is running.
+//
+LEAF_ENTRY JIT_WriteBarrierReg_PreGrow, _TEXT
+    mov     DWORD PTR [edx], ecx
+    cmp     ecx, 0xF0F0F0F0
+    jb      LOCAL_LABEL(NoWriteBarrierPre)
+
+    shr     edx, 10
+    nop     // padding for alignment of constant
+    cmp     BYTE PTR [edx + 0xF0F0F0F0], 0xFF
+    jne     LOCAL_LABEL(WriteBarrierPre)
+
+LOCAL_LABEL(NoWriteBarrierPre):
+    ret
+    nop     // padding for alignment of constant
+    nop     // padding for alignment of constant
+
+LOCAL_LABEL(WriteBarrierPre):
+    mov     BYTE PTR [edx+0xF0F0F0F0], 0xFF
+    ret
+LEAF_END JIT_WriteBarrierReg_PreGrow, _TEXT
+
+// *********************************************************************/
+//  This is the larger write barrier thunk we use when we know that older
+//  generations may be higher in memory than the ephemeral generation
+//  The 0x0F0F0F0F values are patched by the write barrier manager.
+//  This the generic version - wherever the code says ECX,
+//  the specific register is patched later into a copy
+//  Note: do not replace ECX by EAX - there is a smaller encoding for
+//  the compares just for EAX, which won't work for other registers.
+//  NOTE: we need this aligned for our validation to work properly
+.align 4
+LEAF_ENTRY JIT_WriteBarrierReg_PostGrow, _TEXT
+    mov     DWORD PTR [edx], ecx
+    cmp     ecx, 0xF0F0F0F0
+    jb      LOCAL_LABEL(NoWriteBarrierPost)
+    cmp     ecx, 0xF0F0F0F0
+    jae     LOCAL_LABEL(NoWriteBarrierPost)
+
+    shr     edx, 10
+    nop     // padding for alignment of constant
+    cmp     BYTE PTR [edx + 0xF0F0F0F0], 0xFF
+    jne     LOCAL_LABEL(WriteBarrierPost)
+
+LOCAL_LABEL(NoWriteBarrierPost):
+    ret
+    nop     // padding for alignment of constant
+    nop     // padding for alignment of constant
+
+LOCAL_LABEL(WriteBarrierPost):
+    mov     BYTE PTR [edx + 0xF0F0F0F0], 0xFF
+    ret
+LEAF_END JIT_WriteBarrierReg_PostGrow,_TEXT
+
+// JIT_PatchedCodeStart and JIT_PatchedCodeLast determine the bounds of patched code.
+//
+
+.align 4
+LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
+    ret
+LEAF_END JIT_PatchedCodeStart, _TEXT
+
+// **********************************************************************
+// Write barriers generated at runtime
+
+.align 4
+LEAF_ENTRY JIT_PatchedWriteBarrierGroup, _TEXT
+    ret
+LEAF_END JIT_PatchedWriteBarrierGroup, _TEXT
+
+.macro PatchedWriteBarrierHelper rg
+.align 8
+LEAF_ENTRY JIT_WriteBarrier\rg, _TEXT
+    // Just allocate space that will be filled in at runtime
+    .space 48, 0xCC
+LEAF_END JIT_WriteBarrier\rg, _TEXT
+.endm
+
+PatchedWriteBarrierHelper EAX
+PatchedWriteBarrierHelper EBX
+PatchedWriteBarrierHelper ECX
+PatchedWriteBarrierHelper ESI
+PatchedWriteBarrierHelper EDI
+PatchedWriteBarrierHelper EBP
+
+LEAF_ENTRY JIT_PatchedWriteBarrierGroup_End, _TEXT
+    ret
+LEAF_END JIT_PatchedWriteBarrierGroup_End, _TEXT
+
+LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
+    ret
+LEAF_END JIT_PatchedCodeLast, _TEXT
+
+#endif // !FEATURE_NATIVEAOT

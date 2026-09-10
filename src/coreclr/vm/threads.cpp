@@ -956,24 +956,27 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 
 #ifndef FEATURE_PORTABLE_HELPERS
 
-extern "C" void STDCALL JIT_PatchedCodeStart();
-extern "C" void STDCALL JIT_PatchedCodeLast();
-#ifdef TARGET_X86
-extern "C" void STDCALL JIT_PatchedWriteBarrierGroup_End();
-#else
-extern "C" void STDCALL JIT_WriteBarrier_End();
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-extern "C" void STDCALL JIT_CheckedWriteBarrier_End();
-#endif
-#endif // TARGET_X86
+static WriteBarrierCodeDescriptor s_writeBarrierCode = {};
+static WriteBarrierHelperDescriptor s_writeBarrierHelpers = {};
 
-static void* s_barrierCopy = NULL;
+static DWORD GetCodeSize(VOID* codeStart, VOID* codeEnd)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    ptrdiff_t codeSize = (BYTE*)codeEnd - (BYTE*)codeStart;
+    _ASSERTE(codeSize > 0);
+    return (DWORD)codeSize;
+}
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier)
 {
     if (IsWriteBarrierCopyEnabled())
     {
-        return (BYTE*)PINSTRToPCODE((TADDR)s_barrierCopy + ((TADDR)barrier - (TADDR)JIT_PatchedCodeStart));
+        _ASSERTE(s_writeBarrierCode.source_start != nullptr);
+        _ASSERTE(s_writeBarrierCode.executable_start != nullptr);
+        return (BYTE*)PINSTRToPCODE(
+            (TADDR)s_writeBarrierCode.executable_start +
+            ((TADDR)barrier - (TADDR)s_writeBarrierCode.source_start));
     }
     else
     {
@@ -981,50 +984,195 @@ BYTE* GetWriteBarrierCodeLocation(VOID* barrier)
     }
 }
 
+uint8_t* GetWriteBarrierCodeCopy()
+{
+    return s_writeBarrierCode.executable_start;
+}
+
+void SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers)
+{
+    s_writeBarrierHelpers = helpers;
+    s_writeBarrierCode = helpers.code;
+
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, helpers.assign_ref);
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, helpers.checked_assign_ref);
+
+#ifdef TARGET_X86
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EAX, helpers.assign_ref_by_register[0]);
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_ECX, helpers.assign_ref_by_register[1]);
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EBX, helpers.assign_ref_by_register[2]);
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_ESI, helpers.assign_ref_by_register[3]);
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EDI, helpers.assign_ref_by_register[4]);
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EBP, helpers.assign_ref_by_register[5]);
+
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF_EAX, helpers.checked_assign_ref_by_register[0]);
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF_ECX, helpers.checked_assign_ref_by_register[1]);
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF_EBX, helpers.checked_assign_ref_by_register[2]);
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF_ESI, helpers.checked_assign_ref_by_register[3]);
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF_EDI, helpers.checked_assign_ref_by_register[4]);
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF_EBP, helpers.checked_assign_ref_by_register[5]);
+
+    if (helpers.code.executable_start != helpers.code.source_start)
+    {
+        static const char* const symbolNames[WRITE_BARRIER_REGISTER_HELPER_COUNT] =
+        {
+            "JIT_WriteBarrierEAX",
+            "JIT_WriteBarrierECX",
+            "JIT_WriteBarrierEBX",
+            "JIT_WriteBarrierESI",
+            "JIT_WriteBarrierEDI",
+            "JIT_WriteBarrierEBP",
+        };
+        static const WCHAR* const eventNames[WRITE_BARRIER_REGISTER_HELPER_COUNT] =
+        {
+            W("@WriteBarrierEAX"),
+            W("@WriteBarrierECX"),
+            W("@WriteBarrierEBX"),
+            W("@WriteBarrierESI"),
+            W("@WriteBarrierEDI"),
+            W("@WriteBarrierEBP"),
+        };
+
+        uint8_t* sourceEbp = helpers.code.source_start +
+            (reinterpret_cast<uint8_t*>(helpers.assign_ref_by_register[5]) -
+                helpers.code.executable_start);
+        DWORD writeBarrierSize = GetCodeSize(
+            sourceEbp,
+            helpers.exception_ranges[1].end);
+
+        for (size_t i = 0; i < WRITE_BARRIER_REGISTER_HELPER_COUNT; i++)
+        {
+            SetAuxiliarySymbol(helpers.assign_ref_by_register[i], symbolNames[i]);
+            ETW::MethodLog::HelperInitialized(
+                reinterpret_cast<ULONGLONG>(helpers.assign_ref_by_register[i]),
+                writeBarrierSize,
+                eventNames[i]);
+        }
+    }
+#else // TARGET_X86
+    if (helpers.code.executable_start != helpers.code.source_start)
+    {
+        DWORD writeBarrierSize = GetCodeSize(
+            helpers.exception_ranges[0].start,
+            helpers.exception_ranges[0].end);
+        SetAuxiliarySymbol(helpers.assign_ref, "JIT_WriteBarrier");
+        ETW::MethodLog::HelperInitialized(
+            reinterpret_cast<ULONGLONG>(helpers.assign_ref),
+            writeBarrierSize,
+            W("@WriteBarrier"));
+
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        DWORD checkedWriteBarrierSize = GetCodeSize(
+            helpers.exception_ranges[1].start,
+            helpers.exception_ranges[1].end);
+        SetAuxiliarySymbol(helpers.checked_assign_ref, "JIT_CheckedWriteBarrier");
+        ETW::MethodLog::HelperInitialized(
+            reinterpret_cast<ULONGLONG>(helpers.checked_assign_ref),
+            checkedWriteBarrierSize,
+            W("@CheckedWriteBarrier"));
+#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+    }
+#endif // TARGET_X86
+
+    ReportCopiedWriteBarriersToPerfMap();
+}
+
+bool IsIPInWriteBarrierHelper(PCODE controlPc)
+{
+    uintptr_t instruction = PCODEToPINSTR(controlPc);
+
+    for (size_t i = 0; i < s_writeBarrierHelpers.av_location_count; i++)
+    {
+        if (s_writeBarrierHelpers.av_locations[i] == instruction)
+        {
+            return true;
+        }
+    }
+
+    for (size_t i = 0; i < s_writeBarrierHelpers.exception_range_count; i++)
+    {
+        WriteBarrierExceptionRange range = s_writeBarrierHelpers.exception_ranges[i];
+        if (reinterpret_cast<uintptr_t>(range.start) <= instruction &&
+            instruction < reinterpret_cast<uintptr_t>(range.end))
+        {
+            return true;
+        }
+    }
+
+    return IsIPInWriteBarrierCodeCopy(controlPc);
+}
+
+bool IsIPInUnpatchedWriteBarrierHelper(PCODE controlPc)
+{
+#ifdef TARGET_X86
+    if (s_writeBarrierHelpers.exception_range_count == 0)
+    {
+        return false;
+    }
+
+    uintptr_t instruction = PCODEToPINSTR(controlPc);
+    WriteBarrierExceptionRange range = s_writeBarrierHelpers.exception_ranges[0];
+    return reinterpret_cast<uintptr_t>(range.start) <= instruction &&
+        instruction < reinterpret_cast<uintptr_t>(range.end);
+#else
+    UNREFERENCED_PARAMETER(controlPc);
+    return false;
+#endif // TARGET_X86
+}
+
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
 {
-    if (IsWriteBarrierCopyEnabled())
+    if (IsWriteBarrierCopyEnabled() && s_writeBarrierCode.executable_start != nullptr)
     {
-        return (s_barrierCopy <= (void*)controlPc && (void*)controlPc < ((BYTE*)s_barrierCopy + ((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart)));
+        TADDR executableStart = (TADDR)s_writeBarrierCode.executable_start;
+        TADDR controlAddress = (TADDR)controlPc;
+        return executableStart <= controlAddress &&
+            controlAddress - executableStart < s_writeBarrierCode.size;
     }
-    else
-    {
-        return FALSE;
-    }
+
+    return FALSE;
 }
 
 PCODE AdjustWriteBarrierIP(PCODE controlPc)
 {
     _ASSERTE(IsIPInWriteBarrierCodeCopy(controlPc));
 
-    // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
-    return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
+    return (PCODE)((TADDR)s_writeBarrierCode.source_start +
+        ((TADDR)controlPc - (TADDR)s_writeBarrierCode.executable_start));
 }
-
-#ifdef TARGET_X86
-extern "C" void *JIT_WriteBarrierEAX_Loc;
-#elif TARGET_AMD64
-extern "C" void *JIT_WriteBarrier_Loc;
-#else
-extern "C" void *JIT_WriteBarrier_Loc;
-void *JIT_WriteBarrier_Loc = 0;
-#endif
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-extern "C" void (*JIT_WriteBarrier_Table)();
-extern "C" void *JIT_WriteBarrier_Table_Loc;
-void *JIT_WriteBarrier_Table_Loc = 0;
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #else // FEATURE_PORTABLE_HELPERS
 
+uint8_t* GetWriteBarrierCodeCopy()
+{
+    return nullptr;
+}
+
+void SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers)
+{
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, helpers.assign_ref);
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, helpers.checked_assign_ref);
+}
+
+bool IsIPInWriteBarrierHelper(PCODE)
+{
+    return false;
+}
+
+bool IsIPInUnpatchedWriteBarrierHelper(PCODE)
+{
+    return false;
+}
+
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
 {
+    UNREFERENCED_PARAMETER(controlPc);
     return FALSE;
 }
 
 PCODE AdjustWriteBarrierIP(PCODE controlPc)
 {
+    UNREFERENCED_PARAMETER(controlPc);
     UNREACHABLE();
 }
 
@@ -1092,9 +1240,9 @@ static void EnumerateCopiedWriteBarriers(TAction action)
             writeBarriers[j] = current;
         }
 
-        // The final barrier ends at the explicit end of the patched write-barrier group.
+        // The final barrier ends at the end of the patched write-barrier group.
         PCODE writeBarrierGroupEnd = reinterpret_cast<PCODE>(
-            GetWriteBarrierCodeLocation((void*)JIT_PatchedWriteBarrierGroup_End));
+            GetWriteBarrierCodeLocation(s_writeBarrierHelpers.exception_ranges[1].end));
         for (size_t i = 0; i < ARRAY_SIZE(writeBarriers); i++)
         {
             // Event tracing reports a start address and byte count, so end is exclusive.
@@ -1108,13 +1256,14 @@ static void EnumerateCopiedWriteBarriers(TAction action)
                 writeBarriers[i].NameW);
         }
 #else
-        // The configured helper target identifies the executable copy; the assembly end label
-        // provides the exact size without inspecting the copied instructions.
+        // The configured helper target identifies the executable copy. The GC-provided exception
+        // range describes the corresponding source helper and provides its exact size.
         PCODE writeBarrier = VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_ASSIGN_REF].pfnHelper);
         ReportCopiedWriteBarrier(
             action,
             writeBarrier,
-            (BYTE*)JIT_WriteBarrier_End - (BYTE*)JIT_WriteBarrier,
+            s_writeBarrierHelpers.exception_ranges[0].end -
+                s_writeBarrierHelpers.exception_ranges[0].start,
             "WriteBarrier",
             W("WriteBarrier"));
 
@@ -1127,7 +1276,8 @@ static void EnumerateCopiedWriteBarriers(TAction action)
             ReportCopiedWriteBarrier(
                 action,
                 checkedWriteBarrier,
-                (BYTE*)JIT_CheckedWriteBarrier_End - (BYTE*)JIT_CheckedWriteBarrier,
+                s_writeBarrierHelpers.exception_ranges[1].end -
+                    s_writeBarrierHelpers.exception_ranges[1].start,
                 "CheckedWriteBarrier",
                 W("CheckedWriteBarrier"));
         }
@@ -1167,14 +1317,6 @@ void InitThreadManagerTracingData()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifndef FEATURE_PORTABLE_HELPERS
-    ReportCopiedWriteBarriersToPerfMap();
-
-#ifdef FEATURE_EVENT_TRACE
-    ReportCopiedWriteBarriersToEventTracing(
-        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
-#endif // FEATURE_EVENT_TRACE
-#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 //---------------------------------------------------------------------------
@@ -1190,73 +1332,19 @@ void InitThreadManager()
     CONTRACTL_END;
 
 #ifndef FEATURE_PORTABLE_HELPERS
-    // All patched helpers should fit into one page.
-    // If you hit this assert on retail build, there is most likely problem with BBT script.
-    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
-    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)minipal_getpagesize());
-
     if (IsWriteBarrierCopyEnabled())
     {
-        s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
-        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
-        if (s_barrierCopy == NULL)
+        s_writeBarrierCode.executable_start =
+            (uint8_t*)ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
+        ExecutableAllocator::Instance()->Commit(
+            s_writeBarrierCode.executable_start,
+            g_SystemInfo.dwAllocationGranularity,
+            true);
+        if (s_writeBarrierCode.executable_start == nullptr)
         {
             _ASSERTE(!"Allocation of GC barrier code page failed");
             COMPlusThrowWin32();
         }
-
-        {
-            size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
-            ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
-            memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
-        }
-        // Store the JIT_WriteBarrier copy location to a global variable so that helpers
-        // can jump to it.
-#ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX);
-
-#define X86_WRITE_BARRIER_REGISTER(reg) \
-    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
-    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg);
-
-        ENUM_X86_WRITE_BARRIER_REGISTERS()
-
-#undef X86_WRITE_BARRIER_REGISTER
-
-#else // TARGET_X86
-        JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
-#endif // TARGET_X86
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
-        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), "JIT_WriteBarrier");
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-        JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
-        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
-#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-#if defined(TARGET_AMD64)
-        // On AMD64 the Checked variant of the helper jumps through an indirection
-        // to the patched barrier, but is not part of the patched set of helpers.
-        SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
-#endif // TARGET_AMD64
-
-    }
-    else
-    {
-#ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;
-#else
-        JIT_WriteBarrier_Loc = (void*)RhpAssignRef;
-#endif
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-        JIT_WriteBarrier_Table_Loc = NULL;
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 #endif // !FEATURE_PORTABLE_HELPERS
 

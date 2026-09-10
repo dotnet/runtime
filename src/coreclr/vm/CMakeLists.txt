@@ -657,6 +657,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 if (FEATURE_PORTABLE_HELPERS)
     set(PORTABLE_SOURCES_DIR "${RUNTIME_DIR}/portable/")
+    set(PORTABLE_GC_SOURCES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../gc/portable/")
     set(PORTABLE_VM_SOURCES_DIR "./portable/")
 
     list(APPEND VM_SOURCES_WKS
@@ -667,7 +668,7 @@ if (FEATURE_PORTABLE_HELPERS)
     if(CLR_CMAKE_TARGET_ARCH_WASM)
     else()
         list(APPEND VM_SOURCES_WKS
-            ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
+            ${PORTABLE_GC_SOURCES_DIR}/WriteBarriers.cpp
         )
     endif()
 
@@ -681,9 +682,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
-            ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-            ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
-            ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
@@ -695,7 +693,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
         set(VM_HEADERS_WKS_ARCH_ASM
@@ -711,7 +708,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${ARCH_SOURCES_DIR}/thunktemplates.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
             )
 
         set(VM_HEADERS_WKS_ARCH_ASM
@@ -722,14 +718,12 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
             ${ARCH_SOURCES_DIR}/AsmHelpers.asm
             ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
-            ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
             ${ARCH_SOURCES_DIR}/thunktemplates.asm
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
             )
 
         set(VM_HEADERS_WKS_ARCH_ASM
@@ -749,9 +743,6 @@ else()
             ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
-            ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
-            ${ARCH_SOURCES_DIR}/jithelpers_slow.S
-            ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/redirectedhandledjitcase.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
@@ -762,7 +753,6 @@ else()
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
@@ -775,18 +765,15 @@ else()
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/ehhelpers.S
-            ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -794,13 +781,11 @@ else()
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
-            ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -810,7 +795,6 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -820,7 +804,6 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     endif()
 
@@ -845,7 +828,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
-        writebarriermanager.cpp
     )
 
     set(VM_HEADERS_WKS_ARCH
@@ -910,7 +892,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
         gcinfodecoder.cpp
-        writebarriermanager.cpp
     )
 
     if(CLR_CMAKE_HOST_UNIX)
@@ -959,7 +940,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/dynamichelpers.S
     )
     set(VM_SOURCES_WKS_ARCH
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/writebarriers.cpp
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
@@ -1071,6 +1051,7 @@ convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
 set(GC_WKS_SVR_SOURCES
+    ../gc/bulkwritebarrier.cpp
     ../gc/gcee.cpp
     ../gc/gc.cpp
     ../gc/init.cpp

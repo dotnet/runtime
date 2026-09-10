@@ -133,8 +133,8 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     //get global information first
     detailsData->heapAddr = heapAddr;
 
-    detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
-    detailsData->highest_address = PTR_CDADDR(g_highest_address);
+    detailsData->lowest_address = GetGcWriteBarrierLowestAddress();
+    detailsData->highest_address = GetGcWriteBarrierHighestAddress();
     if (IsBackgroundGCEnabled())
     {
         detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;

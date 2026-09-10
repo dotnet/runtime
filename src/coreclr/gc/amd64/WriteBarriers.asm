@@ -3,6 +3,24 @@
 
 include AsmMacros_Shared.inc
 
+ifdef GC_WRITE_BARRIER_STANDALONE
+;; Standalone GC helpers depend only on GC-owned state.
+endif
+
+EXTERN g_lowest_address     : QWORD
+EXTERN g_highest_address    : QWORD
+EXTERN g_ephemeral_low      : QWORD
+EXTERN g_ephemeral_high     : QWORD
+EXTERN g_card_table         : QWORD
+
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN g_card_bundle_table  : QWORD
+endif
+
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+EXTERN g_write_watch_table  : QWORD
+endif
+
 ;; Macro used to copy contents of newly updated GC heap locations to a shadow copy of the heap. This is used
 ;; during garbage collections to verify that object references where never written to the heap without using a
 ;; write barrier. Note that we're potentially racing to update the shadow heap while other threads are writing

@@ -110,6 +110,21 @@ inline bool UseBuildVariant()
     return (major > 2) || (major == 2 && minor >= 4);
 }
 
+inline CLRDATA_ADDRESS GetGcWriteBarrierCardTable()
+{
+    return (CLRDATA_ADDRESS)*g_gcDacGlobals->write_barrier_card_table;
+}
+
+inline CLRDATA_ADDRESS GetGcWriteBarrierLowestAddress()
+{
+    return (CLRDATA_ADDRESS)*g_gcDacGlobals->write_barrier_lowest_address;
+}
+
+inline CLRDATA_ADDRESS GetGcWriteBarrierHighestAddress()
+{
+    return (CLRDATA_ADDRESS)*g_gcDacGlobals->write_barrier_highest_address;
+}
+
 inline bool IsRegionGCEnabled()
 {
     if (UseBuildVariant())

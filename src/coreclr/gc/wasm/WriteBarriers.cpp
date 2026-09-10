@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-#include <fcall.h>
-
-#ifndef FEATURE_NATIVEAOT
-#include "gchelpers.inl"
-#include "gcheaputilities.h"
-#endif
+#include "../writebarrierglobals.h"
 
 #ifdef FEATURE_MULTITHREADING
 #error The current assembly implementation of write barriers assumes single-threaded Wasm
@@ -16,6 +11,8 @@
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 #error The current assembly implementation of write barriers does not implement card bundles
 #endif
+
+static constexpr int CardByteShift = 10;
 
 // To simplify integration with the rest of the codebase and avoid complicating the build
 // system, Wasm write barriers are implemented using inline assembly inside C functions, below.
@@ -27,7 +24,7 @@
 // is to implement the barriers by hand in assembly.
 
 #define ASM_HELPER_2(rettype, funcname, a1, a2) \
-    EXTERN_C rettype __attribute__((naked)) F_CALL_CONV funcname(a1, a2)
+    extern "C" rettype __attribute__((naked)) funcname(a1, a2)
 
 // Helper to make relevant GC globals and constants visible inside of inline assembly
 #define GC_ASM(text) \
@@ -37,11 +34,11 @@
         [g_ephemeral_low] "i" (&g_ephemeral_low), \
         [g_ephemeral_high] "i" (&g_ephemeral_high), \
         [g_card_table] "i" (&g_card_table), \
-        [card_byte_shift] "i" (card_byte_shift) \
+        [card_byte_shift] "i" (CardByteShift) \
     )
 
-EXTERN_C FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, RhpAssignRef, Object **dst, Object *ref)
+extern "C" void RhpAssignRef(void **dst, void *ref);
+ASM_HELPER_2(void, RhpAssignRef, void **dst, void *ref)
 {
     GC_ASM(
         /* *dst = ref */
@@ -78,8 +75,8 @@ ASM_HELPER_2(VOID, RhpAssignRef, Object **dst, Object *ref)
     );
 }
 
-EXTERN_C FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
+extern "C" void RhpCheckedAssignRef(void **dst, void *ref);
+ASM_HELPER_2(void, RhpCheckedAssignRef, void **dst, void *ref)
 {
     GC_ASM(
         /* *dst = ref */

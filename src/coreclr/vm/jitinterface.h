@@ -9,6 +9,7 @@
 #ifndef JITINTERFACE_H
 #define JITINTERFACE_H
 
+#include "../gc/writebarrier.h"
 #include "corjit.h"
 
 #if defined (TARGET_WASM)
@@ -23,13 +24,6 @@
 #include "pgo.h"
 
 class ILCodeStream;
-
-enum StompWriteBarrierCompletionAction
-{
-    SWB_PASS = 0x0,
-    SWB_ICACHE_FLUSH = 0x1,
-    SWB_EE_RESTART = 0x2
-};
 
 enum SignatureKind
 {
@@ -69,8 +63,6 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 
 
 void InitJITAllocationHelpers();
-
-void InitJITWriteBarrierHelpers();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
@@ -156,19 +148,7 @@ extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, Che
 // Regular checked write barrier.
 extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
-#ifdef TARGET_ARM64
-#define RhpCheckedAssignRef RhpCheckedAssignRefArm64
-#define RhpAssignRef RhpAssignRefArm64
-#elif defined (TARGET_LOONGARCH64)
-#define RhpAssignRef RhpAssignRefLoongArch64
-#elif defined (TARGET_RISCV64)
-#define RhpAssignRef RhpAssignRefRiscV64
-#endif // TARGET_*
-
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
-
-extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 
@@ -188,7 +168,6 @@ EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
 #endif // !HOST_64BIT
 
 #ifdef TARGET_X86
-
 #define ENUM_X86_WRITE_BARRIER_REGISTERS() \
     X86_WRITE_BARRIER_REGISTER(EAX) \
     X86_WRITE_BARRIER_REGISTER(ECX) \
@@ -196,30 +175,7 @@ EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
     X86_WRITE_BARRIER_REGISTER(ESI) \
     X86_WRITE_BARRIER_REGISTER(EDI) \
     X86_WRITE_BARRIER_REGISTER(EBP)
-
-extern "C"
-{
-
-// JIThelp.asm/JIThelp.s
-#define X86_WRITE_BARRIER_REGISTER(reg) \
-    void STDCALL JIT_DebugWriteBarrier##reg(); \
-    void STDCALL JIT_WriteBarrier##reg(); \
-    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
-    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
-
-    ENUM_X86_WRITE_BARRIER_REGISTERS()
-#undef X86_WRITE_BARRIER_REGISTER
-
-    void STDCALL JIT_WriteBarrierGroup();
-    void STDCALL JIT_WriteBarrierGroup_End();
-
-    void STDCALL JIT_PatchedWriteBarrierGroup();
-    void STDCALL JIT_PatchedWriteBarrierGroup_End();
-}
-
-void ValidateWriteBarrierHelpers();
-
-#endif //TARGET_X86
+#endif // TARGET_X86
 
 extern "C"
 {

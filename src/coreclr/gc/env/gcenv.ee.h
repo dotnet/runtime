@@ -69,7 +69,22 @@ public:
     static void DiagWalkSurvivors(void* gcContext, bool fCompacting);
     static void DiagWalkUOHSurvivors(void* gcContext, int gen);
     static void DiagWalkBGCSurvivors(void* gcContext);
-    static void StompWriteBarrier(WriteBarrierParameters* args);
+    static bool SupportsWriteBarrierBitwiseRegion();
+    static uint8_t* GetWriteBarrierCodeCopy();
+    static void SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers);
+    static bool IsWriteBarrierCodeCopyEnabled();
+    static bool IsServerGC();
+    static bool UseSlowDebugWriteBarrier();
+    static void CopyWriteBarrierCode(uint8_t* destination, const uint8_t* source, size_t size);
+    static void PatchWriteBarrierPointer(uint8_t* destination, uint8_t* value);
+    static void UpdateWriteBarrierValue(uint8_t* destination, uint64_t value, size_t size);
+    static bool EnterWriteBarrierPatchMode();
+    static void ExitWriteBarrierPatchMode(bool modeChanged);
+    static void SuspendForWriteBarrier();
+    static void RestartForWriteBarrier();
+    static void FlushWriteBarrierInstructionCache(uint8_t* code, size_t size);
+    static void WriteBarrierAssert(void* destination, void* reference);
+    static void UpdateRuntimeWriteBarrierState(const WriteBarrierParameters& state);
 
     static void EnableFinalization(bool gcHasWorkForFinalizerThread);
 

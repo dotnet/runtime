@@ -2,7 +2,7 @@
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
 ;;
-;; Define the helpers used to implement the write barrier required when writing an object reference into a
+;; Define the helpers used to implement the GC-owned write barrier required when writing an object reference into a
 ;; location residing on the GC heap. Such write barriers allow the GC to optimize which objects in
 ;; non-ephemeral generations need to be scanned for references to ephemeral objects during an ephemeral
 ;; collection.
@@ -14,6 +14,18 @@
     .code
 
 include AsmMacros_Shared.inc
+
+G_LOWEST_ADDRESS                            equ _g_lowest_address
+G_HIGHEST_ADDRESS                           equ _g_highest_address
+G_EPHEMERAL_LOW                             equ _g_ephemeral_low
+G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
+G_CARD_TABLE                                equ _g_card_table
+
+EXTERN G_LOWEST_ADDRESS : DWORD
+EXTERN G_HIGHEST_ADDRESS : DWORD
+EXTERN G_EPHEMERAL_LOW : DWORD
+EXTERN G_EPHEMERAL_HIGH : DWORD
+EXTERN G_CARD_TABLE : DWORD
 
 ;; Macro used to copy contents of newly updated GC heap locations to a shadow copy of the heap. This is used
 ;; during garbage collections to verify that object references where never written to the heap without using a
@@ -257,5 +269,124 @@ FASTCALL_FUNC RhpCheckedXchg, 8
     DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, ECX, EDX, ret
 
 FASTCALL_ENDFUNC
+
+ifndef FEATURE_NATIVEAOT
+
+JIT_WriteBarrierReg_PreGrow TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
+JIT_WriteBarrierReg_PostGrow TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
+
+;*********************************************************************/
+; This is the small write barrier thunk we use when we know the
+; ephemeral generation is higher in memory than older generations.
+; The 0x0F0F0F0F values are patched by the write barrier manager.
+; This the generic version - wherever the code says ECX,
+; the specific register is patched later into a copy
+; Note: do not replace ECX by EAX - there is a smaller encoding for
+; the compares just for EAX, which won't work for other registers.
+;
+; READ THIS!!!!!!
+; it is imperative that the addresses of the values that we overwrite
+; (card table, ephemeral region ranges, etc) are naturally aligned since
+; there are codepaths that will overwrite these values while the EE is running.
+;
+PUBLIC JIT_WriteBarrierReg_PreGrow
+JIT_WriteBarrierReg_PreGrow PROC
+        mov     DWORD PTR [edx], ecx
+        cmp     ecx, 0F0F0F0F0h
+        jb      NoWriteBarrierPre
+
+        shr     edx, 10
+        nop ; padding for alignment of constant
+        cmp     byte ptr [edx+0F0F0F0F0h], 0FFh
+        jne     WriteBarrierPre
+NoWriteBarrierPre:
+        ret
+        nop ; padding for alignment of constant
+        nop ; padding for alignment of constant
+WriteBarrierPre:
+        mov     byte ptr [edx+0F0F0F0F0h], 0FFh
+        ret
+JIT_WriteBarrierReg_PreGrow ENDP
+
+;*********************************************************************/
+; This is the larger write barrier thunk we use when we know that older
+; generations may be higher in memory than the ephemeral generation
+; The 0x0F0F0F0F values are patched by the write barrier manager.
+; This the generic version - wherever the code says ECX,
+; the specific register is patched later into a copy
+; Note: do not replace ECX by EAX - there is a smaller encoding for
+; the compares just for EAX, which won't work for other registers.
+; NOTE: we need this aligned for our validation to work properly
+        ALIGN 4
+PUBLIC JIT_WriteBarrierReg_PostGrow
+JIT_WriteBarrierReg_PostGrow PROC
+        mov     DWORD PTR [edx], ecx
+        cmp     ecx, 0F0F0F0F0h
+        jb      NoWriteBarrierPost
+        cmp     ecx, 0F0F0F0F0h
+        jae     NoWriteBarrierPost
+
+        shr     edx, 10
+        nop ; padding for alignment of constant
+        cmp     byte ptr [edx+0F0F0F0F0h], 0FFh
+        jne     WriteBarrierPost
+NoWriteBarrierPost:
+        ret
+        nop ; padding for alignment of constant
+        nop ; padding for alignment of constant
+WriteBarrierPost:
+        mov     byte ptr [edx+0F0F0F0F0h], 0FFh
+        ret
+JIT_WriteBarrierReg_PostGrow ENDP
+
+; PatchedCodeStart and PatchedCodeEnd are used to determine bounds of patched code.
+;
+
+        ALIGN 4
+_JIT_PatchedCodeStart@0 proc public
+        ret
+_JIT_PatchedCodeStart@0 endp
+
+        ALIGN 4
+
+;**********************************************************************
+; Write barriers generated at runtime
+
+PUBLIC _JIT_PatchedWriteBarrierGroup@0
+_JIT_PatchedWriteBarrierGroup@0 PROC
+        ret
+_JIT_PatchedWriteBarrierGroup@0 ENDP
+
+PatchedWriteBarrierHelper MACRO rg
+        ALIGN 8
+PUBLIC _JIT_WriteBarrier&rg&@0
+_JIT_WriteBarrier&rg&@0 PROC
+        ; Just allocate space that will be filled in at runtime
+        db (48) DUP (0CCh)
+_JIT_WriteBarrier&rg&@0 ENDP
+ENDM
+
+PatchedWriteBarrierHelper <EAX>
+PatchedWriteBarrierHelper <EBX>
+PatchedWriteBarrierHelper <ECX>
+PatchedWriteBarrierHelper <ESI>
+PatchedWriteBarrierHelper <EDI>
+PatchedWriteBarrierHelper <EBP>
+
+PUBLIC _JIT_PatchedWriteBarrierGroup_End@0
+_JIT_PatchedWriteBarrierGroup_End@0 PROC
+        ret
+_JIT_PatchedWriteBarrierGroup_End@0 ENDP
+
+_JIT_PatchedCodeLast@0 proc public
+        ret
+_JIT_PatchedCodeLast@0 endp
+
+; This is the first function outside the keep-together range used by BBT.
+_JIT_PatchedCodeEnd@0 proc public
+        ret
+_JIT_PatchedCodeEnd@0 endp
+
+endif
 
     end

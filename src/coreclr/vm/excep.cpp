@@ -5252,16 +5252,6 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 EXTERN_C void JIT_StackProbe_End();
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-#ifndef TARGET_X86
-EXTERN_C void JIT_WriteBarrier_End();
-EXTERN_C void JIT_CheckedWriteBarrier_End();
-#endif // TARGET_X86
-
-#if defined(TARGET_AMD64) && defined(_DEBUG)
-EXTERN_C void JIT_WriteBarrier_Debug();
-EXTERN_C void JIT_WriteBarrier_Debug_End();
-#endif
-
 //Return TRUE if pContext->Pc is in VirtualStub
 BOOL IsIPinVirtualStub(PCODE f_IP)
 {
@@ -5301,48 +5291,6 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
-typedef uint8_t CODE_LOCATION;
-EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
-#if defined(HOST_X86)
-EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefECXAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefEBXAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefESIAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefEDIAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefEBPAVLocation;
-#endif
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
-#if defined(HOST_X86)
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEAXAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefECXAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBXAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
-#endif
-
-static uintptr_t writeBarrierAVLocations[] =
-{
-    (uintptr_t)&RhpAssignRefAVLocation,
-#if defined(HOST_X86)
-    (uintptr_t)&RhpAssignRefEAXAVLocation,
-    (uintptr_t)&RhpAssignRefECXAVLocation,
-    (uintptr_t)&RhpAssignRefEBXAVLocation,
-    (uintptr_t)&RhpAssignRefESIAVLocation,
-    (uintptr_t)&RhpAssignRefEDIAVLocation,
-    (uintptr_t)&RhpAssignRefEBPAVLocation,
-#endif
-    (uintptr_t)&RhpCheckedAssignRefAVLocation,
-#if defined(HOST_X86)
-    (uintptr_t)&RhpCheckedAssignRefEAXAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefECXAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefEBXAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
-#endif
-};
-
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.
 bool IsIPInMarkedJitHelper(PCODE uControlPc)
@@ -5350,36 +5298,17 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
     LIMITED_METHOD_CONTRACT;
 
 #ifndef FEATURE_PORTABLE_HELPERS
-    // compare the IP against the list of known possible AV locations in the write barrier helpers
-    for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
+    if (IsIPInWriteBarrierHelper(uControlPc))
     {
-#if defined(HOST_AMD64) || defined(HOST_X86)
-        // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
-        // wraps every method symbol with a jump stub that breaks the following check.
-        ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
-#endif
-
-        if (writeBarrierAVLocations[i] == PCODEToPINSTR(uControlPc))
-            return true;
+        return true;
     }
 
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
-#ifndef TARGET_X86
-    CHECK_RANGE(JIT_WriteBarrier)
-    CHECK_RANGE(JIT_CheckedWriteBarrier)
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
-#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
-#else
-    CHECK_RANGE(JIT_WriteBarrierGroup)
-    CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
-#endif // TARGET_X86
-
-#if defined(TARGET_AMD64) && defined(_DEBUG)
-    CHECK_RANGE(JIT_WriteBarrier_Debug)
-#endif
+#endif // !TARGET_X86 && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
@@ -5421,7 +5350,7 @@ AdjustContextForJITHelpers(
             // heap change is done after pushing some state and always happens in the non-patched region.
             // (We don't check for this in the normal AV pathway, as in that case, we have an instruction which triggers
             // the AV without writing to memory before adjusting the stack.
-            bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
+            bool withinWriteBarrierGroup = IsIPInUnpatchedWriteBarrierHelper(ip);
             if (withinWriteBarrierGroup)
             {
                 pContext->Ebp = *esp++;

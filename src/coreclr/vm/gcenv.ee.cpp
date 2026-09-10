@@ -24,8 +24,9 @@
 #include "configuration.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
-#include <minipal/memorybarrierprocesswide.h>
-
+#ifdef TARGET_ARM
+#include "cgensys.h"
+#endif // TARGET_ARM
 // Finalizes a weak reference directly.
 extern void FinalizeWeakReference(Object* obj);
 
@@ -163,11 +164,14 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
         {
             Object ** bottomStack = (Object **) pThread->GetCachedStackBase();
             Object ** walk;
+            const WriteBarrierFunctions& writeBarrierFunctions =
+                GCHeapUtilities::GetWriteBarrierFunctions();
+            IsInGCHeapFunction isInGCHeap = writeBarrierFunctions.is_in_gc_heap;
+            void* gcContext = writeBarrierFunctions.context;
             for (walk = topStack; walk < bottomStack; walk ++)
             {
                 if (((void*)*walk > (void*)bottomStack || (void*)*walk < (void*)topStack) &&
-                    ((void*)*walk >= (void*)g_lowest_address && (void*)*walk <= (void*)g_highest_address)
-                    )
+                    isInGCHeap(gcContext, *walk))
                 {
                     //DbgPrintf("promote " FMT_ADDR " : " FMT_ADDR "\n", walk, *walk);
                     fn(walk, sc, GC_CALL_INTERIOR|GC_CALL_PINNED);
@@ -967,227 +971,233 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
 }
 
-void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+bool GCToEEInterface::SupportsWriteBarrierBitwiseRegion()
 {
-    assert(args != nullptr);
-    int stompWBCompleteActions = SWB_PASS;
-    bool is_runtime_suspended = args->is_runtime_suspended;
-
-    switch (args->operation)
-    {
-    case WriteBarrierOp::StompResize:
-        // StompResize requires a new card table, a new lowest address, and
-        // a new highest address
-        assert(args->card_table != nullptr);
-        assert(args->lowest_address != nullptr);
-        assert(args->highest_address != nullptr);
-
-        // We are sensitive to the order of writes here (more comments on this further in the method)
-        // In particular g_card_table must be written before writing the heap bounds.
-        // For platforms with weak memory ordering we will issue fences, for x64/x86 we are ok
-        // as long as compiler does not reorder these writes.
-        // That is unlikely since we have method calls in between.
-        // Just to be robust agains possible refactoring/inlining we will do a compiler-fenced store here.
-        VolatileStoreWithoutBarrier(&g_card_table, args->card_table);
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        assert(args->card_bundle_table != nullptr);
-        g_card_bundle_table = args->card_bundle_table;
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        if (g_sw_ww_enabled_for_gc_heap && (args->write_watch_table != nullptr))
-        {
-            assert(args->is_runtime_suspended);
-            g_write_watch_table = args->write_watch_table;
-        }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-        stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
-        is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || is_runtime_suspended;
-
-        if (stompWBCompleteActions & SWB_ICACHE_FLUSH)
-        {
-            // flushing/invalidating the write barrier's body for the current process
-            // NOTE: the underlying API may flush more than needed or nothing at all if Icache is coherent.
-            ::FlushWriteBarrierInstructionCache();
-        }
-
-        // IMPORTANT: managed heap segments may surround unmanaged/stack segments. In such cases adding another managed
-        //     heap segment may put a stack/unmanaged write inside the new heap range. However the old card table would
-        //     not cover it. Therefore we must ensure that the write barriers see the new table before seeing the new bounds.
-        //
-        //     On architectures with strong ordering, we only need to prevent compiler reordering.
-        //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
-
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
-        if (!is_runtime_suspended)
-        {
-            // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
-            // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            minipal_memory_barrier_process_wide();
-        }
-#endif
-
-        g_lowest_address = args->lowest_address;
-        g_highest_address = args->highest_address;
-
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
-        // Need to reupdate for changes to g_highest_address g_lowest_address
-        stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
-
-#ifdef HOST_ARM
-        if (stompWBCompleteActions & SWB_ICACHE_FLUSH)
-        {
-            // flushing/invalidating the write barrier's body for the current process
-            // NOTE: the underlying API may flush more than needed or nothing at all if Icache is coherent.
-            ::FlushWriteBarrierInstructionCache();
-        }
-#endif
-#endif
-
-        // At this point either the old or the new set of globals (card_table, bounds etc) can be used. Card tables and card bundles allow such use.
-        // When card tables are de-published (at EE suspension) all the info will be merged, so the information will not be lost.
-        // Another point - we should not yet have any managed objects/addresses outside of the former bounds, so either old or new bounds are fine.
-        // That is - because bounds can only become wider and we are not yet done with widening.
-        //
-        // However!!
-        // Once we are done, a new object can (and likely will) be allocated outside of the former bounds.
-        // So, before such object can be used in a write barier, we must ensure that the barrier also uses the new bounds.
-        //
-        // This is easy to arrange for architectures with strong memory ordering. We only need to ensure that
-        // - object is allocated/published _after_ we publish bounds here
-        // - write barrier reads bounds after reading the new object locations
-        //
-        // for architectures with strong memory ordering (x86/x64) both conditions above are naturally guaranteed.
-        // Systems with weak ordering are more interesting. We could either:
-        // a) issue a write fence here and pair it with a read fence in the write barrier, or
-        // b) issue a process-wide full fence here and do ordinary reads in the barrier.
-        //
-        // We will do "b" because executing write barrier is by far more common than updating card table.
-        //
-        // I.E. - for weak architectures we have to do a process-wide fence.
-        //
-        // NOTE: suspending/resuming EE works the same as process-wide fence for our purposes here.
-        //       (we care only about managed threads and suspend/resume will do full fences - good enough for us).
-        //
-
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
-        is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || is_runtime_suspended;
-        if (!is_runtime_suspended)
-        {
-            // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            minipal_memory_barrier_process_wide();
-        }
-#endif
-
-        if (stompWBCompleteActions & SWB_EE_RESTART)
-        {
-            assert(!args->is_runtime_suspended &&
-                "if runtime was suspended in patching routines then it was in running state at beginning");
-            ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
-        }
-        return; // unlike other branches we have already done cleanup so bailing out here
-
-    case WriteBarrierOp::StompEphemeral:
-        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        // StompEphemeral requires a new ephemeral low and a new ephemeral high
-        assert(args->ephemeral_low != nullptr);
-        assert(args->ephemeral_high != nullptr);
-        g_ephemeral_low = args->ephemeral_low;
-        g_ephemeral_high = args->ephemeral_high;
-        g_region_to_generation_table = args->region_to_generation_table;
-        g_region_shr = args->region_shr;
-        g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
-#if defined(HOST_ARM64)
-        // Only allow bitwise write barriers if LSE atomics are present
-        if (!g_arm64_atomics_present)
-        {
-            g_region_use_bitwise_write_barrier = false;
-        }
-#endif
-        stompWBCompleteActions |= ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
-        break;
-
-    case WriteBarrierOp::Initialize:
-        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        // This operation should only be invoked once, upon initialization.
-        assert(g_card_table == nullptr);
-        assert(g_lowest_address == nullptr);
-        assert(g_highest_address == nullptr);
-        assert(args->card_table != nullptr);
-        assert(args->lowest_address != nullptr);
-        assert(args->highest_address != nullptr);
-        assert(args->ephemeral_low != nullptr);
-        assert(args->ephemeral_high != nullptr);
-        assert(!args->requires_upper_bounds_check && "the ephemeral generation must be at the top of the heap!");
-
-        g_card_table = args->card_table;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        assert(g_card_bundle_table == nullptr);
-        g_card_bundle_table = args->card_bundle_table;
-#endif
-
-        g_lowest_address = args->lowest_address;
-        g_highest_address = args->highest_address;
-        g_region_to_generation_table = args->region_to_generation_table;
-        g_region_shr = args->region_shr;
-        g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
-        g_ephemeral_low = args->ephemeral_low;
-        g_ephemeral_high = args->ephemeral_high;
-#if defined(HOST_ARM64)
-        // Only allow bitwise write barriers if LSE atomics are present
-        if (!g_arm64_atomics_present)
-        {
-            g_region_use_bitwise_write_barrier = false;
-        }
-#endif
-        stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
-
-        // StompWriteBarrierResize does not necessarily bash g_ephemeral_low
-        // usages, so we must do so here. This is particularly true on x86/Arm64,
-        // where StompWriteBarrierResize will not bash g_ephemeral_low when
-        // called with the parameters (true, false), as it is above.
-        stompWBCompleteActions |= ::StompWriteBarrierEphemeral(true);
-        break;
-
-    case WriteBarrierOp::SwitchToWriteWatch:
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        assert(args->write_watch_table != nullptr);
-        g_write_watch_table = args->write_watch_table;
-        g_sw_ww_enabled_for_gc_heap = true;
-        stompWBCompleteActions |= ::SwitchToWriteWatchBarrier(true);
+#if defined(TARGET_ARM64)
+    return g_arm64_atomics_present;
 #else
-        assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        break;
+    return true;
+#endif // TARGET_ARM64
+}
 
-    case WriteBarrierOp::SwitchToNonWriteWatch:
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        g_write_watch_table = 0;
-        g_sw_ww_enabled_for_gc_heap = false;
-        stompWBCompleteActions |= ::SwitchToNonWriteWatchBarrier(true);
+uint8_t* GCToEEInterface::GetWriteBarrierCodeCopy()
+{
+    return ::GetWriteBarrierCodeCopy();
+}
+
+void GCToEEInterface::SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers)
+{
+    ::SetWriteBarrierHelpers(helpers);
+}
+
+bool GCToEEInterface::IsWriteBarrierCodeCopyEnabled()
+{
+    return ::IsWriteBarrierCopyEnabled();
+}
+
+bool GCToEEInterface::IsServerGC()
+{
+#ifdef FEATURE_SVR_GC
+    return GCHeapUtilities::IsServerHeap();
 #else
-        assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        break;
+    return false;
+#endif // FEATURE_SVR_GC
+}
 
-    default:
-        assert(!"unknown WriteBarrierOp enum");
-    }
-    if (stompWBCompleteActions & SWB_ICACHE_FLUSH)
+bool GCToEEInterface::UseSlowDebugWriteBarrier()
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#ifdef _DEBUG
+    return (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) != 0;
+#else
+    return false;
+#endif // _DEBUG
+#elif defined(TARGET_X86) && defined(WRITE_BARRIER_CHECK)
+    return (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) != 0;
+#else
+    return false;
+#endif
+}
+
+void GCToEEInterface::CopyWriteBarrierCode(uint8_t* destination, const uint8_t* source, size_t size)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    ExecutableWriterHolder<void> writer(destination, size);
+#else
+    ExecutableWriterHolderNoLog<void> writer(destination, size);
+#endif
+    memcpy(writer.GetRW(), source, size);
+}
+
+void GCToEEInterface::PatchWriteBarrierPointer(uint8_t* destination, uint8_t* value)
+{
+#ifdef TARGET_ARM
+    ExecutableWriterHolderNoLog<uint8_t> writer(destination, 2 * sizeof(uint32_t));
+    PutThumb2Mov32(
+        reinterpret_cast<uint16_t*>(writer.GetRW()),
+        static_cast<uint32_t>(reinterpret_cast<uintptr_t>(value)));
+#else
+    UpdateWriteBarrierValue(destination, reinterpret_cast<uintptr_t>(value), sizeof(uintptr_t));
+#endif // TARGET_ARM
+}
+
+void GCToEEInterface::UpdateWriteBarrierValue(uint8_t* destination, uint64_t value, size_t size)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    switch (size)
     {
-        ::FlushWriteBarrierInstructionCache();
+        case sizeof(uint8_t):
+        {
+            ExecutableWriterHolder<uint8_t> writer(destination, size);
+            *writer.GetRW() = static_cast<uint8_t>(value);
+            break;
+        }
+
+        case sizeof(uint16_t):
+        {
+            ExecutableWriterHolder<uint16_t> writer(reinterpret_cast<uint16_t*>(destination), size);
+            *writer.GetRW() = static_cast<uint16_t>(value);
+            break;
+        }
+
+        case sizeof(uint32_t):
+        {
+            ExecutableWriterHolder<uint32_t> writer(reinterpret_cast<uint32_t*>(destination), size);
+            *writer.GetRW() = static_cast<uint32_t>(value);
+            break;
+        }
+
+        case sizeof(uint64_t):
+        {
+            ExecutableWriterHolder<uint64_t> writer(reinterpret_cast<uint64_t*>(destination), size);
+            *writer.GetRW() = value;
+            break;
+        }
+
+        default:
+            _ASSERTE(!"unsupported write barrier value size");
+            break;
     }
-    if (stompWBCompleteActions & SWB_EE_RESTART)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    _ASSERTE(size == sizeof(uint64_t));
+    ExecutableWriterHolderNoLog<uint64_t> writer(reinterpret_cast<uint64_t*>(destination), size);
+    VolatileStoreWithoutBarrier(writer.GetRW(), value);
+#else
+    _ASSERTE(size == sizeof(uint32_t));
+    ExecutableWriterHolderNoLog<uint32_t> writer(reinterpret_cast<uint32_t*>(destination), size);
+    *writer.GetRW() = static_cast<uint32_t>(value);
+#endif
+}
+
+bool GCToEEInterface::EnterWriteBarrierPatchMode()
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    Thread* currentThread = GetThreadNULLOk();
+    if (currentThread == nullptr || currentThread->PreemptiveGCDisabled())
     {
-        assert(!args->is_runtime_suspended &&
-            "if runtime was suspended in patching routines then it was in running state at beginning");
-        ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
+        return false;
     }
+
+    currentThread->DisablePreemptiveGC();
+    return true;
+#elif defined(TARGET_X86)
+    Thread* currentThread = GetThreadNULLOk();
+    if (currentThread == nullptr || currentThread->PreemptiveGCDisabled())
+    {
+        return false;
+    }
+
+    currentThread->DisablePreemptiveGC();
+    return true;
+#elif defined(TARGET_ARM)
+    GCStressPolicy::GlobalDisable();
+    return true;
+#else
+    return false;
+#endif
+}
+
+void GCToEEInterface::ExitWriteBarrierPatchMode(bool modeChanged)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86)
+    if (modeChanged)
+    {
+        GetThread()->EnablePreemptiveGC();
+    }
+#elif defined(TARGET_ARM)
+    if (modeChanged)
+    {
+        GCStressPolicy::GlobalEnable();
+    }
+#else
+    _ASSERTE(!modeChanged);
+#endif
+}
+
+void GCToEEInterface::SuspendForWriteBarrier()
+{
+#ifdef TARGET_ARM
+    ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
+#else
+    ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_GC_PREP);
+#endif
+}
+
+void GCToEEInterface::RestartForWriteBarrier()
+{
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
+}
+
+void GCToEEInterface::FlushWriteBarrierInstructionCache(uint8_t* code, size_t size)
+{
+#ifdef TARGET_X86
+    ClrFlushInstructionCache(code, size, true);
+#else
+    ::FlushInstructionCache(GetCurrentProcess(), code, size);
+#endif
+}
+
+void GCToEEInterface::WriteBarrierAssert(void* destination, void* reference)
+{
+#if defined(TARGET_X86) && defined(_DEBUG)
+    BYTE* destinationAddress = static_cast<BYTE*>(destination);
+    Object* object = static_cast<Object*>(reference);
+    static BOOL verifyHeap = -1;
+
+    if (verifyHeap == -1)
+    {
+        verifyHeap = g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC;
+    }
+
+    if (verifyHeap)
+    {
+        if (object != nullptr)
+        {
+            object->Validate(FALSE);
+        }
+
+        if (GCHeapUtilities::GetGCHeap()->IsHeapPointer(destinationAddress))
+        {
+            Object* destinationObject = *reinterpret_cast<Object**>(destinationAddress);
+            _ASSERTE(
+                destinationObject == nullptr ||
+                GCHeapUtilities::GetGCHeap()->IsHeapPointer(destinationObject));
+        }
+    }
+    else
+    {
+        _ASSERTE(
+            GCHeapUtilities::IsInGCHeap(destinationAddress) ||
+            reinterpret_cast<size_t>(destinationAddress) < MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT);
+    }
+#else
+    UNREFERENCED_PARAMETER(destination);
+    UNREFERENCED_PARAMETER(reference);
+#endif // TARGET_X86 && _DEBUG
+}
+
+void GCToEEInterface::UpdateRuntimeWriteBarrierState(const WriteBarrierParameters&)
+{
 }
 
 void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)

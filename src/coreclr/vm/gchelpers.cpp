@@ -26,7 +26,6 @@
 
 #include "excep.h"
 
-#include "gchelpers.inl"
 #include "eeprofinterfaces.inl"
 #include "frozenobjectheap.h"
 #include "cdacstress.h"
@@ -1209,29 +1208,13 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 //========================================================================
 
 
-#define card_byte(addr) (((size_t)(addr)) >> card_byte_shift)
-#define card_bit(addr)  (1 << ((((size_t)(addr)) >> (card_byte_shift - 3)) & 7))
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-#define card_bundle_byte(addr) (((size_t)(addr)) >> card_bundle_byte_shift)
-
-static void SetCardBundleByte(BYTE* addr)
-{
-    BYTE* cbByte = (BYTE *)VolatileLoadWithoutBarrier(&g_card_bundle_table) + card_bundle_byte(addr);
-    if (*cbByte != 0xFF)
-    {
-        *cbByte = 0xFF;
-    }
-}
-#endif
-
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+#if defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && !defined(TARGET_X86)
 
 // implemented in assembly
 // extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *refUNSAFE)
 // extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *refUNSAFE)
 
-#else // FEATURE_USE_ASM_GC_WRITE_BARRIERS
+#else // !FEATURE_USE_ASM_GC_WRITE_BARRIERS || TARGET_X86
 
 // NOTE: non-ASM write barriers only work with Workstation GC.
 
@@ -1286,6 +1269,11 @@ void IncUncheckedBarrierCount()
         UncheckedBarrierInterval = BarrierCountPrintInterval;
     }
 }
+
+static bool HasWriteBarrierResult(WriteBarrierResult result, WriteBarrierResult flag)
+{
+    return (static_cast<uint8_t>(result) & static_cast<uint8_t>(flag)) != 0;
+}
 #endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 
 #ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
@@ -1333,52 +1321,27 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 
     VolatileStore(dst, ref);
 
-    // if the dst is outside of the heap (unboxed value classes) then we
-    //      simply exit
-    if (((BYTE*)dst < g_lowest_address) || ((BYTE*)dst >= g_highest_address))
-        return;
-
 #ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    CheckedAfterHeapFilter++;
-#endif
-
-#ifdef WRITE_BARRIER_CHECK
-    updateGCShadow(dst, ref);     // support debugging write barrier
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
+    WriteBarrierResult result = GCHeapUtilities::GetGCHeap()->PostWriteBarrier((void**)dst, ref, ref, true, false);
+    if (HasWriteBarrierResult(result, WriteBarrierResult::DestinationInHeap))
     {
-        GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
+        CheckedAfterHeapFilter++;
     }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    if((BYTE*) dst >= g_ephemeral_low && (BYTE*) dst < g_ephemeral_high)
+    if (HasWriteBarrierResult(result, WriteBarrierResult::DestinationInEphemeralRange))
     {
         CheckedDestInEphem++;
     }
-#endif
-    if((BYTE*) ref >= g_ephemeral_low && (BYTE*) ref < g_ephemeral_high)
+    if (HasWriteBarrierResult(result, WriteBarrierResult::ReferenceInEphemeralRange))
     {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
         CheckedAfterRefInEphemFilter++;
-#endif
-        // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
-        // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
-        BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
-        if(*pCardByte != 0xFF)
-        {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-            CheckedAfterAlreadyDirtyFilter++;
-#endif
-            *pCardByte = 0xFF;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-            SetCardBundleByte((BYTE*)dst);
-#endif
-        }
     }
+    if (HasWriteBarrierResult(result, WriteBarrierResult::CardMarked))
+    {
+        CheckedAfterAlreadyDirtyFilter++;
+    }
+#else // FEATURE_COUNT_GC_WRITE_BARRIERS
+    GCHeapUtilities::CheckedWriteBarrier((void**)dst, ref);
+#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 }
 HCIMPLEND_RAW
 
@@ -1402,47 +1365,27 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
     // If the store above succeeded, "dst" should be in the heap.
    assert(GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
 
-#ifdef WRITE_BARRIER_CHECK
-    updateGCShadow(dst, ref);     // support debugging write barrier
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
-    {
-        GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
-    }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
 #ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    if((BYTE*) dst >= g_ephemeral_low && (BYTE*) dst < g_ephemeral_high)
+    WriteBarrierResult result = GCHeapUtilities::GetGCHeap()->PostWriteBarrier((void**)dst, ref, ref, true, true);
+    if (HasWriteBarrierResult(result, WriteBarrierResult::DestinationInEphemeralRange))
     {
         UncheckedDestInEphem++;
     }
-#endif
-    if((BYTE*) ref >= g_ephemeral_low && (BYTE*) ref < g_ephemeral_high)
+    if (HasWriteBarrierResult(result, WriteBarrierResult::ReferenceInEphemeralRange))
     {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
         UncheckedAfterRefInEphemFilter++;
-#endif
-        // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
-        // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
-        BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
-        if(*pCardByte != 0xFF)
-        {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-            UncheckedAfterAlreadyDirtyFilter++;
-#endif
-            *pCardByte = 0xFF;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-            SetCardBundleByte((BYTE*)dst);
-#endif
-        }
     }
+    if (HasWriteBarrierResult(result, WriteBarrierResult::CardMarked))
+    {
+        UncheckedAfterAlreadyDirtyFilter++;
+    }
+#else // FEATURE_COUNT_GC_WRITE_BARRIERS
+    GCHeapUtilities::WriteBarrier((void**)dst, ref);
+#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 }
 HCIMPLEND_RAW
 
-#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
+#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && !TARGET_X86
 
 // This function sets the card table with the granularity of 1 byte, to avoid ghost updates
 //    that could occur if multiple threads were trying to set different bits in the same card.
@@ -1454,36 +1397,8 @@ void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    // if the dst is outside of the heap (unboxed value classes) then we
-    //      simply exit
-    if (((BYTE*)dst < g_lowest_address) || ((BYTE*)dst >= g_highest_address))
-        return;
-
-#ifdef WRITE_BARRIER_CHECK
-    updateGCShadow((Object**) dst, OBJECTREFToObject(ref));     // support debugging write barrier
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
-    {
-        GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
-    }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-    if ((BYTE*) OBJECTREFToObject(ref) >= g_ephemeral_low && (BYTE*) OBJECTREFToObject(ref) < g_ephemeral_high)
-    {
-        // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
-        // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
-        BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
-        if (*pCardByte != 0xFF)
-        {
-            *pCardByte = 0xFF;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-            SetCardBundleByte((BYTE*)dst);
-#endif
-        }
-    }
+    Object* object = OBJECTREFToObject(ref);
+    GCHeapUtilities::CheckedWriteBarrier((void**)dst, object);
 }
 #include <optdefault.h>
 
@@ -1495,34 +1410,19 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 
     *dst = ref;
 
-#ifdef WRITE_BARRIER_CHECK
-    updateGCShadow((Object **)dst, (Object *)ref);     // support debugging write barrier, updateGCShadow only cares that these are pointers
-#endif
-
-    if (ref->Collectible())
+    bool isCollectible = ref->Collectible();
+#ifndef WRITE_BARRIER_CHECK
+    if (!isCollectible)
     {
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
-        {
-            GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
-        }
-
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-        BYTE *refObject = *(BYTE **)ref->GetLoaderAllocatorObjectHandle();
-        if((BYTE*) refObject >= g_ephemeral_low && (BYTE*) refObject < g_ephemeral_high)
-        {
-            // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
-            // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
-            BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
-            if( !((*pCardByte) & card_bit((BYTE *)dst)) )
-            {
-                *pCardByte = 0xFF;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-                SetCardBundleByte((BYTE*)dst);
-#endif
-            }
-        }
+        return;
     }
+#endif // !WRITE_BARRIER_CHECK
+
+    Object* loaderAllocatorObject = nullptr;
+    if (isCollectible)
+    {
+        loaderAllocatorObject = *(Object**)ref->GetLoaderAllocatorObjectHandle();
+    }
+
+    GCHeapUtilities::GetGCHeap()->PostWriteBarrier((void**)dst, ref, loaderAllocatorObject, isCollectible, true);
 }

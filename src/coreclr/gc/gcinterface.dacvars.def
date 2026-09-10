@@ -99,6 +99,9 @@ GC_DAC_VAR    (uint32_t,              g_totalCpuCount)
 
 // Here is where v5.9 fields start
 GC_DAC_PTR_VAR(uint32_t,              card_table)
+GC_DAC_PTR_VAR(uint32_t,              write_barrier_card_table)
+GC_DAC_PTR_VAR(uint8_t,               write_barrier_lowest_address)
+GC_DAC_PTR_VAR(uint8_t,               write_barrier_highest_address)
 
 #undef GC_DAC_VAR
 #undef GC_DAC_ARRAY_VAR

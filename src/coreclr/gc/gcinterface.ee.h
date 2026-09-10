@@ -337,11 +337,6 @@ public:
     virtual
     void DiagWalkBGCSurvivors(void* gcContext) PURE_VIRTUAL
 
-    // Informs the EE of changes to the location of the card table, potentially updating the write
-    // barrier if it needs to be updated.
-    virtual
-    void StompWriteBarrier(WriteBarrierParameters* args) PURE_VIRTUAL
-
     // Signals to the finalizer thread that there are objects ready to
     // be finalized.
     virtual
@@ -475,6 +470,55 @@ public:
     // cross references would be discarded by the client, so the GC can skip computing it.
     virtual
     bool IsClientBridgeProcessingActive() PURE_VIRTUAL
+
+    // The following methods are available only with EE_INTERFACE_MAJOR_VERSION >= 6.
+    virtual
+    bool SupportsWriteBarrierBitwiseRegion() PURE_VIRTUAL
+
+    virtual
+    uint8_t* GetWriteBarrierCodeCopy() PURE_VIRTUAL
+
+    virtual
+    void SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers) PURE_VIRTUAL
+
+    virtual
+    bool IsWriteBarrierCodeCopyEnabled() PURE_VIRTUAL
+
+    virtual
+    bool IsServerGC() PURE_VIRTUAL
+
+    virtual
+    bool UseSlowDebugWriteBarrier() PURE_VIRTUAL
+
+    virtual
+    void CopyWriteBarrierCode(uint8_t* destination, const uint8_t* source, size_t size) PURE_VIRTUAL
+
+    virtual
+    void PatchWriteBarrierPointer(uint8_t* destination, uint8_t* value) PURE_VIRTUAL
+
+    virtual
+    void UpdateWriteBarrierValue(uint8_t* destination, uint64_t value, size_t size) PURE_VIRTUAL
+
+    virtual
+    bool EnterWriteBarrierPatchMode() PURE_VIRTUAL
+
+    virtual
+    void ExitWriteBarrierPatchMode(bool modeChanged) PURE_VIRTUAL
+
+    virtual
+    void SuspendForWriteBarrier() PURE_VIRTUAL
+
+    virtual
+    void RestartForWriteBarrier() PURE_VIRTUAL
+
+    virtual
+    void FlushWriteBarrierInstructionCache(uint8_t* code, size_t size) PURE_VIRTUAL
+
+    virtual
+    void WriteBarrierAssert(void* destination, void* reference) PURE_VIRTUAL
+
+    virtual
+    void UpdateRuntimeWriteBarrierState(const WriteBarrierParameters& state) PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_

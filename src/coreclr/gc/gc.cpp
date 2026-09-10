@@ -602,7 +602,7 @@ void stomp_write_barrier_ephemeral (uint8_t* ephemeral_low, uint8_t* ephemeral_h
 #ifdef USE_REGIONS
     region_write_barrier_settings (&args, map_region_to_generation_skewed, region_shr);
 #endif //USE_REGIONS
-    GCToEEInterface::StompWriteBarrier(&args);
+    ::StompWriteBarrier(&args);
 }
 
 void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_high
@@ -631,7 +631,7 @@ void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_h
     region_write_barrier_settings (&args, map_region_to_generation_skewed, region_shr);
 #endif //USE_REGIONS
 
-    GCToEEInterface::StompWriteBarrier(&args);
+    ::StompWriteBarrier(&args);
 }
 
 class mark;
@@ -4654,6 +4654,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef MULTIPLE_HEAPS
         gcDacVars->card_table = &gc_heap::card_table;
 #endif // MULTIPLE_HEAPS
+        gcDacVars->write_barrier_card_table = &g_gc_card_table;
+        gcDacVars->write_barrier_lowest_address = &g_gc_lowest_address;
+        gcDacVars->write_barrier_highest_address = &g_gc_highest_address;
     }
 }
 
@@ -4849,7 +4852,7 @@ void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_b
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-    GCToEEInterface::StompWriteBarrier(&args);
+    ::StompWriteBarrier(&args);
 }
 
 }

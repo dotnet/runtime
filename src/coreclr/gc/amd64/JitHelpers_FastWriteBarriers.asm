@@ -27,7 +27,7 @@ include asmconstants.inc
 ;
 ; At anyone time, the memory pointed to by JIT_WriteBarrier will contain one
 ; of these functions.  See StompWriteBarrierResize, StompWriteBarrierEphemeral
-; and InitJITWriteBarrierHelpers in VM\AMD64\JITInterfaceAMD64.cpp for more info.
+; and InitializeWriteBarrierManager in gc\writebarriermanager.cpp for more info.
 ;
 ; READ THIS!!!!!!
 ; it is imperative that the addresses of the values that we overwrite

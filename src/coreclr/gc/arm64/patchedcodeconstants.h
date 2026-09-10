@@ -9,7 +9,7 @@
 #define PATCHEDCODECONSTANTS_H
 
 // These are fixed constants because MacOS doesn't allow label arithmetic in
-// LDR instructions. Asserts in writebarriermanager CALC_TABLE_LOCATION ensure
+// LDR instructions. Asserts in copywritebarriermanager.cpp ensure
 // the values are correct.
 
 #define JIT_WriteBarrier_Size					   0x3a0

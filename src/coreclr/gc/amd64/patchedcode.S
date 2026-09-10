@@ -3,7 +3,21 @@
 
 .intel_syntax noprefix
 #include "unixasmmacros.inc"
-#include "asmconstants.h"
+
+        // When JIT_WriteBarrier is copied into an allocated page,
+        // helpers use this global variable to jump to it. This variable is set in InitThreadManager.
+        .global C_FUNC(JIT_WriteBarrier_Loc)
+#ifndef TARGET_APPLE
+        .hidden C_FUNC(JIT_WriteBarrier_Loc)
+#endif
+#ifdef TARGET_APPLE
+        .zerofill __DATA,__common,C_FUNC(JIT_WriteBarrier_Loc),8,3
+#else
+        .data
+    C_FUNC(JIT_WriteBarrier_Loc):
+        .quad 0
+        .text
+#endif
 
 // On Apple platforms we emit the whole patched region as single function
 // with .alt_entry labels for individual write barrier helpers. This ensures

@@ -157,7 +157,32 @@ public:
     // Returns TRUE if the object is ephemeral
     bool IsEphemeral (Object* object);
     bool IsHeapPointer (void* object, bool small_heap_only = false);
+    bool IsInGCHeap(void* address);
+    void BulkMoveWithWriteBarrier(void* destination, const void* source, size_t length);
+    WriteBarrierResult PostWriteBarrier(
+        void** destination,
+        void* value,
+        Object* reference,
+        bool requiresGenerationalTracking,
+        bool destinationMustBeInHeap);
+    void GetWriteBarrierFunctions(WriteBarrierFunctions* functions);
 
+private:
+    template <bool DestinationMustBeInHeap, bool ReturnResult>
+    FORCEINLINE WriteBarrierResult PostWriteBarrierCore(
+        void** destination,
+        void* value,
+        Object* reference,
+        bool requiresGenerationalTracking);
+    static void WriteBarrierCallback(void* context, void** destination, void* reference);
+    static void CheckedWriteBarrierCallback(void* context, void** destination, void* reference);
+    static bool IsInGCHeapCallback(void* context, void* address);
+    static void BulkMoveWithWriteBarrierCallback(
+        void* destination,
+        const void* source,
+        size_t length);
+
+public:
     void    ValidateObjectMember (Object *obj);
 
     PER_HEAP    size_t  ApproxTotalBytesInUse(BOOL small_heap_only = FALSE);

@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gc.h"
+#include "writebarrierglobals.h"
 
 IGCHeapInternal* g_theGCHeap;
 IGCHandleManager* g_theGCHandleManager;
@@ -35,15 +36,25 @@ uint8_t* g_shadow_lowest_address = NULL;
 #endif
 
 uint32_t* g_gc_card_table;
+uint32_t* g_card_table = nullptr;
 
 VOLATILE(int32_t) g_fSuspensionPending = 0;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 uint32_t* g_gc_card_bundle_table;
+uint32_t* g_card_bundle_table = nullptr;
 #endif
 
 uint8_t* g_gc_lowest_address  = 0;
 uint8_t* g_gc_highest_address = 0;
+uint8_t* g_lowest_address = nullptr;
+uint8_t* g_highest_address = nullptr;
+uint8_t* g_ephemeral_low = reinterpret_cast<uint8_t*>(1);
+uint8_t* g_ephemeral_high = reinterpret_cast<uint8_t*>(~static_cast<uintptr_t>(0));
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+uint8_t* g_write_watch_table = nullptr;
+bool g_sw_ww_enabled_for_gc_heap = false;
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 GCHeapType g_gc_heap_type = GC_HEAP_INVALID;
 uint32_t g_max_generation = max_generation;
 MethodTable* g_gc_pFreeObjectMethodTable = nullptr;

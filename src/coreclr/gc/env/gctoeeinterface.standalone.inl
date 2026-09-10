@@ -149,9 +149,84 @@ namespace standalone
             ::GCToEEInterface::DiagWalkBGCSurvivors(gcContext);
         }
 
-        void StompWriteBarrier(WriteBarrierParameters* args)
+        bool SupportsWriteBarrierBitwiseRegion()
         {
-            ::GCToEEInterface::StompWriteBarrier(args);
+            return ::GCToEEInterface::SupportsWriteBarrierBitwiseRegion();
+        }
+
+        uint8_t* GetWriteBarrierCodeCopy()
+        {
+            return ::GCToEEInterface::GetWriteBarrierCodeCopy();
+        }
+
+        void SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers)
+        {
+            ::GCToEEInterface::SetWriteBarrierHelpers(helpers);
+        }
+
+        bool IsWriteBarrierCodeCopyEnabled()
+        {
+            return ::GCToEEInterface::IsWriteBarrierCodeCopyEnabled();
+        }
+
+        bool IsServerGC()
+        {
+            return ::GCToEEInterface::IsServerGC();
+        }
+
+        bool UseSlowDebugWriteBarrier()
+        {
+            return ::GCToEEInterface::UseSlowDebugWriteBarrier();
+        }
+
+        void CopyWriteBarrierCode(uint8_t* destination, const uint8_t* source, size_t size)
+        {
+            ::GCToEEInterface::CopyWriteBarrierCode(destination, source, size);
+        }
+
+        void PatchWriteBarrierPointer(uint8_t* destination, uint8_t* value)
+        {
+            ::GCToEEInterface::PatchWriteBarrierPointer(destination, value);
+        }
+
+        void UpdateWriteBarrierValue(uint8_t* destination, uint64_t value, size_t size)
+        {
+            ::GCToEEInterface::UpdateWriteBarrierValue(destination, value, size);
+        }
+
+        bool EnterWriteBarrierPatchMode()
+        {
+            return ::GCToEEInterface::EnterWriteBarrierPatchMode();
+        }
+
+        void ExitWriteBarrierPatchMode(bool modeChanged)
+        {
+            ::GCToEEInterface::ExitWriteBarrierPatchMode(modeChanged);
+        }
+
+        void SuspendForWriteBarrier()
+        {
+            ::GCToEEInterface::SuspendForWriteBarrier();
+        }
+
+        void RestartForWriteBarrier()
+        {
+            ::GCToEEInterface::RestartForWriteBarrier();
+        }
+
+        void FlushWriteBarrierInstructionCache(uint8_t* code, size_t size)
+        {
+            ::GCToEEInterface::FlushWriteBarrierInstructionCache(code, size);
+        }
+
+        void WriteBarrierAssert(void* destination, void* reference)
+        {
+            ::GCToEEInterface::WriteBarrierAssert(destination, reference);
+        }
+
+        void UpdateRuntimeWriteBarrierState(const WriteBarrierParameters& state)
+        {
+            ::GCToEEInterface::UpdateRuntimeWriteBarrierState(state);
         }
 
         void EnableFinalization(bool gcHasWorkForFinalizerThread)

@@ -37,6 +37,170 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_subdirectory(vxsort)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
+if(CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  set(GC_WRITE_BARRIER_SOURCES
+    copywritebarriermanager.cpp)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+  set(GC_WRITE_BARRIER_SOURCES
+    arm/writebarriermanager.cpp)
+elseif(CLR_CMAKE_TARGET_ARCH_I386)
+  set(GC_WRITE_BARRIER_SOURCES
+    i386/writebarriermanager.cpp)
+elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64 OR CLR_CMAKE_TARGET_ARCH_RISCV64)
+  set(GC_WRITE_BARRIER_SOURCES
+    literalwritebarriermanager.cpp)
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+  set(GC_WRITE_BARRIER_SOURCES
+    staticwritebarriermanager.cpp
+    wasm/WriteBarriers.cpp)
+endif()
+
+list(APPEND GC_WRITE_BARRIER_SOURCES
+  writebarrierstomp.cpp)
+
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  list(APPEND GC_WRITE_BARRIER_SOURCES
+    writebarrierservices.cpp)
+endif()
+
+set(GC_WRITE_BARRIER_COMMON_SOURCES ${GC_WRITE_BARRIER_SOURCES})
+
+if(CLR_CMAKE_TARGET_ARCH_AMD64)
+  if(CLR_CMAKE_TARGET_WIN32)
+    set(GC_WRITE_BARRIER_ASM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/amd64/JitHelpers_FastWriteBarriers.asm
+      ${CMAKE_CURRENT_SOURCE_DIR}/amd64/JitHelpers_Slow.asm
+      ${CMAKE_CURRENT_SOURCE_DIR}/amd64/patchedcode.asm
+      ${CMAKE_CURRENT_SOURCE_DIR}/amd64/WriteBarriers.asm)
+
+    if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
+      set(GC_WRITE_BARRIER_ASM_INPUTS ${GC_WRITE_BARRIER_ASM_SOURCES})
+      get_directory_property(GC_WRITE_BARRIER_INCLUDE_DIRECTORIES INCLUDE_DIRECTORIES)
+      get_directory_property(GC_WRITE_BARRIER_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+      include_directories(../vm/${ARCH_SOURCES_DIR})
+      if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "Checked")
+        add_definitions(-DWRITE_BARRIER_CHECK)
+      endif()
+      preprocess_files(GC_WRITE_BARRIER_ASM_SOURCES ${GC_WRITE_BARRIER_ASM_SOURCES})
+      set_property(DIRECTORY PROPERTY INCLUDE_DIRECTORIES "${GC_WRITE_BARRIER_INCLUDE_DIRECTORIES}")
+      set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS "${GC_WRITE_BARRIER_COMPILE_DEFINITIONS}")
+    endif()
+  else()
+    set(GC_WRITE_BARRIER_ASM_SOURCES
+      amd64/jithelpers_fastwritebarriers.S
+      amd64/jithelpers_slow.S
+      amd64/patchedcode.S
+      amd64/WriteBarriers.S)
+  endif()
+
+  list(APPEND GC_WRITE_BARRIER_SOURCES
+    ${GC_WRITE_BARRIER_ASM_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
+  if(CLR_CMAKE_TARGET_WIN32)
+    set(GC_WRITE_BARRIER_ASM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/arm64/patchedcode.asm
+      ${CMAKE_CURRENT_SOURCE_DIR}/arm64/WriteBarriers.asm)
+
+    if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
+      set(GC_WRITE_BARRIER_ASM_INPUTS ${GC_WRITE_BARRIER_ASM_SOURCES})
+      get_directory_property(GC_WRITE_BARRIER_INCLUDE_DIRECTORIES INCLUDE_DIRECTORIES)
+      get_directory_property(GC_WRITE_BARRIER_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+      include_directories(../vm/${ARCH_SOURCES_DIR})
+      if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "Checked")
+        add_definitions(-DWRITE_BARRIER_CHECK)
+      endif()
+      preprocess_files(GC_WRITE_BARRIER_ASM_SOURCES ${GC_WRITE_BARRIER_ASM_SOURCES})
+      set_property(DIRECTORY PROPERTY INCLUDE_DIRECTORIES "${GC_WRITE_BARRIER_INCLUDE_DIRECTORIES}")
+      set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS "${GC_WRITE_BARRIER_COMPILE_DEFINITIONS}")
+    endif()
+  else()
+    set(GC_WRITE_BARRIER_ASM_SOURCES
+      arm64/patchedcode.S
+      arm64/WriteBarriers.S)
+  endif()
+
+  list(APPEND GC_WRITE_BARRIER_SOURCES
+    ${GC_WRITE_BARRIER_ASM_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_I386)
+  if(CLR_CMAKE_TARGET_WIN32)
+    set(GC_WRITE_BARRIER_ASM_SOURCES
+      i386/checkedwritebarriers.asm
+      i386/WriteBarriers.asm)
+  else()
+    set(GC_WRITE_BARRIER_ASM_SOURCES
+      i386/checkedwritebarriers.S
+      i386/WriteBarriers.S)
+  endif()
+
+  list(APPEND GC_WRITE_BARRIER_SOURCES
+    ${GC_WRITE_BARRIER_ASM_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+  set(GC_WRITE_BARRIER_ASM_SOURCES
+    arm/patchedcode.S
+    arm/WriteBarriers.S)
+
+  list(APPEND GC_WRITE_BARRIER_SOURCES
+    ${GC_WRITE_BARRIER_ASM_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+  set(GC_WRITE_BARRIER_ASM_SOURCES
+    loongarch64/WriteBarriers.S)
+
+  list(APPEND GC_WRITE_BARRIER_SOURCES
+    ${GC_WRITE_BARRIER_ASM_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
+  set(GC_WRITE_BARRIER_ASM_SOURCES
+    riscv64/WriteBarriers.S)
+
+  list(APPEND GC_WRITE_BARRIER_SOURCES
+    ${GC_WRITE_BARRIER_ASM_SOURCES})
+endif()
+
+add_library_clr(gc_writebarrier OBJECT ${GC_WRITE_BARRIER_SOURCES})
+target_include_directories(gc_writebarrier PRIVATE
+  ${ARCH_SOURCES_DIR}
+  ../pal/inc
+  ../vm/${ARCH_SOURCES_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/../vm/wks)
+
+foreach (Config DEBUG CHECKED)
+  target_compile_definitions(gc_writebarrier PRIVATE $<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
+endforeach (Config)
+
+if(FEATURE_STANDALONE_GC)
+  set(CLRGC_WRITE_BARRIER_ASM_SOURCES ${GC_WRITE_BARRIER_ASM_SOURCES})
+  if(GC_WRITE_BARRIER_ASM_INPUTS)
+    get_directory_property(GC_WRITE_BARRIER_INCLUDE_DIRECTORIES INCLUDE_DIRECTORIES)
+    get_directory_property(GC_WRITE_BARRIER_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+    include_directories(../vm/${ARCH_SOURCES_DIR})
+    remove_definitions(-DWRITE_BARRIER_CHECK)
+    add_definitions(-DGC_WRITE_BARRIER_STANDALONE)
+    set(CLRGC_WRITE_BARRIER_ASM_SOURCES)
+    foreach(ASM_FILE IN LISTS GC_WRITE_BARRIER_ASM_INPUTS)
+      get_filename_component(ASM_NAME ${ASM_FILE} NAME_WE)
+      set(ASM_PREPROCESSED_FILE
+        ${CMAKE_CURRENT_BINARY_DIR}/standalone_${ASM_NAME}.asm)
+      preprocess_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
+      list(APPEND CLRGC_WRITE_BARRIER_ASM_SOURCES ${ASM_PREPROCESSED_FILE})
+    endforeach()
+    set_property(DIRECTORY PROPERTY INCLUDE_DIRECTORIES "${GC_WRITE_BARRIER_INCLUDE_DIRECTORIES}")
+    set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS "${GC_WRITE_BARRIER_COMPILE_DEFINITIONS}")
+  endif()
+
+  set(CLRGC_WRITE_BARRIER_SOURCES
+    ${GC_WRITE_BARRIER_COMMON_SOURCES}
+    ${CLRGC_WRITE_BARRIER_ASM_SOURCES})
+  add_library_clr(clrgc_writebarrier OBJECT ${CLRGC_WRITE_BARRIER_SOURCES})
+  target_include_directories(clrgc_writebarrier PRIVATE
+    ${ARCH_SOURCES_DIR}
+    ../pal/inc
+    ../vm/${ARCH_SOURCES_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/../vm/wks)
+  target_compile_definitions(clrgc_writebarrier PRIVATE
+    BUILD_AS_STANDALONE
+    FEATURE_CONSERVATIVE_GC
+    GC_WRITE_BARRIER_STANDALONE)
+endif(FEATURE_STANDALONE_GC)
+
 if (CLR_CMAKE_TARGET_WIN32)
   set(GC_HEADERS
     env/common.h
@@ -75,6 +239,8 @@ if (CLR_CMAKE_TARGET_WIN32)
     handletablepriv.h
     objecthandle.h
     softwarewritewatch.h
+    writebarrier.h
+    writebarrierglobals.h
   )
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -103,6 +269,7 @@ list(APPEND GC_SOURCES ${GC_HEADERS})
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
 set(GC_WKS_SVR_SOURCES
+  bulkwritebarrier.cpp
   gcee.cpp
   gc.cpp
   init.cpp
@@ -147,7 +314,10 @@ if(FEATURE_STANDALONE_GC)
         $<TARGET_OBJECTS:clrgcexp_gc_svr>)
     endif()
 
-    add_library_clr(clrgcexp SHARED ${GC_SOURCES} ${CLRGGCEXP_OBJECTS})
+    add_library_clr(clrgcexp SHARED
+      ${GC_SOURCES}
+      ${CLRGGCEXP_OBJECTS}
+      $<TARGET_OBJECTS:clrgc_writebarrier>)
     add_dependencies(clrgcexp eventing_headers)
     target_link_libraries(clrgcexp PRIVATE ${GC_LINK_LIBRARIES})
     target_link_libraries(clrgcexp PRIVATE gcexp_dll_wks_descriptor)
@@ -171,7 +341,10 @@ if(FEATURE_STANDALONE_GC)
   endif()
 
   # clrgc is build with standalone+segments
-  add_library_clr(clrgc SHARED ${GC_SOURCES} ${CLRGC_OBJECTS})
+  add_library_clr(clrgc SHARED
+    ${GC_SOURCES}
+    ${CLRGC_OBJECTS}
+    $<TARGET_OBJECTS:clrgc_writebarrier>)
   add_dependencies(clrgc eventing_headers)
   target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
   target_link_libraries(clrgc PRIVATE gc_dll_wks_descriptor)
@@ -184,8 +357,8 @@ if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_CONSERVATIVE_GC)
 
   add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
-  add_definitions(-DVERIFY_HEAP)
-  add_definitions(-DGC_CONFIG_DRIVEN)
+  add_definitions(-DVERIFY_HEAP=)
+  add_definitions(-DGC_CONFIG_DRIVEN=)
   if(CLR_CMAKE_HOST_APPLE)
     # The implementation of GCToOSInterface on Apple platforms makes use of non-POSIX
     # pthreads APIs, which by default are not included in the pthreads header

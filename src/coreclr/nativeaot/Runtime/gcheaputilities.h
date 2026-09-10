@@ -6,33 +6,16 @@
 
 #include "gcinterface.h"
 #include "daccess.h"
+#include "writebarrier.h"
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
 
-#ifndef DACCESS_COMPILE
-extern "C" {
-#endif // !DACCESS_COMPILE
-GPTR_DECL(uint8_t,g_lowest_address);
-GPTR_DECL(uint8_t,g_highest_address);
-GPTR_DECL(uint32_t,g_card_table);
 GVAL_DECL(GCHeapType, g_heap_type);
+
 #ifndef DACCESS_COMPILE
-}
+extern WriteBarrierFunctions g_writeBarrierFunctions;
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-extern "C" uint32_t* g_card_bundle_table;
-#endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-
-extern "C" uint8_t* g_ephemeral_low;
-extern "C" uint8_t* g_ephemeral_high;
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-extern "C" bool g_sw_ww_enabled_for_gc_heap;
-extern "C" uint8_t* g_write_watch_table;
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
 
 // g_gc_dac_vars is a structure of pointers to GC globals that the
 // DAC uses. It is not exposed directly to the DAC.
@@ -89,6 +72,29 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
+    static void InitializeWriteBarrierFunctions(IGCHeap* gcHeap);
+
+    inline static bool IsInGCHeap(void* address)
+    {
+        return g_writeBarrierFunctions.is_in_gc_heap(
+            g_writeBarrierFunctions.context,
+            address);
+    }
+
+    inline static void BulkMoveWithWriteBarrier(
+        void* destination,
+        const void* source,
+        size_t length)
+    {
+        g_writeBarrierFunctions.bulk_move_with_write_barrier(
+            destination,
+            source,
+            length);
+    }
+
+    static void SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers);
+    static bool IsIPInWriteBarrierHelper(uintptr_t instructionPointer);
+
     // Initializes the GC
     static HRESULT InitializeGC();
 

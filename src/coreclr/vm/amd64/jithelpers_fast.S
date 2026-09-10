@@ -5,19 +5,6 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-        // When JIT_WriteBarrier is copied into an allocated page,
-        // helpers use this global variable to jump to it. This variable is set in InitThreadManager.
-        .global C_FUNC(JIT_WriteBarrier_Loc)
-#ifdef TARGET_APPLE
-        .zerofill __DATA,__common,C_FUNC(JIT_WriteBarrier_Loc),8,3
-#else
-        .data
-    C_FUNC(JIT_WriteBarrier_Loc):
-        .quad 0
-        .text
-#endif
-
-
 // The following helper will access ("probe") a word on each page of the stack
 // starting with the page right beneath rsp down to the one pointed to by r11.
 // The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.

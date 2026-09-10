@@ -3054,8 +3054,8 @@ public:
             // if not in the table, or not the case that it was unprotected and GC happened, return true.
             if((val & ~3) != (size_t) ref || (val & 3) != 1)
                 return(true);
-            // If the pointer lives in the GC heap, than it is protected, and thus valid.
-            if (dac_cast<TADDR>(g_lowest_address) <= val && val < dac_cast<TADDR>(g_highest_address))
+            // If the pointer lives in the GC heap, then it is protected, and thus valid.
+            if (GCHeapUtilities::IsInGCHeap(reinterpret_cast<void*>(val)))
                 return(true);
             // Same for frozen segments
             if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*(Object**)ref))
@@ -5404,7 +5404,11 @@ inline BOOL IsWriteBarrierCopyEnabled()
 }
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier);
+uint8_t* GetWriteBarrierCodeCopy();
+void SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers);
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc);
+bool IsIPInWriteBarrierHelper(PCODE controlPc);
+bool IsIPInUnpatchedWriteBarrierHelper(PCODE controlPc);
 PCODE AdjustWriteBarrierIP(PCODE controlPc);
 
 #if !defined(DACCESS_COMPILE)

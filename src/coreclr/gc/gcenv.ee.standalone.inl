@@ -200,10 +200,100 @@ inline void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
     return g_theGCToCLR->DiagWalkBGCSurvivors(gcContext);
 }
 
-inline void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+inline bool GCToEEInterface::SupportsWriteBarrierBitwiseRegion()
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->StompWriteBarrier(args);
+    return g_theGCToCLR->SupportsWriteBarrierBitwiseRegion();
+}
+
+inline uint8_t* GCToEEInterface::GetWriteBarrierCodeCopy()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->GetWriteBarrierCodeCopy();
+}
+
+inline void GCToEEInterface::SetWriteBarrierHelpers(const WriteBarrierHelperDescriptor& helpers)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->SetWriteBarrierHelpers(helpers);
+}
+
+inline bool GCToEEInterface::IsWriteBarrierCodeCopyEnabled()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->IsWriteBarrierCodeCopyEnabled();
+}
+
+inline bool GCToEEInterface::IsServerGC()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->IsServerGC();
+}
+
+inline bool GCToEEInterface::UseSlowDebugWriteBarrier()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->UseSlowDebugWriteBarrier();
+}
+
+inline void GCToEEInterface::CopyWriteBarrierCode(uint8_t* destination, const uint8_t* source, size_t size)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->CopyWriteBarrierCode(destination, source, size);
+}
+
+inline void GCToEEInterface::PatchWriteBarrierPointer(uint8_t* destination, uint8_t* value)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->PatchWriteBarrierPointer(destination, value);
+}
+
+inline void GCToEEInterface::UpdateWriteBarrierValue(uint8_t* destination, uint64_t value, size_t size)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->UpdateWriteBarrierValue(destination, value, size);
+}
+
+inline bool GCToEEInterface::EnterWriteBarrierPatchMode()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->EnterWriteBarrierPatchMode();
+}
+
+inline void GCToEEInterface::ExitWriteBarrierPatchMode(bool modeChanged)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->ExitWriteBarrierPatchMode(modeChanged);
+}
+
+inline void GCToEEInterface::SuspendForWriteBarrier()
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->SuspendForWriteBarrier();
+}
+
+inline void GCToEEInterface::RestartForWriteBarrier()
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->RestartForWriteBarrier();
+}
+
+inline void GCToEEInterface::FlushWriteBarrierInstructionCache(uint8_t* code, size_t size)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->FlushWriteBarrierInstructionCache(code, size);
+}
+
+inline void GCToEEInterface::WriteBarrierAssert(void* destination, void* reference)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->WriteBarrierAssert(destination, reference);
+}
+
+inline void GCToEEInterface::UpdateRuntimeWriteBarrierState(const WriteBarrierParameters& state)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->UpdateRuntimeWriteBarrierState(state);
 }
 
 inline void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)

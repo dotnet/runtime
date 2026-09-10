@@ -252,3 +252,182 @@ LOCAL_LABEL(RhpCheckedXchgRetry):
 LEAF_END RhpCheckedXchg, _TEXT
 #endif // FEATURE_NATIVEAOT
 
+#ifndef FEATURE_NATIVEAOT
+
+#define __wbScratch r3
+
+    .macro JIT_START_WRITE_BARRIER name
+        __\name\()__g_lowest_address_offset = 0xffff
+        __\name\()__g_highest_address_offset = 0xffff
+        __\name\()__g_ephemeral_low_offset = 0xffff
+        __\name\()__g_ephemeral_high_offset = 0xffff
+        __\name\()__g_card_table_offset = 0xffff
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        __\name\()__g_sw_ww_table_offset = 0xffff
+#endif
+     .endm
+
+    .macro JIT_LOAD_GC_GLOBAL name, regName, globalName
+\name\()__\globalName\()_offset:
+    __\name\()__\globalName\()_offset = (\name\()__\globalName\()_offset - \name)
+        movw \regName, #0
+        movt \regName, #0
+    .endm
+
+    .macro JIT_UPDATE_GC_SHADOW name, ptrReg, valReg
+        // Todo: implement, debugging helper
+    .endm
+
+    .macro JIT_UPDATE_CARD_TABLE name, ptrReg, valReg, mp, postGrow, tmpReg
+
+        JIT_LOAD_GC_GLOBAL \name, __wbScratch, g_ephemeral_low
+        cmp \valReg, __wbScratch
+        blo 0f
+
+        .if(\postGrow)
+            JIT_LOAD_GC_GLOBAL \name, __wbScratch, g_ephemeral_high
+            cmp \valReg, __wbScratch
+            bhs 0f
+        .endif
+
+        JIT_LOAD_GC_GLOBAL \name, __wbScratch, g_card_table
+        add __wbScratch, __wbScratch, \ptrReg, lsr #10
+
+        .if(\mp)
+            ldrb \tmpReg, [__wbScratch]
+            cmp \tmpReg, #0xff
+            itt ne
+            movne \tmpReg, 0xff
+            strbne \tmpReg, [__wbScratch]
+        .else
+            mov \tmpReg, #0xff
+            strb \tmpReg, [__wbScratch]
+        .endif
+
+0:
+    .endm
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    .macro JIT_UPDATE_WRITE_WATCH_TABLE name, ptrReg, mp, tmpReg
+
+        JIT_LOAD_GC_GLOBAL \name, __wbScratch, g_write_watch_table
+        cbz __wbScratch, 2f
+        add __wbScratch, __wbScratch, \ptrReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+
+        .if(\mp)
+            ldrb \tmpReg, [__wbScratch]
+            cmp \tmpReg, #0xff
+            itt ne
+            movne \tmpReg, 0xff
+            strbne \tmpReg, [__wbScratch]
+        .else
+            mov \tmpReg, #0xff
+            strb \tmpReg, [__wbScratch]
+        .endif
+
+2:
+    .endm
+#endif
+
+    .macro JIT_CHECK_GC_HEAP_RANGE name, ptrReg, label
+        JIT_LOAD_GC_GLOBAL \name, __wbScratch, g_lowest_address
+        cmp \ptrReg, __wbScratch
+        blo \label
+        JIT_LOAD_GC_GLOBAL \name, __wbScratch, g_highest_address
+        cmp \ptrReg, __wbScratch
+        bhs \label
+    .endm
+
+    .macro JIT_WRITEBARRIER name, mp, post
+    LEAF_ENTRY \name, _TEXT
+        JIT_START_WRITE_BARRIER \name
+        .if(\mp)
+            dmb
+        .endif
+
+        str r1, [r0]
+        JIT_UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        JIT_UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
+#endif
+        JIT_UPDATE_CARD_TABLE \name, r0, r1, \mp, \post, r0
+        bx lr
+    LEAF_END_MARKED \name, _TEXT
+    .endm
+
+    .macro JIT_CHECKEDWRITEBARRIER_SP name, post
+    LEAF_ENTRY \name, _TEXT
+        JIT_START_WRITE_BARRIER \name
+        str r1, [r0]
+        JIT_CHECK_GC_HEAP_RANGE \name, r0, 1f
+        JIT_UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        JIT_UPDATE_WRITE_WATCH_TABLE \name, r0, 0, r12
+#endif
+        JIT_UPDATE_CARD_TABLE \name, r0, r1, 0, \post, r0
+1:
+        bx lr
+    LEAF_END_MARKED \name, _TEXT
+    .endm
+
+    .macro JIT_CHECKEDWRITEBARRIER_MP name, post
+    LEAF_ENTRY \name, _TEXT
+        JIT_START_WRITE_BARRIER \name
+        dmb
+        str r1, [r0]
+        JIT_CHECK_GC_HEAP_RANGE \name, r0, 1f
+        JIT_UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        JIT_UPDATE_WRITE_WATCH_TABLE \name, r0, 1, r12
+#endif
+        JIT_UPDATE_CARD_TABLE \name, r0, r1, 1, \post, r0
+        bx lr
+1:
+        str r1, [r0]
+        bx lr
+    LEAF_END_MARKED \name, _TEXT
+    .endm
+
+    .macro JIT_WRITEBARRIER_DESCRIPTOR name
+1:
+        .word \name-1b
+        .word \name\()_End-1b
+        .word __\name\()__g_lowest_address_offset
+        .word __\name\()__g_highest_address_offset
+        .word __\name\()__g_ephemeral_low_offset
+        .word __\name\()__g_ephemeral_high_offset
+        .word __\name\()__g_card_table_offset
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        .word __\name\()__g_write_watch_table_offset
+#endif
+    .endm
+
+    // There 4 versions of each write barriers. A 2x2 combination of multi-proc/single-proc and pre/post grow version
+    JIT_WRITEBARRIER JIT_WriteBarrier_SP_Pre,  0, 0
+    JIT_WRITEBARRIER JIT_WriteBarrier_SP_Post, 0, 1
+    JIT_WRITEBARRIER JIT_WriteBarrier_MP_Pre,  1, 0
+    JIT_WRITEBARRIER JIT_WriteBarrier_MP_Post, 1, 1
+
+    JIT_CHECKEDWRITEBARRIER_SP JIT_CheckedWriteBarrier_SP_Pre,  0
+    JIT_CHECKEDWRITEBARRIER_SP JIT_CheckedWriteBarrier_SP_Post, 1
+    JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Pre,  0
+    JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Post, 1
+
+g_rgWriteBarrierDescriptors:
+
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_WriteBarrier_SP_Pre
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_WriteBarrier_SP_Post
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_WriteBarrier_MP_Pre
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_WriteBarrier_MP_Post
+
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_SP_Pre
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_SP_Post
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Pre
+    JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Post
+
+    // Sentinel value
+    .word 0
+
+    .global g_rgWriteBarrierDescriptors
+
+#endif // !FEATURE_NATIVEAOT

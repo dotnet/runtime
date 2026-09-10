@@ -11,6 +11,7 @@
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
 #include "RestrictedCallouts.h"
+#include "writebarrier.h"
 
 #include "forward_declarations.h"
 #include "RhConfig.h"

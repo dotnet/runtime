@@ -8,22 +8,10 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-    IMPORT g_lowest_address
-    IMPORT g_highest_address
-    IMPORT g_ephemeral_low
-    IMPORT g_ephemeral_high
-    IMPORT g_card_table
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    IMPORT g_card_bundle_table
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    IMPORT g_write_watch_table
-#endif
-
+#ifndef GC_WRITE_BARRIER_STANDALONE
     IMPORT RhpGcAlloc
     IMPORT RhExceptionHandling_FailedAllocation
+#endif // GC_WRITE_BARRIER_STANDALONE
 
 ;;-----------------------------------------------------------------------------
 ;; Macro for loading a 64-bit constant by a minimal number of instructions
@@ -109,4 +97,3 @@ MovInstr SETS "movk"
 .endm
 
 #endif
-

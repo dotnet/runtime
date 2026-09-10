@@ -68,6 +68,13 @@ GC_Initialize(
     /* Out */ GcDacVars* gcDacVars
 )
 {
+#ifdef BUILD_AS_STANDALONE
+    if (g_runtimeSupportedVersion.MajorVersion < EE_INTERFACE_MAJOR_VERSION)
+    {
+        return E_FAIL;
+    }
+#endif // BUILD_AS_STANDALONE
+
     IGCHeapInternal* heap;
 
     assert(gcDacVars != nullptr);
@@ -138,6 +145,7 @@ GC_Initialize(
     }
 
     g_theGCHeap = heap;
+    InitializeWriteBarrierStomp();
     *gcHandleManager = handleManager;
     *gcHeap = heap;
     return S_OK;

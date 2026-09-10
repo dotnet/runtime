@@ -2869,8 +2869,8 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
 
     detailsData->heapAddr = (CLRDATA_ADDRESS)NULL;
 
-    detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
-    detailsData->highest_address = PTR_CDADDR(g_highest_address);
+    detailsData->lowest_address = GetGcWriteBarrierLowestAddress();
+    detailsData->highest_address = GetGcWriteBarrierHighestAddress();
     if (IsBackgroundGCEnabled())
     {
         detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
@@ -2897,7 +2897,7 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     }
     else
     {
-        detailsData->card_table = PTR_CDADDR(g_card_table);
+        detailsData->card_table = GetGcWriteBarrierCardTable();
     }
 
     if (IsRegionGCEnabled())

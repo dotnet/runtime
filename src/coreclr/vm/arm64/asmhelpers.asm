@@ -31,36 +31,11 @@
     IMPORT ExecuteInterpretedMethod
 #endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    IMPORT  g_write_watch_table
-#endif
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    IMPORT g_card_bundle_table
-#endif
-
-    IMPORT  g_ephemeral_low
-    IMPORT  g_ephemeral_high
-    IMPORT  g_lowest_address
-    IMPORT  g_highest_address
-    IMPORT  g_card_table
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
 #endif
     IMPORT g_pPollGC
     IMPORT g_TrapReturningThreads
-
-#ifdef WRITE_BARRIER_CHECK
-    SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
-    SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
-
-    IMPORT g_lowest_address
-    IMPORT $g_GCShadow
-    IMPORT $g_GCShadowEnd
-#endif // WRITE_BARRIER_CHECK
-
-    IMPORT JIT_WriteBarrier_Table_Loc
-    IMPORT JIT_WriteBarrier_Loc
 
     ;;like TEXTAREA, but with 64 byte alignment so that we can align the patchable pool below to 64 without warning
     AREA    |.text|,ALIGN=6,CODE,READONLY

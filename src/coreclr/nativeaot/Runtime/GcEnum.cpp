@@ -46,12 +46,14 @@ static void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Obj
     // should be no work to do in the relocation phase.
     if (pSc->promotion)
     {
+        IsInGCHeapFunction isInGCHeap = g_writeBarrierFunctions.is_in_gc_heap;
+        void* gcContext = g_writeBarrierFunctions.context;
         for (PTR_PTR_Object ppObj = ppLowerBound; ppObj < ppUpperBound; ppObj++)
         {
             // Only report values that lie in the GC heap range. This doesn't conclusively guarantee that the
             // value is a GC heap reference but it's a cheap check that weeds out a lot of spurious values.
             PTR_Object pObj = *ppObj;
-            if (((PTR_uint8_t)pObj >= g_lowest_address) && ((PTR_uint8_t)pObj <= g_highest_address))
+            if (isInGCHeap(gcContext, pObj))
                 PromoteCarefully(ppObj, GC_CALL_INTERIOR | GC_CALL_PINNED, fnGcEnumRef, pSc);
         }
     }
@@ -113,7 +115,7 @@ void EnumGcRefConservatively(PTR_OBJECTREF pRef, ScanFunc* fnGcEnumRef, ScanCont
         // Only report values that lie in the GC heap range. This doesn't conclusively guarantee that the
         // value is a GC heap reference but it's a cheap check that weeds out a lot of spurious values.
         PTR_Object pObj = *pRef;
-        if (((PTR_uint8_t)pObj >= g_lowest_address) && ((PTR_uint8_t)pObj <= g_highest_address))
+        if (GCHeapUtilities::IsInGCHeap(pObj))
             PromoteCarefully(pRef, GC_CALL_INTERIOR | GC_CALL_PINNED, fnGcEnumRef, pSc);
     }
 }

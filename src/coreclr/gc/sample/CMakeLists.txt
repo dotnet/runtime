@@ -8,6 +8,7 @@ include_directories(../env)
 set(SOURCES
     GCSample.cpp
     gcenv.ee.cpp
+    ../bulkwritebarrier.cpp
     ../gceventstatus.cpp
     ../gcconfig.cpp
     ../gccommon.cpp
@@ -41,6 +42,8 @@ set(SOURCES
     ../handletablescan.cpp
     ../objecthandle.cpp
     ../softwarewritewatch.cpp
+    ../staticwritebarriermanager.cpp
+    ../writebarrierstomp.cpp
 )
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
@@ -94,6 +97,7 @@ endif()
 add_executable_clr(gcsample
     ${SOURCES}
 )
+target_compile_definitions(gcsample PRIVATE GC_STATIC_WRITE_BARRIER)
 
 if(CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(gcsample PRIVATE ${GC_LINK_LIBRARIES})

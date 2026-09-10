@@ -9,7 +9,6 @@
 #include "comdelegate.h"
 #include "field.h"
 #include "ecall.h"
-#include "writebarriermanager.h"
 
 static void SetJitHelperAuxiliarySymbol(CorInfoHelpFunc ftnNum, const char* name)
 {

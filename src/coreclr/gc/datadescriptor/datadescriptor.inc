@@ -150,6 +150,8 @@ CDAC_GLOBAL(HandleMaxInternalTypes, T_UINT32, HANDLE_MAX_INTERNAL_TYPES)
 CDAC_GLOBAL(HandlesPerBlock, T_UINT32, HANDLE_HANDLES_PER_BLOCK)
 CDAC_GLOBAL(BlockInvalid, T_UINT8, BLOCK_INVALID)
 CDAC_GLOBAL(CardTableInfoSize, T_UINT32, (uint32_t)sizeof(dac_card_table_info))
+CDAC_GLOBAL_POINTER(GCLowestAddress, &g_gc_lowest_address)
+CDAC_GLOBAL_POINTER(GCHighestAddress, &g_gc_highest_address)
 #ifdef USE_REGIONS
 CDAC_GLOBAL(CountFreeRegionKinds, T_UINT32, (uint32_t)FREE_REGION_KINDS)
 #endif // USE_REGIONS

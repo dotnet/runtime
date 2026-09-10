@@ -1,6 +1,7 @@
 set(GC_DIR ../../gc)
 
 set(GC_WKS_SVR_SOURCES
+    ${GC_DIR}/bulkwritebarrier.cpp
     ${GC_DIR}/gc.cpp
     ${GC_DIR}/init.cpp
     ${GC_DIR}/no_gc.cpp
@@ -71,6 +72,8 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
     ${GC_DIR}/softwarewritewatch.cpp
+    ${GC_DIR}/staticwritebarriermanager.cpp
+    ${GC_DIR}/writebarrierstomp.cpp
     ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
@@ -285,7 +288,7 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
-  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
+  ${GC_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
 
 # Add architecture specific folder for looking up headers.

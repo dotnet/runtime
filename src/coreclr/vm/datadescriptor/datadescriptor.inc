@@ -1829,8 +1829,6 @@ CDAC_GLOBAL(SyncBlockIsHashCode, T_UINT32, BIT_SBLK_IS_HASHCODE)
 CDAC_GLOBAL(SyncBlockIndexMask, T_UINT32, MASK_SYNCBLOCKINDEX)
 CDAC_GLOBAL(SyncBlockHashCodeMask, T_UINT32, MASK_HASHCODE)
 
-CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
-CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 CDAC_GLOBAL_POINTER(AuxiliarySymbols, &::hlpAuxiliarySymbolTable)
 CDAC_GLOBAL_POINTER(AuxiliarySymbolCount, &::g_auxiliarySymbolCount)
 #if FEATURE_COMINTEROP

@@ -149,11 +149,6 @@ OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocCont
 
 RhDebugBreak                                equ @RhDebugBreak@0
 RhpGcAlloc                                  equ _RhpGcAlloc@16
-G_LOWEST_ADDRESS                            equ _g_lowest_address
-G_HIGHEST_ADDRESS                           equ _g_highest_address
-G_EPHEMERAL_LOW                             equ _g_ephemeral_low
-G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
-G_CARD_TABLE                                equ _g_card_table
 RhpWaitForGC2                               equ @RhpWaitForGC2@4
 RhpTrapThreads                              equ _RhpTrapThreads
 RhpStressGc                                 equ @RhpStressGc@0
@@ -195,9 +190,4 @@ EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
 EXTERN RhpStressGc                              : PROC
 endif ;; FEATURE_GC_STRESS
 
-EXTERN G_LOWEST_ADDRESS : DWORD
-EXTERN G_HIGHEST_ADDRESS : DWORD
-EXTERN G_EPHEMERAL_LOW : DWORD
-EXTERN G_EPHEMERAL_HIGH : DWORD
-EXTERN G_CARD_TABLE : DWORD
 EXTERN RhpTrapThreads : DWORD

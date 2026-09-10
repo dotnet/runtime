@@ -12,8 +12,6 @@
 #include "frames.h"
 #include "virtualcallstub.h"
 #include "comdelegate.h"
-#include "gchelpers.inl"
-#include "arraynative.inl"
 
 #ifdef TARGET_WASM
 extern "C" void SamplingProfiler_OnSamplepoint();
@@ -4700,22 +4698,20 @@ do                                                                      \
                     // Copy locals that need to move to the continuation object
                     // The copied continuation data begins immediately after the
                     // continuation's result storage.
-                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
-                    uint8_t *pContinuationDataStart = continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
-                    uint8_t *pContinuationData = pContinuationDataStart;
-                    size_t bytesTotal = 0;
+                    uint8_t *pContinuationData =
+                        continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
                     if (pCopyEntry->countBytes > 0)
                     {
-                        GCHeapMemoryBarrier();
                         while (pCopyEntry->countBytes != 0)
                         {
-                            InlinedForwardGCSafeCopyHelper(pContinuationData, LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pCopyEntry->countBytes);
-                            bytesTotal += pCopyEntry->countBytes;
+                            GCHeapUtilities::BulkMoveWithWriteBarrier(
+                                pContinuationData,
+                                LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t),
+                                pCopyEntry->countBytes);
                             pContinuationData += pCopyEntry->countBytes;
                             pCopyEntry++;
                         }
-                        InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
                     }
 
                     int32_t returnValueSize = pAsyncSuspendData->asyncMethodReturnTypePrimitiveSize;
