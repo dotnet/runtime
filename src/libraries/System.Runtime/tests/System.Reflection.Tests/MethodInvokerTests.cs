@@ -19,24 +19,37 @@ namespace System.Reflection.Tests
 
         protected override bool SupportsMissing => false;
 
-        [Fact]
-        public void SharedThunk_CachedInvokerPromotes()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SharedThunk_CachedInvokerPromotes(bool useByRef)
         {
-            MethodInfo method = typeof(CachedInvokerTarget).GetMethod(nameof(CachedInvokerTarget.Echo))!;
+            MethodInfo method = typeof(CachedInvokerTarget).GetMethod(
+                useByRef ? nameof(CachedInvokerTarget.TryGetValue) : nameof(CachedInvokerTarget.Echo))!;
             MethodInvoker invoker = MethodInvoker.Create(method);
             var target = new CachedInvokerTarget();
             object argument = new object();
+            object?[] arguments = { target, null };
 
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
-                Assert.Same(argument, invoker.Invoke(target, argument));
-                if (i == 0)
+                if (useByRef)
                 {
-                    IntrinsicInvokeSelectionAssertions.AssertShared(invoker);
+                    Assert.Equal(true, invoker.Invoke(null, arguments.AsSpan()));
+                    Assert.Same(target, arguments[1]);
+                }
+                else
+                {
+                    Assert.Same(argument, invoker.Invoke(target, argument));
+                }
+
+                if (i == 0 || i == IntrinsicInvokeSelectionAssertions.SpecializationThreshold - 1)
+                {
+                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1);
                 }
             }
 
-            Assert.Equal(150, target.CallCount);
+            Assert.Equal(IntrinsicInvokeSelectionAssertions.SpecializationThreshold + 1, target.CallCount);
             IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
         }
 
@@ -59,7 +72,7 @@ namespace System.Reflection.Tests
             MethodInvoker invoker = MethodInvoker.Create(constructor);
             var target = (RefConstructorTarget)RuntimeHelpers.GetUninitializedObject(typeof(RefConstructorTarget));
 
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
                 if (useSpan)
                 {
@@ -369,6 +382,12 @@ namespace System.Reflection.Tests
         private sealed class CachedInvokerTarget
         {
             internal int CallCount { get; private set; }
+
+            public static bool TryGetValue(CachedInvokerTarget target, out object result)
+            {
+                result = target.Echo(target);
+                return true;
+            }
 
             public object Echo(object value)
             {

@@ -35,13 +35,13 @@ namespace System.Reflection.Tests
             object?[] arguments = new object?[argumentCount];
             Array.Fill(arguments, argument);
 
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
                 var result = (CachedInvokerTarget)(argumentCount == 1 ? invoker.Invoke(argument) : invoker.Invoke(arguments.AsSpan()));
                 Assert.Same(argument, result.Value);
-                if (i == 0)
+                if (i == 0 || i == IntrinsicInvokeSelectionAssertions.SpecializationThreshold - 1)
                 {
-                    IntrinsicInvokeSelectionAssertions.AssertShared(invoker);
+                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1);
                 }
             }
 
