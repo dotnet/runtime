@@ -1497,17 +1497,20 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledPInvokeMethods = TRUE, ReadyToRunInfo * pInfo = NULL);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
-    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+    // pInfo, when non-NULL, resolves the fixups against that (supplemental) R2R image instead of the
+    // module's primary image.
+    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods = TRUE, ReadyToRunInfo * pInfo = NULL);
 
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE,
+                           ReadyToRunInfo * pInfo = NULL);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 #ifdef TARGET_WASM
@@ -1516,8 +1519,10 @@ public:
     void RunSupplementalEagerFixups(ReadyToRunInfo *pInfo);
 #endif
 
-    ModuleBase *GetModuleFromIndex(DWORD ix);
-    ModuleBase *GetModuleFromIndexIfLoaded(DWORD ix);
+    // pInfo, when non-NULL, resolves the index against that supplemental R2R image's manifest rather than
+    // this module's primary R2R info (for lazily-attached supplemental images).
+    ModuleBase *GetModuleFromIndex(DWORD ix, ReadyToRunInfo *pInfo = NULL);
+    ModuleBase *GetModuleFromIndexIfLoaded(DWORD ix, ReadyToRunInfo *pInfo = NULL);
 
     BOOL IsReadyToRun() const
     {

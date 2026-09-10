@@ -495,7 +495,20 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     // which requires interpreter byte code. Letting a UCO method pick up native code from a supplement
     // attached after that thunk was handed out would break that path, so supplemental images never provide
     // code for UCO methods (they stay interpreted). The primary image probe above is unaffected.
-    if (pCode == (PCODE)NULL && !HasUnmanagedCallersOnlyAttribute())
+    //
+    // Generic/async-variant/unboxing carve-out: those methods are looked up in the R2R instance-method
+    // table, whose signature matching (SigMatchesMethodDesc) decodes owner-type signatures that reference
+    // native assembly-ref indices. That decode resolves indices through m_pModule's PRIMARY ReadyToRunInfo
+    // (GetNativeAssemblyImport), which for a lazily-attached supplement is the eager image, not this
+    // supplement's manifest -- and for an IL-only eager image there is no native manifest at all, so the
+    // resolution faults. Until signature matching can be made supplemental-manifest-aware, these methods
+    // stay interpreted when their code lives only in a supplement (the methoddef-table path used by
+    // non-generic methods needs no such decode and is unaffected).
+    if (pCode == (PCODE)NULL
+        && !HasUnmanagedCallersOnlyAttribute()
+        && !HasClassOrMethodInstantiation()
+        && !IsAsyncVariantMethod()
+        && !IsUnboxingStub())
     {
         for (ReadyToRunInfo* pSupplemental = pModule->GetSupplementalReadyToRunInfos();
              pSupplemental != NULL && pCode == (PCODE)NULL;
@@ -2784,6 +2797,27 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
     return pCode;
 }
 
+#ifdef FEATURE_READYTORUN
+// A delay-load fixup cell lives in the R2R image whose code references it. For a lazily-attached
+// supplemental (wasm) R2R image that image is NOT the module's primary image, so resolve the cell's
+// owning image/info by address rather than assuming the primary. Falls back to the primary info.
+static ReadyToRunInfo * GetReadyToRunInfoForImportCell(Module * pModule, TADDR cell)
+{
+    STANDARD_VM_CONTRACT;
+
+    for (ReadyToRunInfo * pSupplemental = pModule->GetSupplementalReadyToRunInfos();
+         pSupplemental != NULL;
+         pSupplemental = pSupplemental->GetNextSupplemental())
+    {
+        ReadyToRunLoadedImage * pImage = pSupplemental->GetImage();
+        TADDR base = pImage->GetBase();
+        if (cell >= base && cell < base + pImage->GetVirtualSize())
+            return pSupplemental;
+    }
+    return pModule->GetReadyToRunInfo();
+}
+#endif // FEATURE_READYTORUN
+
 //==========================================================================================
 // In NGen images calls to external methods start out pointing to jump thunks.
 // These jump thunks initially point to the assembly code _ExternalMethodFixupStub
@@ -2865,7 +2899,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     {
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
 
-        ReadyToRunLoadedImage *pNativeImage = pModule->GetReadyToRunImage();
+        ReadyToRunInfo *pReadyToRunInfo = GetReadyToRunInfoForImportCell(pModule, pIndirection);
+        ReadyToRunLoadedImage *pNativeImage = pReadyToRunInfo->GetImage();
 
         RVA rva = pNativeImage->GetDataRva(pIndirection);
 
@@ -2875,13 +2910,13 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             // On some platforms (everywhere except wasm) we can get the section index from the callsite,
             // so we don't have to search for it.
             pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
-            _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
+            _ASSERTE(pImportSection == pReadyToRunInfo->GetImportSectionForRVA(rva));
         }
         else
         {
             // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
             // the section index, so we search for it instead.
-            pImportSection = pModule->GetImportSectionForRVA(rva);
+            pImportSection = pReadyToRunInfo->GetImportSectionForRVA(rva);
         }
         _ASSERTE(pImportSection != NULL);
 
@@ -2900,7 +2935,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         if (kind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
-            pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
+            pInfoModule = pModule->GetModuleFromIndex(moduleIndex,
+                (pReadyToRunInfo != pModule->GetReadyToRunInfo()) ? pReadyToRunInfo : NULL);
             kind &= ~READYTORUN_FIXUP_ModuleOverride;
         }
 
@@ -3497,7 +3533,8 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 {
     STANDARD_VM_CONTRACT;
 
-    ReadyToRunLoadedImage *pNativeImage = pModule->GetReadyToRunImage();
+    ReadyToRunInfo *pReadyToRunInfo = GetReadyToRunInfoForImportCell(pModule, (TADDR)pCell);
+    ReadyToRunLoadedImage *pNativeImage = pReadyToRunInfo->GetImage();
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
@@ -3512,10 +3549,10 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     {
         // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
         // the section index, so we search for it instead.
-        pImportSection = pModule->GetImportSectionForRVA(rva);
+        pImportSection = pReadyToRunInfo->GetImportSectionForRVA(rva);
     }
 
-    _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
+    _ASSERTE(pImportSection == pReadyToRunInfo->GetImportSectionForRVA(rva));
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
 
@@ -3532,7 +3569,8 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     if (kind & READYTORUN_FIXUP_ModuleOverride)
     {
         DWORD moduleIndex = CorSigUncompressData(pBlob);
-        pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
+        pInfoModule = pModule->GetModuleFromIndex(moduleIndex,
+            (pReadyToRunInfo != pModule->GetReadyToRunInfo()) ? pReadyToRunInfo : NULL);
         kind = (ReadyToRunFixupKind)(kind & ~READYTORUN_FIXUP_ModuleOverride);
     }
 

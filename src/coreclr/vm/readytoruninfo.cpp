@@ -1109,7 +1109,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     {
         uint32_t updatedModuleIndex;
         IfFailThrow(sig.GetData(&updatedModuleIndex));
-        pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex);
+        pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex, pZapSigContext->pR2RInfo);
     }
 
     if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
@@ -1406,7 +1406,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             BOOL mayUsePrecompiledPInvokeMethods = TRUE;
             mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
 
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods, this))
             {
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
                 goto done;

@@ -3405,7 +3405,7 @@ void Module::FixupVTables()
 }
 #endif // FEATURE_IJW
 
-ModuleBase *Module::GetModuleFromIndex(DWORD ix)
+ModuleBase *Module::GetModuleFromIndex(DWORD ix, ReadyToRunInfo *pInfo)
 {
     CONTRACTL
     {
@@ -3416,9 +3416,9 @@ ModuleBase *Module::GetModuleFromIndex(DWORD ix)
     }
     CONTRACTL_END;
 
-    if (IsReadyToRun())
+    if (IsReadyToRun() || pInfo != NULL)
     {
-        return ZapSig::DecodeModuleFromIndex(this, ix);
+        return ZapSig::DecodeModuleFromIndex(this, ix, pInfo);
     }
     else
     {
@@ -3438,7 +3438,7 @@ ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 
 #endif // !DACCESS_COMPILE
 
-ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix)
+ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix, ReadyToRunInfo *pInfo)
 {
     CONTRACTL
     {
@@ -3451,7 +3451,7 @@ ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix)
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    return ZapSig::DecodeModuleFromIndexIfLoaded(this, ix);
+    return ZapSig::DecodeModuleFromIndexIfLoaded(this, ix, pInfo);
 #else // DACCESS_COMPILE
     DacNotImpl();
     return NULL;
@@ -3670,18 +3670,28 @@ void Module::RunSupplementalEagerFixups(ReadyToRunInfo *pInfo)
                 kind &= ~READYTORUN_FIXUP_ModuleOverride;
             }
 
-            // The string-thunk fixup is image-specific and must register the supplemental image's thunks
-            // against the supplemental info. Every other fixup in the lazy composite is delay-loaded and
-            // resolves against this module on first use, so only this kind is processed eagerly here.
+            // The string-thunk fixup is image-specific: it must register the supplemental image's thunks
+            // against the supplemental info rather than resolve a value into the cell, so handle it here.
             if (kind == READYTORUN_FIXUP_InjectStringThunks)
             {
                 ProcessInjectStringThunksFixup(pInfo, pBlob);
                 VolatileStore(fixupCell, (SIZE_T)1);
+                continue;
             }
-            else
+
+            // Every other eager fixup (helpers, instruction-set checks, eager type/method handles, ...)
+            // must be resolved now, exactly as Module::RunEagerFixupsUnlocked does for the primary image;
+            // an unresolved eager helper cell is a null indirection that faults when the attached R2R
+            // code first calls through it. Route the signature blob through the supplemental image.
+            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, TRUE /* mayUsePrecompiledPInvokeMethods */, pInfo))
             {
-                _ASSERTE(!"Unexpected eager fixup kind in a supplemental R2R image");
+                // A failed eager check (e.g. an unsupported instruction set) means this image's native
+                // code cannot be used; disable it and keep running on the interpreter. Best-effort:
+                // the eager image already provided a working (partial or IL-only) module.
+                pInfo->DisableAllR2RCode();
+                return;
             }
+            _ASSERTE(*fixupCell != 0);
         }
     }
 }
@@ -3690,7 +3700,7 @@ void Module::RunSupplementalEagerFixups(ReadyToRunInfo *pInfo)
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods, ReadyToRunInfo * pInfo)
 {
     CONTRACTL
     {
@@ -3704,9 +3714,11 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 
     if (fixup == 0)
     {
-        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
+        // A supplemental (lazily-attached) image stores its signatures in its own image; resolve against it.
+        ReadyToRunLoadedImage * pNativeImage = (pInfo != NULL) ? pInfo->GetImage() : GetReadyToRunImage();
+        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods, pInfo))
             return FALSE;
 
         _ASSERTE(*fixupCell != 0);
