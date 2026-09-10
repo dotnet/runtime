@@ -15,6 +15,11 @@
 
 .class public Repro
 {
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/133467')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsWasmReadyToRun')
+    }
     .field private static class [mscorlib]System.Func`2<int32,int32> d1
     .field private static class [mscorlib]System.Func`6<int32,int32,int32,int32,int32,int32> d2
 
