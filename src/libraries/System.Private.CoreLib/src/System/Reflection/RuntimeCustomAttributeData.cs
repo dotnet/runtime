@@ -472,7 +472,7 @@ namespace System.Reflection
     public readonly partial struct CustomAttributeTypedArgument
     {
         #region Private Static Methods
-        private static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
+        internal static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
         {
             return encodedType switch
             {
