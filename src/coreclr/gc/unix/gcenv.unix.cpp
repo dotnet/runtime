@@ -1068,22 +1068,19 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
 #if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64))
     // The size of the user virtual address space is a kernel configuration choice on these
     // architectures, so discover it at run time by probing the candidates from the largest to
-    // the smallest one. The smallest candidate is assumed without probing.
+    // the smallest one.
     static volatile size_t s_maxAddress = 0;
     if (s_maxAddress == 0)
     {
 #if defined(TARGET_ARM64)
-        static const int candidates[] = { 52, 48, 47, 42, 39 };
-        const int minVaBits = 36;
+        static const int candidates[] = { 52, 48, 47, 42, 39, 36 };
 #elif defined(TARGET_RISCV64)
-        static const int candidates[] = { 56, 47 };
-        const int minVaBits = 38;
+        static const int candidates[] = { 56, 47, 38 };
 #else // TARGET_LOONGARCH64
-        static const int candidates[] = { 47, 39 };
-        const int minVaBits = 36;
+        static const int candidates[] = { 47, 39, 36 };
 #endif
 
-        size_t maxAddress = ((size_t)1) << minVaBits;
+        size_t maxAddress = 0;
         for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++)
         {
             if (IsUserVirtualAddressSpaceAtLeast(candidates[i]))
@@ -1093,14 +1090,16 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
             }
         }
 
+        // Not even the smallest candidate could be probed, so the probing itself does not work
+        // in this environment (e.g. mmap is blocked). Report the failure to the caller.
+        assert(maxAddress != 0);
         s_maxAddress = maxAddress;
     }
     return s_maxAddress;
 #else // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
-    // There is no API to get the total virtual address space size on
-    // Unix, so we use a constant value representing 128TB, which is
-    // the approximate size of total user virtual address space on
-    // the currently supported Unix systems.
+    // The remaining platforms do not provide an API to get the size of the user virtual
+    // address space either, so use a constant representing 128TB (47 bits), which is
+    // the size on x64 and a close enough approximation on the other supported systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
 #endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
