@@ -237,6 +237,65 @@ namespace ILAssembler.Tests
             Assert.Empty(body.ExceptionRegions);
         }
 
+        [Theory]
+        [InlineData("br -9", ILOpCode.Br, -9, 5)]
+        [InlineData("br.s -3", ILOpCode.Br_s, -3, 2)]
+        public void NegativeBranchIntoMethodHeader_WithErrorTolerantOption_PreservesMethodBody(
+            string branchInstruction,
+            ILOpCode branchOpCode,
+            int branchOffset,
+            int tryEnd)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .maxstack 1
+                        .try 0 to {{tryEnd}} finally handler {{tryEnd}} to {{tryEnd + 1}}
+                        {{branchInstruction}}
+                        endfinally
+                        ret
+                    }
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source,
+                new Options { ErrorTolerant = true });
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "TestMethod");
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            byte[] il = body.GetILBytes()!;
+
+            Assert.Equal((byte)branchOpCode, il[0]);
+            if (branchOpCode == ILOpCode.Br_s)
+            {
+                Assert.Equal(branchOffset, unchecked((sbyte)il[1]));
+            }
+            else
+            {
+                Assert.Equal(branchOffset, BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(1)));
+            }
+            Assert.Equal((byte)ILOpCode.Endfinally, il[tryEnd]);
+            Assert.Equal((byte)ILOpCode.Ret, il[tryEnd + 1]);
+
+            Assert.Equal(1, body.MaxStack);
+            Assert.False(body.LocalVariablesInitialized);
+            Assert.True(body.LocalSignature.IsNil);
+
+            ExceptionRegion region = Assert.Single(body.ExceptionRegions);
+            Assert.Equal(ExceptionRegionKind.Finally, region.Kind);
+            Assert.Equal(0, region.TryOffset);
+            Assert.Equal(tryEnd, region.TryLength);
+            Assert.Equal(tryEnd, region.HandlerOffset);
+            Assert.Equal(1, region.HandlerLength);
+        }
+
         [Fact]
         public void OffsetBasedCatchRegion_EmitsExactExceptionRegionBounds()
         {

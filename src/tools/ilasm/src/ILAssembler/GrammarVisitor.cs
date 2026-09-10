@@ -3801,9 +3801,15 @@ namespace ILAssembler
                         if (argument is CILParser.Int32Context int32)
                         {
                             int offset = VisitInt32(int32).Value;
-                            LabelHandle label = _currentMethod!.Definition.MethodBody.DefineLabel();
-                            _currentMethod.Definition.MethodBody.Branch(opcode, label);
-                            _currentMethod.Definition.MethodBody.MarkLabel(label, _currentMethod.Definition.MethodBody.Offset + offset);
+                            _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                            if (opcode.GetBranchOperandSize() == 1)
+                            {
+                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteSByte(unchecked((sbyte)offset));
+                            }
+                            else
+                            {
+                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(offset);
+                            }
                         }
                     }
                     break;
