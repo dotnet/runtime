@@ -89,16 +89,16 @@
       -->
     <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' != 'false'">WasmIntrinsics</_WasmIntrinsicsSubstitutions>
     <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' == 'false'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
-    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableRelaxedSimd)' == 'true'">WasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
-    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableRelaxedSimd)' != 'true'">NoWasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
+    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableSIMD)' != 'false' and '$(WasmEnableRelaxedSimd)' == 'true'">WasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
+    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableSIMD)' != 'false' and '$(WasmEnableRelaxedSimd)' != 'true'">NoWasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
     <!-- WasmEnableSIMD is about native codegen, and CoreCLR browser-wasm forces it on, but the CoreCLR
          interpreter maps every System.Runtime.Intrinsics arch intrinsic except get_IsSupported to
          PlatformNotSupportedException. Only crossgen'd code can execute them, so without ReadyToRun stubbing
          IsSupported to true leaves a guarded SIMD path unconditionally reachable and it throws at startup. -->
     <_WasmIntrinsicsSubstitutions Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' != 'true'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
-    <_WasmRelaxedSimdSubstitutions Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' != 'true'">NoWasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
+    <_WasmRelaxedSimdSubstitutions Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' != 'true'"></_WasmRelaxedSimdSubstitutions>
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.$(_WasmIntrinsicsSubstitutions).xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.$(_WasmRelaxedSimdSubstitutions).xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(_WasmRelaxedSimdSubstitutions)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.$(_WasmRelaxedSimdSubstitutions).xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>

@@ -33,10 +33,10 @@ namespace System.Runtime.Intrinsics.Wasm
 
         /// <summary>  i8x16.relaxed_swizzle</summary>
         [Intrinsic]
-        public static Vector128<sbyte> SwizzleNative(Vector128<sbyte> vector, Vector128<sbyte> indices) => SwizzleNative(vector, indices);
+        public static Vector128<sbyte> SwizzleNative(Vector128<sbyte> vector, Vector128<sbyte> indices) => IsSupported ? SwizzleNative(vector, indices) : throw new PlatformNotSupportedException();
         /// <summary>  i8x16.relaxed_swizzle</summary>
         [Intrinsic]
-        public static Vector128<byte>  SwizzleNative(Vector128<byte>  vector, Vector128<byte>  indices) => SwizzleNative(vector, indices);
+        public static Vector128<byte>  SwizzleNative(Vector128<byte>  vector, Vector128<byte>  indices) => IsSupported ? SwizzleNative(vector, indices) : throw new PlatformNotSupportedException();
 
         // Relaxed truncating float-to-int conversions. For NaN or out-of-range inputs the result is
         // implementation-defined; the saturating PackedSimd.ConvertToInt32Saturate / ConvertToUInt32Saturate
@@ -44,33 +44,33 @@ namespace System.Runtime.Intrinsics.Wasm
 
         /// <summary>  i32x4.relaxed_trunc_f32x4_s</summary>
         [Intrinsic]
-        public static Vector128<int>  ConvertToInt32Native(Vector128<float> value) => ConvertToInt32Native(value);
+        public static Vector128<int>  ConvertToInt32Native(Vector128<float> value) => IsSupported ? ConvertToInt32Native(value) : throw new PlatformNotSupportedException();
         /// <summary>  i32x4.relaxed_trunc_f32x4_u</summary>
         [Intrinsic]
-        public static Vector128<uint> ConvertToUInt32Native(Vector128<float> value) => ConvertToUInt32Native(value);
+        public static Vector128<uint> ConvertToUInt32Native(Vector128<float> value) => IsSupported ? ConvertToUInt32Native(value) : throw new PlatformNotSupportedException();
         /// <summary>  i32x4.relaxed_trunc_f64x2_s_zero</summary>
         [Intrinsic]
-        public static Vector128<int>  ConvertToInt32Native(Vector128<double> value) => ConvertToInt32Native(value);
+        public static Vector128<int>  ConvertToInt32Native(Vector128<double> value) => IsSupported ? ConvertToInt32Native(value) : throw new PlatformNotSupportedException();
         /// <summary>  i32x4.relaxed_trunc_f64x2_u_zero</summary>
         [Intrinsic]
-        public static Vector128<uint> ConvertToUInt32Native(Vector128<double> value) => ConvertToUInt32Native(value);
+        public static Vector128<uint> ConvertToUInt32Native(Vector128<double> value) => IsSupported ? ConvertToUInt32Native(value) : throw new PlatformNotSupportedException();
 
         // Relaxed fused multiply-add. Whether the intermediate product is rounded before the add
         // (and whether the underlying instruction is a true fused FMA) is implementation-defined.
 
         /// <summary>  f32x4.relaxed_madd</summary>
         [Intrinsic]
-        public static Vector128<float>  MultiplyAddEstimate(Vector128<float>  left, Vector128<float>  right, Vector128<float>  addend) => MultiplyAddEstimate(left, right, addend);
+        public static Vector128<float>  MultiplyAddEstimate(Vector128<float>  left, Vector128<float>  right, Vector128<float>  addend) => IsSupported ? MultiplyAddEstimate(left, right, addend) : throw new PlatformNotSupportedException();
         /// <summary>  f64x2.relaxed_madd</summary>
         [Intrinsic]
-        public static Vector128<double> MultiplyAddEstimate(Vector128<double> left, Vector128<double> right, Vector128<double> addend) => MultiplyAddEstimate(left, right, addend);
+        public static Vector128<double> MultiplyAddEstimate(Vector128<double> left, Vector128<double> right, Vector128<double> addend) => IsSupported ? MultiplyAddEstimate(left, right, addend) : throw new PlatformNotSupportedException();
 
         /// <summary>  f32x4.relaxed_nmadd</summary>
         [Intrinsic]
-        public static Vector128<float>  MultiplyAddNegatedEstimate(Vector128<float>  left, Vector128<float>  right, Vector128<float>  addend) => MultiplyAddNegatedEstimate(left, right, addend);
+        public static Vector128<float>  MultiplyAddNegatedEstimate(Vector128<float>  left, Vector128<float>  right, Vector128<float>  addend) => IsSupported ? MultiplyAddNegatedEstimate(left, right, addend) : throw new PlatformNotSupportedException();
         /// <summary>  f64x2.relaxed_nmadd</summary>
         [Intrinsic]
-        public static Vector128<double> MultiplyAddNegatedEstimate(Vector128<double> left, Vector128<double> right, Vector128<double> addend) => MultiplyAddNegatedEstimate(left, right, addend);
+        public static Vector128<double> MultiplyAddNegatedEstimate(Vector128<double> left, Vector128<double> right, Vector128<double> addend) => IsSupported ? MultiplyAddNegatedEstimate(left, right, addend) : throw new PlatformNotSupportedException();
 
         // Relaxed lane select. The mask is interpreted per-byte/word; lanes where the mask bit is
         // neither all-ones nor all-zeros produce implementation-defined results. For deterministic
@@ -78,28 +78,28 @@ namespace System.Runtime.Intrinsics.Wasm
 
         /// <summary>  i8x16.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<sbyte>  LaneSelectNative(Vector128<sbyte>  left, Vector128<sbyte>  right, Vector128<sbyte>  mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<sbyte>  LaneSelectNative(Vector128<sbyte>  left, Vector128<sbyte>  right, Vector128<sbyte>  mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
         /// <summary>  i8x16.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<byte>   LaneSelectNative(Vector128<byte>   left, Vector128<byte>   right, Vector128<byte>   mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<byte>   LaneSelectNative(Vector128<byte>   left, Vector128<byte>   right, Vector128<byte>   mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
         /// <summary>  i16x8.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<short>  LaneSelectNative(Vector128<short>  left, Vector128<short>  right, Vector128<short>  mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<short>  LaneSelectNative(Vector128<short>  left, Vector128<short>  right, Vector128<short>  mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
         /// <summary>  i16x8.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<ushort> LaneSelectNative(Vector128<ushort> left, Vector128<ushort> right, Vector128<ushort> mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<ushort> LaneSelectNative(Vector128<ushort> left, Vector128<ushort> right, Vector128<ushort> mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
         /// <summary>  i32x4.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<int>    LaneSelectNative(Vector128<int>    left, Vector128<int>    right, Vector128<int>    mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<int>    LaneSelectNative(Vector128<int>    left, Vector128<int>    right, Vector128<int>    mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
         /// <summary>  i32x4.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<uint>   LaneSelectNative(Vector128<uint>   left, Vector128<uint>   right, Vector128<uint>   mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<uint>   LaneSelectNative(Vector128<uint>   left, Vector128<uint>   right, Vector128<uint>   mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
         /// <summary>  i64x2.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<long>   LaneSelectNative(Vector128<long>   left, Vector128<long>   right, Vector128<long>   mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<long>   LaneSelectNative(Vector128<long>   left, Vector128<long>   right, Vector128<long>   mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
         /// <summary>  i64x2.relaxed_laneselect</summary>
         [Intrinsic]
-        public static Vector128<ulong>  LaneSelectNative(Vector128<ulong>  left, Vector128<ulong>  right, Vector128<ulong>  mask) => LaneSelectNative(left, right, mask);
+        public static Vector128<ulong>  LaneSelectNative(Vector128<ulong>  left, Vector128<ulong>  right, Vector128<ulong>  mask) => IsSupported ? LaneSelectNative(left, right, mask) : throw new PlatformNotSupportedException();
 
         // Relaxed min/max. NaN handling and sign-of-zero handling are implementation-defined.
         // For IEEE-compliant min/max use PackedSimd.Min/Max; for pseudo-min/max (one-sided NaN
@@ -107,16 +107,16 @@ namespace System.Runtime.Intrinsics.Wasm
 
         /// <summary>  f32x4.relaxed_min</summary>
         [Intrinsic]
-        public static Vector128<float>  MinNative(Vector128<float>  left, Vector128<float>  right) => MinNative(left, right);
+        public static Vector128<float>  MinNative(Vector128<float>  left, Vector128<float>  right) => IsSupported ? MinNative(left, right) : throw new PlatformNotSupportedException();
         /// <summary>  f32x4.relaxed_max</summary>
         [Intrinsic]
-        public static Vector128<float>  MaxNative(Vector128<float>  left, Vector128<float>  right) => MaxNative(left, right);
+        public static Vector128<float>  MaxNative(Vector128<float>  left, Vector128<float>  right) => IsSupported ? MaxNative(left, right) : throw new PlatformNotSupportedException();
         /// <summary>  f64x2.relaxed_min</summary>
         [Intrinsic]
-        public static Vector128<double> MinNative(Vector128<double> left, Vector128<double> right) => MinNative(left, right);
+        public static Vector128<double> MinNative(Vector128<double> left, Vector128<double> right) => IsSupported ? MinNative(left, right) : throw new PlatformNotSupportedException();
         /// <summary>  f64x2.relaxed_max</summary>
         [Intrinsic]
-        public static Vector128<double> MaxNative(Vector128<double> left, Vector128<double> right) => MaxNative(left, right);
+        public static Vector128<double> MaxNative(Vector128<double> left, Vector128<double> right) => IsSupported ? MaxNative(left, right) : throw new PlatformNotSupportedException();
 
         // Relaxed Q15 multiply with rounding. Differs from PackedSimd.MultiplyRoundedSaturateQ15
         // (i16x8.q15mulr_sat_s) in that the multiplication of INT16_MIN by INT16_MIN produces an
@@ -124,7 +124,7 @@ namespace System.Runtime.Intrinsics.Wasm
 
         /// <summary>  i16x8.relaxed_q15mulr_s</summary>
         [Intrinsic]
-        public static Vector128<short> MultiplyRoundedQ15Native(Vector128<short> left, Vector128<short> right) => MultiplyRoundedQ15Native(left, right);
+        public static Vector128<short> MultiplyRoundedQ15Native(Vector128<short> left, Vector128<short> right) => IsSupported ? MultiplyRoundedQ15Native(left, right) : throw new PlatformNotSupportedException();
 
         // Relaxed dot products for signed-by-unsigned bytes. Per the finished spec pseudocode,
         // operand `a` is signed and operand `b` is unsigned 7-bit; when any lane of `b` has the
@@ -134,10 +134,10 @@ namespace System.Runtime.Intrinsics.Wasm
 
         /// <summary>  i16x8.relaxed_dot_i8x16_i7x16_s — multiplies adjacent (sbyte, byte) pairs and sums each pair into a signed 16-bit lane.</summary>
         [Intrinsic]
-        public static Vector128<short> DotProductNative(Vector128<sbyte> left, Vector128<byte> right) => DotProductNative(left, right);
+        public static Vector128<short> DotProductNative(Vector128<sbyte> left, Vector128<byte> right) => IsSupported ? DotProductNative(left, right) : throw new PlatformNotSupportedException();
 
         /// <summary>  i32x4.relaxed_dot_i8x16_i7x16_add_s — multiplies four adjacent (sbyte, byte) pairs, sums them with a signed 32-bit accumulator, and returns the result.</summary>
         [Intrinsic]
-        public static Vector128<int> DotProductAddNative(Vector128<sbyte> left, Vector128<byte> right, Vector128<int> accumulator) => DotProductAddNative(left, right, accumulator);
+        public static Vector128<int> DotProductAddNative(Vector128<sbyte> left, Vector128<byte> right, Vector128<int> accumulator) => IsSupported ? DotProductAddNative(left, right, accumulator) : throw new PlatformNotSupportedException();
     }
 }

@@ -13,6 +13,8 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public sealed class RelaxedSimdTests
     {
+        public static bool IsNotSupported => !RelaxedSimd.IsSupported;
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(RelaxedSimd))]
         public unsafe void RelaxedSimdIsSupportedReflects()
@@ -20,6 +22,13 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             MethodInfo methodInfo = typeof(RelaxedSimd).GetMethod("get_IsSupported");
             Assert.NotNull(methodInfo);
             Assert.Equal(RelaxedSimd.IsSupported, methodInfo.Invoke(null, null));
+        }
+
+        [ConditionalFact(typeof(RelaxedSimdTests), nameof(IsNotSupported))]
+        public void UnsupportedMethodThrowsPlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(
+                () => RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.0f)));
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]

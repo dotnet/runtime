@@ -153,6 +153,17 @@ namespace Wasm.Build.Tests
                             return 2;
                         }
                     }
+                    else
+                    {
+                        try
+                        {
+                            RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.0f));
+                            return 3;
+                        }
+                        catch (PlatformNotSupportedException)
+                        {
+                        }
+                    }
 
                     return 42;
                 }
