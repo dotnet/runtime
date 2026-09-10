@@ -17,8 +17,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteRegularFile(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 UstarTarEntry regularFileToWrite = new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -40,8 +40,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteHardLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 UstarTarEntry hardLinkToWrite = new UstarTarEntry(TarEntryType.HardLink, InitialEntryName);
@@ -63,8 +63,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteSymbolicLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 UstarTarEntry symbolicLinkToWrite = new UstarTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
@@ -86,8 +86,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteDirectory(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 UstarTarEntry directoryToWrite = new UstarTarEntry(TarEntryType.Directory, InitialEntryName);
@@ -109,8 +109,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteCharacterDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 UstarTarEntry charDeviceToWrite = new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
@@ -132,8 +132,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteBlockDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 UstarTarEntry blockDeviceToWrite = new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName);
@@ -155,8 +155,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteFifo(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 UstarTarEntry fifoToWrite = new UstarTarEntry(TarEntryType.Fifo, InitialEntryName);

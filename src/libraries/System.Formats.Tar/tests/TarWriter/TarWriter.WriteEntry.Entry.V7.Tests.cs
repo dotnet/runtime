@@ -17,8 +17,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteRegularFile(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 V7TarEntry oldRegularFileToWrite = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
@@ -40,8 +40,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteHardLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 V7TarEntry hardLinkToWrite = new V7TarEntry(TarEntryType.HardLink, InitialEntryName);
@@ -63,8 +63,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteSymbolicLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 V7TarEntry symbolicLinkToWrite = new V7TarEntry(TarEntryType.SymbolicLink, InitialEntryName);
@@ -86,8 +86,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteDirectory(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.V7, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 V7TarEntry directoryToWrite = new V7TarEntry(TarEntryType.Directory, InitialEntryName);

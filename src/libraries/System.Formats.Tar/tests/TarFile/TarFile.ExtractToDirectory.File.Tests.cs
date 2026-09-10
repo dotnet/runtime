@@ -391,8 +391,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TarHardLinkMode.CopyContents)]
         [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.CopyContents)]
         public void HardLinkExtractionRoundtrip(TarEntryFormat format, TarHardLinkMode linkMode)
-            // Create hardlinked dir1/file.txt and dir2/linked.txt.
         {
+            // Create hardlinked dir1/file.txt and dir2/linked.txt.
             using TempDirectory root = new TempDirectory();
 
             string sourceDir1 = Path.Join(root.Path, "source", "dir1");
@@ -522,12 +522,12 @@ namespace System.Formats.Tar.Tests
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal_WithNestedFile()
-            // symlink a/b/c/d ? ../../outside
-            // symlink a/b/c ? .
-            // symlink a/b ? .
-            // file a/d/ pwned.txt escapes
-            // dir a/
         {
+            // dir a/
+            // symlink a/b ? .
+            // symlink a/b/c ? .
+            // symlink a/b/c/d ? ../../outside
+            // file a/d/pwned.txt escapes
             using TempDirectory root = new TempDirectory();
             string destDir = Path.Combine(root.Path, "dest");
             Directory.CreateDirectory(destDir);
@@ -552,8 +552,9 @@ namespace System.Formats.Tar.Tests
             }
 
             if (OperatingSystem.IsWindows())
-                // Windows only creates file symlinks and trying to process a directory symlink will throw UnauthorizedAccessException instead of IOException
             {
+                // Windows only creates file symlinks and trying to process a directory symlink will throw
+                // UnauthorizedAccessException instead of IOException.
                 // Windows always creates file symlinks (FileInfo.CreateAsSymbolicLink), so entry "a/b" becomes a
                 // *file* symlink whose target (".") is a *directory*. Processing the nested entries forces the
                 // extractor to resolve/descend through that type-mismatched reparse point, which Windows rejects,

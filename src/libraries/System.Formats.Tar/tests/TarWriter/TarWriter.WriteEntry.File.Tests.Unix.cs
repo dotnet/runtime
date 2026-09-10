@@ -35,23 +35,21 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                {
-                    await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
-                    TarReader reader = readerHolder;
+                await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
-                    Assert.Equal(expectedFormat, entry.Format);
+                PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
+                Assert.Equal(expectedFormat, entry.Format);
 
-                    Assert.NotNull(entry);
-                    Assert.Equal(fifoName, entry.Name);
-                    Assert.Equal(DefaultLinkName, entry.LinkName);
-                    Assert.Equal(TarEntryType.Fifo, entry.EntryType);
-                    Assert.Null(entry.DataStream);
+                Assert.NotNull(entry);
+                Assert.Equal(fifoName, entry.Name);
+                Assert.Equal(DefaultLinkName, entry.LinkName);
+                Assert.Equal(TarEntryType.Fifo, entry.EntryType);
+                Assert.Null(entry.DataStream);
 
-                    VerifyPlatformSpecificMetadata(fifoPath, entry);
+                VerifyPlatformSpecificMetadata(fifoPath, entry);
 
-                    Assert.Null(await GetNextEntry(reader, async: isAsync));
-                }
+                Assert.Null(await GetNextEntry(reader, async: isAsync));
             }, $"{format}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
@@ -80,26 +78,24 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                {
-                    await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
-                    TarReader reader = readerHolder;
+                await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
-                    Assert.Equal(expectedFormat, entry.Format);
+                PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
+                Assert.Equal(expectedFormat, entry.Format);
 
-                    Assert.NotNull(entry);
-                    Assert.Equal(AssetBlockDeviceFileName, entry.Name);
-                    Assert.Equal(DefaultLinkName, entry.LinkName);
-                    Assert.Equal(TarEntryType.BlockDevice, entry.EntryType);
-                    Assert.Null(entry.DataStream);
+                Assert.NotNull(entry);
+                Assert.Equal(AssetBlockDeviceFileName, entry.Name);
+                Assert.Equal(DefaultLinkName, entry.LinkName);
+                Assert.Equal(TarEntryType.BlockDevice, entry.EntryType);
+                Assert.Null(entry.DataStream);
 
-                    VerifyPlatformSpecificMetadata(blockDevicePath, entry);
+                VerifyPlatformSpecificMetadata(blockDevicePath, entry);
 
-                    Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
-                    Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
+                Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
+                Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
 
-                    Assert.Null(await GetNextEntry(reader, async: isAsync));
-                }
+                Assert.Null(await GetNextEntry(reader, async: isAsync));
             }, $"{format}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
@@ -112,6 +108,7 @@ namespace System.Formats.Tar.Tests
                 string[] parts = args.Split('|');
                 TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(parts[0]);
                 bool isAsync = bool.Parse(parts[1]);
+
                 using TempDirectory root = new TempDirectory();
                 string characterDevicePath = Path.Join(root.Path, AssetCharacterDeviceFileName);
 
@@ -126,26 +123,24 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                {
-                    await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
-                    TarReader reader = readerHolder;
+                await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
-                    Assert.Equal(expectedFormat, entry.Format);
+                PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
+                Assert.Equal(expectedFormat, entry.Format);
 
-                    Assert.NotNull(entry);
-                    Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
-                    Assert.Equal(DefaultLinkName, entry.LinkName);
-                    Assert.Equal(TarEntryType.CharacterDevice, entry.EntryType);
-                    Assert.Null(entry.DataStream);
+                Assert.NotNull(entry);
+                Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
+                Assert.Equal(DefaultLinkName, entry.LinkName);
+                Assert.Equal(TarEntryType.CharacterDevice, entry.EntryType);
+                Assert.Null(entry.DataStream);
 
-                    VerifyPlatformSpecificMetadata(characterDevicePath, entry);
+                VerifyPlatformSpecificMetadata(characterDevicePath, entry);
 
-                    Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
-                    Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
+                Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
+                Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
 
-                    Assert.Null(await GetNextEntry(reader, async: isAsync));
-                }
+                Assert.Null(await GetNextEntry(reader, async: isAsync));
             }, $"{format}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
@@ -185,22 +180,20 @@ namespace System.Formats.Tar.Tests
                 }
                 archive.Seek(0, SeekOrigin.Begin);
 
-                {
-                    await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
-                    TarReader reader = readerHolder;
+                await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
-                    Assert.NotNull(entry);
+                PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
+                Assert.NotNull(entry);
 
-                    Assert.Equal(string.Empty, entry.GroupName);
-                    Assert.Equal(groupId, entry.Gid);
+                Assert.Equal(string.Empty, entry.GroupName);
+                Assert.Equal(groupId, entry.Gid);
 
-                    string extractedPath = Path.Join(root.Path, "extracted.txt");
-                    await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
-                    Assert.True(File.Exists(extractedPath));
+                string extractedPath = Path.Join(root.Path, "extracted.txt");
+                await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
+                Assert.True(File.Exists(extractedPath));
 
-                    Assert.Null(await GetNextEntry(reader, async: isAsync));
-                }
+                Assert.Null(await GetNextEntry(reader, async: isAsync));
             }, $"{f}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
@@ -240,22 +233,20 @@ namespace System.Formats.Tar.Tests
                 }
                 archive.Seek(0, SeekOrigin.Begin);
 
-                {
-                    await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
-                    TarReader reader = readerHolder;
+                await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
-                    Assert.NotNull(entry);
+                PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
+                Assert.NotNull(entry);
 
-                    Assert.Equal(string.Empty, entry.UserName);
-                    Assert.Equal(userId, entry.Uid);
+                Assert.Equal(string.Empty, entry.UserName);
+                Assert.Equal(userId, entry.Uid);
 
-                    string extractedPath = Path.Join(root.Path, "extracted.txt");
-                    await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
-                    Assert.True(File.Exists(extractedPath));
+                string extractedPath = Path.Join(root.Path, "extracted.txt");
+                await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
+                Assert.True(File.Exists(extractedPath));
 
-                    Assert.Null(await GetNextEntry(reader, async: isAsync));
-                }
+                Assert.Null(await GetNextEntry(reader, async: isAsync));
             }, $"{f}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
@@ -307,25 +298,23 @@ namespace System.Formats.Tar.Tests
                 }
                 archive.Seek(0, SeekOrigin.Begin);
 
-                {
-                    await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
-                    TarReader reader = readerHolder;
+                await using TarReaderHolder readerHolder = CreateTarReader(archive, isAsync, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
-                    Assert.NotNull(entry);
+                PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
+                Assert.NotNull(entry);
 
-                    Assert.Equal(string.Empty, entry.GroupName);
-                    Assert.Equal(groupId, entry.Gid);
+                Assert.Equal(string.Empty, entry.GroupName);
+                Assert.Equal(groupId, entry.Gid);
 
-                    Assert.Equal(string.Empty, entry.UserName);
-                    Assert.Equal(userId, entry.Uid);
+                Assert.Equal(string.Empty, entry.UserName);
+                Assert.Equal(userId, entry.Uid);
 
-                    string extractedPath = Path.Join(root.Path, "extracted.txt");
-                    await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
-                    Assert.True(File.Exists(extractedPath));
+                string extractedPath = Path.Join(root.Path, "extracted.txt");
+                await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
+                Assert.True(File.Exists(extractedPath));
 
-                    Assert.Null(await GetNextEntry(reader, async: isAsync));
-                }
+                Assert.Null(await GetNextEntry(reader, async: isAsync));
             }, $"{f}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 

@@ -144,7 +144,7 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, TarEntryFormat.V7, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                TarEntry entry = entryFormat switch
+                TarEntry entryToWrite = entryFormat switch
                 {
                     TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
                     TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
@@ -153,7 +153,7 @@ namespace System.Formats.Tar.Tests
                 };
                 // Should be written in the format of the entry
 
-                await WriteEntry(writer, entry, async);
+                await WriteEntry(writer, entryToWrite, async);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
@@ -189,8 +189,8 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, writerFormat, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
-                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
-                await WriteEntry(writer, entry, async);
+                V7TarEntry entryToWrite = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                await WriteEntry(writer, entryToWrite, async);
             }
 
             archive.Seek(0, SeekOrigin.Begin);

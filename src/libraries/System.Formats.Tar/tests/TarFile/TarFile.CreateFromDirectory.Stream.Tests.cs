@@ -90,12 +90,10 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
+        [MemberData(nameof(GetTwoBooleansData))]
         public async Task CreateFromDirectory_UsesWriterOptions(bool toggle, bool async)
         {
+            // Toggle an option property to verify changing options changes the produced archive.
             bool preserveLinks = toggle;
 
             using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();

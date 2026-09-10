@@ -217,28 +217,26 @@ namespace System.Formats.Tar.Tests
         public async Task Throw_FifoContainsNonZeroDataSection(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "hdr-only");
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+
+            Assert.NotNull(await GetNextEntry(reader, async: async)); // Just a regular file
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+
+            if (async)
             {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
-
-                Assert.NotNull(await GetNextEntry(reader, async: async)); // Just a regular file
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-
-                if (async)
-                {
-                    await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-                }
-                        }
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
+            }
         }
 
         [Theory]
@@ -246,22 +244,20 @@ namespace System.Formats.Tar.Tests
         public async Task Throw_SingleExtendedAttributesEntryWithNoActualEntry(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-path-hdr");
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                if (async)
-                {
-                    await Assert.ThrowsAsync<EndOfStreamException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<EndOfStreamException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-                }
-                        }
+            if (async)
+            {
+                await Assert.ThrowsAsync<EndOfStreamException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<EndOfStreamException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
+            }
         }
 
-            // Sparse entries were created for the GNU format, so they are very rare entry types which are excluded from this test method:
+        // Sparse entries were created for the GNU format, so they are very rare entry types which are excluded from this test method:
         [Fact]
         public async Task ReadDataStreamOfGoLangTarGzGnu()
         {
@@ -275,16 +271,14 @@ namespace System.Formats.Tar.Tests
         public async Task AllowSpacesInOctalFields(string folderName, string testCaseName, bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, folderName, testCaseName);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry entry;
-                while ((entry = await GetNextEntry(reader, async: async)) != null)
-                {
-                    AssertExtensions.GreaterThan(entry.Checksum, 0);
-                    AssertExtensions.GreaterThan((int)entry.Mode, 0);
-        }
+            TarEntry entry;
+            while ((entry = await GetNextEntry(reader, async: async)) != null)
+            {
+                AssertExtensions.GreaterThan(entry.Checksum, 0);
+                AssertExtensions.GreaterThan((int)entry.Mode, 0);
             }
         }
 
@@ -293,18 +287,16 @@ namespace System.Formats.Tar.Tests
         public async Task Throw_ArchivesWithRandomChars(string testCaseName, bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                if (async)
-                {
-                    await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-        }
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
             }
         }
 
@@ -315,19 +307,17 @@ namespace System.Formats.Tar.Tests
             // writer-big has a header for a 16G file but not its contents.
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big");
             // MemoryStream throws when we try to change its Position past its Length.
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                if (async)
-                {
-                    await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-                }
-                        }
+            if (async)
+            {
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
+            }
         }
 
         [Theory]
@@ -335,12 +325,10 @@ namespace System.Formats.Tar.Tests
         public async Task GarbageEntryChecksumZeroReturnNull(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                Assert.Null(await GetNextEntry(reader, async: async));
-                        }
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -348,20 +336,18 @@ namespace System.Formats.Tar.Tests
         public async Task InvalidChecksum_ThrowsInvalidDataException(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "node-tar", "bad-cksum");
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                await GetNextEntry(reader, async: async); // first entry is okay
-                if (async)
-                {
-                    await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-                }
-                        }
+            await GetNextEntry(reader, async: async); // first entry is okay
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
+            }
         }
 
         [Theory]
@@ -372,18 +358,16 @@ namespace System.Formats.Tar.Tests
             // pax-nil-sparse-data, pax-nil-sparse-hole, pax-sparse-big
             // There are PAX archives archives in the golang folder that have extended attributes for treating a regular file as a sparse file.
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, testFolderName, testCaseName);
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                if (async)
-                {
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<NotSupportedException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-                }
+            if (async)
+            {
+                await Assert.ThrowsAsync<NotSupportedException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
             }
         }
 
@@ -408,13 +392,11 @@ namespace System.Formats.Tar.Tests
             Assert.True(archiveIsExpected);
             // Verify the reader doesn't return the data past the trailing null.
 
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: true);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: true);
+            TarReader reader = readerHolder;
 
-                TarEntry firstEntry = await GetNextEntry(reader, async: async);
-                Assert.Equal(FileName, firstEntry.Name);
-                        }
+            TarEntry firstEntry = await GetNextEntry(reader, async: async);
+            Assert.Equal(FileName, firstEntry.Name);
         }
 
         [Theory]
@@ -422,27 +404,25 @@ namespace System.Formats.Tar.Tests
         public async Task DirectoryListRegularFileAndSparse(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "gnu-incremental");
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+
+            TarEntry directoryList = await GetNextEntry(reader, async: async);
+
+            Assert.Equal(TarEntryType.DirectoryList, directoryList.EntryType);
+            Assert.NotNull(directoryList.DataStream);
+            Assert.Equal(14, directoryList.Length);
+
+            Assert.NotNull(await GetNextEntry(reader, async: async));
+
+            if (async)
             {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
-
-                TarEntry directoryList = await GetNextEntry(reader, async: async);
-
-                Assert.Equal(TarEntryType.DirectoryList, directoryList.EntryType);
-                Assert.NotNull(directoryList.DataStream);
-                Assert.Equal(14, directoryList.Length);
-
-                Assert.NotNull(await GetNextEntry(reader, async: async));
-
-                if (async)
-                {
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<NotSupportedException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-                }
-                        }
+                await Assert.ThrowsAsync<NotSupportedException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
+            }
         }
 
         [Theory]
@@ -452,19 +432,17 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big-long");
             // The extended attribute 'size' has the value 17179869184
             // Exception message: Stream length must be non-negative and less than 2^31 - 1 - origin
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                if (async)
-                {
-                    await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await GetNextEntry(reader, async: async));
-                }
-                else
-                {
-                    Assert.Throws<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-                }
-                        }
+            if (async)
+            {
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await GetNextEntry(reader, async: async));
+            }
+            else
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
+            }
         }
 
         private static async Task VerifyDataStreamOfTarUncompressedInternal(string testFolderName, string testCaseName, bool copyData, bool async)
@@ -482,32 +460,30 @@ namespace System.Formats.Tar.Tests
 
         private static async Task VerifyDataStreamOfTarInternal(Stream archiveStream, bool copyData, bool async)
         {
-            {
-                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
-                TarReader reader = readerHolder;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-                TarEntry entry;
-                while ((entry = await GetNextEntry(reader, copyData, async: async)) != null)
+            TarEntry entry;
+            while ((entry = await GetNextEntry(reader, copyData, async: async)) != null)
+            {
+                if (entry.EntryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
                 {
-                    if (entry.EntryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
+                    if (entry.Length == 0)
                     {
-                        if (entry.Length == 0)
+                        Assert.Null(entry.DataStream);
+                    }
+                    else
+                    {
+                        Assert.NotNull(entry.DataStream);
+                        Assert.Equal(entry.DataStream.Length, entry.Length);
+                        if (copyData)
                         {
-                            Assert.Null(entry.DataStream);
-                        }
-                        else
-                        {
-                            Assert.NotNull(entry.DataStream);
-                            Assert.Equal(entry.DataStream.Length, entry.Length);
-                            if (copyData)
-                            {
-                                Assert.True(entry.DataStream.CanSeek);
-                                Assert.Equal(0, entry.DataStream.Position);
-                            }
+                            Assert.True(entry.DataStream.CanSeek);
+                            Assert.Equal(0, entry.DataStream.Position);
                         }
                     }
                 }
-                        }
+            }
         }
     }
 }

@@ -311,7 +311,7 @@ namespace System.Formats.Tar.Tests
             using WrappedStream wrapped = new WrappedStream(archive, canRead: true, canWrite: false, canSeek: false);
             UstarTarEntry entry;
             Stream oldStream;
-            // Seekable
+            // Unseekable
             {
                 await using TarReaderHolder readerHolder = CreateTarReader(wrapped, async, leaveOpen: false);
                 TarReader reader = readerHolder;
@@ -642,6 +642,7 @@ namespace System.Formats.Tar.Tests
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
         }
+
         [Theory]
         [MemberData(nameof(GetBooleanData))]
         public async Task Read_PaxEntryWithOnlyLinkpath_PreservesUstarPrefix(bool async)
@@ -774,48 +775,43 @@ namespace System.Formats.Tar.Tests
 
         private static async Task WriteMetadataEntry(bool async, MemoryStream archive, string metadataType, int size)
         {
-        // Writes a TAR entry with metadata of the specified size.
-        // For GNU types, size is the on-disk block size (string length = size - 1 for null terminator).
-        // For PAX, size is the extended attribute value length; the total block will be
-        // slightly larger due to framing overhead (length prefixes, key names, default attributes).
+            // Writes a TAR entry with metadata of the specified size.
+            // For GNU types, size is the on-disk block size (string length = size - 1 for null terminator).
+            // For PAX, size is the extended attribute value length; the total block will be
+            // slightly larger due to framing overhead (length prefixes, key names, default attributes).
             switch (metadataType)
             {
                 case "PaxExtendedAttributes":
                 {
-                    var extendedAttributes = new Dictionary<string, string>
+                    Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
                     {
                         ["bigkey"] = new string('x', size)
                     };
-                    {
-                        await using TarWriterHolder paxWriterHolder = CreateTarWriter(archive, async, TarEntryFormat.Pax, leaveOpen: true);
-                        TarWriter paxWriter = paxWriterHolder;
 
-                        await WriteEntry(paxWriter, new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes), async);
-                                        }
+                    await using TarWriterHolder paxWriterHolder = CreateTarWriter(archive, async, TarEntryFormat.Pax, leaveOpen: true);
+                    TarWriter paxWriter = paxWriterHolder;
+
+                    await WriteEntry(paxWriter, new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes), async);
                     break;
                 }
 
                 case "GnuLongPath":
                 {
-                    {
-                        await using TarWriterHolder gnuPathWriterHolder = CreateTarWriter(archive, async, TarEntryFormat.Gnu, leaveOpen: true);
-                        TarWriter gnuPathWriter = gnuPathWriterHolder;
+                    await using TarWriterHolder gnuPathWriterHolder = CreateTarWriter(archive, async, TarEntryFormat.Gnu, leaveOpen: true);
+                    TarWriter gnuPathWriter = gnuPathWriterHolder;
 
-                        await WriteEntry(gnuPathWriter, new GnuTarEntry(TarEntryType.RegularFile, new string('a', size - 1)), async);
-                                        }
+                    await WriteEntry(gnuPathWriter, new GnuTarEntry(TarEntryType.RegularFile, new string('a', size - 1)), async);
                     break;
                 }
 
                 case "GnuLongLink":
                 {
-                    {
-                        await using TarWriterHolder gnuLinkWriterHolder = CreateTarWriter(archive, async, TarEntryFormat.Gnu, leaveOpen: true);
-                        TarWriter gnuLinkWriter = gnuLinkWriterHolder;
+                    await using TarWriterHolder gnuLinkWriterHolder = CreateTarWriter(archive, async, TarEntryFormat.Gnu, leaveOpen: true);
+                    TarWriter gnuLinkWriter = gnuLinkWriterHolder;
 
-                        GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
-                        entry.LinkName = new string('a', size - 1);
-                        await WriteEntry(gnuLinkWriter, entry, async);
-                                        }
+                    GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
+                    entry.LinkName = new string('a', size - 1);
+                    await WriteEntry(gnuLinkWriter, entry, async);
                     break;
                 }
             }

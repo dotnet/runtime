@@ -249,10 +249,10 @@ namespace System.Formats.Tar.Tests
             using TempDirectory root = new TempDirectory();
 
             string sharedRootFolders = Path.Join(root.Path, "folder with spaces", new string('a', 100));
+            // Paths don't fit in the standard 'name' field, but they differ in the filename,
+            // which is fully stored as an extended attribute
             string path1 = Path.Join(sharedRootFolders, "entry 1 with spaces.txt");
             string path2 = Path.Join(sharedRootFolders, "entry 2 with spaces.txt");
-                // Paths don't fit in the standard 'name' field, but they differ in the filename,
-                // which is fully stored as an extended attribute
 
             using MemoryStream stream = new MemoryStream();
             {

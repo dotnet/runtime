@@ -29,14 +29,14 @@ namespace System.Formats.Tar.Tests
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ExtractToFile(blockDevice, path, overwrite: false, async));
             Assert.False(File.Exists(path));
 
-            PosixTarEntry characterDevice = await GetNextEntry(reader, async: async) as PosixTarEntry;
             // Character device requires elevation for writing
+            PosixTarEntry characterDevice = await GetNextEntry(reader, async: async) as PosixTarEntry;
             Assert.NotNull(characterDevice);
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ExtractToFile(characterDevice, path, overwrite: false, async));
             Assert.False(File.Exists(path));
 
-            PosixTarEntry fifo = await GetNextEntry(reader, async: async) as PosixTarEntry;
             // Fifo does not require elevation, should succeed
+            PosixTarEntry fifo = await GetNextEntry(reader, async: async) as PosixTarEntry;
             Assert.NotNull(fifo);
             await ExtractToFile(fifo, path, overwrite: false, async);
             Assert.True(File.Exists(path));

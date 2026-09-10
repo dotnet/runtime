@@ -19,8 +19,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteRegularFile(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry regularFileToWrite = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -42,8 +42,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteHardLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry hardLinkToWrite = new PaxTarEntry(TarEntryType.HardLink, InitialEntryName);
@@ -65,8 +65,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteSymbolicLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry symbolicLinkToWrite = new PaxTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
@@ -88,8 +88,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteDirectory(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry directoryToWrite = new PaxTarEntry(TarEntryType.Directory, InitialEntryName);
@@ -111,8 +111,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteCharacterDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry charDeviceToWrite = new PaxTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
@@ -134,8 +134,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteBlockDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry blockDeviceToWrite = new PaxTarEntry(TarEntryType.BlockDevice, InitialEntryName);
@@ -157,8 +157,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteFifo(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry fifoToWrite = new PaxTarEntry(TarEntryType.Fifo, InitialEntryName);
@@ -186,8 +186,8 @@ namespace System.Formats.Tar.Tests
             extendedAttributes.Add(expectedKey, expectedValue);
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry regularFileToWrite = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
@@ -221,8 +221,8 @@ namespace System.Formats.Tar.Tests
         {
             DateTimeOffset minimumTime = DateTimeOffset.UtcNow - TimeSpan.FromHours(1);
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry regularFileToWrite = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -248,8 +248,8 @@ namespace System.Formats.Tar.Tests
             extendedAttributes.Add(PaxEaCTime, GetTimestampStringFromDateTimeOffset(TestChangeTime));
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry regularFileToWrite = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
@@ -277,8 +277,8 @@ namespace System.Formats.Tar.Tests
             string groupName = "IAmAGroupNameWhoseLengthIsWayBeyondTheThirtyTwoByteLimit";
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry regularFileToWrite = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -320,8 +320,8 @@ namespace System.Formats.Tar.Tests
         public async Task WritePaxAttributes_Name_AutomaticallyAdded(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry regularFileToWrite = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -346,8 +346,8 @@ namespace System.Formats.Tar.Tests
 
             string longSymbolicLinkName = new string('a', 101);
             string longHardLinkName = new string('b', 101);
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxTarEntry symlinkToWrite = new PaxTarEntry(TarEntryType.SymbolicLink, "symlink");
@@ -387,8 +387,8 @@ namespace System.Formats.Tar.Tests
         public async Task Add_Empty_GlobalExtendedAttributes(bool async)
         {
             using MemoryStream archive = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archive, async, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 PaxGlobalExtendedAttributesTarEntry geaToWrite = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
@@ -447,8 +447,8 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(timestamp, ctime);
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 await WriteEntry(writer, entry, async);

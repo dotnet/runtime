@@ -113,7 +113,7 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(GetPaxExtendedAttributesRoundtripTestDataAndBooleanData))]
         public async Task PaxExtendedAttribute_Roundtrips(string key, string value, bool async)
         {
-            // Verify the same roundtrip works with async APIs
+            // Verify the same roundtrip works with sync and async APIs
             using MemoryStream stream = new MemoryStream();
             {
                 await using TarWriterHolder writerHolder = CreateTarWriter(stream, async, leaveOpen: true);

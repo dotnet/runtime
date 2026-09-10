@@ -53,8 +53,8 @@ namespace System.Formats.Tar.Tests
             using MemoryStream ms = new();
             Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
+            await using (TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 await WriteEntry(writer, entry, async);
@@ -107,8 +107,8 @@ namespace System.Formats.Tar.Tests
             using MemoryStream ms = new();
             Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
+            await using (TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 await WriteEntry(writer, entry, async);
@@ -155,8 +155,8 @@ namespace System.Formats.Tar.Tests
             using MemoryStream ms = new();
             Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
+            await using (TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 await WriteEntry(writer, posixEntry, async);
@@ -218,8 +218,8 @@ namespace System.Formats.Tar.Tests
             }
 
             using MemoryStream ms = new();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 await WriteEntry(writer, writeEntry, async);
@@ -268,8 +268,8 @@ namespace System.Formats.Tar.Tests
             }
 
             using MemoryStream ms = new();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 await WriteEntry(writer, writeEntry, async);

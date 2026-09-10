@@ -17,8 +17,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteRegularFile(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry regularFileToWrite = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -40,8 +40,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteHardLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry hardLinkToWrite = new GnuTarEntry(TarEntryType.HardLink, InitialEntryName);
@@ -63,8 +63,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteSymbolicLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry symbolicLinkToWrite = new GnuTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
@@ -86,8 +86,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteDirectory(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry directoryToWrite = new GnuTarEntry(TarEntryType.Directory, InitialEntryName);
@@ -109,8 +109,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteCharacterDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry charDeviceToWrite = new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
@@ -132,8 +132,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteBlockDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry blockDeviceToWrite = new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName);
@@ -155,8 +155,8 @@ namespace System.Formats.Tar.Tests
         public async Task WriteFifo(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry fifoToWrite = new GnuTarEntry(TarEntryType.Fifo, InitialEntryName);
@@ -188,8 +188,8 @@ namespace System.Formats.Tar.Tests
             string longName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry entryToWrite = new GnuTarEntry(entryType, longName);
@@ -220,8 +220,8 @@ namespace System.Formats.Tar.Tests
             string longLinkName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry entryToWrite = new GnuTarEntry(entryType, "file.txt");
@@ -251,8 +251,8 @@ namespace System.Formats.Tar.Tests
             string longLinkName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
                 GnuTarEntry entryToWrite = new GnuTarEntry(entryType, longName);
