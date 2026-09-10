@@ -486,10 +486,15 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 
 extern "C" void* GetCurrentSP();
 
-// Check if JMPABS instruction is available (queries cached APX instruction set flag)
-bool IsJmpAbsAvailable();
+// true when the APX JMPABS instruction is available; set by EEJitManager::SetCpuInfo() at startup. A DAC global.
+GVAL_DECL(bool, g_isJmpAbsAvailable);
 
-// Emits:
+inline bool IsJmpAbsAvailable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return g_isJmpAbsAvailable;
+}
+
 // Get Rel32 destination, emit jumpStub if necessary
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator = NULL, bool throwOnOutOfMemoryWithinRange = true);
