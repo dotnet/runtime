@@ -13556,6 +13556,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 assert(embedClsHnd != nullptr);
                                 ValueNum handleVN = vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL);
                                 tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
+
+                                if (tree->IndirMayFault(this))
+                                {
+                                    // The value is known, but the load still dereferences "addr" and can
+                                    // raise NullReferenceException. It has to be recorded here because
+                                    // fgValueNumberAddExceptionSetForIndirection skips indirections whose
+                                    // value numbers are constants.
+                                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair,
+                                                                         fgValueNumberIndirNullCheckExceptions(addr));
+                                }
+
                                 returnsTypeHandle = true;
                             }
                         }
