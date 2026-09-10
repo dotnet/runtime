@@ -36,5 +36,9 @@ namespace System.Text.Json.SourceGeneration
         public required ImmutableEquatableArray<string> ContextClassDeclarations { get; init; }
 
         public required SourceGenerationOptionsSpec? GeneratedOptionsSpec { get; init; }
+
+        public required TargetFramework TargetFramework { get; init; }
+
+        public required bool UseUpdatedMemorySafetyRules { get; init; }
     }
 }

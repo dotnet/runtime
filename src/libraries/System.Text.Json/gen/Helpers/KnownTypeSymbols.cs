@@ -279,6 +279,16 @@ namespace System.Text.Json.SourceGeneration
             && GetOrResolveType("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute", ref _OverloadResolutionPriorityAttributeType) is not null;
         private Option<INamedTypeSymbol?> _OverloadResolutionPriorityAttributeType;
 
+        // Use the consumer's core library, including reference and implementation assemblies.
+        public TargetFramework TargetFramework =>
+            Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly.Name switch
+            {
+                "System.Runtime" or "System.Private.CoreLib" => TargetFramework.NetCoreApp,
+                "netstandard" => TargetFramework.NetStandard,
+                "mscorlib" => TargetFramework.NetFramework,
+                _ => TargetFramework.Unknown,
+            };
+
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
 

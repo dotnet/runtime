@@ -9,6 +9,18 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests
     {
+        [Theory]
+        [InlineData(typeof(ThrowingNonPublicConstructor))]
+        [InlineData(typeof(ThrowingNonPublicConstructor<int>))]
+        public async Task NonPublicConstructors_ThrowOriginalException(Type type)
+        {
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper("""{"Value":42}""", type));
+
+            Assert.Equal("Constructor failure.", exception.Message);
+            Assert.Contains(nameof(ThrowingNonPublicConstructor), exception.StackTrace);
+        }
+
         [Fact]
         public async Task MultipleProperties_Cannot_BindTo_TheSame_ConstructorParameter()
         {

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -701,10 +702,6 @@ namespace System.Text.Json.Serialization.Tests
             internal readonly int GetNumber() => Number;
         }
 
-        /// <summary>
-        /// Generic type with inaccessible [JsonInclude] properties to exercise reflection fallback
-        /// (UnsafeAccessor does not support generic types).
-        /// </summary>
         public class GenericClassWithPrivateJsonIncludeProperties<T>
         {
             [JsonInclude]
@@ -824,7 +821,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public virtual async Task JsonInclude_GenericType_PrivateProperties_CanRoundtrip()
         {
-            // Generic types use reflection fallback (UnsafeAccessor doesn't support generics).
             var obj = GenericClassWithPrivateJsonIncludeProperties<int>.Create(42, "test");
             string json = await Serializer.SerializeWrapper(obj);
             Assert.Contains(@"""Value"":42", json);
@@ -833,6 +829,315 @@ namespace System.Text.Json.Serialization.Tests
             var deserialized = await Serializer.DeserializeWrapper<GenericClassWithPrivateJsonIncludeProperties<int>>(json);
             Assert.Equal(42, deserialized.GetValue());
             Assert.Equal("test", deserialized.GetLabel());
+        }
+
+        public struct GenericStructWithPrivateJsonIncludeProperties<T>
+        {
+            [JsonInclude]
+            private T Value { get; set; }
+
+            [JsonInclude]
+            private string Label { get; set; }
+        }
+
+        [Theory]
+        [InlineData(typeof(GenericStructWithPrivateJsonIncludeProperties<int>), """{"Value":42,"Label":"test"}""")]
+        [InlineData(typeof(GenericStructWithPrivateJsonIncludeProperties<string>), """{"Value":"hello","Label":"test"}""")]
+        public async Task JsonInclude_GenericStruct_PrivateProperties_CanRoundtrip(Type type, string json)
+        {
+            object result = await Serializer.DeserializeWrapper(json, type);
+            JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(result, type));
+        }
+
+        public struct GenericStructWithThrowingAccessors<T>
+        {
+            [JsonInclude]
+            private T Value
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                get => throw new InvalidOperationException("Getter failure.");
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                set => throw new InvalidOperationException("Setter failure.");
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task JsonInclude_GenericStruct_ThrowingAccessors_PropagateOriginalException(bool serialize)
+        {
+            Func<Task> action = serialize
+                ? () => Serializer.SerializeWrapper(default(GenericStructWithThrowingAccessors<int>))
+                : () => Serializer.DeserializeWrapper<GenericStructWithThrowingAccessors<int>>("""{"Value":42}""");
+
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(action);
+            Assert.Equal(serialize ? "Getter failure." : "Setter failure.", exception.Message);
+            Assert.Contains(nameof(GenericStructWithThrowingAccessors<int>), exception.StackTrace);
+        }
+
+        public class GenericClassWithReadOnlyJsonIncludeMembers<T>
+        {
+            [JsonInclude]
+            [JsonPropertyName("Value")]
+            private readonly T _value;
+
+            [JsonInclude]
+            private string Label { get; } = "initial";
+
+            public GenericClassWithReadOnlyJsonIncludeMembers() : this(default!) { }
+
+            public GenericClassWithReadOnlyJsonIncludeMembers(T value) => _value = value;
+
+            public T GetValue() => _value;
+        }
+
+        [Theory]
+        [InlineData("""{"Value":42}""")]
+        [InlineData("""{"Label":"changed"}""")]
+        public async Task JsonInclude_GenericReadOnlyMembers_AreNotDeserialized(string json)
+        {
+            var result = await Serializer.DeserializeWrapper<GenericClassWithReadOnlyJsonIncludeMembers<int>>(json);
+            Assert.Equal(0, result.GetValue());
+            JsonTestHelper.AssertJsonEqual("""{"Value":0,"Label":"initial"}""", await Serializer.SerializeWrapper(result));
+        }
+
+        public class GenericClassWithPrivateJsonIncludeFields<T>
+        {
+            [JsonInclude]
+            [JsonPropertyName("Value")]
+            private T _value;
+
+            [JsonInclude]
+            [JsonPropertyName("Label")]
+            private string _label;
+
+            public GenericClassWithPrivateJsonIncludeFields() : this(default!, "initial") { }
+
+            public GenericClassWithPrivateJsonIncludeFields(T value, string label)
+            {
+                _value = value;
+                _label = label;
+            }
+
+            public T GetValue() => _value;
+            public string GetLabel() => _label;
+        }
+
+        public struct GenericStructWithPrivateJsonIncludeFields<T>
+        {
+            [JsonInclude]
+            [JsonPropertyName("Value")]
+            private T _value;
+
+            [JsonInclude]
+            [JsonPropertyName("Label")]
+            private string _label;
+
+            public GenericStructWithPrivateJsonIncludeFields(T value, string label)
+            {
+                _value = value;
+                _label = label;
+            }
+
+            public readonly T GetValue() => _value;
+            public readonly string GetLabel() => _label;
+        }
+
+        [Theory]
+        [InlineData(typeof(GenericClassWithPrivateJsonIncludeFields<int>), """{"Value":42,"Label":"test"}""")]
+        [InlineData(typeof(GenericClassWithPrivateJsonIncludeFields<string>), """{"Value":"hello","Label":"test"}""")]
+        [InlineData(typeof(GenericStructWithPrivateJsonIncludeFields<int>), """{"Value":42,"Label":"test"}""")]
+        [InlineData(typeof(GenericStructWithPrivateJsonIncludeFields<string>), """{"Value":"hello","Label":"test"}""")]
+        public async Task JsonInclude_GenericFields_CanRoundtrip(Type type, string json)
+        {
+            object result = await Serializer.DeserializeWrapper(json, type);
+            JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(result, type));
+        }
+
+        public struct StructWithPrivateConstructorAndMembers
+        {
+            public int Value { get; }
+
+            [JsonInclude, JsonPropertyName("Field")]
+            private int _field;
+
+            [JsonInclude, JsonPropertyName("ReadOnly")]
+            private readonly int _readOnly;
+
+            [JsonInclude]
+            private string Property { get; set; }
+
+            [JsonInclude]
+            private string InitOnly { get; init; }
+
+            [JsonConstructor]
+            private StructWithPrivateConstructorAndMembers(int value)
+            {
+                Value = value;
+                _field = -1;
+                _readOnly = 23;
+                Property = "initial";
+                InitOnly = "initial";
+            }
+
+            public readonly int GetField() => _field;
+            public readonly int GetReadOnly() => _readOnly;
+        }
+
+        public struct GenericStructWithPrivateInitOnlyMembers<T>
+        {
+            public T Value { get; }
+
+            [JsonInclude, JsonPropertyName("ReadOnly")]
+            private readonly T _readOnly;
+
+            [JsonInclude]
+            private T InitOnly { get; init; }
+
+            [JsonConstructor]
+            private GenericStructWithPrivateInitOnlyMembers(T value)
+            {
+                Value = value;
+                _readOnly = value;
+                InitOnly = default!;
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(StructWithPrivateConstructorAndMembers),
+            """{"Value":42}""",
+            """{"Value":42,"Field":-1,"ReadOnly":23,"Property":"initial","InitOnly":"initial"}""")]
+        [InlineData(typeof(StructWithPrivateConstructorAndMembers),
+            """{"Value":42,"Field":17,"ReadOnly":99,"Property":"updated","InitOnly":"initialized"}""",
+            """{"Value":42,"Field":17,"ReadOnly":23,"Property":"updated","InitOnly":"initialized"}""")]
+        [InlineData(typeof(GenericStructWithPrivateInitOnlyMembers<int>),
+            """{"Value":42,"ReadOnly":99,"InitOnly":17}""",
+            """{"Value":42,"ReadOnly":42,"InitOnly":17}""")]
+        [InlineData(typeof(GenericStructWithPrivateInitOnlyMembers<string>),
+            """{"Value":"constructor","ReadOnly":"ignored","InitOnly":"initialized"}""",
+            """{"Value":"constructor","ReadOnly":"constructor","InitOnly":"initialized"}""")]
+        public async Task JsonInclude_Struct_PrivateConstructorAndMembers_CanRoundtrip(Type type, string json, string expectedJson)
+        {
+            object result = await Serializer.DeserializeWrapper(json, type);
+            Assert.IsType(type, result);
+            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(result, type));
+        }
+
+        public class GenericMemberOuter<TOuter>
+        {
+            public class Nested<TInner>
+            {
+                [JsonInclude]
+                private TOuter OuterValue { get; set; }
+
+                public TInner InnerValue { get; init; }
+            }
+
+            public class Nested
+            {
+                [JsonInclude]
+                private TOuter Value { get; set; }
+            }
+        }
+
+        public class GenericAccessorBase<T>
+        {
+            [JsonInclude]
+            [JsonPropertyName("BaseValue")]
+            private T Value { get; set; }
+        }
+
+        public class GenericAccessorDerived<T> : GenericAccessorBase<T>
+        {
+            [JsonInclude]
+            [JsonPropertyName("DerivedValue")]
+            private T Value { get; set; }
+        }
+
+        public class NonGenericAccessorDerived : GenericAccessorBase<int> { }
+
+        public class GenericAccessorGrandBase<TGrand> where TGrand : class
+        {
+            [JsonInclude]
+            private TGrand GrandSecret { get; set; } = default!;
+        }
+
+        public class GenericAccessorIntermediate<TBase> : GenericAccessorGrandBase<string> where TBase : struct
+        {
+            [JsonInclude]
+            private TBase BaseSecret { get; set; }
+        }
+
+        public class NonGenericAccessorLeaf : GenericAccessorIntermediate<int> { }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task JsonInclude_MultipleGenericBaseTypes_CanRoundtrip(bool deserialize)
+        {
+            const string PopulatedJson = """{"BaseSecret":42,"GrandSecret":"secret"}""";
+            const string DefaultJson = """{"BaseSecret":0,"GrandSecret":null}""";
+
+            NonGenericAccessorLeaf value = deserialize
+                ? await Serializer.DeserializeWrapper<NonGenericAccessorLeaf>(PopulatedJson)
+                : new NonGenericAccessorLeaf();
+
+            JsonTestHelper.AssertJsonEqual(
+                deserialize ? PopulatedJson : DefaultJson,
+                await Serializer.SerializeWrapper(value));
+        }
+
+        public class GenericAccessorDerivedWithPublicProperty<T> : GenericAccessorBase<T>
+        {
+            public T DerivedValue { get; set; }
+        }
+
+        public class GenericAccessorDerivedWithIgnoredProperty<T> : GenericAccessorBase<T>
+        {
+            [JsonIgnore]
+            public T IgnoredValue { get; init; }
+        }
+
+        public class GenericAccessorDerived<TFirst, TSecond> : GenericAccessorBase<TFirst>
+        {
+            [JsonInclude]
+            [JsonPropertyName("DerivedValue")]
+            private TSecond Value { get; set; }
+        }
+
+        public class GenericMembersWithKeywordParameter<@class> where @class : struct
+        {
+            [JsonInclude]
+            private @class Value { get; set; }
+
+            public @class Other { get; init; }
+        }
+
+        public class ConstrainedGenericAccessor<TValue, TCollection>
+            where TValue : struct
+            where TCollection : ICollection<TValue>, new()
+        {
+            [JsonInclude]
+            private TValue Value { get; set; }
+
+            public TCollection Values { get; init; } = new();
+        }
+
+        [Theory]
+        [InlineData(typeof(GenericMemberOuter<int>.Nested<string>), """{"OuterValue":42,"InnerValue":"test"}""")]
+        [InlineData(typeof(GenericMemberOuter<int>.Nested), """{"Value":42}""")]
+        [InlineData(typeof(GenericAccessorDerived<int>), """{"BaseValue":1,"DerivedValue":2}""")]
+        [InlineData(typeof(NonGenericAccessorDerived), """{"BaseValue":42}""")]
+        [InlineData(typeof(GenericAccessorDerivedWithPublicProperty<int>), """{"BaseValue":1,"DerivedValue":2}""")]
+        [InlineData(typeof(GenericAccessorDerivedWithIgnoredProperty<int>), """{"BaseValue":42}""")]
+        [InlineData(typeof(GenericAccessorDerived<int, string>), """{"BaseValue":42,"DerivedValue":"test"}""")]
+        [InlineData(typeof(GenericMembersWithKeywordParameter<int>), """{"Value":42,"Other":7}""")]
+        [InlineData(typeof(ConstrainedGenericAccessor<int, List<int>>), """{"Value":42,"Values":[1,2]}""")]
+        public async Task JsonInclude_GenericNestedAndInheritedMembers_CanRoundtrip(Type type, string json)
+        {
+            object result = await Serializer.DeserializeWrapper(json, type);
+            JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(result, type));
         }
 
         public class ConstraintBase
@@ -864,6 +1169,32 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("test", deserialized.Name);
             Assert.Equal(1, deserialized.Response.Id);
             Assert.Equal("extra", deserialized.Response.Extra);
+        }
+
+        public class ConstrainedGenericClassWithOptionalInitOnlyProperties<T> where T : notnull, ConstraintBase
+        {
+            public T? Response { get; init; }
+            public string Name { get; init; } = "default";
+        }
+
+        [Fact]
+        public async Task InitOnlyProperties_ConstrainedGenericType_PreservesDefaults()
+        {
+            var value = new ConstrainedGenericClassWithOptionalInitOnlyProperties<ConstraintDerived>
+            {
+                Response = new ConstraintDerived { Id = 2, Extra = "optional" },
+                Name = "updated"
+            };
+
+            string json = await Serializer.SerializeWrapper(value);
+            var deserialized = await Serializer.DeserializeWrapper<ConstrainedGenericClassWithOptionalInitOnlyProperties<ConstraintDerived>>(json);
+            Assert.Equal(2, deserialized.Response.Id);
+            Assert.Equal("optional", deserialized.Response.Extra);
+            Assert.Equal("updated", deserialized.Name);
+
+            deserialized = await Serializer.DeserializeWrapper<ConstrainedGenericClassWithOptionalInitOnlyProperties<ConstraintDerived>>("{}");
+            Assert.Null(deserialized.Response);
+            Assert.Equal("default", deserialized.Name);
         }
     }
 }
