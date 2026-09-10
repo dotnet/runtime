@@ -1281,6 +1281,18 @@ extends:
             - WasmTestOnFirefox
             - WasmTestOnV8
 
+      # WebAssembly CoreCLR - EAT (EnableAggressiveTrimming) library tests - only run on linux
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          nameSuffix: _EAT
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+          scenarios:
+            - WasmTestOnChrome
+
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
