@@ -4,6 +4,7 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -93,5 +94,22 @@ namespace System.Diagnostics
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal static void UserBreakpoint() => Break();
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [DebuggerHidden]
+        internal static unsafe void InvokeFunction(IntPtr methodHandle, IntPtr declaringTypeHandle, IntPtr* storage)
+        {
+            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeTypeFromHandle(declaringTypeHandle);
+            MethodBase? method = RuntimeType.GetMethodBase(declaringType, new RuntimeMethodHandleInternal(methodHandle));
+            Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
+
+            MethodBaseInvoker invoker = method is RuntimeMethodInfo methodInfo
+                ? methodInfo.Invoker
+                : ((RuntimeConstructorInfo)method!).Invoker;
+
+            // Exceptions must reach the native func-eval handler without introducing a managed catch site.
+            invoker.InvokeForDebugger(storage);
+        }
     }
 }
