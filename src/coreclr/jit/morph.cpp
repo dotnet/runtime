@@ -9905,6 +9905,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            if (node->GetOperandCount() != 2)
+            {
+                // These simplifications are not worth specializing for explicit rounding modes.
+                break;
+            }
+
             double multiplier = op2Cns->ToScalarFloating(simdBaseType);
 
             if (multiplier == -1.0)
@@ -9987,7 +9993,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 ExtractEffectiveOp(GT_NEG, node, /* destroyNodes */ true);
                 return result;
             }
-            else if ((op1Oper == GT_MUL) || (op1Oper == GT_DIV))
+            else if (((op1Oper == GT_MUL) || (op1Oper == GT_DIV)) && (op1Intrin->GetOperandCount() == 2))
             {
                 GenTree* op2 = op1Intrin->Op(2);
 
@@ -10079,6 +10085,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (GenTree::OperIsCompare(op1Oper))
             {
+                if (op1IsScalar)
+                {
+                    // Reversing a scalar comparison does not complement the upper elements.
+                    break;
+                }
+
                 assert(op1Intrin->GetOperandCount() == 2);
 
                 GenTree* cmpOp1 = op1Intrin->Op(1);
@@ -10087,9 +10099,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 const bool reverseCond = true;
 
                 var_types lookupType =
-                    op1IsScalar ? op1RetType
-                                : GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType,
-                                                                            op1SimdSize, reverseCond);
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType, op1SimdSize,
+                                                              reverseCond);
                 NamedIntrinsic newId =
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op1Oper, lookupType, cmpOp1, cmpOp2,
                                                                  op1SimdBaseType, op1SimdSize, op1IsScalar,
@@ -10129,7 +10140,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 switch (op1Intrinsic)
                 {
                     case NI_AVX_Compare:
-                    case NI_AVX_CompareScalar:
                     case NI_AVX512_CompareMask:
                     {
                         assert(op1Intrin->GetOperandCount() == 3);
@@ -10187,7 +10197,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (newMode != mode)
                         {
                             ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
-                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(mode));
+                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(newMode));
                             fgUpdateConstTreeValueNumber(cmpOp3);
                             return fgMorphHWIntrinsicRequired(op1Intrin);
                         }

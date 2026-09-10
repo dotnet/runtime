@@ -19713,7 +19713,7 @@ GenTree* Compiler::gtExtractSideEffectsFromUnusedNode(GenTree* node)
         JITDUMP("Replace an unused GetType node [%06d] with a NULLCHECK\n", dspTreeID(node));
         ValueNumPair vnPair = node->gtVNPair;
         node                = gtNewNullCheck(obj);
-        if (vnPair.BothDefined())
+        if ((vnStore != nullptr) && vnPair.BothDefined())
         {
             node->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnStore->VNPExceptionSet(vnPair));
         }

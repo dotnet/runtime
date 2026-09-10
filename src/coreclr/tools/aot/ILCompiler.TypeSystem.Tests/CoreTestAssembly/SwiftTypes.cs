@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace ILCompiler.Compiler.Tests.Assets.SwiftTypes;
+namespace TypeSystemTests.TestData.SwiftTypes;
 
 [ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Double, ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int16)]
 public struct I64_D_I8_I32_UI16

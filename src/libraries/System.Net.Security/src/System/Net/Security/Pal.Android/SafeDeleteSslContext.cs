@@ -185,7 +185,7 @@ namespace System.Net.Security
                 }
 
                 token.SetPayload(_outputBuffer.ActiveSpan);
-                _outputBuffer.Discard(_outputBuffer.ActiveLength);
+                _outputBuffer.DiscardAll();
             }
         }
 

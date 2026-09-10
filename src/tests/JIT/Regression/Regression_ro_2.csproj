@@ -103,6 +103,7 @@
     <Compile Include="JitBlue\Runtime_127446\Runtime_127446.cs" />
     <Compile Include="JitBlue\Runtime_128062\Runtime_128062.cs" />
     <Compile Include="JitBlue\Runtime_128392\Runtime_128392.cs" />
+    <Compile Include="JitBlue\Runtime_133523\Runtime_133523.cs" />
     <Compile Include="JitBlue\Runtime_128631\Runtime_128631.cs" />
     <Compile Include="JitBlue\Runtime_128801\Runtime_128801.cs" />
     <Compile Include="JitBlue\Runtime_129076\Runtime_129076.cs" />
@@ -139,9 +140,12 @@
     <Compile Include="JitBlue\Runtime_132841\Runtime_132841.cs" />
     <Compile Include="JitBlue\Runtime_132785\Runtime_132785.cs" />
     <Compile Include="JitBlue\Runtime_132902\Runtime_132902.cs" />
+    <Compile Include="JitBlue\Runtime_133092\Runtime_133092.cs" />
     <Compile Include="JitBlue\Runtime_133022\Runtime_133022.cs" />
     <Compile Include="JitBlue\Runtime_133101\Runtime_133101.cs" />
     <Compile Include="JitBlue\Runtime_133207\Runtime_133207.cs" />
+    <Compile Include="JitBlue\Runtime_133518\Runtime_133518.cs" />
+    <Compile Include="JitBlue\Runtime_133521\Runtime_133521.cs" />
   </ItemGroup>
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>
