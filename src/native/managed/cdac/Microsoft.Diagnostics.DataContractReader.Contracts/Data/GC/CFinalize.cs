@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class CFinalize : IData<CFinalize>
 {
     [FieldAddress]
-    public TargetPointer FillPointers { get; }
+    public partial TargetPointer FillPointers { get; }
 }

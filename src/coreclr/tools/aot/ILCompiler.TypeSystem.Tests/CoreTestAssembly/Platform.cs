@@ -234,6 +234,13 @@ namespace System.Runtime.InteropServices
 
 namespace System.Runtime.CompilerServices
 {
+    public sealed class InlineArrayAttribute : Attribute
+    {
+        public InlineArrayAttribute(int length)
+        {
+        }
+    }
+
     public sealed class IsByRefLikeAttribute : Attribute
     {
     }
@@ -291,5 +298,30 @@ namespace System.Runtime.Intrinsics
     {
         private readonly Vector256<T> _lower;
         private readonly Vector256<T> _upper;
+    }
+}
+
+namespace System.Numerics
+{
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal32
+    {
+        private readonly uint _value;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal64
+    {
+        private readonly ulong _value;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal128
+    {
+        private readonly ulong _lower;
+        private readonly ulong _upper;
     }
 }

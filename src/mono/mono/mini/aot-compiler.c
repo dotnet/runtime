@@ -5817,6 +5817,36 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		add_extra_method_with_depth (acfg, method, depth + 1);
 	}
 
+	/*
+	 * Minimal gsharedvt used by llvmonly cannot compile shared methods whose
+	 * signatures contain variable-size value types. Nullable<T>.Box/Unbox have
+	 * such signatures, so their shared implementations are unavailable.
+	 *
+	 * The runtime consequently resolves these helpers to concrete methods and
+	 * adapts gsharedvt callers with out wrappers. Those wrappers are generated
+	 * when the concrete methods are AOT-compiled, while the generic-class scan
+	 * normally skips these methods because they are otherwise sharable.
+	 * Explicitly add the concrete helpers to cover this llvmonly-specific gap.
+	 *
+	 * The rgctx unbox entry (MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX) always resolves
+	 * Unbox, so add Box and Unbox unconditionally; enum-backed Nullable<T> is
+	 * additionally unboxed via UnboxExact from the statically-typed IL lowering
+	 * (handle_unbox_nullable), so add that too.
+	 */
+	if (acfg->aot_opts.llvm_only && mono_class_is_nullable (klass)) {
+		MonoMethod *box = try_get_method_nofail (klass, "Box", 1, 0);
+		if (box)
+			add_extra_method_with_depth (acfg, box, depth + 1);
+		MonoMethod *unbox = try_get_method_nofail (klass, "Unbox", 1, 0);
+		if (unbox)
+			add_extra_method_with_depth (acfg, unbox, depth + 1);
+		if (m_class_is_enumtype (mono_class_get_nullable_param_internal (klass))) {
+			MonoMethod *unbox_exact = try_get_method_nofail (klass, "UnboxExact", 1, 0);
+			if (unbox_exact)
+				add_extra_method_with_depth (acfg, unbox_exact, depth + 1);
+		}
+	}
+
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->type == MONO_TYPE_GENERICINST)

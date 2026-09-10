@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_Arrays_simple2;
+
 using System;
 using Xunit;
 
 public class Simple2_Array_Test
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

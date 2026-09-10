@@ -689,7 +689,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -927,7 +927,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // but using the legacy X509Certificate2 ctor, to test the settings for that set of
             // loader limits with respect to duplicates.
 
-            X509Certificate2 cert = new X509Certificate2(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw);
+            X509Certificate2 cert = TestData.WithDuplicateAttributesPfx((object)null, static (bytes, _) =>
+            {
+                return new X509Certificate2(bytes, TestData.PlaceholderPw);
+            });
 
             using (cert)
             {

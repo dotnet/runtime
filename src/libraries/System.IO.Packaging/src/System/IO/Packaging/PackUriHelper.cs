@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -601,7 +602,9 @@ namespace System.IO.Packaging
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
         /// </summary>
+#pragma warning disable CA1067 // Not overriding Equals(object); changing equality behavior could affect existing case-sensitive comparisons.
         internal sealed class ValidatedPartUri : Uri, IComparable<ValidatedPartUri>, IEquatable<ValidatedPartUri>
+#pragma warning restore CA1067
         {
             //------------------------------------------------------
             //
@@ -650,22 +653,6 @@ namespace System.IO.Packaging
             }
 
             #endregion IEquatable Methods
-
-            #region Overrides
-
-            public override bool Equals(object? obj)
-            {
-                if (obj is ValidatedPartUri other)
-                    return Compare(other) == 0;
-                return false;
-            }
-
-            public override int GetHashCode()
-            {
-                return StringComparer.OrdinalIgnoreCase.GetHashCode(NormalizedPartUriString);
-            }
-
-            #endregion Overrides
 
             #region Internal Properties
 
@@ -855,11 +842,7 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.Compare(
-                    NormalizedPartUriString,
-                    otherPartUri.NormalizedPartUriString,
-                    StringComparison.OrdinalIgnoreCase
-                );
+                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
             }
 
             //------------------------------------------------------
@@ -891,6 +874,37 @@ namespace System.IO.Packaging
             #endregion Private Methods
 
             //------------------------------------------------------
+        }
+
+        /// <summary>
+        /// Compares <see cref="ValidatedPartUri"/> instances for equality using the normalized (upper-cased) part URI
+        /// string comparison implemented by <see cref="IEquatable{ValidatedPartUri}.Equals(ValidatedPartUri)"/>.
+        /// This is used explicitly by internal collections that need case-insensitive part-name
+        /// semantics (e.g. <see cref="ZipPackage"/>'s content-type override dictionary), without
+        /// relying on <see cref="ValidatedPartUri"/> overriding <see cref="object.Equals(object?)"/>
+        /// or <see cref="object.GetHashCode"/>, which would break the equality contract inherited
+        /// from <see cref="Uri"/> when a <see cref="ValidatedPartUri"/> is compared against, or
+        /// co-located in a hash collection with, a plain <see cref="Uri"/> of the same value.
+        /// </summary>
+        internal sealed class ValidatedPartUriEqualityComparer : IEqualityComparer<ValidatedPartUri>
+        {
+            internal static readonly ValidatedPartUriEqualityComparer Instance = new();
+
+            private ValidatedPartUriEqualityComparer() { }
+
+            public bool Equals(ValidatedPartUri? x, ValidatedPartUri? y)
+            {
+                if (ReferenceEquals(x, y))
+                    return true;
+
+                if (x is null || y is null)
+                    return false;
+
+                return ((IEquatable<ValidatedPartUri>)x).Equals(y);
+            }
+
+            public int GetHashCode(ValidatedPartUri obj)
+                => StringComparer.Ordinal.GetHashCode(obj.NormalizedPartUriString);
         }
 
         #endregion Private Class

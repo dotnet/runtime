@@ -102,11 +102,11 @@ namespace System.IO.Compression
             // the lengths need to be converted to nuint for the native call. Rent appropriately sized array from pool
             // This incidentally also protects against concurrent modifications of the sampleLengths that could cause
             // access violations later in native code.
-            byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * Unsafe.SizeOf<nuint>());
+            byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * sizeof(nuint));
             byte[]? dictionaryBuffer = null;
             try
             {
-                Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * Unsafe.SizeOf<nuint>()));
+                Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * sizeof(nuint)));
                 Debug.Assert(lengthsAsNuint.Length == sampleLengths.Length);
 
                 long totalLength = 0;

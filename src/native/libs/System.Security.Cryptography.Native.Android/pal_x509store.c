@@ -18,21 +18,29 @@ typedef enum
     EntryFlags_MatchesCertificate = 4,
 } EntryFlags;
 
-// Returns whether or not the store contains the specified alias
-// If the entry exists, the flags parameter is set based on the contents of the entry
-ARGS_NON_NULL_ALL static bool ContainsEntryForAlias(
-    JNIEnv* env, jobject /*KeyStore*/ store, jobject /*X509Certificate*/ cert, jstring alias, EntryFlags* flags)
+// Determines whether the store contains the specified alias, populating *flags
+// with the entry's contents when present.
+// Returns SUCCESS if the lookup completed (regardless of whether an entry exists),
+// FAIL if a JNI exception was encountered while inspecting the store entry.
+// On SUCCESS, *contains indicates whether an entry exists for the alias.
+ARGS_NON_NULL_ALL static int32_t ContainsEntryForAlias(
+    JNIEnv* env, jobject /*KeyStore*/ store, jobject /*X509Certificate*/ cert, jstring alias, bool* contains, EntryFlags* flags)
 {
-    bool ret = false;
+    int32_t ret = FAIL;
     EntryFlags flagsLocal = EntryFlags_None;
+    bool containsLocal = false;
 
     INIT_LOCALS(loc, entry, existingCert);
 
     bool containsAlias = (*env)->CallBooleanMethod(env, store, g_KeyStoreContainsAlias, alias);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (!containsAlias)
+    {
+        ret = SUCCESS;
         goto cleanup;
+    }
 
-    ret = true;
+    containsLocal = true;
 
     // KeyStore.Entry entry = store.getEntry(alias, null);
     // if (entry instanceof KeyStore.PrivateKeyEntry) {
@@ -48,42 +56,65 @@ ARGS_NON_NULL_ALL static bool ContainsEntryForAlias(
         flagsLocal |= EntryFlags_HasCertificate;
         flagsLocal |= EntryFlags_HasPrivateKey;
         loc[existingCert] = (*env)->CallObjectMethod(env, loc[entry], g_PrivateKeyEntryGetCertificate);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
     else if ((*env)->IsInstanceOf(env, loc[entry], g_TrustedCertificateEntryClass))
     {
         flagsLocal |= EntryFlags_HasCertificate;
         loc[existingCert] = (*env)->CallObjectMethod(env, loc[entry], g_TrustedCertificateEntryGetTrustedCertificate);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
     else
     {
         // Entry for alias exists, but doesn't represent a certificate or private key + certificate
+        ret = SUCCESS;
         goto cleanup;
     }
 
     assert(loc[existingCert] != NULL);
-    if ((*env)->CallBooleanMethod(env, cert, g_X509CertEquals, loc[existingCert]))
+    jboolean equals = (*env)->CallBooleanMethod(env, cert, g_X509CertEquals, loc[existingCert]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (equals)
     {
         flagsLocal |= EntryFlags_MatchesCertificate;
     }
 
+    ret = SUCCESS;
+
 cleanup:
     RELEASE_LOCALS(loc, env);
-    *flags = flagsLocal;
+    if (ret == SUCCESS)
+    {
+        *contains = containsLocal;
+        *flags = flagsLocal;
+    }
     return ret;
 }
 
+// Determines whether the store contains the specified alias with a matching certificate.
+// Returns SUCCESS if the lookup completed (regardless of match result), FAIL on a JNI
+// exception while inspecting the entry. On SUCCESS, *matches indicates whether the entry
+// exists AND its certificate matches the supplied cert.
 ARGS_NON_NULL_ALL
-static bool ContainsMatchingCertificateForAlias(JNIEnv* env,
-                                                jobject /*KeyStore*/ store,
-                                                jobject /*X509Certificate*/ cert,
-                                                jstring alias)
+static int32_t ContainsMatchingCertificateForAlias(JNIEnv* env,
+                                                   jobject /*KeyStore*/ store,
+                                                   jobject /*X509Certificate*/ cert,
+                                                   jstring alias,
+                                                   bool* matches)
 {
     EntryFlags flags;
-    if (!ContainsEntryForAlias(env, store, cert, alias, &flags))
-        return false;
+    bool contains = false;
+    *matches = false;
+
+    if (ContainsEntryForAlias(env, store, cert, alias, &contains, &flags) != SUCCESS)
+        return FAIL;
+
+    if (!contains)
+        return SUCCESS;
 
     EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
-    return (flags & matchesFlags) == matchesFlags;
+    *matches = (flags & matchesFlags) == matchesFlags;
+    return SUCCESS;
 }
 
 int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
@@ -95,29 +126,38 @@ int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
     abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
 
-    jstring alias = make_java_string(env, hashString);
+    INIT_LOCALS(loc, alias);
+    loc[alias] = make_java_string(env, hashString);
+
     EntryFlags flags;
-    if (ContainsEntryForAlias(env, store, cert, alias, &flags))
+    bool contains = false;
+    if (ContainsEntryForAlias(env, store, cert, loc[alias], &contains, &flags) != SUCCESS)
+        goto cleanup;
+
+    if (contains)
     {
-        ReleaseLRef(env, alias);
         EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
         if ((flags & matchesFlags) != matchesFlags)
         {
             LOG_ERROR("Store already contains alias with entry that does not match the expected certificate");
-            return FAIL;
+            goto cleanup;
         }
 
         // Certificate is already in store - nothing to do
         LOG_DEBUG("Store already contains certificate");
-        return SUCCESS;
+        ret = SUCCESS;
+        goto cleanup;
     }
 
     // store.setCertificateEntry(alias, cert);
-    (*env)->CallVoidMethod(env, store, g_KeyStoreSetCertificateEntry, alias, cert);
-    (*env)->DeleteLocalRef(env, alias);
+    (*env)->CallVoidMethod(env, store, g_KeyStoreSetCertificateEntry, loc[alias], cert);
+    ret = CheckJNIExceptions(env) ? FAIL : SUCCESS;
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyStore*/ store,
@@ -136,11 +176,15 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
 
     INIT_LOCALS(loc, alias, certs);
     jobject privateKey = NULL;
+    bool releasePrivateKey = true;
 
     loc[alias] = make_java_string(env, hashString);
 
     EntryFlags flags;
-    if (ContainsEntryForAlias(env, store, cert, loc[alias], &flags))
+    bool contains = false;
+    if (ContainsEntryForAlias(env, store, cert, loc[alias], &contains, &flags) != SUCCESS)
+        goto cleanup;
+    if (contains)
     {
         EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
         if ((flags & matchesFlags) != matchesFlags)
@@ -161,21 +205,23 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
         // Delete existing entry. We will replace the existing cert with the cert + private key.
         // store.deleteEntry(alias);
         (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, loc[alias]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
-    bool releasePrivateKey = true;
     switch (algorithm)
     {
         case PAL_EC:
         {
             EC_KEY* ec = (EC_KEY*)key;
             privateKey = (*env)->CallObjectMethod(env, ec->keyPair, g_keyPairGetPrivateMethod);
+            ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
             break;
         }
         case PAL_DSA:
         {
             // key is a KeyPair jobject
             privateKey = (*env)->CallObjectMethod(env, key, g_keyPairGetPrivateMethod);
+            ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
             break;
         }
         case PAL_RSA:
@@ -205,7 +251,7 @@ cleanup:
     RELEASE_LOCALS(loc, env);
     if (releasePrivateKey)
     {
-        (*env)->DeleteLocalRef(env, privateKey);
+        ReleaseLRef(env, privateKey);
     }
 
     return ret;
@@ -220,10 +266,18 @@ bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store
     abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
-    jstring alias = make_java_string(env, hashString);
+    INIT_LOCALS(loc, alias);
+    loc[alias] = make_java_string(env, hashString);
 
-    bool containsCert = ContainsMatchingCertificateForAlias(env, store, cert, alias);
-    (*env)->DeleteLocalRef(env, alias);
+    bool containsCert = false;
+    if (ContainsMatchingCertificateForAlias(env, store, cert, loc[alias], &containsCert) != SUCCESS)
+    {
+        // Lookup failed (JNI exception). Treat as "not contained" so the exception
+        // doesn't leak back to managed code.
+        containsCert = false;
+    }
+
+    RELEASE_LOCALS(loc, env);
     return containsCert;
 }
 
@@ -290,8 +344,11 @@ EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesC
             // Public publicKey = cert.getPublicKey();
             // PrivateKey privateKey = entry.getPrivateKey();
             loc[cert] = (*env)->CallObjectMethod(env, loc[entry], g_PrivateKeyEntryGetCertificate);
+            ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
             loc[publicKey] = (*env)->CallObjectMethod(env, loc[cert], g_X509CertGetPublicKey);
+            ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
             loc[privateKey] = (*env)->CallObjectMethod(env, loc[entry], g_PrivateKeyEntryGetPrivateKey);
+            ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
 
             PAL_KeyAlgorithm keyAlgorithm = PAL_UnknownAlgorithm;
             void* keyHandle = HandleFromKeys(env, loc[publicKey], loc[privateKey], &keyAlgorithm);
@@ -305,10 +362,13 @@ EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesC
         {
             // Certificate cert = entry.getTrustedCertificate();
             loc[cert] = (*env)->CallObjectMethod(env, loc[entry], g_TrustedCertificateEntryGetTrustedCertificate);
+            ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
             cb(AddGRef(env, loc[cert]), NULL /*privateKey*/, PAL_UnknownAlgorithm, context);
         }
 
     loop_cleanup:
+        // Per-entry exceptions have been logged and cleared via ON_EXCEPTION_PRINT_AND_GOTO.
+        // We silently skip the failed entry and continue, preserving the original behavior.
         RELEASE_LOCALS(loc, env);
 
         hasNext = (*env)->CallBooleanMethod(env, aliases, g_EnumerationHasMoreElements);
@@ -340,6 +400,11 @@ static bool SystemAliasFilter(JNIEnv* env, jstring alias)
     size_t prefixLen = (sizeof(systemPrefix) / sizeof(*systemPrefix)) - 1;
 
     const char* aliasPtr = (*env)->GetStringUTFChars(env, alias, NULL);
+    if (aliasPtr == NULL)
+    {
+        CheckJNIExceptions(env);
+        return false;
+    }
     bool isSystem = (strncmp(aliasPtr, systemPrefix, prefixLen) == 0);
     (*env)->ReleaseStringUTFChars(env, alias, aliasPtr);
     return isSystem;
@@ -452,9 +517,13 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
+    INIT_LOCALS(loc, alias);
 
-    jstring alias = make_java_string(env, hashString);
-    if (!ContainsMatchingCertificateForAlias(env, store, cert, alias))
+    loc[alias] = make_java_string(env, hashString);
+    bool containsCert = false;
+    if (ContainsMatchingCertificateForAlias(env, store, cert, loc[alias], &containsCert) != SUCCESS)
+        goto cleanup;
+    if (!containsCert)
     {
         // Certificate is not in store - nothing to do
         ret = SUCCESS;
@@ -462,11 +531,11 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
     }
 
     // store.deleteEntry(alias);
-    (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, alias);
+    (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, loc[alias]);
     ret = CheckJNIExceptions(env) ? FAIL : SUCCESS;
 
 cleanup:
-    ReleaseLRef(env, alias);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

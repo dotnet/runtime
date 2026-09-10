@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_StructPromote_SpAddrAT;
+
 using System.Runtime.CompilerServices;
 using System;
 using Xunit;
@@ -42,6 +44,7 @@ public class SpAddrAT
         return Foo(s0, s1) + x;  // r0 <= &s0[0]; r1 <= &s0[4]; r2 <= r2; r3 <= r3
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

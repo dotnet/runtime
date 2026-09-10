@@ -417,7 +417,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             var notNullCallback = new PostEvictionCallbackRegistration()
             {
-                EvictionCallback = (_, _, _, _) => { }
+                EvictionCallback = (_, _, _, _) => {}
             };
 
             options.PostEvictionCallbacks.Add(notNullCallback);
@@ -569,7 +569,6 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72879")] // issue in cache
         public void GetAndSet_AreThreadSafe_AndUpdatesNeverLeavesNullValues()
         {
             var cache = CreateCache();
@@ -579,39 +578,46 @@ namespace Microsoft.Extensions.Caching.Memory
             cache.Set(key, new Guid());
 
             const int WriterCount = 2;
-            const int Iterations = 20_000;
+            const int WriterIterations = 20_000;
+            int activeWriters = WriterCount;
             using var barrier = new Barrier(WriterCount + 1);
 
-            var writers = new Task[WriterCount];
+            var workers = new Task[WriterCount + 1];
             for (int i = 0; i < WriterCount; i++)
             {
-                writers[i] = Task.Run(() =>
+                workers[i] = StartWorker(() =>
                 {
-                    barrier.SignalAndWait();
-                    for (int j = 0; j < Iterations; j++)
+                    try
                     {
-                        cache.Set(key, Guid.NewGuid());
+                        barrier.SignalAndWait();
+                        for (int j = 0; j < WriterIterations; j++)
+                        {
+                            cache.Set(key, Guid.NewGuid());
+                        }
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref activeWriters);
                     }
                 });
             }
 
-            var reader = Task.Run(() =>
+            // The reader keeps polling for as long as any writer is still replacing the entry, so it
+            // covers the whole write window rather than a fixed number of iterations of its own.
+            workers[WriterCount] = StartWorker(() =>
             {
                 barrier.SignalAndWait();
-                for (int j = 0; j < Iterations; j++)
+                while (Volatile.Read(ref activeWriters) > 0)
                 {
-                    if (cache.Get(key) == null)
+                    if (cache.Get(key) is null)
                     {
                         readValueIsNull = true;
-                        break;
+                        return;
                     }
                 }
             });
 
-            var all = new Task[WriterCount + 1];
-            Array.Copy(writers, all, WriterCount);
-            all[WriterCount] = reader;
-            Task.WaitAll(all);
+            WaitForWorkers(workers);
 
             Assert.False(readValueIsNull);
         }
@@ -619,83 +625,100 @@ namespace Microsoft.Extensions.Caching.Memory
         [Fact]
         public void OvercapacityPurge_AreThreadSafe()
         {
-            var cache = new MemoryCache(new MemoryCacheOptions
+            const long SizeLimit = 10;
+            using var cache = new MemoryCache(new MemoryCacheOptions
             {
                 ExpirationScanFrequency = TimeSpan.Zero,
-                SizeLimit = 10,
+                SizeLimit = SizeLimit,
                 CompactionPercentage = 0.5
             });
 
-            const int NumberOfThreads = 3;
-            const int IterationsPerThread = 10_000;
-            using var barrier = new Barrier(NumberOfThreads);
-            bool limitExceeded = false;
+            const int WorkerCount = 3;
+            const int IterationsPerWorker = 10_000;
+            using var barrier = new Barrier(WorkerCount);
+            long sizeOverLimit = 0;
 
-            var tasks = new Task[NumberOfThreads];
-            for (int i = 0; i < NumberOfThreads; i++)
+            var workers = new Task[WorkerCount];
+            for (int i = 0; i < WorkerCount; i++)
             {
-                tasks[i] = Task.Run(() =>
+                workers[i] = StartWorker(() =>
                 {
                     barrier.SignalAndWait();
-                    for (int j = 0; j < IterationsPerThread; j++)
+                    for (int j = 0; j < IterationsPerWorker; j++)
                     {
-                        if (cache.Size > 10)
+                        long size = cache.Size;
+                        if (size > SizeLimit)
                         {
-                            limitExceeded = true;
-                            break;
+                            Interlocked.CompareExchange(ref sizeOverLimit, size, 0);
+                            return;
                         }
+
                         cache.Set(Guid.NewGuid(), Guid.NewGuid(), new MemoryCacheEntryOptions { Size = 1 });
                     }
                 });
             }
 
-            Task.WaitAll(tasks);
+            WaitForWorkers(workers);
 
-            CapacityTests.AssertCacheSize(cache.Count, cache);
-            Assert.InRange(cache.Count, 0, 10);
-            Assert.False(limitExceeded);
+            Assert.True(sizeOverLimit == 0, $"Cache size reached {sizeOverLimit}, above the limit of {SizeLimit}.");
+
+            // Overcapacity compaction is queued to the thread pool, so entries can still be evicted for a
+            // short while after the writers stop. Re-read both values on every attempt: capturing one of
+            // them up front compares a stale snapshot against a value a late compaction is still moving.
+            CapacityTests.AssertEventually(() =>
+            {
+                long count = cache.Count;
+                Assert.Equal(count, cache.Size);
+                Assert.InRange(count, 0L, SizeLimit);
+            });
         }
 
         [Fact]
         public void AddAndReplaceEntries_AreThreadSafe()
         {
-            var cache = new MemoryCache(new MemoryCacheOptions
+            const int KeyCount = 10;
+            using var cache = new MemoryCache(new MemoryCacheOptions
             {
                 ExpirationScanFrequency = TimeSpan.Zero,
                 SizeLimit = 20,
                 CompactionPercentage = 0.5
             });
 
-            const int NumberOfThreads = 3;
-            const int IterationsPerThread = 10_000;
-            using var barrier = new Barrier(NumberOfThreads);
+            const int WorkerCount = 3;
+            const int IterationsPerWorker = 10_000;
+            using var barrier = new Barrier(WorkerCount);
 
-            var tasks = new Task[NumberOfThreads];
-            for (int i = 0; i < NumberOfThreads; i++)
+            var workers = new Task[WorkerCount];
+            for (int i = 0; i < WorkerCount; i++)
             {
-                // Each thread gets its own Random; Random is not thread-safe.
+                // Random is not thread safe, so every worker gets its own seeded instance.
                 var random = new Random(i);
-                tasks[i] = Task.Run(() =>
+                workers[i] = StartWorker(() =>
                 {
                     barrier.SignalAndWait();
-                    for (int j = 0; j < IterationsPerThread; j++)
+                    for (int j = 0; j < IterationsPerWorker; j++)
                     {
-                        var entrySize = random.Next(0, 5);
-                        cache.Set(random.Next(0, 10), entrySize, new MemoryCacheEntryOptions { Size = entrySize });
+                        int entrySize = random.Next(0, 5);
+                        cache.Set(random.Next(0, KeyCount), entrySize, new MemoryCacheEntryOptions { Size = entrySize });
                     }
                 });
             }
 
-            Task.WaitAll(tasks);
+            WaitForWorkers(workers);
 
-            var cacheSize = 0;
-            for (var i = 0; i < 10; i++)
+            // Each entry stores its own size as its value, so the sum over every possible key is the size
+            // the cache should be tracking. See OvercapacityPurge_AreThreadSafe for why this is retried.
+            CapacityTests.AssertEventually(() =>
             {
-                cacheSize += cache.Get<int>(i);
-            }
+                long expectedSize = 0;
+                for (int i = 0; i < KeyCount; i++)
+                {
+                    expectedSize += cache.Get<int>(i);
+                }
 
-            CapacityTests.AssertCacheSize(cacheSize, cache);
-            Assert.InRange(cache.Count, 0, 20);
+                Assert.Equal(expectedSize, cache.Size);
+                Assert.InRange(cache.Count, 0, KeyCount);
+            });
         }
 
         [Fact]
@@ -725,7 +748,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public void TryGetValueFromCacheWithNullKeyThrows()
         {
             var cache = CreateCache();
-            Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null, out long result));
+            Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null,out long result));
         }
 
         [Fact]
@@ -733,8 +756,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = CreateCache();
             Assert.Throws<ArgumentNullException>(() => cache.GetOrCreate<object>(null, null))
-;
-        }
+;       }
 
         [Fact]
         public async Task GetOrCreateAsyncFromCacheWithNullKeyThrows()
@@ -813,6 +835,24 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Equal("string value", cache.Get(key0));
             Assert.Equal("decimal value", cache.Get(key1));
         }
+
+        /// <summary>
+        /// Runs <paramref name="work"/> on a dedicated thread rather than a thread pool thread. The
+        /// concurrency tests above hammer the cache for their whole run without ever yielding, so leaving
+        /// them on the pool would delay the cache's own background work (overcapacity compaction, expired
+        /// item scans) and the sibling test collections xunit runs in parallel. Note this frees pool
+        /// threads, not cores, so the workers still compete for CPU with whatever runs alongside them.
+        /// </summary>
+        private static Task StartWorker(Action work) =>
+            Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        /// <summary>
+        /// Waits for the workers, failing rather than hanging if they do not finish. Those tests exist to
+        /// catch deadlocks and livelocks in <see cref="MemoryCache"/>, so an unbounded wait would turn the
+        /// very bug they hunt into an unattributable CI job timeout instead of a test failure.
+        /// </summary>
+        private static void WaitForWorkers(Task[] workers) =>
+            Assert.True(Task.WaitAll(workers, TimeSpan.FromMinutes(2)), "Cache workers did not complete.");
 
         private class TestKey
         {

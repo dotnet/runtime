@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
             // This should be the last update operation in the resolver to avoid resetting the flag.
             typeInfo.IsCustomized = false;
 
-            if (_modifiers != null)
+            if (_modifiers is not null)
             {
                 foreach (Action<JsonTypeInfo> modifier in _modifiers)
                 {

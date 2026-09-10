@@ -140,7 +140,7 @@ jobs:
           arguments:
             crossgen_framework
             --crossgen    $(crossgen2location)
-            --dotnet      $(Build.SourcesDirectory)\dotnet.cmd
+            --dotnet      $(Build.SourcesDirectory)\eng\common\dotnet.cmd
             --core_root   $(workItemDirectory)\dlls
             --result_dir  $(workItemDirectory)\log
             --target_os   $(target_crossgen2_os)

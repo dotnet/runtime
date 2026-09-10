@@ -558,7 +558,14 @@ type Driver() =
 
 [<SkipOnCoreClr("Unstable under JIT stress", RuntimeTestModes.AnyJitStress ||| RuntimeTestModes.AnyGCStress)>]
 [<SkipOnMono("Not supported on Mono runtime")>]
+[<ActiveIssue("https://github.com/dotnet/runtime/issues/133464", typeof<PlatformDetection>, [| "IsWasmReadyToRun" |])>]
 [<ConditionalFact(typeof<Utilities>, [| "IsNotNativeAot" |])>]
 let main () =
     let driver = Driver()
     driver.Start()
+
+[<EntryPoint>]
+let entryPoint _argv =
+    let driver = Driver()
+    driver.Start()
+    100

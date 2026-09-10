@@ -91,7 +91,6 @@ BOOL ThreadExceptionState::IsComPlusException()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (GetExceptionCode() != EXCEPTION_COMPLUS)
     {

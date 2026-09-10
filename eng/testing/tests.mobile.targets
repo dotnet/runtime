@@ -119,8 +119,12 @@
       <_ResolvedStreamConformanceTests
           Include="@(ResolvedFileToPublish)"
           Condition="'%(ResolvedFileToPublish.FileName)' == 'StreamConformanceTests'" />
+      <_ResolvedTestUtilities
+          Include="@(ResolvedFileToPublish)"
+          Condition="'%(ResolvedFileToPublish.FileName)' == 'TestUtilities'" />
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
-      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
+      <!-- Only root TestUtilities when it is actually in the link set; some trimmed apps don't reference it. -->
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true' and '@(_ResolvedTestUtilities)' != ''" />
       <TrimmerRootDescriptor
           Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.StreamConformanceTests.xml"
           Condition="'$(SkipTestUtilitiesReference)' != 'true' and '$(TargetsAppleMobile)' == 'true' and '@(_ResolvedStreamConformanceTests)' != ''" />
@@ -132,7 +136,7 @@
           Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'android'" />
-      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'" />
+      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="('$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator') and '$(TestNativeAot)' != 'true'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'wasi'" />
 
       <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->
@@ -151,7 +155,7 @@
   <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" Condition="'$(SkipWorkloadsTestingTargetsImport)' == 'true'" />
 
   <Target Name="PublishTestAsSelfContained"
-          Condition="'$(IsCrossTargetingBuild)' != 'true'"
+          Condition="'$(IsCrossTargetingBuild)' != 'true' and '$(IgnoreForCI)' != 'true'"
           AfterTargets="$(PublishTestAsSelfContainedAfterTargets)"
           DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);$(BundleTestAppTargets);ArchiveTests" />
 

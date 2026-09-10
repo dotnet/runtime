@@ -133,7 +133,12 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ConvertPolyfills.cs" Link="Common\Polyfills\ConvertPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs" Link="Common\Polyfills\DictionaryPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\DoublePolyfills.cs" Link="Common\Polyfills\DoublePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\Int32Polyfills.cs" Link="Common\Polyfills\Int32Polyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">

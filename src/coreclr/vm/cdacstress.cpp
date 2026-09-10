@@ -566,6 +566,9 @@ void CdacStressPolicy::Shutdown()
     if (!s_initialized)
         return;
 
+    CrstHolder cdacLock(&s_cdacLock);
+    s_initialized = false;
+
     // Print summary to stderr so results are always visible
     LONG totalVerifications = s_passCount + s_failCount + s_knownIssueCount;
     fprintf(stderr,
@@ -652,7 +655,6 @@ void CdacStressPolicy::Shutdown()
         s_cdacHandle = 0;
     }
 
-    s_initialized = false;
     s_cdacStressLevel = 0;
     LOG((LF_GCROOTS, LL_INFO10, "CDAC GC Stress: Shutdown complete\n"));
 }
@@ -1776,13 +1778,15 @@ static void VerifyArgIteratorOnStack(Thread* pThread)
 
 static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 {
-    _ASSERTE(s_initialized);
     _ASSERTE(pThread != nullptr);
     _ASSERTE(regs != nullptr);
 
     // Serialize cDAC access — the cDAC's ProcessedData cache and COM interfaces
     // are not thread-safe, and GC stress can fire on multiple threads.
     CrstHolder cdacLock(&s_cdacLock);
+
+    if (!s_initialized)
+        return;
 
     DWORD osThreadId = pThread->GetOSThreadId();
 

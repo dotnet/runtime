@@ -36,7 +36,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
         public class DotNetSearchOptions
         {
-            // Keep in sync with fxr_resolver::search_location in fxr_resolver.h
+            // Keep in sync with fxr_search_location in fxr_resolver.h
             [Flags]
             public enum SearchLocation : byte
             {

@@ -68,6 +68,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task OSPlatformGuard()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task ReplacedJumpTarget()
         {
             return RunTest(allowMissingWarnings: true);

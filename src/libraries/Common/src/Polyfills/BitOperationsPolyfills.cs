@@ -48,6 +48,25 @@ internal static class BitOperations
     }
 
     /// <summary>
+    /// Returns the number of leading zero bits in the specified value.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int LeadingZeroCount(uint value) =>
+        value == 0 ? 32 : 31 - Log2(value);
+
+    /// <summary>
+    /// Returns the number of leading zero bits in the specified value.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int LeadingZeroCount(ulong value)
+    {
+        uint high = (uint)(value >> 32);
+        return high == 0
+            ? 32 + LeadingZeroCount((uint)value)
+            : LeadingZeroCount(high);
+    }
+
+    /// <summary>
     /// Returns the population count (number of bits set) of a mask.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

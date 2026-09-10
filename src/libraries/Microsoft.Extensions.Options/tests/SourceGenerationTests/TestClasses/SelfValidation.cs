@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 namespace SelfValidation
@@ -61,4 +63,30 @@ namespace SelfValidation
             return new[] { new ValidationResult($"Display: {context.DisplayName}, Member: {context.MemberName}") };
         }
     }
+
+#if NET
+    public sealed class AsyncSelfValidatingModel : IAsyncValidatableObject
+    {
+        [Required]
+        public string? Name { get; set; }
+
+        public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+            ValidationContext validationContext,
+            [global::System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            yield break;
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    [OptionsValidator]
+    public partial class AsyncSelfValidatingValidator : IAsyncValidateOptions<AsyncSelfValidatingModel>
+    {
+    }
+#endif // NET
 }

@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="Microsoft.Extensions.Caching.Abstractions">
+    <!-- Accessed via [UnsafeAccessor] from Microsoft.Extensions.Caching.Hybrid, which the trimmer cannot follow. -->
+    <type fullname="Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions">
+      <method name="ToDistributedCacheEntryOptions" />
+    </type>
+  </assembly>
+</linker>

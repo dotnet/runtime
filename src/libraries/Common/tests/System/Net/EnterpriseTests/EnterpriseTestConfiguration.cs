@@ -12,10 +12,14 @@ namespace System.Net.Test.Common
         public const string NtlmAuthWebServer = "http://apacheweb.linux.contoso.com:8080/auth/ntlm/";
         public const string DigestAuthWebServer = "http://apacheweb.linux.contoso.com/auth/digest/";
 
+        public const string FtpServer = "apacheweb.linux.contoso.com";
+        public const string FtpBasePath = "/ftp/";
+
         public static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNTIME_ENTERPRISETESTS_ENABLED"));
         // Following credentials are used only in docker scenario, it is not leaking any secrets.
         public static NetworkCredential ValidNetworkCredentials => new NetworkCredential("user1", "PLACEHOLDERcorrect20");
         public static NetworkCredential ValidDomainNetworkCredentials => new NetworkCredential("user1", "PLACEHOLDERcorrect20", "LINUX" );
         public static NetworkCredential InvalidNetworkCredentials => new NetworkCredential("user1", "PLACEHOLDERwong");
+        public static NetworkCredential FtpNetworkCredentials => new NetworkCredential("ftpuser", "PLACEHOLDER_FTP_PASSWORD");
     }
 }

@@ -21,6 +21,8 @@
             Destination="$(OutputPath)$(LibPrefix)nethost.lib" />
       <FilesToPublish Include="$(DotNetHostBinDir)\nethost.h"
             Destination="$(OutputPath)$(LibPrefix)nethost.h" />
+      <FilesToPublish Include="$(DotNetHostBinDir)\host_error_codes.h"
+            Destination="$(OutputPath)$(LibPrefix)host_error_codes.h" />
     </ItemGroup>
 
     <Copy SourceFiles="@(FilesToPublish)"

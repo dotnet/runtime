@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.GCAllocContext))]
 internal sealed partial class GCAllocContext : IData<GCAllocContext>
 {
-    [Field] public TargetPointer Pointer { get; }
-    [Field] public TargetPointer Limit { get; }
-    [Field] public long AllocBytes { get; }
-    [Field] public long AllocBytesLoh { get; }
+    [Field] public partial TargetPointer Pointer { get; }
+    [Field] public partial TargetPointer Limit { get; }
+    [Field] public partial long AllocBytes { get; }
+    [Field] public partial long AllocBytesLoh { get; }
 }

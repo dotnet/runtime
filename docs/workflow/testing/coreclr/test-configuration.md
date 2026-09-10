@@ -49,8 +49,6 @@ Therefore the managed portion of each test **must not contain**:
     * e.g. `<DisableProjectBuild>true</DisableProjectBuild>`
 * Exclude test from GCStress runs by adding the following to the csproj:
     * `<GCStressIncompatible>true</GCStressIncompatible>`
-* Exclude test from HeapVerify testing runs runs by adding the following to the csproj:
-    * `<HeapVerifyIncompatible>true</HeapVerifyIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Exclude test from NativeAOT runs runs by adding the following to the csproj:

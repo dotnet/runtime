@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EEConfig))]
 internal sealed partial class EEConfig : IData<EEConfig>
 {
-    [Field] public uint ModifiableAssemblies { get; }
+    [Field] public partial uint ModifiableAssemblies { get; }
 }

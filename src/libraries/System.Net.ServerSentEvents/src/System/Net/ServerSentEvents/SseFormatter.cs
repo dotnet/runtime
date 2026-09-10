@@ -24,6 +24,7 @@ namespace System.Net.ServerSentEvents
         /// <param name="destination">The destination stream to write the events.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <remarks>The <paramref name="destination"/> stream is flushed after each event is written.</remarks>
         public static Task WriteAsync(IAsyncEnumerable<SseItem<string>> source, Stream destination, CancellationToken cancellationToken = default)
         {
             if (source is null)
@@ -48,6 +49,7 @@ namespace System.Net.ServerSentEvents
         /// <param name="itemFormatter">The formatter for the data field of given event.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <remarks>The <paramref name="destination"/> stream is flushed after each event is written.</remarks>
         public static Task WriteAsync<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<SseItem<T>, IBufferWriter<byte>> itemFormatter, CancellationToken cancellationToken = default)
         {
             if (source is null)
@@ -85,6 +87,10 @@ namespace System.Net.ServerSentEvents
                     reconnectionInterval: item.ReconnectionInterval);
 
                 await destination.WriteAsync(bufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
+
+                // Each event is a self-contained message that the peer may want to consume in real time,
+                // so flush the destination to ensure it isn't held back by any intermediate buffering.
+                await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
 
                 userDataBufferWriter.Reset();
                 bufferWriter.Reset();

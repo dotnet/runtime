@@ -250,11 +250,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     {
                         int endingLocation = suffixPart.IndexOf(')');
                         if (endingLocation < 0
-#if NETFRAMEWORK || NETSTANDARD
-                            || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length).ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
-#else
                             || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
-#endif
                         {
                             if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
                                 eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling ratio was invalid");
@@ -268,11 +264,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                         int endingLocation = suffixPart.IndexOf(')');
                         if (endingLocation < 0
                             || !int.TryParse(
-#if NETFRAMEWORK || NETSTANDARD
-                                    suffixPart.Slice(c_ParentRateLimitingSamplerPrefix.Length, endingLocation - c_ParentRateLimitingSamplerPrefix.Length).ToString(),
-#else
                                     suffixPart.Slice(c_ParentRateLimitingSamplerPrefix.Length, endingLocation - c_ParentRateLimitingSamplerPrefix.Length),
-#endif
                                     NumberStyles.None, CultureInfo.InvariantCulture, out int maximumRatePerSecond)
                             || maximumRatePerSecond <= 0)
                         {

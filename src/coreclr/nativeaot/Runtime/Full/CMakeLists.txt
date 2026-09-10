@@ -32,27 +32,6 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
   # libunwind implementation symbols are resolved before localization. The
   # localize list is generated only from the bundled libunwind source objects.
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*(UnwindHelpers|UnixNativeCodeManager)\\.cpp\\.o$>")
-  set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${CMAKE_LINKER}")
-  get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_NAME "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" NAME)
-  if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_NAME MATCHES "^llvm-link(-[0-9.]+)?(\\.exe)?$")
-    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_VERSION "${CMAKE_MATCH_1}")
-    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_EXTENSION "${CMAKE_MATCH_2}")
-    get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" DIRECTORY)
-    find_program(NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD
-      NAMES "ld.lld${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_VERSION}${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_EXTENSION}" ld.lld
-      PATHS "${NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR}"
-      NO_DEFAULT_PATH)
-    if(NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD)
-      set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD}")
-    else()
-      find_program(NATIVEAOT_PRIVATE_LIBUNWIND_LD NAMES ld)
-      if(NATIVEAOT_PRIVATE_LIBUNWIND_LD)
-        set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${NATIVEAOT_PRIVATE_LIBUNWIND_LD}")
-      else()
-        message(FATAL_ERROR "ld.lld (preferred) or ld is required to privatize NativeAOT libunwind symbols")
-      endif()
-    endif()
-  endif()
 
   add_custom_command(
     OUTPUT "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
@@ -69,7 +48,7 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     COMMAND "${CMAKE_COMMAND}" -E rm -f
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
-    COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    COMMAND "${CMAKE_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
     COMMAND "${CMAKE_OBJCOPY}"
             "--localize-symbols=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
@@ -87,11 +66,15 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
 endif()
 
 add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
-add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+endif()
 set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
 add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
-add_dependencies(Runtime.GC.Server aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.GC.Server aot_eventing_headers)
+endif()
 target_compile_definitions(Runtime.GC.Server PRIVATE FEATURE_SVR_GC SERVER_GC)
 set_target_properties(Runtime.GC.Server PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
@@ -101,8 +84,8 @@ if (CLR_CMAKE_TARGET_WIN32)
   # objects archived into Runtime.WorkstationGC/Runtime.ServerGC would otherwise
   # reference a vc140.pdb that is absent when these static libs are statically
   # linked by the AOT compiler publish projects, producing LNK4099.
-  target_compile_options(Runtime.GC.Workstation PRIVATE /Z7)
-  target_compile_options(Runtime.GC.Server PRIVATE /Z7)
+  set_target_properties(Runtime.GC.Workstation PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+  set_target_properties(Runtime.GC.Server PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC
@@ -111,7 +94,9 @@ add_library(Runtime.WorkstationGC STATIC
     ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
     ${RUNTIME_ARCH_ASM_OBJECTS}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>)
-add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+endif()
 target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor)
 
 add_library(Runtime.ServerGC STATIC
@@ -121,15 +106,23 @@ add_library(Runtime.ServerGC STATIC
     ${RUNTIME_ARCH_ASM_OBJECTS}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>
     $<TARGET_OBJECTS:Runtime.GC.Server>)
-add_dependencies(Runtime.ServerGC aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.ServerGC aot_eventing_headers)
+endif()
 target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor nativeaot_gc_svr_descriptor)
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
-add_dependencies(standalonegc-disabled aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(standalonegc-disabled aot_eventing_headers)
+endif()
 add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
-add_dependencies(standalonegc-enabled aot_eventing_headers)
-if(CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(standalonegc-disabled aot_etw_headers)
-  add_dependencies(standalonegc-enabled aot_etw_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(standalonegc-enabled aot_eventing_headers)
+endif()
+if(FEATURE_EVENT_TRACE)
+  if(CLR_CMAKE_TARGET_WIN32)
+    add_dependencies(standalonegc-disabled aot_etw_headers)
+    add_dependencies(standalonegc-enabled aot_etw_headers)
+  endif()
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

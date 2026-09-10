@@ -68,8 +68,8 @@ namespace System.Text.Json.Serialization.Metadata
             return CreateDelegate<Func<object>>(dynamicMethod);
         }
 
-        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
+        public override Func<object?[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
+            CreateDelegate<Func<object?[], T>>(CreateParameterizedConstructor(constructor));
 
         private static DynamicMethod CreateParameterizedConstructor(ConstructorInfo constructor)
         {
@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(!constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -187,7 +187,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(!constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             Debug.Assert(parameters.Length == 1);

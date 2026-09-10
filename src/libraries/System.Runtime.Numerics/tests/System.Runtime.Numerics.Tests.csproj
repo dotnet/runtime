@@ -60,6 +60,7 @@
     <Compile Include="BigInteger\TryWriteBytes.cs" />
     <Compile Include="BigInteger\UInt32Samples.cs" />
     <Compile Include="ComplexTests.cs" />
+    <Compile Include="ComplexTests.SpecialValues.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />

@@ -17,12 +17,12 @@ internal interface IExceptionClauseData
 [CdacType(nameof(DataType.EEExceptionClause))]
 internal sealed partial class EEExceptionClause : IData<EEExceptionClause>, IExceptionClauseData
 {
-    [Field] public uint Flags { get; }
-    [Field] public uint TryStartPC { get; }
-    [Field] public uint TryEndPC { get; }
-    [Field] public uint HandlerStartPC { get; }
-    [Field] public uint HandlerEndPC { get; }
-    [Field] public TargetNUInt TypeHandle { get; }
+    [Field] public partial uint Flags { get; }
+    [Field] public partial uint TryStartPC { get; }
+    [Field] public partial uint TryEndPC { get; }
+    [Field] public partial uint HandlerStartPC { get; }
+    [Field] public partial uint HandlerEndPC { get; }
+    [Field] public partial TargetNUInt TypeHandle { get; }
 
     public uint ClassToken => (uint)TypeHandle.Value;
     public uint FilterOffset => ClassToken;
@@ -31,12 +31,12 @@ internal sealed partial class EEExceptionClause : IData<EEExceptionClause>, IExc
 [CdacType(nameof(DataType.R2RExceptionClause))]
 internal sealed partial class R2RExceptionClause : IData<R2RExceptionClause>, IExceptionClauseData
 {
-    [Field] public uint Flags { get; }
-    [Field] public uint TryStartPC { get; }
-    [Field] public uint TryEndPC { get; }
-    [Field] public uint HandlerStartPC { get; }
-    [Field] public uint HandlerEndPC { get; }
-    [Field] public uint ClassToken { get; }
+    [Field] public partial uint Flags { get; }
+    [Field] public partial uint TryStartPC { get; }
+    [Field] public partial uint TryEndPC { get; }
+    [Field] public partial uint HandlerStartPC { get; }
+    [Field] public partial uint HandlerEndPC { get; }
+    [Field] public partial uint ClassToken { get; }
 
     public uint FilterOffset => ClassToken;
 }

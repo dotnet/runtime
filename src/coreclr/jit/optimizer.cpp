@@ -2260,9 +2260,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     if (haveProfileWeights)
     {
-        // Reduce flow into the new loop entry/exit blocks
+        // Reduce flow into the new loop entry block
         newPreheader->setBBProfileWeight(newCondToNewPreheader->getLikelyWeight());
-        exit->decreaseBBProfileWeight(newCondToNewExit->getLikelyWeight());
 
         // Update the duplicated blocks' weights
 
@@ -2273,6 +2272,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         }
 
         condBlock->setBBProfileWeight(condBlock->computeIncomingWeight());
+
+        // Recompute exit's weight from its (now updated) incoming edges.
+        // Using computeIncomingWeight here (rather than decreasing by the newly
+        // introduced preheader-to-exit edge weight) avoids amplifying small
+        // pre-existing inconsistencies once the loop-exit flow is scaled down.
+        exit->setBBProfileWeight(exit->computeIncomingWeight());
     }
 
     // Finally compact the condition with its pred if that is possible now.
@@ -2426,22 +2431,21 @@ PhaseStatus Compiler::optOptimizePostLayout()
             GenTree* const test = block->lastNode();
             assert(test->OperIsConditionalJump());
 
+            // Try to reverse the condition in-place. We are running after LSRA, so we cannot
+            // introduce new IR nodes here. If the condition cannot be reversed in-place, bail
+            // on flipping for this block.
+            //
+            // For GT_JTRUE the operand may have a GT_COPY/GT_RELOAD inserted by LSRA on top of
+            // the actual condition node, so skip those to find the underlying condition.
+            GenTree* cond = test;
             if (test->OperIs(GT_JTRUE))
             {
-                // Flip GT_JTRUE node's conditional operand, and handle any new nodes this may introduce
-                GenTree* const cond    = test->gtGetOp1();
-                GenTree* const newCond = gtReverseCond(cond);
-                if (cond != newCond)
-                {
-                    LIR::AsRange(block).InsertAfter(cond, newCond);
-                    test->AsUnOp()->gtOp1 = newCond;
-                }
+                cond = test->gtGetOp1()->gtSkipReloadOrCopy();
             }
-            else
+
+            if (!gtTryReverseCond(cond))
             {
-                // gtReverseCond can handle other conditional jumps without introducing a new node
-                GenTree* const cond = gtReverseCond(test);
-                assert(cond == test);
+                continue;
             }
 
             FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
@@ -3680,7 +3684,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
                 printTreeID(origExpr);
                 printf(" was declared as hoistable from loop at nesting depth %d; actually hoisted from loop at depth "
                        "%d.\n",
-                       tlAndN.m_num, depth);
+                       (int)tlAndN.m_num, (int)depth);
                 assert(false);
             }
             else
@@ -5676,26 +5680,6 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
 }
 
 //------------------------------------------------------------------------------
-// optRemoveStandaloneRangeCheck : A thin wrapper over optRemoveRangeCheck that removes standalone checks.
-//
-// Arguments:
-//    check - The standalone top-level CHECK node.
-//    stmt  - The statement "check" is a root node of.
-//
-// Return Value:
-//    If "check" has no side effects, it is retuned, bashed to a no-op.
-//    If it has side effects, the tree that executes them is returned.
-//
-GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt)
-{
-    assert(check != nullptr);
-    assert(stmt != nullptr);
-    assert(check == stmt->GetRootNode());
-
-    return optRemoveRangeCheck(check, nullptr, stmt);
-}
-
-//------------------------------------------------------------------------------
 // optRemoveCommaBasedRangeCheck : A thin wrapper over optRemoveRangeCheck that removes COMMA-based checks.
 //
 // Arguments:
@@ -5980,7 +5964,9 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && isEntire &&
+                        // For async methods we may skip an explicit init through the resumption path
+                        //
+                        if (!removedExplicitZeroInit && isEntire && !compIsAsync() &&
                             (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->IsLiveInOutOfHandler())))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
@@ -6104,7 +6090,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     // the implicit "live-in" one, which is not guaranteed, but very likely.
                     if ((defIndex == 1) && !varDsc->TypeIs(TYP_STRUCT))
                     {
-                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n");
                         continue;
                     }
 

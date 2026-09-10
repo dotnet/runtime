@@ -350,9 +350,6 @@ void trace_corehost_init(
             case host_mode_t::apphost:
                 host_mode_str = _X("apphost");
                 break;
-            case host_mode_t::split_fx:
-                host_mode_str = _X("split_fx");
-                break;
             case host_mode_t::libhost:
                 host_mode_str = _X("libhost");
                 break;
@@ -450,7 +447,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int ar
         {
             rc = StatusCode::HostApiBufferTooSmall;
             *required_buffer_size = len + 1;
-            trace::info(_X("get-native-search-directories failed with buffer too small"), output_string.c_str());
+            trace::info(_X("get-native-search-directories failed with buffer too small. Required: %d, available: %d"), len + 1, buffer_size);
         }
         else
         {

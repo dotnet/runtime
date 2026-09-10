@@ -116,7 +116,7 @@ namespace Internal.IL.Stubs
                 if (runtimeMarshallingEnabled)
                 {
                     marshallers[i] = Marshaller.CreateMarshaller(parameterType,
-                                                        parameterIndex,
+                                                        i,
                                                         methodSig.GetEmbeddedSignatureData(),
                                                         MarshallerType.Argument,
                                                         parameterMetadata.MarshalAsDescriptor,

@@ -16,7 +16,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         HijackArgs args = _target.ProcessedData.GetOrAdd<HijackArgs>(frame.HijackArgsPtr);
 
         // The stack pointer is the address immediately following HijackArgs
-        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        uint hijackArgsSize = Data.HijackArgs.GetSize(_target);
         _context.Context.Esp = (uint)frame.HijackArgsPtr + hijackArgsSize;
 
         UpdateFromRegisterDict(args.Registers);
@@ -63,10 +63,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         _context.Context.Eip = (uint)frame.ReturnAddress;
 
         // The stack pointer is set to the address immediately after the TailCallFrame structure.
-        if (_target.GetTypeInfo(DataType.TailCallFrame).Size is not uint tailCallFrameSize)
-        {
-            throw new InvalidOperationException("TailCallFrame missing size information");
-        }
+        uint tailCallFrameSize = Data.TailCallFrame.GetSize(_target);
         _context.Context.Esp = (uint)(frame.Address + tailCallFrameSize);
 
         CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(frame.CalleeSavedRegisters);

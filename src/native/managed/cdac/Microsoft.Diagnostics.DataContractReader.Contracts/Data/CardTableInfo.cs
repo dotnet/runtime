@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CardTableInfo))]
 internal sealed partial class CardTableInfo : IData<CardTableInfo>
 {
-    [Field] public uint Recount { get; }
-    [Field] public TargetNUInt Size { get; }
-    [Field] public TargetPointer NextCardTable { get; }
+    [Field] public partial uint Recount { get; }
+    [Field] public partial TargetNUInt Size { get; }
+    [Field] public partial TargetPointer NextCardTable { get; }
 }

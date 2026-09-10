@@ -11,7 +11,7 @@ namespace Internal.IL.Stubs
         // Emits a thunk that wraps an async method to return a Task or ValueTask.
         // The thunk calls the async method, and if it completes synchronously,
         // it returns a completed Task/ValueTask. If the async method suspends,
-        // it calls FinalizeTaskReturningThunk/FinalizeValueTaskReturningThunk method to get the Task/ValueTask.
+        // it calls CreateRuntimeAsyncTask/CreateRuntimeAsyncValueTask method to get the Task/ValueTask.
 
         // The emitted code matches method EmitTaskReturningThunk in CoreCLR VM.
         public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
@@ -191,35 +191,35 @@ namespace Internal.IL.Stubs
 
                 codestream.EmitLabel(suspendedLabel);
 
-                MethodDesc finalizeTaskReturningThunkMd;
+                MethodDesc createRuntimeAsyncTaskMd;
                 if (logicalReturnType != null)
                 {
-                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                    MethodSignature createRuntimeAsyncTaskSignature = new MethodSignature(
                         MethodSignatureFlags.Static,
                         genericParameterCount: 1,
                         returnType: ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true)),
                         parameters: [awaitStateType.MakeByRefType()]
                     );
 
-                    finalizeTaskReturningThunkMd = asyncHelpersType
-                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature)
+                    createRuntimeAsyncTaskMd = asyncHelpersType
+                        .GetKnownMethod(isValueTask ? "CreateRuntimeAsyncValueTask"u8 : "CreateRuntimeAsyncTask"u8, createRuntimeAsyncTaskSignature)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
                 else
                 {
-                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                    MethodSignature createRuntimeAsyncTaskSignature = new MethodSignature(
                         MethodSignatureFlags.Static,
                         genericParameterCount: 0,
                         returnType: returnType,
                         parameters: [awaitStateType.MakeByRefType()]
                     );
 
-                    finalizeTaskReturningThunkMd = asyncHelpersType
-                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature);
+                    createRuntimeAsyncTaskMd = asyncHelpersType
+                        .GetKnownMethod(isValueTask ? "CreateRuntimeAsyncValueTask"u8 : "CreateRuntimeAsyncTask"u8, createRuntimeAsyncTaskSignature);
                 }
 
                 codestream.EmitLdLoc(refAwaitStateLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(finalizeTaskReturningThunkMd));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(createRuntimeAsyncTaskMd));
                 codestream.EmitStLoc(returnTaskLocal);
                 codestream.Emit(ILOpcode.leave, returnTaskLabel);
 

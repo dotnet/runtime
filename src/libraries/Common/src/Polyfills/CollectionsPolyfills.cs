@@ -12,3 +12,24 @@ internal static class KeyValuePairPolyfills
         value = source.Value;
     }
 }
+
+/// <summary>Provides downlevel polyfills for instance methods on <see cref="List{T}"/>.</summary>
+internal static class ListPolyfills
+{
+    extension<T>(List<T> list)
+    {
+        public void AddRange(ReadOnlySpan<T> source)
+        {
+            int requiredCapacity = checked(list.Count + source.Length);
+            if (list.Capacity < requiredCapacity)
+            {
+                list.Capacity = requiredCapacity;
+            }
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                list.Add(source[i]);
+            }
+        }
+    }
+}

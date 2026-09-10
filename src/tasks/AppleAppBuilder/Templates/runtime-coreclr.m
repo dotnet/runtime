@@ -156,10 +156,6 @@ mono_ios_runtime_init (void)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
 
-#if HYBRID_GLOBALIZATION
-    setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
-#endif
-
     // build using DiagnosticPorts property in AppleAppBuilder
     // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
     // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents=diagnostics_tracing
@@ -177,15 +173,6 @@ mono_ios_runtime_init (void)
     const char* bundle = get_bundle_path ();
     chdir (bundle);
 
-    char icu_dat_path [1024];
-    int res;
-#if defined(HYBRID_GLOBALIZATION)
-    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt_hybrid.dat");
-#else
-    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
-#endif
-    assert (res > 0);
-
     // Contract lasts the lifetime of the app. The app exists before the end of this function.
     struct host_runtime_contract host_contract = {
         .size = sizeof(struct host_runtime_contract),
@@ -196,11 +183,7 @@ mono_ios_runtime_init (void)
     char contract_str[19]; // 0x + 16 hex digits + '\0'
     snprintf(contract_str, 19, "0x%zx", (size_t)(&host_contract));
 
-#if defined(INVARIANT_GLOBALIZATION)
-#define PROPERTY_COUNT %AppContextPropertyCount_InvariantGlobalization%
-#else
 #define PROPERTY_COUNT %AppContextPropertyCount%
-#endif
 
     // Hardcoded properties + runtime config properties (generated at build time)
     const char *appctx_keys[PROPERTY_COUNT];
@@ -208,9 +191,6 @@ mono_ios_runtime_init (void)
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
     appctx_keys[2] = "TRUSTED_PLATFORM_ASSEMBLIES";
     appctx_keys[3] = "HOST_RUNTIME_CONTRACT";
-#if !defined(INVARIANT_GLOBALIZATION)
-    appctx_keys[4] = "ICU_DAT_FILE_PATH";
-#endif
 %AppContextKeys%
 
     const char *appctx_values[PROPERTY_COUNT];
@@ -218,9 +198,6 @@ mono_ios_runtime_init (void)
     appctx_values[1] = bundle;
     appctx_values[2] = compute_trusted_platform_assemblies();
     appctx_values[3] = contract_str;
-#if !defined(INVARIANT_GLOBALIZATION)
-    appctx_values[4] = icu_dat_path;
-#endif
 %AppContextValues%
 
     const char* executable = "%EntryPointLibName%";
@@ -229,6 +206,7 @@ mono_ios_runtime_init (void)
     void *coreclr_handle = NULL;
 
     char path [1024];
+    int res;
     res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, executable);
     assert (res > 0);
 

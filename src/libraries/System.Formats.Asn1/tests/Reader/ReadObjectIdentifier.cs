@@ -234,6 +234,23 @@ namespace System.Formats.Asn1.Tests.Reader
     public static class ReadObjectIdentifierDecoderTests
     {
         [Theory]
+        [InlineData("0609608648016503040311", "2.16.840.1.101.3.4.3.17")]
+        [InlineData("0609608648016503040312", "2.16.840.1.101.3.4.3.18")]
+        [InlineData("0609608648016503040313", "2.16.840.1.101.3.4.3.19")]
+        [InlineData("0609608648016503040401", "2.16.840.1.101.3.4.4.1")]
+        [InlineData("0609608648016503040402", "2.16.840.1.101.3.4.4.2")]
+        [InlineData("0609608648016503040403", "2.16.840.1.101.3.4.4.3")]
+        public static void ReadWellKnownObjectIdentifier(string inputHex, string expectedValue)
+        {
+            byte[] input = inputHex.HexToByteArray();
+
+            string oid = AsnDecoder.ReadObjectIdentifier(input, AsnEncodingRules.DER, out int consumed);
+
+            Assert.Equal(expectedValue, oid);
+            Assert.Equal(input.Length, consumed);
+        }
+
+        [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]

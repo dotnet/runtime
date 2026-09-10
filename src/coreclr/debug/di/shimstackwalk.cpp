@@ -135,15 +135,15 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     // #DacShimSwWorkAround
     //
     // This part cannot be determined using DBI alone. We must call through to the DAC
-    // because we have no other way to get at TS_Hijacked & TS_SyncSuspended.  When the
+    // because we have no other way to get at TS_Hijacked & TS_DebugSyncSuspended.  When the
     // rearchitecture is complete, this DAC call should be able to go away, and we
     // should be able to use DBI for all the info we need.
     //
-    // One might think one could avoid the DAC for TS_SyncSuspended by just checking
+    // One might think one could avoid the DAC for TS_DebugSyncSuspended by just checking
     // USER_SUSPENDED, but that won't work. Although USER_SUSPENDED will be returned some
-    // of the time when TS_SyncSuspended is set, that will not be the case when the
+    // of the time when TS_DebugSyncSuspended is set, that will not be the case when the
     // debugger must suspend the thread. Example: if the given thread is in the middle of
-    // throwing a managed exception when the debugger breaks in, then TS_SyncSuspended
+    // throwing a managed exception when the debugger breaks in, then TS_DebugSyncSuspended
     // will be set due to the debugger's breaking, but USER_SUSPENDED will not be set, so
     // we'll think the UM chain should be tracked, resulting in a stack that differs from
     // Whidbey.
@@ -151,7 +151,7 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
         return FALSE;
 
     // In the case the thread is throwing a managed exception, 
-    // TS_SyncSuspended might not yet be set, resulting in IsThreadSuspendedOrHijacked 
+    // TS_DebugSyncSuspended might not yet be set, resulting in IsThreadSuspendedOrHijacked 
     // returning false above. We need to check the exception state to make sure we don't
     // track the chain in this case. Since we know the type of Frame we are dealing with, 
     // we can make a more accurate determination of whether we should track the chain.

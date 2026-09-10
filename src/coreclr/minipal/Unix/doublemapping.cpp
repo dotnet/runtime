@@ -27,8 +27,16 @@
 #include "minipal/cpufeatures.h"
 
 #ifndef TARGET_APPLE
+#if !defined(TARGET_WASI)
 #include <link.h>
+#endif
 #include <dlfcn.h>
+#if defined(TARGET_WASI)
+// pal_wasi_missing.h provides Dl_info for the struct InitializeTemplateThunkLocals
+// declaration below; the actual dladdr() call is FEATURE_MAP_THUNKS_FROM_IMAGE-only
+// (Apple) so the stub is never invoked on WASI.
+#include "../../pal/src/include/pal/wasi/pal_wasi_missing.h"
+#endif
 #endif // TARGET_APPLE
 
 #ifdef TARGET_APPLE
@@ -103,6 +111,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     // for the rest of the process.
 #ifdef RLIMIT_AS
     // OpenBSD has no address-space rlimit (RLIMIT_AS), so this clipping is skipped there.
+    // WASI also has no RLIMIT_AS.
     struct rlimit virtualAddressSpaceLimit;
     if ((getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0) && (virtualAddressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
@@ -115,6 +124,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #endif // RLIMIT_AS
 
     // Clip the maximum double mapped memory size to the file size limit
+#ifdef RLIMIT_FSIZE
+    // WASI has no RLIMIT_FSIZE, so this clipping is skipped there.
     struct rlimit fileSizeLimit;
     if ((getrlimit(RLIMIT_FSIZE, &fileSizeLimit) == 0) && (fileSizeLimit.rlim_cur != RLIM_INFINITY))
     {
@@ -123,6 +134,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
             maxDoubleMappedMemorySize = fileSizeLimit.rlim_cur;
         }
     }
+#endif // RLIMIT_FSIZE
 
     if (ftruncate(fd, maxDoubleMappedMemorySize) == -1)
     {

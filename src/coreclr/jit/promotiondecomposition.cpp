@@ -1159,12 +1159,19 @@ private:
         //
         GenTreeFlags GetIndirFlags(var_types type)
         {
-            if (genTypeSize(type) == 1)
+            GenTreeFlags flags = m_indirFlags;
+            if (!varTypeIsGC(type))
             {
-                return m_indirFlags & ~GTF_IND_UNALIGNED;
+                // These accesses are pieces of a whole struct copy, so they do not need to be atomic.
+                flags |= GTF_IND_ALLOW_NON_ATOMIC;
             }
 
-            return m_indirFlags;
+            if (genTypeSize(type) == 1)
+            {
+                flags &= ~GTF_IND_UNALIGNED;
+            }
+
+            return flags;
         }
     };
 

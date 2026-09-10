@@ -59,32 +59,32 @@ public class AssetsComputingHelper
         var extension = candidate.GetMetadata("Extension");
         var fileName = candidate.GetMetadata("FileName");
         var assetType = candidate.GetMetadata("AssetType");
-        bool fromMonoPackage = IsFromRuntimePack(candidate);
+        bool fromRuntimePack = IsFromRuntimePack(candidate);
 
         // A similar logic is in ReadWasmNativeAssetsFromFileSystem target for RuntimeTests
         reason = extension switch
         {
-            ".a" when fromMonoPackage => "extension is .a is not supported.",
-            ".c" when fromMonoPackage => "extension is .c is not supported.",
-            ".h" when fromMonoPackage => "extension is .h is not supported.",
+            ".a" when fromRuntimePack => "extension is .a is not supported.",
+            ".c" when fromRuntimePack => "extension is .c is not supported.",
+            ".h" when fromRuntimePack => "extension is .h is not supported.",
             // It is safe to filter out all XML files since we are not interested in any XML file from the list
             // of ResolvedFilesToPublish to become a static web asset. Things like this include XML doc files and
             // so on.
             ".xml" => "it is a documentation file",
-            ".rsp" when fromMonoPackage => "extension is .rsp is not supported.",
-            ".props" when fromMonoPackage => "extension is .props is not supported.",
+            ".rsp" when fromRuntimePack => "extension is .rsp is not supported.",
+            ".props" when fromRuntimePack => "extension is .props is not supported.",
             ".blat" when !timezoneSupport => "timezone support is not enabled.",
             ".dat" when invariantGlobalization && fileName.StartsWith("icudt") => "invariant globalization is enabled",
             ".dat" when loadFullICUData && fileName != "icudt" => "full ICU data is enabled",
             ".dat" when !string.IsNullOrEmpty(customIcuCandidateFilename) && fileName != customIcuCandidateFilename => "custom icu file either from absolute path or from runtime pack path will be used",
             ".dat" when IsDefaultIcuMode() && !(icuShardsFromRuntimePack.Any(f => f == fileName)) => "automatic icu shard selection, based on application culture, is enabled",
-            ".json" when fromMonoPackage && (fileName == "wasm-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
-            ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
-            ".map" when emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => null,
-            ".map" when emitSourceMap && fromMonoPackage && enableDiagnostics && fileName == "dotnet.diagnostics.js" => null,
-            ".map" when emitSourceMap && fromMonoPackage && !enableDiagnostics && fileName == "dotnet.diagnostics.js" => "perf tracing is not enabled",
-            ".map" when !emitSourceMap && fromMonoPackage => "source map file is not published",
-            ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
+            ".json" when fromRuntimePack && (fileName == "wasm-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
+            ".ts" when fromRuntimePack && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
+            ".map" when emitSourceMap && fromRuntimePack && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => null,
+            ".map" when emitSourceMap && fromRuntimePack && enableDiagnostics && fileName == "dotnet.diagnostics.js" => null,
+            ".map" when emitSourceMap && fromRuntimePack && !enableDiagnostics && fileName == "dotnet.diagnostics.js" => "perf tracing is not enabled",
+            ".map" when !emitSourceMap && fromRuntimePack => "source map file is not published",
+            ".ts" when fromRuntimePack && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
             ".js" when assetType == "native" && dotnetJsSingleThreadNames.Contains(fileName) => null,
             ".js" when assetType == "native" && enableDiagnostics && dotnetJsDiagNames.Contains(fileName) => null,
             ".js" when assetType == "native" && !enableDiagnostics && dotnetJsDiagNames.Contains(fileName) => "perf tracing is not enabled",

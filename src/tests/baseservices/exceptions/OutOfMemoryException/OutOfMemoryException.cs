@@ -77,6 +77,7 @@ class OutOfMemoryExceptionTest
         // 32 MB GC heap limit (0x2000000): small enough to exhaust quickly but large enough for startup.
         psi.Environment["DOTNET_GCHeapHardLimit"] = "0x2000000";
         psi.Environment["DOTNET_DbgEnableMiniDump"] = "0";
+        psi.Environment["DOTNET_EnableCrashReport"] = "0";
 
         ProcessTextOutput output;
         try

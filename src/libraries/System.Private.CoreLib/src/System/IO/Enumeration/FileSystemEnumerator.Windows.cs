@@ -171,6 +171,13 @@ namespace System.IO.Enumeration
                 case Interop.StatusOptions.STATUS_NO_MORE_FILES:
                 // FILE_NOT_FOUND can occur when there are NO files in a volume root (usually there are hidden system files).
                 case Interop.StatusOptions.STATUS_FILE_NOT_FOUND:
+                // STATUS_OBJECT_NAME_NOT_FOUND occurs when an OS-level filter (FileName) is passed to NtQueryDirectoryFile
+                // and nothing matches. Most file systems report this as STATUS_NO_SUCH_FILE (handled above as
+                // STATUS_FILE_NOT_FOUND), but some- particularly read-only or virtual file systems- report it as
+                // STATUS_OBJECT_NAME_NOT_FOUND instead. We can't know which file system driver a given directory is on. The
+                // directory handle was already opened successfully, so this can only mean the filter matched nothing; treat
+                // it the same as no matches.
+                case Interop.StatusOptions.STATUS_OBJECT_NAME_NOT_FOUND:
                 // STATUS_OBJECT_NAME_INVALID is returned when the FileName has characters the filesystem doesn't like. They
                 // never would have matched manually filtering the current directory, so we'll return no matches. It is
                 // better to let Windows tell us that we have an invalid name as opposed to guessing. We can't know which

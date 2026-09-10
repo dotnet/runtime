@@ -16,11 +16,18 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 
 .class public auto ansi beforefieldinit Test_badcodeinsidefinally
        extends [mscorlib]System.Object
 {
+  .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+      string('https://github.com/dotnet/runtime/issues/133504')
+      type([TestLibrary]TestLibrary.PlatformDetection)
+      string[1] ('IsWasmReadyToRun')
+  }
 
   .method static object GetObj() cil managed
   {

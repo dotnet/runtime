@@ -22,7 +22,7 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
         } catch (error: any) {
             // do not propagate ExitStatus exception
             if (!error || typeof error.status !== "number") {
-                _ems_.dotnetApi.exit(1, error);
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
                 throw error;
             }
         }
@@ -48,7 +48,7 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         } catch (error: any) {
             // do not propagate ExitStatus exception
             if (!error || typeof error.status !== "number") {
-                _ems_.dotnetApi.exit(1, error);
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
                 throw error;
             }
         }
@@ -74,7 +74,7 @@ export function SystemJS_ScheduleFinalization(): void {
         } catch (error: any) {
             // do not propagate ExitStatus exception
             if (!error || typeof error.status !== "number") {
-                _ems_.dotnetApi.exit(1, error);
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
                 throw error;
             }
         }
@@ -103,7 +103,7 @@ export function SystemJS_ScheduleDiagnosticServer(delayMs: number): void {
         } catch (error: any) {
             // do not propagate ExitStatus exception
             if (!error || typeof error.status !== "number") {
-                _ems_.dotnetApi.exit(1, error);
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
                 throw error;
             }
         }

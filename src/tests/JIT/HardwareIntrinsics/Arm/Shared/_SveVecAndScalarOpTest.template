@@ -79,8 +79,8 @@ namespace {Namespace}
 
             public DataTable({Op1BaseType}[] inArray1, {RetBaseType}[] outArray, int alignment)
             {
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
+                int sizeOfinArray1 = inArray1.Length * sizeof({Op1BaseType});
+                int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfoutArray: {sizeOfoutArray}");
@@ -122,7 +122,7 @@ namespace {Namespace}
                 var testStruct = new TestStruct();
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
                 testStruct._fld2 = {NextValueOp1};
 
                 return testStruct;
@@ -139,8 +139,8 @@ namespace {Namespace}
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int Op1ElementCount = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
+        private static readonly int RetElementCount = sizeof({RetVectorType}<{RetBaseType}>) / sizeof({RetBaseType});
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
 
@@ -155,7 +155,7 @@ namespace {Namespace}
             Succeeded = true;
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
 
             _fld2 = {NextValueOp1};
 
@@ -280,7 +280,7 @@ namespace {Namespace}
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof({RetVectorType}<{RetBaseType}>));
 
             ValidateResult(inArray1, op2, outArray, method);
         }
@@ -290,8 +290,8 @@ namespace {Namespace}
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof({RetVectorType}<{RetBaseType}>));
 
             ValidateResult(inArray1, op2, outArray, method);
         }

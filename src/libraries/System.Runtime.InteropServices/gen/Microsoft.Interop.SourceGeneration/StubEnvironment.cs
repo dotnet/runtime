@@ -101,5 +101,19 @@ namespace Microsoft.Interop
                 return _stackTraceHiddenAttrType.Value;
             }
         }
+
+        private Optional<INamedTypeSymbol?> _debuggerHiddenAttrType;
+        public INamedTypeSymbol? DebuggerHiddenAttrType
+        {
+            get
+            {
+                if (_debuggerHiddenAttrType.HasValue)
+                {
+                    return _debuggerHiddenAttrType.Value;
+                }
+                _debuggerHiddenAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.System_Diagnostics_DebuggerHiddenAttribute));
+                return _debuggerHiddenAttrType.Value;
+            }
+        }
     }
 }

@@ -220,7 +220,7 @@ namespace System.Net.Http
                     // Send a PING
                     _pingCounter--;
                     if (NetEventSource.Log.IsEnabled()) connection.Trace($"[FlowControl] Sending RTT PING with payload {_pingCounter}");
-                    connection.LogExceptions(connection.SendPingAsync(_pingCounter, isAck: false));
+                    connection.QueuePing(_pingCounter, isAck: false);
                     _pingSentTimestamp = now;
                     _state = State.PingSent;
                 }

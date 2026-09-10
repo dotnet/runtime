@@ -8,7 +8,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace Test
+namespace JitTest_Directed_UnrollLoop_Dev10_846218
 {
     internal struct IntVec
     {
@@ -47,6 +47,7 @@ namespace Test
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -62,4 +63,3 @@ namespace Test
         }
     }
 }
-

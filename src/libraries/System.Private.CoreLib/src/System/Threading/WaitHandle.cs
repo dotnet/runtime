@@ -170,7 +170,8 @@ namespace System.Threading
                         }
                     }
 
-                    if (sendWaitEvents)
+                    // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
+                    if (sendWaitEvents && NativeRuntimeEventSource.Log.IsEnabled())
                     {
                         NativeRuntimeEventSource.Log.WaitHandleWaitStart(waitSource, associatedObject ?? this);
                     }
@@ -184,7 +185,8 @@ namespace System.Threading
                             useTrivialWaits);
                     }
 
-                    if (sendWaitEvents)
+                    // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
+                    if (sendWaitEvents && NativeRuntimeEventSource.Log.IsEnabled())
                     {
                         NativeRuntimeEventSource.Log.WaitHandleWaitStop();
                     }
@@ -423,7 +425,8 @@ namespace System.Threading
                 }
             }
 
-            if (sendWaitEvents)
+            // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
+            if (sendWaitEvents && NativeRuntimeEventSource.Log.IsEnabled())
             {
                 NativeRuntimeEventSource.Log.WaitHandleWaitStart();
             }
@@ -434,7 +437,8 @@ namespace System.Threading
                 waitResult = WaitMultipleIgnoringSyncContextCore(handles, waitAll, millisecondsTimeout);
             }
 
-            if (sendWaitEvents)
+            // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
+            if (sendWaitEvents && NativeRuntimeEventSource.Log.IsEnabled())
             {
                 NativeRuntimeEventSource.Log.WaitHandleWaitStop();
             }

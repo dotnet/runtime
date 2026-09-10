@@ -502,48 +502,6 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif
 
-//
-// JIT Static access helpers when coreclr host specifies single appdomain flag
-//
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
-    mov x0, x1
-    ret lr
-
-LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetNonGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, x1
-    ldr      x1, [x1]
-    br       x1
-LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
-    mov x0, x1
-    ret lr
-
-LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, x1
-    ldr      x1, [x1]
-    br       x1
-LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-
 #ifdef PROFILING_SUPPORTED
 
 // ------------------------------------------------------------------

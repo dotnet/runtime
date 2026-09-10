@@ -158,6 +158,7 @@ $env:CORE_ROOT = "path\to\Core_Root"
 | **DynamicMethods** | DynamicMethod / IL emit |
 | **CallSignatures** | Wide signature surface for the ARGITER sub-check (primitives, byref/ptr, structs, generics) |
 | **CrossModule** | Calls across multiple assemblies exercising cross-module type references |
+| **NotYetLoadedArgType** | Regression coverage for the cDAC dropping a GC-root whose argument type is not yet loaded when a `PrestubMethodFrame` is scanned. |
 | **VarArgs** | `__arglist` / VASigCookie validation for ARGITER (Windows x86/x64/ARM64 only; excluded from GCREFS until GetStackReferences walks the cookie signature) |
 
 ## Architecture
@@ -176,4 +177,3 @@ CdacStressTestBase.RunGCRefStressAsync(debuggeeName)
   ├── Parse results log → CdacStressResults
   └── Assert: exit=100, zero failures
 ```
-

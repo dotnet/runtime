@@ -898,6 +898,83 @@ namespace Mono.Linker.Steps
                 return true;
             }
 
+            // Recognizes the OS platform-guard idiom and evaluates it to a constant. Unlike the
+            // OperatingSystem.IsX() predicates (per-target literals the generic analyzer already folds),
+            // IsOSPlatform routes through an instance String.Equals and, for the RuntimeInformation
+            // overload, an opaque OSPlatform struct, so it needs direct handling. The recognized platform
+            // token is mapped to its OperatingSystem.IsX() predicate, which is then folded normally -- that
+            // predicate also encodes the OSX/MacCatalyst aliasing, so no manual replication is needed.
+            bool TryEvaluateOSPlatformGuard(in UnreachableBlocksOptimizer optimizer, MethodDefinition md, Collection<Instruction> instructions, int callIndex, [NotNullWhen(true)] out Instruction? result)
+            {
+                result = null;
+
+                if (md.Name != "IsOSPlatform" || !md.IsStatic || md.GetMetadataParametersCount() != 1 || callIndex < 1)
+                    return false;
+
+                bool isRuntimeInformation = md.DeclaringType.IsTypeOf("System.Runtime.InteropServices", "RuntimeInformation");
+                bool isOperatingSystem = md.DeclaringType.IsTypeOf("System", "OperatingSystem");
+                if (!isRuntimeInformation && !isOperatingSystem)
+                    return false;
+
+                Instruction argProducer = instructions[callIndex - 1];
+                string? token;
+
+                if (isOperatingSystem)
+                {
+                    // OperatingSystem.IsOSPlatform(string) with a literal platform name.
+                    token = argProducer.OpCode.Code == Code.Ldstr ? (string)argProducer.Operand : null;
+                }
+                else
+                {
+                    // RuntimeInformation.IsOSPlatform(OSPlatform) built from a well-known OSPlatform value.
+                    if (argProducer.OpCode.Code != Code.Call)
+                        return false;
+
+                    MethodDefinition? producer = context.TryResolve((MethodReference)argProducer.Operand);
+                    if (producer == null || !producer.DeclaringType.IsTypeOf("System.Runtime.InteropServices", "OSPlatform"))
+                        return false;
+
+                    token = producer.Name switch
+                    {
+                        "get_Windows" => "WINDOWS",
+                        "get_Linux" => "LINUX",
+                        "get_OSX" => "OSX",
+                        "get_FreeBSD" => "FREEBSD",
+                        "Create" when callIndex >= 2 && instructions[callIndex - 2].OpCode.Code == Code.Ldstr
+                            => (string)instructions[callIndex - 2].Operand,
+                        _ => null,
+                    };
+                }
+
+                string? predicate = token?.ToUpperInvariant() switch
+                {
+                    "WINDOWS" => "IsWindows",
+                    "LINUX" => "IsLinux",
+                    "OSX" or "MACOS" => "IsMacOS",
+                    "BROWSER" => "IsBrowser",
+                    "WASI" => "IsWasi",
+                    "ANDROID" => "IsAndroid",
+                    "IOS" => "IsIOS",
+                    "MACCATALYST" => "IsMacCatalyst",
+                    "TVOS" => "IsTvOS",
+                    "WATCHOS" => "IsWatchOS",
+                    "FREEBSD" => "IsFreeBSD",
+                    _ => null, // unknown/custom platform: leave the guard untouched
+                };
+                if (predicate == null)
+                    return false;
+
+                TypeDefinition? operatingSystem = md.DeclaringType.Module.GetType("System.OperatingSystem");
+                MethodDefinition? isPlatform = operatingSystem?.Methods.FirstOrDefault(
+                    m => m.Name == predicate && m.IsStatic && m.HasBody && m.GetMetadataParametersCount() == 0);
+                if (isPlatform == null)
+                    return false;
+
+                // The predicate body is a per-target 'return true/false', which the constant analyzer folds.
+                result = optimizer.TryGetMethodCallResult(new CalleePayload(isPlatform, Array.Empty<Instruction>()))?.Instruction;
+                return result != null;
+            }
+
             public bool ApplyTemporaryInlining(in UnreachableBlocksOptimizer optimizer)
             {
                 bool changed = false;
@@ -919,6 +996,19 @@ namespace Mono.Linker.Steps
                             // Not supported
                             if (md.IsVirtual || md.CallingConvention == MethodCallingConvention.VarArg)
                                 break;
+
+                            // RuntimeInformation.IsOSPlatform(OSPlatform.X) / OperatingSystem.IsOSPlatform("X")
+                            // don't fold through the generic constant analyzer (the argument flows through an
+                            // opaque OSPlatform struct or an instance String.Equals). Recognize the guard idiom
+                            // directly so its dead branch (and any foreign P/Invoke it protects) can be trimmed.
+                            if (context.IsOptimizationEnabled(CodeOptimizations.IPConstantPropagation, Body.Method)
+                                && TryEvaluateOSPlatformGuard(optimizer, md, instructions, i, out Instruction? osGuardResult))
+                            {
+                                RewriteToNop(i - 1, 1);
+                                Rewrite(i, osGuardResult);
+                                changed = true;
+                                break;
+                            }
 
                             Instruction[]? args = GetArgumentsOnStack(md, FoldedInstructions ?? instructions, i);
                             targetResult = args?.Length > 0 && md.IsStatic ? EvaluateIntrinsicCall(md, args) : null;
@@ -1187,7 +1277,23 @@ namespace Mono.Linker.Steps
                 var reachable = new BitArray(FoldedInstructions.Count);
 
                 Stack<int>? condBranches = null;
-                bool exceptionHandlersChecked = !Body.HasExceptionHandlers;
+                BitArray? reachableExceptionHandlers = null;
+                (int Start, int End)[]? exceptionHandlerRanges = null;
+                if (Body.HasExceptionHandlers)
+                {
+                    int handlerCount = ExceptionHandlers.Count;
+                    reachableExceptionHandlers = new BitArray(handlerCount);
+                    exceptionHandlerRanges = new (int Start, int End)[handlerCount];
+
+                    // Fixed-point discovery can scan handlers multiple times, but instruction positions do not change here.
+                    Collection<Instruction> instructions = Instructions;
+                    for (int handlerIndex = 0; handlerIndex < handlerCount; handlerIndex++)
+                    {
+                        ExceptionHandler handler = ExceptionHandlers[handlerIndex];
+                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), instructions.IndexOf(handler.TryEnd) - 1);
+                    }
+                }
+
                 Instruction target;
                 int i = 0;
                 while (true)
@@ -1245,23 +1351,23 @@ namespace Mono.Linker.Steps
                         continue;
                     }
 
-                    if (!exceptionHandlersChecked)
+                    if (reachableExceptionHandlers != null)
                     {
-                        exceptionHandlersChecked = true;
+                        Debug.Assert(exceptionHandlerRanges is not null);
 
-                        var instrs = Instructions;
-                        foreach (var handler in ExceptionHandlers)
+                        // Newly reachable handlers can contain protected regions for nested handlers.
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
                         {
-                            int start = instrs.IndexOf(handler.TryStart);
-                            int end = instrs.IndexOf(handler.TryEnd) - 1;
-
-                            if (!HasAnyBitSet(reachable, start, end))
-                            {
-                                unreachableHandlers ??= new List<ExceptionHandler>();
-
-                                unreachableHandlers.Add(handler);
+                            if (reachableExceptionHandlers[handlerIndex])
                                 continue;
-                            }
+
+                            var handler = ExceptionHandlers[handlerIndex];
+                            (int Start, int End) range = exceptionHandlerRanges[handlerIndex];
+
+                            if (!HasAnyBitSet(reachable, range.Start, range.End))
+                                continue;
+
+                            reachableExceptionHandlers[handlerIndex] = true;
 
                             condBranches ??= new Stack<int>();
 
@@ -1288,6 +1394,15 @@ namespace Mono.Linker.Steps
                         {
                             i = condBranches.Pop();
                             continue;
+                        }
+
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
+                        {
+                            if (reachableExceptionHandlers[handlerIndex])
+                                continue;
+
+                            unreachableHandlers ??= new List<ExceptionHandler>();
+                            unreachableHandlers.Add(ExceptionHandlers[handlerIndex]);
                         }
                     }
 

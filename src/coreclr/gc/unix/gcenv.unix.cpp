@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <cassert>
-#define __STDC_FORMAT_MACROS
 #include <cinttypes>
 #include <memory>
 #include <pthread.h>
@@ -143,8 +142,18 @@ bool GCToOSInterface::Initialize()
 
     g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
 
-    // Calculate and cache the number of processors on this machine
+#ifdef TARGET_ANDROID
+    // Android tries really hard to save power by powering off CPUs on SMP phones which
+    // means the normal way to query cpu count can underestimate the number of available CPUs.
+    int cpuCount = minipal_get_cpu_present_count();
+    if (cpuCount == -1)
+    {
+        cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
+    }
+#else
     int cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
+#endif
+
     if (cpuCount == -1)
     {
         return false;
@@ -382,9 +391,6 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
     int mmapFlags = MAP_ANON | MAP_PRIVATE | hugePagesFlag;
-#ifdef __HAIKU__
-    mmapFlags |= MAP_NORESERVE;
-#endif
     void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, mmapFlags, -1, 0);
 
     if (pRetVal != MAP_FAILED)
@@ -535,9 +541,6 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
     int mmapFlags = MAP_FIXED | MAP_ANON | MAP_PRIVATE;
-#ifdef TARGET_HAIKU
-    mmapFlags |= MAP_NORESERVE;
-#endif
     bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
 #if defined(MADV_DONTDUMP)
@@ -1272,31 +1275,6 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 
     if (available_page_file != nullptr)
         *available_page_file = GetAvailablePageFile();
-}
-
-// Get a high precision performance counter
-// Return:
-//  The counter value
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    return minipal_hires_ticks();
-}
-
-// Get a frequency of the high precision performance counter
-// Return:
-//  The counter frequency
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    // The counter frequency of gettimeofday is in microseconds.
-    return minipal_hires_tick_frequency();
-}
-
-// Get a time stamp with a low precision
-// Return:
-//  Time stamp in milliseconds
-uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    return (uint64_t)minipal_lowres_ticks();
 }
 
 // Gets the total number of processors on the machine, not taking
