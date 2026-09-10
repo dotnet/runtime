@@ -299,7 +299,6 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc2");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
