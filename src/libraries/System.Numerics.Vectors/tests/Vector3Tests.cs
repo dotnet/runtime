@@ -1951,6 +1951,15 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void GreaterThanAnyTest()
+        {
+            Assert.False(Vector3.GreaterThanAny(Vector3.Create(1, 2, 3), Vector3.Create(1, 2, 3)));
+            Assert.True(Vector3.GreaterThanAny(Vector3.Create(2, 2, 3), Vector3.Create(1, 2, 3)));
+            Assert.True(Vector3.GreaterThanAny(Vector3.Create(1, 3, 3), Vector3.Create(1, 2, 3)));
+            Assert.True(Vector3.GreaterThanAny(Vector3.Create(1, 2, 4), Vector3.Create(1, 2, 3)));
+        }
+
+        [Fact]
         public void GreaterThanOrEqualAnyTest()
         {
             // Test case that would have failed before fix: no elements pass, but 4th (0 >= 0) would pass
@@ -1976,6 +1985,15 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void LessThanAnyTest()
+        {
+            Assert.False(Vector3.LessThanAny(Vector3.Create(1, 2, 3), Vector3.Create(1, 2, 3)));
+            Assert.True(Vector3.LessThanAny(Vector3.Create(0, 2, 3), Vector3.Create(1, 2, 3)));
+            Assert.True(Vector3.LessThanAny(Vector3.Create(1, 1, 3), Vector3.Create(1, 2, 3)));
+            Assert.True(Vector3.LessThanAny(Vector3.Create(1, 2, 2), Vector3.Create(1, 2, 3)));
+        }
+
+        [Fact]
         public void LessThanOrEqualAnyTest()
         {
             // Test case that would have failed before fix: no elements pass, but 4th (0 <= 0) would pass
@@ -1991,8 +2009,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void GreaterThanOrEqualAllTest()
         {
-            // Test case that would have failed before fix: all 3 elements pass, but 4th could give false positive
-            // with undefined upper element from AsVector128Unsafe
+            // The zero-filled padding lane must not affect the result.
             Assert.True(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, 3, 4), Vector3.Create(1, 2, 3)));
             Assert.True(Vector3.GreaterThanOrEqualAll(Vector3.Create(1, 2, 3), Vector3.Create(1, 2, 3))); // All equal
 
@@ -2000,13 +2017,15 @@ namespace System.Numerics.Tests
             Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(0, 3, 4), Vector3.Create(1, 2, 3))); // X not greater or equal
             Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, 1, 4), Vector3.Create(1, 2, 3))); // Y not greater or equal
             Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, 3, 2), Vector3.Create(1, 2, 3))); // Z not greater or equal
+            Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(float.NaN, 3, 4), Vector3.Create(1, 2, 3)));
+            Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, float.NaN, 4), Vector3.Create(1, 2, 3)));
+            Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, 3, float.NaN), Vector3.Create(1, 2, 3)));
         }
 
         [Fact]
         public void LessThanOrEqualAllTest()
         {
-            // Test case that would have failed before fix: all 3 elements pass, but 4th could give false positive
-            // with undefined upper element from AsVector128Unsafe
+            // The zero-filled padding lane must not affect the result.
             Assert.True(Vector3.LessThanOrEqualAll(Vector3.Create(1, 2, 3), Vector3.Create(2, 3, 4)));
             Assert.True(Vector3.LessThanOrEqualAll(Vector3.Create(1, 2, 3), Vector3.Create(1, 2, 3))); // All equal
 
@@ -2014,6 +2033,9 @@ namespace System.Numerics.Tests
             Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(3, 2, 3), Vector3.Create(2, 3, 4))); // X not less or equal
             Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(1, 4, 3), Vector3.Create(2, 3, 4))); // Y not less or equal
             Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(1, 2, 5), Vector3.Create(2, 3, 4))); // Z not less or equal
+            Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(float.NaN, 2, 3), Vector3.Create(2, 3, 4)));
+            Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(1, float.NaN, 3), Vector3.Create(2, 3, 4)));
+            Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(1, 2, float.NaN), Vector3.Create(2, 3, 4)));
         }
     }
 }

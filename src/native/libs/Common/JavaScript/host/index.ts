@@ -4,6 +4,7 @@
 import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExportsTable, LoaderConfigInternal } from "./types";
 import { InternalExchangeIndex } from "./types";
 import { _ems_ } from "../ems-ambient";
+import { ENVIRONMENT_IS_NODE } from "../per-module";
 
 import GitHash from "consts:gitHash";
 
@@ -60,6 +61,18 @@ function setupEmscripten() {
         !loaderConfig.virtualWorkingDirectory ||
         !loaderConfig.environmentVariables) {
         throw new Error("Invalid runtime config, cannot initialize the runtime.");
+    }
+
+    const globalThisAny = globalThis as any;
+    // On Node.js, process.env is the lowest-precedence source of environment variables: it must not
+    // override values from the generated manifest (dotnet.js) or from withEnvironmentVariable().
+    if (ENVIRONMENT_IS_NODE && globalThisAny.process && globalThisAny.process.env) {
+        const processEnv = globalThisAny.process.env;
+        for (const key in processEnv) {
+            if (loaderConfig.environmentVariables[key] === undefined) {
+                loaderConfig.environmentVariables[key] = processEnv[key];
+            }
+        }
     }
 
     for (const key in loaderConfig.environmentVariables) {

@@ -246,7 +246,7 @@ public unsafe partial class TargetTests
         ContractDescriptorHelpers.Fill(descriptor, targetTestHelpers.Arch, descriptorJson.Length, 0xdddddddd, 0, 0xeeeeeeee);
 
         FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTargetFromRawDescriptor(descriptor, descriptorJson, []));
-        Assert.IsType<System.Text.Json.JsonException>(ex.InnerException);
+        Assert.IsAssignableFrom<System.Text.Json.JsonException>(ex.InnerException);
         Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
     }
 

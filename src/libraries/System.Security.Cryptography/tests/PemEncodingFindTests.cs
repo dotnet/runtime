@@ -424,6 +424,74 @@ MII
             AssertExtensions.SequenceEqual(Create(base64), content[fields.Base64Data]);
         }
 
+        [Fact]
+        public void Find_ManyBegins_OneEnd()
+        {
+            const int ContentLength = 4 * 1024 * 1024;
+            const string GoodPrefix = "-----BEGIN Y-----\n";
+            const string MinPayload = "base64AAAA==\n";
+
+            int div4 = 0;
+            int mod4 = 0;
+            int goodStart = 0;
+
+            // Build a string that looks like
+            // -----BEGIN X-----
+            // -----BEGIN X-----
+            // ...
+            // -----BEGIN X-----
+            // -----BEGIN Y-----
+            // [mod4 whitespace][content]
+            // -----END Y-----
+            string content = string.Create(
+                ContentLength,
+                0,
+                (span, _) =>
+                {
+                    string suffix = "-----END Y-----\n";
+                    ReadOnlySpan<char> badPrefix = "-----BEGIN X-----\n";
+                    ReadOnlySpan<char> goodPrefix = GoodPrefix;
+                    ReadOnlySpan<char> minPayload = MinPayload;
+
+                    int tailLength = suffix.Length + minPayload.Length;
+                    int reserved = goodPrefix.Length + tailLength;
+                    int badPrefixCount = (span.Length - reserved) / badPrefix.Length;
+
+                    for (int i = 0; i < badPrefixCount; i++)
+                    {
+                        badPrefix.CopyTo(span);
+                        span = span.Slice(badPrefix.Length);
+                    }
+
+                    goodStart = ContentLength - span.Length;
+                    goodPrefix.CopyTo(span);
+                    span = span.Slice(goodPrefix.Length);
+
+                    int remain = span.Length - tailLength;
+                    (div4, mod4) = int.DivRem(remain, 4);
+
+                    span.Slice(0, mod4).Fill('\n');
+                    span = span.Slice(mod4);
+
+                    span.Slice(0, 4 * div4).Fill('A');
+                    span = span.Slice(4 * div4);
+
+                    minPayload.CopyTo(span);
+                    span = span.Slice(minPayload.Length);
+
+                    suffix.CopyTo(span);
+                });
+
+            int expectedBase64Start = goodStart + GoodPrefix.Length + mod4;
+            int expectedBase64Len = 4 * div4 + MinPayload.Length - 1;
+
+            AssertPemFound(
+                content,
+                expectedLocation: goodStart .. (ContentLength - 1),
+                expectedBase64: expectedBase64Start .. (expectedBase64Start + expectedBase64Len),
+                expectedLabel: (goodStart + 11) .. (goodStart + 12));
+        }
+
         private PemFields AssertPemFound(
             string input,
             Range expectedLocation,

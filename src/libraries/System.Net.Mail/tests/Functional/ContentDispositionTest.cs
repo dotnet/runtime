@@ -93,6 +93,17 @@ namespace System.Net.Mime.Tests
         }
 
         [Fact]
+        public static void ToString_EncodedWordWithinInvalidParameterValue_DoesNotBypassEncoding()
+        {
+            var cd = new ContentDisposition();
+            cd.FileName = "report\r\nX-Test: injected =?utf-8?B?YQ?=";
+
+            string value = cd.ToString();
+
+            Assert.DoesNotContain("\r\nX-Test:", value, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public static void Inline_Roundtrip()
         {
             var cd = new ContentDisposition();

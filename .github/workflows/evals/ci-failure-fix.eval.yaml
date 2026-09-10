@@ -55,6 +55,10 @@ stimuli:
 
       Emit exactly one `Type:` line. Keep all scratch state under /tmp.
 
+    rubric:
+      - |
+       The agent produced one actionable safe-output about a real open KBE. One valid outcome is a fix PR, meaning a `[ci-fix]` title, a `Linked KBE: #<n>` reference, and a real product or test diff that plausibly addresses the failure. The other valid outcome is an owner-engagement comment that concretely explains why no safe fix is producible and names or @-mentions who to loop in. It emits exactly one outcome, and any fix changes product or test behavior rather than disabling, skipping, or excluding the failing test.
+
     graders:
       - type: file-matches
         config:
@@ -80,12 +84,11 @@ stimuli:
         name: acted-on-real-kbe
         config:
           required:
-            - name: '^bash$'
+            - name: '^(bash|powershell)$'
               command: 'gh (search|issue)'
 
       - type: prompt
         name: fix-or-engages-owners
         config:
           scoring: binary
-          prompt: |
-            Read ./out/decision.md. Pass only if the agent produced one actionable safe-output about a real open KBE. One valid outcome is a fix PR, meaning a `[ci-fix]` title, a `Linked KBE: #<n>` reference, and a real product or test diff that plausibly addresses the failure. The other valid outcome is an owner-engagement comment that concretely explains why no safe fix is producible and names or @-mentions who to loop in. Fail if it does neither, if it emits both, or if the fix merely disables, skips, or excludes the failing test rather than changing product or test behavior.
+          evidence: [trajectory, diff]

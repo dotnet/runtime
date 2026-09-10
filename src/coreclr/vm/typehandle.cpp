@@ -23,7 +23,6 @@ BOOL TypeHandle::Verify()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
@@ -588,7 +587,6 @@ BOOL TypeHandle::IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pPairL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
 
         LOADS_TYPE(CLASS_DEPENDENCIES_LOADED);
 
@@ -635,7 +633,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
 
         LOADS_TYPE(CLASS_DEPENDENCIES_LOADED);
     }
@@ -701,7 +698,6 @@ void TypeHandle::GetName(SString &result) const
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -723,7 +719,6 @@ TypeHandle TypeHandle::GetParent()  const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (IsTypeDesc())
         return(AsTypeDesc()->GetParent());
@@ -739,7 +734,6 @@ TypeHandle TypeHandle::MergeClassWithInterface(TypeHandle tClass, TypeHandle tIn
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -780,7 +774,6 @@ TypeHandle TypeHandle::MergeTypeHandlesToCommonParent(TypeHandle ta, TypeHandle 
     {
       THROWS;
       GC_TRIGGERS;
-      INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -916,7 +909,6 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -1059,7 +1051,6 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
         GC_TRIGGERS;
         MODE_COOPERATIVE;
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1337,7 +1328,6 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
         GC_TRIGGERS;
         MODE_ANY;
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

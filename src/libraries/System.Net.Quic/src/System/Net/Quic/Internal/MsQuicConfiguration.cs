@@ -288,7 +288,11 @@ internal static partial class MsQuicConfiguration
                 ThrowHelper.ThrowIfMsQuicError(status, SR.net_quic_tls_version_notsupported);
             }
 
-            if (status == MsQuic.QUIC_STATUS_CERT_NO_CERT && certificate != null && certificate.HasPrivateKey())
+            // Schannel reports SEC_E_NO_CREDENTIALS (mapped to QUIC_STATUS_CERT_NO_CERT) for
+            // server certificates and SEC_E_UNKNOWN_CREDENTIALS for client certificates when the
+            // private key is ephemeral, which is not supported on Windows.
+            if ((status == MsQuic.QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
+                certificate is not null && certificate.HasPrivateKey())
             {
                 using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
                 if (safeCertContextHandle.HasEphemeralPrivateKey)

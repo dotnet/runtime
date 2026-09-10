@@ -19,6 +19,24 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract partial class ObjectWriter
     {
+        public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            ObjectWriter objectWriter =
+                factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
+                factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                factory.Target.Architecture == TargetArchitecture.Wasm32 ? new WasmRelocatableObjectWriter(factory, options) :
+                new ElfObjectWriter(factory, options);
+
+            using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);
+            objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
+
+            stopwatch.Stop();
+            if (logger.IsVerbose)
+                logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");
+        }
+
         // Debugging
         private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 
@@ -56,10 +74,10 @@ namespace ILCompiler.ObjectWriter
 
         private protected abstract void EmitDebugFunctionInfo(
             uint methodTypeIndex,
+            Utf8String methodDisplayName,
             Utf8String methodName,
             SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode,
-            bool hasSequencePoints);
+            INodeWithDebugInfo debugNode);
 
         private protected virtual void EmitDebugThunkInfo(
             Utf8String methodName,
@@ -105,9 +123,9 @@ namespace ILCompiler.ObjectWriter
                     {
                         if (node is IMethodNode methodNode)
                         {
-                            bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                            uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            uint methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
+                            Utf8String methodDisplayName = new Utf8String(CSharpTypeNameFormatter.Instance.FormatName(methodNode.Method));
+                            EmitDebugFunctionInfo(methodTypeIndex, methodDisplayName, methodName, methodSymbol, debugNode);
                         }
                         else
                         {

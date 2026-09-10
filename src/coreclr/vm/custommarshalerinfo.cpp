@@ -87,7 +87,6 @@ void *CustomMarshalerInfo::operator new(size_t size, LoaderHeap *pHeap)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pHeap));
     }
     CONTRACTL_END;
@@ -142,7 +141,6 @@ EEHashEntry_t * EECMInfoHashtableHelper::AllocateEntry(EECMInfoHashtableKey *pKe
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END;
 

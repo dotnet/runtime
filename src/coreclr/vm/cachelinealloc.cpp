@@ -86,7 +86,6 @@ void *CCacheLineAllocator::VAlloc(ULONG cbSize)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 
@@ -166,7 +165,6 @@ void *CCacheLineAllocator::GetCacheLine64()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 
@@ -214,7 +212,6 @@ void *CCacheLineAllocator::GetCacheLine32()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 

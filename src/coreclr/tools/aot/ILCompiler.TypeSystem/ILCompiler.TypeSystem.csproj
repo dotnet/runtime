@@ -206,6 +206,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs">
       <Link>TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CSharpTypeNameFormatter.cs">
+      <Link>Utilities\CSharpTypeNameFormatter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameFormatter.cs">
       <Link>Utilities\CustomAttributeTypeNameFormatter.cs</Link>
     </Compile>

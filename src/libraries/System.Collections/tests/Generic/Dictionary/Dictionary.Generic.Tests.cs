@@ -469,6 +469,16 @@ namespace System.Collections.Tests
         }
 
         [Theory]
+        [InlineData(132, 137)]
+        [InlineData(607, 613)]
+        public void TrimExcess_Generic_UsesNearestValidPrime(int requestedCapacity, int expectedCapacity)
+        {
+            var dictionary = new Dictionary<TKey, TValue>(1000);
+            dictionary.TrimExcess(requestedCapacity);
+            Assert.Equal(expectedCapacity, dictionary.Capacity);
+        }
+
+        [Theory]
         [InlineData(20)]
         [InlineData(23)]
         public void TrimExcess_Generic_TrimToLargerThanExistingCapacity_DoesNothing(int suggestedCapacity)

@@ -21,7 +21,9 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
+        // check to Roslyn and the runtime.
+        [Theory, TestCategory("mono")]
         [BuildAndRun()]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
                         (Configuration config, bool aot)
@@ -90,19 +92,49 @@ namespace Wasm.Build.Tests
                     new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ true, /*expectSuccess*/ true }
                 ).UnwrapItemsAsArrays();
 
-        [Theory]
+        // The library's struct is made non-blittable by a type the generator recognises by name, which
+        // only Mono's generator still does. Kept here so that path stays covered; the CoreCLR
+        // equivalent is the LayoutKind.Auto theory below.
+        [Theory, TestCategory("mono")]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
-        public async Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
+        public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
                         (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
+            => BlittableFromDifferentAssembly(
+                config, aot, libraryHasAttribute, appHasAttribute, expectSuccess, useAutoLayout: false);
+
+        // Same scenario, with the struct made non-blittable by its layout rather than by a name only a
+        // test can produce. What is under test either way is that the DisableRuntimeMarshalling the
+        // generator honours is the one on the assembly declaring the callback, not the struct.
+        [Theory, TestCategory("mono")]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
+        public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly_WithAutoLayout
+                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
+            => BlittableFromDifferentAssembly(
+                config, aot, libraryHasAttribute, appHasAttribute, expectSuccess, useAutoLayout: true);
+
+        private async Task BlittableFromDifferentAssembly
+                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, bool useAutoLayout)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
             string extraItems =  @$"<ProjectReference Include=""..\\Library\\Library.csproj"" />";
             string libRelativePath = Path.Combine("..", "Library", "Library.cs");
             string programRelativePath = Path.Combine("Common", "Program.cs");
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "blittable_different_library", extraProperties: extraProperties, extraItems: extraItems);
+            string prefix = useAutoLayout ? "blittable_different_library_auto" : "blittable_different_library";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraProperties: extraProperties, extraItems: extraItems);
             ReplaceFile(libRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly_Lib.cs"));
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly.cs"));
+            if (useAutoLayout)
+            {
+                // Drop the marker type and let the layout make S non-blittable instead.
+                UpdateFile(libRelativePath, new Dictionary<string, string>
+                {
+                    { "public struct __NonBlittableTypeForAutomatedTests__ { }", "" },
+                    { "public struct S {", "[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]\n    public struct S {" },
+                    { "public __NonBlittableTypeForAutomatedTests__ NonBlittable;", "public float Value2;" },
+                });
+            }
             if (!libraryHasAttribute)
             {
                 UpdateFile(libRelativePath, new Dictionary<string, string> { { "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]", "" } });
@@ -415,19 +447,19 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
         {
             // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with
@@ -443,8 +475,45 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(aot: false)]
+        [TestCategory("native")]
+        public async Task VersionedOSPlatformPInvokeIsIncluded(Configuration config, bool aot)
+        {
+            // Regression coverage for https://github.com/dotnet/runtime/issues/132297:
+            // a versioned platform attribute like [SupportedOSPlatform("browser1.0")] must still
+            // be treated as matching TargetOS=browser, so the pinvoke must be kept (not silently
+            // filtered out), while a versioned attribute for a different OS (e.g. "windows1.0")
+            // must still be filtered out.
+            string extraItems = @"<NativeFileReference Include=""versioned-osplatform.c"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "versioned_osplatform_pinvoke",
+                extraItems: extraItems, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VersionedOSPlatform.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "versioned-osplatform.c"), Path.Combine(_projectDir, "versioned-osplatform.c"));
+
+            (_, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot), isNativeBuild: true);
+            Assert.DoesNotContain("WASM0001", output);
+
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-build");
+            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
+
+            string includedPInvokeTableEntry = IsCoreClrRuntime
+                ? "DllImportEntry(versioned_browser_add)"
+                : "\"versioned_browser_add\", versioned_browser_add";
+            Assert.Contains(includedPInvokeTableEntry, pinvokeTable);
+
+            string excludedPInvokeTableEntry = IsCoreClrRuntime
+                ? "DllImportEntry(versioned_windows_add)"
+                : "\"versioned_windows_add\", versioned_windows_add";
+            Assert.DoesNotContain(excludedPInvokeTableEntry, pinvokeTable);
+
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains("sum: 42", result.TestOutput);
+        }
+
+        [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");

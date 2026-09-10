@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test131537.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Reproduce the WasmTestOnChrome-MONO-ST configuration from #131537:
+         corelib is AOT'd but this test assembly runs in the interpreter, so the
+         object(Nullable<T>) gsharedvt out-sig wrapper is not emitted by AOT.
+         This item is ignored on non-wasm-AOT runtimes. -->
+    <_AOT_InternalForceInterpretAssemblies Include="test131537.dll" />
+  </ItemGroup>
+</Project>

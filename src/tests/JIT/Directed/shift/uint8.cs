@@ -5,7 +5,7 @@
 using System;
 using Xunit;
 
-namespace ShiftTest
+namespace JitTest_Directed_shift_uint8
 {
     public class CL
     {
@@ -28,6 +28,7 @@ namespace ShiftTest
             arg_data <<= 4;
             return arg_data;
         }
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

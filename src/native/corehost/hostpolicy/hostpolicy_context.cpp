@@ -38,7 +38,11 @@ namespace
         if (!pal::clr_palstring(path, &file_path))
         {
             trace::warning(_X("Failure probing contents of the application bundle."));
+#ifdef TARGET_UNIX
+            trace::warning(_X("Failed to convert path [%s] to UTF8"), path);
+#else
             trace::warning(_X("Failed to convert path [%hs] to UTF8"), path);
+#endif
 
             return false;
         }

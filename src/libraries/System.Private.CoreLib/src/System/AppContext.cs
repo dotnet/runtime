@@ -130,20 +130,43 @@ namespace System
             }
         }
 
+        [ThreadStatic]
+        private static bool t_deliveringFirstChanceNotification;
+
         private static void OnFirstChanceException(Exception e, object? sender)
         {
             if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                FirstChanceExceptionEventArgs args = new(e);
-                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                // Guard against reentrancy. Allocating the event args below or running a
+                // handler may itself throw (e.g. OutOfMemoryException in a low-memory
+                // situation). That exception would trigger another first-chance
+                // notification on this same thread, allocate again, throw again, and
+                // recurse until the stack overflows. Skip nested notifications to break
+                // the recursion.
+                if (t_deliveringFirstChanceNotification)
                 {
-                    try
+                    return;
+                }
+
+                t_deliveringFirstChanceNotification = true;
+                try
+                {
+                    FirstChanceExceptionEventArgs args = new(e);
+
+                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                     {
-                        handler(sender, args);
+                        try
+                        {
+                            handler(sender, args);
+                        }
+                        catch
+                        {
+                        }
                     }
-                    catch
-                    {
-                    }
+                }
+                finally
+                {
+                    t_deliveringFirstChanceNotification = false;
                 }
             }
         }

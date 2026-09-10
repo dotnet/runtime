@@ -10,7 +10,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     set(SOURCES IjwProfileeDll.cpp)
 
     # add the shared library
-    add_library (IjwProfileeDll SHARED ${SOURCES})
+    add_library (IjwProfileeDll ${TEST_LIB_TYPE} ${SOURCES})
     target_link_libraries(IjwProfileeDll PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
     add_ijw_msbuild_project_properties(IjwProfileeDll ijwhost)
 

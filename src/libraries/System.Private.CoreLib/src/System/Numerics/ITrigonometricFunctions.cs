@@ -109,6 +109,17 @@ namespace System.Numerics
             // This is particularly true for `RadiansToDegrees` where 180 is exactly representable
             // and so allows an exactly representable intermediate value to be computed when overflow
             // doesn't occur.
+            //
+            // Which of the two forms wins is decided by where the nearest representable `pi / 180`
+            // falls relative to the infinitely precise value, which lands more or less uniformly for
+            // each number of significand bits. Folding therefore ranges from far worse to far better
+            // depending on the type, while this form stays between 55% and 75% correctly rounded
+            // everywhere. A DIM cannot pick the better half of that, since it can only reach
+            // `TSelf.Pi` and so must round twice to get there.
+            //
+            // A concrete type has neither constraint. It can name the constant directly and knows
+            // what its hardware and any wider type give it, so it can be correctly rounded over the
+            // whole domain, which every type here does and any other implementation is free to do.
 
             return (degrees * TSelf.Pi) / TSelf.CreateChecked(180);
         }

@@ -39,6 +39,7 @@ namespace Internal.IL
 
         private TypeEqualityPatternAnalyzer _typeEqualityPatternAnalyzer;
         private IsInstCheckPatternAnalyzer _isInstCheckPatternAnalyzer;
+        private RvaIntrinsicPatternAnalyzer _rvaIntrinsicPatternAnalyzer;
 
         private sealed class BasicBlock
         {
@@ -287,6 +288,7 @@ namespace Internal.IL
 
             _typeEqualityPatternAnalyzer = default;
             _isInstCheckPatternAnalyzer = default;
+            _rvaIntrinsicPatternAnalyzer = default;
             _currentInstructionOffset = 0;
             _previousInstructionOffset = -1;
         }
@@ -298,8 +300,10 @@ namespace Internal.IL
 
         partial void StartImportingInstruction(ILOpcode opcode)
         {
-            _typeEqualityPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
-            _isInstCheckPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
+            ILReader reader = new ILReader(_ilBytes, _currentOffset);
+            _typeEqualityPatternAnalyzer.Advance(opcode, reader, _methodIL);
+            _isInstCheckPatternAnalyzer.Advance(opcode, reader, _methodIL);
+            _rvaIntrinsicPatternAnalyzer.Advance(opcode, reader, _methodIL);
         }
 
         private void EndImportingInstruction()
@@ -530,6 +534,12 @@ namespace Internal.IL
 
         private void ImportCall(ILOpcode opcode, int token)
         {
+            if (_rvaIntrinsicPatternAnalyzer.IsRvaIntrinsicCall)
+            {
+                Debug.Assert(opcode == ILOpcode.call);
+                return;
+            }
+
             // We get both the canonical and runtime determined form - JitInterface mostly operates
             // on the canonical form.
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
@@ -1079,6 +1089,13 @@ namespace Internal.IL
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
+
+            // The JIT synthesizes calls to these when it inlines an async callee that may
+            // suspend, which it can do at any async call site.
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionWithContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionNoContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionContinueOnThreadPool"u8, null)), asyncReason);
         }
 
         // The JIT rewrites calls to AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter with a struct
@@ -1361,6 +1378,19 @@ namespace Internal.IL
                 var field = (FieldDesc)obj;
 
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
+
+                RvaIntrinsicPatternAnalyzer analyzer = _rvaIntrinsicPatternAnalyzer;
+                ILReader reader = GetRemainingBlockIL();
+                if (reader.HasNext)
+                {
+                    ILOpcode opcode = reader.ReadILOpcode();
+                    analyzer.Advance(opcode, reader, _methodIL);
+                    if (analyzer.IsRvaIntrinsicCall)
+                    {
+                        _dependencies.Add(_compilation.GetFieldRvaData(field), "InitializeArray/CreateSpan RVA data");
+                        return;
+                    }
+                }
 
                 if (field.OwningType.IsRuntimeDeterminedSubtype)
                 {

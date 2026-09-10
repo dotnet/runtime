@@ -212,7 +212,6 @@ public:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         PRECONDITION(HasLock());
 
@@ -407,12 +406,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_currentLevel = level;
-    }
-
-    static LoadLevelLimiter* GetCurrent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return t_currentLoadLevelLimiter;
     }
 };
 
@@ -1258,8 +1251,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefClassFactHash != NULL) {
             return m_pRefClassFactHash;
         }
@@ -1273,8 +1264,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefDispIDCache != NULL) {
             return m_pRefDispIDCache;
         }

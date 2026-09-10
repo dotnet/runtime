@@ -119,8 +119,12 @@
       <_ResolvedStreamConformanceTests
           Include="@(ResolvedFileToPublish)"
           Condition="'%(ResolvedFileToPublish.FileName)' == 'StreamConformanceTests'" />
+      <_ResolvedTestUtilities
+          Include="@(ResolvedFileToPublish)"
+          Condition="'%(ResolvedFileToPublish.FileName)' == 'TestUtilities'" />
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
-      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
+      <!-- Only root TestUtilities when it is actually in the link set; some trimmed apps don't reference it. -->
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true' and '@(_ResolvedTestUtilities)' != ''" />
       <TrimmerRootDescriptor
           Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.StreamConformanceTests.xml"
           Condition="'$(SkipTestUtilitiesReference)' != 'true' and '$(TargetsAppleMobile)' == 'true' and '@(_ResolvedStreamConformanceTests)' != ''" />

@@ -24,7 +24,7 @@ public class WasmR2RInfoTests
     // Builds a target whose FunctionTableIndexRangeList global points at a *slot* (pointer-to-pointer),
     // matching the CDAC_GLOBAL_POINTER contract. WasmR2RInfo must dereference the slot to reach the
     // list head; walking from the slot address directly reads garbage and finds nothing.
-    private static TestPlaceholderTarget CreateTarget()
+    private static TestPlaceholderTarget CreateTarget(bool emptyList = false)
     {
         TargetTestHelpers helpers = new(WasmArch);
         var targetBuilder = new TestPlaceholderTarget.Builder(WasmArch);
@@ -68,7 +68,7 @@ public class WasmR2RInfoTests
 
         // The slot holds the pointer to the list head. The global points at the slot, not the head.
         var slotFrag = allocator.Allocate((uint)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
-        helpers.WritePointer(slotFrag.Data.AsSpan().Slice(0, helpers.PointerSize), sectionFrag.Address);
+        helpers.WritePointer(slotFrag.Data.AsSpan().Slice(0, helpers.PointerSize), emptyList ? 0ul : sectionFrag.Address);
 
         var types = new Dictionary<DataType, Target.TypeInfo>
         {
@@ -109,5 +109,128 @@ public class WasmR2RInfoTests
         WasmR2RInfo info = new(CreateTarget());
 
         Assert.False(info.TryGetVirtualIPBase(MinFunctionTableIndex + 100, out _));
+    }
+
+    [Fact]
+    public void EmptyRangeList_ResolvesToNoSection()
+    {
+        WasmR2RInfo info = new(CreateTarget(emptyList: true));
+
+        Assert.False(info.TryGetVirtualIPBase(FunctionTableIndex, out _));
+        Assert.False(info.TryGetUnwindData(FunctionTableIndex, out _));
+    }
+
+    // Source: linked merged WASI corerun-composite.wasm (MD5 a978074b91cd722574b308f52c9ca994).
+    // The MVID-matched System.Private.CoreLib component's MethodDefEntryPoints uniquely maps
+    // RuntimeFunction[1040] to parameterless System.Exception::.ctor() (token 0x060004AB).
+    // The runtime-function bytes cc 11 00 00 79 07 00 00 establish BeginAddress 0x11cc with the
+    // funclet bit clear. MinFunctionTableIndex is the linker-assigned absolute table base for that
+    // image and is not portable across relinks. Disassembly of the same method supplied the frame
+    // virtual-IP field. MinVirtualIP was not reliably captured, so the fixture supplies a synthetic
+    // value that satisfies the runtime's virtual-IP encoding.
+    private const uint CapturedMinFunctionTableIndex = 6259;
+    private const uint CapturedNumRuntimeFunctions = 45283;
+    private const uint CapturedExceptionCtorLocalIndex = 1040;
+    private const uint CapturedExceptionCtorFunctionTableIndex = CapturedMinFunctionTableIndex + CapturedExceptionCtorLocalIndex;
+    private const uint DisassembledFrameVirtualIPHalf = 1;
+    private const uint CapturedFunctionBeginAddress = 0x11cc;
+    private const ulong SyntheticMinVirtualIP = 0x8000_0001;
+    private const uint SyntheticLastFunctionBeginAddress = 0x4000;
+
+    private static (TestPlaceholderTarget Target, ulong FrameAddress) CreateDispatchingCompositeFixture()
+    {
+        TargetTestHelpers helpers = new(WasmArch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(WasmArch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
+        var allocator = builder.CreateAllocator(0x0010_0000, 0x0080_0000);
+
+        int hashMapStride = MockHashMap.CreateLayout(WasmArch).Size;
+        var moduleLayout = MockLoaderModule.CreateLayout(WasmArch);
+        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(WasmArch, hashMapStride);
+        var runtimeFunctionLayout = helpers.LayoutFields([
+            new("BeginAddress", DataType.uint32),
+            new("UnwindData", DataType.uint32),
+        ]);
+        var rangeSectionLayout = helpers.LayoutFields([
+            new("MinFunctionTableIndex", DataType.uint32),
+            new("NumRuntimeFunctions", DataType.uint32),
+            new("R2RModule", DataType.pointer),
+            new("Next", DataType.pointer),
+        ]);
+
+        uint runtimeFunctionStride = runtimeFunctionLayout.Stride;
+        var runtimeFuncTableFrag = allocator.Allocate((ulong)(CapturedNumRuntimeFunctions * runtimeFunctionStride), "RuntimeFunctions");
+        int beginOffset = (int)(CapturedExceptionCtorLocalIndex * runtimeFunctionStride) + runtimeFunctionLayout.Fields["BeginAddress"].Offset;
+        helpers.Write(runtimeFuncTableFrag.Data.AsSpan().Slice(beginOffset, sizeof(uint)), CapturedFunctionBeginAddress);
+        int lastBeginOffset = (int)((CapturedNumRuntimeFunctions - 1) * runtimeFunctionStride) + runtimeFunctionLayout.Fields["BeginAddress"].Offset;
+        helpers.Write(runtimeFuncTableFrag.Data.AsSpan().Slice(lastBeginOffset, sizeof(uint)), SyntheticLastFunctionBeginAddress);
+
+        MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
+        r2rInfo.CompositeInfo = r2rInfo.Address;
+        r2rInfo.NumRuntimeFunctions = CapturedNumRuntimeFunctions;
+        r2rInfo.RuntimeFunctions = runtimeFuncTableFrag.Address;
+        r2rInfo.LoadedImageBase = LoadedImageBase;
+        r2rInfo.MinVirtualIP = SyntheticMinVirtualIP;
+
+        MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
+        module.ReadyToRunInfo = r2rInfo.Address;
+
+        var sectionFrag = allocator.Allocate(rangeSectionLayout.Stride, "FunctionTableIndexRangeSection");
+        var secFields = rangeSectionLayout.Fields;
+        helpers.Write(sectionFrag.Data.AsSpan().Slice(secFields["MinFunctionTableIndex"].Offset, sizeof(uint)), CapturedMinFunctionTableIndex);
+        helpers.Write(sectionFrag.Data.AsSpan().Slice(secFields["NumRuntimeFunctions"].Offset, sizeof(uint)), CapturedNumRuntimeFunctions);
+        helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["R2RModule"].Offset, helpers.PointerSize), module.Address);
+        helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["Next"].Offset, helpers.PointerSize), 0ul);
+
+        var slotFrag = allocator.Allocate((uint)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
+        helpers.WritePointer(slotFrag.Data.AsSpan().Slice(0, helpers.PointerSize), sectionFrag.Address);
+
+        var frameFrag = allocator.Allocate(16, "R2RFrame");
+        helpers.Write(frameFrag.Data.AsSpan().Slice(0, sizeof(uint)), CapturedExceptionCtorFunctionTableIndex);
+        helpers.Write(frameFrag.Data.AsSpan().Slice(4, sizeof(uint)), DisassembledFrameVirtualIPHalf);
+
+        var types = new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.RuntimeFunction] = new() { Fields = runtimeFunctionLayout.Fields, Size = runtimeFunctionLayout.Stride },
+            [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(r2rInfoLayout),
+            [DataType.Module] = TargetTestHelpers.CreateTypeInfo(moduleLayout),
+            [DataType.FunctionTableIndexRangeSection] = new() { Fields = rangeSectionLayout.Fields, Size = rangeSectionLayout.Stride },
+        };
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(types)
+            .AddGlobals(("FunctionTableIndexRangeList", slotFrag.Address))
+            .Build();
+
+        return (target, frameFrag.Address);
+    }
+
+    [Fact]
+    public void DispatchingCompositeFixture_ResolvesCapturedFunctionTableRange()
+    {
+        (TestPlaceholderTarget target, _) = CreateDispatchingCompositeFixture();
+        WasmR2RInfo info = new(target);
+
+        Assert.True(info.TryGetVirtualIPBase(CapturedExceptionCtorFunctionTableIndex, out ulong baseVirtualIP));
+        Assert.Equal(SyntheticMinVirtualIP + CapturedFunctionBeginAddress, baseVirtualIP);
+
+        uint lastFunctionTableIndex = CapturedMinFunctionTableIndex + CapturedNumRuntimeFunctions - 1;
+        Assert.True(info.TryGetVirtualIPBase(lastFunctionTableIndex, out ulong lastBaseVirtualIP));
+        Assert.Equal(SyntheticMinVirtualIP + SyntheticLastFunctionBeginAddress, lastBaseVirtualIP);
+
+        Assert.False(info.TryGetVirtualIPBase(CapturedMinFunctionTableIndex - 1, out _));
+        Assert.False(info.TryGetVirtualIPBase(CapturedMinFunctionTableIndex + CapturedNumRuntimeFunctions, out _));
+    }
+
+    [Fact]
+    public void DispatchingCompositeFixture_UnwinderDecodesDisassembledFrameVirtualIP()
+    {
+        (TestPlaceholderTarget target, ulong frameAddress) = CreateDispatchingCompositeFixture();
+        WasmUnwinder unwinder = new(target, new WasmR2RInfo(target));
+
+        TargetCodePointer virtualIP = unwinder.GetVirtualIP(new TargetPointer(frameAddress));
+        Assert.Equal(
+            SyntheticMinVirtualIP + CapturedFunctionBeginAddress + (DisassembledFrameVirtualIPHalf * 2),
+            virtualIP.Value);
     }
 }

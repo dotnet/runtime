@@ -795,7 +795,8 @@ namespace System.Net.Security
         //
         internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer, out int consumed)
         {
-            if (TryNextMessageViaTlsSession(incomingBuffer, out ProtocolToken wedged, out consumed))
+            if (!LocalAppContextSwitches.UseLegacySslStreamHandshake &&
+                TryNextMessageViaTlsSession(incomingBuffer, out ProtocolToken wedged, out consumed))
             {
                 if (NetEventSource.Log.IsEnabled() && wedged.Failed)
                 {

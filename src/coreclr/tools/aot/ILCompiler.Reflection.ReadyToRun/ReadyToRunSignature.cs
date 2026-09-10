@@ -1456,7 +1456,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case ReadyToRunFixupKind.DeclaringTypeHandle:
-                    ParseType(builder);
+                    if (_contextReader.DeclaringTypeHandleFixupUsesMethodSignature)
+                    {
+                        ParseMethod(builder);
+                    }
+                    else
+                    {
+                        // Images predating R2R version 27 encode the declaring type followed by the type
+                        // named by the token.
+                        ParseType(builder);
+                        builder.Append(" of ");
+                        ParseType(builder);
+                    }
                     builder.Append(" (DECLARING_TYPE_HANDLE)");
                     break;
 

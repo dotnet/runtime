@@ -5,6 +5,8 @@
 // It tries to access field from a promoted struct with an offset that 
 // is not valid for the promoted struct type.
 
+namespace JitTest_Directed_StructPromote_Unsafe_AccessInvalidFieldOffset;
+
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;

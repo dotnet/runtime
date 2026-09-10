@@ -88,7 +88,7 @@ static inline bool InterpOpIsCondBranch(int32_t opcode)
 // Check if opcode is a return instruction
 static inline bool InterpOpIsReturn(int32_t opcode)
 {
-    return opcode >= INTOP_RET && opcode <= INTOP_RET_VOID;
+    return opcode >= INTOP_RET && opcode <= INTOP_RET_VT_LOCALLOC;
 }
 
 // Check if opcode is a direct call (target can be resolved statically from data items)

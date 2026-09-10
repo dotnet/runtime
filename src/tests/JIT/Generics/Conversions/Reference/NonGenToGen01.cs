@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Conversions_Reference_NonGenToGen01;
+
 using System;
 using Xunit;
 

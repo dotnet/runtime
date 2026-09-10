@@ -329,8 +329,14 @@ probe_result_t deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, cons
                 {
                     // Bundles are expected to be RID-specific themselves, so RID-specific assets are not expected to be found in the bundle.
                     assert(!entry.is_rid_specific || !found_in_bundle);
+                    if (found_in_bundle)
+                    {
+                        trace::verbose(_X("    Probed deps dir and matched in bundle"));
+                        return probe_result_t::bundled;
+                    }
+
                     trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                    return found_in_bundle ? probe_result_t::bundled : probe_result_t::found;
+                    return probe_result_t::found;
                 }
             }
 

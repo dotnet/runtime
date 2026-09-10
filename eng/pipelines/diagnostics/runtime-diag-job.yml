@@ -169,6 +169,9 @@ jobs:
 
     - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
+    - ${{ if or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.hostedOs, 'osx')) }}:
+      - template: /eng/pipelines/common/select-xcode.yml
+
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies

@@ -182,6 +182,21 @@ gh aw compile --validate
 - **CLI commands reference**: For a complete guide on all `gh aw` commands and their MCP tool equivalents (for restricted environments), see https://github.com/github/gh-aw/blob/v0.71.5/.github/aw/cli-commands.md
 - **Repository-specific requirements**: There are multiple sets of repository-specific instructions below that must be respected. They affect workflow authoring, updates, compilation, and reviews.
 
+## Repository-Specific Requirements: Safe-Output Data
+
+Agent-provided issue, pull-request, discussion, and comment bodies are sanitized before posting. In particular, [gh-aw removes HTML/XML comments](https://github.github.com/gh-aw/reference/safe-outputs/#text-sanitization-allowed-domains-allowed-github-references), so never use `<!-- ... -->` supplied by the agent as a deduplication key, artifact identity, counter, or persisted state.
+
+For machine-readable values that must survive sanitization, first confirm that the output type supports `data` and that appending another fenced JSON block will not break a downstream body parser:
+
+1. Configure `safe-outputs.data` with the narrowest practical inline schema.
+2. Have the agent provide the `data` object separately from `body`.
+3. Read the resulting `Structured data:` fenced JSON block from the posted body.
+4. When migrating an existing workflow, keep an explicit fallback for already-posted artifacts that predate structured data.
+
+`safe-outputs.data` is not available on every output type; notably, `update_issue` cannot attach it. It also appends a second fenced JSON block to the posted body, which is incompatible with formats such as Known Build Error issues that require exactly one fenced JSON block. In those cases, use narrowly formatted visible fields in the body and preserve them on every rewrite.
+
+Structured data is visible in the posted body; it is not private workflow storage. The feature requires gh-aw v0.83.5 or later. Framework-generated provenance comments such as `gh-aw-workflow-id` survive because gh-aw appends them after sanitization, but workflows must not imitate that implementation detail or assume their own HTML comments receive the same treatment.
+
 ## Repository-Specific Requirements: Copilot PAT Pool
 
 **⚠️ MANDATORY**: Every agentic workflow in this repository **must** utilize the Copilot PAT Pool as detailed in `.github/workflows/shared/pat_pool.README.md`. This mechanism selects a random Copilot PAT from a numbered pool of secrets to avoid rate-limiting from a single shared PAT.
@@ -214,4 +229,3 @@ When compiling agentic workflows in this repository, always supply `--schedule-s
 ```sh
 gh aw compile --schedule-seed dotnet/runtime
 ```
-

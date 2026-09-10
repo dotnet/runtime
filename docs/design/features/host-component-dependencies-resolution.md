@@ -28,9 +28,8 @@ This feature certainly provides a somewhat duplicate functionality to the existi
   * RID fallback graph from the root framework - reused
 * Just like settings, there's a set of environment variables which are used in the same way as the app would use them
   * `DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX` - used just like in the app
-  * `ProgramFiles` and `ProgramFiles(x86")` - used to find servicing root and the shared store
+  * `ProgramFiles` and `ProgramFiles(x86")` - used to find servicing root
   * `DOTNET_SHARED_STORE` - used to find the shared store - just like the app
-  * `DOTNET_MULTILEVEL_LOOKUP` - used to enable multi-level lookup - used just like in the app
 * Right now this feature doesn't process `.runtimeconfig.json` or `.runtimeconfig.dev.json`. Most dynamically loaded components don't have these anyway, since SDK doesn't generate these for the `classlib` project type. The only meaningful piece of info from these which could be used is the set of probing paths to use. Currently the same set ofprobing paths as for the app is used. With the changes in .NET Core 3 where `dotnet build` will copy all static dependencies locally, the importance of additional probing paths should be very low anyway.
 
 ## Open questions

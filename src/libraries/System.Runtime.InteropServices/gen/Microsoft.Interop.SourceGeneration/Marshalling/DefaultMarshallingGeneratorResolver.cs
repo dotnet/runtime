@@ -27,6 +27,7 @@ namespace Microsoft.Interop
             IMarshallingGeneratorResolver fallbackResolver = new NotSupportedResolver();
             List<IMarshallingGeneratorResolver> coreResolvers = [
                 .. additionalResolvers,
+                new IidParameterIndexMarshallerResolver(),
                 new BlittableMarshallerResolver(env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling)),
                 new MarshalAsMarshallingGeneratorResolver(new InteropGenerationOptions(UseMarshalType: true)),
                 new NoMarshallingInfoErrorResolver(stringMarshallingAttribute),

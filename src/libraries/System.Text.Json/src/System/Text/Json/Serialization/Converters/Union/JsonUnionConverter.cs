@@ -122,11 +122,6 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_UnionAmbiguousJsonValueType(typeToConvert, valueType);
                 }
 
-                if (typeInfo.UnionHasCustomConverterCase)
-                {
-                    ThrowHelper.ThrowJsonException_UnionCaseWithCustomConverterRequiresClassifier(typeToConvert);
-                }
-
                 Type? resolvedCaseType = null;
                 typeInfo.UnionValueTypeMap?.TryGetValue(valueType, out resolvedCaseType);
                 caseType = resolvedCaseType!;

@@ -70,6 +70,22 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
+
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+        }
+
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+
+        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
+        }
+
         public sealed override Type DeclaringType
         {
             get

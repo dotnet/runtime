@@ -258,7 +258,6 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectIfExists() const
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 

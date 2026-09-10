@@ -111,6 +111,12 @@ namespace System.Buffers
     }
     public static partial class SequenceReaderExtensions
     {
+        public static bool TryPeekBigEndian(this ref System.Buffers.SequenceReader<byte> reader, out short value) { throw null; }
+        public static bool TryPeekBigEndian(this ref System.Buffers.SequenceReader<byte> reader, out int value) { throw null; }
+        public static bool TryPeekBigEndian(this ref System.Buffers.SequenceReader<byte> reader, out long value) { throw null; }
+        public static bool TryPeekLittleEndian(this ref System.Buffers.SequenceReader<byte> reader, out short value) { throw null; }
+        public static bool TryPeekLittleEndian(this ref System.Buffers.SequenceReader<byte> reader, out int value) { throw null; }
+        public static bool TryPeekLittleEndian(this ref System.Buffers.SequenceReader<byte> reader, out long value) { throw null; }
         public static bool TryReadBigEndian(this ref System.Buffers.SequenceReader<byte> reader, out short value) { throw null; }
         public static bool TryReadBigEndian(this ref System.Buffers.SequenceReader<byte> reader, out int value) { throw null; }
         public static bool TryReadBigEndian(this ref System.Buffers.SequenceReader<byte> reader, out long value) { throw null; }

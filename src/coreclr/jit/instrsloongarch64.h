@@ -1075,13 +1075,13 @@ INST(vldrepl_b,         "vldrepl.b",        LD, 0x30800000,0xffc00000,DF_S_RGX)
 INST(vst,               "vst",              ST, 0x2c400000,0xffc00000,DF_S_RGX)
 // ui1
 INST(vinsgr2vr_d,       "vinsgr2vr.d",      0,  0x72ebf000,0xfffff800,DF_S_RGX) // vd,rj,ui1
+INST(vreplvei_d,        "vreplvei.d",       0,  0x72f7f000,0xfffff800,DF_S_2RX) // vd,vj,ui1
 INST(vpickve2gr_d,      "vpickve2gr.d",     0,  0x72eff000,0xfffff800,DF_S_GRX) // rd,vj,ui1
 INST(vpickve2gr_du,     "vpickve2gr.du",    0,  0x72f3f000,0xfffff800,DF_S_GRX) // rd,vj,ui1
-INST(vreplvei_d,        "vreplvei.d",       0,  0x72f7f000,0xfffff800,DF_S_2RX) // vd,vj,ui1
 // ui2
-INST(vinsgr2vr_w,       "vinsgr2vr.w",      0,  0x72ebe000,0xfffff000,DF_S_RGX) // vd,rj,ui2
 INST(vpickve2gr_w,      "vpickve2gr.w",     0,  0x72efe000,0xfffff000,DF_S_GRX) // rd,vj,ui2
 INST(vpickve2gr_wu,     "vpickve2gr.wu",    0,  0x72f3e000,0xfffff000,DF_S_GRX) // rd,vj,ui2
+INST(vinsgr2vr_w,       "vinsgr2vr.w",      0,  0x72ebe000,0xfffff000,DF_S_RGX) // vd,rj,ui2
 INST(vreplvei_w,        "vreplvei.w",       0,  0x72f7e000,0xfffff000,DF_S_2RX) // vd,vj,ui2
 // ui3
 INST(vslli_b,           "vslli.b",          0,  0x732c2000,0xffffe000,DF_S_2R3IU) // vd,vj,ui3
@@ -1097,11 +1097,13 @@ INST(vbitseti_b,        "vbitseti.b",       0,  0x73142000,0xffffe000,DF_S_2R3IU
 INST(vbitrevi_b,        "vbitrevi.b",       0,  0x73182000,0xffffe000,DF_S_2R3IU)
 INST(vsat_b,            "vsat.b",           0,  0x73242000,0xffffe000,DF_S_2R3IU)
 INST(vsat_bu,           "vsat.bu",          0,  0x73282000,0xffffe000,DF_S_2R3IU)
+INST(vreplvei_h,        "vreplvei.h",       0,  0x72f7c000,0xffffe000,DF_S_2R3IU) // vd,vj,ui3
 INST(vinsgr2vr_h,       "vinsgr2vr.h",      0,  0x72ebc000,0xffffe000,DF_S_RGX)   // vd,rj,ui3
 INST(vpickve2gr_h,      "vpickve2gr.h",     0,  0x72efc000,0xffffe000,DF_S_GRX)   // rd,vj,ui3
 INST(vpickve2gr_hu,     "vpickve2gr.hu",    0,  0x72f3c000,0xffffe000,DF_S_GRX)   // rd,vj,ui3
-INST(vreplvei_h,        "vreplvei.h",       0,  0x72f7c000,0xffffe000,DF_S_2R3IU) // vd,vj,ui3
 // ui4
+INST(vpickve2gr_b,      "vpickve2gr.b",     0,  0x72ef8000,0xffffc000,DF_S_GRX)   // rd,vj,ui4
+INST(vpickve2gr_bu,     "vpickve2gr.bu",    0,  0x72f38000,0xffffc000,DF_S_GRX)   // rd,vj,ui4
 INST(vslli_h,           "vslli.h",          0,  0x732c4000,0xffffc000,DF_S_2R4IU) // vd,vj,ui4
 INST(vsrli_h,           "vsrli.h",          0,  0x73304000,0xffffc000,DF_S_2R4IU)
 INST(vsrai_h,           "vsrai.h",          0,  0x73344000,0xffffc000,DF_S_2R4IU)
@@ -1128,8 +1130,6 @@ INST(vbitrevi_h,        "vbitrevi.h",       0,  0x73184000,0xffffc000,DF_S_2R4IU
 INST(vsat_h,            "vsat.h",           0,  0x73244000,0xffffc000,DF_S_2R4IU)
 INST(vsat_hu,           "vsat.hu",          0,  0x73284000,0xffffc000,DF_S_2R4IU)
 INST(vinsgr2vr_b,       "vinsgr2vr.b",      0,  0x72eb8000,0xffffc000,DF_S_RGX)   // vd,rj,ui4
-INST(vpickve2gr_b,      "vpickve2gr.b",     0,  0x72ef8000,0xffffc000,DF_S_GRX)   // rd,vj,ui4
-INST(vpickve2gr_bu,     "vpickve2gr.bu",    0,  0x72f38000,0xffffc000,DF_S_GRX)   // rd,vj,ui4
 INST(vreplvei_b,        "vreplvei.b",       0,  0x72f78000,0xffffc000,DF_S_2R4IU) // vd,vj,ui4
 // ui5
 INST(vslei_bu,          "vslei.bu",         0,  0x72840000,0xffff8000,DF_S_2R5IU) // vd,vj,ui5
@@ -1837,6 +1837,8 @@ INST(xvinsgr2vr_d,      "xvinsgr2vr.d",     0,  0x76ebe000,0xfffff000,DF_A_RGX) 
 INST(xvpickve2gr_d,     "xvpickve2gr.d",    0,  0x76efe000,0xfffff000,DF_A_GRX)  // rd,xj,ui2
 INST(xvpickve2gr_du,    "xvpickve2gr.du",   0,  0x76f3e000,0xfffff000,DF_A_GRX)  // rd,xj,ui2
 // ui3
+INST(xvpickve2gr_w,     "xvpickve2gr.w",    0,  0x76efc000,0xffffe000,DF_A_GRX)   // rd,xj,ui3
+INST(xvpickve2gr_wu,    "xvpickve2gr.wu",   0,  0x76f3c000,0xffffe000,DF_A_GRX)   // rd,xj,ui3
 INST(xvslli_b,          "xvslli.b",         0,  0x772c2000,0xffffe000,DF_A_2R3IU) // xd,xj,ui3
 INST(xvsrli_b,          "xvsrli.b",         0,  0x77302000,0xffffe000,DF_A_2R3IU)
 INST(xvsrai_b,          "xvsrai.b",         0,  0x77342000,0xffffe000,DF_A_2R3IU)
@@ -1864,8 +1866,6 @@ INST(xvbitclri_b,       "xvbitclri.b",      0,  0x77102000,0xffffe000,DF_A_2R3IU
 INST(xvbitseti_b,       "xvbitseti.b",      0,  0x77142000,0xffffe000,DF_A_2R3IU)
 INST(xvbitrevi_b,       "xvbitrevi.b",      0,  0x77182000,0xffffe000,DF_A_2R3IU)
 INST(xvinsgr2vr_w,      "xvinsgr2vr.w",     0,  0x76ebc000,0xffffe000,DF_A_RGX)   // xd,rj,ui3
-INST(xvpickve2gr_w,     "xvpickve2gr.w",    0,  0x76efc000,0xffffe000,DF_A_GRX)   // rd,xj,ui3
-INST(xvpickve2gr_wu,    "xvpickve2gr.wu",   0,  0x76f3c000,0xffffe000,DF_A_GRX)   // rd,xj,ui3
 INST(xvsat_b,           "xvsat.b",          0,  0x77242000,0xffffe000,DF_A_2R3IU) // vd,xj,ui3
 INST(xvsat_bu,          "xvsat.bu",         0,  0x77282000,0xffffe000,DF_A_2R3IU) // vd,xj,ui3
 // ui4

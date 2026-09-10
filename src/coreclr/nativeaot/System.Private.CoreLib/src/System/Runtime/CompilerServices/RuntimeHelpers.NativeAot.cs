@@ -213,6 +213,13 @@ namespace System.Runtime.CompilerServices
             return GetMethodTable(obj)->HasComponentSize;
         }
 
+        // Returns true iff the type of the object requires finalization,
+        // which includes a finalizer inherited from a base type.
+        internal static unsafe bool ObjectHasFinalizer(object obj)
+        {
+            return GetMethodTable(obj)->IsFinalizable;
+        }
+
         public static void PrepareMethod(RuntimeMethodHandle method)
         {
             if (method.Value == IntPtr.Zero)

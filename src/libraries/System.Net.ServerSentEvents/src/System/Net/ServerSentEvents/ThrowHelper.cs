@@ -22,5 +22,19 @@ namespace System.Net.ServerSentEvents
         {
             throw new ArgumentException(SR.ArgumentException_CannotBeNegative, parameterName);
         }
+
+        public static void ThrowIfNull([NotNull] object? argument, string parameterName)
+        {
+            if (argument is null)
+            {
+                ThrowArgumentNullException(parameterName);
+            }
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException(string parameterName)
+        {
+            throw new ArgumentOutOfRangeException(parameterName);
+        }
     }
 }

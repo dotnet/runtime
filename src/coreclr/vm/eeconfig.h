@@ -435,16 +435,6 @@ public:
 
     DWORD GetHostTestThreadAbort() const {LIMITED_METHOD_CONTRACT; return testThreadAbort;}
 
-#define INJECTFAULT_LOADERHEAP      0x1
-#define INJECTFAULT_GCHEAP          0x2
-#define INJECTFAULT_SO              0x4
-#define INJECTFAULT_GMHEAP          0x8
-#define INJECTFAULT_DYNAMICCODEHEAP 0x10
-#define INJECTFAULT_MAPVIEWOFFILE   0x20
-#define INJECTFAULT_JITHEAP         0x40
-
-    DWORD ShouldInjectFault(DWORD faultType) const {LIMITED_METHOD_CONTRACT; return fShouldInjectFault & faultType;}
-
 #endif
 
 #ifdef FEATURE_INTERPRETER
@@ -585,7 +575,6 @@ private: //----------------------------------------------------------------
 #endif // _DEBUG
 
 #ifdef _DEBUG
-    DWORD fShouldInjectFault;
     DWORD testThreadAbort;
 #endif
 

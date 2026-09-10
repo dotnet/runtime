@@ -215,6 +215,12 @@ bool Compiler::optCopyProp(
             continue;
         }
 
+        if (varDsc->lvOnlyUsedOnSynchronousPath || newLclVarDsc->lvOnlyUsedOnSynchronousPath)
+        {
+            // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
+            continue;
+        }
+
         if (optCopyProp_LclVarScore(varDsc, newLclVarDsc, true) <= 0)
         {
             continue;

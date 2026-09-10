@@ -530,6 +530,6 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     private ClrDataFrame CreateFrame(IStackDataFrameHandle dataFrame)
     {
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
-        return new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
+        return new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null, new());
     }
 }

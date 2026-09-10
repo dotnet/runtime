@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,6 +14,8 @@ namespace System.Net
         // Uses the system-configured DNS servers. A benign race may construct more
         // than one instance, but only one is published; DnsResolver holds no
         // unmanaged state, so the extra instance is simply collected.
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         private static DnsResolver DefaultResolver => field ??= new();
 
         /// <summary>
@@ -22,6 +25,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<AddressRecord> ResolveAddresses(string name)
             => DefaultResolver.ResolveAddresses(name);
 
@@ -37,6 +43,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<AddressRecord> ResolveAddresses(string name, AddressFamily addressFamily)
             => DefaultResolver.ResolveAddresses(name, addressFamily);
 
@@ -48,6 +57,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveAddressesAsync(name, cancellationToken);
 
@@ -64,6 +76,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, AddressFamily addressFamily, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveAddressesAsync(name, addressFamily, cancellationToken);
 
@@ -74,6 +89,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the SRV records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<SrvRecord> ResolveSrv(string name)
             => DefaultResolver.ResolveSrv(name);
 
@@ -85,6 +103,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the SRV records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<SrvRecord>> ResolveSrvAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveSrvAsync(name, cancellationToken);
 
@@ -95,6 +116,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the MX records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<MxRecord> ResolveMx(string name)
             => DefaultResolver.ResolveMx(name);
 
@@ -106,6 +130,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the MX records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<MxRecord>> ResolveMxAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveMxAsync(name, cancellationToken);
 
@@ -116,6 +143,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the TXT records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<TxtRecord> ResolveTxt(string name)
             => DefaultResolver.ResolveTxt(name);
 
@@ -127,6 +157,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the TXT records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<TxtRecord>> ResolveTxtAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveTxtAsync(name, cancellationToken);
 
@@ -137,6 +170,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<CNameRecord> ResolveCName(string name)
             => DefaultResolver.ResolveCName(name);
 
@@ -148,6 +184,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<CNameRecord>> ResolveCNameAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveCNameAsync(name, cancellationToken);
 
@@ -158,6 +197,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the PTR records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<PtrRecord> ResolvePtr(string name)
             => DefaultResolver.ResolvePtr(name);
 
@@ -167,6 +209,9 @@ namespace System.Net
         /// <param name="address">The IP address to perform a reverse lookup for.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the PTR records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<PtrRecord> ResolvePtr(IPAddress address)
             => DefaultResolver.ResolvePtr(address);
 
@@ -178,6 +223,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the PTR records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<PtrRecord>> ResolvePtrAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolvePtrAsync(name, cancellationToken);
 
@@ -188,6 +236,9 @@ namespace System.Net
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the PTR records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<PtrRecord>> ResolvePtrAsync(IPAddress address, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolvePtrAsync(address, cancellationToken);
 
@@ -198,6 +249,9 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the NS records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static DnsResult<NsRecord> ResolveNs(string name)
             => DefaultResolver.ResolveNs(name);
 
@@ -209,6 +263,9 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the NS records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("wasi")]
         public static Task<DnsResult<NsRecord>> ResolveNsAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveNsAsync(name, cancellationToken);
     }

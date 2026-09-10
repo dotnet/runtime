@@ -708,6 +708,7 @@ private:
     // suspension point.
     bool m_nextAwaitIsTail = false;
     bool m_asyncVersionIsTailCalling = false;
+    bool m_hasLocalloc = false;
 
     // If true, this is a recognized await of ValueTaskReturn().AsTask(). This
     // does not have strictly the same semantics as 'await ValueTaskReturn()'
@@ -1077,6 +1078,7 @@ private:
     int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
     int32_t* m_pDebugMethodEnterSeqPointSlot = nullptr; // fixup slot for first seq point offset in INTOP_DEBUG_METHOD_ENTER
 
+    void FixLocallocRet();
     void AllocOffsets();
     int32_t ComputeCodeSize();
     void EmitCode();

@@ -788,8 +788,8 @@ public:
     }
 
     // Returns true if this MethodDesc represents an interop stub.
-    // This includes interop IL stubs (PInvoke, COM, reverse PInvoke, struct marshal)
-    // and PInvoke methods (PInvokeMethodDesc).
+    // This includes interop IL stubs (PInvoke, COM, reverse PInvoke, struct marshal),
+    // PInvoke methods (PInvokeMethodDesc), and CLR->COM calls (CLRToCOMCallMethodDesc).
     inline bool IsInteropStub();
 
     inline DWORD IsInterface()
@@ -916,7 +916,7 @@ public:
     // Additionally, if the non-BoxedEntryPointStub is RequiresInstMethodTableArg()
     // then pass on the MethodTable as an extra argument to the
     // underlying unboxed-this-MethodDesc.
-    BOOL IsUnboxingStub()
+    bool IsUnboxingStub()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1670,6 +1670,9 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+#ifndef DACCESS_COMPILE
+    PCODE GetNativeCodeVolatile();
+#endif
 
     // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
     PCODE GetCodeForInterpreterOrJitted()
@@ -1866,11 +1869,6 @@ public:
 
     //================================================================
     // Running the Prestub preparation step.
-
-    // The stub produced by prestub requires method desc to be passed
-    // in dedicated register.
-    // See HasMDContextArg() for the related stub version.
-    BOOL RequiresMDContextArg();
 
     // Returns true if the method has to have stable entrypoint always.
     BOOL RequiresStableEntryPoint();
@@ -2399,7 +2397,7 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
-extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex);
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex, QCallExceptionStatus* qcallError);
 #endif // DACCESS_COMPILE
 
 template<> struct cdac_data<MethodDesc>
@@ -2986,7 +2984,11 @@ public:
     DPTR(struct InterpreterPrecode) m_interpreterPrecode;
 #endif
 
-    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of StubPInvokeVarArg and StubCLRToCOMInterop.
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of StubPInvokeVarArg and the
+    // retired value 6 (StubCLRToCOMInterop).
+    // The values marked unused below were retired once CLR->COM calls started being compiled as
+    // transient IL on the CLR->COM MethodDesc itself instead of a separate IL stub MethodDesc. The
+    // cDAC still reads them when inspecting older runtimes, so they must not be reused.
     enum ILStubType : DWORD
     {
         StubNotSet = 0,
@@ -2995,7 +2997,7 @@ public:
         StubPInvokeCalli = 3,
         StubPInvokeVarArg = 4,
         StubReversePInvoke = 5,
-        StubCLRToCOMInterop = 6,
+        // unused           = 6, // was StubCLRToCOMInterop
         StubCOMToCLRInterop = 7,
         StubStructMarshalInterop = 8,
         StubArrayOp = 9,
@@ -3012,7 +3014,7 @@ public:
 
         StubAsyncResume = 18,
 
-        StubCLRToCOMEvent = 19,
+        // unused           = 19, // was StubCLRToCOMEvent
         StubLast = 20
     };
 
@@ -3144,17 +3146,11 @@ public:
 
         ILStubType type = GetILStubType();
 
-        isStepThrough = type == StubUnboxingIL || type == StubInstantiating || type == StubCLRToCOMEvent;
+        isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
 
         return isStepThrough;
     }
 
-    bool IsCLRToCOMStub() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub());
-        return GetILStubType() == StubCLRToCOMInterop;
-    }
     bool IsCOMToCLRStub() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -3216,14 +3212,6 @@ public:
         _ASSERTE(IsILStub());
         ILStubType type = GetILStubType();
         return type == DynamicMethodDesc::StubAsyncResume;
-    }
-
-    // Whether the stub takes a context argument that is an interop MethodDesc.
-    // See RequiresMDContextArg() for the non-stub version.
-    bool HasMDContextArg() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || IsPInvokeVarArgStub();
     }
 
     //
@@ -3371,7 +3359,7 @@ public:
         kLastError                      = 0x0080,   // setLastError keyword specified
         kNativeNoMangle                 = 0x0100,   // nomangle keyword specified
 
-        kVarArgs                        = 0x0200,
+        //unused                        = 0x0200,
         kStdCall                        = 0x0400,
         kThisCall                       = 0x0800,
 
@@ -3454,13 +3442,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_pszEntrypointName;
-    }
-
-    BOOL IsVarArgs() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (m_wPInvokeFlags & kVarArgs) != 0;
     }
 
     BOOL IsStdCall() const
@@ -3626,9 +3607,6 @@ struct CLRToCOMCallInfo
     // EEImplMethodDesc that has already been initialized for COM interop.
     inline static CLRToCOMCallInfo *FromMethodDesc(MethodDesc *pMD);
 
-    // IL stub for CLR to COM call
-    PCODE m_pILStub;
-
     // MethodDesc of the COM event provider to forward the call to (COM event interfaces)
     MethodDesc *m_pEventProviderMD;
 
@@ -3646,12 +3624,6 @@ struct CLRToCOMCallInfo
     // caching but I'm not sure I know all the places these things are
     // created.)
     WORD        m_cachedComSlot;
-
-    PCODE * GetAddrOfILStubField()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pILStub;
-    }
 
 #ifdef TARGET_X86
     // Size of outgoing arguments (on stack). This is currently used only
@@ -3701,12 +3673,6 @@ public:
     CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
     void InitComEventCallInfo();
-
-    PCODE * GetAddrOfILStubField()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCLRToCOMCallInfo->GetAddrOfILStubField();
-    }
 
     MethodTable* GetInterfaceMethodTable()
     {

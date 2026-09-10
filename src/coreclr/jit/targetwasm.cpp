@@ -87,6 +87,26 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
         else
         {
             abiType = ToJitType(wasmAbiType);
+
+            // A struct wider than the wasm value it lowers to is passed by value across several
+            // of them, matching the wasm C ABI: Int128 as 2 x i64, a 256-bit vector as 2 x v128,
+            // a 512-bit vector as 4 x v128. A struct can be narrower than its value (see the
+            // segment size below), so this must compare sizes rather than count slots.
+            unsigned segSize = genTypeSize(abiType);
+            if (structLayout->GetSize() > segSize)
+            {
+                unsigned numSegs = structLayout->GetSize() / segSize;
+                assert((numSegs * segSize) == structLayout->GetSize());
+
+                ABIPassingInformation info(comp, numSegs);
+                for (unsigned i = 0; i < numSegs; i++)
+                {
+                    regNumber reg   = MakeWasmReg(m_localIndex++, abiType);
+                    info.Segment(i) = ABIPassingSegment::InRegister(reg, i * segSize, segSize);
+                }
+
+                return info;
+            }
         }
 
         regNumber reg = MakeWasmReg(m_localIndex++, genActualType(abiType));

@@ -224,8 +224,10 @@ set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:TargetArchitecture=%__BuildArc
 
 if "%__Mono%"=="1" (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=mono"
+  set __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono" !__CMakeArgs!
 ) else (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=coreclr"
+  set __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR" !__CMakeArgs!
 )
 
 if %__Ninja% == 0 (

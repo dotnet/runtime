@@ -26,7 +26,6 @@ VOID FieldDesc::SetStaticOBJECTREF(OBJECTREF objRef)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -115,7 +114,6 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -222,7 +220,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(IsStatic());
     }
     CONTRACTL_END
@@ -254,7 +251,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
             GCX_COOP();
             // This routine doesn't have a failure semantic - but Resolve*Field(...) does.
             // Something needs to be rethought here and I think it's E&C.
-            CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|GCViolation);   //B#25680 (Fix Enc violations)
+            CONTRACT_VIOLATION(ThrowsViolation|GCViolation);   //B#25680 (Fix Enc violations)
             retVal = (void*)(pEnCModule->ResolveOrAllocateField(NULL, pFD));
         }
 #endif // !DACCESS_COMPILE
@@ -308,7 +305,6 @@ void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
         if (FORBIDGC_LOADER_USE_ENABLED() ) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED() ) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED() ) FORBID_FAULT; else INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -355,7 +351,6 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -683,7 +678,6 @@ UINT FieldDesc::GetSize(MethodTable *pMTOfValueTypeField)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -709,7 +703,6 @@ UINT FieldDesc::GetSize()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -796,7 +789,6 @@ REFLECTFIELDREF FieldDesc::AllocateStubFieldInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;

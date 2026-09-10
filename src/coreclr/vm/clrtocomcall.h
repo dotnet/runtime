@@ -18,10 +18,16 @@
 
 #include "util.hpp"
 
+class ILStubResolver;
+
 class CLRToCOMCall
 {
     public:
-        static PCODE       GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD);
+        // Generates the transient IL implementation for a CLR->COM call.
+        static COR_ILMETHOD_DECODER* CreateCLRToCOMCallMethodIL(MethodDesc* pMD, DynamicResolver** ppResolver);
+
+        // Returns the user-provided IL stub method for this CLR->COM call, or NULL if there isn't one.
+        static MethodDesc* GetPredefinedILStubMethod(MethodDesc* pMD);
 
         static CLRToCOMCallInfo *PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags);
     private:

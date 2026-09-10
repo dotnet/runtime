@@ -161,6 +161,8 @@ public interface IGC : IContract
     HandleType[] GetHandleTypes(uint[] types) => throw new NotImplementedException();
     TargetNUInt GetHandleExtraInfo(TargetPointer handle) => throw new NotImplementedException();
 
+    // Gets the global allocation context pointer and limit. Both are null when the target
+    // runtime does not allocate out of a global allocation context.
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit) => throw new NotImplementedException();
 
     IReadOnlyList<GCMemoryRegionData> GetHandleTableMemoryRegions() => throw new NotImplementedException();

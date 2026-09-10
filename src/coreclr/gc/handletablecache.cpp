@@ -407,7 +407,6 @@ void TableFullRebalanceCache(HandleTable *pTable,
 
         {
             // allocate the new handles - we intentionally don't check for success here
-            FAULT_NOT_FATAL();
 
             uHandleCount += TableAllocBulkHandles(pTable, uType, pHandleBase, uAlloc);
         }

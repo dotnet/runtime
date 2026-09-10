@@ -1200,6 +1200,30 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(" ", "\u00A0")]
+        [InlineData(" ", "\u202F")]
+        [InlineData("\u00A0", " ")]
+        [InlineData("\u202F", " ")]
+        public static void ParseHexFloat_SpaceReplacingDecimalSeparator(string inputSeparator, string formatSeparator)
+        {
+            NumberFormatInfo nfi = new() { NumberDecimalSeparator = formatSeparator };
+            string value = $"0x1{inputSeparator}8p0";
+
+            Assert.Equal(1.5, double.Parse(value, NumberStyles.HexFloat, nfi));
+            Assert.Equal(1.5, double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.HexFloat, nfi));
+        }
+
+        [Fact]
+        public static void ParseHexFloat_SupplementaryDecimalSeparator()
+        {
+            NumberFormatInfo nfi = new() { NumberDecimalSeparator = "\U0001F600" };
+            const string Value = "0x1\U0001F6008p0";
+
+            Assert.Equal(1.5, double.Parse(Value, NumberStyles.HexFloat, nfi));
+            Assert.Equal(1.5, double.Parse(Encoding.UTF8.GetBytes(Value), NumberStyles.HexFloat, nfi));
+        }
+
+        [Theory]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowThousands)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowCurrencySymbol)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowTrailingSign)]
@@ -1342,6 +1366,21 @@ namespace System.Tests
             CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
             string s = string.Format(ci, "{0}", 158.68);
             Assert.Equal(-158.68, double.Parse("-" + s, NumberStyles.Number, ci));
+        }
+
+        [Fact]
+        public static void TestSpecialValueParsingWithHyphen()
+        {
+            NumberFormatInfo format = new() { NegativeSign = "\u2212" };
+
+            Assert.True(double.IsNaN(double.Parse("-NaN", NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse("-NaN"u8, NumberStyles.Float, format)));
+
+            format = CultureInfo.GetCultureInfo("sv-SE").NumberFormat;
+            string value = "-" + format.NaNSymbol;
+
+            Assert.True(double.IsNaN(double.Parse(value, NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
         }
 
         [Theory]
@@ -1904,6 +1943,46 @@ namespace System.Tests
         {
             AssertExtensions.Equal(-expectedResult, double.RadiansToDegrees(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, double.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones that pick a path or a sign the bulk data cannot reach:
+        // zero, the subnormal range where the middle term underflows, the cutoffs at either end,
+        // and an overflow. The last two are the inputs whose exact product lands closest to a
+        // rounding midpoint anywhere in the domain, at 2^-55.58 and 2^-55.99 ulp, so they are what
+        // a form carrying too few bits gets wrong first.
+        [Theory]
+        [InlineData(0x0000_0000_0000_0000, 0x0000_0000_0000_0000, 0x0000_0000_0000_0000)] // 0
+        [InlineData(0x0000_0000_0000_0001, 0x0000_0000_0000_0000, 0x0000_0000_0000_0039)] // Epsilon
+        [InlineData(0x0010_0000_0000_0000, 0x0000_477D_1A89_4A75, 0x006C_A5DC_1A63_C1F8)] // MinNormal
+        [InlineData(0x031F_FFFF_FFFF_FFFF, 0x02C1_DF46_A252_9D39, 0x037C_A5DC_1A63_C1F7)] // RadiansToDegreesMin - 1 ulp
+        [InlineData(0x0320_0000_0000_0000, 0x02C1_DF46_A252_9D39, 0x037C_A5DC_1A63_C1F8)] // RadiansToDegreesMin
+        [InlineData(0x03EF_FFFF_FFFF_FFFF, 0x0391_DF46_A252_9D39, 0x044C_A5DC_1A63_C1F7)] // DegreesToRadiansMin - 1 ulp
+        [InlineData(0x03F0_0000_0000_0000, 0x0391_DF46_A252_9D39, 0x044C_A5DC_1A63_C1F8)] // DegreesToRadiansMin
+        [InlineData(0x7F91_DF46_A252_9D38, 0x7F33_F6A1_DB14_1FB8, 0x7FEF_FFFF_FFFF_FFFE)] // RadiansToDegreesMax - 1 ulp
+        [InlineData(0x7F91_DF46_A252_9D39, 0x7F33_F6A1_DB14_1FB9, 0x7FF0_0000_0000_0000)] // RadiansToDegreesMax
+        [InlineData(0x7FEF_FFFF_FFFF_FFFF, 0x7F91_DF46_A252_9D39, 0x7FF0_0000_0000_0000)] // MaxValue
+        [InlineData(0x7FF0_0000_0000_0000, 0x7FF0_0000_0000_0000, 0x7FF0_0000_0000_0000)] // PositiveInfinity
+        [InlineData(0x3FF9_6BDF_4AA9_CD3B, 0x3F9C_655C_F14D_66CB, 0x4056_C226_7343_95AC)] // closest to a midpoint anywhere for DegreesToRadians
+        [InlineData(0x3FFD_B0FB_3010_78BE, 0x3FA0_9530_51C1_CB1B, 0x405A_94C0_9279_849F)] // closest to a midpoint anywhere for RadiansToDegrees
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ulong valueBits, ulong degreesToRadiansBits, ulong radiansToDegreesBits)
+        {
+            const ulong SignMask = 0x8000_0000_0000_0000;
+
+            double value = BitConverter.UInt64BitsToDouble(valueBits);
+            double degreesToRadians = BitConverter.UInt64BitsToDouble(degreesToRadiansBits);
+            double radiansToDegrees = BitConverter.UInt64BitsToDouble(radiansToDegreesBits);
+
+            AssertExtensions.Equal(degreesToRadians, double.DegreesToRadians(value));
+            AssertExtensions.Equal(radiansToDegrees, double.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            double negativeValue = BitConverter.UInt64BitsToDouble(valueBits ^ SignMask);
+            double negativeDegreesToRadians = BitConverter.UInt64BitsToDouble(degreesToRadiansBits ^ SignMask);
+            double negativeRadiansToDegrees = BitConverter.UInt64BitsToDouble(radiansToDegreesBits ^ SignMask);
+
+            AssertExtensions.Equal(negativeDegreesToRadians, double.DegreesToRadians(negativeValue));
+            AssertExtensions.Equal(negativeRadiansToDegrees, double.RadiansToDegrees(negativeValue));
         }
 
         public static IEnumerable<object[]> TryParsePartial_TestData()

@@ -51,7 +51,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // mask as the 16-byte shuffle immediate.
                     GenTree*  src    = node->Op(1);
                     regNumber srcReg = GetMultiUseOperandReg(src);
-                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(src), WasmRegToIndex(srcReg));
+                    genEmitLocalGet(srcReg, src->TypeGet());
                     GetEmitter()->emitIns_V128Imm(INS_i8x16_shuffle, node->Op(2)->AsVecCon()->gtSimdVal.u8);
                 }
                 else
@@ -197,7 +197,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
                 // and so RA should have assigned them locals which prior codegen should
                 // have local.tee'd them into.
                 regNumber reg = GetMultiUseOperandReg(op);
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(op), WasmRegToIndex(reg));
+                genEmitLocalGet(reg, op->TypeGet());
             }
         }
     };
@@ -214,7 +214,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
         }
 
         // In the innermost block, load the immediate value to branch to the appropriate case block
-        GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(immOp), WasmRegToIndex(immReg));
+        genEmitLocalGet(immReg, immOp->TypeGet());
 
         // cases are 0 ... immUpperBound, default, where the last case is the default which branches to the unreachable
         // inner block. Case 0 -> imm = 0, Case 1 -> imm = 1, and so on.

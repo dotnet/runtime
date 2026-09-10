@@ -183,6 +183,9 @@
   <data name="ConstrainedCallWithNonByRefThis" xml:space="preserve">
     <value>The 'this' argument to a constrained call must have ByRef type.</value>
   </data>
+  <data name="ConstrainedTypeNoInterfaceImpl" xml:space="preserve">
+    <value>The type operand of the constrained prefix must implement the interface declaring the static virtual method.</value>
+  </data>
   <data name="CtorExpected" xml:space="preserve">
     <value>.ctor expected.</value>
   </data>
@@ -452,5 +455,11 @@
   </data>
   <data name="LocallocStackNotEmpty" xml:space="preserve">
     <value>Stack must be empty before localloc, except for the size item.</value>
+  </data>
+  <data name="InvalidBaseType" xml:space="preserve">
+    <value>Type '{0}' has invalid base type '{1}'.</value>
+  </data>
+  <data name="BadTypeSpec" xml:space="preserve">
+    <value>Invalid TypeSpec metadata.</value>
   </data>
 </root>

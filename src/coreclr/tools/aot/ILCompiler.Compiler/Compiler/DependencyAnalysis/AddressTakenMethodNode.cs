@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// optimization, this node is not skipped and instead emits a jump stub. The purpose of the jump stub is to provide a
     /// unique code address for the address taken method.
     /// </summary>
-    internal sealed class AddressTakenMethodNode : JumpStubNode, IMethodNode, ISymbolNodeWithLinkage
+    internal sealed class AddressTakenMethodNode : JumpStubNode, IMethodCodeNodeWithTypeSignature, ISymbolNodeWithLinkage
     {
         private readonly IMethodNode _methodNode;
 
@@ -32,6 +32,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public MethodDesc Method => _methodNode.Method;
+        public override MethodSignature Signature => Method.Signature;
+        public override bool IsUnmanagedCallersOnly => Method.IsUnmanagedCallersOnly;
+        public override bool IsAsyncCall => Method.IsAsyncCall();
+        public override bool HasGenericContextArg => Method.RequiresInstMethodDescArg() || Method.RequiresInstMethodTableArg();
 
         protected override string GetName(NodeFactory factory)
         {

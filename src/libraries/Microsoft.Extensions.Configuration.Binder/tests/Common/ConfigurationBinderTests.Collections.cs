@@ -2446,6 +2446,120 @@ namespace Microsoft.Extensions
             Assert.Equal(0, dictionary.Count);
         }
 
+        [Fact]
+        public void BindStructWithNoBindableMembers_PreservesExistingValue()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"Struct:Field", "7"},
+            });
+
+            var options = new OptionsWithStructWithNoBindableMembers();
+            configurationBuilder.Build().Bind(options);
+
+            Assert.Equal(42, options.Struct.Field);
+        }
+
+        [Fact]
+        public void TestCollectionsOfNonInstantiableElements()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"List:0:Value", "1"},
+                {"Array:0:Value", "2"},
+                {"Set:0:Value", "3"},
+                {"Dictionary:key:Value", "4"},
+                {"Name", "test"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithNonInstantiableElements();
+            config.Bind(options);
+
+            // The elements are abstract, so none of them can be created; the collections are still
+            // instantiated, just left empty.
+            Assert.Empty(options.List);
+            Assert.Empty(options.Array);
+            Assert.Empty(options.Set);
+            Assert.Empty(options.Dictionary);
+
+            // Binding of the remaining members is unaffected.
+            Assert.Equal("test", options.Name);
+        }
+
+        [Fact]
+        public void TestNullHandling_BindCollectionOfNonInstantiableElements()
+        {
+            IConfiguration? configuration = null;
+            List<AbstractElement>? elements = new();
+
+            // There is nothing to bind, but argument validation still applies.
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(elements));
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(elements, _ => { }));
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind("", elements));
+        }
+
+        [Fact]
+        public void TestNullHandling_BindCollectionOfNonInstantiableElements_NullKeyThrows()
+        {
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            List<AbstractElement>? elements = new();
+            string? key = null;
+
+            // The key overload resolves the section before it looks at the instance, so the lookup
+            // still rejects a null key even though there is nothing to bind.
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(key, elements));
+        }
+
+        [Fact]
+        public void TestNullHandling_BindCollectionOfNonInstantiableElements_NullInstanceIsNoOp()
+        {
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            List<AbstractElement>? elements = null;
+            bool configureOptionsInvoked = false;
+
+            // A null instance is a no-op: the binder options are never created, so the callback never
+            // runs and an unsupported option on it can never be observed.
+            configuration.Bind(elements);
+            configuration.Bind(elements, options =>
+            {
+                configureOptionsInvoked = true;
+                options.BindNonPublicProperties = true;
+            });
+            configuration.Bind("key", elements);
+
+            Assert.False(configureOptionsInvoked);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BindCollectionOfNonInstantiableElements_InvokesMemberSetter(bool configurationHasMatchingSection)
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            var input = new Dictionary<string, string> { { "Unrelated", "value" } };
+            if (configurationHasMatchingSection)
+            {
+                input.Add("List:0:Value", "1");
+            }
+
+            configurationBuilder.AddInMemoryCollection(input);
+
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithNonInstantiableElementsAndTrackingSetter();
+            config.Bind(options);
+
+            // Nothing can be bound into the collection, but the member is still written back so that a
+            // setter adjusting the value keeps running, matching the reflection-based binder.
+            Assert.Equal(1, options.ListSetterCallCount);
+            Assert.Empty(options.List);
+        }
+
         // Test behavior for root level arrays.
 
         // Tests for TypeConverter usage.
@@ -2478,6 +2592,49 @@ namespace Microsoft.Extensions
             Assert.Equal("Noah", users[0].Name);
             Assert.Equal(2, users[1].Id);
             Assert.Null(users[1].Name);
+        }
+
+        [Fact]
+        public void CanBindNestedTypeWhoseSoleMemberIsAReadOnlyCollectionConstructorParameter()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Class:Values:0", "a" },
+                    { "Struct:Values:0", "b" },
+                    { "NullableStruct:Values:0", "c" },
+                })
+                .Build();
+
+            var options = config.Get<SoleReadOnlyCollectionParamHolder>();
+
+            Assert.NotNull(options);
+            Assert.Equal(new[] { "a" }, options.Class?.Values);
+            Assert.Equal(new[] { "b" }, options.Struct.Values);
+            Assert.Equal(new[] { "c" }, options.NullableStruct?.Values);
+        }
+
+        [Fact]
+        public void CanBindNestedTypeWhoseSoleMemberIsAReadOnlyDictionaryConstructorParameter()
+        {
+            // IReadOnlyDictionary<,> reaches the same "no bindable members" state as the read-only collection
+            // interfaces above, but by way of the LinqToDictionary instantiation strategy rather than a copy
+            // constructor. Both are excluded by the same clause in TypeIndex.ShouldBindTo.
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Class:Values:a", "1" },
+                    { "Struct:Values:b", "2" },
+                    { "NullableStruct:Values:c", "3" },
+                })
+                .Build();
+
+            var options = config.Get<SoleReadOnlyDictionaryParamHolder>();
+
+            Assert.NotNull(options);
+            Assert.Equal(new Dictionary<string, string> { ["a"] = "1" }, options.Class?.Values);
+            Assert.Equal(new Dictionary<string, string> { ["b"] = "2" }, options.Struct.Values);
+            Assert.Equal(new Dictionary<string, string> { ["c"] = "3" }, options.NullableStruct?.Values);
         }
     }
 }

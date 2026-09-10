@@ -85,6 +85,9 @@
     <Error Condition="'$(RuntimeSrcDir)' != '' and '$(RuntimeConfig)' == ''"
            Text="%24(RuntimeSrcDir) is set, but %24(RuntimeConfig) is not" />
 
+    <Error Condition="'$(TargetFramework)' == ''"
+           Text="%24(TargetFramework) is not set. It needs to be set to the TFM the runtime pack was built for, eg. netX.0" />
+
     <PropertyGroup>
       <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse)))</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))</MicrosoftNetCoreAppRuntimePackRidDir>

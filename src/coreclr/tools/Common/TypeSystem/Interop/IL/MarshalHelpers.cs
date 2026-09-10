@@ -247,6 +247,7 @@ namespace Internal.TypeSystem.Interop
                     // Allow ref returning blittable structs for IJW
                     if (type.IsValueType &&
                         (nativeType == NativeTypeKind.Struct || nativeType == NativeTypeKind.Default) &&
+                        IsValidForGenericMarshalling(type, isField) &&
                         MarshalUtils.IsBlittableType(type))
                     {
                         return MarshallerKind.BlittableValueClassByRefReturn;
@@ -665,6 +666,12 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsInterface)
             {
+                if (type.HasInstantiation)
+                {
+                    // Generic types cannot be marshaled.
+                    return MarshallerKind.Invalid;
+                }
+
                 if (context.Target.IsWindows)
                     return MarshallerKind.ComInterface;
                 else

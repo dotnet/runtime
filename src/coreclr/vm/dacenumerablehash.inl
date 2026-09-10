@@ -179,7 +179,6 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 
     // If we can't increase the number of buckets, we lose perf but not correctness. So we won't report this
     // error to our caller.
-    FAULT_NOT_FATAL();
 
     DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
     DWORD cBuckets = GetLength(curBuckets);

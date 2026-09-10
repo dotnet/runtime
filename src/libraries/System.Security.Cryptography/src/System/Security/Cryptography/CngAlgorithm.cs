@@ -236,7 +236,8 @@ namespace System.Security.Cryptography
         ///   A new <see cref="CngAlgorithm"/> object that specifies the Composite Module-Lattice-Based
         ///   Digital Signature Algorithm (Composite ML-DSA).
         /// </value>
-        internal static CngAlgorithm CompositeMLDsa =>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithm CompositeMLDsa =>
             field ??= new CngAlgorithm("Composite-ML-DSA"); // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
 
         private static CngAlgorithm? s_ecdh;

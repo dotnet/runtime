@@ -1,0 +1,143 @@
+<!--
+  Regenerates the checked-in CoreCLR WebAssembly call helpers under this directory.
+
+  Driven by generate-coreclr-helpers.sh / .cmd, which only parse arguments and hand the work
+  here, so the module list, the crossgen2 lookup and the scan paths are expressed once instead
+  of once per shell language. See generate-coreclr-helpers.md.
+
+  Properties:
+    Configuration     Debug (default), Release or Checked. Has to match the configuration the
+                      scanned assemblies were built in.
+    BrowserScanPath   Overrides the browser scan path.
+    WasiScanPath      Overrides the wasi scan path.
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <!-- The framework P/Invoke modules, shared with the runtime tests' corerun relink so the
+       checked-in tables and the ones the tests generate cannot drift apart. -->
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+
+  <PropertyGroup>
+    <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
+    <_FrameworkVersion>$(MajorVersion).$(MinorVersion).0</_FrameworkVersion>
+
+    <!-- The scripts that drive this project are per-OS, so name the one for the current OS. -->
+    <_BuildScript Condition="$([MSBuild]::IsOSPlatform('Windows'))">.\build.cmd</_BuildScript>
+    <_BuildScript Condition="'$(_BuildScript)' == ''">./build.sh</_BuildScript>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_WasmCallHelperTarget Include="browser">
+      <ScanPath Condition="'$(BrowserScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(BrowserScanPath)'))</ScanPath>
+      <ScanPath Condition="'$(BrowserScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-browser-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
+    </_WasmCallHelperTarget>
+    <_WasmCallHelperTarget Include="wasi">
+      <ScanPath Condition="'$(WasiScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(WasiScanPath)'))</ScanPath>
+      <ScanPath Condition="'$(WasiScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-wasi-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
+    </_WasmCallHelperTarget>
+  </ItemGroup>
+
+  <!-- The generator leaves its output unstamped: run over a user application it would be writing a
+       file full of names taken from that application, which are not ours to license. The copies
+       checked in here are ours, so the regeneration path stamps them on the way out of staging.
+       Writing only on a real change keeps the timestamp the generator's own WriteIfDifferent was
+       protecting, so regenerating an unchanged table does not retrigger the native build. -->
+  <UsingTask TaskName="WriteWithLicenseHeader"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <DestinationFolder ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        foreach (ITaskItem file in Files)
+        {
+            string text = File.ReadAllText(file.ItemSpec);
+            string newLine = text.Contains("\r\n") ? "\r\n" : "\n";
+            string content =
+                "// Licensed to the .NET Foundation under one or more agreements." + newLine +
+                "// The .NET Foundation licenses this file to you under the MIT license." + newLine +
+                "//" + newLine + newLine + text;
+
+            string destination = Path.Combine(DestinationFolder, Path.GetFileName(file.ItemSpec));
+            if (File.Exists(destination) && File.ReadAllText(destination) == content)
+            {
+                continue;
+            }
+
+            Log.LogMessage(MessageImportance.High, "Writing {0}", destination);
+            File.WriteAllText(destination, content);
+        }
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
+  <Target Name="GenerateCallHelpers" Outputs="%(_WasmCallHelperTarget.Identity)">
+    <PropertyGroup>
+      <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
+      <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
+      <!-- The self-contained crossgen2 from the same per-flavor build output that produced the
+           scan path. -->
+      <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(_TargetOS).wasm.$(Configuration)', '$(BuildArchitecture)', 'crossgen2', 'crossgen2$(ExeSuffix)'))</_Crossgen2Path>
+      <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
+      <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '$(_TargetOS)'))</_ResponseFileDir>
+      <_ResponseFile>$(_ResponseFileDir)generate-coreclr-helpers.rsp</_ResponseFile>
+      <_StagingDir>$(_ResponseFileDir)generated/</_StagingDir>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(_Crossgen2Path)')"
+           Text="crossgen2 was not found at $(_Crossgen2Path). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
+    <Error Condition="!Exists('$(_ScanPath)')"
+           Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
+    <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
+           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(RepositoryEngineeringDir)wasm/WasmPInvokeModules.props." />
+
+    <Message Importance="High" Text="[$(_TargetOS)] Scan path: $(_ScanPath)" />
+    <Message Importance="High" Text="[$(_TargetOS)] Output path: $(_OutputDir)" />
+
+    <RemoveDir Directories="$(_StagingDir)" />
+    <MakeDir Directories="$(_OutputDir);$(_ResponseFileDir);$(_StagingDir)" />
+
+    <ItemGroup>
+      <_ScanAssembly Remove="@(_ScanAssembly)" />
+      <_ScanAssembly Include="$(_ScanPath)*.dll" />
+    </ItemGroup>
+
+    <Error Condition="'@(_ScanAssembly)' == ''"
+           Text="No assemblies to scan were found in $(_ScanPath)." />
+
+    <ItemGroup>
+      <_GeneratorArg Remove="@(_GeneratorArg)" />
+      <_GeneratorArg Include="--targetos:$(_TargetOS)" />
+      <_GeneratorArg Include="--targetarch:wasm" />
+      <_GeneratorArg Include="--generate-portable-callhelpers:$(_StagingDir)" />
+      <_GeneratorArg Include="@(WasmCoreClrFrameworkPInvokeModule->'--directpinvoke:%(Identity)')" />
+      <_GeneratorArg Include="@(_ScanAssembly->'%(FullPath)')" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_ResponseFile)" Lines="@(_GeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Exec Command="&quot;$(_Crossgen2Path)&quot; &quot;@$(_ResponseFile)&quot;"
+          WorkingDirectory="$(RepoRoot)" />
+
+    <ItemGroup>
+      <_StagedCallHelper Remove="@(_StagedCallHelper)" />
+      <_StagedCallHelper Include="$(_StagingDir)*.cpp" />
+    </ItemGroup>
+
+    <Error Condition="'@(_StagedCallHelper)' == ''" Text="The generator produced no files in $(_StagingDir)." />
+
+    <WriteWithLicenseHeader Files="@(_StagedCallHelper)" DestinationFolder="$(_OutputDir)" />
+  </Target>
+
+</Project>

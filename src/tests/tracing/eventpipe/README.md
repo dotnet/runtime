@@ -84,6 +84,23 @@ The optional validator has the signature `Func<EventPipeEventSource, Func<int>>`
 Register event handlers in the outer function, then return an inner `Func<int>`
 that checks the collected data and returns `100` (pass) or `-1` (fail).
 
+### Non-lossy (Block) buffering
+
+By default a session drops events when its buffer fills. Passing a `bufferingMode`
+of `EventPipeBufferingMode.Block` instead parks the producer until the drain thread
+frees capacity, so no events are lost. Pair it with a small `circularBufferMB` to
+exercise the parking path and `failOnEventsLost` to assert that nothing was dropped:
+
+```csharp
+return IpcTraceTest.RunAndValidateEventCounts(
+    expectedEventCounts,
+    eventGeneratingAction,
+    providers,
+    circularBufferMB: 1,
+    bufferingMode: EventPipeBufferingMode.Block,
+    failOnEventsLost: true);
+```
+
 ## Common providers
 
 | Provider | Purpose |

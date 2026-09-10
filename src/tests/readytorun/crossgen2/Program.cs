@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using TestLibrary;
 using Xunit;
 
 internal class ClassWithStatic
@@ -1237,6 +1238,48 @@ public class Program
         return true;
     }
 
+    private interface IUnboxingStubTest
+    {
+        int GetValue();
+    }
+
+    private readonly struct UnboxingStubTest : IUnboxingStubTest
+    {
+        private readonly int _value;
+
+        public UnboxingStubTest(int value)
+        {
+            _value = value;
+        }
+
+        public int GetValue() => _value;
+    }
+
+    private readonly struct GenericUnboxingStubTest<T> : IUnboxingStubTest
+    {
+        private readonly int _value;
+
+        public GenericUnboxingStubTest(int value)
+        {
+            _value = value;
+        }
+
+        public int GetValue() => _value + typeof(T).Name.Length;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallUnboxingStubTest(IUnboxingStubTest value) => value.GetValue();
+
+    private static bool BoxedInterfaceUnboxingStubTest()
+    {
+        return CallUnboxingStubTest(new UnboxingStubTest(42)) == 42;
+    }
+
+    private static bool BoxedInterfaceGenericUnboxingStubTest()
+    {
+        return CallUnboxingStubTest(new GenericUnboxingStubTest<string>(42)) == 42 + nameof(String).Length;
+    }
+
     enum TestEnum
     {
         A,
@@ -2219,6 +2262,8 @@ public class Program
         RunTest("ObjectGetTypeOnGenericParamTest", ObjectGetTypeOnGenericParamTest());
         RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
+        RunTest("BoxedInterfaceUnboxingStubTest", BoxedInterfaceUnboxingStubTest());
+        RunTest("BoxedInterfaceGenericUnboxingStubTest", BoxedInterfaceGenericUnboxingStubTest());
         RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
         RunTest("DelegateFromAnotherModuleTest", DelegateFromAnotherModuleTest());
         RunTest("SealedDefaultInterfaceMethodTest", SealedDefaultInterfaceMethodTest());
@@ -2227,7 +2272,11 @@ public class Program
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
-        RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        // ActiveIssue https://github.com/dotnet/runtime/issues/133307
+        if (!PlatformDetection.IsWasm || !PlatformDetection.IsReadyToRunCompiled)
+        {
+            RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        }
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
         RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());

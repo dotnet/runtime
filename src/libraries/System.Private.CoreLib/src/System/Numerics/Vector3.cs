@@ -588,7 +588,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.GreaterThan(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
+        public static bool GreaterThanAny(Vector3 left, Vector3 right) => Vector128.GreaterThanAny(left.AsVector128(), right.AsVector128());
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -598,7 +598,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAll(Vector3 left, Vector3 right) => Vector128.EqualsAll(Vector128.GreaterThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128<int>.AllBitsSet);
+        public static bool GreaterThanOrEqualAll(Vector3 left, Vector3 right) => Vector128.GreaterThanOrEqualAll(left.AsVector128(), right.AsVector128());
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
@@ -719,7 +719,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.LessThan(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
+        public static bool LessThanAny(Vector3 left, Vector3 right) => Vector128.LessThanAny(left.AsVector128(), right.AsVector128());
 
         /// <inheritdoc cref="Vector4.LessThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -729,7 +729,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAll(Vector3 left, Vector3 right) => Vector128.EqualsAll(Vector128.LessThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128<int>.AllBitsSet);
+        public static bool LessThanOrEqualAll(Vector3 left, Vector3 right) => Vector128.LessThanOrEqualAll(left.AsVector128(), right.AsVector128());
 
         /// <inheritdoc cref="Vector4.LessThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]

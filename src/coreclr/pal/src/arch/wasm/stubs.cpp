@@ -207,7 +207,9 @@ RaiseException(
 extern "C" VOID PALAPI
 DebugBreak()
 {
-    _ASSERT(!"DebugBreak not implemented on wasi");
+    // No host debugger on WASI. Must NOT call _ASSERT here: AssertBreak calls
+    // DebugBreak, so asserting would recurse until the stack is exhausted and
+    // hide the original assert. Trap directly instead.
     __builtin_debugtrap();
     abort();
 }
@@ -222,6 +224,20 @@ extern "C" VOID PALAPI
 OutputDebugStringW(IN LPCWSTR lpOutputString)
 {
     (void)lpOutputString;  // wchar_t* — not converted here; stub only
+}
+
+// PAL_ProbeMemory — normally in pal/src/debug/debug.cpp, excluded on WASI. wasm
+// linear memory is one contiguous region, so a range is valid iff it ends
+// within the current memory size (64 KiB pages).
+extern "C" PALIMPORT BOOL PALAPI
+PAL_ProbeMemory(PVOID pBuffer, DWORD cbBuffer, BOOL fWriteAccess)
+{
+    (void)fWriteAccess;
+    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= (__builtin_wasm_memory_size(0) * 65536))
+    {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 // PAL exception-record allocation — normally in seh-unwind.cpp which we

@@ -107,7 +107,6 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Test first for the canned SO EXCEPTION_POINTERS structure as it has a NULL context record and will break the code below.
     extern EXCEPTION_POINTERS g_SOExceptionPointers;
@@ -137,7 +136,6 @@ BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownType)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -172,7 +170,6 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -212,7 +209,6 @@ void GetExceptionMessage(OBJECTREF throwable, SString &result)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -230,7 +226,6 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -370,7 +365,6 @@ void ExceptionPreserveStackTrace(   // No return.
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -596,7 +590,6 @@ DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1089,7 +1082,6 @@ HRESULT EHRangeTreeNode::AddNode(EHRangeTreeNode *pNode)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
         PRECONDITION(pNode != NULL);
     }
     CONTRACTL_END;
@@ -1138,7 +1130,7 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
         }
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: m_ehcount:0x%x, m_rgClauses:0%x\n",
+    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: m_ehcount:0x%x, m_rgClauses:%p\n",
          m_EHCount, m_rgClauses));
 
     m_rgNodes = new (nothrow) EHRangeTreeNode[m_EHCount+1];
@@ -1152,7 +1144,7 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
     m_root = &(m_rgNodes[m_EHCount]);
     m_root->MarkAsRoot(methodSize + 1);
 
-    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: rgNodes:0x%x\n", m_rgNodes));
+    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: rgNodes:%p\n", m_rgNodes));
 
     if (m_EHCount ==0)
     {
@@ -1171,10 +1163,10 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
 
         pIJM->GetNextEHClause(&pEnumState, pEHClause);
 
-        LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: EHRTT_JIT_MANAGER got clause\n", i));
+        LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: EHRTT_JIT_MANAGER got clause\n"));
 
         LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: clause 0x%x,"
-                    "addrof:0x%x\n", i, pEHClause ));
+                "addrof:%p\n", i, pEHClause ));
 
         _ASSERTE(pEHClause->HandlerEndPC != (DWORD) -1);  // <TODO> remove, only protects against a deprecated convention</TODO>
 
@@ -1439,7 +1431,6 @@ TRY_CATCH_FINALLY GetTcf(EHRangeTreeNode *pNode,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1665,7 +1656,6 @@ HRESULT DestinationIsValid(void *pDjiToken,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1699,7 +1689,6 @@ HRESULT SetIPFromSrcToDst(Thread *pThread,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END;
 
@@ -1844,7 +1833,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1922,7 +1910,7 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
         memcpy(pTarget, pSource, offsetof(CONTEXT, ExtendedRegisters));
     }
     STRESS_LOG3(LF_SYNC, LL_INFO1000, "ReSet thread context EIP = %p ESP = %p EBP = %p\n",
-        GetIP((CONTEXT*)pTarget), GetSP((CONTEXT*)pTarget), GetFP((CONTEXT*)pTarget));
+        (void*)GetIP((CONTEXT*)pTarget), (void*)GetSP((CONTEXT*)pTarget), (void*)GetFP((CONTEXT*)pTarget));
 
 #else // !CONTEXT_EXTENDED_REGISTERS
 
@@ -2569,7 +2557,8 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
 
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", (void*)currentIP,
+        (void*)currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionObject(pThrowable))
@@ -2748,7 +2737,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
 
       if (pException->IsType(reKind))
         return TRUE;
@@ -2773,7 +2761,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(pThrowable != NULL);
 
@@ -2791,7 +2778,6 @@ BOOL IsUncatchable(OBJECTREF *pThrowable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     _ASSERTE(pThrowable != NULL);
@@ -3586,7 +3572,6 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3595,7 +3580,7 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
     // user breakpoints as if they're unhandled exceptions right away.
     //
     // @todo: The InternalUnhandledExceptionFilter can trigger.
-    CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation | FaultViolation | FaultNotFatal);
+    CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation);
 
 #ifdef TARGET_UNIX
     int result = COMUnhandledExceptionFilter(pEP);
@@ -3659,7 +3644,6 @@ LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, PVOID pv)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3752,7 +3736,6 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef TARGET_UNIX
     g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
@@ -4735,7 +4718,7 @@ static BOOL GetManagedFormatStringForResourceID(UINT32 resId, SString & converte
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4754,7 +4737,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4770,7 +4753,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4929,7 +4912,6 @@ BOOL IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pException
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -4970,7 +4952,6 @@ void AdjustContextForThreadStop(Thread* pThread,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5003,7 +4984,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5033,7 +5013,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     {
         EX_TRY
         {
-            FAULT_NOT_FATAL();
 
             ThreadPreventAsyncHolder preventAsync;
             ResetProcessorStateHolder procState;
@@ -5760,8 +5739,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
     Thread *pThread;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
-
         pThread = GetThreadNULLOk();
 
         //
@@ -5848,16 +5825,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         return VEH_CONTINUE_SEARCH;
     }
 
-    // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
-    // on WIN64
-    //
-
-    if (pThread)
-    {
-        FAULT_FORBID_NO_ALLOC();
-        CantAllocHolder caHolder;
-    }
-
     return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
 }
 
@@ -5889,9 +5856,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     VEH_ACTION action;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
-
         action = CLRVectoredExceptionHandlerPhase3(pExceptionInfo);
     }
 
@@ -5909,7 +5874,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     // In OOM situations, this call better not fault.
     //
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
 
         // Give the debugger a chance. Note that its okay for this call to trigger a GC, since the debugger will take
@@ -5961,7 +5925,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     BOOL fShouldHandleManagedFault;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionInfo->ExceptionRecord,
                                                              pExceptionInfo->ContextRecord,
@@ -6106,7 +6069,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 PCODE ip = (PCODE)GetIP(pContext);
                 if (IsIPInModule(GetClrModuleBase(), ip) || IsIPInModule(GCHeapUtilities::GetGCModuleBase(), ip))
                 {
-                    CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
+                    CONTRACT_VIOLATION(ThrowsViolation);
 
                     //
                     // If you're debugging, set the debugger to catch first-chance AV's, then simply hit F5 or
@@ -6612,7 +6575,7 @@ void CLRAddVectoredHandlers(void)
 }
 
 //
-// This does the work of the Unwind and Continue Hanlder inside the catch clause of that handler. The stack has not
+// This does the work of the Unwind and Continue Handler inside the catch clause of that handler. The stack has not
 // been unwound when this is called. Keep that in mind when deciding where to put new code :)
 //
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException)
@@ -6650,7 +6613,75 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 }
 
 //
-// This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
+// This does the work of the Unwind and Continue Handler inside the catch clause of that handler. The stack has not
+// been unwound when this is called. Keep that in mind when deciding where to put new code :)
+//
+void UnwindAndContinueRethrowHelperInsideQCallCatch(
+    Exception* pException,
+    QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame))
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    Thread* pThread = GetThread();
+
+    // The native exception unwind can leave stale entries below the current stack pointer
+    // on the Frame chain. Find the first enclosing InlinedCallFrame without inspecting them.
+    Frame* pCurrentSP = static_cast<Frame*>(GetCurrentSP());
+    Frame* pInlinedCallFrame = pThread->GetFrame();
+    while ((pInlinedCallFrame != FRAME_TOP) &&
+           ((pInlinedCallFrame < pCurrentSP) ||
+            (pInlinedCallFrame->GetFrameIdentifier() != FrameIdentifier::InlinedCallFrame)))
+    {
+        pInlinedCallFrame = pInlinedCallFrame->PtrNextFrame();
+    }
+
+    _ASSERTE(pInlinedCallFrame != FRAME_TOP);
+    _ASSERTE(pInlinedCallFrame == pEntryFrame);
+
+    GCX_COOP();
+
+    LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE inside catch, unwinding frame chain\n"));
+
+    // This SetFrame is OK because we will not have frames that require ExceptionUnwind in strictly unmanaged EE
+    // code chunks which is all that an UnC handler can guard.
+    //
+    // @todo: we'd rather use UnwindFrameChain, but there is a concern: some of the ExceptionUnwind methods on some
+    // of the Frame types do a great deal of work; load classes, throw exceptions, etc. We need to decide on some
+    // policy here. Do we want to let such functions throw, etc.? Right now, we believe that there are no such
+    // frames on the stack to be unwound, so the SetFrame is alright (see the first comment above.) At the very
+    // least, we should add some way to assert that.
+    pThread->SetFrame(pInlinedCallFrame);
+
+    // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
+    // while we are still within the context of the catch block. This will help diagnose
+    // cases where the last thrown object is NULL.
+    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
+    CONSISTENCY_CHECK(orThrowable != NULL);
+    SetQCallExceptionStatusThrowable(pQCallException, orThrowable);
+
+    // The exception status now owns a handle to the throwable. Release the native
+    // exception and its cached throwable handle, as the normal rethrow path does.
+    Exception::Delete(pException);
+}
+
+#ifdef TARGET_UNIX
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExceptionStatus* pQCallException)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    GCX_COOP();
+
+    OBJECTREF throwable = ExInfo::CreateThrowable(exception.GetExceptionRecord(), FALSE);
+    SetQCallExceptionStatusThrowable(pQCallException, throwable);
+}
+#endif
+
+//
+// This does the work of the Unwind and Continue Handler after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
 //
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow)
@@ -6832,8 +6863,9 @@ LONG NotifyOfCHFFilterWrapper(
         if (pThread)
         {
             LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
-                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL,
-                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL ));
+                 (void*)(pThread->GetExceptionState()->GetContextRecord() ?
+                     GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL),
+                 (void*)(pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL) ));
         }
         LOG((LF_EH, LL_INFO1000, "\n"));
         return ret;
@@ -9434,7 +9466,6 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -9757,7 +9788,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
 // Throw a decorated runtime exception with a localized message.
 // Queries the ResourceManager for a corresponding resource value.
 //==========================================================================
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName, Exception * pInnerException)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName)
 {
     CONTRACTL
     {
@@ -9770,20 +9801,8 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wsz
 
     _ASSERTE((reKind != kExecutionEngineException) ||
              !"ExecutionEngineException shouldn't be thrown. Use EEPolicy to failfast or a better exception. The caller of this function should modify their code.");
-    //
-    // For some reason, the compiler complains about unreachable code if
-    // we don't split the new from the throw.  So we're left with this
-    // unnecessarily verbose syntax.
-    //
 
-    if (pInnerException == NULL)
-    {
-        EX_THROW(EEResourceException, (reKind, wszResourceName));
-    }
-    else
-    {
-        EX_THROW_WITH_INNER(EEResourceException, (reKind, wszResourceName), pInnerException);
-    }
+    EX_THROW(EEResourceException, (reKind, wszResourceName));
 }
 
 //==========================================================================

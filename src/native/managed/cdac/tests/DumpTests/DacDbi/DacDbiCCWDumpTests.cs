@@ -19,7 +19,7 @@ public class DacDbiCCWDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "CCW";
     protected override string DumpType => "full";
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     private (TargetPointer Ccw, TargetPointer InterfacePointer) FindBuiltInComCcwWithInterface()
     {

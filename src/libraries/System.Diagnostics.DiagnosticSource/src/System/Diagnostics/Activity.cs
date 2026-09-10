@@ -428,12 +428,18 @@ namespace System.Diagnostics
         public Enumerator<ActivityLink> EnumerateLinks() => new Enumerator<ActivityLink>(_links?.First);
 
         /// <summary>
+        /// Enumerate the baggage attached to this Activity object and its ancestors without allocating.
+        /// </summary>
+        /// <returns><see cref="BaggageEnumerator"/>.</returns>
+        internal BaggageEnumerator EnumerateBaggage() => new BaggageEnumerator(this);
+
+        /// <summary>
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
         /// Returns null if that key does not exist.
         /// </summary>
         public string? GetBaggageItem(string key)
         {
-            foreach (KeyValuePair<string, string?> keyValue in Baggage)
+            foreach (KeyValuePair<string, string?> keyValue in EnumerateBaggage())
                 if (key == keyValue.Key)
                     return keyValue.Value;
             return null;
@@ -1596,6 +1602,54 @@ namespace System.Diagnostics
 
                 _currentNode = _nextNode;
                 _nextNode = _nextNode.Next;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Enumerates the baggage stored on this Activity and its ancestors without allocating.
+        /// Mirrors the semantics of the <see cref="Baggage"/> property, which uses an iterator
+        /// (allocating a state machine on every call) to walk the same data.
+        /// </summary>
+        internal struct BaggageEnumerator
+        {
+            // The next Activity (if any) to search for a non-empty baggage list. Always points at an
+            // Activity whose own baggage list has not yet been consumed by this enumerator.
+            private Activity? _activity;
+
+            // The remaining nodes of the baggage list currently being drained.
+            private DiagNode<KeyValuePair<string, string?>>? _next;
+
+            internal BaggageEnumerator(Activity? activity)
+            {
+                _activity = activity;
+                _next = null;
+                Current = default;
+            }
+
+            public KeyValuePair<string, string?> Current { get; private set; }
+
+            public readonly BaggageEnumerator GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                while (_next is null)
+                {
+                    if (_activity is null)
+                    {
+                        return false;
+                    }
+
+                    BaggageLinkedList? baggage = _activity._baggage;
+                    _activity = _activity.Parent;
+                    if (baggage != null)
+                    {
+                        _next = baggage.First;
+                    }
+                }
+
+                Current = _next.Value;
+                _next = _next.Next;
                 return true;
             }
         }

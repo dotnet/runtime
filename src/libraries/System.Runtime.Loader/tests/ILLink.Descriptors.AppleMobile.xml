@@ -1,0 +1,5 @@
+<linker>
+  <!-- Real project references on Apple mobile; embedded resources (not link inputs) on browser, so only rooted here. -->
+  <assembly fullname="System.Runtime.Loader.Test.Assembly" />
+  <assembly fullname="System.Runtime.Loader.Test.Assembly2" />
+</linker>

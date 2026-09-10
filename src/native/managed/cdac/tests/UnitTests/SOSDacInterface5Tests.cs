@@ -125,7 +125,7 @@ public unsafe class SOSDacInterface5Tests
             .AddMockContract(mockPlatformMetadata)
             .Build();
 
-        return new SOSDacImpl(target, legacyObj: null);
+        return new SOSDacImpl(target, legacyObj: null, new());
     }
 
     private static int CallGetTieredVersions(ISOSDacInterface5 dac5, DacpTieredVersionData[] buffer, out int count, int rejitId = 0)

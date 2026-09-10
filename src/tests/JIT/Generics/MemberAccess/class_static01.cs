@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_MemberAccess_class_static01;
+
 using System;
 using Xunit;
 
@@ -25,6 +27,7 @@ class Gen<T>
 
 public class Test_class_static01
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

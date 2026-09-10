@@ -734,7 +734,8 @@ ipc_transport_get_default_name (
 		pd.m_Pid,
 		pd.m_ApplicationGroupId,
 		"socket");
-	return true;
+	// PAL_GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
+	return name [0] != '\0';
 #else
 	return false;
 #endif
@@ -813,7 +814,7 @@ ipc_alloc_uds_address (
 	EP_ASSERT (ipc != NULL);
 
 	struct sockaddr_un *server_address = ep_rt_object_alloc (struct sockaddr_un);
-	ep_return_null_if_nok (server_address != NULL);
+	ep_raise_error_if_nok (server_address != NULL);
 
 	server_address->sun_family = AF_UNIX;
 
@@ -823,20 +824,29 @@ ipc_alloc_uds_address (
 			sizeof (server_address->sun_path),
 			"%s",
 			ipc_name);
-		if (result <= 0 || result >= (int32_t)(sizeof (server_address->sun_path)))
-			server_address->sun_path [0] = '\0';
+		ep_raise_error_if_nok (result > 0 && result < (int32_t)(sizeof (server_address->sun_path)));
 	} else {
 		// generate the default socket name
-		ipc_transport_get_default_name (
+		ep_raise_error_if_nok (ipc_transport_get_default_name (
 			server_address->sun_path,
-			sizeof (server_address->sun_path));
+			sizeof (server_address->sun_path)));
 	}
+
+	// An empty sun_path would bind to the Linux abstract namespace, which is not supported.
+	ep_raise_error_if_nok (server_address->sun_path [0] != '\0');
 
 	ipc->server_address = (ds_ipc_socket_address_t *)server_address;
 	ipc->server_address_len = sizeof (struct sockaddr_un);
 	ipc->server_address_family = server_address->sun_family;
+	server_address = NULL;
 
+ep_on_exit:
 	return ipc;
+
+ep_on_error:
+	ep_rt_object_free (server_address);
+	ipc = NULL;
+	ep_exit_error_handler ();
 #else
 	return NULL;
 #endif

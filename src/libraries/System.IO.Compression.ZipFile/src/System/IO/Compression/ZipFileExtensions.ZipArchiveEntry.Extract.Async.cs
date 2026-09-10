@@ -72,16 +72,39 @@ public static partial class ZipFileExtensions
         cancellationToken.ThrowIfCancellationRequested();
 
         ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);
+        await ExtractToFileCoreAsync(source, destinationFileName, overwrite, fileStreamOptions, password: default, usePassword: false, cancellationToken).ConfigureAwait(false);
+    }
 
-        // When overwriting, extract to a temporary file first to avoid corrupting the destination file
-        // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
+    /// <summary>
+    /// Asynchronously creates a file on the file system with the entry's contents using the specified extraction options.
+    /// </summary>
+    public static Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, ZipExtractionOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, options.Password, cancellationToken);
+    }
+
+    private static async Task ExtractToFileAsync(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);
+        await ExtractToFileCoreAsync(source, destinationFileName, overwrite, fileStreamOptions, password, usePassword: true, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Shared implementation for extracting an entry's contents to a file, with or without a password.
+    // When overwriting, extraction happens to a temporary file first, so that the destination file isn't
+    // corrupted if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
+    private static async Task ExtractToFileCoreAsync(ZipArchiveEntry source, string destinationFileName, bool overwrite, FileStreamOptions fileStreamOptions, ReadOnlyMemory<char> password, bool usePassword, CancellationToken cancellationToken)
+    {
         string extractPath = destinationFileName;
         string? tempPath = null;
 
         if (overwrite && File.Exists(destinationFileName))
         {
             // Use GetTempFileName for a unique temp file in the system temp directory.
-            // This avoids conflicts and ensures cleanup by the OS if the process crashes.
+            // This avoids conflicts; we attempt to delete the temp file if extraction fails.
             tempPath = Path.GetTempFileName();
             extractPath = tempPath;
         }
@@ -91,7 +114,9 @@ public static partial class ZipFileExtensions
             FileStream fs = new FileStream(extractPath, fileStreamOptions);
             await using (fs.ConfigureAwait(false))
             {
-                Stream es = await source.OpenAsync(FileAccess.Read, cancellationToken).ConfigureAwait(false);
+                Stream es = usePassword
+                    ? await source.OpenAsync(password.Span, cancellationToken: cancellationToken).ConfigureAwait(false)
+                    : await source.OpenAsync(FileAccess.Read, cancellationToken).ConfigureAwait(false);
                 await using (es.ConfigureAwait(false))
                 {
                     await es.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
@@ -112,64 +137,6 @@ public static partial class ZipFileExtensions
             if (tempPath is not null)
             {
                 // Ignore exceptions during cleanup; the original exception is more important
-                try { File.Delete(tempPath); } catch { }
-            }
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Asynchronously creates a file on the file system with the entry's contents using the specified extraction options.
-    /// </summary>
-    public static Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, ZipExtractionOptions options, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, options.Password, cancellationToken);
-    }
-
-    private static async Task ExtractToFileAsync(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);
-
-        // When overwriting, extract to a temporary file first to avoid corrupting the destination file
-        // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
-        string extractPath = destinationFileName;
-        string? tempPath = null;
-
-        if (overwrite && File.Exists(destinationFileName))
-        {
-            tempPath = Path.GetTempFileName();
-            extractPath = tempPath;
-        }
-
-        try
-        {
-            FileStream fs = new FileStream(extractPath, fileStreamOptions);
-            await using (fs.ConfigureAwait(false))
-            {
-                Stream es = await source.OpenAsync(password.Span, cancellationToken: cancellationToken).ConfigureAwait(false);
-                await using (es.ConfigureAwait(false))
-                {
-                    await es.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
-                }
-            }
-
-            // Move the temporary file to the destination only after successful extraction
-            if (tempPath is not null)
-            {
-                File.Move(tempPath, destinationFileName, overwrite: true);
-            }
-
-            ExtractToFileFinalize(source, destinationFileName);
-        }
-        catch
-        {
-            // Clean up the temporary file if extraction failed
-            if (tempPath is not null)
-            {
                 try { File.Delete(tempPath); } catch { }
             }
             throw;

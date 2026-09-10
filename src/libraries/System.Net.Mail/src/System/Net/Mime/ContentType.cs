@@ -116,10 +116,10 @@ namespace System.Net.Mime
             get
             {
                 string? value = Parameters["name"];
-                (string decodedValue, Encoding? nameEncoding) = MimeBasePart.DecodeHeaderValue(value, false);
+                Encoding? nameEncoding = MimeBasePart.DecodeEncoding(value);
                 if (nameEncoding != null)
                 {
-                    value = decodedValue;
+                    value = MimeBasePart.DecodeHeaderValue(value);
                 }
                 return value!;
             }
@@ -191,24 +191,7 @@ namespace System.Net.Mime
 
         private static void EncodeToBuffer(string value, StringBuilder builder, bool allowUnicode)
         {
-            Encoding? encoding;
-            try
-            {
-                (_, encoding) = MimeBasePart.DecodeHeaderValue(value, false);
-            }
-            catch (FormatException)
-            {
-                // The value looks like an encoded-word but its content isn't actually decodable;
-                // treat it as not pre-encoded so it gets properly quoted/escaped below.
-                encoding = null;
-            }
-            catch (ArgumentException)
-            {
-                // Unsupported charset; treat it as not pre-encoded so it gets properly quoted/escaped below.
-                encoding = null;
-            }
-
-            if (encoding != null) // Manually encoded elsewhere, pass through
+            if (MimeBasePart.IsFullyEncoded(value)) // Manually encoded elsewhere, pass through
             {
                 builder.Append('"').Append(value).Append('"');
             }
@@ -220,7 +203,7 @@ namespace System.Net.Mime
             else
             {
                 // MIME Encoding required
-                encoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
+                Encoding encoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
                 builder.Append('"').Append(MimeBasePart.EncodeHeaderValue(value, encoding, MimeBasePart.ShouldUseBase64Encoding(encoding))).Append('"');
             }
         }

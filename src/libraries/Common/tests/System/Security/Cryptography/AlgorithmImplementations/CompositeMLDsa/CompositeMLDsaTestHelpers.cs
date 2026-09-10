@@ -3,9 +3,11 @@
 
 using System.Collections.Generic;
 using System.Formats.Asn1;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Rsa.Tests;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
@@ -14,6 +16,11 @@ namespace System.Security.Cryptography.Tests
 {
     internal static partial class CompositeMLDsaTestHelpers
     {
+        private static readonly Lazy<bool> s_lazyIsBCryptSupported = new(CheckBCryptSupport);
+
+        // Remove this BCrypt flag once supported Windows versions consistently provide Composite ML-DSA.
+        internal static bool IsBCryptSupported => s_lazyIsBCryptSupported.Value;
+
         // DER encoding of ASN.1 BitString "foo"
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };
 
@@ -696,6 +703,55 @@ namespace System.Security.Cryptography.Tests
                 _ => throw new XunitException("Unknown algorithm."),
             };
         }
+
+        private static bool CheckBCryptSupport()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return false;
+            }
+
+            const int STATUS_NOT_FOUND = unchecked((int)0xC0000225);
+            const int STATUS_SUCCESS = 0;
+
+            int status = BCryptOpenAlgorithmProvider(
+                out SafeBCryptAlgorithmHandle algorithm,
+                "Composite-ML-DSA",
+                pszImplementation: null,
+                dwFlags: 0);
+
+            using (algorithm)
+            {
+                return status switch
+                {
+                    STATUS_SUCCESS => true,
+                    STATUS_NOT_FOUND => false,
+                    _ => throw new CryptographicException($"BCryptOpenAlgorithmProvider failed with status 0x{(uint)status:X8}."),
+                };
+            }
+        }
+
+        private sealed class SafeBCryptAlgorithmHandle : SafeHandleZeroOrMinusOneIsInvalid
+        {
+            public SafeBCryptAlgorithmHandle()
+                : base(ownsHandle: true)
+            {
+            }
+
+            protected override bool ReleaseHandle() => BCryptCloseAlgorithmProvider(handle, 0) == 0;
+        }
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [LibraryImport("bcrypt.dll", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial int BCryptOpenAlgorithmProvider(
+            out SafeBCryptAlgorithmHandle phAlgorithm,
+            string pszAlgId,
+            string? pszImplementation,
+            int dwFlags);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [LibraryImport("bcrypt.dll")]
+        private static partial int BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
 
         private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
         private static byte[] DoTryUntilDone(TryExportFunc func)

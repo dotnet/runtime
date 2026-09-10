@@ -17,8 +17,10 @@ namespace System.Threading
     {
         // The spin count is chosen to be in the range of typical thread wake latency and some additional overhead,
         // all assuming a single spin is calibrated to around 35 nanoseconds.
-        // The thread wake latency commonly measures at 2-10 microsecond (year 2026) and unlikely to drastically change.
-        private const int DefaultSemaphoreSpinCountLimit = 256;
+        // The thread wake latency commonly measures at ~10 microseconds (year 2026) and is unlikely to drastically change.
+        // But since the wakes are LIFO, the spin needs to survive additional overhead (we will need to take a lock, unlink the thread).
+        // So we limit the spin to about 35 microseconds.
+        private const int DefaultSemaphoreSpinCountLimit = 1024;
         // The cooldown roughly serves as detection that the thread did not spend time being blocked.
         // If it woke in under 4 microseconds, it was likely a fast/trivial wake without blocking.
         private const int DefaultWakeCooldown = 4;
@@ -148,8 +150,9 @@ namespace System.Threading
         }
 
         // If we have signals and have waiters, we need to make sure at least one is waking.
-        // We wake one waiter at a time. If it finds work it will ask for workers and that can wake more waiters
-        // if other workers do not consume the additional signals.
+        // We wake one waiter at a time. If it finds a signal it will wake another worker, unless other workers consume
+        // the additional signals first.
+
         // It is generally unusual to have > 1 signal. That only happens when the count of desired workers had a forced change.
         // In any case, we would prefer that extra signals be consumed by active workers, but must guarantee that signals
         // are consumed eventually thus we release waiters one by one.
@@ -257,6 +260,11 @@ namespace System.Threading
                         if (counts.SignalCount != 0)
                         {
                             // success
+
+                            // If there are remaining signals, wake another waiter to ensure signals are eventually consumed.
+                            // In a saturated pool there may be little new semaphore traffic, and we'd otherwise keep
+                            // sleeping workers counted as running for too long.
+                            MaybeWakeWaiter(newCounts);
                             return true;
                         }
 

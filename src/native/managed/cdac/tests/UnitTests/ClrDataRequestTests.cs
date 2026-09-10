@@ -82,10 +82,10 @@ public unsafe class ClrDataRequestTests
     private static object CreateInstance(RequestType type)
         => type switch
         {
-            RequestType.Task => new ClrDataTask(default, null!, null),
-            RequestType.MethodDefinition => new ClrDataMethodDefinition(null!, default, 0, null),
-            RequestType.MethodInstance => new ClrDataMethodInstance(null!, default, default, null),
-            RequestType.Value => new ClrDataValue(null!, TargetPointer.Null, 0, null, TargetPointer.Null, [], null),
+            RequestType.Task => new ClrDataTask(default, null!, null, new()),
+            RequestType.MethodDefinition => new ClrDataMethodDefinition(null!, default, 0, null, new()),
+            RequestType.MethodInstance => new ClrDataMethodInstance(null!, default, default, null, new()),
+            RequestType.Value => new ClrDataValue(null!, TargetPointer.Null, 0, null, TargetPointer.Null, [], null, new()),
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
 

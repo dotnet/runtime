@@ -57,6 +57,7 @@ namespace System.ComponentModel.DataAnnotations
         public string? OtherPropertyDisplayName { get { throw null; } }
         public override bool RequiresValidationContext { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
@@ -191,6 +192,7 @@ namespace System.ComponentModel.DataAnnotations
         public FileExtensionsAttribute() : base (default(System.ComponentModel.DataAnnotations.DataType)) { }
         public string Extensions { get { throw null; } set { } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -227,6 +229,7 @@ namespace System.ComponentModel.DataAnnotations
         public int MaximumLength { get { throw null; } }
         public int MinimumLength { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -238,6 +241,7 @@ namespace System.ComponentModel.DataAnnotations
         public MaxLengthAttribute(int length) { }
         public int Length { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false)]
@@ -254,6 +258,7 @@ namespace System.ComponentModel.DataAnnotations
         public MinLengthAttribute(int length) { }
         public int Length { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -278,6 +283,7 @@ namespace System.ComponentModel.DataAnnotations
         public System.Type OperandType { get { throw null; } }
         public bool ParseLimitsInInvariantCulture { get { throw null; } set { } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -288,6 +294,7 @@ namespace System.ComponentModel.DataAnnotations
         public int MatchTimeoutInMilliseconds { get { throw null; } set { } }
         public string Pattern { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -310,6 +317,7 @@ namespace System.ComponentModel.DataAnnotations
         public int MaximumLength { get { throw null; } }
         public int MinimumLength { get { throw null; } set { } }
         public override string FormatErrorMessage(string name) { throw null; }
+        public override string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
@@ -347,6 +355,7 @@ namespace System.ComponentModel.DataAnnotations
         protected string ErrorMessageString { get { throw null; } }
         public virtual bool RequiresValidationContext { get { throw null; } }
         public virtual string FormatErrorMessage(string name) { throw null; }
+        public virtual string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public System.ComponentModel.DataAnnotations.ValidationResult? GetValidationResult(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
         public virtual bool IsValid(object? value) { throw null; }
         protected virtual System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }

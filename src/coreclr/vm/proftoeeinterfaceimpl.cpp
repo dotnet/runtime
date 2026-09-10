@@ -1336,7 +1336,6 @@ void ScanRootsHelper(Object* pObj, Object ** ppRoot, ScanContext *pSC, uint32_t 
     // On the other hand, this only means profiling information will be incomplete,
     // so it's ok to swallow E_OUTOFMEMORY.
     //
-    FAULT_NOT_FATAL();
 
     ProfilingScanContext *pPSC = (ProfilingScanContext *)pSC;
 
@@ -1593,7 +1592,7 @@ HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *ph
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetHandleFromThread 0x%p.\n",
-        threadId));
+        (void*)threadId));
 
     if (!IsManagedThread(threadId))
     {
@@ -1639,7 +1638,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetObjectSize 0x%p.\n",
-         objectId));
+         (void*)objectId));
 
     if (objectId == 0)
     {
@@ -1703,7 +1702,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize2(ObjectID objectId, SIZE_T *pcSize)
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetObjectSize2 0x%p.\n",
-         objectId));
+         (void*)objectId));
 
     if (objectId == 0)
     {
@@ -1765,7 +1764,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: IsArrayClass 0x%p.\n",
-         classId));
+         (void*)classId));
 
     HRESULT hr;
 
@@ -1843,7 +1842,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadInfo(ThreadID threadId, DWORD *pdwWin32T
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetThreadInfo 0x%p.\n",
-         threadId));
+         (void*)threadId));
 
     if (!IsManagedThread(threadId))
     {
@@ -2133,7 +2132,7 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetTokenAndMetaDataFromFunction 0x%p.\n",
-         functionId));
+         (void*)functionId));
 
     if (functionId == 0)
     {
@@ -2382,7 +2381,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo(FunctionID functionId, LPCBYTE * pSta
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetCodeInfo 0x%p.\n",
-        functionId));
+        (void*)functionId));
 
     // GetCodeInfo may be called asynchronously, and the JIT functions take a reader
     // lock.  So we need to ensure the current thread hasn't been hijacked by a profiler while
@@ -2464,7 +2463,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo2(FunctionID functionId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetCodeInfo2 0x%p.\n",
-        functionId));
+        (void*)functionId));
 
     HRESULT hr = S_OK;
 
@@ -2527,7 +2526,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetCodeInfo3 0x%p 0x%p.\n",
-        functionId, reJitId));
+        (void*)functionId, (void*)reJitId));
 
     HRESULT hr = S_OK;
 
@@ -2695,7 +2694,7 @@ HRESULT ProfToEEInterfaceImpl::EnumModuleFrozenObjects(ModuleID moduleID,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: EnumModuleFrozenObjects 0x%p.\n",
-         moduleID));
+         (void*)moduleID));
 
     if (NULL == ppEnum)
     {
@@ -2757,7 +2756,7 @@ HRESULT ProfToEEInterfaceImpl::GetArrayObjectInfo(ObjectID objectId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetArrayObjectInfo 0x%p.\n",
-         objectId));
+         (void*)objectId));
 
     if (objectId == 0)
     {
@@ -2883,7 +2882,7 @@ HRESULT ProfToEEInterfaceImpl::GetBoxClassLayout(ClassID classId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetBoxClassLayout 0x%p.\n",
-         classId));
+         (void*)classId));
 
     if (pBufferOffset == NULL)
     {
@@ -2944,7 +2943,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadAppDomain(ThreadID threadId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetThreadAppDomain 0x%p.\n",
-         threadId));
+         (void*)threadId));
 
     if (pAppDomainId == NULL)
     {
@@ -3019,7 +3018,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetRVAStaticAddress 0x%p, 0x%08x.\n",
-         classId,
+         (void*)classId,
          fieldToken));
 
     //
@@ -3136,9 +3135,9 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetAppDomainStaticAddress 0x%p, 0x%08x, 0x%p.\n",
-         classId,
+         (void*)classId,
          fieldToken,
-         appDomainId));
+         (void*)appDomainId));
 
     //
     // Check for NULL parameters
@@ -3282,9 +3281,9 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress(ClassID classId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetThreadStaticAddress 0x%p, 0x%08x, 0x%p.\n",
-         classId,
+         (void*)classId,
          fieldToken,
-         threadId));
+         (void*)threadId));
 
     //
     // Verify the value of threadId, which must be the current thread ID or NULL, which means using curernt thread ID.
@@ -3358,10 +3357,10 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetThreadStaticAddress2 0x%p, 0x%08x, 0x%p, 0x%p.\n",
-         classId,
+         (void*)classId,
          fieldToken,
-         appDomainId,
-         threadId));
+         (void*)appDomainId,
+         (void*)threadId));
 
 
     if (threadId == 0)
@@ -3479,9 +3478,9 @@ HRESULT ProfToEEInterfaceImpl::GetContextStaticAddress(ClassID classId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetContextStaticAddress 0x%p, 0x%08x, 0x%p.\n",
-         classId,
+         (void*)classId,
          fieldToken,
-         contextId));
+         (void*)contextId));
 
     return E_NOTIMPL;
 }
@@ -3534,7 +3533,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainsContainingModule(ModuleID moduleId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetAppDomainsContainingModule 0x%p, 0x%08x, 0x%p, 0x%p.\n",
-         moduleId,
+         (void*)moduleId,
          cAppDomainIds,
          pcAppDomainIds,
          appDomainIds));
@@ -3612,7 +3611,7 @@ HRESULT ProfToEEInterfaceImpl::GetStaticFieldInfo(ClassID classId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetStaticFieldInfo 0x%p, 0x%08x.\n",
-         classId,
+         (void*)classId,
          fieldToken));
 
     //
@@ -3716,7 +3715,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetClassIDInfo2 0x%p.\n",
-        classId));
+        (void*)classId));
 
     //
     // Verify parameters.
@@ -3880,7 +3879,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo(ModuleID     moduleId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetModuleInfo 0x%p.\n",
-        moduleId));
+        (void*)moduleId));
 
     // Parameter validation is taken care of in GetModuleInfo2.
 
@@ -4003,7 +4002,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetModuleInfo2 0x%p.\n",
-        moduleId));
+        (void*)moduleId));
 
     if (moduleId == 0)
     {
@@ -4155,7 +4154,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetModuleMetaData 0x%p, 0x%08x.\n",
-        moduleId,
+        (void*)moduleId,
         dwOpenFlags));
 
     if (moduleId == 0)
@@ -4238,7 +4237,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetILFunctionBody 0x%p, 0x%08x.\n",
-         moduleId,
+         (void*)moduleId,
          methodId));
 
     Module *    pModule;                // Working pointer for real class.
@@ -4366,7 +4365,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetILFunctionBodyAllocator 0x%p.\n",
-        moduleId));
+        (void*)moduleId));
 
     if ((moduleId == 0) || (ppMalloc == NULL))
     {
@@ -4420,7 +4419,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: SetILFunctionBody 0x%p, 0x%08x.\n",
-         moduleId,
+         (void*)moduleId,
          methodId));
 
     if ((moduleId == 0) ||
@@ -4495,7 +4494,7 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: SetILInstrumentedCodeMap 0x%p, %d.\n",
-         functionId,
+         (void*)functionId,
          fStartJit));
 
     if (functionId == 0)
@@ -4652,7 +4651,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadContext(ThreadID threadId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetThreadContext 0x%p.\n",
-         threadId));
+         (void*)threadId));
 
     if (!IsManagedThread(threadId))
     {
@@ -4702,7 +4701,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetClassIDInfo 0x%p.\n",
-        classId));
+        (void*)classId));
 
     if (classId == 0)
     {
@@ -4795,7 +4794,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetFunctionInfo 0x%p.\n",
-        functionId));
+        (void*)functionId));
 
     if (functionId == 0)
     {
@@ -4865,7 +4864,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping(FunctionID functionId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetILToNativeMapping 0x%p.\n",
-        functionId));
+        (void*)functionId));
 
     return GetILToNativeMapping2(functionId, 0, cMap, pcMap, map);
 }
@@ -4901,7 +4900,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetILToNativeMapping2 0x%p 0x%p.\n",
-        functionId, reJitId));
+        (void*)functionId, (void*)reJitId));
 
     if (functionId == 0)
     {
@@ -4990,7 +4989,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromObject(ObjectID objectId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetClassFromObject 0x%p.\n",
-         objectId));
+         (void*)objectId));
 
     if (objectId == 0)
     {
@@ -5045,7 +5044,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromToken(ModuleID    moduleId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetClassFromToken 0x%p, 0x%08x.\n",
-         moduleId,
+         (void*)moduleId,
          typeDef));
 
     if ((moduleId == 0) || (typeDef == mdTypeDefNil) || (typeDef == mdTokenNil))
@@ -5141,7 +5140,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromTokenAndTypeArgs(ModuleID moduleID,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetClassFromTokenAndTypeArgs 0x%p, 0x%08x.\n",
-         moduleID,
+         (void*)moduleID,
          typeDef));
 
     if (!g_profControlBlock.fBaseSystemClassesLoaded)
@@ -5207,15 +5206,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromTokenAndTypeArgs(ModuleID moduleID,
             // impact retail builds, in which contracts are not available.
             ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-            // ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE also defines FAULT_FORBID, which
-            // causes Scanruntime to flag a fault violation in AssemblySpec::InitializeSpec,
-            // which is defined as FAULTS.   It only happens in a type-loading path, which
-            // is not supported on a non-EE thread.  Suppressing a contract violation in an
-            // unsupported execution path is more preferable than causing AV when calling
-            // GetClassFromTokenAndTypeArgs on a non-EE thread in a check build.  See Dev10
-            // 682526 for more details.
-            FAULT_NOT_FATAL();
-
             th = ClassLoader::LoadGenericInstantiationThrowing(pModule,
                                                                typeDef,
                                                                Instantiation(genericParameters, cTypeArgs),
@@ -5278,7 +5268,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromToken(ModuleID moduleId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetFunctionFromToken 0x%p, 0x%08x.\n",
-         moduleId,
+         (void*)moduleId,
          typeDef));
 
     if ((moduleId == 0) || (typeDef == mdTokenNil))
@@ -5370,9 +5360,9 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetFunctionFromTokenAndTypeArgs 0x%p, 0x%08x, 0x%p.\n",
-         moduleID,
+         (void*)moduleID,
          funcDef,
-         classId));
+         (void*)classId));
 
     TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
     Module* pModule = reinterpret_cast< Module* >(moduleID);
@@ -5482,7 +5472,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetAppDomainInfo 0x%p.\n",
-         appDomainId));
+         (void*)appDomainId));
 
     if (appDomainId == 0)
     {
@@ -5576,7 +5566,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetAssemblyInfo 0x%p.\n",
-         assemblyId));
+         (void*)assemblyId));
 
     if (assemblyId == 0)
     {
@@ -5968,7 +5958,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetFunctionInfo2 0x%p.\n",
-        funcId));
+        (void*)funcId));
 
     //
     // Verify parameters.
@@ -6166,7 +6156,7 @@ HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *is
         (LF_CORPROF,
             LL_INFO1000,
             "**PROF: IsFunctionDynamic 0x%p.\n",
-            functionId));
+            (void*)functionId));
 
     //
     // Verify parameters.
@@ -6319,7 +6309,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
         (LF_CORPROF,
             LL_INFO1000,
             "**PROF: GetDynamicFunctionInfo 0x%p.\n",
-            functionId));
+            (void*)functionId));
 
     //
     // Verify parameters.
@@ -6441,7 +6431,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
     (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetNativeCodeStartAddresses 0x%p 0x%p.\n",
-        functionID, reJitId));
+        (void*)functionID, (void*)reJitId));
 
     HRESULT hr = S_OK;
 
@@ -6543,7 +6533,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping3(UINT_PTR pNativeCodeStartAd
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetILToNativeMapping3 0x%p.\n",
-        pNativeCodeStartAddress));
+        (void*)pNativeCodeStartAddress));
 
     if (pNativeCodeStartAddress == (PCODE)NULL)
     {
@@ -6609,7 +6599,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo4(UINT_PTR pNativeCodeStartAddress,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetCodeInfo4 0x%p.\n",
-        pNativeCodeStartAddress));
+        (void*)pNativeCodeStartAddress));
 
     if ((cCodeInfos != 0) && (codeInfos == NULL))
     {
@@ -6721,7 +6711,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateObjectReferences(ObjectID objectId, Obje
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: EnumerateObjectReferences 0x%p.\n",
-        objectId));
+        (void*)objectId));
 
     if (callback == nullptr)
     {
@@ -6771,7 +6761,7 @@ HRESULT ProfToEEInterfaceImpl::IsFrozenObject(ObjectID objectId, BOOL *pbFrozen)
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: IsFrozenObject 0x%p.\n",
-        objectId));
+        (void*)objectId));
 
     *pbFrozen = GCHeapUtilities::GetGCHeap()->IsInFrozenSegment((Object*)objectId) ? TRUE : FALSE;
 
@@ -7657,7 +7647,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     }
 
     bool ownEESuspension = false;
-    bool suspendedByThisThread = (ThreadSuspend::GetSuspensionThread() == GetThreadNULLOk());
+    Thread* pCurrentThread = GetThreadNULLOk();
+    bool suspendedByThisThread = pCurrentThread != nullptr && ThreadSuspend::GetSuspensionThread() == pCurrentThread;
     if (suspendedByThisThread && !g_profControlBlock.fProfilerRequestedRuntimeSuspend)
     {
         // This thread is responsible for suspending the runtime so we can't block
@@ -7938,7 +7929,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetClassLayout 0x%p.\n",
-        classID));
+        (void*)classID));
 
     //
     // Verify parameters
@@ -8554,7 +8545,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: DoStackSnapshot 0x%p, 0x%p, 0x%08x, 0x%p, 0x%p, 0x%08x.\n",
-        thread,
+        (void*)thread,
         callback,
         infoFlags,
         clientData,
@@ -9197,7 +9188,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        (LF_CORPROF,
                                        LL_INFO1000,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
-                                       objectId));
+                                       (void*)objectId));
 
 
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
@@ -9260,7 +9251,7 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetReJITIDs 0x%p.\n",
-         functionId));
+         (void*)functionId));
 
     if (functionId == 0)
     {
@@ -9807,7 +9798,6 @@ HRESULT ProfilingGetFunctionEnter3Info(FunctionID functionId,                   
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10006,7 +9996,6 @@ HRESULT ProfilingGetFunctionLeave3Info(FunctionID functionId,                   
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10168,7 +10157,6 @@ HRESULT ProfilingGetFunctionTailcall3Info(FunctionID functionId,                
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10812,7 +10800,6 @@ HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecifi
 
             {
                 // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-                FAULT_NOT_FATAL();
 
                 pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, platformSpecificHandle);
 

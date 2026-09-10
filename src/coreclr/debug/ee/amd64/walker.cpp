@@ -1036,7 +1036,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
         if (done)
             break;
-        LOG((LF_CORDB, LL_INFO10000, "prefix:%0.2x ", *address));
+        LOG((LF_CORDB, LL_INFO10000, "prefix:%02x ", *address));
         address++;
     } while (true);
 
@@ -1227,7 +1227,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     size_t opCode    = size_t(*address);
     size_t opCodeExt = (opCode << 2) | pp;
 
-    LOG((LF_CORDB, LL_INFO10000, "opCode:%02x pp:%d W:%d L:%d LL:%d ", opCode, pp, W ? 1 : 0, L ? 1 : 0, evex_LL));
+    LOG((LF_CORDB, LL_INFO10000, "opCode:%02zx pp:%d W:%d L:%d LL:%d ", opCode, pp, W ? 1 : 0, L ? 1 : 0, evex_LL));
 
     switch (opCodeMap)
     {
@@ -1311,18 +1311,18 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             case 0xC2: // RET
             case 0xC3: // RET N
                 pInstrAttrib->m_fIsAbsBranch = true;
-                LOG((LF_CORDB, LL_INFO10000, "ABS:%0.2x\n", opcode0));
+                LOG((LF_CORDB, LL_INFO10000, "ABS:%02x\n", opcode0));
                 break;
 
             case 0xE8: // CALL relative
                 pInstrAttrib->m_fIsCall = true;
-                LOG((LF_CORDB, LL_INFO10000, "CALL REL:%0.2x\n", opcode0));
+                LOG((LF_CORDB, LL_INFO10000, "CALL REL:%02x\n", opcode0));
                 break;
 
             case 0xC8: // ENTER
                 pInstrAttrib->m_fIsCall = true;
                 pInstrAttrib->m_fIsAbsBranch = true;
-                LOG((LF_CORDB, LL_INFO10000, "CALL ABS:%0.2x\n", opcode0));
+                LOG((LF_CORDB, LL_INFO10000, "CALL ABS:%02x\n", opcode0));
                 break;
 
             case 0xFF: // CALL/JMP modr/m
@@ -1342,11 +1342,11 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                         pInstrAttrib->m_fIsAbsBranch = true;
                         break;
                 }
-                LOG((LF_CORDB, LL_INFO10000, "CALL/JMP modr/m:%0.2x\n", opcode0));
+                LOG((LF_CORDB, LL_INFO10000, "CALL/JMP modr/m:%02x\n", opcode0));
                 break;
 
             default:
-                LOG((LF_CORDB, LL_INFO10000, "NORMAL:%0.2x\n", opcode0));
+                LOG((LF_CORDB, LL_INFO10000, "NORMAL:%02x\n", opcode0));
                 break;
         }
     }

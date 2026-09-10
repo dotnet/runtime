@@ -20,6 +20,8 @@
 #include "nullprofiler/nullprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
 #include "releaseondetach/releaseondetach.h"
+#include "runtimeasyncapis/runtimeasyncapisprofiler.h"
+#include "runtimeasynctypes/runtimeasynctypesprofiler.h"
 #include "transitions/transitions.h"
 #include "multiple/multiple.h"
 #include "inlining/inlining.h"
@@ -126,6 +128,14 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == ReleaseOnDetach::GetClsid())
     {
         profiler = new ReleaseOnDetach();
+    }
+    else if (clsid == RuntimeAsyncApisProfiler::GetClsid())
+    {
+        profiler = new RuntimeAsyncApisProfiler();
+    }
+    else if (clsid == RuntimeAsyncTypesProfiler::GetClsid())
+    {
+        profiler = new RuntimeAsyncTypesProfiler();
     }
     else if (clsid == Transitions::GetClsid())
     {

@@ -20,7 +20,7 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "GCRoots";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     /// <summary>
     /// Drives <see cref="DacDbiImpl.WalkRefs"/> to completion and returns every reference reported.

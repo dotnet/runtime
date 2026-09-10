@@ -24,7 +24,6 @@ namespace Microsoft.Interop
                     new StructAsHResultMarshallerFactory(),
                     new ManagedHResultExceptionGeneratorResolver(),
                     new ComInterfaceDispatchMarshallingResolver(),
-                    new IidParameterIndexMarshallerResolver(),
                 ]);
 
         public static IMarshallingGeneratorResolver GetGeneratorResolver(EnvironmentFlags env, MarshalDirection direction)

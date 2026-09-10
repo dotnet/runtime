@@ -380,5 +380,33 @@ internal static partial class Interop
 
             return info;
         }
+
+        /// <summary>
+        /// Attempts to get the physical memory footprint for the process identified by the PID. This is an
+        /// accounting-based measurement of the process's memory usage - the same value shown in Activity
+        /// Monitor's Memory column - not a strict count of pages unique/private to the process.
+        /// </summary>
+        /// <param name="pid">The process to retrieve the physical footprint for</param>
+        /// <param name="physicalFootprint">When this method returns true, contains the process's physical footprint in bytes</param>
+        /// <returns>
+        /// true if the physical footprint could be retrieved; false if it could not - for example, if the
+        /// caller lacks permission to query a process owned by another user, or the process has since exited
+        /// </returns>
+        internal static unsafe bool TryGetProcessPhysicalFootprint(int pid, out ulong physicalFootprint)
+        {
+            // Negative PIDs are invalid
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
+
+            rusage_info_v3 info = default;
+            int result = proc_pid_rusage(pid, RUSAGE_INFO_V3, &info);
+            if (result < 0)
+            {
+                physicalFootprint = 0;
+                return false;
+            }
+
+            physicalFootprint = info.ri_phys_footprint;
+            return true;
+        }
     }
 }

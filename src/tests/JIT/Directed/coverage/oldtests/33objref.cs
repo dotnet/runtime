@@ -3,6 +3,8 @@
 
 //testing more than 32 (>33) objref's on the stack and as function arguments
 
+namespace JitTest_Directed_coverage_oldtests_33objref;
+
 using System;
 using Xunit;
 
@@ -83,6 +85,7 @@ public class Test33objref
             (a33 - a30) * (a31 + a32);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

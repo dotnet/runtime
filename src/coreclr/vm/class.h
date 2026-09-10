@@ -27,7 +27,7 @@
 /*
  *  Include Files
  */
-#include "eecontract.h"
+#include <contract.h>
 #include "argslot.h"
 #include "vars.hpp"
 #include "cor.h"
@@ -1889,10 +1889,6 @@ public:
 
 class UMThunkMarshInfo;
 
-#ifdef FEATURE_COMINTEROP
-struct CLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
-
 class DelegateEEClass : public EEClass
 {
 public:
@@ -1903,10 +1899,6 @@ public:
     PCODE                            m_pMultiCastInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
     Volatile<PCODE>                  m_pMarshalStub;
-
-#ifdef FEATURE_COMINTEROP
-    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
     {
@@ -2004,7 +1996,9 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
+#ifdef FEATURE_VARARGS
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
+#endif // FEATURE_VARARGS
 
 
 

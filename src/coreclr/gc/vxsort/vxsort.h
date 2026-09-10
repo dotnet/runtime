@@ -5,13 +5,11 @@
 #define VXSORT_VXSORT_H
 
 #if defined(TARGET_AMD64)
-#ifdef __GNUC__
-#ifdef __clang__
+#if defined(__clang__)
 #pragma clang attribute push (__attribute__((target("popcnt"))), apply_to = any(function))
-#else
+#elif defined(__GNUC__)
 #pragma GCC push_options
 #pragma GCC target("popcnt")
-#endif
 #endif
 #endif // TARGET_AMD64
 

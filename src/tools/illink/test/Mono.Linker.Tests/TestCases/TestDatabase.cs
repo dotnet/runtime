@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,7 +12,10 @@ namespace Mono.Linker.Tests.TestCases
 {
     public static class TestDatabase
     {
-        private static TestCase[] _cachedAllCases;
+        private static readonly Lazy<TestCase[]> s_allCases = new(() => CreateCollector()
+            .Collect()
+            .OrderBy(c => c.DisplayName)
+            .ToArray());
 
         public static IEnumerable<object[]> AdvancedTests()
         {
@@ -26,6 +30,12 @@ namespace Mono.Linker.Tests.TestCases
         public static IEnumerable<object[]> AttributeTests()
         {
             return TestCasesBySuiteName("Attributes");
+        }
+
+        public static IEnumerable<object[]> AttributeTestsShard(int shardIndex, int shardCount)
+        {
+            return TestCasesBySuiteName("Attributes")
+                .Where((_, index) => index % shardCount == shardIndex);
         }
 
         public static IEnumerable<object[]> AttributesStructLayoutTests()
@@ -73,6 +83,12 @@ namespace Mono.Linker.Tests.TestCases
             return TestCasesBySuiteName("DataFlow");
         }
 
+        public static IEnumerable<object[]> DataFlowTestsShard(int shardIndex, int shardCount)
+        {
+            return TestCasesBySuiteName("DataFlow")
+                .Where((_, index) => index % shardCount == shardIndex);
+        }
+
         public static IEnumerable<object[]> DynamicDependenciesTests()
         {
             return TestCasesBySuiteName("DynamicDependencies");
@@ -111,6 +127,12 @@ namespace Mono.Linker.Tests.TestCases
         public static IEnumerable<object[]> InheritanceInterfaceTests()
         {
             return TestCasesBySuiteName("Inheritance.Interfaces");
+        }
+
+        public static IEnumerable<object[]> InheritanceInterfaceTestsShard(int shardIndex, int shardCount)
+        {
+            return TestCasesBySuiteName("Inheritance.Interfaces")
+                .Where((_, index) => index % shardCount == shardIndex);
         }
 
         public static IEnumerable<object[]> InheritanceVirtualMethodsTests()
@@ -265,12 +287,7 @@ namespace Mono.Linker.Tests.TestCases
 
         static IEnumerable<TestCase> AllCases()
         {
-            _cachedAllCases ??= CreateCollector()
-                    .Collect()
-                    .OrderBy(c => c.DisplayName)
-                    .ToArray();
-
-            return _cachedAllCases;
+            return s_allCases.Value;
         }
 
         static IEnumerable<object[]> TestCasesBySuiteName(string suiteName)

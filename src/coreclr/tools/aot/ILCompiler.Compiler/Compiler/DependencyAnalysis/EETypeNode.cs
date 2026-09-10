@@ -1145,8 +1145,8 @@ namespace ILCompiler.DependencyAnalysis
                         && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
                     {
                         compositionNode = _type.Instantiation.Length > 1
-                            ? factory.ConstructedGenericComposition(_type.Instantiation)
-                            : factory.MaximallyConstructableType(_type.Instantiation[0]);
+                            ? factory.MetadataEnabledGenericComposition(_type.Instantiation)
+                            : factory.MaximallyMetadataEnabledType(_type.Instantiation[0]);
                     }
                     else
                     {

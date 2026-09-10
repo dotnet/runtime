@@ -203,6 +203,7 @@ MONO_JIT_ICALL (mono_get_native_calli_wrapper) \
 MONO_JIT_ICALL (mono_get_special_static_data) \
 MONO_JIT_ICALL (mono_gsharedvt_constrained_call) \
 MONO_JIT_ICALL (mono_gsharedvt_value_copy) \
+MONO_JIT_ICALL (mono_helper_box_nullable) \
 MONO_JIT_ICALL (mono_helper_compile_generic_method) \
 MONO_JIT_ICALL (mono_helper_ldstr) \
 MONO_JIT_ICALL (mono_helper_ldstr_mscorlib) \

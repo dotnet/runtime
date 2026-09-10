@@ -172,16 +172,7 @@ namespace System.Collections.Generic
             else
             {
                 Initialize(source.Count);
-
-                Entry[]? entries = source._entries;
-                for (int i = 0; i < source._count; i++)
-                {
-                    ref Entry entry = ref entries![i];
-                    if (entry.Next >= -1)
-                    {
-                        AddIfNotPresent(entry.Value, out _);
-                    }
-                }
+                CopyEntries(source._entries!, source._count);
             }
 
             Debug.Assert(Count == source.Count);
@@ -1296,6 +1287,7 @@ namespace System.Collections.Generic
             // Value types never rehash
             Debug.Assert(!forceNewHashCodes || !typeof(T).IsValueType);
             Debug.Assert(_entries != null, "_entries should be non-null");
+            Debug.Assert(HashHelpers.IsPrime(newSize));
             Debug.Assert(newSize >= _entries.Length);
 
             var entries = new Entry[newSize];
@@ -1337,6 +1329,30 @@ namespace System.Collections.Generic
             _entries = entries;
         }
 
+        private void CopyEntries(Entry[] entries, int count)
+        {
+            Debug.Assert(_entries is not null);
+
+            Entry[] newEntries = _entries;
+            int newCount = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int hashCode = entries[i].HashCode;
+                if (entries[i].Next >= -1)
+                {
+                    ref Entry entry = ref newEntries[newCount];
+                    entry = entries[i];
+                    ref int bucket = ref GetBucketRef(hashCode);
+                    entry.Next = bucket - 1; // Value in _buckets is 1-based
+                    bucket = newCount + 1;
+                    newCount++;
+                }
+            }
+
+            _count = newCount;
+            _freeCount = 0;
+        }
+
         /// <summary>
         /// Sets the capacity of a <see cref="HashSet{T}"/> object to the actual number of elements it contains,
         /// rounded up to a nearby, implementation-specific value.
@@ -1353,35 +1369,30 @@ namespace System.Collections.Generic
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(capacity, Count);
 
-            int newSize = HashHelpers.GetPrime(capacity);
+            int newSize = HashHelpers.GetPrimeAtLeast(capacity);
             Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
-            if (newSize >= currentCapacity)
+            if (oldEntries is null || newSize >= oldEntries.Length)
             {
                 return;
             }
 
-            int oldCount = _count;
             _version++;
-            Initialize(newSize);
-            Entry[]? entries = _entries;
-            int count = 0;
-            for (int i = 0; i < oldCount; i++)
-            {
-                int hashCode = oldEntries![i].HashCode; // At this point, we know we have entries.
-                if (oldEntries[i].Next >= -1)
-                {
-                    ref Entry entry = ref entries![count];
-                    entry = oldEntries[i];
-                    ref int bucket = ref GetBucketRef(hashCode);
-                    entry.Next = bucket - 1; // Value in _buckets is 1-based
-                    bucket = count + 1;
-                    count++;
-                }
-            }
 
-            _count = count;
-            _freeCount = 0;
+            Debug.Assert(HashHelpers.IsPrime(newSize));
+            Debug.Assert(newSize >= Count);
+
+            var buckets = new int[newSize];
+            var entries = new Entry[newSize];
+
+            // Assign member variables after both arrays are allocated to guard against corruption from OOM if second fails.
+            _freeList = -1;
+            _buckets = buckets;
+            _entries = entries;
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
+#endif
+
+            CopyEntries(oldEntries, _count);
         }
 
         #endregion

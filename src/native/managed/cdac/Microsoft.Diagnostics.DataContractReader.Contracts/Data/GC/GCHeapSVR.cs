@@ -38,5 +38,5 @@ internal sealed partial class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
 
     [Field] public partial TargetPointer? FreeableSohSegment { get; }
     [Field] public partial TargetPointer? FreeableUohSegment { get; }
-    [Field] public partial TargetPointer? FreeRegions { get; }
+    [FieldAddress] public partial TargetPointer? FreeRegions { get; }
 }

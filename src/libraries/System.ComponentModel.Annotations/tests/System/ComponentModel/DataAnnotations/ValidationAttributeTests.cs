@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -135,6 +136,58 @@ namespace System.ComponentModel.DataAnnotations.Tests
             attribute.ErrorMessageResourceName = null;
             attribute.ErrorMessageResourceType = null;
             Assert.Equal(expected, attribute.FormatErrorMessage("name"));
+        }
+
+        [Theory]
+        [InlineData("SomeMessage", "name", "SomeMessage")]
+        [InlineData("SomeMessage with name <{0}>", "name", "SomeMessage with name <name>")]
+        public static void FormatMessage_ReturnsExpected(string format, string name, string expected)
+        {
+            var attribute = new ValidationAttributeNoOverrides();
+            Assert.Equal(expected, attribute.FormatMessage(format, name));
+        }
+
+        public static IEnumerable<object[]> FormatMessageAttributes()
+        {
+            yield return new object[] { new ValidationAttributeNoOverrides() };
+            yield return new object[] { new CompareAttribute("OtherProperty") };
+            yield return new object[] { new FileExtensionsAttribute() };
+            yield return new object[] { new LengthAttribute(1, 2) };
+            yield return new object[] { new MaxLengthAttribute(2) };
+            yield return new object[] { new MinLengthAttribute(1) };
+            yield return new object[] { new RangeAttribute(1, 2) };
+            yield return new object[] { new RegularExpressionAttribute("pattern") };
+            yield return new object[] { new StringLengthAttribute(2) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatMessageAttributes))]
+        public static void FormatMessage_NullFormat_ThrowsArgumentNullException(ValidationAttribute attribute)
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "format",
+                () => attribute.FormatMessage(null, "name"));
+        }
+
+        [Fact]
+        public static void FormatMessage_InvalidFormat_ThrowsFormatException()
+        {
+            var attribute = new ValidationAttributeNoOverrides();
+
+            Assert.Throws<FormatException>(() => attribute.FormatMessage("{1}", "name"));
+        }
+
+        [Fact]
+        public static void FormatErrorMessage_DelegatesToFormatMessage()
+        {
+            var attribute = new ValidationAttributeOverrideFormatMessage
+            {
+                ErrorMessage = "SomeMessage with name <{0}>"
+            };
+
+            Assert.Equal(
+                "SomeMessage with name <{0}>|name",
+                attribute.FormatErrorMessage("name"));
         }
 
         [Theory]
@@ -324,6 +377,11 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         public class ValidationAttributeNoOverrides : ValidationAttribute
         {
+        }
+
+        public class ValidationAttributeOverrideFormatMessage : ValidationAttribute
+        {
+            public override string FormatMessage(string format, string name) => $"{format}|{name}";
         }
 
         public class ValidationAttributeOverrideOneArgIsValid : ValidationAttribute

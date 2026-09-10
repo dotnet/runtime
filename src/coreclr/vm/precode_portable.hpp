@@ -18,7 +18,7 @@ public: // static
     static bool HasInterpreterData(PCODE addr);
 
     static void* GetActualCode(PCODE addr);
-    static void SetActualCode(PCODE addr, PCODE actualCode);
+    static void SetActualCode(PCODE addr, void* actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
@@ -128,6 +128,52 @@ public:
 
     friend struct ::cdac_data<PortableEntryPoint>;
 };
+
+class UnboxingStubPortableEntryPoint final
+{
+public:
+    Volatile<MethodDesc*> _targetMethodDesc;
+    Volatile<PCODE> _targetEntryPoint;
+    PortableEntryPoint _entryPoint;
+
+    static UnboxingStubPortableEntryPoint* FromEntryPoint(PCODE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return reinterpret_cast<UnboxingStubPortableEntryPoint*>(
+            reinterpret_cast<BYTE*>(PCODEToPINSTR(addr)) - offsetof(UnboxingStubPortableEntryPoint, _entryPoint));
+    }
+
+    PortableEntryPoint* GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &_entryPoint;
+    }
+
+    void Init(MethodDesc* pMD)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _entryPoint.Init(pMD);
+        _targetMethodDesc = nullptr;
+        _targetEntryPoint = (PCODE)nullptr;
+    }
+
+    static void SetStubTargetAndActualCode(
+        PCODE addr,
+        MethodDesc* targetMethodDesc,
+        PCODE targetEntryPoint,
+        void* actualCode)
+    {
+        WRAPPER_NO_CONTRACT;
+        UnboxingStubPortableEntryPoint* entryPoint = FromEntryPoint(addr);
+        entryPoint->_targetMethodDesc = targetMethodDesc;
+        entryPoint->_targetEntryPoint = targetEntryPoint;
+        PortableEntryPoint::SetActualCode(addr, actualCode);
+    }
+};
+
+// Generated unboxing stubs access these fields at fixed negative offsets from the embedded entrypoint.
+static_assert(offsetof(UnboxingStubPortableEntryPoint, _targetEntryPoint) == TARGET_POINTER_SIZE);
+static_assert(offsetof(UnboxingStubPortableEntryPoint, _entryPoint) == 2 * TARGET_POINTER_SIZE);
 
 template<>
 struct cdac_data<PortableEntryPoint>

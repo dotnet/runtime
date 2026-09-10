@@ -1066,56 +1066,6 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
     }
 }
 
-// Get a high precision performance counter
-// Return:
-//  The counter value
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceCounter(&ts))
-    {
-        assert(false && "Failed to query performance counter");
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a frequency of the high precision performance counter
-// Return:
-//  The counter frequency
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceFrequency(&ts))
-    {
-        assert(false && "Failed to query performance counter");
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a time stamp with a low precision
-// Return:
-//  Time stamp in milliseconds
-uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
-    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
-    // resolution is improved. This helps responsiveness in the case an app is trying to opt
-    // into things like multimedia scenarios and additionally does not include "bias" from time
-    // the system is spent asleep or in hibernation.
-
-    const ULONGLONG TicksPerMillisecond = 10000;
-
-    ULONGLONG unbiasedTime;
-    if (!::QueryUnbiasedInterruptTime(&unbiasedTime))
-    {
-        assert(false && "Failed to query unbiased interrupt time");
-    }
-
-    return (uint64_t)(unbiasedTime / TicksPerMillisecond);
-}
-
 // Gets the total number of processors on the machine, not taking
 // into account current process affinity.
 // Return:

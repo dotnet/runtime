@@ -730,7 +730,8 @@ public:
 
 #ifdef MULTICOREJIT_LOGGING
 
-void _MulticoreJitTrace(const char * format, ...);
+#include <minipal/types.h>
+void _MulticoreJitTrace(const char * format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 
 #define MulticoreJitTrace(x)      do { _MulticoreJitTrace x; } while (0)
 

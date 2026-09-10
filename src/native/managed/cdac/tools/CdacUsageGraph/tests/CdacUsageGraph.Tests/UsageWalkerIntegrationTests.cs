@@ -31,7 +31,15 @@ public sealed class UsageWalkerIntegrationTests
         if (root is null)
             return null;
 
-        return (AnalysisPipeline.BuildGraph(root.FullName), root.FullName);
+        return (
+            UsageGraphAnalyzer.Analyze(new UsageGraphAnalysisOptions(
+                Path.Combine(
+                    root.FullName,
+                    CdacSymbols.ContractsProjectDirectory,
+                    CdacSymbols.ContractsProjectFile),
+                CdacSymbols.CoreCLRContractsMetadataName,
+                root.FullName)),
+            root.FullName);
     }
 
     [Fact]
@@ -56,7 +64,10 @@ public sealed class UsageWalkerIntegrationTests
         DirectoryInfo? root = Locator.FindCdacRoot();
         if (root is null) return; // cDAC source not found (running outside the repo)
 
-        CSharpCompilation compilation = CdacCompilationLoader.Load(root.FullName);
+        CSharpCompilation compilation = CdacCompilationLoader.LoadProject(Path.Combine(
+            root.FullName,
+            CdacSymbols.ContractsProjectDirectory,
+            CdacSymbols.ContractsProjectFile));
         INamedTypeSymbol jitNotification = compilation.GetTypeByMetadataName(
             "Microsoft.Diagnostics.DataContractReader.Data.JITNotification")!;
 

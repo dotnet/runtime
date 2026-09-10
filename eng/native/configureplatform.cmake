@@ -221,10 +221,10 @@ if(CLR_CMAKE_HOST_OS STREQUAL emscripten)
     set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL emscripten)
 
-if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+if(CLR_CMAKE_HOST_OS STREQUAL wasi)
     set(CLR_CMAKE_HOST_WASI 1)
     set(CLR_CMAKE_HOST_UNIX 1)
-endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+endif(CLR_CMAKE_HOST_OS STREQUAL wasi)
 
 #--------------------------------------------
 # This repo builds two set of binaries
@@ -525,7 +525,7 @@ else()
             add_compile_options(-mbulk-memory)
             add_compile_options(-msimd128)
         endif()
-        if(CLR_CMAKE_TARGET_WASI)
+        if(CLR_CMAKE_TARGET_WASI AND NOT CLR_CROSS_COMPONENTS_BUILD)
             # Native wasm exceptions: sjlj cannot handle the interpreter's
             # ResumeAfterCatch (throw-from-catch). -wasm-use-legacy-eh=false
             # selects the new try_table/throw_ref proposal that wasmtime 45+

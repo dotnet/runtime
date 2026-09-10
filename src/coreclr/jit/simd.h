@@ -1323,9 +1323,17 @@ inline void EvaluateBinaryMask(genTreeOps        oper,
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
-void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0, const TSimd& arg1)
+void EvaluateBinarySimd(genTreeOps   oper,
+                        bool         scalar,
+                        TSimd*       result,
+                        const TSimd& arg0,
+                        const TSimd& arg1,
+                        unsigned     simdSize = sizeof(TSimd))
 {
-    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+    assert(simdSize <= sizeof(TSimd));
+    assert((simdSize % sizeof(TBase)) == 0);
+
+    uint32_t count = simdSize / sizeof(TBase);
 
     if (scalar)
     {
@@ -1356,8 +1364,13 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd
 }
 
 template <typename TSimd>
-void EvaluateBinarySimd(
-    genTreeOps oper, bool scalar, var_types baseType, TSimd* result, const TSimd& arg0, const TSimd& arg1)
+void EvaluateBinarySimd(genTreeOps   oper,
+                        bool         scalar,
+                        var_types    baseType,
+                        TSimd*       result,
+                        const TSimd& arg0,
+                        const TSimd& arg1,
+                        unsigned     simdSize = sizeof(TSimd))
 {
     switch (baseType)
     {
@@ -1370,11 +1383,11 @@ void EvaluateBinarySimd(
 
             if (IsBinaryBitwiseOperation(oper))
             {
-                EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1, simdSize);
             }
             else
             {
-                EvaluateBinarySimd<TSimd, float>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, float>(oper, scalar, result, arg0, arg1, simdSize);
             }
             break;
         }
@@ -1388,60 +1401,60 @@ void EvaluateBinarySimd(
 
             if (IsBinaryBitwiseOperation(oper))
             {
-                EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1, simdSize);
             }
             else
             {
-                EvaluateBinarySimd<TSimd, double>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, double>(oper, scalar, result, arg0, arg1, simdSize);
             }
             break;
         }
 
         case TYP_BYTE:
         {
-            EvaluateBinarySimd<TSimd, int8_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int8_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_SHORT:
         {
-            EvaluateBinarySimd<TSimd, int16_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int16_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_INT:
         {
-            EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_LONG:
         {
-            EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_UBYTE:
         {
-            EvaluateBinarySimd<TSimd, uint8_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint8_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_USHORT:
         {
-            EvaluateBinarySimd<TSimd, uint16_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint16_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_UINT:
         {
-            EvaluateBinarySimd<TSimd, uint32_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint32_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_ULONG:
         {
-            EvaluateBinarySimd<TSimd, uint64_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint64_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
@@ -1450,6 +1463,97 @@ void EvaluateBinarySimd(
             unreached();
         }
     }
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsNaN(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsArithmetic(baseType));
+
+    TSimd result = {};
+
+    if (varTypeIsFloating(baseType))
+    {
+        EvaluateBinarySimd<TSimd>(GT_NE, false, baseType, &result, value, value, simdSize);
+    }
+    return result;
+}
+
+inline var_types GetSimdIntegralBaseType(var_types baseType)
+{
+    if (baseType == TYP_FLOAT)
+    {
+        return TYP_INT;
+    }
+    if (baseType == TYP_DOUBLE)
+    {
+        return TYP_LONG;
+    }
+    return baseType;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsNegative(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsArithmetic(baseType));
+
+    TSimd result = {};
+
+    if (!varTypeIsUnsigned(baseType))
+    {
+        EvaluateBinarySimd<TSimd>(GT_LT, false, GetSimdIntegralBaseType(baseType), &result, value, TSimd::Zero(),
+                                  simdSize);
+    }
+    return result;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsZero(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    TSimd result = {};
+    EvaluateBinarySimd<TSimd>(GT_EQ, false, baseType, &result, value, TSimd::Zero(), simdSize);
+    return result;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsNegativeZero(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsFloating(baseType));
+
+    TSimd result = EvaluateSimdIsZero(baseType, value, simdSize);
+    TSimd sign   = EvaluateSimdIsNegative(baseType, value, simdSize);
+    EvaluateBinarySimd<TSimd>(GT_AND, false, baseType, &result, result, sign, simdSize);
+    return result;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsPositiveZero(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsFloating(baseType));
+
+    TSimd result = EvaluateSimdIsZero(baseType, value, simdSize);
+    TSimd sign   = EvaluateSimdIsNegative(baseType, value, simdSize);
+    EvaluateBinarySimd<TSimd>(GT_AND_NOT, false, baseType, &result, result, sign, simdSize);
+    return result;
+}
+
+template <typename TSimd>
+bool EvaluateSimdAnyWhereAllBitsSet(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    TSimd result     = {};
+    TSimd zero       = TSimd::Zero();
+    TSimd allBitsSet = TSimd::AllBitsSet();
+    EvaluateBinarySimd<TSimd>(GT_EQ, false, GetSimdIntegralBaseType(baseType), &result, value, allBitsSet, simdSize);
+    return memcmp(&result, &zero, simdSize) != 0;
+}
+
+template <typename TSimd>
+bool EvaluateSimdAllWhereAllBitsSet(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    TSimd result     = {};
+    TSimd allBitsSet = TSimd::AllBitsSet();
+    EvaluateBinarySimd<TSimd>(GT_EQ, false, GetSimdIntegralBaseType(baseType), &result, value, allBitsSet, simdSize);
+    return memcmp(&result, &allBitsSet, simdSize) == 0;
 }
 
 template <typename TSimd>

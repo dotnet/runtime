@@ -195,12 +195,18 @@ static CHAR16_T EncoderReplacementFallbackBuffer_InternalGetNextChar(EncoderBuff
 
     // Do we have anything left? 0 is now last fallback char, negative is nothing left
     if (self->fallbackCount < 0)
+    {
+        self->bFallingBack = false;
+        self->iRecursionCount = 0;
         return '\0';
+    }
 
     // Need to get it out of the buffer.
     // Make sure it didn't wrap from the fast count-- path
     if (self->fallbackCount == INT_MAX)
     {
+        self->bFallingBack = false;
+        self->iRecursionCount = 0;
         self->fallbackCount = -1;
         return '\0';
     }

@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_nullabletypes_invokecommon;
+
 using System;
-using Xunit;
 
 public sealed class TestException : Exception
 {
@@ -49,20 +50,4 @@ public static class Test_nullabletypes
             throw new TestException(counter, "Failure while Comparing {1} to {2}", obj1, obj2);
     }
 
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            NullableTests.Run();
-            Console.WriteLine("Test SUCCESS");
-            return 100;
-        }
-        catch (TestException ex)
-        {
-            Console.WriteLine(ex);
-            Console.WriteLine("Test FAILED");
-            return ex.Counter + 101;
-        }
-    }
 }

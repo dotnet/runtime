@@ -15,5 +15,6 @@ namespace System.Text.Json.Serialization
         Number = 8,
         Boolean = 16,
         Null = 32,
+        Any = Object | Array | String | Number | Boolean | Null,
     }
 }

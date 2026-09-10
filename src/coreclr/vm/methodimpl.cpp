@@ -61,7 +61,6 @@ PTR_MethodDesc MethodImpl::FindMethodDesc(DWORD slot, PTR_MethodDesc defaultRetu
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END
@@ -80,7 +79,6 @@ PTR_MethodDesc MethodImpl::GetMethodDesc(DWORD slotIndex, PTR_MethodDesc default
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END
@@ -104,7 +102,6 @@ void MethodImpl::SetSize(LoaderHeap *pHeap, AllocMemTracker *pamTracker, DWORD s
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
         PRECONDITION(pdwSlots==NULL && pImplementedMD==NULL);
-        INJECT_FAULT(ThrowOutOfMemory());
     } CONTRACTL_END;
 
     if(size > 0) {

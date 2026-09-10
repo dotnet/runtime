@@ -51,7 +51,6 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             if (exitCode != goodExit)
             {
                 _ASSERTE(!"Bad Exit value");
-                FAULT_NOT_FATAL();      // if we OOM we can simply give up
                 minipal_log_print_error("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
@@ -697,7 +696,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 {
     // This is fatal error.  We do not care about SO mode any more.
     // All of the code from here on out is robust to any failures in any API's that are called.
-    CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
+    CONTRACT_VIOLATION(GCViolation | ModeViolation | TakesLockViolation);
 
     WRAPPER_NO_CONTRACT;
 
@@ -884,7 +883,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     WRAPPER_NO_CONTRACT;
 
     // All of the code from here on out is robust to any failures in any API's that are called.
-    FAULT_NOT_FATAL();
 
     EXCEPTION_RECORD   exceptionRecord;
     EXCEPTION_POINTERS exceptionPointers;
@@ -917,8 +915,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     {
         // This is fatal error.  We do not care about SO mode any more.
         // All of the code from here on out is robust to any failures in any API's that are called.
-        CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
-
+        CONTRACT_VIOLATION(GCViolation | ModeViolation | TakesLockViolation);
 
         // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
         // block indefinitely if the fatal error occurred during the GC.

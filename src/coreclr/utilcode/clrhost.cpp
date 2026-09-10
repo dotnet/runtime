@@ -137,7 +137,6 @@ LoadsTypeHolder::LoadsTypeHolder(BOOL       fConditional,
     // This fcn makes non-scoped changes to ClrDebugState so we cannot use a runtime CONTRACT here.
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     m_fConditional = fConditional;
@@ -188,7 +187,6 @@ LoadsTypeHolder::~LoadsTypeHolder()
     // This fcn makes non-scoped changes to ClrDebugState so we cannot use a runtime CONTRACT here.
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     if (m_fConditional)

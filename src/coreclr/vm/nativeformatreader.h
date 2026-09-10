@@ -568,6 +568,13 @@ namespace NativeFormat
 
         bool IsNull() { return _pReader == NULL; }
 
+        NativeParser GetParserAfterTable()
+        {
+            uint endOffset;
+            GetParserForBucket(_bucketMask, &endOffset);
+            return NativeParser(_pReader, endOffset);
+        }
+
         class AllEntriesEnumerator
         {
             PTR_NativeHashtable _table;

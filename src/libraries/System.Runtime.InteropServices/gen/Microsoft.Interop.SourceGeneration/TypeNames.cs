@@ -113,6 +113,7 @@ namespace Microsoft.Interop
         public const string GlobalAlias = "global::";
 
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
+        public const string ErrorHandlerAttribute = "System.Runtime.InteropServices.ErrorHandlerAttribute";
         public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
         public const string LibraryImportAttribute_ShortName = "LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";

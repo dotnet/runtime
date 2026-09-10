@@ -470,6 +470,7 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     // The GS cookie is stored in a read only data segment
     DWORD oldProtection;
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
@@ -481,6 +482,7 @@ void InitGSCookie()
     // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
     oldProtection = PAGE_READONLY;
 #endif // TARGET_UNIX
+#endif // FEATURE_READONLY_GS_COOKIE
 
 #ifndef TARGET_UNIX
     // The GSCookie cannot be in a writeable page
@@ -507,10 +509,12 @@ void InitGSCookie()
         val ++;
     *pGSCookiePtr = val;
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &oldProtection))
     {
         ThrowLastError();
     }
+#endif // FEATURE_READONLY_GS_COOKIE
 }
 
 Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized = FALSE;
@@ -762,9 +766,7 @@ void EEStartupHelper()
         InitializeLogging();
 #endif
 
-#ifdef FEATURE_PERFMAP
-        InitThreadManagerPerfMapData();
-#endif
+        InitThreadManagerTracingData();
 
 #ifdef FEATURE_PGO
         PgoManager::Initialize();
@@ -977,7 +979,7 @@ void EEStartupHelper()
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
         // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
-        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
+        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain %p\n",
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
@@ -2001,7 +2003,6 @@ void ContractRegressionCheckInner()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         LOADS_TYPE(CLASS_LOAD_BEGIN);
         CANNOT_TAKE_LOCK;
     }
@@ -2035,13 +2036,11 @@ void ContractRegressionCheck()
         // B#564831 (which left a huge swath of contracts silently disabled for over six months)
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation
                                    | GCViolation
-                                   | FaultViolation
                                    | LoadsTypeViolation
                                    | TakesLockViolation
                                    , ReasonContractInfrastructure
                                     );
         {
-            FAULT_NOT_FATAL();
             ContractRegressionCheckInner();
         }
     }
@@ -2057,4 +2056,3 @@ void ContractRegressionCheck()
 }
 
 #endif // ENABLE_CONTRACTS_IMPL
-

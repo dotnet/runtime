@@ -511,67 +511,67 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.NegativeInfinity, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray()); // +1024
+            Assert.Equal<byte>([0x04, 0x00], destination); // +1024
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.MinValue, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x03, 0xFF }, destination.ToArray()); // +1023
+            Assert.Equal<byte>([0x03, 0xFF], destination); // +1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-1.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+            Assert.Equal<byte>([0x00, 0x00], destination); // +0
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-MinNormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x02 }, destination.ToArray()); // -1022
+            Assert.Equal<byte>([0xFC, 0x02], destination); // -1022
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0xFC, 0x01], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-double.Epsilon, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0xFC, 0x01], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-0.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0xFC, 0x01], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.NaN, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray()); // +1024
+            Assert.Equal<byte>([0x04, 0x00], destination); // +1024
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(0.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0xFC, 0x01], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.Epsilon, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0xFC, 0x01], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0xFC, 0x01], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(MinNormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFC, 0x02 }, destination.ToArray()); // -1022
+            Assert.Equal<byte>([0xFC, 0x02], destination); // -1022
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(1.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+            Assert.Equal<byte>([0x00, 0x00], destination); // +0
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.MaxValue, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x03, 0xff }, destination.ToArray()); // +1023
+            Assert.Equal<byte>([0x03, 0xff], destination); // +1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.PositiveInfinity, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray()); // +1024
+            Assert.Equal<byte>([0x04, 0x00], destination); // +1024
 
             Assert.False(FloatingPointHelper<double>.TryWriteExponentBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x04, 0x00], destination);
         }
 
         [Fact]
@@ -582,67 +582,67 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.NegativeInfinity, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray()); // +1024
+            Assert.Equal<byte>([0x00, 0x04], destination); // +1024
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.MinValue, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0x03 }, destination.ToArray()); // +1023
+            Assert.Equal<byte>([0xFF, 0x03], destination); // +1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-1.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+            Assert.Equal<byte>([0x00, 0x00], destination); // +0
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-MinNormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x02, 0xFC }, destination.ToArray()); // -1022
+            Assert.Equal<byte>([0x02, 0xFC], destination); // -1022
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0x01, 0xFC], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-double.Epsilon, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0x01, 0xFC], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-0.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0x01, 0xFC], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.NaN, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray()); // +1024
+            Assert.Equal<byte>([0x00, 0x04], destination); // +1024
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(0.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0x01, 0xFC], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.Epsilon, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0x01, 0xFC], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+            Assert.Equal<byte>([0x01, 0xFC], destination); // -1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(MinNormal, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x02, 0xFC }, destination.ToArray()); // -1022
+            Assert.Equal<byte>([0x02, 0xFC], destination); // -1022
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(1.0, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+            Assert.Equal<byte>([0x00, 0x00], destination); // +0
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.MaxValue, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0x03 }, destination.ToArray()); // +1023
+            Assert.Equal<byte>([0xFF, 0x03], destination); // +1023
 
             Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.PositiveInfinity, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray()); // +1024
+            Assert.Equal<byte>([0x00, 0x04], destination); // +1024
 
             Assert.False(FloatingPointHelper<double>.TryWriteExponentLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x04], destination);
         }
 
         [Fact]
@@ -653,67 +653,67 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.NegativeInfinity, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.MinValue, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x1F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x1F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-1.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-MinNormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-double.Epsilon, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-0.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.NaN, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(0.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.Epsilon, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(MinNormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(1.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.MaxValue, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x1F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x1F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.PositiveInfinity, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.False(FloatingPointHelper<double>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
         }
 
         [Fact]
@@ -724,67 +724,67 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.NegativeInfinity, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.MinValue, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-1.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-MinNormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-double.Epsilon, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-0.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.NaN, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(0.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.Epsilon, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(MaxSubnormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(MinNormal, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(1.0, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.MaxValue, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x00], destination);
 
             Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.PositiveInfinity, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00], destination);
 
             Assert.False(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00], destination);
         }
 
         //

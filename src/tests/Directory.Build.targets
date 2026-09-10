@@ -260,6 +260,11 @@
       <!-- Don't copy out-of-process test components to the merged wrapper output folder -->
       <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
       <!-- For merged project wrappers, include native libraries in all project references -->
+      <!-- Dynamic libraries only. On browser a static archive in a wrapper's output directory has
+           no consumer: only a corerun links one, and a merged wrapper never builds a corerun,
+           because the hook in Common/CLRTest.WasmCorerun.targets needs the project's own
+           @(CMakeProjectReference). Tests merged into a wrapper keep their native code unlinked and
+           gate on PlatformDetection.PlatformDoesNotSupportNativeTestAssets instead. -->
       <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != ''" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
@@ -271,6 +276,11 @@
 
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
+
+  <!-- WebAssembly cannot load native libraries at run time, so tests that call into their own
+       native code need a corerun with that code linked in. -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
+          Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
           Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"

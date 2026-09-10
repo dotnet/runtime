@@ -46,6 +46,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public int P
                     {
                         {|IL5005:unsafe|} get => 0;
+                        set { }
                     }
                 }
                 """;
@@ -55,6 +56,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public int P
                     {
                         get => 0;
+                        set { }
                     }
                 }
                 """;

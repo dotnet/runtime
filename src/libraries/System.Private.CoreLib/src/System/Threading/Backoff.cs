@@ -15,8 +15,8 @@ namespace System.Threading
         // the exponential backoff will generally be not more than 2X worse than the perfect guess and
         // will do a lot less attempts than a simple retry. On multiprocessor machine fruitless attempts
         // will cause unnecessary sharing of the contended state which may make modifying the state more expensive.
-        // To protect against degenerate cases we will cap the per-iteration wait to 1-2 thousand spinwaits.
-        private const uint MaxExponentialBackoffBits = 10;
+        // To protect against degenerate cases we will cap the per-iteration wait to 2.2–4.4 microseconds.
+        private const uint MaxExponentialBackoffBits = 7;
 
         internal static unsafe int Exponential(uint attempt)
         {

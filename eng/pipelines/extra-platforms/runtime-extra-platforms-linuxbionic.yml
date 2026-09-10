@@ -6,7 +6,6 @@
 parameters:
   isExtraPlatformsBuild: false
   isLinuxBionicOnlyBuild: false
-  isRollingBuild: false
 
 jobs:
 

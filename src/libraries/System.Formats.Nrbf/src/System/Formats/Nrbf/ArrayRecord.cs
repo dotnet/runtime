@@ -114,6 +114,22 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType();
 
+    /// <summary>
+    /// Checks that the number of records matches the number of array elements when an exact count is expected.
+    /// </summary>
+    /// <remarks>
+    /// Every record represents a single value, except for the Multiple Null Records which represent more than one null.
+    /// When nulls are allowed, Multiple Null Records are permitted and the record count is not expected to match the total element count.
+    /// It's important to perform this check before allocating the array, as the array can be very large.
+    /// </remarks>
+    private protected void CheckExpectedRecordCount(List<SerializationRecord> records, bool allowNulls)
+    {
+        if (!allowNulls && ArrayInfo.FlattenedLength != records.Count)
+        {
+            ThrowHelper.ThrowArrayContainedNulls();
+        }
+    }
+
     internal static void Populate(List<SerializationRecord> source, Array destination, int[] lengths, AllowedRecordTypes allowedRecordTypes, bool allowNulls)
     {
         int[] indices = new int[lengths.Length];

@@ -179,7 +179,13 @@ namespace System.Net.Security.Tests
             }
 
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
-            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            // Use a unique SNI name, as SslStreamTlsResumeTests does. The client-side session cache
+            // lives on a process-wide SSL_CTX shared by every client with the same protocols and
+            // client certificate, and holds a single session per SNI name. With the certificate
+            // name, a test running concurrently in this assembly can overwrite our cached ticket
+            // with one issued by its own server, which this server then cannot decrypt.
+            string targetHost = Guid.NewGuid().ToString("N");
 
             using TlsContext serverCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
@@ -189,8 +195,8 @@ namespace System.Net.Security.Tests
                 AllowTlsResume = allowResume,
             });
 
-            long bytes1 = await MeasureHandshakeBytesAsync(serverCtx, serverName, protocol);
-            long bytes2 = await MeasureHandshakeBytesAsync(serverCtx, serverName, protocol);
+            long bytes1 = await MeasureHandshakeBytesAsync(serverCtx, targetHost, protocol);
+            long bytes2 = await MeasureHandshakeBytesAsync(serverCtx, targetHost, protocol);
 
             if (allowResume)
             {
@@ -211,7 +217,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static async Task<long> MeasureHandshakeBytesAsync(TlsContext serverCtx, string serverName, SslProtocols protocol)
+        private static async Task<long> MeasureHandshakeBytesAsync(TlsContext serverCtx, string targetHost, SslProtocols protocol)
         {
             (Socket cs, Socket ss) = await CreateLoopbackSocketPairAsync();
             using (cs)
@@ -224,7 +230,7 @@ namespace System.Net.Security.Tests
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
-                    TargetHost = serverName,
+                    TargetHost = targetHost,
                     EnabledSslProtocols = protocol,
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });

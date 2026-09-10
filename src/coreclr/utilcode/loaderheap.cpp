@@ -50,7 +50,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -75,7 +75,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -164,7 +164,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -289,7 +289,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -353,7 +353,6 @@ void *UnlockedLoaderHeap::UnlockedAllocMem(size_t dwSize
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -366,35 +365,6 @@ void *UnlockedLoaderHeap::UnlockedAllocMem(size_t dwSize
     return pResult;
 }
 
-#ifdef _DEBUG
-static DWORD ShouldInjectFault()
-{
-    static DWORD fInjectFault = 99;
-
-    if (fInjectFault == 99)
-        fInjectFault = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) != 0);
-    return fInjectFault;
-}
-
-#define SHOULD_INJECT_FAULT(return_statement)   \
-    do {                                        \
-        if (ShouldInjectFault() & 0x1)          \
-        {                                       \
-            char *a = new (nothrow) char;       \
-            if (a == NULL)                      \
-            {                                   \
-                return_statement;               \
-            }                                   \
-            delete a;                           \
-        }                                       \
-    } while (FALSE)
-
-#else
-
-#define SHOULD_INJECT_FAULT(return_statement) do { (void)((void *)0); } while (FALSE)
-
-#endif
-
 void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
                                                    COMMA_INDEBUG(_In_ const char *szFile)
                                                    COMMA_INDEBUG(int lineNum))
@@ -404,16 +374,11 @@ void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return NULL;);
         PRECONDITION(dwSize != 0);
     }
     CONTRACTL_END;
 
-    SHOULD_INJECT_FAULT(return NULL);
-
     INDEBUG(size_t dwRequestedSize = dwSize;)
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
 #ifdef RANDOMIZE_ALLOC
     dwSize += s_randomForLoaderHeap.Next() % 256;
@@ -504,7 +469,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     {
         INSTANCE_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -523,7 +488,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 
         if (pTag->m_dwRequestedSize != dwRequestedSize || pTag->m_allocationType != kAllocMem)
         {
-            CONTRACT_VIOLATION(ThrowsViolation|FaultViolation); // We're reporting a heap corruption - who cares about violations
+            CONTRACT_VIOLATION(ThrowsViolation); // We're reporting a heap corruption
 
             StackSString message;
             message.Printf("HEAP VIOLATION: Invalid BackoutMem() call made at:\n"
@@ -539,15 +504,15 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                            "The arguments to BackoutMem() were:\n"
                            "\n"
                            "     Pointer: 0x%p\n"
-                           "     Size:    %lu (0x%lx)\n"
+                           "     Size:    %zu (0x%zx)\n"
                            "\n"
                            ,szFile
                            ,lineNum
                            ,szAllocFile
                            ,allocLineNum
                            ,pMem
-                           ,(ULONG)dwRequestedSize
-                           ,(ULONG)dwRequestedSize
+                           ,dwRequestedSize
+                           ,dwRequestedSize
                           );
 
 
@@ -672,16 +637,12 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     CONTRACTL
     {
         NOTHROW;
-
-        // Macro syntax can't handle this INJECT_FAULT expression - we'll use a precondition instead
-        //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
+        GC_NOTRIGGER;
 
         PRECONDITION( alignment != 0 );
         PRECONDITION(0 == (alignment & (alignment - 1))); // require power of 2
     }
     CONTRACTL_END
-
-    STATIC_CONTRACT_FAULT;
 
     // Set default value
     if (pdwExtra)
@@ -689,11 +650,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
         *pdwExtra = 0;
     }
 
-    SHOULD_INJECT_FAULT(return NULL);
-
     void *pResult;
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     // Check for overflow if we align the allocation
     if (dwRequestedSize + alignment < dwRequestedSize)
@@ -802,7 +759,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
     CONTRACTL
     {
         THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -862,7 +819,7 @@ void UnlockedLoaderHeap::DumpFreeList()
             if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
             buf.AppendUTF8("\n");
 
-            minipal_log_print_info(buf.GetUTF8());
+            minipal_log_print_info("%s", buf.GetUTF8());
             buf.Clear();
 
             pBlock = pBlock->m_pNext;
@@ -877,11 +834,6 @@ void UnlockedLoaderHeap::DumpFreeList()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-
-    // The new "nothrow" below failure is handled in a non-fault way, so
-    // make sure that callers with FORBID_FAULT can call this method without
-    // firing the contract violation assert.
-    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
 
     LOADER_HEAP_BEGIN_TRAP_FAULT
 
@@ -933,8 +885,6 @@ void UnlockedLoaderHeap::DumpFreeList()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-
-    INCONTRACT(_ASSERTE_IMPL(!ARE_FAULTS_FORBIDDEN()));
 
     void *pResult = NULL;
     LOADER_HEAP_BEGIN_TRAP_FAULT
@@ -1073,7 +1023,7 @@ void UnlockedLoaderHeap::ValidateFreeList(UnlockedLoaderHeap *pHeap)
     // is a secondary assert inside the contract stuff.
     //
     // This contract violation is permanent.
-    CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation);  // This violation won't be removed
+    CONTRACT_VIOLATION(ThrowsViolation|GCViolation|ModeViolation);  // This violation won't be removed
 
     LoaderHeapFreeBlock *pFree     = pHeap->m_pFirstFreeBlock;
     LoaderHeapFreeBlock *pPrev     = NULL;

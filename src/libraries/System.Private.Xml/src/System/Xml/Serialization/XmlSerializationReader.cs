@@ -163,6 +163,9 @@ namespace System.Xml.Serialization
             }
         }
 
+        internal bool HasUnknownNodeOrAttributeEvents =>
+            _events.OnUnknownNode is not null || _events.OnUnknownAttribute is not null;
+
         protected int ReaderCount
         {
             get { return 0; }
@@ -4612,10 +4615,7 @@ namespace System.Xml.Serialization
         // surfaced consistently.
         private void WriteHandleUnknownAttributes()
         {
-            // When the element is marked xsi:nil, the nil marker (and the element itself) is consumed
-            // by the following ReadNull() call, so its attributes must not be surfaced as unknown. This
-            // also matches the struct path, where a nil element returns before its attributes are read.
-            Writer.WriteLine("if (!GetNullAttr()) {");
+            Writer.WriteLine("if (Reader.HasAttributes) {");
             Writer.Indent++;
             Writer.WriteLine("while (Reader.MoveToNextAttribute()) {");
             Writer.Indent++;
@@ -4672,9 +4672,9 @@ namespace System.Xml.Serialization
             }
             else
             {
-                WriteHandleUnknownAttributes();
                 Writer.WriteLine("if (!ReadNull()) {");
                 Writer.Indent++;
+                WriteHandleUnknownAttributes();
 
                 MemberMapping memberMapping = new MemberMapping();
                 memberMapping.Elements = arrayMapping.Elements;
@@ -4761,7 +4761,6 @@ namespace System.Xml.Serialization
             }
             else if (!element.Mapping!.IsSoap && (element.Mapping is PrimitiveMapping))
             {
-                WriteHandleUnknownAttributes();
                 if (element.IsNullable)
                 {
                     Writer.WriteLine("if (ReadNull()) {");
@@ -4779,7 +4778,13 @@ namespace System.Xml.Serialization
                     Writer.WriteLine(";");
                     Writer.Indent--;
                     Writer.WriteLine("}");
-                    Writer.Write("else ");
+                    Writer.WriteLine("else {");
+                    Writer.Indent++;
+                    WriteHandleUnknownAttributes();
+                }
+                else
+                {
+                    WriteHandleUnknownAttributes();
                 }
                 if (element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
                 {
@@ -4858,6 +4863,11 @@ namespace System.Xml.Serialization
                 }
                 Writer.Indent--;
                 Writer.WriteLine("}");
+                if (element.IsNullable)
+                {
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                }
             }
             else if (element.Mapping is StructMapping || (element.Mapping.IsSoap && element.Mapping is PrimitiveMapping))
             {

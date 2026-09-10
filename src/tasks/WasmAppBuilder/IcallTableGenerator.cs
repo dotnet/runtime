@@ -25,19 +25,16 @@ internal sealed class IcallTableGenerator
     private LogAdapter Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
 
-    private bool _isCoreClr;
-
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
     // a smaller linked icall table mapping tokens to C function names
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IcallTableGenerator(string? runtimeIcallTableFile, Func<string, string> fixupSymbolName, LogAdapter log, bool isCoreClr)
+    public IcallTableGenerator(string? runtimeIcallTableFile, Func<string, string> fixupSymbolName, LogAdapter log)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
-        _isCoreClr = isCoreClr;
         if (runtimeIcallTableFile != null)
             ReadTable(runtimeIcallTableFile);
     }
@@ -210,11 +207,8 @@ internal sealed class IcallTableGenerator
 
         void AddSignature(Type type, MethodInfo method)
         {
-            string? signature = _isCoreClr ? CoreClr.SignatureMapper.MethodToSignature(method, Log) : Mono.SignatureMapper.MethodToSignature(method, Log);
-            if (signature == null)
-            {
-                throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-            }
+            string signature = Mono.SignatureMapper.MethodToSignature(method, Log)
+                ?? throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
 
             if (_signatures.Add(signature))
                 Log.LogMessage(MessageImportance.Low, $"Adding icall signature {signature} for method '{type.FullName}.{method.Name}'");
