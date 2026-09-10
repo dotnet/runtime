@@ -1147,7 +1147,7 @@ namespace System.IO.Packaging
                     }
 
                     _contentTypeStreamExists = true;
-                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite);
+                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.Read);
                 }
                 // If the content type stream is interleaved, validate the piece numbering.
                 else if (partPieces != null)
