@@ -177,6 +177,42 @@ namespace System.Tests
             throw new Exception("Boom!");
         }
 
+        [Fact]
+        public static void RepeatedCatch_ThrowFromSecondCatch_HandledByOuterCatch()
+        {
+            bool caught = false;
+
+            try
+            {
+                ThrowFromSecondCatch();
+            }
+            catch (InvalidOperationException)
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowFromSecondCatch()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                try
+                {
+                    throw new Exception();
+                }
+                catch
+                {
+                    if (i != 0)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                }
+            }
+        }
+
         private static void VerifyCallStack(
             (string CallerMemberName, string SourceFilePath, int SourceLineNumber) expectedStackFrame,
             string reportedCallStack, int skipFrames)
