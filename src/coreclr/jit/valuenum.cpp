@@ -424,6 +424,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_nextChunkBase(0)
     , m_fixedPointMapSels(alloc, 8)
     , m_checkedBoundVNs(alloc)
+    , m_checkedBoundIndexVNs(alloc)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -7934,6 +7935,12 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
     return false;
 }
 
+bool ValueNumStore::IsVNCheckedBoundIndex(ValueNum vn)
+{
+    bool dummy;
+    return m_checkedBoundIndexVNs.TryGetValue(vn, &dummy);
+}
+
 //----------------------------------------------------------------------------------
 // IsVNCastToULong: checks whether the given VN represents (ulong)op cast
 //
@@ -7961,14 +7968,14 @@ bool ValueNumStore::IsVNCastToULong(ValueNum vn, ValueNum* castedOp)
     return false;
 }
 
-void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
+void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
 {
-    // This is meant to flag VNs for lengths that aren't known at compile time, so we can
+    // This is meant to flag VNs for bounds check operands that aren't known at compile time, so we can
     // form and propagate assertions about them.  Ensure that callers filter out constant
     // VNs since they're not what we're looking to flag, and assertion prop can reason
     // directly about constants.
     assert(!IsVNConstant(vn));
-    m_checkedBoundVNs.AddOrUpdate(vn, true);
+    (isIndex ? m_checkedBoundIndexVNs : m_checkedBoundVNs).AddOrUpdate(vn, true);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -13807,8 +13814,15 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // next add the bounds check exception set for the current tree node
                         fgValueNumberAddExceptionSet(tree);
 
-                        // Record non-constant value numbers that are used as the length argument to bounds checks, so
-                        // that assertion prop will know that comparisons against them are worth analyzing.
+                        // Record non-constant value numbers that are used as arguments to bounds checks, so that
+                        // assertion prop will know that comparisons against them are worth analyzing.
+                        ValueNum indexVN =
+                            vnStore->VNNormalValue(tree->AsBoundsChk()->GetIndex()->gtVNPair.GetConservative());
+                        if ((indexVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(indexVN))
+                        {
+                            vnStore->SetVNIsCheckedBound(indexVN, true);
+                        }
+
                         ValueNum lengthVN =
                             vnStore->VNNormalValue(tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative());
                         if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
@@ -14968,11 +14982,67 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         }
     }
 
+    // Async calls define the "resumed" indicator: it is set to 1 when the call
+    // suspends and we are later resumed in this frame, and is left alone
+    // otherwise. Thus we know the value after the call is 1 if the call always
+    // suspends, or if the indicator was already known to be 1 before it.
+    GenTreeLclVarCommon* asyncResumedLclAddr = gtCallGetDefinedAsyncResumedLclAddr(call);
+    ValueNumPair         asyncResumedVNP;
+    if (asyncResumedLclAddr != nullptr)
+    {
+        if (call->GetAsyncInfo().AlwaysSuspends)
+        {
+            JITDUMP("Call [%06u] always suspends; establishing always resumed state for V%02u\n", dspTreeID(call),
+                    asyncResumedLclAddr->GetLclNum());
+            asyncResumedVNP.SetBoth(vnStore->VNOneForType(TYP_I_IMPL));
+        }
+        else
+        {
+            CallArg* resumedUseArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
+            if (resumedUseArg != nullptr)
+            {
+                // The arg is usually a TYP_INT use of the TYP_I_IMPL indicator var.
+                assert(genActualTypeIsInt(resumedUseArg->GetNode()));
+
+                // The indicator is monotonic, so it stays 1 for whichever kinds
+                // it was already known to be 1 for.
+                ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
+                for (ValueNumKind vnKind : vnKinds)
+                {
+                    ValueNum resumedUseVN = vnStore->VNNormalValue(resumedUseArg->GetNode()->GetVN(vnKind));
+                    if (vnStore->IsVNConstant(resumedUseVN) && (vnStore->CoercedConstantValue<int>(resumedUseVN) == 1))
+                    {
+                        JITDUMP("Call [%06u] propagates always resumed state for V%02u (%s VN)\n", dspTreeID(call),
+                                asyncResumedLclAddr->GetLclNum(), vnKind == VNK_Liberal ? "liberal" : "conservative");
+                        asyncResumedVNP.Set(vnKind, vnStore->VNOneForType(TYP_I_IMPL));
+                    }
+                }
+            }
+        }
+    }
+
     // If the call generates any definitions, for example because it uses "return buffer", then VN the local
     // as well.
     auto visitDef = [=](const LocalDef& def) {
         ValueNumPair storeValue;
-        storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
+        if (def.Def == asyncResumedLclAddr)
+        {
+            storeValue = asyncResumedVNP;
+        }
+
+        if (!storeValue.BothDefined())
+        {
+            // Use the same new unique VN for any kind we do not know the value of.
+            ValueNum newVN = vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet());
+            if (storeValue.GetLiberal() == ValueNumStore::NoVN)
+            {
+                storeValue.SetLiberal(newVN);
+            }
+            if (storeValue.GetConservative() == ValueNumStore::NoVN)
+            {
+                storeValue.SetConservative(newVN);
+            }
+        }
 
         fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size, storeValue);
         return GenTree::VisitResult::Continue;

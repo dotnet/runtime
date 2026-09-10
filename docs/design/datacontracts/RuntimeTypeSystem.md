@@ -86,6 +86,11 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(ITypeHandle typeHandle);
+    // Returns the alignment requirement of a type. Mirrors
+    // CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp. The result is
+    // unclamped -- callers such as ArgIterator apply their own clamping. This is optional
+    // functionality; runtimes that don't support it return the target pointer size.
+    public virtual int GetClassAlignmentRequirement(ITypeHandle typeHandle);
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such
     // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI).
@@ -556,6 +561,10 @@ static class RuntimeTypeSystem_1_Helpers
 | `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
+| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read |
+| `EEClassLayoutInfo` | `AlignmentRequirement` | `uint8` | Largest alignment requirement of all members of the type |
+| `EEClassLayoutInfo` | `Flags` | `uint8` | Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable |
+| `EEClassLayoutInfo` | `LayoutType` | `uint8` | Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4) |
 | `EEClassOptionalFields` | `EightByteRegistersInfo` | `SystemVEightByteRegistersInfo` | Inline `SystemVEightByteRegistersInfo` describing the SystemV AMD64 register-passing classification (only populated on UNIX_AMD64_ABI builds) |
 | `EEImplMethodDesc` | *(type size)* | `uint32` | Base size for mcEEImpl classification |
 | `FCallMethodDesc` | *(type size)* | `uint32` | Base size for mcFCall classification |
@@ -574,6 +583,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `InstantiatedMethodDesc` | `Flags2` | `uint16` | Flags for the InstantiatedMethodDesc |
 | `InstantiatedMethodDesc` | `NumGenericArgs` | `uint16` | How many generic args the method has |
 | `InstantiatedMethodDesc` | `PerInstInfo` | `pointer` | The pointer to the method's type arguments |
+| `LayoutEEClass` | `LayoutInfo` | `EEClassLayoutInfo` | Inline `EEClassLayoutInfo` for a type with layout. Only the offset is used - the reader constructs an `EEClassLayoutInfo` at that offset from the `EEClass` address. Only valid when `EEClass.VMFlags` has `VMFLAG_HASLAYOUT` |
 | `LoaderAllocator` | `CreationNumber` | `uint64` | Monotonically-increasing creation number assigned to each collectible LoaderAllocator. |
 | `LoaderAllocator` | `DynamicHelpersStubHeap` | `pointer` | Dynamic-helper stub heap (optional, present when ReadyToRun dynamic-helper stubs are enabled) |
 | `LoaderAllocator` | `ExecutableHeap` | `pointer` | Executable-code heap |
@@ -846,6 +856,25 @@ static class RuntimeTypeSystem_1_Helpers
     public bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) { ... }
 
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    // Mirrors CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp.
+    //   result = target pointer size
+    //   if the type is a MethodTable and has an EEClass:
+    //     if EEClass.VMFlags has VMFLAG_HASLAYOUT:
+    //       // LayoutEEClass derives from EEClass, so its layout info lives at a fixed offset from
+    //       // the same address. Reading it without the HasLayout check interprets unrelated memory.
+    //       layoutInfo = EEClassLayoutInfo at (eeClass + offsetof(LayoutEEClass, LayoutInfo))
+    //       if layoutInfo.LayoutType == Sequential or layoutInfo.Flags has e_BLITTABLE:
+    //         result = layoutInfo.AlignmentRequirement
+    //   // FEATURE_64BIT_ALIGNMENT (ARM, WASM). RequiresAlign8 is only set on targets with that
+    //   // requirement, so this is a no-op elsewhere.
+    //   if result < 8 and RequiresAlign8(typeHandle): result = 8
+    //   return result
+    //
+    // Note: the native implementation also handles the native (marshalled) value type view via
+    // TypeHandle::IsNativeValueType. That is a marshalling-only concept that is not reachable from
+    // the managed argument layout this contract serves, so it is not mirrored here.
+    public int GetClassAlignmentRequirement(ITypeHandle typeHandle) { ... }
 
     public bool IsCanonicalMethodTable(ITypeHandle typeHandle)
         => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;

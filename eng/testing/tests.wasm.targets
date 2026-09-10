@@ -87,8 +87,14 @@
 
       So, set those parameters explicitly here.
       -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' != 'false'">WasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' == 'false'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <!-- WasmEnableSIMD is about native codegen, and CoreCLR browser-wasm forces it on, but the CoreCLR
+         interpreter maps every System.Runtime.Intrinsics arch intrinsic except get_IsSupported to
+         PlatformNotSupportedException. Only crossgen'd code can execute them, so without ReadyToRun stubbing
+         IsSupported to true leaves a guarded SIMD path unconditionally reachable and it throws at startup. -->
+    <_WasmIntrinsicsSubstitutions Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' != 'true'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.$(_WasmIntrinsicsSubstitutions).xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>

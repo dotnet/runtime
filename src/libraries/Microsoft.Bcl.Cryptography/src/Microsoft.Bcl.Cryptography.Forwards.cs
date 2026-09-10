@@ -30,6 +30,7 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.HpkeRecipient))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.HpkeSender))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.HpkeSuite))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CompositeMLKemCng))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.X25519DiffieHellman))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.X25519DiffieHellmanCng))]
 #endif
