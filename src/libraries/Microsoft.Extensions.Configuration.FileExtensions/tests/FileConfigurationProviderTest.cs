@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Test;
@@ -205,6 +206,337 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             DelegatingToPhysical,
             DerivedFromPhysical,
             Custom
+        }
+
+        public enum FileProviderOrigin
+        {
+            ResolvedFromRootedPath,
+            DefaultedFromAppContextBaseDirectory,
+            SetOnTheSource,
+            SetOnTheBuilder,
+            SetBasePathOnTheBuilder
+        }
+
+        [Theory]
+        [InlineData(FileProviderOrigin.ResolvedFromRootedPath, true)]
+        [InlineData(FileProviderOrigin.DefaultedFromAppContextBaseDirectory, true)]
+        [InlineData(FileProviderOrigin.SetOnTheSource, false)]
+        [InlineData(FileProviderOrigin.SetOnTheBuilder, false)]
+        [InlineData(FileProviderOrigin.SetBasePathOnTheBuilder, true)]
+        public void ProviderDisposesOnlyConfigurationOwnedFileProviders(FileProviderOrigin origin, bool expectedDisposed)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            var source = new FileConfigurationSourceImpl
+            {
+                Optional = true,
+                Path = "appsettings.json",
+                ReloadOnChange = true
+            };
+            PhysicalFileProvider suppliedProvider = null;
+
+            switch (origin)
+            {
+                case FileProviderOrigin.ResolvedFromRootedPath:
+                    source.Path = Path.Combine(rootDir.Path, "appsettings.json");
+                    source.ResolveFileProvider();
+                    break;
+                case FileProviderOrigin.DefaultedFromAppContextBaseDirectory:
+                    break;
+                case FileProviderOrigin.SetOnTheSource:
+                    source.FileProvider = suppliedProvider = new PhysicalFileProvider(rootDir.Path);
+                    break;
+                case FileProviderOrigin.SetOnTheBuilder:
+                    builder.SetFileProvider(suppliedProvider = new PhysicalFileProvider(rootDir.Path));
+                    break;
+                case FileProviderOrigin.SetBasePathOnTheBuilder:
+                    builder.SetBasePath(rootDir.Path);
+                    suppliedProvider = Assert.IsType<PhysicalFileProvider>(builder.GetFileProvider());
+                    break;
+            }
+
+            using (suppliedProvider)
+            {
+                var provider = (IDisposable)source.Build(builder);
+                var fileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+                Assert.False(IsDisposed(fileProvider));
+
+                provider.Dispose();
+
+                Assert.Equal(expectedDisposed, IsDisposed(fileProvider));
+            }
+        }
+
+        [Theory]
+        [InlineData(FileProviderOrigin.ResolvedFromRootedPath, false)]
+        [InlineData(FileProviderOrigin.ResolvedFromRootedPath, true)]
+        [InlineData(FileProviderOrigin.DefaultedFromAppContextBaseDirectory, false)]
+        [InlineData(FileProviderOrigin.DefaultedFromAppContextBaseDirectory, true)]
+        [InlineData(FileProviderOrigin.SetBasePathOnTheBuilder, false)]
+        [InlineData(FileProviderOrigin.SetBasePathOnTheBuilder, true)]
+        public void MultipleProvidersDisposeFileProviderAfterTheLastProvider(FileProviderOrigin origin, bool disposeNewestFirst)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            var source = new FileConfigurationSourceImpl
+            {
+                Optional = true,
+                Path = origin is FileProviderOrigin.ResolvedFromRootedPath
+                    ? Path.Combine(rootDir.Path, "appsettings.json")
+                    : "appsettings.json",
+                ReloadOnChange = true
+            };
+            if (origin is FileProviderOrigin.ResolvedFromRootedPath)
+            {
+                source.ResolveFileProvider();
+            }
+            else if (origin is FileProviderOrigin.SetBasePathOnTheBuilder)
+            {
+                builder.SetBasePath(rootDir.Path);
+            }
+
+            var first = (IDisposable)source.Build(builder);
+            var second = (IDisposable)source.Build(builder);
+            var fileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+
+            IDisposable firstToDispose = disposeNewestFirst ? second : first;
+            IDisposable lastToDispose = disposeNewestFirst ? first : second;
+
+            firstToDispose.Dispose();
+            Assert.False(IsDisposed(fileProvider));
+
+            lastToDispose.Dispose();
+            Assert.True(IsDisposed(fileProvider));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetBasePathFileProviderIsSharedAcrossSources(bool disposeNewestFirst)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            builder.SetBasePath(rootDir.Path);
+            var firstSource = new FileConfigurationSourceImpl { Optional = true, Path = "first.json" };
+            var secondSource = new FileConfigurationSourceImpl { Optional = true, Path = "second.json" };
+
+            var first = (IDisposable)firstSource.Build(builder);
+            var second = (IDisposable)secondSource.Build(builder);
+            var fileProvider = Assert.IsType<PhysicalFileProvider>(firstSource.FileProvider);
+            Assert.Same(fileProvider, secondSource.FileProvider);
+
+            IDisposable firstToDispose = disposeNewestFirst ? second : first;
+            IDisposable lastToDispose = disposeNewestFirst ? first : second;
+
+            firstToDispose.Dispose();
+            Assert.False(IsDisposed(fileProvider));
+
+            lastToDispose.Dispose();
+            Assert.True(IsDisposed(fileProvider));
+        }
+
+        [Fact]
+        public void DisposingAProviderTwiceDoesNotReleaseAFileProviderStillInUse()
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            var source = new FileConfigurationSourceImpl
+            {
+                Optional = true,
+                Path = Path.Combine(rootDir.Path, "appsettings.json"),
+                ReloadOnChange = true
+            };
+            source.ResolveFileProvider();
+
+            var first = (IDisposable)source.Build(builder);
+            var second = (IDisposable)source.Build(builder);
+            var fileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+
+            first.Dispose();
+            first.Dispose();
+            Assert.False(IsDisposed(fileProvider));
+
+            second.Dispose();
+            Assert.True(IsDisposed(fileProvider));
+        }
+
+        [Theory]
+        [InlineData(FileProviderOrigin.ResolvedFromRootedPath)]
+        [InlineData(FileProviderOrigin.DefaultedFromAppContextBaseDirectory)]
+        [InlineData(FileProviderOrigin.SetBasePathOnTheBuilder)]
+        public void RebuildingASourceAfterDisposalCreatesAFreshFileProvider(FileProviderOrigin origin)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            var source = new FileConfigurationSourceImpl
+            {
+                Optional = true,
+                Path = origin is FileProviderOrigin.ResolvedFromRootedPath
+                    ? Path.Combine(rootDir.Path, "appsettings.json")
+                    : "appsettings.json",
+                ReloadOnChange = true
+            };
+            if (origin is FileProviderOrigin.ResolvedFromRootedPath)
+            {
+                source.ResolveFileProvider();
+            }
+            else if (origin is FileProviderOrigin.SetBasePathOnTheBuilder)
+            {
+                builder.SetBasePath(rootDir.Path);
+            }
+
+            var first = (IDisposable)source.Build(builder);
+            var firstFileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            first.Dispose();
+            Assert.True(IsDisposed(firstFileProvider));
+            Assert.Null(source.FileProvider);
+
+            var second = (IDisposable)source.Build(builder);
+            var secondFileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            Assert.NotSame(firstFileProvider, secondFileProvider);
+            Assert.False(IsDisposed(secondFileProvider));
+
+            second.Dispose();
+            Assert.True(IsDisposed(secondFileProvider));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void RebuildingASourcePreservesFileProviderPollingSettings(bool usePollingFileWatcher, bool useActivePolling)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            var source = new FileConfigurationSourceImpl
+            {
+                Optional = true,
+                Path = Path.Combine(rootDir.Path, "appsettings.json")
+            };
+            source.ResolveFileProvider();
+
+            var firstFileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            firstFileProvider.UsePollingFileWatcher = usePollingFileWatcher;
+            firstFileProvider.UseActivePolling = useActivePolling;
+
+            var first = (IDisposable)source.Build(builder);
+            first.Dispose();
+
+            using var second = (IDisposable)source.Build(builder);
+            var secondFileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            Assert.Equal(usePollingFileWatcher, secondFileProvider.UsePollingFileWatcher);
+            Assert.Equal(useActivePolling, secondFileProvider.UseActivePolling);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RebuildingASourcePreservesPollingAfterWatcherCreated(bool useActivePolling)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            var source = new FileConfigurationSourceImpl
+            {
+                Optional = true,
+                Path = Path.Combine(rootDir.Path, "appsettings.json"),
+                ReloadOnChange = true
+            };
+            source.ResolveFileProvider();
+
+            var firstFileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            firstFileProvider.UsePollingFileWatcher = true;
+            firstFileProvider.UseActivePolling = useActivePolling;
+
+            var first = (IDisposable)source.Build(builder);
+            first.Dispose();
+
+            using var second = (IDisposable)source.Build(builder);
+            var secondFileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            Assert.IsType<CompositeChangeToken>(secondFileProvider.Watch(source.Path));
+            Assert.Equal(useActivePolling, secondFileProvider.UseActivePolling);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReplacingFileProviderDoesNotTransferOwnershipToTheReplacement(bool replaceAfterBuild)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+            using var replacementRootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+
+            var builder = new ConfigurationBuilder();
+            var source = new FileConfigurationSourceImpl
+            {
+                Optional = true,
+                Path = Path.Combine(rootDir.Path, "appsettings.json"),
+                ReloadOnChange = true
+            };
+            source.ResolveFileProvider();
+
+            var ownedFileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            IDisposable? provider = replaceAfterBuild ? (IDisposable)source.Build(builder) : null;
+            using var replacement = new PhysicalFileProvider(replacementRootDir.Path);
+
+            source.FileProvider = replacement;
+
+            Assert.Equal(!replaceAfterBuild, IsDisposed(ownedFileProvider));
+
+            provider ??= (IDisposable)source.Build(builder);
+            provider.Dispose();
+
+            Assert.True(IsDisposed(ownedFileProvider));
+            Assert.False(IsDisposed(replacement));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ProviderUsesCurrentFileProviderAndPath(bool sourceOwnsFileProvider)
+        {
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+            using var replacementRootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+            string originalFileName = "original.json";
+            string replacementFileName = "replacement.json";
+            File.WriteAllText(Path.Combine(rootDir.Path, originalFileName), PhysicalFileContent);
+            File.WriteAllText(Path.Combine(replacementRootDir.Path, replacementFileName), TransformedFileContent);
+
+            var source = new FileConfigurationSourceImpl
+            {
+                Path = sourceOwnsFileProvider ? Path.Combine(rootDir.Path, originalFileName) : originalFileName
+            };
+            using PhysicalFileProvider? callerProvidedFileProvider = sourceOwnsFileProvider
+                ? null
+                : new PhysicalFileProvider(rootDir.Path);
+            if (sourceOwnsFileProvider)
+            {
+                source.ResolveFileProvider();
+            }
+            else
+            {
+                source.FileProvider = callerProvidedFileProvider;
+            }
+
+            using var replacement = new PhysicalFileProvider(replacementRootDir.Path);
+            using var provider = new ContentCapturingFileConfigurationProvider(source);
+            source.FileProvider = replacement;
+            source.Path = replacementFileName;
+
+            provider.Load();
+
+            Assert.Equal(TransformedFileContent, provider.Content);
+        }
+
+        private static bool IsDisposed(PhysicalFileProvider fileProvider)
+        {
+            FieldInfo disposedField = typeof(PhysicalFileProvider).GetField("_disposed", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (bool)disposedField.GetValue(fileProvider);
         }
 
         // An IFileInfo that reports a physical path but whose content differs from what is stored at

@@ -7,8 +7,10 @@ using System.Linq;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.Configuration.UserSecrets.Test;
+using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -140,6 +142,31 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             var configuration = builder.Build();
             Assert.Null(configuration["Facebook:PLACEHOLDER"]);
             Assert.False(File.Exists(secretFilePath));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60584", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public void AddUserSecrets_Disposes_File_Provider_With_The_Configuration()
+        {
+            var userSecretsId = Guid.NewGuid().ToString();
+            SetSecret(userSecretsId, "Facebook:PLACEHOLDER", "value1");
+
+            var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId, reloadOnChange: true);
+            var configuration = builder.Build();
+
+            var source = Assert.IsType<JsonConfigurationSource>(Assert.Single(builder.Sources));
+            var fileProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            Assert.False(IsDisposed(fileProvider));
+
+            ((IDisposable)configuration).Dispose();
+
+            Assert.True(IsDisposed(fileProvider));
+        }
+
+        private static bool IsDisposed(PhysicalFileProvider fileProvider)
+        {
+            FieldInfo disposedField = typeof(PhysicalFileProvider).GetField("_disposed", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (bool)disposedField.GetValue(fileProvider);
         }
 
         public void Dispose()

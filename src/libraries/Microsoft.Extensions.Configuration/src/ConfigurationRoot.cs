@@ -30,10 +30,18 @@ namespace Microsoft.Extensions.Configuration
 
             _providers = providers;
             _changeTokenRegistrations = new List<IDisposable>(providers.Count);
-            foreach (IConfigurationProvider p in providers)
+            try
             {
-                p.Load();
-                _changeTokenRegistrations.Add(ChangeToken.OnChange(p.GetReloadToken, RaiseChanged));
+                foreach (IConfigurationProvider p in providers)
+                {
+                    p.Load();
+                    _changeTokenRegistrations.Add(ChangeToken.OnChange(p.GetReloadToken, RaiseChanged));
+                }
+            }
+            catch
+            {
+                DisposeRegistrations();
+                throw;
             }
         }
 
@@ -98,14 +106,21 @@ namespace Microsoft.Extensions.Configuration
         /// <inheritdoc />
         public void Dispose()
         {
-            // dispose change token registrations
+            DisposeRegistrations();
+            DisposeProviders(_providers);
+        }
+
+        private void DisposeRegistrations()
+        {
             foreach (IDisposable registration in _changeTokenRegistrations)
             {
                 registration.Dispose();
             }
+        }
 
-            // dispose providers
-            foreach (IConfigurationProvider provider in _providers)
+        internal static void DisposeProviders(IEnumerable<IConfigurationProvider> providers)
+        {
+            foreach (IConfigurationProvider provider in providers)
             {
                 (provider as IDisposable)?.Dispose();
             }

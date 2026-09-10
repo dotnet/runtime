@@ -13,10 +13,31 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public abstract class FileConfigurationSource : IConfigurationSource
     {
+        private FileProviderHandle? _fileProvider;
+
         /// <summary>
         /// Gets or sets the provider used to access the contents of the file.
         /// </summary>
-        public IFileProvider? FileProvider { get; set; }
+        /// <remarks>
+        /// A provider supplied by the caller is not disposed by the configuration system.
+        /// A provider created by the configuration system is disposed once nothing is using it.
+        /// </remarks>
+        public IFileProvider? FileProvider
+        {
+            get => _fileProvider?.Current;
+            set
+            {
+                if (ReferenceEquals(FileProvider, value) &&
+                    (value is not null || _fileProvider is null))
+                {
+                    return;
+                }
+
+                FileProviderHandle? previous = _fileProvider;
+                _fileProvider = value is null ? null : FileProviderHandle.CreateBorrowed(value);
+                previous?.DiscardIfIdle();
+            }
+        }
 
         /// <summary>
         /// Gets or sets the path to the file.
@@ -68,7 +89,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         public void EnsureDefaults(IConfigurationBuilder builder)
         {
-            FileProvider ??= builder.GetFileProvider();
+            _fileProvider ??= builder.GetFileProviderHandle();
             OnLoadException ??= builder.GetFileLoadExceptionHandler();
         }
 
@@ -77,14 +98,21 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public void ResolveFileProvider()
         {
-            if (FileProvider == null &&
+            if (_fileProvider is null &&
                 !string.IsNullOrEmpty(Path) &&
                 System.IO.Path.IsPathRooted(Path) &&
                 System.IO.Path.GetDirectoryName(Path) is string directory)
             {
-                FileProvider = new PhysicalFileProvider(directory);
+                _fileProvider = FileProviderHandle.CreateOwned(new PhysicalFileProvider(directory));
                 Path = System.IO.Path.GetFileName(Path);
             }
+        }
+
+        internal FileProviderHandle? AcquireFileProvider()
+        {
+            FileProviderHandle? fileProvider = _fileProvider;
+            fileProvider?.Acquire();
+            return fileProvider;
         }
     }
 }
