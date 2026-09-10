@@ -57,7 +57,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(ConstructorArguments_TestData))]
         public void ConstructorsPreserveArgumentsAcrossTiers(Type target, object?[] expected)
         {
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
                 ConstructorArgumentsAttribute attribute = target.GetCustomAttribute<ConstructorArgumentsAttribute>();
                 Assert.Equal(expected, attribute.Arguments);
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void ConstructorExceptionsAreNotWrapped()
         {
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
                 InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
                     () => typeof(ThrowingConstructorTarget).GetCustomAttribute<ThrowingConstructorAttribute>());
