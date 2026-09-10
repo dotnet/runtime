@@ -197,6 +197,47 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void InvalidExceptionRegion_WithErrorTolerantOption_PreservesMethodBodyAttributes()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .maxstack 3
+                        .try 5 to 0 finally handler 0 to 1
+                        ret
+                    }
+                }
+                """;
+
+            var sourceText = new SourceText(source, "test.il");
+            DocumentCompiler compiler = new();
+            var (_, result) = compiler.Compile(
+                sourceText,
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "TestMethod");
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.Equal(3, body.MaxStack);
+            Assert.False(body.LocalVariablesInitialized);
+            Assert.Empty(body.ExceptionRegions);
+        }
+
+        [Fact]
         public void OffsetBasedCatchRegion_EmitsExactExceptionRegionBounds()
         {
             string source = """
