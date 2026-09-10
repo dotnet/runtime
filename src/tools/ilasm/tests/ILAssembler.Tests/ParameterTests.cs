@@ -229,6 +229,37 @@ namespace ILAssembler.Tests
             Assert.Equal((ParameterAttributes)8, parameters["rawFlags"].Attributes);
         }
 
+        [Theory]
+        [InlineData("System.Runtime.InteropServices.InAttribute", ParameterAttributes.In)]
+        [InlineData("System.Runtime.InteropServices.OutAttribute", ParameterAttributes.Out)]
+        [InlineData("System.Runtime.InteropServices.OptionalAttribute", ParameterAttributes.Optional)]
+        public void PseudoCustomAttribute_OnParameter_LowersToFlagAndDropsAttribute(string attributeType, ParameterAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32 x) cil managed
+                    {
+                        .param [1]
+                        .custom instance void [mscorlib]{{attributeType}}::.ctor() = ( 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+            var parameter = reader.GetParameter(Assert.Single(method.GetParameters()));
+
+            Assert.Equal(expected, parameter.Attributes & expected);
+            Assert.Empty(parameter.GetCustomAttributes());
+        }
+
         [Fact]
         public void UnnamedInstanceParam_EmitsParamRow()
         {
