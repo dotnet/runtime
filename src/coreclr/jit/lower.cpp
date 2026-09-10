@@ -10297,8 +10297,11 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
 
         changed = true;
     }
-    else if (op->OperIs(GT_LCL_FLD, GT_IND))
+    else if (op->OperIs(GT_LCL_FLD, GT_IND) && (genTypeSize(op) == genTypeSize(node)))
     {
+        // Retyping the load in place also changes how many bytes it accesses, so it is
+        // only valid when the load is already exactly as wide as the bitcast. A small
+        // typed load (e.g. BITCAST<float>(IND<ubyte>)) must keep its normalizing load.
         op->ChangeType(node->TypeGet());
         changed = true;
     }
