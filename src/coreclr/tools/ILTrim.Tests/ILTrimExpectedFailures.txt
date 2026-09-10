@@ -463,6 +463,7 @@ UnreachableBlock.MethodArgumentPropagation
 UnreachableBlock.MethodWithParametersSubstitutions
 UnreachableBlock.MultiStageRemoval
 UnreachableBlock.NestedFinallyInFinallyHandler
+UnreachableBlock.OSPlatformGuard
 UnreachableBlock.ReplacedJumpTarget
 UnreachableBlock.ReplacedReturns
 UnreachableBlock.ResultInliningNotPossible

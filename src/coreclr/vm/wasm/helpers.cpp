@@ -1638,8 +1638,22 @@ void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* p
         return nullptr;
     }
 
+    // Structural sharing can find a stub even when this particular managed signature
+    // was never compiled. Do not publish native code that the interpreter cannot call.
+    MetaSig unboxingSig(pMD);
+    if (ComputeCalliSigThunk(unboxingSig) == nullptr)
+    {
+        return nullptr;
+    }
+
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+    if (!PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
+    {
+        return nullptr;
+    }
+
     *ppTargetMethodDesc = pTargetMethodDesc;
-    *pTargetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+    *pTargetEntryPoint = targetEntryPoint;
     return unboxingStub;
 }
 
