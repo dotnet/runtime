@@ -1923,7 +1923,9 @@ extern "C" int32_t CoreCLR_AttachLazyR2RImage(const char *assemblySimpleName, vo
         while (it.Next(pAssembly.This()))
         {
             Module *pModule = pAssembly->GetModule();
-            if (pModule != NULL && pModule->IsReadyToRun() &&
+            // Match by simple name only. The eager image may be IL-only (an empty profile compiles no
+            // methods), so it is not necessarily IsReadyToRun(); the supplemental attaches regardless.
+            if (pModule != NULL &&
                 strcmp(pModule->GetSimpleName(), assemblySimpleName) == 0)
             {
                 pTargetModule = pModule;

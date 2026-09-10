@@ -269,6 +269,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                            Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
                            Crossgen2ExtraCommandLineArgs="$(_WasmLazyR2RCrossgen2Args)"
                            CompilationEntry="@(_WasmLazyR2RCompileEntry)"
+                           ImplementationAssemblyReferences="@(_WasmLazyR2RReferences)"
                            ReadyToRunCompositeBuildInput="@(_ReadyToRunCompileList)"
                            ReadyToRunCompositeBuildReferences="@(_WasmLazyR2RReferences)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
@@ -319,7 +320,9 @@ Copyright (c) .NET Foundation. All rights reserved.
         <SourceType>Computed</SourceType>
         <ContentRoot>$(_WasmPublishR2RDir)</ContentRoot>
         <BasePath>$(StaticWebAssetBasePath)</BasePath>
-        <RelativePath>%(FileName)%(Extension)</RelativePath>
+        <!-- These late-defined assets miss the wasm publish's _framework/ endpoint prefixing, so place them under
+             _framework/ directly (matching the eager webcils and the loader's framework-relative fetch). -->
+        <RelativePath>_framework/%(FileName)%(Extension)</RelativePath>
         <AssetKind>Publish</AssetKind>
         <AssetMode>All</AssetMode>
         <AssetRole>Primary</AssetRole>
