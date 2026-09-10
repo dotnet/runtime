@@ -1922,10 +1922,13 @@ namespace System.Reflection
                         int size = GetPrimitiveSize(encoding);
                         if (size != 0)
                         {
-                            primitives[i] = ReadPrimitiveValue(ref parser, encoding);
-                            ref byte data = ref Unsafe.As<ulong, byte>(ref primitives[i]);
-                            ref byte value = ref Unsafe.Add(ref data, BitConverter.IsLittleEndian ? 0 : sizeof(ulong) - size);
-                            StoreArgumentReference(argumentStorage + i, ref value);
+                            Span<byte> value = MemoryMarshal.AsBytes(primitives.Slice(i, 1)).Slice(0, size);
+                            ReadPrimitiveData(ref parser, encoding).CopyTo(value);
+                            if (!BitConverter.IsLittleEndian)
+                            {
+                                value.Reverse();
+                            }
+                            StoreArgumentReference(argumentStorage + i, ref MemoryMarshal.GetReference(value));
                         }
                         else
                         {
@@ -2017,15 +2020,16 @@ namespace System.Reflection
             _ => 0
         };
 
-        private static ulong ReadPrimitiveValue(ref CustomAttributeDataParser parser, CustomAttributeEncoding encoding) =>
-            GetPrimitiveSize(encoding) switch
+        private static ReadOnlySpan<byte> ReadPrimitiveData(ref CustomAttributeDataParser parser, CustomAttributeEncoding encoding)
+        {
+            int size = GetPrimitiveSize(encoding);
+            if (size == 0)
             {
-                1 => parser.GetU1(),
-                2 => parser.GetU2(),
-                4 => parser.GetU4(),
-                8 => parser.GetU8(),
-                _ => throw new CustomAttributeFormatException()
-            };
+                throw new CustomAttributeFormatException();
+            }
+
+            return parser.ReadData(size);
+        }
 
         private static object? ReadAttributeValue(ref CustomAttributeDataParser parser, RuntimeType type, RuntimeModule module)
         {
@@ -2033,9 +2037,17 @@ namespace System.Reflection
             int size = GetPrimitiveSize(encoding);
             if (size != 0)
             {
-                ulong bits = ReadPrimitiveValue(ref parser, encoding);
-                ref byte data = ref Unsafe.As<ulong, byte>(ref bits);
-                return RuntimeHelpers.Box(ref Unsafe.Add(ref data, BitConverter.IsLittleEndian ? 0 : sizeof(ulong) - size), type.TypeHandle);
+                ReadOnlySpan<byte> data = ReadPrimitiveData(ref parser, encoding);
+                if (BitConverter.IsLittleEndian || size == 1)
+                {
+                    return RuntimeHelpers.Box(ref MemoryMarshal.GetReference(data), type.TypeHandle);
+                }
+
+                InlineArray8<byte> reversedStorage = default;
+                Span<byte> reversed = ((Span<byte>)reversedStorage).Slice(0, size);
+                data.CopyTo(reversed);
+                reversed.Reverse();
+                return RuntimeHelpers.Box(ref MemoryMarshal.GetReference(reversed), type.TypeHandle);
             }
 
             if (type == typeof(string))
@@ -2161,9 +2173,9 @@ namespace System.Reflection
                 {
                     for (int i = 0; i < length; i++)
                     {
-                        ulong bits = ReadPrimitiveValue(ref parser, encoding);
-                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<ulong>(in bits));
-                        bytes.Slice(sizeof(ulong) - elementSize).CopyTo(data.Slice(i * elementSize, elementSize));
+                        Span<byte> element = data.Slice(i * elementSize, elementSize);
+                        ReadPrimitiveData(ref parser, encoding).CopyTo(element);
+                        element.Reverse();
                     }
                 }
                 return array;
