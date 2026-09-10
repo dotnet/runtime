@@ -663,15 +663,18 @@ public:
     */
 
     // Returns whether or not the given size is a valid segment size.
+    // No longer used by the VM in .NET Core 2.1+
     virtual bool IsValidSegmentSize(size_t size) PURE_VIRTUAL
 
     // Returns whether or not the given size is a valid gen 0 max size.
+    // No longer used by the VM in .NET Core 2.1+
     virtual bool IsValidGen0MaxSize(size_t size) PURE_VIRTUAL
 
     // Gets a valid segment size.
     virtual size_t GetValidSegmentSize(bool large_seg = false) PURE_VIRTUAL
 
     // Sets the limit for reserved virtual memory.
+    // No longer used in .NET Core 2.1+
     virtual void SetReservedVMLimit(size_t vmlimit) PURE_VIRTUAL
 
     /*
