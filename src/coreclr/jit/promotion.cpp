@@ -782,8 +782,6 @@ public:
             // extracting rarely used fields can add substantial work and register pressure.
             // Wider fields naturally limit the number of extractions per register.
             // Restrict the credit for small fields with few accesses to target these cases.
-            // This is an imprecise heuristic: it does not model extraction cost, register
-            // pressure, or shared parameter spill costs.
             const weight_t MIN_RELATIVE_ACCESS_WEIGHT = 0.10;
             bool           allowBitwiseExtraction =
                 !varTypeIsSmall(access.AccessType) ||
