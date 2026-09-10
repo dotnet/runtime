@@ -476,13 +476,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 List<(ObjectSpec Type, List<PropertySpec> Members)>? setterAccessorTypes = null;
-                HashSet<ObjectSpec>? seenSetterTypes = null;
                 if (_bindingHelperInfo.TypesForGen_BindCore is ImmutableEquatableArray<ComplexTypeSpec> bindTypes)
                 {
                     foreach (ComplexTypeSpec spec in bindTypes)
                     {
-                        if (_typeIndex.GetEffectiveTypeSpec(spec) is not ObjectSpec type || type.Properties is null ||
-                            !(seenSetterTypes ??= new()).Add(type))
+                        if (spec is not ObjectSpec { Properties: not null } type)
                         {
                             continue;
                         }
@@ -533,8 +531,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 // The reflection fallback references an InstanceMemberBindingFlags const and, for value-type setters, a
-                // ValueTypeSetter<,> delegate. Both are ordinary class members, so their placement after the accessors
-                // that reference them is fine.
+                // ValueTypeSetter<,> delegate.
                 if (needsBindingFlags)
                 {
                     _writer.WriteLine();
