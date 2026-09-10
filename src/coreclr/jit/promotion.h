@@ -154,7 +154,8 @@ class Promotion
 
     static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
-    static bool     MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType);
+    static bool     MapsToParameterRegister(
+            Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType, bool allowBitwiseExtraction = true);
 public:
     explicit Promotion(Compiler* compiler)
         : m_compiler(compiler)
