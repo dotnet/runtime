@@ -87,6 +87,12 @@ of the `WebcilHeader`.
 
 The memory of the WebcilPayload must also be allocated with 16 byte alignment.
 
+The module shall not export its compiled functions. Exports count towards the engine's
+effective-type-size limit, so a module carrying a framework-sized function count becomes unloadable
+if each function is exported; the element segment, not the export table, is what makes a function
+reachable. Function names shall instead be carried in the `name` custom section, which is ignored by
+engines, counts towards no limit, and may be stripped when size matters.
+
 ``` wat
 (module
   (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: two little-endian u32 values (payloadSize, tableSize). This specifies a Webcil payload of size 15 bytes with 1 required table entry

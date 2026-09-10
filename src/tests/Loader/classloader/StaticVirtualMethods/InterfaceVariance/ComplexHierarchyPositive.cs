@@ -15,6 +15,7 @@ namespace VariantStaticInterfaceDispatchRegressionTest
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/88689", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133466", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
         public static void TestEntryPoint()
         {
             Console.WriteLine("Test cases");

@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
+#if NET
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -2362,11 +2365,75 @@ string lengthAttribute = "";
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), emittedSource.Replace("\r\n", "\n"));
 
         CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName(), source + emittedSource, refAssemblyPath: null, languageVersion);
-        var emitResult = compilation.Emit(new MemoryStream());
+        using MemoryStream assemblyStream = new();
+        var emitResult = compilation.Emit(assemblyStream);
 
         Assert.True(emitResult.Success);
+#if NET
+        Assembly generatedAssembly = Assembly.Load(assemblyStream.ToArray());
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "CompareAttribute",
+            new object[] { "P5" },
+            "external {0}:{1}",
+            "external name:P5");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "LengthAttribute",
+            new object[] { 1, 3 },
+            "external {0}:{1:D2}:{2:D2}",
+            "external name:01:03");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "MaxLengthAttribute",
+            new object[] { 5 },
+            "external {0}:{1:D2}",
+            "external name:05");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "MinLengthAttribute",
+            new object[] { 5 },
+            "external {0}:{1:D2}",
+            "external name:05");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "RangeAttribute",
+            new object[] { typeof(int), "1", "3" },
+            "external {0}:{1:D2}:{2:D2}",
+            "external name:01:03");
+#endif
         // Console.WriteLine(emittedSource);
     }
+
+#if NET
+    private static void AssertGeneratedFormatMessage(
+        Assembly generatedAssembly,
+        string attributeName,
+        object[] constructorArguments,
+        string format,
+        string expected)
+    {
+        Type generatedType = Assert.Single(
+            generatedAssembly.GetTypes(),
+            type => type.Name.EndsWith($"_{attributeName}", StringComparison.Ordinal));
+        ValidationAttribute attribute = Assert.IsAssignableFrom<ValidationAttribute>(
+            Activator.CreateInstance(generatedType, constructorArguments));
+
+        Assert.Equal(expected, attribute.FormatMessage(format, "name"));
+        ArgumentNullException nullException = Assert.Throws<ArgumentNullException>(
+            () => attribute.FormatMessage(null!, "name"));
+        Assert.Equal("format", nullException.ParamName);
+        Assert.Throws<FormatException>(() => attribute.FormatMessage("{3}", "name"));
+
+        MethodInfo? formatMessage = generatedType.GetMethod(nameof(ValidationAttribute.FormatMessage));
+        Assert.NotNull(formatMessage);
+        Assert.Equal(generatedType, formatMessage.DeclaringType);
+
+        StringSyntaxAttribute syntax = Assert.Single(
+            formatMessage.GetParameters()[0].GetCustomAttributes<StringSyntaxAttribute>());
+        Assert.Equal(StringSyntaxAttribute.CompositeFormat, syntax.Syntax);
+    }
+#endif
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task UsingInterfaceAsPropertyTypeForLengthAttributesTests()

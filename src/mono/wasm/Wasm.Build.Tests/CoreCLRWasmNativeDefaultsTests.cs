@@ -15,9 +15,11 @@ namespace Wasm.Build.Tests
     // in that situation must fail the build rather than silently produce an app whose configuration
     // does not match the prebuilt dotnet.native.wasm.
     [TestCategory("workload")]
+    [TestCategory("coreclr")]
     public class CoreCLRWasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");
+        private static readonly Regex s_r2rDirectoryRegex = new("\\*\\* WasmPublishR2RDir: '([^']*)'");
 
         public CoreCLRWasmNativeDefaultsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -52,8 +54,10 @@ namespace Wasm.Build.Tests
             // comparison is textual, so a numerically equal but differently spelled size counts as
             // a mismatch. That only costs an unnecessary relink, never a mismatched binary.
             { "<EmccStackSize>2097152</EmccStackSize>", true },
-            // a non-registry trigger: setting WasmPerformanceInstrumentation always forces a relink
-            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", true },
+            // WasmPerformanceInstrumentation would force a relink, but that defaulting is temporarily
+            // disabled in BrowserWasmApp.CoreCLR.targets pending https://github.com/dotnet/runtime/issues/132772,
+            // so it currently does not relink.
+            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", false },
         };
 
         [Theory]
@@ -109,6 +113,42 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains("** WasmBuildNative: 'true'", line);
+        }
+
+        [Fact]
+        public void PublishReadyToRunDirectoryMatchesSdkOutputCasing()
+        {
+            Configuration config = Configuration.Debug;
+            string printValueTarget = """
+                <Target Name="PrintWasmPublishR2RDir"
+                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
+                    <Message Text="** WasmPublishR2RDir: '$(_WasmPublishR2RDir)'" Importance="High" />
+                    <Error Text="Stopping after validating the R2R directory" />
+                </Target>
+                """;
+
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_r2r_directory",
+                extraProperties: """
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <PublishTrimmed>true</PublishTrimmed>
+                    """,
+                insertAtEnd: printValueTarget);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: "-t:PrintWasmPublishR2RDir"));
+
+            Assert.Contains("Stopping after validating the R2R directory", output);
+            Match match = s_r2rDirectoryRegex.Match(output);
+            Assert.True(match.Success, output);
+            Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
         }
 
         private string? BuildAndGetWasmBuildNativeLine(string projectPrefix, string extraProperties, bool expectSuccess)

@@ -1285,13 +1285,32 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 
     BasicBlock* const bDestTarget = bDest->GetTarget();
 
-    // Don't redirect 'block' to 'bDestTarget' if the latter jumps to 'bDest'.
-    // This will lead the JIT to consider optimizing 'block' -> 'bDestTarget' -> 'bDest',
-    // entering an infinite loop.
-    //
-    if (bDestTarget->GetUniqueSucc() == bDest)
+    // Don't redirect 'block' into a cycle of empty unconditional blocks. The next invocation
+    // would redirect it again, indefinitely rotating its target around the cycle.
+    BasicBlock* slow = bDest;
+    BasicBlock* fast = bDest;
+    while (true)
     {
-        optimizeJump = false;
+        if (!slow->isEmpty() || !slow->KindIs(BBJ_ALWAYS) || !fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
+        {
+            break;
+        }
+
+        slow = slow->GetTarget();
+        fast = fast->GetTarget();
+
+        if (!fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
+        {
+            break;
+        }
+
+        fast = fast->GetTarget();
+
+        if (slow == fast)
+        {
+            optimizeJump = false;
+            break;
+        }
     }
 
     // We do not optimize jumps between two different try regions.
@@ -5279,11 +5298,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     fgUnlinkStmt(predBlock, stmt);
 
-                    if (predBlock->isEmpty())
-                    {
-                        tryRemoveAndFixFlow(predBlock, commSucc);
-                    }
-
                     // Add one of the matching stmts to block, and
                     // update its flags.
                     //
@@ -5291,6 +5305,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     {
                         fgInsertStmtAtBeg(commSucc, stmt);
                         commSucc->CopyFlags(predBlock, BBF_COPY_PROPAGATE);
+                    }
+
+                    if (predBlock->isEmpty())
+                    {
+                        tryRemoveAndFixFlow(predBlock, commSucc);
                     }
 
                     madeChanges = true;
@@ -5344,20 +5363,24 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     // From most to least preferable.
                     //
-                    if (isNoSplit && isFallThrough)
+                    if (predBlock == commSucc)
                     {
                         return 0;
                     }
-                    if (isNoSplit)
+                    if (isNoSplit && isFallThrough)
                     {
                         return 1;
                     }
-                    if (isFallThrough)
+                    if (isNoSplit)
                     {
                         return 2;
                     }
+                    if (isFallThrough)
+                    {
+                        return 3;
+                    }
 
-                    return 3;
+                    return 4;
                 };
 
                 unsigned const rank = getRank();

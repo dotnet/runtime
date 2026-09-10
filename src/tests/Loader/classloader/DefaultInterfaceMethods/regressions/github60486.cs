@@ -114,6 +114,7 @@ public class ProgramBase<TT> : TestItf4<TT>
 public class Program : ProgramBase<InputData>, TestItf2<InputData>
 {
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133505", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static void TestEntryPoint()
     {

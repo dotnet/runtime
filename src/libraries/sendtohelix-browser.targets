@@ -173,16 +173,22 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'Mono'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-    <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsListCoreCLR.txt</BuildWasmAppsJobsList>
+    <!-- Generated while building Wasm.Build.Tests, see its GenerateHelixJobsList target. -->
+    <BuildWasmAppsJobsList>$(WasmBuildTestsJobsListFile)</BuildWasmAppsJobsList>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
-    <!-- Mono-specific tests never apply to CoreCLR. Tests that are both native and Mono-only carry
-         the `mono` category too, so excluding `mono` alone covers them; `native` on its own marks
-         relink/AOT coverage that CoreCLR does run. The workload/no-workload selection above still applies. -->
+    <!-- Flavor-specific tests never apply to the other flavor. Tests that are both native and
+         Mono-only carry the `mono` category too, so excluding `mono` alone covers them; `native` on
+         its own marks relink/AOT coverage that CoreCLR does run. These two conditions must stay in
+         sync with $(_HelixJobsListExcludedCategory) in Wasm.Build.Tests.csproj, which is what keeps
+         the same classes out of the generated list; the negated form matches it so that an unset
+         $(RuntimeFlavor) filters and generates consistently. The single work item lanes do not
+         consult the generated list at all, so this is their only flavor filter.
+         The workload/no-workload selection above still applies. -->
     <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' != 'CoreCLR'">$(_XUnitTraitArg) -notrait category=coreclr</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>

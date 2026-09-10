@@ -227,6 +227,15 @@
   <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
 
   <PropertyGroup>
+    <!-- Wasm.Build.Tests generates this at build time by scanning its own test assembly, and
+         sendtohelix-browser.targets reads it to fan the tests out into per-class Helix work items.
+         The flavor is normalized because the pipeline spells $(RuntimeFlavor) differently ('Mono'
+         when building, 'mono' when sending to Helix) and this ends up in a file name.
+         Must be placed after the Subsets.props import so $(RuntimeFlavor) has its default value. -->
+    <_WasmBuildTestsJobsListFlavor Condition="'$(RuntimeFlavor)' == 'CoreCLR'">coreclr</_WasmBuildTestsJobsListFlavor>
+    <_WasmBuildTestsJobsListFlavor Condition="'$(_WasmBuildTestsJobsListFlavor)' == ''">mono</_WasmBuildTestsJobsListFlavor>
+    <WasmBuildTestsJobsListFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', 'Wasm.Build.Tests', 'BuildWasmAppsJobsList.$(_WasmBuildTestsJobsListFlavor).txt'))</WasmBuildTestsJobsListFile>
+
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
     <CoreLibRefDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'ref'))</CoreLibRefDir>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>

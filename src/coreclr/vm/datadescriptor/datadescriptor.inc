@@ -545,11 +545,13 @@ CDAC_TYPE_FIELD(Signature, T_POINTER, SignaturePointer, cdac_data<Signature>::Si
 CDAC_TYPE_FIELD(Signature, T_UINT32, SignatureLength, cdac_data<Signature>::SignatureLength)
 CDAC_TYPE_END(Signature)
 
+#ifdef FEATURE_VARARGS
 CDAC_TYPE_BEGIN(VASigCookie)
 CDAC_TYPE_INDETERMINATE(VASigCookie)
 CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
 CDAC_TYPE_FIELD(VASigCookie, TYPE(Signature), Signature, cdac_data<VASigCookie>::Signature)
 CDAC_TYPE_END(VASigCookie)
+#endif // FEATURE_VARARGS
 
 // RuntimeTypeSystem
 
@@ -594,7 +596,21 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::Nu
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
 CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
+CDAC_TYPE_FIELD(EEClass, T_UINT32, VMFlags, cdac_data<EEClass>::VMFlags)
 CDAC_TYPE_END(EEClass)
+
+// LayoutInfo aliases unrelated memory unless EEClass::HasLayout() is true.
+CDAC_TYPE_BEGIN(LayoutEEClass)
+CDAC_TYPE_INDETERMINATE(LayoutEEClass)
+CDAC_TYPE_FIELD(LayoutEEClass, TYPE(EEClassLayoutInfo), LayoutInfo, cdac_data<LayoutEEClass>::LayoutInfo)
+CDAC_TYPE_END(LayoutEEClass)
+
+CDAC_TYPE_BEGIN(EEClassLayoutInfo)
+CDAC_TYPE_INDETERMINATE(EEClassLayoutInfo)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, LayoutType, cdac_data<EEClassLayoutInfo>::LayoutType)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, AlignmentRequirement, cdac_data<EEClassLayoutInfo>::AlignmentRequirement)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, Flags, cdac_data<EEClassLayoutInfo>::Flags)
+CDAC_TYPE_END(EEClassLayoutInfo)
 
 CDAC_TYPE_BEGIN(EEClassOptionalFields)
 CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
@@ -1792,6 +1808,7 @@ CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfac
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
 CDAC_GLOBAL_POINTER(JITNotificationTable, &::g_pNotificationTable)
 CDAC_GLOBAL(JITNotificationTableSize, T_UINT32, JIT_NOTIFICATION_TABLE_SIZE)
+// Unused by the runtime - see "Pending cleanup" at the end of this file.
 CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
@@ -1895,3 +1912,13 @@ CDAC_GLOBAL_CONTRACT(Thread, c1)
 CDAC_GLOBAL_CONTRACT(WindowsErrorReporting, c1)
 
 CDAC_GLOBALS_END()
+
+// Pending cleanup
+//
+// Data descriptor entries that the runtime itself no longer uses, but that cannot be deleted
+// without breaking a frozen contract version. Each one can only go away together with a bump of
+// the contract version that requires it. Keep this list up to date so that the next version bump
+// does not have to rediscover them.
+//
+// - Delete GlobalAllocContext (and ::g_global_alloc_context, together with its dacvars.h entry
+//   that keeps it captured in mini/triage dumps) once the GC contract version is bumped to c2.

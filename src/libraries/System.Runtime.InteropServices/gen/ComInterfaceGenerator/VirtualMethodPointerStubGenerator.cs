@@ -305,9 +305,18 @@ namespace Microsoft.Interop
             });
             foreach (TypePositionInfo element in originalElements)
             {
-                elements.Add(element with
+                TypePositionInfo unmanagedToManagedElement = element;
+                if (unmanagedToManagedElement.IsErrorHandlingPosition)
                 {
-                    NativeIndex = TypePositionInfo.IncrementIndex(element.NativeIndex)
+                    unmanagedToManagedElement = unmanagedToManagedElement with
+                    {
+                        IsErrorHandlingPosition = false,
+                    };
+                }
+
+                elements.Add(unmanagedToManagedElement with
+                {
+                    NativeIndex = TypePositionInfo.IncrementIndex(unmanagedToManagedElement.NativeIndex)
                 });
             }
 
@@ -320,7 +329,8 @@ namespace Microsoft.Interop
                     {
                         InstanceIdentifier = "__exception",
                         ManagedIndex = TypePositionInfo.ExceptionIndex,
-                        NativeIndex = TypePositionInfo.ReturnIndex
+                        NativeIndex = TypePositionInfo.ReturnIndex,
+                        IsErrorHandlingPosition = true,
                     });
             }
 
