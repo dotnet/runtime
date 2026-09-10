@@ -271,9 +271,14 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
-    // True when this image was compiled with the GC mode transition verification scaffolding, which
-    // means its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch. See the comment on
-    // t_gcModeSwitchPermitted in vm/threads.h.
+    // True when this image was compiled with the GC mode transition verification scaffolding.
+    //
+    // Only WebAssembly emits the scaffolding: the helper call at catch resumption points is
+    // inserted by the WebAssembly-only JIT path in fgwasm.cpp, and only the WebAssembly catch
+    // resumption path consumes this. On any other target the flag is inert even if set, so do not
+    // treat it as a general statement that the image's catch resumption points call
+    // READYTORUN_HELPER_ResumeAfterCatch. See the comment on t_gcModeSwitchPermitted in
+    // vm/threads.h.
     BOOL VerifiesGCModeTransitions()
     {
         LIMITED_METHOD_CONTRACT;

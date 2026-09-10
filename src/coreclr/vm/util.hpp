@@ -196,7 +196,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 
 #ifdef TARGET_WASM
 // On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
-// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
 // the region does not contain an early return, break, continue, or goto out of the region. Such
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
@@ -222,7 +222,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 
 #ifdef TARGET_WASM
 // On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
-// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
 // the region does not contain an early return, break, continue, or goto out of the region. Such
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
@@ -258,7 +258,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 
 #ifdef TARGET_WASM
 // On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
-// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
 // the region does not contain an early return, break, continue, or goto out of the region. Such
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
@@ -315,7 +315,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_COOP_NO_DTOR_END()
 
 // On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
-// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
 // the region does not contain an early return, break, continue, or goto out of the region. Such
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
@@ -328,7 +328,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_PREEMP_NO_DTOR_END()
 
 // On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
-// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
 // the region does not contain an early return, break, continue, or goto out of the region. Such
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
@@ -341,7 +341,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_MAYBE_COOP_NO_THREAD_BROKEN(_cond)
 
 // On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
-// Semantically its equivalent to the corresponding GCX_ holder on other platforms, as long as
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
 // the region does not contain an early return, break, continue, or goto out of the region. Such
 // a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
 // the region instead (for example by assigning to a result variable declared before the _BEGIN).
