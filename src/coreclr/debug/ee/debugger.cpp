@@ -1281,7 +1281,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_pAssembly = pEvalInfo->vmAssembly.GetRawPtr();
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
-    m_targetCodeAddr = (TADDR)NULL;
     m_stringSize = pEvalInfo->stringSize;
     m_arrayRank = pEvalInfo->arrayRank;
     m_genericArgsCount = pEvalInfo->genericArgsCount;
@@ -14323,7 +14322,7 @@ Debugger::FuncEvalAbort(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        if (g_pEEInterface->GetThread() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
     }
     CONTRACTL_END;
 
@@ -14386,7 +14385,7 @@ Debugger::FuncEvalRudeAbort(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        if (g_pEEInterface->GetThread() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
     }
     CONTRACTL_END;
 
