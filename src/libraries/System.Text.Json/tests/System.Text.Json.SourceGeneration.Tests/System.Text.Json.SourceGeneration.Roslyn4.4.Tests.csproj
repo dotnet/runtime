@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Features>$(Features);updated-memory-safety-rules</Features>
     <TestedRoslynVersion>4.4</TestedRoslynVersion>
   </PropertyGroup>
 

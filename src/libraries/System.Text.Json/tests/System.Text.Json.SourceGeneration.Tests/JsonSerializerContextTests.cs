@@ -608,11 +608,20 @@ namespace System.Text.Json.SourceGeneration.Tests
                 JsonTypeInfo<TestPoco> typeInfo = JsonTypeInfo.CreateJsonTypeInfo<TestPoco>(options);
                 typeInfo.CreateObject = () => new TestPoco();
                 JsonPropertyInfo property = typeInfo.CreateJsonPropertyInfo(typeof(string), "test");
-                property.Get = (o) => System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).IntProperty.ToString();
+                property.Get = (o) =>
+                {
+                    unsafe
+                    {
+                        return System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).IntProperty.ToString();
+                    }
+                };
                 property.Set = (o, val) =>
                 {
-                    System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).StringProperty = (string)val;
-                    System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).IntProperty = int.Parse((string)val);
+                    unsafe
+                    {
+                        System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).StringProperty = (string)val;
+                        System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).IntProperty = int.Parse((string)val);
+                    }
                 };
 
                 typeInfo.Properties.Add(property);

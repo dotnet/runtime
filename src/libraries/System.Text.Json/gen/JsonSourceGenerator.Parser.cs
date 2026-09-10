@@ -20,6 +20,7 @@ namespace System.Text.Json.SourceGeneration
     {
         // The source generator requires NRT and init-only property support.
         private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp9;
+        private const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
 
         private sealed class Parser
         {
@@ -178,6 +179,7 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
+                    UseUpdatedMemorySafetyRules = contextClassDeclaration.SyntaxTree.Options.Features.ContainsKey(UpdatedMemorySafetyRulesFeature),
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.

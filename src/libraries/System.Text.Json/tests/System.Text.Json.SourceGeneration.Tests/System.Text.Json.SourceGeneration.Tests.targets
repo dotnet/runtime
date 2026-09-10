@@ -19,6 +19,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS</DefineConstants>
   </PropertyGroup>
 
