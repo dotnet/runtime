@@ -1,13 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection.Emit;
+using System.Threading;
 
 namespace System.Reflection
 {
     internal partial class MethodBaseInvoker
     {
         private IntrinsicInvokeHelper.InvokeState _invokeState;
+        private InvokerEmitUtil.InvokeFunc_Debugger? _invokeFunc_Debugger;
 
         internal unsafe MethodBaseInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
         {
@@ -38,6 +41,23 @@ namespace System.Reflection
             }
 
             return _invokeFunc_RefArgs!(obj, args);
+        }
+
+        [StackTraceHidden]
+        [DebuggerHidden]
+        internal unsafe void InvokeForDebugger(IntPtr* storage)
+        {
+            InvokerEmitUtil.InvokeFunc_Debugger? invoke = Volatile.Read(ref _invokeFunc_Debugger);
+            if (invoke is null)
+            {
+                using (AssemblyBuilder.ForceAllowDynamicCode())
+                {
+                    invoke = InvokerEmitUtil.CreateInvokeDelegate_Debugger(_method);
+                }
+                invoke = Interlocked.CompareExchange(ref _invokeFunc_Debugger, invoke, null) ?? invoke;
+            }
+
+            invoke(storage);
         }
     }
 }
