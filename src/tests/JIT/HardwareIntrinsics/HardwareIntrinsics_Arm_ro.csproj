@@ -4,6 +4,9 @@
 
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
 
+    <!-- Managed ilasm round-tripping this merged runner exceeds practical CI limits. -->
+    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
+
     <!-- Various platforms will always throw, so we don't want to spend cycles running tests unnecessarily -->
     <!-- We don't need to worry about coverage as we have a number of stress tests that can disable intrinsics per ISA and run on the normally supported platforms -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
