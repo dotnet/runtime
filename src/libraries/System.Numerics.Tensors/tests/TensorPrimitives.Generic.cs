@@ -1772,6 +1772,77 @@ namespace System.Numerics.Tensors.Tests
             });
         }
         #endregion
+
+        #region Number aggregates ignore NaN
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(16)]
+        [InlineData(33)]
+        public void NumberAggregates_IgnoreNaN(int length)
+        {
+            // IEEE 754:2019 minimumNumber/maximumNumber ignore a NaN operand when a numeric one is
+            // available, while minimum/maximum propagate it. The span reductions must match.
+            T nan = T.CreateTruncating(float.NaN);
+            T one = T.One;
+            T two = one + one;
+
+            if (length == 1)
+            {
+                AssertEqualAggregate(nan, TensorPrimitives.MinNumber<T>([nan]));
+                AssertEqualAggregate(nan, TensorPrimitives.MaxNumber<T>([nan]));
+                AssertEqualAggregate(nan, TensorPrimitives.MinMagnitudeNumber<T>([nan]));
+                AssertEqualAggregate(nan, TensorPrimitives.MaxMagnitudeNumber<T>([nan]));
+                AssertEqualAggregate(nan, TensorPrimitives.Min<T>([nan]));
+                AssertEqualAggregate(nan, TensorPrimitives.Max<T>([nan]));
+                return;
+            }
+
+            T[] values = new T[length];
+
+            // NaN at the start, in the middle, and at the end of the span, so both the vectorized
+            // and the scalar tails of the reduction see it.
+            foreach (int nanIndex in new[] { 0, length / 2, length - 1 })
+            {
+                Array.Fill(values, two);
+                values[nanIndex] = nan;
+
+                // A distinct minimum so the reduction is not trivially the fill value.
+                values[(nanIndex + 1) % length] = one;
+
+                // Number variants ignore the NaN and pick the numeric extreme.
+                AssertEqualAggregate(one, TensorPrimitives.MinNumber<T>(values));
+                AssertEqualAggregate(two, TensorPrimitives.MaxNumber<T>(values));
+                AssertEqualAggregate(one, TensorPrimitives.MinMagnitudeNumber<T>(values));
+                AssertEqualAggregate(two, TensorPrimitives.MaxMagnitudeNumber<T>(values));
+
+                // Plain Min/Max still propagate NaN.
+                AssertEqualAggregate(nan, TensorPrimitives.Min<T>(values));
+                AssertEqualAggregate(nan, TensorPrimitives.Max<T>(values));
+                AssertEqualAggregate(nan, TensorPrimitives.MinMagnitude<T>(values));
+                AssertEqualAggregate(nan, TensorPrimitives.MaxMagnitude<T>(values));
+            }
+
+            // Signed zeros follow minimumNumber/maximumNumber: +0 is greater than -0.
+            T[] signedZeros = { -T.Zero, T.Zero };
+            Assert.True(T.IsNegative(TensorPrimitives.MinNumber<T>(signedZeros)));
+            Assert.False(T.IsNegative(TensorPrimitives.MaxNumber<T>(signedZeros)));
+
+            static void AssertEqualAggregate(T expected, T actual)
+            {
+                if (T.IsNaN(expected))
+                {
+                    Assert.True(T.IsNaN(actual), $"expected NaN, got {actual}");
+                }
+                else
+                {
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+        #endregion
     }
 
     public unsafe abstract class GenericSignedIntegerTensorPrimitivesTests<T> : GenericIntegerTensorPrimitivesTests<T>
