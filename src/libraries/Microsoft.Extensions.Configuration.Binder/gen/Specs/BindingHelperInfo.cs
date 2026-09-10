@@ -189,7 +189,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // (e.g. the only member is a ctor parameter backed by a non-bindable read-only
                                 // collection type), otherwise the emitter can end up calling an Initialize method
                                 // that was never generated.
-                                bool needsInitializeMethod = _typeIndex.HasInitializeMethod(objectSpec);
+                                bool needsInitializeMethod = TypeIndex.HasInitializeMethod(objectSpec);
 
                                 if (hasBindableMembers || needsInitializeMethod)
                                 {

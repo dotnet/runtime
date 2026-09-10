@@ -32,6 +32,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitBindCoreMainMethod();
                 EmitBindCoreMethods();
                 EmitInitializeMethods();
+                EmitAccessorMethods();
                 EmitHelperMethods();
                 EmitBindingExtEndRegion();
             }
@@ -323,15 +324,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitInitializeMethod(ObjectSpec type)
             {
-                Debug.Assert(_typeIndex.HasInitializeMethod(type));
+                Debug.Assert(TypeIndex.HasInitializeMethod(type));
                 Debug.Assert(_typeIndex.CanInstantiate(type));
-                Debug.Assert(type.Properties is not null, $"Expecting type for init method, {type.DisplayString}, to have properties.");
                 Debug.Assert(
                     type.InstantiationStrategy is ObjectInstantiationStrategy.ParameterlessConstructor || type.ConstructorParameters is not null,
                     $"Expecting parameterized type for init method, {type.DisplayString}, to have ctor params.");
 
-                IEnumerable<PropertySpec> initOnlyProps = type.Properties
-                    .Where(prop => prop.SetOnInit && _typeIndex.ShouldBindTo(prop));
                 List<string> ctorArgList = new();
 
                 EmitStartBlock($"public static {type.TypeRef.FullyQualifiedName} {GetInitializeMethodDisplayString(type)}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
@@ -356,31 +354,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                foreach (PropertySpec property in initOnlyProps)
-                {
-                    if (property.MatchingCtorParam is null)
-                    {
-                        EmitBindImplForMember(property);
-                    }
-                }
-
-                string returnExpression = $"return new {type.TypeRef.FullyQualifiedName}({string.Join(", ", ctorArgList)})";
-                if (!initOnlyProps.Any())
-                {
-                    _writer.WriteLine($"{returnExpression};");
-                }
-                else
-                {
-                    EmitStartBlock(returnExpression);
-                    foreach (PropertySpec property in initOnlyProps)
-                    {
-                        // Properties bound through a matching constructor parameter don't have a local of their
-                        // own; their bound value lives in the local named after the parameter.
-                        string valueExpr = EscapeIdentifier(property.MatchingCtorParam?.Name ?? property.Name);
-                        _writer.WriteLine($@"{EscapeIdentifier(property.Name)} = {valueExpr},");
-                    }
-                    EmitEndBlock(endBraceTrailingSource: ";");
-                }
+                // Construct the instance and return it. Init-only and required members are not assigned here; they are
+                // set post-construction in BindCore (only when their config key is present) so their defaults survive.
+                // A type with required members is constructed through an accessor that bypasses the required-member
+                // check (see GetConstructionExpression); everything else uses a plain constructor call.
+                _writer.WriteLine($"return {GetConstructionExpression(type, ctorArgList)};");
 
                 // End method.
                 EmitEndBlock();
@@ -443,6 +421,184 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine();
                     }
                 }
+            }
+
+            /// <summary>
+            /// The expression that constructs <paramref name="type"/>. A type with required members not satisfied by a
+            /// <c>[SetsRequiredMembers]</c> constructor is constructed through an accessor that bypasses the
+            /// required-member check (so those members can be set post-construction); everything else uses <c>new</c>.
+            /// </summary>
+            private static string GetConstructionExpression(ObjectSpec type, List<string> ctorArgList)
+            {
+                // A ConstructValueTypeWithDefault type has no Initialize method (HasInitializeMethod is false for it),
+                // so it is constructed inline by EmitObjectInit, never here. This method only runs for types that do
+                // have an Initialize method, so default(T) never applies.
+                Debug.Assert(!type.ConstructValueTypeWithDefault);
+
+                string args = string.Join(", ", ctorArgList);
+                return type.ConstructionRequiresAccessor
+                    ? $"{UnsafeAccessorEmitter.GetConstructorAccessorName(type.IdentifierCompatibleSubstring)}({args})"
+                    : $"new {type.TypeRef.FullyQualifiedName}({args})";
+            }
+
+            /// <summary>
+            /// The call-site name of the init-only setter accessor for <paramref name="property"/>, matching the accessor
+            /// emitted by <see cref="UnsafeAccessorEmitter"/> (including the generic wrapper prefix for generic types).
+            /// </summary>
+            private static string GetInitOnlySetterAccessorName(ObjectSpec type, PropertySpec property) =>
+                UnsafeAccessorEmitter.GetQualifiedAccessorName(
+                    property.DeclaringTypeParameterNames,
+                    (property.AccessorDeclaringTypeRef ?? type.TypeRef).FullyQualifiedName,
+                    type.IdentifierCompatibleSubstring,
+                    accessorKind: "set",
+                    property.Name,
+                    propertyIndex: 0,
+                    // Property names are unique within a type (the parser dedupes by name), so no index disambiguation.
+                    needsDisambiguation: false);
+
+            /// <summary>
+            /// Emits the constructor and init-only setter accessors used to construct types and set their init-only or
+            /// required members post-construction, delegating to the shared <see cref="UnsafeAccessorEmitter"/> (which
+            /// uses <c>[UnsafeAccessor]</c> where available and reflection otherwise).
+            /// </summary>
+            private void EmitAccessorMethods()
+            {
+                List<ObjectSpec>? constructorAccessorTypes = null;
+                if (_bindingHelperInfo.TypesForGen_Initialize is ImmutableEquatableArray<ObjectSpec> initTypes)
+                {
+                    foreach (ObjectSpec type in initTypes)
+                    {
+                        if (type.ConstructionRequiresAccessor)
+                        {
+                            (constructorAccessorTypes ??= new()).Add(type);
+                        }
+                    }
+                }
+
+                List<(ObjectSpec Type, List<PropertySpec> Members)>? setterAccessorTypes = null;
+                HashSet<ObjectSpec>? seenSetterTypes = null;
+                if (_bindingHelperInfo.TypesForGen_BindCore is ImmutableEquatableArray<ComplexTypeSpec> bindTypes)
+                {
+                    foreach (ComplexTypeSpec spec in bindTypes)
+                    {
+                        if (_typeIndex.GetEffectiveTypeSpec(spec) is not ObjectSpec type || type.Properties is null ||
+                            !(seenSetterTypes ??= new()).Add(type))
+                        {
+                            continue;
+                        }
+
+                        List<PropertySpec>? members = null;
+                        foreach (PropertySpec property in type.Properties)
+                        {
+                            if (property.CanSetViaAccessor && _typeIndex.ShouldBindTo(property))
+                            {
+                                (members ??= new()).Add(property);
+                            }
+                        }
+
+                        if (members is not null)
+                        {
+                            (setterAccessorTypes ??= new()).Add((type, members));
+                        }
+                    }
+                }
+
+                if (constructorAccessorTypes is null && setterAccessorTypes is null)
+                {
+                    return;
+                }
+
+                bool needsBindingFlags = false;
+                bool needsValueTypeSetterDelegate = false;
+
+                if (constructorAccessorTypes is not null)
+                {
+                    foreach (ObjectSpec type in constructorAccessorTypes)
+                    {
+                        EmitConstructorAccessor(type);
+                        needsBindingFlags |= !type.ConstructorCanUseUnsafeAccessor;
+                    }
+                }
+
+                if (setterAccessorTypes is not null)
+                {
+                    foreach ((ObjectSpec type, List<PropertySpec> members) in setterAccessorTypes)
+                    {
+                        needsValueTypeSetterDelegate |= EmitInitOnlySetterAccessors(type, members);
+                        foreach (PropertySpec property in members)
+                        {
+                            needsBindingFlags |= !property.SetterCanUseUnsafeAccessor;
+                        }
+                    }
+                }
+
+                // The reflection fallback references an InstanceMemberBindingFlags const and, for value-type setters, a
+                // ValueTypeSetter<,> delegate. Both are ordinary class members, so their placement after the accessors
+                // that reference them is fine.
+                if (needsBindingFlags)
+                {
+                    _writer.WriteLine();
+                    _writer.WriteLine("private const global::System.Reflection.BindingFlags InstanceMemberBindingFlags =");
+                    _writer.WriteLine("    global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic;");
+                }
+
+                if (needsValueTypeSetterDelegate)
+                {
+                    _writer.WriteLine();
+                    _writer.WriteLine("private delegate void ValueTypeSetter<TDeclaringType, TValue>(ref TDeclaringType obj, TValue value);");
+                }
+
+                _emitBlankLineBeforeNextStatement = true;
+            }
+
+            private void EmitConstructorAccessor(ObjectSpec type)
+            {
+                List<UnsafeAccessorEmitter.UnsafeAccessorParameterSpec> parameters = new();
+                if (type.ConstructorParameters is not null)
+                {
+                    int index = 0;
+                    foreach (ParameterSpec parameter in type.ConstructorParameters)
+                    {
+                        parameters.Add(new UnsafeAccessorEmitter.UnsafeAccessorParameterSpec
+                        {
+                            TypeFQN = parameter.TypeRef.FullyQualifiedName,
+                            Index = index++,
+                        });
+                    }
+                }
+
+                _writer.WriteLine();
+                UnsafeAccessorEmitter.EmitConstructorAccessor(_writer, new UnsafeAccessorEmitter.UnsafeAccessorConstructorSpec
+                {
+                    TypeFriendlyName = type.IdentifierCompatibleSubstring,
+                    TypeFQN = type.TypeRef.FullyQualifiedName,
+                    CanUseUnsafeAccessor = type.ConstructorCanUseUnsafeAccessor,
+                    Parameters = parameters.ToImmutableEquatableArray(),
+                });
+            }
+
+            private bool EmitInitOnlySetterAccessors(ObjectSpec type, List<PropertySpec> members)
+            {
+                var memberSpecs = new List<UnsafeAccessorEmitter.UnsafeAccessorMemberSpec>(members.Count);
+                foreach (PropertySpec property in members)
+                {
+                    memberSpecs.Add(new UnsafeAccessorEmitter.UnsafeAccessorMemberSpec
+                    {
+                        Kind = UnsafeAccessorEmitter.AccessorMemberKind.Property,
+                        MemberName = property.Name,
+                        NeedsGetter = false,
+                        NeedsSetter = true,
+                        CanUseUnsafeAccessors = property.SetterCanUseUnsafeAccessor,
+                        DeclaringTypeFQN = (property.AccessorDeclaringTypeRef ?? type.TypeRef).FullyQualifiedName,
+                        MemberTypeFQN = property.TypeRef.FullyQualifiedName,
+                        DeclaringTypeParameterNames = property.DeclaringTypeParameterNames,
+                        OpenDeclaringTypeFQN = property.OpenDeclaringTypeFQN,
+                        OpenMemberTypeFQN = property.OpenPropertyTypeFQN,
+                        DeclaringTypeParameterConstraintClauses = property.DeclaringTypeParameterConstraintClauses,
+                    });
+                }
+
+                return UnsafeAccessorEmitter.EmitMemberAccessors(_writer, type.IdentifierCompatibleSubstring, type.IsValueType, memberSpecs);
             }
 
             private void EmitHelperMethods()
@@ -921,10 +1077,49 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         EmitBindImplForProperty(property);
                     }
                     EmitEndBlock();
+
+                    // For a constructed instance, a property that matches a constructor parameter is not bound from
+                    // config again (that would duplicate collection items). Instead it is reset - assigned back to its
+                    // own current value through its setter - so setters with side effects still run. This matches the
+                    // reflection binder's ResetPropertyValue, which only applies to properties with a public getter and
+                    // a setter (a public set or an init-only setter reachable through an accessor).
+                    List<PropertySpec>? resetProperties = null;
+                    foreach (PropertySpec property in initializeBoundProperties)
+                    {
+                        if (property.CanGet && (property.CanSet || property.CanSetViaAccessor))
+                        {
+                            (resetProperties ??= new()).Add(property);
+                        }
+                    }
+
+                    if (resetProperties is not null)
+                    {
+                        EmitStartBlock("else");
+                        foreach (PropertySpec property in resetProperties)
+                        {
+                            string memberAccessExpr = $"{Identifier.instance}.{EscapeIdentifier(property.Name)}";
+                            if (property.CanSet)
+                            {
+                                _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr};");
+                            }
+                            else
+                            {
+                                string instanceArg = type.IsValueType ? $"ref {Identifier.instance}" : Identifier.instance;
+                                _writer.WriteLine($"{GetInitOnlySetterAccessorName(type, property)}({instanceArg}, {memberAccessExpr});");
+                            }
+                        }
+                        EmitEndBlock();
+                    }
                 }
 
                 void EmitBindImplForProperty(PropertySpec property)
                 {
+                    if (property.CanSetViaAccessor)
+                    {
+                        EmitBindImplForInitOnlyProperty(property);
+                        return;
+                    }
+
                     string containingTypeRef = property.IsStatic ? type.TypeRef.FullyQualifiedName : Identifier.instance;
                     EmitBindImplForMember(
                         property,
@@ -933,6 +1128,36 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         canSet: property.CanSet,
                         canGet: property.CanGet,
                         InitializationKind.Declaration);
+                }
+
+                // Binds an init-only property, which cannot be assigned directly post-construction. The value is bound
+                // into a local seeded with the property's current value (its default), then written back through an
+                // accessor. Seeding with the current value preserves the default when the config key is absent.
+                void EmitBindImplForInitOnlyProperty(PropertySpec property)
+                {
+                    // Only bindable (ShouldBindTo) properties reach here, and an init-only property is accessible only
+                    // through its getter (its setter is not counted by IsAccessible), so it always has a public getter.
+                    Debug.Assert(property.CanGet);
+
+                    EmitBlankLineIfRequired();
+
+                    TypeSpec memberType = _typeIndex.GetTypeSpec(property.TypeRef);
+                    string local = GetIncrementalIdentifier(Identifier.temp);
+                    string propTypeFQN = memberType.TypeRef.FullyQualifiedName;
+
+                    _writer.WriteLine($"{propTypeFQN} {local} = {Identifier.instance}.{EscapeIdentifier(property.Name)};");
+
+                    EmitBindImplForMember(
+                        property,
+                        memberAccessExpr: local,
+                        GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
+                        canSet: true,
+                        canGet: property.CanGet,
+                        InitializationKind.None,
+                        bindingToLocal: true);
+
+                    string instanceArg = type.IsValueType ? $"ref {Identifier.instance}" : Identifier.instance;
+                    _writer.WriteLine($"{GetInitOnlySetterAccessorName(type, property)}({instanceArg}, {local});");
                 }
             }
 
@@ -950,14 +1175,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     IsPropertyReboundInBindCore(property));
 
             /// <summary>
-            /// Whether <paramref name="property"/> is populated while an instance of <paramref name="type"/> is created
-            /// through its Initialize method: either it flows through a matching constructor parameter, or it is a
-            /// required/init-only property assigned in the object initializer. Types without an Initialize method bind
-            /// all their properties in <c>BindCore</c>.
+            /// Whether <paramref name="property"/> is bound while an instance of <paramref name="type"/> is created
+            /// through its Initialize method. Only properties flowing through a matching constructor parameter are bound
+            /// during construction; init-only and required properties are set post-construction in <c>BindCore</c>.
+            /// Types without an Initialize method bind all their properties in <c>BindCore</c>.
             /// </summary>
-            private bool IsBoundInInitialize(ObjectSpec type, PropertySpec property) =>
-                _typeIndex.HasInitializeMethod(type) &&
-                (property.MatchingCtorParam is not null || property.SetOnInit);
+            private static bool IsBoundInInitialize(ObjectSpec type, PropertySpec property) =>
+                TypeIndex.HasInitializeMethod(type) &&
+                property.MatchingCtorParam is not null;
 
             /// <summary>
             /// Whether binding <paramref name="property"/> in a <c>BindCore</c> method emits code that reads from or
@@ -969,9 +1194,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 switch (_typeIndex.GetEffectiveTypeSpec(property.TypeRef))
                 {
                     case ParsableFromStringSpec:
-                        return property.CanGet && property.CanSet;
+                        return property.CanGet && (property.CanSet || property.CanSetViaAccessor);
                     case ConfigurationSectionSpec:
-                        return property.CanSet;
+                        return property.CanSet || property.CanSetViaAccessor;
                     case ComplexTypeSpec complexType:
                         return IsBindableAsMember(complexType, property.CanSet);
                     default:
@@ -1444,7 +1669,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (strategy is ObjectInstantiationStrategy.ParameterlessConstructor)
                     {
-                        if (_typeIndex.HasInitializeMethod(objectType))
+                        if (TypeIndex.HasInitializeMethod(objectType))
                         {
                             // A required or init-only property can only be assigned in an object initializer at
                             // construction time; that is done in the Initialize method.
@@ -1455,8 +1680,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             // value tuple types will be declared with syntax like:
                             //     (int, int) value = default;
-                            // This is to avoid using invalid syntax calling the parameterless constructor
-                            initExpr = type.IsValueTuple ? "default" : $"new {typeFQN}()";
+                            // This is to avoid using invalid syntax calling the parameterless constructor.
+                            // A value type with required members likewise cannot use new T() (CS9035); default(T)
+                            // bypasses the check and its required members are set post-construction.
+                            initExpr = type.IsValueTuple ? "default"
+                                : objectType.ConstructValueTypeWithDefault ? $"default({typeFQN})"
+                                : $"new {typeFQN}()";
                         }
                     }
                     else

@@ -67,6 +67,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? ParameterInfo { get; }
         public INamedTypeSymbol? Delegate   { get; }
         public INamedTypeSymbol? NotNullIfNotNullAttribute { get; }
+        public INamedTypeSymbol? UnsafeAccessorAttribute { get; }
+        public INamedTypeSymbol? OverloadResolutionPriorityAttribute { get; }
+
+        /// <summary>
+        /// Whether <c>[UnsafeAccessor]</c> can target generic declaring types. Pre-.NET 9 <c>[UnsafeAccessor]</c> does
+        /// not support generics; the .NET 9 <c>OverloadResolutionPriorityAttribute</c> is used as a proxy for that
+        /// runtime support (it shipped in the same release), alongside <c>UnsafeAccessorAttribute</c> (.NET 8).
+        /// </summary>
+        public bool SupportsGenericUnsafeAccessors => UnsafeAccessorAttribute is not null && OverloadResolutionPriorityAttribute is not null;
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
@@ -140,6 +149,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             // Only generate nullable attributes if available
             NotNullIfNotNullAttribute = compilation.GetBestTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute");
+
+            // Used to decide whether generated code can set init-only/required members and bypass the required-member
+            // check via [UnsafeAccessor] (.NET 8+) instead of falling back to reflection. OverloadResolutionPriorityAttribute
+            // (.NET 9) is a proxy for [UnsafeAccessor] supporting generic declaring types.
+            UnsafeAccessorAttribute = compilation.GetBestTypeByMetadataName("System.Runtime.CompilerServices.UnsafeAccessorAttribute");
+            OverloadResolutionPriorityAttribute = compilation.GetBestTypeByMetadataName("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute");
         }
     }
 }

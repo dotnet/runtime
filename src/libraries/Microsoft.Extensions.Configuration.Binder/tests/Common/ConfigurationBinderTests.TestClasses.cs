@@ -351,6 +351,16 @@ namespace Microsoft.Extensions
             public List<string> Items { get; init; } = new() { "preset" };
         }
 
+        public class BaseWithInitOnlyProperty
+        {
+            public string BaseName { get; init; } = "baseDefault";
+        }
+
+        public sealed class DerivedWithInitOnlyProperty : BaseWithInitOnlyProperty
+        {
+            public string DerivedName { get; init; } = "derivedDefault";
+        }
+
 #if NET
         public sealed class RequiredPropertiesParameterlessCtor
         {
@@ -362,6 +372,24 @@ namespace Microsoft.Extensions
         {
             public required string Name { get; init; }
             public required NestedForInitOnly Child { get; init; }
+        }
+
+        public sealed class RequiredPropertiesWithNonNullDefaults
+        {
+            public required string Name { get; set; } = "defaultName";
+            public required List<string> Items { get; init; } = new() { "preset" };
+        }
+
+        public record struct StructWithCtorParamAndRequiredMember(int A)
+        {
+            public required int B { get; set; }
+        }
+
+        public struct StructWithExplicitParameterlessCtorAndRequiredMember
+        {
+            public int FromCtor;
+            public StructWithExplicitParameterlessCtorAndRequiredMember() { FromCtor = 42; }
+            public required int Req { get; set; }
         }
 #endif
 

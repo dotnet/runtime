@@ -34,6 +34,7 @@
     <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\TypeModelHelper.cs" Link="Common\SourceGenerators\TypeModelHelper.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\TypeRef.cs" Link="Common\SourceGenerators\TypeRef.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\UnsafeAccessorEmitter.cs" Link="Common\SourceGenerators\UnsafeAccessorEmitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />

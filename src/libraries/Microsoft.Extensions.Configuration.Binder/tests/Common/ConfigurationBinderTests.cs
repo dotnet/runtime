@@ -2053,9 +2053,9 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         /// <summary>
-        /// A parameterless-constructor type with an init-only (or required) property is created through a generated
-        /// Initialize method that assigns those members in an object initializer. An init-only collection there must be
-        /// bound exactly once - in Initialize, not again in BindCore - so its items are not duplicated.
+        /// A parameterless-constructor type with an init-only collection property. The collection is set
+        /// post-construction through an accessor (an <c>[UnsafeAccessor]</c> setter, or reflection downlevel), bound
+        /// exactly once so its items are not duplicated, matching the reflection binder.
         /// </summary>
         [Fact]
         public void CanBind_InitOnlyCollectionOnParameterlessConstructorType()
@@ -2077,9 +2077,9 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
         /// <summary>
         /// When binding onto an already-existing instance of a parameterless-constructor type with an init-only
-        /// collection, the instance is not created through the generated Initialize method, so the collection is bound
-        /// in BindCore (through the !boundThroughConstructor branch). Its items must be appended into the existing
-        /// collection exactly once, not duplicated, matching the reflection binder.
+        /// collection, the collection is set through an accessor post-construction. Its items must be appended into the
+        /// existing collection exactly once, not duplicated, matching the reflection binder. (Before the accessor-based
+        /// approach the source generator could not set an init-only member on an existing instance at all.)
         /// </summary>
         [Fact]
         public void CanBindExistingInstance_InitOnlyCollectionOnParameterlessConstructorType()
@@ -2100,9 +2100,9 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
 #if NET
         /// <summary>
-        /// A required nested complex property on a parameterless-constructor type is assigned in the generated
-        /// Initialize method's object initializer and must be bound to the configured values, whether the required
-        /// property has a settable or an init-only setter.
+        /// A required nested complex property on a parameterless-constructor type is set after construction (which goes
+        /// through an accessor that bypasses the required-member check) and must be bound to the configured values,
+        /// whether the required property has a settable or an init-only setter.
         /// </summary>
         [Fact]
         public void CanBind_RequiredNestedComplexOnParameterlessConstructorType_SettableSetter()
@@ -2139,23 +2139,76 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("n", result.Name);
             Assert.Equal("hello", result.Child.Value);
         }
+
+        /// <summary>
+        /// Required members with a non-null field-initializer default are preserved when their config key is absent and
+        /// bound when present, identically to the reflection binder. The source generator constructs the instance
+        /// through an accessor that bypasses the required-member check (running the field initializers) and then sets
+        /// each required member only when its key is present, so the defaults survive. This covers both a required
+        /// settable property and a required init-only property.
+        /// </summary>
+        [Fact]
+        public void RequiredPropertiesWithNonNullDefaults_PreserveDefaults()
+        {
+            string present = """{ "Name": "n", "Items": [ "a", "b" ] }""";
+            string missing = """{ "Unrelated": "x" }""";
+
+            RequiredPropertiesWithNonNullDefaults whenPresent =
+                TestHelpers.GetConfigurationFromJsonString(present).Get<RequiredPropertiesWithNonNullDefaults>();
+            RequiredPropertiesWithNonNullDefaults whenMissing =
+                TestHelpers.GetConfigurationFromJsonString(missing).Get<RequiredPropertiesWithNonNullDefaults>();
+
+            Assert.Equal("n", whenPresent.Name);
+            Assert.Equal(new[] { "preset", "a", "b" }, whenPresent.Items);
+            Assert.Equal("defaultName", whenMissing.Name);
+            Assert.Equal(new[] { "preset" }, whenMissing.Items);
+        }
+
+        /// <summary>
+        /// A value type with both a constructor parameter and a required member cannot be created with new S(a) (CS9035)
+        /// because the required member is not set. It is constructed through an accessor that passes the constructor
+        /// argument and bypasses the required-member check; the required member is then set post-construction. Both the
+        /// constructor-bound value and the required member must bind, matching the reflection binder.
+        /// </summary>
+        [Fact]
+        public void ValueTypeWithConstructorParameterAndRequiredMember_BindsBoth()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "A": 1, "B": 2 }""");
+
+            StructWithCtorParamAndRequiredMember result = config.Get<StructWithCtorParamAndRequiredMember>();
+
+            Assert.Equal(1, result.A);
+            Assert.Equal(2, result.B);
+        }
+
+        /// <summary>
+        /// A value type with an explicit (author-written) parameterless constructor and a required member must have its
+        /// constructor run during binding, matching the reflection binder (which uses Activator.CreateInstance). The
+        /// source generator constructs it through an accessor rather than default(T) (which would skip the constructor).
+        /// </summary>
+        [Fact]
+        public void ValueTypeWithExplicitParameterlessCtorAndRequiredMember_RunsConstructor()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Req": 7 }""");
+
+            StructWithExplicitParameterlessCtorAndRequiredMember result =
+                config.Get<StructWithExplicitParameterlessCtorAndRequiredMember>();
+
+            Assert.Equal(42, result.FromCtor);
+            Assert.Equal(7, result.Req);
+        }
 #endif
 
         /// <summary>
-        /// Documents a known difference between the reflection binder and the source generator for an init-only
-        /// property that has a non-null field-initializer default.
-        ///
-        /// The reflection binder constructs the instance (running the field initializer) and then binds through the
-        /// property getter, so a configured value is layered over the existing default (appended, for a collection)
-        /// and an absent key preserves the default.
-        ///
-        /// The source generator cannot observe a property's field initializer, so it binds the property in the object
-        /// initializer at construction time: a configured value replaces the default, and an absent key leaves the
-        /// property at its (unobserved) default of null. Init-only properties without such a default bind identically
-        /// in both binders; this only affects init-only properties that carry a non-null default.
+        /// An init-only property with a non-null field-initializer default is now bound identically by the reflection
+        /// binder and the source generator: the instance is constructed (running the field initializer) and the
+        /// property is set post-construction only when its config key is present. A configured value is layered over the
+        /// existing default (appended, for a collection), and an absent key preserves the default. The source generator
+        /// achieves this by setting init-only members through an [UnsafeAccessor] setter (or reflection downlevel)
+        /// rather than an object initializer, so the default it cannot observe is never overwritten.
         /// </summary>
         [Fact]
-        public void InitOnlyPropertyWithNonNullDefault_BinderBehaviorDiffers()
+        public void InitOnlyPropertyWithNonNullDefault_PreservesDefault()
         {
             string present = """{ "Name": "n", "Items": [ "a", "b" ] }""";
             string missing = """{ "Unrelated": "x" }""";
@@ -2165,19 +2218,35 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             InitOnlyPropertiesWithNonNullDefaults whenMissing =
                 TestHelpers.GetConfigurationFromJsonString(missing).Get<InitOnlyPropertiesWithNonNullDefaults>();
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Configured value replaces the default; an absent key leaves the property null.
-            Assert.Equal("n", whenPresent.Name);
-            Assert.Equal(new[] { "a", "b" }, whenPresent.Items);
-            Assert.Null(whenMissing.Name);
-            Assert.Null(whenMissing.Items);
-#else
             // The field-initializer default is preserved: layered over when present, kept when absent.
             Assert.Equal("n", whenPresent.Name);
             Assert.Equal(new[] { "preset", "a", "b" }, whenPresent.Items);
             Assert.Equal("defaultName", whenMissing.Name);
             Assert.Equal(new[] { "preset" }, whenMissing.Items);
-#endif
+        }
+
+        /// <summary>
+        /// An init-only property inherited from a base type is set post-construction like any other init-only property.
+        /// The source generator's setter must target the base type that declares the setter (through an
+        /// <see cref="System.Runtime.CompilerServices.UnsafeAccessorAttribute"/> extern against the base type, or the
+        /// reflection fallback downlevel), so both the inherited and the derived init-only members bind, and each
+        /// preserves its default when its config key is absent - matching the reflection binder.
+        /// </summary>
+        [Fact]
+        public void CanBind_InheritedInitOnlyProperty()
+        {
+            string present = """{ "BaseName": "b", "DerivedName": "d" }""";
+            string missing = """{ "Unrelated": "x" }""";
+
+            DerivedWithInitOnlyProperty whenPresent =
+                TestHelpers.GetConfigurationFromJsonString(present).Get<DerivedWithInitOnlyProperty>();
+            DerivedWithInitOnlyProperty whenMissing =
+                TestHelpers.GetConfigurationFromJsonString(missing).Get<DerivedWithInitOnlyProperty>();
+
+            Assert.Equal("b", whenPresent.BaseName);
+            Assert.Equal("d", whenPresent.DerivedName);
+            Assert.Equal("baseDefault", whenMissing.BaseName);
+            Assert.Equal("derivedDefault", whenMissing.DerivedName);
         }
 
         public static IEnumerable<object[]> Configuration_TestData()

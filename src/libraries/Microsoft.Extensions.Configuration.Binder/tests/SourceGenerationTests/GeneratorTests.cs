@@ -496,6 +496,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 public required string Value { get; set; }
             }
             """)]
+        [InlineData("""
+            public struct Settings
+            {
+                public required string Name { get; set; }
+                public required Nested Child { get; set; }
+            }
+
+            public struct Nested
+            {
+                public required string Value { get; set; }
+            }
+            """)]
         public async Task RequiredPropertyOnParameterlessConstructorType(string settingsType)
         {
             string source = $$"""
@@ -535,7 +547,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 public required string Name { get; internal init; }
             }
             """)]
-        public async Task RequiredPropertyWithNonPublicSetter_ReportsDiagnostic(string settingsType)
+        public async Task RequiredPropertyWithNonPublicSetter_NoDiagnostic(string settingsType)
         {
             string source = $$"""
                 using Microsoft.Extensions.Configuration;
@@ -556,9 +568,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
             Assert.NotNull(result.GeneratedSource);
-            Assert.Contains(result.Diagnostics, diag => diag.Id == Diagnostics.TypeNotSupported.Id);
+            // The instance is constructed through an accessor that bypasses the required-member check, so no diagnostic
+            // is reported. The member with the non-public setter is simply left at its default, like the reflection
+            // binder (which does not bind non-public members by default).
+            Assert.Empty(result.Diagnostics);
 
-            // The generator marks the type non-constructible instead of emitting uncompilable code (CS9035).
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
