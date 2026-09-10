@@ -160,14 +160,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 // Check for array interfaces
-                if (implType.IsWellKnownType(WellKnownType.Array))
+                if (implType.IsWellKnownType(WellKnownType.Array) && declMethod.OwningType.HasInstantiation)
                 {
                     ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)declMethod.Context;
                     ArrayType arrayType = context.GetArrayType(context.GetWellKnownType(WellKnownType.Object));
-                    RuntimeInterfacesAlgorithm runtimeInterfacesAlgorithm = context.GetRuntimeInterfacesAlgorithmForType(arrayType);
 
-                    if (runtimeInterfacesAlgorithm.ImplementsGenericInterfaceDefinition(declMethod.OwningType, arrayType))
+                    foreach (DefType runtimeInterface in arrayType.RuntimeInterfaces)
                     {
+                        if (!declMethod.OwningType.HasSameTypeDefinition(runtimeInterface))
+                        {
+                            continue;
+                        }
+
                         if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                         {
                             devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
@@ -179,6 +183,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // We should have ruled this out above.
                         Debug.Assert(!resultElemType.IsCanonicalSubtype(CanonicalFormKind.Any));
                         resolvedVirtualMethod = context.GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(declMethod, resultElemType);
+                        break;
                     }
                 }
             }

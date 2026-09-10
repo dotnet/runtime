@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -23,29 +21,5 @@ namespace Internal.TypeSystem
         /// details of the base type.
         /// </summary>
         public abstract DefType[] ComputeRuntimeInterfaces(TypeDesc type);
-
-        /// <summary>
-        /// Determines whether <paramref name="type"/> implements a generic runtime interface with the same
-        /// type definition as <paramref name="interfaceType"/>, ignoring the generic arguments.
-        /// </summary>
-        public virtual bool ImplementsGenericInterfaceDefinition(TypeDesc interfaceType, TypeDesc type)
-        {
-            Debug.Assert(interfaceType.IsInterface);
-
-            if (!interfaceType.HasInstantiation)
-            {
-                return false;
-            }
-
-            foreach (DefType runtimeInterface in type.RuntimeInterfaces)
-            {
-                if (interfaceType.HasSameTypeDefinition(runtimeInterface))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }
