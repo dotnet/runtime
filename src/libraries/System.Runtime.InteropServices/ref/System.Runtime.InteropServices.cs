@@ -353,7 +353,7 @@ namespace System.Runtime.InteropServices.Marshalling
         ManagedObjectWrapper = 0x1,
         ComObjectWrapper = 0x2,
     }
-    public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
+    public sealed partial class ComObject : System.Runtime.InteropServices.ComObjectBase, System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
     {
         internal ComObject() { }
         public void FinalRelease() { }
@@ -738,6 +738,14 @@ namespace System.Runtime.InteropServices
         Method = 0,
         PropGet = 1,
         PropSet = 2,
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    public abstract partial class ComObjectBase
+    {
+        protected ComObjectBase() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=true)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

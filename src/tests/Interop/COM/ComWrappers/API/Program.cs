@@ -8,6 +8,8 @@ namespace ComWrappersTests
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.Marshalling;
@@ -539,28 +541,66 @@ namespace ComWrappersTests
             Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
+        private class ComWrappersTestObject : ComObjectBase
+        {
+        }
+
+        private sealed class FinalizableComWrappersTestObject : ComWrappersTestObject
+        {
+            ~FinalizableComWrappersTestObject() { }
+        }
+
+        private sealed class FinalizableProxy
+        {
+            ~FinalizableProxy() { }
+        }
+
+        private static object CreateProxy(bool useComObjectBase, bool hasFinalizer = false)
+        {
+            if (hasFinalizer)
+            {
+                return useComObjectBase ? new FinalizableComWrappersTestObject() : new FinalizableProxy();
+            }
+
+            return useComObjectBase ? new ComWrappersTestObject() : new object();
+        }
+
         private sealed unsafe class PlainProxyComWrappers : ComWrappers
         {
+            private readonly bool _useComObjectBase;
+            private readonly bool _hasFinalizer;
+
+            public Action? CreatingObject { get; init; }
+
+            public PlainProxyComWrappers(bool useComObjectBase = false, bool hasFinalizer = false)
+            {
+                _useComObjectBase = useComObjectBase;
+                _hasFinalizer = hasFinalizer;
+            }
+
             protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
                 count = 0;
                 return null;
             }
 
-            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags) => new();
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                CreatingObject?.Invoke();
+
+                return CreateProxy(_useComObjectBase, _hasFinalizer);
+            }
 
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
         }
 
-        // An RCW is only resolvable back to its COM instance once its wrapper is in the wrapper table, and
-        // that registration cannot be done while holding a cache lock. So an entry is published before it
-        // is registered, and an entry in that state is not handed out, or a thread could be given an RCW
-        // that does not resolve yet. Every round here is a fresh COM instance that all the threads race to
-        // create the RCW for, which is the shape that hits it: handing such an entry out fails in the low
-        // tens out of these several thousand attempts, and skipping it, never.
+        // Racing on a fresh COM instance exercises publication: an RCW must be resolvable as soon as any
+        // caller receives it, whether its association is stored in a field or in the wrapper table.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public void ValidateCreateObjectRaceResolvesImmediately()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateCreateObjectRaceResolvesImmediately(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectRaceResolvesImmediately)}...");
 
@@ -574,7 +614,7 @@ namespace ComWrappersTests
                 instances[i] = MockReferenceTrackerRuntime.CreateTrackerObject();
             }
 
-            var cw = new PlainProxyComWrappers();
+            var cw = new PlainProxyComWrappers(useComObjectBase);
             var failures = new ConcurrentQueue<Exception>();
 
             // The RCWs are kept alive for the whole run, so that no wrapper is finalized underneath a
@@ -646,8 +686,10 @@ namespace ComWrappersTests
         // all of those paths together, with collections and finalizers running underneath, to catch an
         // entry ever being read after the handle behind it was freed.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public void ValidateCreateObjectConcurrentCacheAccess()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateCreateObjectConcurrentCacheAccess(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectConcurrentCacheAccess)}...");
 
@@ -655,7 +697,9 @@ namespace ComWrappersTests
             const int IterationCount = 300;
             const int InstanceCount = 4;
 
-            var cw = new TestComWrappers();
+            ComWrappers cw = useComObjectBase
+                ? new PlainProxyComWrappers(useComObjectBase: true, hasFinalizer: true)
+                : new TestComWrappers();
 
             IntPtr[] instances = new IntPtr[InstanceCount];
             IntPtr[] identities = new IntPtr[InstanceCount];
@@ -689,13 +733,13 @@ namespace ComWrappersTests
                             // spread over the buckets rather than all queueing on one of them.
                             int slot = (i + index) % instances.Length;
 
-                            var wrapper = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(instances[slot], CreateObjectFlags.None);
+                            object wrapper = cw.GetOrCreateObjectForComInstance(instances[slot], CreateObjectFlags.None);
 
                             Assert.NotNull(wrapper);
 
                             // Asking again while this thread still holds the wrapper has to produce the same
                             // object, which is the guarantee the cache exists to provide.
-                            var again = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(instances[slot], CreateObjectFlags.None);
+                            object again = cw.GetOrCreateObjectForComInstance(instances[slot], CreateObjectFlags.None);
 
                             Assert.Same(wrapper, again);
 
@@ -750,8 +794,10 @@ namespace ComWrappersTests
         // of them can win. Whichever does, every caller has to come back with it, and the objects that
         // lost have to be left exactly as they were rather than half registered.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public void ValidateRegisterAndCreateRaceForSameComInstance()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateRegisterAndCreateRaceForSameComInstance(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateRegisterAndCreateRaceForSameComInstance)}...");
 
@@ -761,7 +807,7 @@ namespace ComWrappersTests
 
             Assert.Equal(0, Marshal.QueryInterface(instanceRaw, IUnknownVtbl.IID_IUnknown, out IntPtr identity));
 
-            var cw = new PlainProxyComWrappers();
+            var cw = new PlainProxyComWrappers(useComObjectBase);
             var failures = new ConcurrentQueue<Exception>();
 
             // Half of these are left null, for the threads that ask for an object to be created
@@ -777,7 +823,7 @@ namespace ComWrappersTests
                 int index = t;
 
                 // Every other thread brings its own object to register, the rest ask for one to be created.
-                supplied[index] = (index % 2) == 0 ? new object() : null;
+                supplied[index] = (index % 2) == 0 ? CreateProxy(useComObjectBase) : null;
 
                 threads[t] = new Thread(() =>
                 {
@@ -849,12 +895,14 @@ namespace ComWrappersTests
         // one rejects it for a COM instance that still has an entry whose RCW has been collected, which
         // is a different path through the cache because the entry is there and has to be taken over.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
-        public void ValidateRejectedRegistrationOverDeadEntry()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateRejectedRegistrationOverDeadEntry(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateRejectedRegistrationOverDeadEntry)}...");
 
-            var cw = new PlainProxyComWrappers();
+            var cw = new PlainProxyComWrappers(useComObjectBase);
 
             IntPtr firstRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
             IntPtr secondRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
@@ -902,6 +950,119 @@ namespace ComWrappersTests
             }
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateCachedTrackerWaitsForRegistration(bool useComObjectBase)
+        {
+            Console.WriteLine($"Running {nameof(ValidateCachedTrackerWaitsForRegistration)}...");
+
+            using var creatingObject = new ManualResetEventSlim();
+            using var publisherReturned = new ManualResetEventSlim();
+            using var readerReturned = new ManualResetEventSlim();
+            var wrappers = new PlainProxyComWrappers(useComObjectBase) { CreatingObject = creatingObject.Set };
+            object proxy = CreateProxy(useComObjectBase);
+            IntPtr instance = MockReferenceTrackerRuntime.CreateTrackerObject();
+            var failures = new ConcurrentQueue<Exception>();
+            object?[] results = new object?[2];
+            var publisher = new Thread(() =>
+            {
+                try
+                {
+                    results[0] = wrappers.GetOrRegisterObjectForComInstance(instance, CreateObjectFlags.TrackerObject, proxy);
+                }
+                catch (Exception e)
+                {
+                    failures.Enqueue(e);
+                }
+                finally
+                {
+                    publisherReturned.Set();
+                }
+            }) { IsBackground = true };
+            var reader = new Thread(() =>
+            {
+                try
+                {
+                    results[1] = wrappers.GetOrCreateObjectForComInstance(instance, CreateObjectFlags.TrackerObject);
+                }
+                catch (Exception e)
+                {
+                    failures.Enqueue(e);
+                }
+                finally
+                {
+                    readerReturned.Set();
+                }
+            }) { IsBackground = true };
+
+            try
+            {
+                // Hold tracker insertion, not the RCW cache lock, so the late reader observes a published
+                // entry whose tracker registration is still pending. No product test hook is needed.
+                using (GetTrackerCacheModificationLock().EnterScope())
+                {
+                    publisher.Start();
+                    Assert.True(SpinWait.SpinUntil(() => IsRegistered() || publisherReturned.IsSet, TimeSpan.FromMinutes(1)));
+                    Assert.Empty(failures);
+                    Assert.False(publisherReturned.IsSet);
+                    Assert.True(IsRegistered());
+
+                    reader.Start();
+                    Assert.Equal(0, WaitHandle.WaitAny(
+                        new[] { creatingObject.WaitHandle, readerReturned.WaitHandle }, TimeSpan.FromMinutes(1)));
+                    Assert.False(readerReturned.IsSet);
+                }
+            }
+            finally
+            {
+                if ((publisher.ThreadState & System.Threading.ThreadState.Unstarted) == 0)
+                {
+                    Assert.True(publisher.Join(TimeSpan.FromMinutes(2)), "The tracker publisher did not finish.");
+                }
+                if ((reader.ThreadState & System.Threading.ThreadState.Unstarted) == 0)
+                {
+                    Assert.True(reader.Join(TimeSpan.FromMinutes(2)), "The tracker reader did not finish.");
+                }
+                Marshal.Release(instance);
+            }
+
+            Assert.Empty(failures);
+            Assert.Same(proxy, results[0]);
+            Assert.Same(proxy, results[1]);
+
+            bool IsRegistered()
+            {
+                if (!ComWrappers.TryGetComInstance(proxy, out IntPtr unknown))
+                {
+                    return false;
+                }
+
+                Marshal.Release(unknown);
+
+                return true;
+            }
+        }
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Runtime.InteropServices.TrackerObjectManager", "System.Private.CoreLib")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, "System.Runtime.InteropServices.GCHandleSet", "System.Private.CoreLib")]
+        private static Lock GetTrackerCacheModificationLock()
+        {
+            Type? manager = typeof(ComWrappers).Assembly.GetType("System.Runtime.InteropServices.TrackerObjectManager");
+            Assert.NotNull(manager);
+            FieldInfo? cacheField = manager.GetField("s_referenceTrackerNativeObjectWrapperCache", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(cacheField);
+            object? cache = cacheField.GetValue(null);
+            Assert.NotNull(cache);
+            Type? cacheType = typeof(ComWrappers).Assembly.GetType("System.Runtime.InteropServices.GCHandleSet");
+            Assert.NotNull(cacheType);
+            PropertyInfo? modificationLock = cacheType.GetProperty("ModificationLock");
+            Assert.NotNull(modificationLock);
+
+            return Assert.IsType<Lock>(modificationLock.GetValue(cache));
+        }
+
         // Hands every caller the one wrapper, so that only one native reference is taken however many
         // threads race. Creating a wrapper per caller and abandoning the losers is not an option here:
         // ITrackerObjectWrapper's finalizer fails the run if its tracker object is still connected, and
@@ -909,10 +1070,15 @@ namespace ComWrappersTests
         private sealed class SharedTrackerComWrappers : TestComWrappers
         {
             private readonly Barrier _barrier;
+            private readonly bool _useComObjectBase;
             private readonly object _lock = new();
             private object? _proxy;
 
-            public SharedTrackerComWrappers(Barrier barrier) => _barrier = barrier;
+            public SharedTrackerComWrappers(Barrier barrier, bool useComObjectBase)
+            {
+                _barrier = barrier;
+                _useComObjectBase = useComObjectBase;
+            }
 
             /// <summary>How many callers reached <see cref="CreateObject"/>, so a test can prove they all raced.</summary>
             public int CreateObjectCount;
@@ -925,9 +1091,20 @@ namespace ComWrappersTests
 
                 lock (_lock)
                 {
-                    return _proxy ??= base.CreateObject(externalComObject, flags);
+                    if (_proxy is null)
+                    {
+                        object proxy = base.CreateObject(externalComObject, flags);
+                        _proxy = _useComObjectBase ? new TrackerObjectProxy((ITrackerObjectWrapper)proxy) : proxy;
+                    }
+
+                    return _proxy;
                 }
             }
+        }
+
+        private sealed class TrackerObjectProxy(ITrackerObjectWrapper tracker) : ComObjectBase
+        {
+            public ITrackerObjectWrapper Tracker { get; } = tracker;
         }
 
         // The concurrent test above uses CreateObjectFlags.None, so the wrapper it builds is not a
@@ -936,8 +1113,10 @@ namespace ComWrappersTests
         // wrapper up, and then checks what that registration is for: the wrapper has to be walked, or
         // the managed objects the native object is holding are not kept alive through a collection.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public void ValidateCreateObjectConcurrentTrackerRegistration()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateCreateObjectConcurrentTrackerRegistration(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectConcurrentTrackerRegistration)}...");
 
@@ -947,7 +1126,7 @@ namespace ComWrappersTests
 
             using var barrier = new Barrier(ThreadCount);
 
-            var cw = new SharedTrackerComWrappers(barrier);
+            var cw = new SharedTrackerComWrappers(barrier, useComObjectBase);
             var failures = new ConcurrentQueue<Exception>();
 
             object[] results = new object[ThreadCount];
@@ -987,14 +1166,15 @@ namespace ComWrappersTests
             // Ownership has been transferred to the wrapper.
             Marshal.Release(trackerObjRaw);
 
-            var trackerObj = (ITrackerObjectWrapper)results[0];
+            object proxy = results[0];
+            ITrackerObjectWrapper trackerObj = proxy is TrackerObjectProxy trackerProxy ? trackerProxy.Tracker : (ITrackerObjectWrapper)proxy;
 
             foreach (object result in results)
             {
-                Assert.Same(trackerObj, result);
+                Assert.Same(proxy, result);
             }
 
-            Assert.True(ComWrappers.TryGetComInstance(trackerObj, out IntPtr unknown));
+            Assert.True(ComWrappers.TryGetComInstance(proxy, out IntPtr unknown));
 
             Marshal.Release(unknown);
 
@@ -1025,7 +1205,7 @@ namespace ComWrappersTests
 
             ForceGC();
 
-            GC.KeepAlive(trackerObj);
+            GC.KeepAlive(proxy);
         }
 
         // Hands every caller the same object, and holds them all inside 'CreateObject' until they have
@@ -1034,9 +1214,13 @@ namespace ComWrappersTests
         {
             private readonly Barrier _barrier;
 
-            public SharedProxyComWrappers(Barrier barrier) => _barrier = barrier;
+            public SharedProxyComWrappers(Barrier barrier, bool useComObjectBase)
+            {
+                _barrier = barrier;
+                Proxy = CreateProxy(useComObjectBase);
+            }
 
-            public object Proxy { get; } = new();
+            public object Proxy { get; }
 
             /// <summary>How many callers reached <see cref="CreateObject"/>, so a test can prove they all raced.</summary>
             public int CreateObjectCount;
@@ -1066,8 +1250,10 @@ namespace ComWrappersTests
         // it and the rest release the wrapper they built, so this checks that losing that race leaves the
         // object usable and still mapped to the COM instance it was created for.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public void ValidateCreateObjectRaceReturningSameObject()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateCreateObjectRaceReturningSameObject(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectRaceReturningSameObject)}...");
 
@@ -1080,7 +1266,7 @@ namespace ComWrappersTests
 
             using var barrier = new Barrier(ThreadCount);
 
-            var cw = new SharedProxyComWrappers(barrier);
+            var cw = new SharedProxyComWrappers(barrier, useComObjectBase);
             var failures = new ConcurrentQueue<Exception>();
 
             object[] results = new object[ThreadCount];
@@ -1142,8 +1328,13 @@ namespace ComWrappersTests
         private sealed unsafe class DistinctProxyComWrappers : ComWrappers
         {
             private readonly Barrier _barrier;
+            private readonly bool _useComObjectBase;
 
-            public DistinctProxyComWrappers(Barrier barrier) => _barrier = barrier;
+            public DistinctProxyComWrappers(Barrier barrier, bool useComObjectBase)
+            {
+                _barrier = barrier;
+                _useComObjectBase = useComObjectBase;
+            }
 
             public ConcurrentQueue<object> Created { get; } = new();
 
@@ -1157,7 +1348,7 @@ namespace ComWrappersTests
             {
                 _barrier.SignalAndWait(TimeSpan.FromMinutes(1));
 
-                object proxy = new();
+                object proxy = CreateProxy(_useComObjectBase);
 
                 Created.Enqueue(proxy);
 
@@ -1172,8 +1363,10 @@ namespace ComWrappersTests
         // implementation is free to keep hold of everything it returned, and the ones that lost have to
         // behave exactly like objects that were never handed to ComWrappers at all.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public void ValidateCreateObjectRaceLeavesNothingBehindForLosers()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateCreateObjectRaceLeavesNothingBehindForLosers(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectRaceLeavesNothingBehindForLosers)}...");
 
@@ -1185,7 +1378,7 @@ namespace ComWrappersTests
 
             using var barrier = new Barrier(ThreadCount);
 
-            var cw = new DistinctProxyComWrappers(barrier);
+            var cw = new DistinctProxyComWrappers(barrier, useComObjectBase);
             var failures = new ConcurrentQueue<Exception>();
 
             object[] results = new object[ThreadCount];
@@ -1276,12 +1469,16 @@ namespace ComWrappersTests
         // Verify that if a GC nulls the contents of a weak GCHandle but has not yet
         // run finializers to remove that GCHandle from the cache, the state of the system is valid.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
-        public void ValidateCreateObjectWeakHandleCacheCleanUp()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateCreateObjectWeakHandleCacheCleanUp(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectWeakHandleCacheCleanUp)}...");
 
-            var cw = new TestComWrappers();
+            ComWrappers cw = useComObjectBase
+                ? new PlainProxyComWrappers(useComObjectBase: true, hasFinalizer: true)
+                : new TestComWrappers();
 
             // Get an object from a tracker runtime.
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
@@ -1305,7 +1502,7 @@ namespace ComWrappersTests
             [MethodImpl(MethodImplOptions.NoInlining)]
             static void CreateObject(ComWrappers cw, IntPtr trackerObj)
             {
-                var obj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObj, CreateObjectFlags.None);
+                object obj = cw.GetOrCreateObjectForComInstance(trackerObj, CreateObjectFlags.None);
                 Assert.NotNull(obj);
             }
         }
@@ -1314,12 +1511,16 @@ namespace ComWrappersTests
         // while the entry under that key belongs to a different wrapper than the one that is about to finalize.
         // The old wrapper must remove only the entry it published, and leave the replacement in place.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
-        public void ValidateReplacedCacheEntrySurvivesOldWrapperCleanUp()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateReplacedCacheEntrySurvivesOldWrapperCleanUp(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateReplacedCacheEntrySurvivesOldWrapperCleanUp)}...");
 
-            var cw = new TestComWrappers();
+            ComWrappers cw = useComObjectBase
+                ? new PlainProxyComWrappers(useComObjectBase: true, hasFinalizer: true)
+                : new TestComWrappers();
 
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
 
@@ -1330,14 +1531,14 @@ namespace ComWrappersTests
             GC.Collect();
 
             // This takes over the dead entry, replacing the handle stored under that key.
-            var replacement = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+            object replacement = cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
             Assert.NotNull(replacement);
 
             // Now let the abandoned wrapper finalize and release, which removes its own cache entry.
             ForceGC();
 
             // The replacement is still alive, so it has to still be cached.
-            var lookup = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+            object lookup = cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
             Assert.Same(replacement, lookup);
 
             // It also has to still resolve back to the COM instance it wraps.
@@ -1351,7 +1552,7 @@ namespace ComWrappersTests
             [MethodImpl(MethodImplOptions.NoInlining)]
             static void CreateAndAbandonWrapper(ComWrappers cw, IntPtr instance)
             {
-                var obj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(instance, CreateObjectFlags.None);
+                object obj = cw.GetOrCreateObjectForComInstance(instance, CreateObjectFlags.None);
                 Assert.NotNull(obj);
             }
         }
@@ -1413,11 +1614,11 @@ namespace ComWrappersTests
 
         class Resurrecter()
         {
-            public ManualReleaseITestObjectWrapper? UnmanagedWrapper;
+            public object? UnmanagedWrapper;
 
             ~Resurrecter()
             {
-                if (UnmanagedWrapper != null)
+                if (UnmanagedWrapper is not null)
                 {
                     GC.ReRegisterForFinalize(this);
                 }
@@ -1467,13 +1668,74 @@ namespace ComWrappersTests
             static void AssertNativeObjectWrapperAlive(ComWrappers cw, WeakGCHandle<Resurrecter> handle, IntPtr unmanagedObj)
             {
                 Assert.True(handle.TryGetTarget(out Resurrecter resurrecter));
-                ManualReleaseITestObjectWrapper? unmanagedWrapper = resurrecter.UnmanagedWrapper;
+                var unmanagedWrapper = (ManualReleaseITestObjectWrapper)resurrecter.UnmanagedWrapper;
                 Assert.NotNull(resurrecter);
                 Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapper, out IntPtr unmanagedObjOther));
                 Assert.Equal(unmanagedObj, unmanagedObjOther);
                 resurrecter.UnmanagedWrapper = null;
                 Marshal.Release(unmanagedObjOther);
                 unmanagedWrapper.FinalRelease();
+            }
+        }
+
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Theory]
+        [InlineData(false, false, CreateObjectFlags.None)]
+        [InlineData(false, true, CreateObjectFlags.None)]
+        [InlineData(true, false, CreateObjectFlags.None)]
+        [InlineData(true, true, CreateObjectFlags.None)]
+        [InlineData(false, false, CreateObjectFlags.UniqueInstance)]
+        [InlineData(false, true, CreateObjectFlags.UniqueInstance)]
+        [InlineData(true, false, CreateObjectFlags.UniqueInstance)]
+        [InlineData(true, true, CreateObjectFlags.UniqueInstance)]
+        public void ValidateProxyResurrection(bool useComObjectBase, bool hasFinalizer, CreateObjectFlags flags)
+        {
+            Console.WriteLine($"Running {nameof(ValidateProxyResurrection)}...");
+
+            var cw = new PlainProxyComWrappers(useComObjectBase, hasFinalizer);
+            IntPtr instance = MockReferenceTrackerRuntime.CreateTrackerObject();
+            Assert.Equal(0, Marshal.QueryInterface(instance, IUnknownVtbl.IID_IUnknown, out IntPtr identity));
+
+            try
+            {
+                using WeakGCHandle<Resurrecter> handle = CreateResurrectableWrapper(cw, instance, flags);
+                ForceGC();
+                AssertResurrectedWrapper(cw, handle, instance, identity, hasFinalizer, flags);
+            }
+            finally
+            {
+                Marshal.Release(identity);
+                Marshal.Release(instance);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static WeakGCHandle<Resurrecter> CreateResurrectableWrapper(ComWrappers cw, IntPtr instance, CreateObjectFlags flags)
+            {
+                var resurrecter = new Resurrecter
+                {
+                    UnmanagedWrapper = cw.GetOrCreateObjectForComInstance(instance, flags)
+                };
+
+                return new WeakGCHandle<Resurrecter>(resurrecter, trackResurrection: true);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertResurrectedWrapper(ComWrappers cw, WeakGCHandle<Resurrecter> handle, IntPtr instance, IntPtr identity, bool hasFinalizer, CreateObjectFlags flags)
+            {
+                Assert.True(handle.TryGetTarget(out Resurrecter resurrecter));
+                object proxy = resurrecter.UnmanagedWrapper;
+                Assert.NotNull(proxy);
+                Assert.True(ComWrappers.TryGetComInstance(proxy, out IntPtr unknown));
+                Assert.Equal(identity, unknown);
+                Marshal.Release(unknown);
+
+                if (!hasFinalizer && flags == CreateObjectFlags.None)
+                {
+                    Assert.Same(proxy, cw.GetOrCreateObjectForComInstance(instance, flags));
+                }
+
+                resurrecter.UnmanagedWrapper = null;
+                GC.KeepAlive(proxy);
             }
         }
 
@@ -1628,20 +1890,19 @@ namespace ComWrappersTests
             }
         }
 
-        // Every other test in this file uses an RCW type that has a finalizer, and a wrapper allocates a
-        // second GC handle for those. An RCW with no finalizer gets a single handle that tracks
-        // resurrection instead, so its cache entries go dead at a different point in a collection than
-        // the ones covered above.
+        // A non-finalizable RCW uses a resurrection-tracking handle without a second handle. Exercise
+        // replacement and cleanup at the earlier collection boundary for both registration stores.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
-        public void ValidateExternalWrapperCacheCleanUpWithoutFinalizer()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ValidateExternalWrapperCacheCleanUpWithoutFinalizer(bool useComObjectBase)
         {
             Console.WriteLine($"Running {nameof(ValidateExternalWrapperCacheCleanUpWithoutFinalizer)}...");
 
-            var cw = new TestComWrappers()
-            {
-                UseManualReleaseITestObjectWrapper = true,
-            };
+            ComWrappers cw = useComObjectBase
+                ? new PlainProxyComWrappers(useComObjectBase: true)
+                : new TestComWrappers() { UseManualReleaseITestObjectWrapper = true };
 
             var test = new Test();
 
@@ -1673,7 +1934,7 @@ namespace ComWrappersTests
 
             Assert.False(second.TryGetTarget(out _));
 
-            var third = (ManualReleaseITestObjectWrapper)cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
+            object third = cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
 
             Assert.True(ComWrappers.TryGetComInstance(third, out IntPtr unknown));
 
@@ -1683,7 +1944,10 @@ namespace ComWrappersTests
             Marshal.Release(identity);
             Marshal.Release(unknown);
 
-            third.FinalRelease();
+            if (third is ManualReleaseITestObjectWrapper manualWrapper)
+            {
+                manualWrapper.FinalRelease();
+            }
 
             GC.KeepAlive(test);
 
@@ -1703,9 +1967,12 @@ namespace ComWrappersTests
             [MethodImpl(MethodImplOptions.NoInlining)]
             static WeakReference<object> CreateAndAbandonWrapper(ComWrappers cw, IntPtr comWrapper)
             {
-                var wrapper = (ManualReleaseITestObjectWrapper)cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
+                object wrapper = cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
 
-                wrapper.FinalRelease();
+                if (wrapper is ManualReleaseITestObjectWrapper manualWrapper)
+                {
+                    manualWrapper.FinalRelease();
+                }
 
                 return new WeakReference<object>(wrapper);
             }
@@ -2263,4 +2530,3 @@ namespace ComWrappersTests
         }
     }
 }
-

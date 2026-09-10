@@ -23,6 +23,7 @@ public static class CoreCLRContracts
         registry.Register<IStackWalk>("c1", static t => new StackWalk_1(t));
         registry.Register<IRuntimeInfo>("c1", static t => new RuntimeInfo_1(t));
         registry.Register<IComWrappers>("c1", static t => new ComWrappers_1(t));
+        registry.Register<IComWrappers>("c2", static t => new ComWrappers_2(t));
         registry.Register<ISHash>("c1", static t => new SHash_1(t));
         registry.Register<INotifications>("c1", static t => new Notifications_1(t));
         registry.Register<ICodeNotifications>("c1", static t => new CodeNotifications_1(t));
