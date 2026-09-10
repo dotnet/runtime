@@ -130,6 +130,8 @@ namespace System.Reflection
                     return false;
                 }
 
+                // ActivatorUtilities.CreateInstance reaches StaticFileMiddleware (4), SessionMiddleware and
+                // RateLimitingMiddleware (5), OutputCacheMiddleware (6), and EndpointRoutingMiddleware (8).
                 thunk = referenceArguments ? argCount switch
                 {
                     0 => &Ctor_0,
@@ -155,6 +157,7 @@ namespace System.Reflection
                     }
                     else if (argCount == 1 && GetInputType(argumentTypes[0]) == typeof(int) && IsReferenceType(returnType))
                     {
+                        // SignalR BuildStream<T>(int streamBufferCapacity).
                         thunk = &Static_Object_Int;
                     }
                     else if (argCount == 2 && IsReferenceType(argumentTypes[0]) &&
@@ -162,6 +165,7 @@ namespace System.Reflection
                         returnType == typeof(bool))
                     {
                         // Thunk for the .NET TryParse pattern with reference-type results.
+                        // Typed-header TryParse(string, out T) and TryParseList(IList<string>, out IList<T>).
                         thunk = &Static_Bool_ObjByRefObj;
                     }
                 }
@@ -175,12 +179,15 @@ namespace System.Reflection
                     {
                         if (argCount == 1)
                         {
+                            // Named attribute setters (Duration, NoStore, Location, CaptureUnmatchedValues)
+                            // and Blazor RemoveRootComponent(int).
                             thunk = ClassifyInstancePrimitive(GetInputType(argumentTypes[0]));
                         }
                         else if (argCount == 4 &&
                             argumentTypes[0] == typeof(float) && argumentTypes[1] == typeof(float) &&
                             argumentTypes[2] == typeof(float) && GetInputType(argumentTypes[3]) == typeof(int))
                         {
+                            // Blazor VirtualizeJsInterop.OnSpacerBeforeVisible and OnSpacerAfterVisible.
                             thunk = &Instance_Void_FloatFloatFloatInt;
                         }
                     }
@@ -211,27 +218,35 @@ namespace System.Reflection
             if (arguments.Length == 1)
             {
                 Type type = GetInputType(arguments[0]);
+                // StreamRenderingAttribute and RequireAntiforgeryTokenAttribute.
                 if (type == typeof(bool)) return &Ctor_Bool;
+                // Length-based route constraints and BindingBehaviorAttribute's enum constructor.
                 if (type == typeof(int)) return &Ctor_Int;
+                // Min/Max route constraints and RequestSizeLimitAttribute.
                 if (type == typeof(long)) return &Ctor_Long;
             }
             else if (arguments.Length == 2)
             {
                 Type first = GetInputType(arguments[0]);
                 Type second = GetInputType(arguments[1]);
+                // LengthRouteConstraint(int, int) and RangeRouteConstraint(long, long).
                 if (first == typeof(int) && second == typeof(int)) return &Ctor_IntInt;
                 if (first == typeof(long) && second == typeof(long)) return &Ctor_LongLong;
+                // ProducesResponseTypeAttribute(Type, int).
                 if (IsReferenceType(first) && second == typeof(int)) return &Ctor_ObjInt;
             }
             else if (arguments.Length == 4 && IsReferenceType(arguments[0]) && IsReferenceType(arguments[3]))
             {
+                // ProducesResponseTypeAttribute(Type, int, string, string[]).
                 if (GetInputType(arguments[1]) == typeof(int) && IsReferenceType(arguments[2])) return &Ctor_ObjIntObjObj;
+                // MVC ArrayModelBinder<TElement> and CollectionModelBinder<TElement>.
                 if (IsReferenceType(arguments[1]) && GetInputType(arguments[2]) == typeof(bool)) return &Ctor_ObjObjBoolObj;
             }
             else if (arguments.Length == 5 &&
                 IsReferenceType(arguments[0]) && IsReferenceType(arguments[1]) && IsReferenceType(arguments[2]) &&
                 GetInputType(arguments[3]) == typeof(bool) && IsReferenceType(arguments[4]))
             {
+                // MVC DictionaryModelBinder<TKey, TValue>.
                 return &Ctor_ObjObjObjBoolObj;
             }
 
@@ -297,6 +312,7 @@ namespace System.Reflection
 
             if (count == 2 && returnType == typeof(int))
             {
+                // Blazor AddRootComponent(string, string).
                 return &Instance_Int_2Obj;
             }
 
