@@ -3391,7 +3391,6 @@ public:
     SIZE_T                             m_stringSize;
     BYTE                              *m_argData;
     MethodDesc                        *m_md;
-    PCODE                              m_targetCodeAddr;
     ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
     SIZE_T                             m_arrayRank;

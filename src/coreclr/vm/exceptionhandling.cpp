@@ -20,6 +20,9 @@
 
 extern MethodDesc* g_pThreadStartCallbackMethodDesc;
 extern MethodDesc* g_pGCRunFinalizersMethodDesc;
+#ifdef DEBUGGING_SUPPORTED
+extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
+#endif // DEBUGGING_SUPPORTED
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -4172,7 +4175,11 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 if ((pMethodDesc != NULL) &&
                     (pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc ||
                      pMethodDesc == g_pThreadStartCallbackMethodDesc ||
-                     pMethodDesc == g_pGCRunFinalizersMethodDesc))
+                     pMethodDesc == g_pGCRunFinalizersMethodDesc
+#ifdef DEBUGGING_SUPPORTED
+                     || pMethodDesc == VolatileLoad(&g_pDebuggerInvokeFunctionMethodDesc)
+#endif // DEBUGGING_SUPPORTED
+                     ))
                 {
                     // Runtime-invoked UCO entrypoint calls should behave like the
                     // internal call path and not as external-native propagation.
