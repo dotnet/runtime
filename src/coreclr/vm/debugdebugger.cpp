@@ -202,7 +202,8 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     if (!pCf->IsFrameless() &&
         pCf->GetFrame()->GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame &&
         pData->cElements > 0 &&
-        pData->pElements[pData->cElements - 1].pFunc == pFunc)
+        pData->pElements[pData->cElements - 1].pFunc == pFunc &&
+        pData->pElements[pData->cElements - 1].ip != (PCODE)NULL)
     {
         return SWA_CONTINUE;
     }

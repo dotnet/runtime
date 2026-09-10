@@ -132,8 +132,12 @@ public class Program : ProgramBase<InputData>, TestItf2<InputData>
         }
         catch (Exception ex)
         {
+            Assert.NotNull(ex.StackTrace);
+
             int frameCount = 0;
-            foreach (string line in ex.StackTrace.Split(Environment.NewLine))
+            foreach (string line in ex.StackTrace.Split(
+                new string[] { Environment.NewLine },
+                StringSplitOptions.None))
             {
                 if (line.Contains($"{nameof(Program)}.{nameof(ThrowForStackTrace)}(", StringComparison.Ordinal))
                 {
