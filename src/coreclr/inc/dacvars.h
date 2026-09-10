@@ -133,6 +133,10 @@ DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
 #ifdef FEATURE_CODE_VERSIONING
 DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionManager::s_HasNonDefaultILVersions)
 #endif // FEATURE_CODE_VERSIONING
+#ifdef TARGET_AMD64
+// Selects the encoding used by the AMD64 runtime-generated stubs (APX JMPABS vs. mov rax/jmp rax).
+DEFINE_DACVAR(bool, dac__g_isJmpAbsAvailable, ::g_isJmpAbsAvailable)
+#endif // TARGET_AMD64
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
