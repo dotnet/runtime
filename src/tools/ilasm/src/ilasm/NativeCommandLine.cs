@@ -269,14 +269,14 @@ internal static class NativeCommandLine
             return false;
         }
 
-        if (option.Arity.MaximumNumberOfValues == 0)
+        if (value is null)
         {
-            return value is null;
+            return true;
         }
 
-        return option.ValueType != typeof(bool) ||
-            value is null ||
-            bool.TryParse(value, out _);
+        return option.ValueType == typeof(bool)
+            ? bool.TryParse(value, out _)
+            : option.Arity.MaximumNumberOfValues > 0;
     }
 
     private static string NormalizeDebugMode(string value)

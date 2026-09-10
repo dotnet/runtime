@@ -350,6 +350,15 @@ public class CommandLineTests
             NativeCommandLine.Normalize([argument], allowSlashOptions: false));
     }
 
+    [Fact]
+    public void ModernShortBooleanOption_WithZeroArityAndBooleanValueIsPreserved()
+    {
+        IlasmRootCommand command = new();
+        command.Optimize.Arity = new ArgumentArity(0, 0);
+
+        Assert.Equal(["-O:false"], NativeCommandLine.Normalize(["-O:false"], command));
+    }
+
     [Theory]
     [InlineData("-g:opt", false)]
     [InlineData("-O=x.exe", false)]

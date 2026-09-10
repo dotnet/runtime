@@ -47,6 +47,47 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void UndefinedBranchTarget_WithErrorTolerantOption_PreservesMethodBodyAttributes()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .maxstack 3
+                        br UndefinedLabel
+                        ret
+                    }
+                }
+                """;
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.LabelNotFound);
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "TestMethod");
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.Equal(3, body.MaxStack);
+            Assert.False(body.LocalVariablesInitialized);
+        }
+
+        [Fact]
         public void Diagnostic_SwitchLabelNotFound_PointsToInstruction()
         {
             string source = """
@@ -552,20 +593,19 @@ namespace ILAssembler.Tests
                 calliSignature.ParameterTypes);
         }
 
-        [Fact]
-        public void MaxStackDirective_IsPreserved()
+        [Theory]
+        [InlineData("ret")]
+        [InlineData("ldc.i4.1\nlocalloc\npop\nret")]
+        public void MaxStackDirective_IsPreservedWithoutInitializingLocals(string instructions)
         {
-            string source = """
+            string source = $$"""
                 .assembly Test { }
                 .class public auto ansi Test
                 {
                     .method public static void F() cil managed
                     {
                         .maxstack 3
-                        ldc.i4.1
-                        localloc
-                        pop
-                        ret
+                        {{instructions}}
                     }
                 }
                 """;
@@ -578,7 +618,7 @@ namespace ILAssembler.Tests
 
             MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
             Assert.Equal(3, body.MaxStack);
-            Assert.True(body.LocalVariablesInitialized);
+            Assert.False(body.LocalVariablesInitialized);
         }
 
         [Fact]
