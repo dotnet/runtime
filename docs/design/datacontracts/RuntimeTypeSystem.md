@@ -561,7 +561,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
-| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read |
+| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass`; bit `0x10000` (`VMFLAG_INLINE_ARRAY`) indicates repeated inline-array field layout |
 | `EEClassLayoutInfo` | `AlignmentRequirement` | `uint8` | Largest alignment requirement of all members of the type |
 | `EEClassLayoutInfo` | `Flags` | `uint8` | Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable |
 | `EEClassLayoutInfo` | `LayoutType` | `uint8` | Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4) |

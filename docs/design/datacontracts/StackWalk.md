@@ -825,13 +825,16 @@ Version 2 uses the Version 1 stack-walking algorithm and adds support for report
 off-heap value classes from the thread's GCFrame chain. A GCFrame whose `GCFlags`
 contains `GCFrameValueClassFlag` is interpreted as a `ProtectValueClassFrame`; its
 `ValueClassInfoList` identifies the unboxed value classes whose embedded references
-must be reported using each value class's method-table GC descriptor.
+must be reported using each value class's method-table GC descriptor. Byref-like
+inline arrays repeat their element's interior-pointer layout across the full value.
 
 <!-- BEGIN GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
 ### Data descriptor changes from `c1`
 
 | Change | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- | --- |
+| Added | `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass`; bit `0x10000` (`VMFLAG_INLINE_ARRAY`) indicates repeated inline-array field layout |
+| Added | `MethodTable` | `EEClassOrCanonMT` | `pointer` | Path to both EEClass and canonical MethodTable of a MethodTable |
 | Added | `ProtectValueClassFrame` | `ValueClassInfoList` | `pointer` | Pointer to the list of off-heap value classes protected by this GCFrame |
 | Added | `ValueClassInfo` | `Data` | `pointer` | Pointer to the unboxed value-class data |
 | Added | `ValueClassInfo` | `MethodTable` | `pointer` | Method table describing the value-class layout |

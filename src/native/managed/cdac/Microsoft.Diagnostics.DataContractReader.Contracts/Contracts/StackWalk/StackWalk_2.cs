@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -81,7 +82,7 @@ internal sealed class StackWalk_2 : StackWalk_1
         }
     }
 
-    private static void ReportByRefLikeValueClassRoots(
+    private void ReportByRefLikeValueClassRoots(
         IRuntimeTypeSystem rts,
         ITypeHandle typeHandle,
         TargetPointer data,
@@ -91,6 +92,7 @@ internal sealed class StackWalk_2 : StackWalk_1
         if (depth > MaxValueClassRecursionDepth)
             return;
 
+        bool isInlineArray = IsInlineArray(typeHandle);
         foreach (TargetPointer fieldDesc in rts.GetFieldDescList(typeHandle))
         {
             if (rts.IsFieldDescStatic(fieldDesc))
@@ -98,18 +100,88 @@ internal sealed class StackWalk_2 : StackWalk_1
 
             uint offset = rts.GetFieldDescOffset(fieldDesc, fieldDef: null);
             CorElementType fieldType = rts.GetFieldDescType(fieldDesc);
-            if (fieldType == CorElementType.Byref)
+            ITypeHandle? nestedType = fieldType == CorElementType.ValueType
+                ? rts.GetFieldDescApproxTypeHandle(fieldDesc)
+                : null;
+            bool nestedIsByRefLike = nestedType is not null && rts.IsByRefLike(nestedType);
+            if (!ShouldReportByRefLikeField(fieldType, nestedIsByRefLike))
+                continue;
+
+            uint elementSize = isInlineArray
+                ? GetInlineArrayElementSize(rts, fieldType, nestedType)
+                : 0;
+            if (isInlineArray && elementSize == 0)
+                continue;
+
+            foreach (uint fieldOffset in GetByRefLikeFieldOffsets(
+                isInlineArray,
+                offset,
+                elementSize,
+                rts.GetNumInstanceFieldBytes(typeHandle)))
             {
-                scanContext.GCReportCallback(data + offset, GcScanFlags.GC_CALL_INTERIOR);
-            }
-            else if (fieldType == CorElementType.ValueType)
-            {
-                ITypeHandle? nestedType = rts.GetFieldDescApproxTypeHandle(fieldDesc);
-                if (nestedType is not null && rts.IsByRefLike(nestedType))
+                TargetPointer fieldData = data + fieldOffset;
+                if (fieldType == CorElementType.Byref)
                 {
-                    ReportByRefLikeValueClassRoots(rts, nestedType, data + offset, scanContext, depth + 1);
+                    scanContext.GCReportCallback(fieldData, GcScanFlags.GC_CALL_INTERIOR);
+                }
+                else if (nestedType is not null && rts.IsByRefLike(nestedType))
+                {
+                    ReportByRefLikeValueClassRoots(rts, nestedType, fieldData, scanContext, depth + 1);
                 }
             }
         }
+    }
+
+    internal static bool ShouldReportByRefLikeField(CorElementType fieldType, bool nestedIsByRefLike) =>
+        fieldType == CorElementType.Byref || (fieldType == CorElementType.ValueType && nestedIsByRefLike);
+
+    internal static IEnumerable<uint> GetByRefLikeFieldOffsets(
+        bool isInlineArray,
+        uint fieldOffset,
+        uint elementSize,
+        uint totalSize)
+    {
+        if (!isInlineArray)
+        {
+            yield return fieldOffset;
+            yield break;
+        }
+
+        if (elementSize == 0)
+            throw new InvalidOperationException("Inline array element size must be non-zero.");
+
+        for (uint repeatedOffset = 0; repeatedOffset < totalSize; repeatedOffset = checked(repeatedOffset + elementSize))
+        {
+            yield return checked(fieldOffset + repeatedOffset);
+        }
+    }
+
+    private uint GetInlineArrayElementSize(
+        IRuntimeTypeSystem rts,
+        CorElementType fieldType,
+        ITypeHandle? nestedType)
+    {
+        if (fieldType == CorElementType.Byref)
+            return (uint)_target.PointerSize;
+
+        if (nestedType is not null)
+            return rts.GetNumInstanceFieldBytes(nestedType);
+
+        return 0;
+    }
+
+    private bool IsInlineArray(ITypeHandle typeHandle)
+    {
+        Data.MethodTable methodTable = _target.ProcessedData.GetOrAdd<Data.MethodTable>(typeHandle.Address);
+        TargetPointer eeClassPointer = methodTable.EEClassOrCanonMT;
+        if (MethodTableFlags_1.GetEEClassOrCanonMTBits(eeClassPointer) == MethodTableFlags_1.EEClassOrCanonMTBits.CanonMT)
+        {
+            TargetPointer canonicalMethodTablePointer = MethodTableFlags_1.UntagEEClassOrCanonMT(eeClassPointer);
+            Data.MethodTable canonicalMethodTable = _target.ProcessedData.GetOrAdd<Data.MethodTable>(canonicalMethodTablePointer);
+            eeClassPointer = canonicalMethodTable.EEClassOrCanonMT;
+        }
+
+        Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPointer);
+        return eeClass.IsInlineArray;
     }
 }
