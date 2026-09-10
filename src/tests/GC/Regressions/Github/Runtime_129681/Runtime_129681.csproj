@@ -3,6 +3,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- wasm32 doesn't support region GC, and its fully committed segments exceed
+         this test's hard limit during runtime startup. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
     <!-- CrossGen2 reserves 6 GiB for regions which exceeds the 64 MiB hard limit - https://github.com/dotnet/runtime/issues/132062 -->
     <CrossGenTest>false</CrossGenTest>
 

@@ -527,6 +527,10 @@ Reject signatures consisting only of:
 - A bare `[FAIL]` line with only the test class name
 - A bare fully-qualified test name
 - A truncated test-name prefix ending in `_`, `.`, or `*`
+- An array whose only failure-identifying anchors are a per-test or
+  per-invocation announcement and a generic suite-harness error from a shared
+  multi-test Helix console log; those lines can coexist when an unrelated
+  sibling test fails, creating a catch-all KBE
 - Common infra strings like `Connection reset`, `Operation timed out`, or
   `No space left on device`
 
@@ -537,6 +541,12 @@ Prefer signatures built from, in order:
    array form)
 3. A unique native stack frame or symbol
 4. A specific JIT method-being-compiled marker plus the stress mode
+
+For a shared multi-test Helix console log, use an exact assertion, exception, or
+error line from the failing test's own output. If no such line can be isolated,
+set `ExcludeConsoleLog` to `true` and use a signature from a per-test or
+leg-level log source; otherwise do not emit the KBE and record
+`skipped: weak signature` for human review.
 
 If you cannot produce a signature meeting this bar, do not create a KBE from
 the shared flow. Return the failure as unhandled or human-review-needed instead.
@@ -554,6 +564,7 @@ the shared flow. Return the failure as unhandled or human-review-needed instead.
 | `"BadImageFormatException"` | bare exception type | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network failures everywhere | array: `["xharness exec android test", "Operation timed out after 3600s"]` with `BuildRetry: false` |
 | `"ComInterfaceGenerator.Tests.ilc.rsp exited with code 134"` | paraphrased; not in the log | copy the actual MSBuild line verbatim: `"Microsoft.NETCore.Native.targets(313,5): error MSB3073: ... exited with code 134."` |
+| array: `["Running test: profiler/gc/nongcheap/nongcheap.cmd", "Profiler tests are expected to contain the text 'PROFILER TEST PASSES'"]` | announcement plus suite-harness error from a shared console log; matches unrelated profiler tests | use the failing test's exact assertion/error line from per-test output, or set `ExcludeConsoleLog: true` and use a signature from a per-test or leg-level (non-console) log source |
 
 <a id="sanitization"></a>
 

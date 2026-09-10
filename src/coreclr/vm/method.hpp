@@ -916,7 +916,7 @@ public:
     // Additionally, if the non-BoxedEntryPointStub is RequiresInstMethodTableArg()
     // then pass on the MethodTable as an extra argument to the
     // underlying unboxed-this-MethodDesc.
-    BOOL IsUnboxingStub()
+    bool IsUnboxingStub()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1670,6 +1670,9 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+#ifndef DACCESS_COMPILE
+    PCODE GetNativeCodeVolatile();
+#endif
 
     // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
     PCODE GetCodeForInterpreterOrJitted()
@@ -2394,7 +2397,7 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
-extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex);
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex, QCallExceptionStatus* qcallError);
 #endif // DACCESS_COMPILE
 
 template<> struct cdac_data<MethodDesc>

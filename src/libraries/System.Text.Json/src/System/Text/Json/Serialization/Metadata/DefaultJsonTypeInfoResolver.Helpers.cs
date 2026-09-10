@@ -123,9 +123,12 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (inferClosedTypePolymorphism &&
                 options is null or { DerivedTypes.Count: 0 } &&
-                closedDerivedTypes is { Length: > 0 } inferredDerivedTypes)
+                closedDerivedTypes is { Length: > 0 } declaredDerivedTypes)
             {
                 options ??= new();
+
+                List<Type> inferredDerivedTypes = new(declaredDerivedTypes.Length);
+                GetClosedDerivedTypes(declaredDerivedTypes, inferredDerivedTypes);
 
                 foreach (Type derivedType in inferredDerivedTypes)
                 {
@@ -271,6 +274,28 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             return false;
+        }
+
+        private static void GetClosedDerivedTypes(Type[] declaredDerivedTypes, List<Type> derivedTypes)
+        {
+            foreach (Type derivedType in declaredDerivedTypes)
+            {
+                Type derivedTypeDefinition = derivedType.IsGenericType
+                    ? derivedType.GetGenericTypeDefinition()
+                    : derivedType;
+
+                if (IsClosedType(derivedTypeDefinition, out Type[]? nestedDerivedTypes))
+                {
+                    if (nestedDerivedTypes is not null)
+                    {
+                        GetClosedDerivedTypes(nestedDerivedTypes, derivedTypes);
+                    }
+                }
+                else
+                {
+                    derivedTypes.Add(derivedType);
+                }
+            }
         }
 
         /// <summary>

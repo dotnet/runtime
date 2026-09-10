@@ -24,7 +24,6 @@ Revision History:
 #include "pal/synchobjects.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/event.hpp"
-#include "pal/semaphore.hpp"
 #include "pal/dbgmsg.h"
 #include <new>
 
@@ -38,7 +37,6 @@ static PalObjectTypeId sg_rgWaitObjectsIds[] =
     {
         otiAutoResetEvent,
         otiManualResetEvent,
-        otiSemaphore,
         otiThread
     };
 static CAllowedObjectTypes sg_aotWaitObject(sg_rgWaitObjectsIds,
@@ -47,8 +45,7 @@ static CAllowedObjectTypes sg_aotWaitObject(sg_rgWaitObjectsIds,
 static PalObjectTypeId sg_rgSignalableObjectIds[] =
 {
     otiAutoResetEvent,
-    otiManualResetEvent,
-    otiSemaphore
+    otiManualResetEvent
 };
 static CAllowedObjectTypes sg_aotSignalableObject(sg_rgSignalableObjectIds, ARRAY_SIZE(sg_rgSignalableObjectIds));
 
