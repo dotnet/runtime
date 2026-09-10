@@ -1318,6 +1318,33 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     return funcPtr;
 }
 
+extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(
+    MethodDesc* pMethod, QCall::TypeHandle declaringType, QCall::ObjectHandleOnStack target, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    void* result = nullptr;
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    OBJECTREF receiver = nullptr;
+    GCPROTECT_BEGIN(receiver);
+    receiver = target.Get();
+    _ASSERTE(receiver != nullptr);
+    MethodTable* pReceiverMT = receiver->GetMethodTable();
+    {
+        GCX_PREEMP();
+        pMethod->EnsureActive();
+        result = reinterpret_cast<void*>(pMethod->IsVtableMethod()
+            ? pMethod->GetSingleCallableAddrOfVirtualizedCode(&receiver, pReceiverMT, declaringType.AsTypeHandle())
+            : pMethod->GetSingleCallableAddrOfCode());
+    }
+    GCPROTECT_END();
+
+    END_QCALL;
+    return result;
+}
+
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 {
     CONTRACTL

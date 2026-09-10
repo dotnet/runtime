@@ -19,6 +19,37 @@ namespace System.Reflection.Tests
 
         protected override bool SupportsMissing => false;
 
+        [Fact]
+        public void SharedThunk_CachedInvokerPromotes()
+        {
+            MethodInfo method = typeof(CachedInvokerTarget).GetMethod(nameof(CachedInvokerTarget.Echo))!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+            var target = new CachedInvokerTarget();
+            object argument = new object();
+
+            for (int i = 0; i < 150; i++)
+            {
+                Assert.Same(argument, invoker.Invoke(target, argument));
+                if (i == 0)
+                {
+                    IntrinsicInvokeSelectionAssertions.AssertShared(invoker);
+                }
+            }
+
+            Assert.Equal(150, target.CallCount);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
+        }
+
+        [Fact]
+        public void SharedThunk_ObjectMethodOnBoxedValueReceiverFallsBack()
+        {
+            MethodInfo method = typeof(object).GetMethod(nameof(object.ToString))!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+
+            Assert.Equal("50", invoker.Invoke(new IntrinsicInvokeStructReceiver(50)));
+            IntrinsicInvokeSelectionAssertions.AssertFallback(invoker);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -334,6 +365,21 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Invoke_TestData() => MethodInfoTests.Invoke_TestData();
+
+        private sealed class CachedInvokerTarget
+        {
+            internal int CallCount { get; private set; }
+
+            public object Echo(object value)
+            {
+                if (CallCount++ == 0)
+                {
+                    GC.Collect();
+                }
+
+                return value;
+            }
+        }
 
         private class TestClass
         {
