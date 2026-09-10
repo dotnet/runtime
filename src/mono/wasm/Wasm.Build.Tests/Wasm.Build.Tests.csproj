@@ -57,29 +57,27 @@
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
-    <!-- Built (not linked) so EventPipeDiagnosticsTests can invoke it to turn an interpreter PGO trace into an .mibc. -->
-    <ProjectReference Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
-                      Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
-                      ReferenceOutputAssembly="false" />
-
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- Copy dotnet-pgo (and its dependencies) next to the test so EventPipeDiagnosticsTests can run it. -->
-  <Target Name="_CopyDotnetPgoToTestOutput" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" AfterTargets="Build">
-    <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="GetTargetPath">
+  <!-- Deploy dotnet-pgo (and its managed dependencies) into a dotnet-pgo/ subfolder next to the test so
+       EventPipeDiagnosticsTests can invoke it. These are added as CopyToOutputDirectory None items (rather
+       than a post-Build copy into OutDir) so they flow into the Helix test payload, exactly like the
+       testassets/data items above; a plain copy into OutDir is not part of the browser test archive.
+       dotnet-pgo is built explicitly because ProjectReferences aren't resolved this early in the build. -->
+  <Target Name="_AddDotnetPgoToTestPayload" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" BeforeTargets="AssignTargetPaths">
+    <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="Build">
       <Output TaskParameter="TargetOutputs" ItemName="_DotnetPgoBuiltAssembly" />
     </MSBuild>
     <ItemGroup>
       <!-- Root files only; the RID-specific native subdirs (amd64/arm64/x86/shims) are Windows ETW/PDB
            helpers not needed to read a .nettrace, and copying that tree races/fails on Linux CI. -->
-      <_DotnetPgoOutputFiles Include="%(_DotnetPgoBuiltAssembly.RootDir)%(_DotnetPgoBuiltAssembly.Directory)*" />
+      <None Include="%(_DotnetPgoBuiltAssembly.RootDir)%(_DotnetPgoBuiltAssembly.Directory)*"
+            Link="dotnet-pgo\%(FileName)%(Extension)"
+            CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
-    <Copy SourceFiles="@(_DotnetPgoOutputFiles)"
-          DestinationFolder="$(OutDir)dotnet-pgo"
-          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
