@@ -1123,7 +1123,7 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 //--------------------------------------------------------------------
 // This constructor pushes a new GCFrame on the frame chain.
 //--------------------------------------------------------------------
-GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags)
+GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags, bool push)
 {
     CONTRACTL
     {
@@ -1170,7 +1170,8 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcF
     m_numObjRefs    = numObjRefs;
     m_gcFlags       = gcFlags;
 
-    Push(pThread);
+    if (push)
+        Push(pThread);
 }
 
 GCFrame::~GCFrame()

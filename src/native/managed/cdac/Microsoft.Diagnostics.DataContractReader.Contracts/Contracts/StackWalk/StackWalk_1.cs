@@ -434,7 +434,9 @@ internal partial class StackWalk_1 : IStackWalk
     private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
     {
         ulong pointerSize = (ulong)_target.PointerSize;
-        uint valueClassFlag = _target.ReadGlobal<uint>(Constants.Globals.GCFrameValueClassFlag);
+        uint valueClassFlag = _target.TryReadGlobal<uint>(Constants.Globals.GCFrameValueClassFlag, out uint? valueClassFlagValue)
+            ? valueClassFlagValue.GetValueOrDefault()
+            : 0;
         HashSet<TargetPointer> seen = [];
         TargetPointer pGCFrame = threadData.GCFrame;
         while (pGCFrame != TargetPointer.Null)

@@ -163,10 +163,6 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `GCFrame` | `Next` | `pointer` | Pointer to the next GCFrame toward the top of the chain |
 | `GCFrame` | `NumObjRefs` | `uint32` | Count of protected object reference slots starting at ObjRefs |
 | `GCFrame` | `ObjRefs` | `pointer` | Pointer to the array of protected object reference slots |
-| `ProtectValueClassFrame` | `ValueClassInfoList` | `pointer` | Pointer to the list of off-heap value classes protected by this GCFrame |
-| `ValueClassInfo` | `Data` | `pointer` | Pointer to the unboxed value-class data |
-| `ValueClassInfo` | `MethodTable` | `pointer` | Method table describing the value-class layout |
-| `ValueClassInfo` | `Next` | `pointer` | Pointer to the next protected value class |
 | `HijackArgs` | *(type size)* | `uint32` | Size in bytes of the platform-specific hijack argument save area |
 | `HijackArgs` | `CalleeSavedRegisters` | `pointer` | Address of the embedded nonvolatile-register values saved for the hijacked thread |
 | `HijackArgs` | `Rsp` | `pointer` | Stack pointer saved when the thread was hijacked on Windows x64 |
@@ -187,6 +183,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
+| `ProtectValueClassFrame` | `ValueClassInfoList` | `pointer` | Pointer to the list of off-heap value classes protected by this GCFrame |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
@@ -207,6 +204,9 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` | `FirstGCRefMapSlot` | `pointer` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
 | `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
+| `ValueClassInfo` | `Data` | `pointer` | Pointer to the unboxed value-class data |
+| `ValueClassInfo` | `MethodTable` | `pointer` | Method table describing the value-class layout |
+| `ValueClassInfo` | `Next` | `pointer` | Pointer to the next protected value class |
 | `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
 ### Global variables used

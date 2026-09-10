@@ -1688,7 +1688,7 @@ public:
         WRAPPER_NO_CONTRACT;
     }
 
-    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags);
+    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags, bool push = true);
     ~GCFrame();
 
     // Push and pop this frame from the thread's stack.
@@ -1788,15 +1788,17 @@ class ProtectValueClassFrame : public GCFrame
 public:
 #ifndef DACCESS_COMPILE
     ProtectValueClassFrame()
-        : GCFrame(GetThread(), NULL, 0, GCFRAME_FLAG_VALUECLASS), m_pVCInfo(NULL)
+        : GCFrame(GetThread(), NULL, 0, GCFRAME_FLAG_VALUECLASS, false), m_pVCInfo(NULL)
     {
         WRAPPER_NO_CONTRACT;
+        Push(GetThread());
     }
 
     ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : GCFrame(pThread, NULL, 0, GCFRAME_FLAG_VALUECLASS), m_pVCInfo(vcInfo)
+        : GCFrame(pThread, NULL, 0, GCFRAME_FLAG_VALUECLASS, false), m_pVCInfo(vcInfo)
     {
         WRAPPER_NO_CONTRACT;
+        Push(pThread);
     }
 #endif
 
