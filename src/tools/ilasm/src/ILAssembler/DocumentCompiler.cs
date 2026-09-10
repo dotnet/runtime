@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 
 namespace ILAssembler;
 public sealed class DocumentCompiler
@@ -21,28 +20,22 @@ public sealed class DocumentCompiler
         Dictionary<string, SourceText> loadedDocuments = new();
         ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
-        GrammarVisitor? visitor = null;
+        GrammarActions? actions = null;
         IReadOnlyDictionary<string, string?>? definedVariables = null;
 
         foreach (var document in documents)
         {
             loadedDocuments[document.Path!] = document;
 
-            var inputSource = new AntlrInputStream(document.Text)
-            {
-                name = document.Path
-            };
+            StringCharStream inputSource = new(document.Text, document.Path);
             CILLexer lexer = new(inputSource);
             PreprocessedTokenSource preprocessor = new(lexer, path =>
             {
-                var includedDocument = includedDocumentLoader(path);
-                var includedSource = new AntlrInputStream(includedDocument.Text)
-                {
-                    name = includedDocument.Path
-                };
+                SourceText includedDocument = includedDocumentLoader(path);
+                StringCharStream includedSource = new(includedDocument.Text, includedDocument.Path);
                 loadedDocuments[includedDocument.Path!] = includedDocument;
                 return new CILLexer(includedSource);
-            }, text => new CILLexer(new AntlrInputStream(text)), definedVariables);
+            }, text => new CILLexer(new StringCharStream(text)), definedVariables);
 
             preprocessor.OnPreprocessorSyntaxError += (source, start, length, msg) =>
             {
@@ -56,32 +49,32 @@ public sealed class DocumentCompiler
                 }
             };
 
-            CILParser parser = new(new CommonTokenStream(preprocessor));
+            actions ??= new GrammarActions(loadedDocuments, options, resourceLocator);
+            actions.BeginDocument();
+
+            CILParser parser = new(new UnbufferedTokenStream(preprocessor))
+            {
+                Actions = actions,
+                BuildParseTree = false
+            };
             parser.RemoveErrorListeners();
-            var parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
-            ParserErrorListener parserErrorListener = new(parserDiagnostics, loadedDocuments);
-            parser.AddErrorListener(parserErrorListener);
-            var result = parser.decls();
-            parserErrorListener.AddErrorNodeContexts(result);
+            ImmutableArray<Diagnostic>.Builder parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+            parser.AddErrorListener(new ParserErrorListener(parserDiagnostics, loadedDocuments, actions.RecordSyntaxError));
+            _ = parser.decls();
 
             // Add parser diagnostics to the main list
             diagnostics.AddRange(parserDiagnostics);
-
-            visitor ??= new GrammarVisitor(loadedDocuments, options, resourceLocator);
-            visitor.BeginDocument(parserErrorListener.ErrorContexts);
-
-            _ = result.Accept(visitor);
 
             // Transfer defined constants to the next document
             definedVariables = preprocessor.DefinedVariables;
         }
 
-        if (visitor is null)
+        if (actions is null)
         {
             return (diagnostics.ToImmutable(), null);
         }
 
-        var image = visitor.BuildImage();
+        var image = actions.BuildImage();
 
         bool anyErrors = diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         anyErrors |= image.Diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
@@ -98,21 +91,21 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
 {
     private readonly ImmutableArray<Diagnostic>.Builder _diagnostics;
     private readonly Dictionary<string, SourceText> _loadedDocuments;
-    public HashSet<ParserRuleContext> ErrorContexts { get; } = [];
+    private readonly Action _recordSyntaxError;
 
-    public ParserErrorListener(ImmutableArray<Diagnostic>.Builder diagnostics, Dictionary<string, SourceText> loadedDocuments)
+    public ParserErrorListener(
+        ImmutableArray<Diagnostic>.Builder diagnostics,
+        Dictionary<string, SourceText> loadedDocuments,
+        Action recordSyntaxError)
     {
         _diagnostics = diagnostics;
         _loadedDocuments = loadedDocuments;
+        _recordSyntaxError = recordSyntaxError;
     }
 
     public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
     {
-        if (recognizer is Parser { Context: { } context })
-        {
-            AddContextAndAncestors(context);
-        }
-
+        _recordSyntaxError();
         var sourceName = offendingSymbol?.TokenSource?.SourceName ?? "";
         var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex + 1);
         if (_loadedDocuments.TryGetValue(sourceName, out var sourceText))
@@ -122,29 +115,6 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
         else
         {
             _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Error, $"line {line}:{charPositionInLine} {msg}", new Location(span, new SourceText("", sourceName))));
-        }
-    }
-
-    public void AddErrorNodeContexts(IParseTree tree)
-    {
-        if (tree is IErrorNode)
-        {
-            AddContextAndAncestors(tree.Parent as ParserRuleContext);
-            return;
-        }
-
-        for (int i = 0; i < tree.ChildCount; i++)
-        {
-            AddErrorNodeContexts(tree.GetChild(i));
-        }
-    }
-
-    private void AddContextAndAncestors(ParserRuleContext? context)
-    {
-        while (context is not null)
-        {
-            ErrorContexts.Add(context);
-            context = context.Parent as ParserRuleContext;
         }
     }
 }
