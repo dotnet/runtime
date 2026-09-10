@@ -11,7 +11,10 @@ namespace System.Net.Security
 
         partial void InitializePlatformSpecificSessionState()
         {
-            _options.SslStreamProxy = new SslStream.JavaProxy(AcceptAndDeferPlatformValidation);
+            // In wedge mode the options bag is shared with SslStream, which installs its own
+            // proxy in its constructor. Only supply one when the bag does not already have it,
+            // so SslStream's callback routing stays intact and its JavaProxy is not leaked.
+            _options.SslStreamProxy ??= new SslStream.JavaProxy(AcceptAndDeferPlatformValidation);
         }
 
         partial void SeedPlatformValidationErrors(ref SslPolicyErrors sslPolicyErrors)
@@ -24,18 +27,18 @@ namespace System.Net.Security
 
         // Invoked synchronously from Android's DotnetProxyTrustManager. Always accepts so
         // the handshake progresses; the platform verdict (if respected) is recorded and
-        // surfaced later through AcceptWithDefaultValidation.
+        // surfaced later through AcceptWithDefaultValidation. The verdict is assigned rather
+        // than latched so a later validation (e.g. renegotiation with a different chain) is
+        // not tainted by an earlier rejection.
         private SslStream.JavaProxy.RemoteCertificateValidationResult AcceptAndDeferPlatformValidation(IntPtr platformValidationError)
         {
-            if (platformValidationError != IntPtr.Zero && ShouldRespectPlatformValidation())
-            {
-                _platformChainRejected = true;
+            bool rejected = platformValidationError != IntPtr.Zero && ShouldRespectPlatformValidation();
+            _platformChainRejected = rejected;
 
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    string? validationError = Interop.AndroidCrypto.GetPlatformValidationError(platformValidationError);
-                    NetEventSource.Error(this, $"The Android platform trust manager rejected the remote certificate chain: {validationError}");
-                }
+            if (rejected && NetEventSource.Log.IsEnabled())
+            {
+                string? validationError = Interop.AndroidCrypto.GetPlatformValidationError(platformValidationError);
+                NetEventSource.Error(this, $"The Android platform trust manager rejected the remote certificate chain: {validationError}");
             }
 
             return new SslStream.JavaProxy.RemoteCertificateValidationResult
