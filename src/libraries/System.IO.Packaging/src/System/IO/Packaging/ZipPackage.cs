@@ -1152,15 +1152,21 @@ namespace System.IO.Packaging
                 // If the content type stream is interleaved, validate the piece numbering.
                 else if (partPieces != null)
                 {
+                    // Sum the piece lengths without risking overflow: each ZipArchiveEntry.Length is a
+                    // non-negative long that (with Zip64) can be as large as long.MaxValue, so a malicious
+                    // archive could otherwise make an unchecked running total wrap around and defeat the
+                    // size check below. Comparing against the remaining budget instead of adding first keeps
+                    // totalLength bounded by MaxContentTypesXmlSize at all times.
                     long totalLength = 0;
                     foreach (ZipPackagePartPiece piece in partPieces)
                     {
-                        totalLength += piece.ZipArchiveEntry.Length;
-                    }
+                        long pieceLength = piece.ZipArchiveEntry.Length;
+                        if (pieceLength > MaxContentTypesXmlSize - totalLength)
+                        {
+                            throw new FileFormatException(SR.Format(SR.ContentTypeStreamTooLarge, MaxContentTypesXmlSize));
+                        }
 
-                    if (totalLength > MaxContentTypesXmlSize)
-                    {
-                        throw new FileFormatException(SR.Format(SR.ContentTypeStreamTooLarge, MaxContentTypesXmlSize));
+                        totalLength += pieceLength;
                     }
 
                     _contentTypeStreamExists = true;
