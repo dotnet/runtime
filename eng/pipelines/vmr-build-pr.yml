@@ -4,29 +4,8 @@
 
 trigger: none
 
-pr:
-  branches:
-    include:
-    - '*'
-  paths:
-    include:
-    - '*'
-    - eng/pipelines/global-build.yml
-    exclude:
-    - '**.md'
-    - .devcontainer/*
-    - .github/*
-    - docs/*
-    # Don't trigger VMR builds for changes to Mono.
-    # Mono-based stage 2 source-build is not blocking for the VMR and is only done as a basic validation
-    # for our partners. Interesting Mono-based stage 2 source-build legs are for architectures that are not
-    # supported on CoreCLR, like S390X, which we don't build ourselves.
-    - src/mono/*
-    - eng/pipelines/coreclr/*.*
-    - eng/pipelines/libraries/*.*
-    - eng/pipelines/installer/*.*
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
+# Test-only: this pipeline does not use the shared public pipeline template.
+pr: none
 
 variables:
 - template: /eng/common/templates/variables/pool-providers.yml@self
