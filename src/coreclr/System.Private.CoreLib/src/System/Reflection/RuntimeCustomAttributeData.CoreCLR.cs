@@ -10,7 +10,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using CustomAttributeDataParser = System.Reflection.CustomAttributeEncodedArgument.CustomAttributeDataParser;
 
 namespace System.Reflection
 {
@@ -486,7 +485,7 @@ namespace System.Reflection
                     }
                     else
                     {
-                        var parser = new CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
+                        var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
                         if (!parser.ValidateProlog())
                         {
                             throw new CustomAttributeFormatException();
@@ -683,7 +682,7 @@ namespace System.Reflection
 
             RuntimeType[] argumentTypes = constructor.ArgumentTypes;
             int argumentCount = argumentTypes.Length;
-            var parser = new CustomAttributeDataParser(GetAttributeBlob(blob, blobEnd));
+            var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blob, blobEnd));
             if (!parser.ValidateProlog())
             {
                 throw new CustomAttributeFormatException();
@@ -759,7 +758,7 @@ namespace System.Reflection
         {
             try
             {
-                var parser = new CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
+                var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
                 CustomAttributeEncoding memberKind = parser.GetTag();
                 if (memberKind is not CustomAttributeEncoding.Field and not CustomAttributeEncoding.Property)
                 {
@@ -815,7 +814,7 @@ namespace System.Reflection
             _ => 0
         };
 
-        private static ReadOnlySpan<byte> ReadPrimitiveData(ref CustomAttributeDataParser parser, CustomAttributeEncoding encoding)
+        private static ReadOnlySpan<byte> ReadPrimitiveData(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, CustomAttributeEncoding encoding)
         {
             int size = GetPrimitiveSize(encoding);
             if (size == 0)
@@ -826,7 +825,7 @@ namespace System.Reflection
             return parser.ReadData(size);
         }
 
-        private static object? ReadAttributeValue(ref CustomAttributeDataParser parser, RuntimeType type, RuntimeModule module)
+        private static object? ReadAttributeValue(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, RuntimeType type, RuntimeModule module)
         {
             CustomAttributeEncoding encoding = GetPrimitiveEncoding(type);
             int size = GetPrimitiveSize(encoding);
@@ -872,7 +871,7 @@ namespace System.Reflection
         }
 
         private static RuntimeType ReadAttributeType(
-            ref CustomAttributeDataParser parser, CustomAttributeEncoding encoding, RuntimeModule module, bool allowArray = true)
+            ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, CustomAttributeEncoding encoding, RuntimeModule module, bool allowArray = true)
         {
             if (GetPrimitiveSize(encoding) != 0 || encoding is CustomAttributeEncoding.String or CustomAttributeEncoding.Type or CustomAttributeEncoding.Object)
             {
@@ -898,7 +897,7 @@ namespace System.Reflection
             throw new CustomAttributeFormatException();
         }
 
-        private static RuntimeType? ReadAttributeTypeName(ref CustomAttributeDataParser parser, RuntimeModule module)
+        private static RuntimeType? ReadAttributeTypeName(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, RuntimeModule module)
         {
             ReadOnlySpan<byte> utf8Name = parser.GetStringBytes(out bool isNull);
             if (isNull)
@@ -937,7 +936,7 @@ namespace System.Reflection
             }
         }
 
-        private static Array? ReadAttributeArray(ref CustomAttributeDataParser parser, RuntimeType elementType, RuntimeModule module)
+        private static Array? ReadAttributeArray(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, RuntimeType elementType, RuntimeModule module)
         {
             int length = parser.GetI4();
             if (length == -1)
