@@ -114,11 +114,39 @@ public class ProgramBase<TT> : TestItf4<TT>
 public class Program : ProgramBase<InputData>, TestItf2<InputData>
 {
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133505", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static void TestEntryPoint()
     {
         new Program().Start();
+        ValidateExceptionStackTrace();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowForStackTrace() => throw new Exception();
+
+    private static void ValidateExceptionStackTrace()
+    {
+        try
+        {
+            ThrowForStackTrace();
+        }
+        catch (Exception ex)
+        {
+            Assert.NotNull(ex.StackTrace);
+
+            int frameCount = 0;
+            foreach (string line in ex.StackTrace.Split(
+                new string[] { Environment.NewLine },
+                StringSplitOptions.None))
+            {
+                if (line.Contains($"{nameof(Program)}.{nameof(ThrowForStackTrace)}(", StringComparison.Ordinal))
+                {
+                    frameCount++;
+                }
+            }
+
+            Assert.Equal(1, frameCount);
+        }
     }
 
     public void Start()
