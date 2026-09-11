@@ -1,6 +1,33 @@
 "use strict";
 
-async function searchKbeIssues(query, token, fetchImpl = fetch) {
+const { execFile } = require("node:child_process");
+const { promisify } = require("node:util");
+
+const execFileAsync = promisify(execFile);
+
+async function runGhApi(query, token, execFileImpl = execFileAsync) {
+    const { stdout } = await execFileImpl("gh", [
+        "api",
+        "search/issues",
+        "--method",
+        "GET",
+        "--field",
+        `q=${query.trim()} repo:dotnet/runtime is:issue`,
+        "--field",
+        "per_page=10",
+    ], {
+        env: { ...process.env, GITHUB_TOKEN: token },
+        maxBuffer: 1024 * 1024,
+    });
+
+    try {
+        return JSON.parse(stdout);
+    } catch {
+        throw new Error("gh issue search returned invalid JSON");
+    }
+}
+
+async function searchKbeIssues(query, token, runApi = runGhApi) {
     if (typeof query !== "string" || !query.trim()) {
         throw new Error("query must be a non-empty string");
     }
@@ -8,22 +35,7 @@ async function searchKbeIssues(query, token, fetchImpl = fetch) {
         throw new Error("a GitHub token must be set");
     }
 
-    const searchUrl = new URL("https://api.github.com/search/issues");
-    searchUrl.searchParams.set("q", `${query.trim()} repo:dotnet/runtime is:issue`);
-    searchUrl.searchParams.set("per_page", "10");
-
-    const response = await fetchImpl(searchUrl, {
-        headers: {
-            Accept: "application/vnd.github+json",
-            Authorization: `Bearer ${token}`,
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-    });
-    if (!response.ok) {
-        throw new Error(`GitHub issue search failed with status ${response.status}`);
-    }
-
-    const result = await response.json();
+    const result = await runApi(query.trim(), token);
     if (result.incomplete_results !== false || !Array.isArray(result.items)) {
         throw new Error("GitHub issue search returned an invalid response");
     }
@@ -46,7 +58,7 @@ async function searchKbeIssues(query, token, fetchImpl = fetch) {
     });
 }
 
-module.exports = { searchKbeIssues };
+module.exports = { runGhApi, searchKbeIssues };
 
 if (require.main === module) {
     const token =

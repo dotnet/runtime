@@ -62,20 +62,31 @@ mcp-scripts:
       if (typeof query !== "string" || !query.trim()) {
         throw new Error("query must be a non-empty string");
       }
-      const searchUrl = new URL("https://api.github.com/search/issues");
-      searchUrl.searchParams.set("q", `${query.trim()} repo:dotnet/runtime is:issue`);
-      searchUrl.searchParams.set("per_page", "10");
-      const response = await fetch(searchUrl, {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-          "X-GitHub-Api-Version": "2022-11-28"
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`GitHub issue search failed with status ${response.status}`);
+      const token = process.env.GITHUB_TOKEN;
+      if (!token) {
+        throw new Error("GITHUB_TOKEN must be set");
       }
-      const result = await response.json();
+      const { execFile } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const { stdout } = await promisify(execFile)("gh", [
+        "api",
+        "search/issues",
+        "--method",
+        "GET",
+        "--field",
+        `q=${query.trim()} repo:dotnet/runtime is:issue`,
+        "--field",
+        "per_page=10"
+      ], {
+        env: { ...process.env, GITHUB_TOKEN: token },
+        maxBuffer: 1024 * 1024
+      });
+      let result;
+      try {
+        result = JSON.parse(stdout);
+      } catch {
+        throw new Error("gh issue search returned invalid JSON");
+      }
       if (result.incomplete_results !== false || !Array.isArray(result.items)) {
         throw new Error("GitHub issue search returned an invalid response");
       }

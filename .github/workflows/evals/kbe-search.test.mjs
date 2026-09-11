@@ -6,10 +6,10 @@ import test from "node:test";
 import { registerGraders } from "./kbe-candidate-reads-grader.mjs";
 
 const require = createRequire(import.meta.url);
-const { searchKbeIssues } = require("./search-kbe-issues.cjs");
+const { runGhApi, searchKbeIssues } = require("./search-kbe-issues.cjs");
 const testToken = "test-token";
 
-async function productionSearch() {
+async function productionScript() {
     const workflow = await readFile(new URL("../ci-failure-scan.md", import.meta.url), "utf8");
     const scriptMatch = workflow.match(
         /^  search-kbe-issues:\r?\n[\s\S]*?^    script: \|\r?\n(?<script>(?:^      .*(?:\r?\n|$))+?)^    env:/m
@@ -20,15 +20,7 @@ async function productionSearch() {
         .map((line) => line.slice(6))
         .join("\n");
 
-    return new Function("query", "fetch", "process", `return (async () => {\n${script}\n})();`);
-}
-
-function response(body, { ok = true, status = 200 } = {}) {
-    return {
-        ok,
-        status,
-        json: async () => body,
-    };
+    return script;
 }
 
 function validResult() {
@@ -42,39 +34,47 @@ function validResult() {
     };
 }
 
-test("production and eval search wrappers return the same inert candidates", async () => {
-    const production = await productionSearch();
-    const fetchImpl = async (url) => {
-        assert.equal(url.searchParams.get("q"), "sample query repo:dotnet/runtime is:issue");
-        assert.equal(url.searchParams.get("per_page"), "10");
-        return response(validResult());
-    };
-    const processStub = { env: { GITHUB_TOKEN: testToken } };
-
-    assert.deepEqual(
-        await production(" sample query ", fetchImpl, processStub),
-        await searchKbeIssues(" sample query ", testToken, fetchImpl)
-    );
+test("production wrapper uses authenticated gh api transport", async () => {
+    const script = await productionScript();
+    assert.match(script, /execFile\)\("gh"/);
+    assert.match(script, /"api",\s*"search\/issues"/);
+    assert.match(script, /GITHUB_TOKEN/);
 });
 
-test("production and eval search wrappers reject incomplete results", async () => {
-    const production = await productionSearch();
-    const fetchImpl = async () => response({ ...validResult(), incomplete_results: true });
-    const processStub = { env: { GITHUB_TOKEN: testToken } };
-
-    await assert.rejects(production("query", fetchImpl, processStub), /invalid response/);
-    await assert.rejects(searchKbeIssues("query", testToken, fetchImpl), /invalid response/);
+test("eval search wrapper rejects incomplete results", async () => {
+    const runApi = async () => ({ ...validResult(), incomplete_results: true });
+    await assert.rejects(searchKbeIssues("query", testToken, runApi), /invalid response/);
 });
 
-test("production and eval search wrappers reject malformed candidates", async () => {
-    const production = await productionSearch();
+test("eval search wrapper rejects malformed candidates", async () => {
     const malformed = validResult();
     malformed.items[0].user = {};
-    const fetchImpl = async () => response(malformed);
-    const processStub = { env: { GITHUB_TOKEN: testToken } };
+    const runApi = async () => malformed;
+    await assert.rejects(searchKbeIssues("query", testToken, runApi), /invalid candidate/);
+});
 
-    await assert.rejects(production("query", fetchImpl, processStub), /invalid candidate/);
-    await assert.rejects(searchKbeIssues("query", testToken, fetchImpl), /invalid candidate/);
+test("eval wrapper passes the bounded repository-scoped query to gh", async () => {
+    let command;
+    let args;
+    let options;
+    const execFileImpl = async (...received) => {
+        [command, args, options] = received;
+        return { stdout: JSON.stringify(validResult()) };
+    };
+
+    await runGhApi(" sample query ", testToken, execFileImpl);
+    assert.equal(command, "gh");
+    assert.deepEqual(args, [
+        "api",
+        "search/issues",
+        "--method",
+        "GET",
+        "--field",
+        "q=sample query repo:dotnet/runtime is:issue",
+        "--field",
+        "per_page=10",
+    ]);
+    assert.equal(options.env.GITHUB_TOKEN, testToken);
 });
 
 function trajectory(events) {
