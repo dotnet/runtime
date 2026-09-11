@@ -1,0 +1,18 @@
+<Project>
+  <!--
+    Shipped inside the crossgen2 tool pack as Sdk/Sdk.props, so that a workload can acquire the pack
+    and locate the tool with an MSBuild Sdk import.
+
+    The SDK's own ReadyToRun path does not need this: it downloads the pack itself and computes the
+    tool path in ResolveReadyToRunCompilers. Workloads that want crossgen2 for something other than
+    compiling ReadyToRun images have no such mechanism, because the pack is only ever resolved when
+    PublishReadyToRun is set.
+
+    The pack is host-specific and is selected by the workload resolver from the host RID, so the
+    executable suffix follows the machine that restored it.
+  -->
+  <PropertyGroup>
+    <_Crossgen2PackExeSuffix Condition="$([MSBuild]::IsOSPlatform('Windows'))">.exe</_Crossgen2PackExeSuffix>
+    <Crossgen2ToolPath Condition="'$(Crossgen2ToolPath)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'tools', 'crossgen2$(_Crossgen2PackExeSuffix)'))</Crossgen2ToolPath>
+  </PropertyGroup>
+</Project>

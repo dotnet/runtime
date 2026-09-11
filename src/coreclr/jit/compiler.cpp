@@ -4340,9 +4340,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
-    // Relaxed IR checks are currently only enabled through indirect call transformation.
-    activePhaseChecks &= ~(PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED);
-
     // Cleanup un-imported BBs, cleanup un-imported or
     // partially imported try regions, add OSR step blocks.
     //
@@ -4508,6 +4505,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = true);
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
 #ifdef DEBUG
@@ -4518,8 +4516,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = false);
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    // Global morph restores the strict IR flag invariants.
+    activePhaseChecks &= ~PhaseChecks::CHECK_IR_RELAXED;
 
     auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args

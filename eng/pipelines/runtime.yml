@@ -65,6 +65,10 @@ extends:
           - template: /eng/pipelines/common/evaluate-default-paths.yml
 
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - group: DotNet-HelixApi-Access
       jobs:
       - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
         - template: /eng/common/core-templates/job/helix-job-monitor.yml
@@ -130,7 +134,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false /p:BuildCrossgen2HostPackForWorkloadTesting=true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
