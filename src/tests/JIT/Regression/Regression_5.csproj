@@ -5,9 +5,6 @@
     <!-- Regression_1, Regression_6, Regression_7 -->
     <MergedWrapperProjectReference Remove="CLR-x86-*/**/*.??proj" />
 
-    <!-- Regression_2 and Regression_3 -->
-    <MergedWrapperProjectReference Remove="JitBlue/**/*.??proj" />
-
     <!-- Regression_4 -->
     <MergedWrapperProjectReference Remove="VS-ia64-JIT/**/*.??proj" />
   </ItemGroup>

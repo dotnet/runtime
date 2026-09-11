@@ -390,6 +390,8 @@
              Link="Common\System\Security\Cryptography\CompositeMLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
@@ -1920,8 +1922,10 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemCng.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
              Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.cs"
@@ -1964,6 +1968,8 @@
             Link="Common\System\Security\Cryptography\MLKemImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.CompositeMLKem.cs"
+             Link="Common\System\Security\Cryptography\PqcBlobHelpers.CompositeMLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.cs"
              Link="Common\System\Security\Cryptography\RSACng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.EncryptDecrypt.cs"
