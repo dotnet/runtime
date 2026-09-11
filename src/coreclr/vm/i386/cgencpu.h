@@ -50,7 +50,6 @@ class ComCallMethodDesc;
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 
 //**********************************************************************
 // Parameter size

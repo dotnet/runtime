@@ -336,9 +336,9 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
     call in interesting ways, manipulate/parse the "secret" arguments, or do
     other not quite compilable to standardized C concepts.
 
-    1.  `CallDescrWorkerInternal` – Needed to support VM to managed function
-        calls. Necessary for all applications as this is how the main method is
-        called.
+    1.  VM-to-managed calls use `[UnmanagedCallersOnly]` entrypoints through the
+        platform's unmanaged ABI. Ports must support the reverse P/Invoke
+        transitions used by these entrypoints, including program startup.
 
     2.  `PInvokeImportThunk` – Needed to support saving off a set of arguments to
         a p/invoke so that the runtime can find the actual target. Also uses one
