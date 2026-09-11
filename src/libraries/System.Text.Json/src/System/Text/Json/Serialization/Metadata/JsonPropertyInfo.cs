@@ -567,8 +567,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
 
-            if (NumberHandingIsApplicable() ||
-                EffectiveConverter.ConverterStrategy is ConverterStrategy.Union)
+            if (NumberHandingIsApplicable())
             {
                 // This logic is to honor JsonNumberHandlingAttribute placed on
                 // custom collections e.g. public class MyNumberList : List<int>.
