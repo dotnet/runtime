@@ -87,6 +87,7 @@ jobs:
         - browser_wasm
       nameSuffix: _R2R
       readyToRun: true
+      timeoutInMinutes: 480
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
