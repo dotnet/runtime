@@ -200,22 +200,13 @@ namespace System.Formats.Tar
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.
-        internal static TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format, TarEntryType entryType)
-        {
-            if (format is TarEntryFormat.V7)
+        internal static TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format, TarEntryType entryType) =>
+            (format, entryType) switch
             {
-                if (entryType is TarEntryType.RegularFile)
-                {
-                    return TarEntryType.V7RegularFile;
-                }
-            }
-            else if (entryType is TarEntryType.V7RegularFile)
-            {
-                return TarEntryType.RegularFile;
-            }
-
-            return entryType;
-        }
+                (TarEntryFormat.V7, TarEntryType.RegularFile) => TarEntryType.V7RegularFile,
+                (not TarEntryFormat.V7, TarEntryType.V7RegularFile) => TarEntryType.RegularFile,
+                _ => entryType,
+            };
 
         /// <summary>Parses a numeric field.</summary>
         internal static T ParseNumeric<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>, IBinaryInteger<T>

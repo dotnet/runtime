@@ -713,6 +713,43 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void UnionWithCustomConverter_CompilesWithoutWarning()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(IntOrLongUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [JsonConverter(typeof(IntOrLongUnionConverter))]
+                    [Union]
+                    public readonly struct IntOrLongUnion : IUnion
+                    {
+                        public IntOrLongUnion(int value) { Value = value; }
+                        public IntOrLongUnion(long value) { Value = value; }
+                        public object? Value { get; }
+                    }
+
+                    public sealed class IntOrLongUnionConverter : JsonConverter<IntOrLongUnion>
+                    {
+                        public override IntOrLongUnion Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => default;
+                        public override void Write(Utf8JsonWriter writer, IntOrLongUnion value, JsonSerializerOptions options) { }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1227");
+        }
+
+        [Fact]
         public void UnionWithListAndDictionaryCases_CompilesWithoutWarning()
         {
             string source = """

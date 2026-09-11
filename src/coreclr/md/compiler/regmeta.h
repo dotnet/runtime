@@ -16,7 +16,6 @@
 
 #include <metamodelrw.h>
 #include "../inc/mdlog.h"
-#include "utsem.h"
 #include "rwutil.h"
 #include "sigparser.h"
 
@@ -1302,14 +1301,14 @@ public:
 
     STDMETHODIMP_(IUnknown *) GetCachedInternalInterface(BOOL fWithLock);   // S_OK or error
     STDMETHODIMP SetCachedInternalInterface(IUnknown *pUnk);    // S_OK or error
-    STDMETHODIMP SetReaderWriterLock(UTSemReadWrite * pSem)
+    STDMETHODIMP SetReaderWriterLock(minipal_rwlock * pLock)
     {
-        _ASSERTE(m_pSemReadWrite == NULL);
-        m_pSemReadWrite = pSem;
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        _ASSERTE(m_pReadWriteLock == NULL);
+        m_pReadWriteLock = pLock;
+        INDEBUG(if (pLock != NULL) { m_pStgdb->m_MiniMd.Debug_EnableLockCheck(); })
         return NOERROR;
     }
-    STDMETHODIMP_(UTSemReadWrite *) GetReaderWriterLock() { return m_pSemReadWrite; }
+    STDMETHODIMP_(minipal_rwlock *) GetReaderWriterLock() { return m_pReadWriteLock; }
 
 #ifndef FEATURE_METADATA_EMIT
     // This method is also part of IMetaDataEmit interface, do not declare it twice
@@ -1996,8 +1995,8 @@ protected:
     IMDInternalImport   *m_pInternalImport;
 #endif //FEATURE_METADATA_INTERNAL_APIS
 
-    UTSemReadWrite      *m_pSemReadWrite;
-    unsigned    m_fOwnSem : 1;
+    minipal_rwlock      *m_pReadWriteLock;
+    unsigned    m_fOwnLock : 1;
     unsigned    m_bRemap : 1;               // If true, there is a token mapper.
     unsigned    m_bSaveOptimized : 1;       // If true, save optimization has been done.
     unsigned    m_hasOptimizedRefToDef : 1; // true if we have performed ref to def optimization
