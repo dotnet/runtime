@@ -122,7 +122,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         // to control cDAC behavior.
         if (_legacy is not null)
         {
-            _legacy.DacSetTargetConsistencyChecks(fEnableAsserts);
+            int hrLocal = _legacy.DacSetTargetConsistencyChecks(fEnableAsserts);
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
         }
 
         return HResults.S_OK;
