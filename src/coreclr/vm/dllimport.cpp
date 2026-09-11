@@ -5204,12 +5204,14 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
     AccessCheckContext accessContext(pTargetMD, pTargetMT);
 
+    TargetMethodForAccessCheck stubMethodForAccessCheck(pStubMD);
+
     if (!ClassLoader::CanAccess(
             &accessContext,
-            pStubClassMT,
+            TargetTypeForAccessCheck(pStubClassMT),
             stubClassType.GetAssembly(),
             pStubMD->GetAttrs(),
-            pStubMD))
+            &stubMethodForAccessCheck))
     {
         StackSString interopMethodName(SString::Utf8, pTargetMD->GetName());
 

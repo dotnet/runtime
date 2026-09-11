@@ -1246,6 +1246,9 @@ public:
     TargetTypeForAccessCheck(TypeHandle typeHandle, TargetInstantiationForAccessCheck* instantiationForAccessCheck)
         : _typeHandle(typeHandle), InstantiationForAccessCheck(instantiationForAccessCheck)
     {
+        // NOTE: unlike the (TypeHandle, const TargetInstantiationForAccessCheck&) overload below, this
+        // constructor stores the caller-supplied pointer directly rather than copying it locally. The
+        // caller is responsible for ensuring that *instantiationForAccessCheck outlives this object.
         ConvertSigToTypeHandleForSpecialCases();
     }
 
@@ -1332,6 +1335,23 @@ public:
         else
         {
             return _typeHandle.IsGenericVariable();
+        }
+    }
+    // True if the underlying type is backed by a MethodTable (i.e. is not a TypeVarTypeDesc/MVar
+    // or a FnPtrTypeDesc). Mirrors TypeHandle::GetMethodTableOfRootTypeParam() != NULL; access checks
+    // are only meaningful for MethodTable-backed types.
+    bool HasMethodTable() const
+    {
+        if (InstantiationForAccessCheck != nullptr)
+        {
+            // ConvertSigToTypeHandleForSpecialCases immediately resolves VAR/MVAR/FNPTR/INTERNAL element
+            // types into a concrete TypeHandle and clears InstantiationForAccessCheck, so any element type
+            // still deferred here (CLASS/VALUETYPE/GENERICINST) always names a MethodTable-backed type.
+            return true;
+        }
+        else
+        {
+            return !_typeHandle.IsNull() && _typeHandle.GetMethodTableOfRootTypeParam() != NULL;
         }
     }
 };

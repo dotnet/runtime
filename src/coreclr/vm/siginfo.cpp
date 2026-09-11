@@ -1082,6 +1082,8 @@ static uint32_t NormalizeFnPtrCallingConvention(uint32_t callConv)
     return callConv;
 }
 
+#ifndef DACCESS_COMPILE
+
 bool TargetTypeForAccessCheck::IsNull() const
 {
     return _typeHandle.IsNull();
@@ -1163,7 +1165,7 @@ bool TargetTypeForAccessCheck::HasSameTypeDefAs(const MethodTable::InterfaceMapI
 }
 Module* TargetTypeForAccessCheck::GetModule() const
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
     if (HasTypeParam() && InstantiationForAccessCheck != nullptr)
     {
         // If this is an array, we may have an TypeHandle like SomeType[] for the TypeHandle, but the logical type is actually.. !0[], and we should be using the Module of the type parameter AKA the signature module.
@@ -1234,7 +1236,7 @@ TargetTypeForAccessCheck TargetTypeForAccessCheck::GetTypeParam() const
 
 MethodDesc* TargetMethodForAccessCheck::GetMethodDescForThrow() const
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     if (InstantiationForAccessCheck != nullptr)
     {
@@ -1246,6 +1248,7 @@ MethodDesc* TargetMethodForAccessCheck::GetMethodDescForThrow() const
 
         BYTE etype;
         IfFailThrow(sp.GetByte(&etype));
+        THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, InstantiationForAccessCheck->GetModule());
         IfFailThrow(sp.GetData(&nGenericMethodArgs));
 
         DWORD cbAllocSize = 0;
@@ -1279,12 +1282,15 @@ bool TargetMethodForAccessCheck::CanAccessMethodInstantiation( // True if access
     AccessCheckContext* pContext,
     const AccessCheckOptions & accessCheckOptions) const
 {
+    STANDARD_VM_CONTRACT;
+
     if (InstantiationForAccessCheck != nullptr)
     {
         SigPointer sig = InstantiationForAccessCheck->GetSig();
 
         BYTE etype;
         IfFailThrow(sig.GetByte(&etype));
+        THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, InstantiationForAccessCheck->GetModule());
         return ClassLoader::CanAccessInstantiationBySignature(pContext, sig, InstantiationForAccessCheck->GetModule(), accessCheckOptions);
     }
     else
@@ -1325,9 +1331,6 @@ bool SigPointer::AccessCheckType(
     }
     else
     {
-        ClassLoader::NotFoundAction  notFoundAction;
-        CorInternalStates            tdTypes;
-
         switch((DWORD)typ) {
 
         case ELEMENT_TYPE_GENERICINST:
@@ -1373,7 +1376,7 @@ bool SigPointer::AccessCheckType(
             if (IsNilToken(typeToken))
                 THROW_BAD_FORMAT(BFA_UNEXPECTED_TOKEN_AFTER_CLASSVALTYPE, pModule);
 
-            thToCheck = ClassLoader::LoadTypeDefThrowing(pModule, typeToken, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
+            thToCheck = ClassLoader::LoadTypeDefOrRefThrowing(pModule, typeToken, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
             break;
         }
 
@@ -1414,6 +1417,8 @@ bool SigPointer::AccessCheckType(
             thToCheck.GetAssembly(),
             accessCheckOptions);
 }
+
+#endif // #ifndef DACCESS_COMPILE
 
 // Method: TypeHandle SigPointer::GetTypeHandleThrowing()
 // pZapSigContext is only set when decoding zapsigs
