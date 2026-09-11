@@ -301,7 +301,7 @@ namespace ILCompiler.DependencyAnalysis
         NodeCache<MetadataType, ObjectGetTypeCalledNode> _objectGetTypeCalledNodes = new NodeCache<MetadataType, ObjectGetTypeCalledNode>(key
             => new ObjectGetTypeCalledNode(key));
 
-        public object ReflectedType(TypeDesc type)
+        public DependencyNode ReflectedType(TypeDesc type)
         {
             // TODO: this should be a separate node with more logic
 
@@ -316,7 +316,7 @@ namespace ILCompiler.DependencyAnalysis
             return TypeDefinition(definition.Module, definition.Handle);
         }
 
-        public object ReflectedMethod(MethodDesc method)
+        public DependencyNode ReflectedMethod(MethodDesc method)
         {
             // TODO: this should be a separate node with more logic
             var definition = (EcmaMethod)method.GetTypicalMethodDefinition();
@@ -327,7 +327,7 @@ namespace ILCompiler.DependencyAnalysis
             return MethodDefinition(definition.Module, definition.Handle);
         }
 
-        public object ReflectedField(FieldDesc field)
+        public DependencyNode ReflectedField(FieldDesc field)
         {
             // TODO: this should be a separate node with more logic
             var definition = (EcmaField)field.GetTypicalFieldDefinition();

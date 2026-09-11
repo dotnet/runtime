@@ -142,6 +142,26 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void ExpandLargePrk()
+        {
+            const int MaxPrkLength = 2048;
+            byte[] prk = new byte[MaxPrkLength + 1];
+
+            if (PlatformDetection.IsWindows10Version1803OrGreater)
+            {
+                CryptographicException exception = Assert.Throws<CryptographicException>(() =>
+                    Expand(HashAlgorithmName.SHA256, prk, 32, Array.Empty<byte>()));
+
+                Assert.Contains(MaxPrkLength.ToString(), exception.Message);
+            }
+            else
+            {
+                byte[] okm = Expand(HashAlgorithmName.SHA256, prk, 32, Array.Empty<byte>());
+                Assert.Equal("1F3BBC11EFB1D1DE50442A9BF8317A7A1B119883B3D507229AD169F8770BDD0E", okm.ByteArrayToHex());
+            }
+        }
+
+        [Fact]
         public void ExpandOkmMaxSize()
         {
             byte[] prk = new byte[20];
@@ -206,6 +226,42 @@ namespace System.Security.Cryptography.Tests
             info[0] ^= 1;
             byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, info);
             Assert.NotEqual(test.Okm, okm);
+        }
+
+        [Fact]
+        public void DeriveKeyLargeIkm()
+        {
+            const int MaxIkmLength = 2048;
+            byte[] ikm = new byte[MaxIkmLength + 1];
+
+            if (PlatformDetection.IsWindows10Version1803OrGreater)
+            {
+                CryptographicException exception = Assert.Throws<CryptographicException>(() =>
+                    DeriveKey(HashAlgorithmName.SHA256, ikm, 32, Array.Empty<byte>(), Array.Empty<byte>()));
+
+                Assert.Contains(MaxIkmLength.ToString(), exception.Message);
+            }
+            else
+            {
+                byte[] okm = DeriveKey(HashAlgorithmName.SHA256, ikm, 32, Array.Empty<byte>(), Array.Empty<byte>());
+                Assert.Equal("75D3F9AA6309BD35BE5BAE4395415970C5682CB05B01E1AB05050F9812124764", okm.ByteArrayToHex());
+            }
+        }
+
+        [Fact]
+        public void DeriveKeyLargeSalt()
+        {
+            byte[] salt = new byte[1024];
+            byte[] okm = DeriveKey(HashAlgorithmName.SHA256, "ikm"u8.ToArray(), 32, salt, Array.Empty<byte>());
+            Assert.Equal("EDA18C97F87B21690CF1211C7C440AED6F0526412C6C2F8BA8F718D3CAC72471", okm.ByteArrayToHex());
+        }
+
+        [Fact]
+        public void DeriveKeyLargeInfo()
+        {
+            byte[] info = new byte[1024];
+            byte[] okm = DeriveKey(HashAlgorithmName.SHA256, "ikm"u8.ToArray(), 32, "salt"u8.ToArray(), info);
+            Assert.Equal("9B1C96B2000BA1F84A40605AC70C46C8FE339796BC7F82EDCA9A71CEF69A396B", okm.ByteArrayToHex());
         }
 
         [Theory]

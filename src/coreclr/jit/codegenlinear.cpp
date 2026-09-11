@@ -91,6 +91,8 @@ void CodeGen::genInitialize()
     }
 
     initializeVariableLiveKeeper();
+    emittedCallReturnInfo =
+        new (m_compiler, CMK_DebugInfo) jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
 
     genPendingCallLabel = nullptr;
 
@@ -196,7 +198,7 @@ void CodeGen::genCodeForBBlist()
     if (m_compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", m_compiler->compCycleEstimate,
+        printf("compCycleEstimate = %6zu, compSizeEstimate = %5zu ", m_compiler->compCycleEstimate,
                m_compiler->compSizeEstimate);
         printf("%s\n", m_compiler->info.compFullName);
     }
@@ -244,8 +246,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     JITDUMP("\n=============== Generating ");
     JITDUMPEXEC(block->dspBlockHeader(true, true));
     JITDUMPEXEC(m_compiler->fgDispBBLiveness(block));
-
-    assert(LIR::AsRange(block).CheckLIR(m_compiler));
 
     // Figure out which registers hold variables on entry to this block
 
@@ -458,19 +458,16 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
-#ifdef TARGET_WASM
-    // genHomeRegisterParams can generate arbitrary amounts of code on Wasm, so
-    // we have moved it out of the prolog to the first basic block in order to
-    // work around the restriction that the prolog can only be one insGroup.
-    if (block->IsFirst())
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame && block->IsFirst())
     {
-        genHomeRegisterParamsOutsideProlog();
+        genZeroInitializeUnknownSizeFrame();
     }
 #endif
 
 #ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
     // Emit poisoning into the init BB that comes right after prolog.
-    // We cannot emit this code in the prolog as it might make the prolog too large.
+    // We cannot emit this code in the prolog as it might use a helper call that kills argument regs.
     if (m_compiler->compShouldPoisonFrame() && block->IsFirst())
     {
         genPoisonFrame(newLiveRegSet);
@@ -807,6 +804,21 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 
         case BBJ_THROW:
         {
+#if defined(TARGET_WASM)
+            // Wasm validator needs an `unreachable` after the throw so the
+            // fall-through stack is polymorphic.
+            //
+            GetEmitter()->emitIns(INS_unreachable);
+
+            // At function/funclet end, close open intervals and emit `end`
+            // (we've already emitted the terminating `unreachable` above).
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
+            }
+#else  // !TARGET_WASM
+
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
             // We insert an unexecuted breakpoint instruction in several situations
@@ -838,15 +850,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                     }
                 }
             }
-
-#if defined(TARGET_WASM)
-            // For wasm the last instruction in a function or funclet must be end.
-            //
-            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
-            {
-                GetEmitter()->emitIns(INS_end);
-            }
-#endif // defined(TARGET_WASM)
+#endif // !TARGET_WASM
 
             break;
         }
@@ -905,6 +909,18 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 #if FEATURE_LOOP_ALIGN
             SetLoopAlignBackEdge(block, block->GetTarget());
 #endif // FEATURE_LOOP_ALIGN
+
+#if defined(TARGET_WASM)
+            // If this BBJ_ALWAYS is the last block of the function or funclet
+            // (e.g., backedge of an infinite loop), close any still-open
+            // wasm intervals and emit the function-body terminator.
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd();
+            }
+#endif // defined(TARGET_WASM)
+
             break;
 
         case BBJ_COND:
@@ -970,6 +986,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
 }
 
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
 //   Record information about an async resume point in the async resume info tabl.e
@@ -988,6 +1006,8 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
 
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
+
+#if HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1098,23 +1118,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
 }
 
-//------------------------------------------------------------------------
-// genUpdateVarReg: Update the current register location for a multi-reg lclVar
-//
-// Arguments:
-//    varDsc   - the LclVarDsc for the lclVar
-//    tree     - the lclVar node
-//    regIndex - the index of the register in the node
-//
-// inline
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    // This should only be called for multireg lclVars.
-    assert(m_compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
-    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
-}
-#endif // !TARGET_WASM
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 // genUpdateVarReg: Update the current register location for a lclVar
@@ -1738,6 +1742,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+#endif
         else if (tree->OperIsFieldList())
         {
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
@@ -1746,7 +1751,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
                 genConsumeRegs(fieldNode);
             }
         }
-#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -1817,7 +1821,6 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
-#ifndef TARGET_WASM
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
@@ -1838,6 +1841,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -2544,7 +2548,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 
     if (castIsLoad)
     {
-        const var_types srcLoadType = src->TypeGet();
+        // A spill temp holds the full actual-type value, already extended per the source's own
+        // signedness, so we allow a bit more leeway with it, in that the cast's own sign can be
+        // allowed to not match the source's, by being executed "as-if" it was from TYP_INT.
+        // This flexibility is used by some HWI lowering which tweaks casts.
+        const var_types srcLoadType = src->isUsedFromSpillTemp() ? srcType : src->TypeGet();
 
         switch (m_extendKind)
         {
@@ -2703,6 +2711,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * Possible values for JitEmitUnitTestsSections:
  * Amd64: all, sse2
  * Arm64: all, general, advsimd, sve
+ * Wasm:  all, simd
  */
 
 #if defined(DEBUG)
@@ -2727,7 +2736,14 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
+#ifndef TARGET_WASM
     inst_JMP(EJ_jmp, skipLabel);
+#else
+    // On Wasm, we skip over the generated emitter test code by nesting it in a block where the
+    // first instruction branches to the end of the block.
+    GetEmitter()->emitIns_BlockTy(INS_block);
+    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, nullptr);
+#endif
 
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
@@ -2751,6 +2767,14 @@ void CodeGen::genEmitterUnitTests()
     {
         genAmd64EmitterUnitTestsCCMP();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "cfcmov") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCFCMOV();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ctest") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCTEST();
+    }
 
 #elif defined(TARGET_ARM64)
     if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
@@ -2761,6 +2785,10 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsAdvSimd();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "fp16") != nullptr))
+    {
+        genArm64EmitterUnitTestsFp16();
+    }
     if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {
         genArm64EmitterUnitTestsSve();
@@ -2769,6 +2797,13 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsPac();
     }
+
+#elif defined(TARGET_WASM)
+    if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
+    {
+        genWasmEmitterUnitTestsSimd();
+    }
+    instGen(INS_end);
 #endif
 
     genDefineTempLabel(skipLabel);

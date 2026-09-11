@@ -119,6 +119,7 @@ namespace System.Net.Http.Functional.Tests
 
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "UseProxy not supported on Wasi")]
     public sealed class SocksProxyTest_Http1_Async : SocksProxyTest
     {
         public SocksProxyTest_Http1_Async(ITestOutputHelper helper) : base(helper) { }
@@ -126,6 +127,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "UseProxy not supported on Wasi")]
     [SkipOnPlatform(TestPlatforms.Android, "The sync Send method is not supported on mobile platforms")]
     public sealed class SocksProxyTest_Http1_Sync : SocksProxyTest
     {
@@ -135,6 +137,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "UseProxy not supported on Wasi")]
     public sealed class SocksProxyTest_Http2 : SocksProxyTest
     {
         public SocksProxyTest_Http2(ITestOutputHelper helper) : base(helper) { }

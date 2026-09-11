@@ -1,0 +1,51 @@
+<!--
+  Prunes the shared wasm tool cache described in eng/wasm/WasmToolCache.props, removing every
+  entry that the current checkout does not reference. Because entries are keyed by version, stale
+  versions accumulate as the pinned versions move forward.
+
+  Run with: ./build.sh -s clean.wasmtools
+  Add /p:PruneAllWasmTools=true to remove the cache entirely.
+
+  Valid entries are identified by their '.complete' sentinel files (globbed as items rather than
+  enumerated with a property function, which MSBuild disallows for System.IO.Directory). The
+  matching entry directory is the sentinel path with the '.complete' extension stripped.
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
+
+  <Target Name="PruneWasmToolCache" BeforeTargets="Build">
+    <!-- PruneAllWasmTools: remove the whole cache. -->
+    <Message Condition="'$(PruneAllWasmTools)' == 'true'" Importance="High"
+             Text="Removing the entire wasm tool cache at '$(WasmToolCacheDir)'." />
+    <RemoveDir Condition="'$(PruneAllWasmTools)' == 'true' and Exists('$(WasmToolCacheDir)')"
+               Directories="$(WasmToolCacheDir)" />
+
+    <ItemGroup Condition="'$(PruneAllWasmTools)' != 'true'">
+      <!-- Every sentinel this checkout can reference. Browser/JS-engine entries only exist on
+           platforms where those versions are defined (see wasm-provisioning.targets). -->
+      <_WasmToolInUseStamp Include="$(EmscriptenSdkStampFile);$(WasiSdkStampFile);$(WasmtimeStampFile)" />
+      <_WasmToolInUseStamp Include="$(ChromeStampFile);$(ChromeDriverStampFile)" Condition="'$(ChromeVersion)' != ''" />
+      <_WasmToolInUseStamp Include="$(V8StampFile)" Condition="'$(V8Version)' != ''" />
+      <_WasmToolInUseStamp Include="$(FirefoxStampFile);$(GeckoDriverStampFile)" Condition="'$(FirefoxRevision)' != ''" />
+
+      <_WasmToolCacheStamp Include="$(WasmToolCacheDir)**\*.complete" />
+      <_WasmToolStaleStamp Include="@(_WasmToolCacheStamp)" Exclude="@(_WasmToolInUseStamp)" />
+      <!-- Entry directory = sentinel path minus the '.complete' extension. -->
+      <_WasmToolStaleDir Include="@(_WasmToolStaleStamp->'%(RootDir)%(Directory)%(Filename)')" />
+    </ItemGroup>
+
+    <Message Condition="'$(PruneAllWasmTools)' != 'true' and '@(_WasmToolStaleStamp)' == ''"
+             Importance="High" Text="No stale wasm tool cache entries to prune under '$(WasmToolCacheDir)'." />
+    <Message Condition="'$(PruneAllWasmTools)' != 'true' and '@(_WasmToolStaleStamp)' != ''"
+             Importance="High" Text="Pruning stale wasm tool cache entry '%(_WasmToolStaleDir.Identity)'" />
+
+    <Delete Condition="'$(PruneAllWasmTools)' != 'true'" Files="@(_WasmToolStaleStamp)" />
+    <RemoveDir Condition="'$(PruneAllWasmTools)' != 'true'" Directories="@(_WasmToolStaleDir)" />
+  </Target>
+
+</Project>

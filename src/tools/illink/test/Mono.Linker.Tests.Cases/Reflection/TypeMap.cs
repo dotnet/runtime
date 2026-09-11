@@ -69,6 +69,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod), By = Tool.Trimmer)]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
 [assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("UnimportantString", typeof(PreservedTargetType))]
@@ -420,6 +421,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
     class TypeCheckOnlyClass;
 
+    // Kept by Trimmer only: ILLink conservatively marks ldftn targets as reflection-visible
+    // (see https://github.com/dotnet/runtime/commit/33a30bc0b01), which cascades to the
+    // declaring type via MarkTypeVisibleToReflection, triggering TypeMap processing.
+    // NativeAOT handles ldftn more precisely and waits for `Delegate.get_Method` being called
+    // before declaring the method reflection visible.
+    [Kept(By = Tool.Trimmer)]
     class TargetType4;
 
     [Kept]

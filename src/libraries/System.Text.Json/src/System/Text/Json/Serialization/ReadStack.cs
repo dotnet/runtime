@@ -74,6 +74,12 @@ namespace System.Text.Json
         public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
+        /// Holds the resolved Type when a custom type classifier is used
+        /// instead of discriminator-based resolution.
+        /// </summary>
+        public Type? PolymorphicResolvedType;
+
+        /// <summary>
         /// Global flag indicating whether we can read preserved references.
         /// </summary>
         public bool PreserveReferences;
@@ -105,7 +111,8 @@ namespace System.Text.Json
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
-            Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true
+                || (jsonTypeInfo.PolymorphicTypeResolver is not null && jsonTypeInfo.TypeClassifier is not null);
             SupportContinuation = supportContinuation;
         }
 
@@ -134,7 +141,8 @@ namespace System.Text.Json
                     Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
                     Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
-                    Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+                    Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true
+                        || (jsonTypeInfo.PolymorphicTypeResolver is not null && jsonTypeInfo.TypeClassifier is not null);
                 }
             }
             else
@@ -210,7 +218,7 @@ namespace System.Text.Json
         public JsonConverter InitializePolymorphicReEntry(JsonTypeInfo derivedJsonTypeInfo)
         {
             Debug.Assert(!IsContinuation);
-            Debug.Assert(Current.PolymorphicJsonTypeInfo == null);
+            Debug.Assert(Current.PolymorphicJsonTypeInfo is null);
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.None);
 
             Current.PolymorphicJsonTypeInfo = Current.JsonTypeInfo;
@@ -229,7 +237,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter ResumePolymorphicReEntry()
         {
-            Debug.Assert(Current.PolymorphicJsonTypeInfo != null);
+            Debug.Assert(Current.PolymorphicJsonTypeInfo is not null);
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended);
 
             // Swap out the two values as we resume the polymorphic converter
@@ -243,7 +251,7 @@ namespace System.Text.Json
         /// </summary>
         public void ExitPolymorphicConverter(bool success)
         {
-            Debug.Assert(Current.PolymorphicJsonTypeInfo != null);
+            Debug.Assert(Current.PolymorphicJsonTypeInfo is not null);
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntryStarted);
 
             // Swap out the two values as we exit the polymorphic converter
@@ -283,7 +291,7 @@ namespace System.Text.Json
                 string? propertyName = GetPropertyName(ref frame);
                 AppendPropertyName(sb, propertyName);
 
-                if (frame.JsonTypeInfo != null && frame.IsProcessingEnumerable())
+                if (frame.JsonTypeInfo is not null && frame.IsProcessingEnumerable())
                 {
                     if (frame.ReturnValue is not IEnumerable enumerable)
                     {
@@ -321,7 +329,7 @@ namespace System.Text.Json
 
             static void AppendPropertyName(StringBuilder sb, string? propertyName)
             {
-                if (propertyName != null)
+                if (propertyName is not null)
                 {
                     if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
@@ -343,9 +351,9 @@ namespace System.Text.Json
 
                 // Attempt to get the JSON property name from the frame.
                 byte[]? utf8PropertyName = frame.JsonPropertyName;
-                if (utf8PropertyName == null)
+                if (utf8PropertyName is null)
                 {
-                    if (frame.JsonPropertyNameAsString != null)
+                    if (frame.JsonPropertyNameAsString is not null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary
                         // keys and KeyValuePair property names.
@@ -359,7 +367,7 @@ namespace System.Text.Json
                     }
                 }
 
-                if (utf8PropertyName != null)
+                if (utf8PropertyName is not null)
                 {
                     propertyName = Encoding.UTF8.GetString(utf8PropertyName);
                 }

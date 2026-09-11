@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -59,5 +60,17 @@ public class RuntimeInfoDumpTests : DumpTestBase
         };
 
         Assert.Equal(expected, os);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeInfo_RuntimeFlavorIsCoreclr(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
+        RuntimeInfoRuntimeFlavor flavor = runtimeInfo.GetRuntimeFlavor();
+
+        Assert.Equal(RuntimeInfoRuntimeFlavor.Coreclr, flavor);
     }
 }

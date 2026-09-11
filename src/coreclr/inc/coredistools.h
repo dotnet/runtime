@@ -43,6 +43,7 @@ enum TargetArch {
     Target_Arm64,
     Target_LoongArch64,
     Target_RiscV64,
+    Target_Wasm32,
 };
 
 struct CorDisasm;
@@ -190,6 +191,44 @@ typedef void __cdecl DumpDiffBlocks_t(const CorAsmDiff *AsmDiff,
     size_t Size1, const uint8_t *Address2,
     const uint8_t *Bytes2, size_t Size2);
 DllIface DumpDiffBlocks_t DumpDiffBlocks;
+
+// "Framed" variants -- intended for Target_Wasm32 today, where the JIT writes
+// the code buffer as a sequence of length-prefixed Wasm function/funclet
+// bodies rather than a flat instruction stream.
+//
+// Layout of each record:
+//   [ULEB128 body_size_in_bytes][body bytes]
+//
+// Each body begins with the standard Wasm locals declaration
+//   [ULEB128 num_local_decls][(ULEB128 count, u8 valtype)*]
+// followed by the opcode stream (which is expected to end with the outer
+// function's `end` opcode 0x0B).
+//
+// The OffsetComparator callback is invoked with BlockOffset set to the byte
+// offset of the current instruction's *opcode byte*, measured from the start
+// of the whole framed buffer (Bytes). This matches the offsets used by the
+// JIT-recorded relocation tables, so callers can look up reloc kind / target
+// directly without further bookkeeping.
+//
+// The non-framed entry points (NearDiffCodeBlocks, DumpCodeBlock,
+// DumpDiffBlocks) automatically delegate to these framed implementations
+// when the configured target architecture is Target_Wasm32.
+typedef bool __cdecl NearDiffCodeBlocksFramed_t(const CorAsmDiff *AsmDiff,
+    const void *UserData,
+    const uint8_t *Address1,
+    const uint8_t *Bytes1, size_t Size1,
+    const uint8_t *Address2,
+    const uint8_t *Bytes2, size_t Size2);
+DllIface NearDiffCodeBlocksFramed_t NearDiffCodeBlocksFramed;
+
+typedef void __cdecl DumpCodeBlockFramed_t(const CorDisasm *Disasm,
+    const uint8_t *Address, const uint8_t *Bytes, size_t Size);
+DllIface DumpCodeBlockFramed_t DumpCodeBlockFramed;
+
+typedef void __cdecl DumpDiffBlocksFramed_t(const CorAsmDiff *AsmDiff,
+    const uint8_t *Address1, const uint8_t *Bytes1, size_t Size1,
+    const uint8_t *Address2, const uint8_t *Bytes2, size_t Size2);
+DllIface DumpDiffBlocksFramed_t DumpDiffBlocksFramed;
 
 // Get a pointer to the buffered output buffer.
 typedef const char* __cdecl GetOutputBuffer_t();

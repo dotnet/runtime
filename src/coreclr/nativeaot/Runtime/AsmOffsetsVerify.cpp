@@ -11,7 +11,6 @@
 #include "TargetPtrs.h"
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
-#include "CachedInterfaceDispatch.h"
 #include "shash.h"
 #include <minipal/cpufeatures.h>
 

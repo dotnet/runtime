@@ -621,10 +621,6 @@ static LPVOID ReserveVirtualMemory(
     }
 #endif
 
-#ifdef __HAIKU__
-        mmapFlags |= MAP_NORESERVE;
-#endif
-
     LPVOID pRetVal = mmap((LPVOID) StartBoundary,
                           MemSize,
                           PROT_NONE,
@@ -1619,6 +1615,11 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
 
     int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
     int32_t initialReserveLimit = -1;
+#if defined(TARGET_WASI)
+    // WASI has neither RLIMIT_AS nor RLIMIT_DATA nor RLIM_INFINITY; wasm32 has a
+    // hard 4 GiB limit and no separate VM accounting. Skip the rlimit-based
+    // sizing and let sizeOfAllocation stay at MaxExecutableMemorySizeNearCoreClr.
+#else
 #ifdef RLIMIT_AS
     int addressSpace = RLIMIT_AS;
 #else
@@ -1645,6 +1646,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
             sizeOfAllocation = initialReserveLimit;
         }
     }
+#endif // !TARGET_WASI
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
     // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs

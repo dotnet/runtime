@@ -1,38 +1,49 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class TableSegment : IData<TableSegment>
+[CdacType(nameof(DataType.TableSegment))]
+internal sealed partial class TableSegment : IData<TableSegment>
 {
-    static TableSegment IData<TableSegment>.Create(Target target, TargetPointer address) => new TableSegment(target, address);
-    public TableSegment(Target target, TargetPointer address)
+    [Field] public partial TargetPointer NextSegment { get; }
+
+    [FieldAddress]
+    public partial TargetPointer RgValue { get; }
+    [CustomInit(nameof(InitRgTail))] public partial byte[] RgTail { get; }
+    [CustomInit(nameof(InitRgAllocation))] public partial byte[] RgAllocation { get; }
+    [CustomInit(nameof(InitRgUserData))] public partial byte[] RgUserData { get; }
+
+    [DataDescriptorDependency(nameof(RgTail), "uint8[]")]
+    private partial byte[] InitRgTail(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TableSegment);
-        NextSegment = target.ReadPointerField(address, type, nameof(NextSegment));
-        uint handleBlocksPerSegment = target.ReadGlobal<uint>(Constants.Globals.HandleBlocksPerSegment);
         uint handleMaxInternalTypes = target.ReadGlobal<uint>(Constants.Globals.HandleMaxInternalTypes);
-
         TargetPointer rgTailPtr = address + (ulong)type.Fields[nameof(RgTail)].Offset;
-        RgTail = new byte[handleMaxInternalTypes];
-        target.ReadBuffer(rgTailPtr, RgTail);
-
-        TargetPointer rgAllocationPtr = address + (ulong)type.Fields[nameof(RgAllocation)].Offset;
-        RgAllocation = new byte[handleBlocksPerSegment];
-        target.ReadBuffer(rgAllocationPtr, RgAllocation);
-
-        // let's not read the entire array because it is large and not always fully mapped.
-        RgValue = address + (ulong)type.Fields[nameof(RgValue)].Offset;
-
-        TargetPointer rgUserDataPtr = address + (ulong)type.Fields[nameof(RgUserData)].Offset;
-        RgUserData = new byte[handleBlocksPerSegment];
-        target.ReadBuffer(rgUserDataPtr, RgUserData);
+        byte[] rgTail = new byte[handleMaxInternalTypes];
+        target.ReadBuffer(rgTailPtr, rgTail);
+        return rgTail;
     }
 
-    public TargetPointer NextSegment { get; init; }
-    public byte[] RgTail { get; init; }
-    public byte[] RgAllocation { get; init; }
-    public TargetPointer RgValue { get; init; }
-    public byte[] RgUserData { get; init; }
+    [DataDescriptorDependency(nameof(RgAllocation), "uint8[]")]
+    private partial byte[] InitRgAllocation(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.TableSegment);
+        uint handleBlocksPerSegment = target.ReadGlobal<uint>(Constants.Globals.HandleBlocksPerSegment);
+        TargetPointer rgAllocationPtr = address + (ulong)type.Fields[nameof(RgAllocation)].Offset;
+        byte[] rgAllocation = new byte[handleBlocksPerSegment];
+        target.ReadBuffer(rgAllocationPtr, rgAllocation);
+        return rgAllocation;
+    }
+
+    [DataDescriptorDependency(nameof(RgUserData), "uint8[]")]
+    private partial byte[] InitRgUserData(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.TableSegment);
+        uint handleBlocksPerSegment = target.ReadGlobal<uint>(Constants.Globals.HandleBlocksPerSegment);
+        TargetPointer rgUserDataPtr = address + (ulong)type.Fields[nameof(RgUserData)].Offset;
+        byte[] rgUserData = new byte[handleBlocksPerSegment];
+        target.ReadBuffer(rgUserDataPtr, rgUserData);
+        return rgUserData;
+    }
 }

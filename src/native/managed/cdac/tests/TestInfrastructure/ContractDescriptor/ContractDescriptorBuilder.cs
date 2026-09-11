@@ -1,0 +1,290 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Text;
+
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure.ContractDescriptor;
+
+public class ContractDescriptorBuilder : MockMemorySpace.Builder
+{
+    // These addresses are arbitrary and are used to store the contract descriptor components.
+    // They should not overlap with any other heap fragment addresses.
+    private const uint ContractDescriptorAddr = 0xaaaaaaaa;
+    private const uint JsonDescriptorAddr = 0xdddddddd;
+    private const uint ContractPointerDataAddr = 0xeeeeeeee;
+
+    private bool _created;
+
+    public ContractDescriptorBuilder(TargetTestHelpers targetTestHelpers)
+        : base(targetTestHelpers)
+    { }
+
+    public class DescriptorBuilder(ContractDescriptorBuilder parent)
+    {
+        private bool _created;
+        private readonly ContractDescriptorBuilder _parent = parent;
+
+        private int? _version = 2;
+        private IReadOnlyDictionary<string, string>? _contracts;
+        private IDictionary<DataType, Target.TypeInfo>? _types;
+        private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)>? _globals;
+        private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)>? _subDescriptors;
+        private IReadOnlyCollection<ulong>? _indirectValues;
+
+        public DescriptorBuilder SetContracts(IReadOnlyCollection<string> contracts)
+            => SetContracts(contracts.ToDictionary(static c => c, static _ => "c1"));
+
+        public DescriptorBuilder SetVersion(int? version)
+        {
+            _version = version;
+            return this;
+        }
+
+        public DescriptorBuilder SetContracts(IReadOnlyDictionary<string, string> contracts)
+        {
+            if (_contracts is not null)
+                throw new InvalidOperationException("Contracts already set");
+            _contracts = contracts;
+            return this;
+        }
+
+        public DescriptorBuilder SetTypes(IDictionary<DataType, Target.TypeInfo> types)
+        {
+            if (_types is not null)
+                throw new InvalidOperationException("Types already set");
+            _types = types;
+            return this;
+        }
+
+        public DescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong Value, string? TypeName)> globals)
+        {
+            if (_globals != null)
+                throw new InvalidOperationException("Globals already set");
+            _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, (string?)null, g.TypeName)).ToArray();
+            return this;
+        }
+
+        public DescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, string? StringValue, string? TypeName)> globals)
+        {
+            if (_globals != null)
+                throw new InvalidOperationException("Globals already set");
+            _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.StringValue, g.TypeName)).ToArray();
+            return this;
+        }
+
+        public DescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> globals)
+        {
+            if (_globals != null)
+                throw new InvalidOperationException("Globals already set");
+            _globals = globals;
+            return this;
+        }
+
+        public DescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> globals, IReadOnlyCollection<ulong> indirectValues)
+        {
+            SetGlobals(globals);
+            SetIndirectValues(indirectValues);
+            return this;
+        }
+
+        public DescriptorBuilder SetSubDescriptors(IReadOnlyCollection<(string Name, uint IndirectIndex)> subDescriptors)
+        {
+            if (_subDescriptors != null)
+                throw new InvalidOperationException("Sub descriptors already set");
+            _subDescriptors = subDescriptors.Select<(string Name, uint IndirectIndex), (string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)>(s => (s.Name, null, s.IndirectIndex, null, null)).ToList();
+            return this;
+        }
+
+        public DescriptorBuilder SetIndirectValues(IReadOnlyCollection<ulong> indirectValues)
+        {
+            if (_indirectValues != null)
+                throw new InvalidOperationException("Indirect values already set");
+            _indirectValues = indirectValues;
+            return this;
+        }
+
+
+        public ulong CreateSubDescriptor(uint contractDescriptorAddress, uint jsonAddress, uint pointerDataAddress)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+
+            (MockMemorySpace.HeapFragment json, MockMemorySpace.HeapFragment pointerData) = CreateDataDescriptor(jsonAddress, pointerDataAddress);
+            int pointerDataCount = pointerData.Data is null ? 0 : pointerData.Data.Length / _parent.TargetTestHelpers.PointerSize;
+            MockMemorySpace.HeapFragment descriptor = CreateContractDescriptor(
+                contractDescriptorAddress,
+                jsonAddress,
+                pointerDataAddress,
+                json.Data.Length,
+                pointerDataCount);
+
+            _parent.AddHeapFragment(descriptor);
+            _parent.AddHeapFragment(json);
+            if (pointerData.Data is not null && pointerData.Data.Length > 0)
+                _parent.AddHeapFragment(pointerData);
+
+            _created = true;
+            return descriptor.Address;
+        }
+
+        private MockMemorySpace.HeapFragment CreateContractDescriptor(uint contractDescriptorAddress, uint jsonAddress, uint pointerDataAddress, int jsonLength, int pointerDataCount)
+        {
+            byte[] descriptor = new byte[ContractDescriptorHelpers.Size(_parent.TargetTestHelpers.Arch.Is64Bit)];
+            ContractDescriptorHelpers.Fill(descriptor, _parent.TargetTestHelpers.Arch, jsonLength, jsonAddress, pointerDataCount, pointerDataAddress);
+            return new MockMemorySpace.HeapFragment
+            {
+                Address = contractDescriptorAddress,
+                Data = descriptor,
+                Name = "ContractDescriptor"
+            };
+        }
+
+        private string MakeContractsJson()
+        {
+            if (_contracts is null || _contracts.Count == 0)
+                return string.Empty;
+            StringBuilder sb = new();
+            foreach ((string name, string version) in _contracts)
+            {
+                sb.Append($"\"{name}\": \"{version}\",");
+            }
+            Debug.Assert(sb.Length > 0);
+            sb.Length--; // remove trailing comma
+            return sb.ToString();
+        }
+
+        protected (MockMemorySpace.HeapFragment json, MockMemorySpace.HeapFragment pointerData) CreateDataDescriptor(ulong jsonAddress, ulong pointerDataAddress)
+        {
+            string metadataTypesJson = _types is not null ? ContractDescriptorHelpers.MakeTypesJson(_types) : string.Empty;
+            string metadataGlobalsJson = _globals is not null ? ContractDescriptorHelpers.MakeGlobalsJson(_globals) : string.Empty;
+            string metadataSubDescriptorJson = _subDescriptors is not null ? ContractDescriptorHelpers.MakeGlobalsJson(_subDescriptors) : string.Empty;
+            string interpolatedContracts = _contracts is not null ? MakeContractsJson() : string.Empty;
+            string interpolatedVersion = _version is int version ? $"\"version\": {version}," : string.Empty;
+            byte[] jsonBytes = Encoding.UTF8.GetBytes($$"""
+            {
+                {{interpolatedVersion}}
+                "baseline": "empty",
+                "contracts": { {{interpolatedContracts}} },
+                "types": { {{metadataTypesJson}} },
+                "globals": { {{metadataGlobalsJson}} },
+                "subDescriptors": { {{metadataSubDescriptorJson}} },
+            }
+            """);
+            MockMemorySpace.HeapFragment json = new()
+            {
+                Address = jsonAddress,
+                Data = jsonBytes,
+                Name = "JsonDescriptor"
+            };
+
+            MockMemorySpace.HeapFragment pointerData;
+            if (_indirectValues != null)
+            {
+                int pointerSize = _parent.TargetTestHelpers.PointerSize;
+                byte[] pointerDataBytes = new byte[_indirectValues.Count * pointerSize];
+                int offset = 0;
+                foreach (var value in _indirectValues)
+                {
+                    _parent.TargetTestHelpers.WritePointer(pointerDataBytes.AsSpan(offset, pointerSize), value);
+                    offset += pointerSize;
+                }
+                pointerData = new MockMemorySpace.HeapFragment
+                {
+                    Address = pointerDataAddress,
+                    Data = pointerDataBytes,
+                    Name = "PointerData"
+                };
+            }
+            else
+            {
+                pointerData = new MockMemorySpace.HeapFragment
+                {
+                    Address = pointerDataAddress,
+                    Data = Array.Empty<byte>(),
+                    Name = "PointerData"
+                };
+            }
+            return (json, pointerData);
+        }
+    }
+
+    public bool TryCreateTarget(
+        DescriptorBuilder descriptor,
+        [NotNullWhen(true)] out ContractDescriptorTarget? target,
+        params Action<ContractRegistry>[] additionalContractRegistrations)
+    {
+        try
+        {
+            target = CreateTarget(descriptor, additionalContractRegistrations);
+            return true;
+        }
+        catch (Exception)
+        {
+            target = null;
+            return false;
+        }
+    }
+
+    public ContractDescriptorTarget CreateTarget(DescriptorBuilder descriptor, params Action<ContractRegistry>[] additionalContractRegistrations)
+    {
+        if (_created)
+            throw new InvalidOperationException("Context already created");
+        _created = true;
+        ulong contractDescriptorAddress = descriptor.CreateSubDescriptor(ContractDescriptorAddr, JsonDescriptorAddr, ContractPointerDataAddr);
+        MockMemorySpace.MemoryContext memoryContext = GetMemoryContext();
+        Action<ContractRegistry>[] contractRegistrations = [Contracts.CoreCLRContracts.Register, .. additionalContractRegistrations];
+
+        return ContractDescriptorTarget.Create(
+            contractDescriptorAddress,
+            memoryContext.ReadFromTarget,
+            memoryContext.WriteToTarget,
+            (_, _, _) => throw new NotImplementedException("Tests do not provide GetTargetThreadContext"),
+            (_, _) => throw new NotImplementedException("Tests do not provide SetTargetThreadContext"),
+            (ulong _, out ulong _) => throw new NotImplementedException("Tests do not provide AllocVirtual"),
+            contractRegistrations);
+    }
+
+    public ContractDescriptorTarget CreateTargetFromRawDescriptor(byte[] descriptor, byte[] descriptorJson, byte[] pointerData)
+    {
+        if (_created)
+            throw new InvalidOperationException("Context already created");
+        _created = true;
+
+        AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = ContractDescriptorAddr,
+            Data = descriptor,
+            Name = "ContractDescriptor"
+        });
+        AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = JsonDescriptorAddr,
+            Data = descriptorJson,
+            Name = "JsonDescriptor"
+        });
+        if (pointerData.Length > 0)
+        {
+            AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Address = ContractPointerDataAddr,
+                Data = pointerData,
+                Name = "PointerData"
+            });
+        }
+
+        MockMemorySpace.MemoryContext memoryContext = GetMemoryContext();
+        return ContractDescriptorTarget.Create(
+            ContractDescriptorAddr,
+            memoryContext.ReadFromTarget,
+            memoryContext.WriteToTarget,
+            (_, _, _) => throw new NotImplementedException("Tests do not provide GetTargetThreadContext"),
+            (_, _) => throw new NotImplementedException("Tests do not provide SetTargetThreadContext"),
+            (ulong _, out ulong _) => throw new NotImplementedException("Tests do not provide AllocVirtual"),
+            [Contracts.CoreCLRContracts.Register]);
+    }
+}

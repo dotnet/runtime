@@ -45,7 +45,7 @@ namespace Microsoft.Interop
             {
                 return type is INamedTypeSymbol { IsComImport: true }
                     ? marshalAsInfo
-                    : ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, type);
+                    : ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, type, (marshalAsInfo as MarshalAsInterfaceInfo)?.IidParameterIndexInfo);
             }
 
             if (marshalAsInfo is MarshalAsArrayInfo arrayInfo)

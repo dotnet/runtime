@@ -33,7 +33,6 @@ public:
     const pal::string_t& get_path() const { return m_path; }
     const pal::string_t& get_dev_path() const { return m_dev_path; }
     const pal::string_t& get_tfm() const;
-    bool get_is_multilevel_lookup_disabled() const;
     const std::list<pal::string_t>& get_probe_paths() const;
     bool get_is_framework_dependent() const;
     bool parse_opts(const json_parser_t::value_t& opts);
@@ -42,10 +41,7 @@ public:
     const fx_reference_vector_t& get_included_frameworks() const { return m_included_frameworks; }
     void set_fx_version(pal::string_t version);
 
-    static constexpr int unknown_version = std::numeric_limits<int>::max();
-
 private:
-    const uint32_t get_compat_major_version_from_tfm() const;
     bool ensure_parsed(); //todo: const runtime_config_t* defaults
     bool ensure_dev_config_parsed();
 
@@ -54,8 +50,6 @@ private:
     fx_reference_vector_t m_included_frameworks;
     settings_t m_default_settings;   // the default settings (Steps #0 and #1)
     settings_t m_override_settings;  // the settings that can't be changed (Step #5)
-    std::vector<std::string> m_prop_keys;
-    std::vector<std::string> m_prop_values;
     std::list<pal::string_t> m_probe_paths;
 
     pal::string_t m_tfm;

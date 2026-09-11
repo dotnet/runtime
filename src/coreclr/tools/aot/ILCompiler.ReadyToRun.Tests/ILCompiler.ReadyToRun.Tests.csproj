@@ -1,17 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Set TargetOS and TargetArchitecture to control what JIT and corelib the tests will give to crossgen2 -->
+  <!-- Setting TargetRid will not work -->
+
   <PropertyGroup>
     <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Platforms>x64;x86</Platforms>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
-    <Configurations>Debug;Release;Checked</Configurations>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <!-- These tests build for AnyCPU, but the assets copied for crossgen compilations within the
+         tests are tied to the outer runtime build's Target -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <!-- Set the output path based on the RID of the outer build (the one used in crossgen
+         compilations that run inside the tests), not this test's RID
+         Some tests are skipped based on CoreCLRConfiguration, so also include that in output path -->
+    <OutputPath>$(BaseOutputPath)$(Configuration)\$(CoreCLRConfiguration)_CLR\$(TargetRid)\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,41 +26,49 @@
 
   <ItemGroup>
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
+    <ProjectReference Include="../ILCompiler.ReadyToRun/ILCompiler.ReadyToRun.csproj" Aliases="crossgen2" />
+    <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems" Private="false">
+      <SetConfiguration>Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true;TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS)</SetConfiguration>
+    </ProjectReference>
   </ItemGroup>
 
-  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
-       Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
   <ItemGroup>
     <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
-  <!-- Pass build-time paths to test runtime via RuntimeHostConfigurationOption -->
+  <Target Name="SetupCopyCrossgen2CompilationAssets"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="ResolveProjectReferences"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'@(Crossgen2InbuildOutputItems)' == ''"
+           Text="crossgen2_inbuild published no files. This is a build authoring error; the ProjectReference should have built it." />
+    <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')"
+           Text="The 'libs' subset must be built for $(TargetOS)-$(TargetArchitecture) before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath). Configuration: '$(LibrariesConfiguration)'." />
+    <Error Condition="!Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll')"
+           Text="The 'clr.corelib' subset must be built for $(TargetOS)-$(TargetArchitecture) before building this project. Missing artifacts: $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll. Configuration: '$(CoreCLRConfiguration)'." />
+
+    <ItemGroup>
+      <_SharedFrameworkAssembly Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll" />
+      <_SharedFrameworkAssembly Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Filename Metadata may differ from the filename of OutputPath. We want to copy the file using the actual filename of the output path. -->
+      <Content Include="@(Crossgen2InbuildOutputItems->'%(OutputPath)')"
+               CopyToOutputDirectory="PreserveNewest"
+               TargetPath="crossgen2/$([System.IO.Path]::GetFileName('%(Crossgen2InbuildOutputItems.OutputPath)'))" />
+
+      <Content Include="@(_SharedFrameworkAssembly)"
+               CopyToOutputDirectory="PreserveNewest"
+               TargetPath="libraries/%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">
-      <Value>$(RuntimeBinDir)/$(BuildArchitecture)/crossgen2</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackDir">
-      <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
-      <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.RefPackDir">
-      <Value>$(MicrosoftNetCoreAppRefPackRefDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRArtifactsDir">
-      <Value>$(CoreCLRArtifactsPath)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture">
-      <Value>$(TargetArchitecture)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.TargetOS">
-      <Value>$(TargetOS)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.Configuration">
-      <Value>$(Configuration)</Value>
-    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration" Value="$(CoreCLRConfiguration)" />
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetOS" Value="$(TargetOS)" />
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture" Value="$(TargetArchitecture)" />
   </ItemGroup>
 
 </Project>

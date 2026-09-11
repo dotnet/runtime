@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
@@ -25,7 +27,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             _embeddedSignatureData = embeddedSigData;
         }
 
-        public override ReadOnlySpan<byte> Name => _name;
+        public override Utf8Span Name => _name;
         public override MetadataType OwningType => _type;
 
         public override TypeDesc FieldType => _fieldType;

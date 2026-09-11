@@ -44,6 +44,8 @@ namespace ILCompiler
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
         public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
+        public Option<bool?> GenerateUnboxingStubs { get; } =
+            new("--generate-unboxing-stubs") { Description = SR.GenerateUnboxingStubsOption };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
         public Option<bool> InputBubble { get; } =
@@ -86,20 +88,24 @@ namespace ILCompiler
             new("--resilient") { Description = SR.ResilientOption };
         public Option<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
-        public Option<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore, HelpName = "arg" };
-        public Option<bool> EnableGenericCycleDetection { get; } =
-            new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
+        public Option<string> TargetArchitecture { get; } =
+            new("--targetarch") { Description = SR.TargetArchOption };
         public Option<int> GenericCycleDepthCutoff { get; } =
             new("--maxgenericcycle") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, Description = SR.GenericCycleDepthCutoff };
         public Option<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
-        public Option<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
+        public Option<string> TargetOS { get; } =
+            new("--targetos") { Description = SR.TargetOSOption };
+        public Option<bool?> TargetAllowsRuntimeCodeGeneration { get; } =
+            new("--target-allows-runtime-code-generation") { Description = SR.TargetAllowsRuntimeCodeGenerationOption };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -160,8 +166,6 @@ namespace ILCompiler
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result { get; private set; }
 
-        public static bool IsArmel { get; private set; }
-
         public Crossgen2RootCommand(string[] args) : base(SR.Crossgen2BannerText)
         {
             Arguments.Add(InputFilePaths);
@@ -178,6 +182,7 @@ namespace ILCompiler
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
             Options.Add(EnableCachedInterfaceDispatchSupport);
+            Options.Add(GenerateUnboxingStubs);
             Options.Add(TypeValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
@@ -199,13 +204,15 @@ namespace ILCompiler
             Options.Add(SupportIbc);
             Options.Add(Resilient);
             Options.Add(ImageBase);
-            Options.Add(EnableGenericCycleDetection);
             Options.Add(GenericCycleDepthCutoff);
             Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);
             Options.Add(TargetOS);
+            Options.Add(TargetAllowsRuntimeCodeGeneration);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);
@@ -308,13 +315,15 @@ namespace ILCompiler
             Console.WriteLine(SR.DashDashHelp);
             Console.WriteLine();
 
-            string[] ValidArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
-            string[] ValidOS = ["windows", "linux", "osx", "ios", "iossimulator", "maccatalyst", "browser"];
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", Helpers.ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", Helpers.ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
 
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            string[] ValidObjFormats = ["pe", "macho", "wasm"];
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--obj-format", String.Join("', '", ValidObjFormats), "pe"));
             Console.WriteLine();
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
-            Console.WriteLine();
+
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
             Console.WriteLine();
 
@@ -326,7 +335,7 @@ namespace ILCompiler
             Console.WriteLine();
 
             Console.WriteLine(SR.InstructionSetHelp);
-            foreach (string arch in ValidArchitectures)
+            foreach (string arch in Helpers.ValidArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
@@ -357,18 +366,6 @@ namespace ILCompiler
             Console.WriteLine();
             Console.WriteLine(SR.CpuFamilies);
             Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-        }
-
-        private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
-        {
-            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
-            if (firstToken != null && firstToken.Equals("armel", StringComparison.OrdinalIgnoreCase))
-            {
-                IsArmel = true;
-                return Internal.TypeSystem.TargetArchitecture.ARM;
-            }
-
-            return Helpers.GetTargetArchitecture(firstToken);
         }
 
         private static int MakeParallelism(ArgumentResult result)

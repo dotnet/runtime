@@ -310,6 +310,7 @@ namespace Microsoft.Interop.JavaScript
                     ManagedIndex = TypePositionInfo.ExceptionIndex,
                     NativeIndex = signatureElements.Length, // Insert at the end of the argument list
                     RefKind = RefKind.Out, // We'll treat it as a separate out parameter.
+                    IsErrorHandlingPosition = true,
                 });
 
             for (int i = 0; i < allElements.Length; i++)
@@ -400,7 +401,7 @@ namespace Microsoft.Interop.JavaScript
             return LocalFunctionStatement(
                 returnType,
                 innerFunctionName)
-                .WithBody(stubGenerator.GenerateStubBody(IdentifierName(TypeNames.GlobalAlias + context.SignatureContext.MethodName)))
+                .WithBody(stubGenerator.GenerateStubBodyForMethod(IdentifierName(TypeNames.GlobalAlias + context.SignatureContext.MethodName)))
                 .WithParameterList(parameters)
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                     Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))));

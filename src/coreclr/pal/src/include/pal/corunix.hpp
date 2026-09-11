@@ -159,11 +159,9 @@ namespace CorUnix
     {
         otiAutoResetEvent = 0,
         otiManualResetEvent,
-        otiSemaphore,
         otiFile,
         otiFileMapping,
         otiSocket,
-        otiProcess,
         otiThread,
         otiIOCompletionPort,
         ObjectTypeIdCount    // This entry must come last in the enumeration
@@ -980,4 +978,3 @@ namespace CorUnix
 }
 
 #endif // _CORUNIX_H
-

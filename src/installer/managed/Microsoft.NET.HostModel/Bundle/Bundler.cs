@@ -248,43 +248,52 @@ namespace Microsoft.NET.HostModel.Bundle
         internal static ReadOnlySpan<byte> BundleHeaderSignature => BundleHeaderPlaceholder.Slice(8);
 
         /// <summary>
-        /// Generate a bundle, given the specification of embedded files
+        /// Generate a bundle, given the specification of embedded files.
         /// </summary>
         /// <param name="fileSpecs">
-        /// An enumeration FileSpecs for the files to be embedded.
-        ///
-        /// Files in fileSpecs that are not bundled within the single file bundle,
-        /// and should be published as separate files are marked as "IsExcluded" by this method.
-        /// This doesn't include unbundled files that should be dropped, and not published as output.
+        /// An enumeration of FileSpecs for the files to be embedded.
+        /// Files that are excluded from the bundle have their <see cref="FileSpec.Excluded"/> flag set by this method.
         /// </param>
         /// <returns>
-        /// The full path the generated bundle file
+        /// The full path of the generated bundle file.
         /// </returns>
         /// <exceptions>
-        /// ArgumentException if input is invalid
+        /// ArgumentException if input is invalid.
         /// IOExceptions and ArgumentExceptions from callees flow to the caller.
         /// </exceptions>
         public string GenerateBundle(IReadOnlyList<FileSpec> fileSpecs)
         {
+            return GenerateBundle(ComputeBundleContents(fileSpecs));
+        }
+
+        /// <summary>
+        /// Generate a bundle from the given <see cref="BundleContents"/>,
+        /// as computed by <see cref="ComputeBundleContents"/>.
+        /// </summary>
+        /// <param name="bundleContents">
+        /// The bundle contents from <see cref="ComputeBundleContents"/>.
+        /// </param>
+        /// <returns>
+        /// The full path of the generated bundle file.
+        /// </returns>
+        public string GenerateBundle(BundleContents bundleContents)
+        {
+#if NET
+            ArgumentNullException.ThrowIfNull(bundleContents);
+#else
+            if (bundleContents is null)
+            {
+                throw new ArgumentNullException(nameof(bundleContents));
+            }
+#endif
+
             _tracer.Log($"Bundler Version: {BundlerMajorVersion}.{BundlerMinorVersion}");
             _tracer.Log($"Bundle  Version: {BundleManifest.BundleVersion}");
             _tracer.Log($"Target Runtime: {_target}");
             _tracer.Log($"Bundler Options: {_options}");
-            if (fileSpecs.Any(x => !x.IsValid()))
-            {
-                throw new ArgumentException("Invalid input specification: Found entry with empty source-path or bundle-relative-path.");
-            }
-            string hostSource;
-            try
-            {
-                hostSource = fileSpecs.Where(x => x.BundleRelativePath.Equals(_hostName)).Single().SourcePath;
-            }
-            catch (InvalidOperationException)
-            {
-                throw new ArgumentException("Invalid input specification: Must specify the host binary");
-            }
 
-            (FileSpec Spec, FileType Type)[] relativePathToSpec = GetFilteredFileSpecs(fileSpecs);
+            string hostSource = bundleContents.Host.SourcePath;
+            (FileSpec Spec, FileType Type)[] relativePathToSpec = bundleContents.TypedIncludedFiles;
             long bundledFilesSize = 0;
             // Conservatively estimate the size of bundled files.
             // Assume no compression and worst case alignment for assemblies.
@@ -390,26 +399,24 @@ namespace Microsoft.NET.HostModel.Bundle
                         }
                     }
 
-                    // MacOS keeps a cache of file signatures, so we must create a new inode to ensure the file signature is properly updated.
-                    if (_macosCodesign && File.Exists(bundlePath))
+                    // On non-Windows, delete any existing bundle so the output is written to a new inode.
+                    // FileStreamOptions.UnixCreateMode only applies when a file is created, not when an
+                    // existing file is truncated in place, so without this an existing non-executable
+                    // bundle would keep its permissions and require a chmod (which can fail on some
+                    // filesystems, e.g. bind-mounted volumes in rootless containers). On macOS this also
+                    // ensures the kernel's code signature cache is not reused for the new contents.
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && File.Exists(bundlePath))
                     {
-                        _tracer.Log($"Removing existing bundle file to clear signature cache: {bundlePath}");
+                        _tracer.Log($"Removing existing bundle file: {bundlePath}");
                         File.Delete(bundlePath);
                     }
-                    using (FileStream bundleOutputStream = File.Open(bundlePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    using (FileStream bundleOutputStream = HostModelUtils.CreateFileStreamForHost(bundlePath, FileAccess.Write, FileShare.None))
                     {
                         BinaryUtils.WriteToStream(accessor, bundleOutputStream, (long)endOfBundle);
                     }
                 }
             }
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // chmod +755
-                File.SetUnixFileMode(bundlePath,
-                     UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                     UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                     UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-            }
+            HostModelUtils.SetPermissionsForHost(bundlePath);
             return bundlePath;
         }
 
@@ -445,20 +452,49 @@ namespace Microsoft.NET.HostModel.Bundle
             return headerOffset != 0;
         }
 
-        private (FileSpec Spec, FileType Type)[] GetFilteredFileSpecs(IEnumerable<FileSpec> fileSpecs)
+        /// <summary>
+        /// Compute which files would be included in or excluded from the bundle
+        /// for the given set of input file specs and the bundler's current options.
+        /// </summary>
+        /// <param name="fileSpecs">
+        /// An enumeration of FileSpecs for the files to potentially be embedded.
+        /// Files that are excluded from the bundle have their <see cref="FileSpec.Excluded"/> flag set by this method.
+        /// </param>
+        /// <returns>
+        /// A <see cref="BundleContents"/> describing which files would be included in
+        /// and excluded from the bundle.
+        /// </returns>
+        public BundleContents ComputeBundleContents(IReadOnlyList<FileSpec> fileSpecs)
+        {
+            if (fileSpecs.Any(x => !x.IsValid()))
+            {
+                throw new ArgumentException("Invalid input specification: Found entry with empty source-path or bundle-relative-path.");
+            }
+
+            FileSpec[] hostSpecs = fileSpecs.Where(x => IsHost(x.BundleRelativePath)).ToArray();
+            if (hostSpecs.Length != 1)
+            {
+                throw new ArgumentException($"Invalid input specification: Must specify exactly one entry for the host binary '{_hostName}'");
+            }
+
+            FileSpec hostSpec = hostSpecs[0];
+            var (included, excluded) = GetFilteredFileSpecs(fileSpecs.Where(x => x != hostSpec));
+            return new BundleContents(
+                hostSpec,
+                included,
+                excluded);
+        }
+
+        private ((FileSpec Spec, FileType Type)[] Included, FileSpec[] Excluded) GetFilteredFileSpecs(IEnumerable<FileSpec> fileSpecs)
         {
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
             // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
             // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
             var relativePathToSpec = new Dictionary<string, (FileSpec Spec, FileType Type)>(StringComparer.Ordinal);
+            var excluded = new List<FileSpec>();
             foreach (var fileSpec in fileSpecs)
             {
                 string relativePath = fileSpec.BundleRelativePath;
-
-                if (IsHost(relativePath))
-                {
-                    continue;
-                }
 
                 if (ShouldIgnore(relativePath))
                 {
@@ -472,6 +508,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 {
                     _tracer.Log($"Exclude [{type}]: {relativePath}");
                     fileSpec.Excluded = true;
+                    excluded.Add(fileSpec);
                     continue;
                 }
 
@@ -490,7 +527,8 @@ namespace Microsoft.NET.HostModel.Bundle
                     relativePathToSpec.Add(fileSpec.BundleRelativePath, (fileSpec, type));
                 }
             }
-            return relativePathToSpec.Values.ToArray();
+
+            return (relativePathToSpec.Values.ToArray(), excluded.ToArray());
         }
 
         /// <summary>

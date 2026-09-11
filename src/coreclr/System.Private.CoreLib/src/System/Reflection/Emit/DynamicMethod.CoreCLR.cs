@@ -51,14 +51,11 @@ namespace System.Reflection.Emit
                 // Compile the method since accessibility checks are done as part of compilation
                 GetMethodDescriptor();
                 IRuntimeMethodInfo? methodHandle = _methodHandle;
-                CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
+                CompileMethod(methodHandle != null ? IRuntimeMethodInfo.GetValue(methodHandle) : RuntimeMethodHandleInternal.EmptyHandle);
                 GC.KeepAlive(methodHandle);
             }
 
-            MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateNoSecurityCheck(delegateType, target, GetMethodDescriptor());
-            // stash this MethodInfo by brute force.
-            d.StoreDynamicMethod(this);
-            return d;
+            return Delegate.CreateDelegateForDynamicMethod(delegateType, target, GetMethodDescriptor(), this);
         }
 
         // This is guaranteed to return a valid handle

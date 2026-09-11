@@ -38,7 +38,6 @@ namespace System.Security.AccessControl
         SystemAcl = 0x00000008,
     }
 
-
     public enum ResourceType
     {
         Unknown = 0x00,

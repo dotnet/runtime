@@ -54,37 +54,37 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REG
             switch (i)
             {
             case REGISTER_INSTRUCTION_POINTER:
-                regBuffer[iRegister++] = m_rd->PC; break;
+                regBuffer[iRegister++] = m_context.Pc; break;
             case REGISTER_STACK_POINTER:
-                regBuffer[iRegister++] = m_rd->SP; break;
+                regBuffer[iRegister++] = m_context.Sp; break;
             case REGISTER_ARM_R0:
-                regBuffer[iRegister++] = m_rd->R0; break;
+                regBuffer[iRegister++] = m_context.R0; break;
             case REGISTER_ARM_R1:
-                regBuffer[iRegister++] = m_rd->R1; break;
+                regBuffer[iRegister++] = m_context.R1; break;
             case REGISTER_ARM_R2:
-                regBuffer[iRegister++] = m_rd->R2; break;
+                regBuffer[iRegister++] = m_context.R2; break;
             case REGISTER_ARM_R3:
-                regBuffer[iRegister++] = m_rd->R3; break;
+                regBuffer[iRegister++] = m_context.R3; break;
             case REGISTER_ARM_R4:
-                regBuffer[iRegister++] = m_rd->R4; break;
+                regBuffer[iRegister++] = m_context.R4; break;
             case REGISTER_ARM_R5:
-                regBuffer[iRegister++] = m_rd->R5; break;
+                regBuffer[iRegister++] = m_context.R5; break;
             case REGISTER_ARM_R6:
-                regBuffer[iRegister++] = m_rd->R6; break;
+                regBuffer[iRegister++] = m_context.R6; break;
             case REGISTER_ARM_R7:
-                regBuffer[iRegister++] = m_rd->R7; break;
+                regBuffer[iRegister++] = m_context.R7; break;
             case REGISTER_ARM_R8:
-                regBuffer[iRegister++] = m_rd->R8; break;
+                regBuffer[iRegister++] = m_context.R8; break;
             case REGISTER_ARM_R9:
-                regBuffer[iRegister++] = m_rd->R9; break;
+                regBuffer[iRegister++] = m_context.R9; break;
             case REGISTER_ARM_R10:
-                regBuffer[iRegister++] = m_rd->R10; break;
+                regBuffer[iRegister++] = m_context.R10; break;
             case REGISTER_ARM_R11:
-                regBuffer[iRegister++] = m_rd->R11; break;
+                regBuffer[iRegister++] = m_context.R11; break;
             case REGISTER_ARM_R12:
-                regBuffer[iRegister++] = m_rd->R12; break;
+                regBuffer[iRegister++] = m_context.R12; break;
             case REGISTER_ARM_LR:
-                regBuffer[iRegister++] = m_rd->LR; break;
+                regBuffer[iRegister++] = m_context.Lr; break;
             }
         }
     }
@@ -114,36 +114,4 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
 
     // Defer to adapter for v1.0 interface
     return GetRegistersAdapter(maskCount, mask, regCount, regBuffer);
-}
-
-// This is just a convenience function to convert a regdisplay into a Context.
-// Since a context has more info than a regdisplay, the conversion isn't perfect
-// and the context can't be fully accurate.
-void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT * pInputContext)
-{
-    INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(pInputContext);
-
-    if ((pInputContext->ContextFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
-    {
-        pInputContext->R0 = m_rd->R0;
-        pInputContext->R1 = m_rd->R1;
-        pInputContext->R2 = m_rd->R2;
-        pInputContext->R3 = m_rd->R3;
-        pInputContext->R4 = m_rd->R4;
-        pInputContext->R5 = m_rd->R5;
-        pInputContext->R6 = m_rd->R6;
-        pInputContext->R7 = m_rd->R7;
-        pInputContext->R8 = m_rd->R8;
-        pInputContext->R9 = m_rd->R9;
-        pInputContext->R10 = m_rd->R10;
-        pInputContext->R11 = m_rd->R11;
-    }
-
-    if ((pInputContext->ContextFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
-    {
-        pInputContext->Sp = m_rd->SP;
-        pInputContext->Lr = m_rd->LR;
-        pInputContext->Pc = m_rd->PC;
-    }
 }

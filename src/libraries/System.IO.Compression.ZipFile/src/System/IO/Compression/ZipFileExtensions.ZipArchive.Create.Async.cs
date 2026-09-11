@@ -44,7 +44,36 @@ public static partial class ZipFileExtensions
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The value of the task is the newly created entry.</returns>
     public static Task<ZipArchiveEntry> CreateEntryFromFileAsync(this ZipArchive destination, string sourceFileName, string entryName, CancellationToken cancellationToken = default) =>
-        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, null, cancellationToken);
+        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, null, cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// <p>Asynchronously adds a file from the file system to the archive under the specified entry name using encryption.</p>
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// sourceFileName is a zero-length string, contains only whitespace, or contains invalid characters.
+    /// -or- entryName is a zero-length string.
+    /// -or- password is null or empty when encryption is not None.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">sourceFileName or entryName is null.</exception>
+    /// <exception cref="PathTooLongException">In sourceFileName, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+    /// <exception cref="DirectoryNotFoundException">The specified sourceFileName is invalid.</exception>
+    /// <exception cref="IOException">An I/O error occurred while opening the file specified by sourceFileName.</exception>
+    /// <exception cref="UnauthorizedAccessException">sourceFileName specified a directory, or the caller lacks permission.</exception>
+    /// <exception cref="FileNotFoundException">The file specified in sourceFileName was not found.</exception>
+    /// <exception cref="NotSupportedException">sourceFileName is in an invalid format or the ZipArchive does not support writing.</exception>
+    /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
+    /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    ///
+    /// <param name="destination">The zip archive to add the file to.</param>
+    /// <param name="sourceFileName">The path to the file on the file system to be copied from.</param>
+    /// <param name="entryName">The name of the entry to be created.</param>
+    /// <param name="password">The password to use for encrypting the entry.</param>
+    /// <param name="encryption">The encryption method to use.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The value of the task is the newly created entry.</returns>
+    public static Task<ZipArchiveEntry> CreateEntryFromFileAsync(this ZipArchive destination,
+        string sourceFileName, string entryName, ReadOnlyMemory<char> password, ZipEncryptionMethod encryption, CancellationToken cancellationToken = default) =>
+        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, null, password, encryption, cancellationToken);
 
     /// <summary>
     /// <p>Asynchronously adds a file from the file system to the archive under the specified entry name.
@@ -78,19 +107,50 @@ public static partial class ZipFileExtensions
     /// <returns>A task that represents the asynchronous operation. The value of the task is the newly created entry.</returns>
     public static Task<ZipArchiveEntry> CreateEntryFromFileAsync(this ZipArchive destination,
                                                       string sourceFileName, string entryName, CompressionLevel compressionLevel, CancellationToken cancellationToken = default) =>
-        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, compressionLevel, cancellationToken);
+        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, compressionLevel, cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// <p>Asynchronously adds a file from the file system to the archive under the specified entry name using the specified compression level and encryption.</p>
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// sourceFileName is a zero-length string, contains only whitespace, or contains invalid characters.
+    /// -or- entryName is a zero-length string.
+    /// -or- password is null or empty when encryption is not None.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">sourceFileName or entryName is null.</exception>
+    /// <exception cref="PathTooLongException">In sourceFileName, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+    /// <exception cref="DirectoryNotFoundException">The specified sourceFileName is invalid.</exception>
+    /// <exception cref="IOException">An I/O error occurred while opening the file specified by sourceFileName.</exception>
+    /// <exception cref="UnauthorizedAccessException">sourceFileName specified a directory, or the caller lacks permission.</exception>
+    /// <exception cref="FileNotFoundException">The file specified in sourceFileName was not found.</exception>
+    /// <exception cref="NotSupportedException">sourceFileName is in an invalid format or the ZipArchive does not support writing.</exception>
+    /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
+    /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    ///
+    /// <param name="destination">The zip archive to add the file to.</param>
+    /// <param name="sourceFileName">The path to the file on the file system to be copied from.</param>
+    /// <param name="entryName">The name of the entry to be created.</param>
+    /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
+    /// <param name="password">The password to use for encrypting the entry.</param>
+    /// <param name="encryption">The encryption method to use.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The value of the task is the newly created entry.</returns>
+    public static Task<ZipArchiveEntry> CreateEntryFromFileAsync(this ZipArchive destination,
+        string sourceFileName, string entryName, CompressionLevel compressionLevel, ReadOnlyMemory<char> password, ZipEncryptionMethod encryption, CancellationToken cancellationToken = default) =>
+        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, compressionLevel, password, encryption, cancellationToken);
 
     internal static async Task<ZipArchiveEntry> DoCreateEntryFromFileAsync(this ZipArchive destination, string sourceFileName, string entryName,
-                                                    CompressionLevel? compressionLevel, CancellationToken cancellationToken)
+        CompressionLevel? compressionLevel, ReadOnlyMemory<char> password = default, ZipEncryptionMethod encryption = ZipEncryptionMethod.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true);
+        (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true, password.Span, encryption);
 
-        await using (fs)
+        await using (fs.ConfigureAwait(false))
         {
             Stream es = await entry.OpenAsync(cancellationToken).ConfigureAwait(false);
-            await using (es)
+
+            await using (es.ConfigureAwait(false))
             {
                 await fs.CopyToAsync(es, cancellationToken).ConfigureAwait(false);
             }
@@ -98,5 +158,4 @@ public static partial class ZipFileExtensions
 
         return entry;
     }
-
 }

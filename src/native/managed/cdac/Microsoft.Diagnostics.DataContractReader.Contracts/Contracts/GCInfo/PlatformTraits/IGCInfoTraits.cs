@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal interface IGCInfoTraits
 {
+    static virtual bool IsInterpreter => false;
+    static virtual bool UsesStackPointerAsAmbientSP => false;
     static virtual int NO_GS_COOKIE { get; } = -1;
     static virtual uint NO_STACK_BASE_REGISTER { get; } = 0xFFFFFFFF;
     static virtual uint NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA { get; } = 0xFFFFFFFF;
@@ -53,14 +55,6 @@ internal interface IGCInfoTraits
     /// Scratch register slots should only be reported for the active (leaf) stack frame.
     /// </summary>
     static abstract bool IsScratchRegister(uint regNum);
-
-    /// <summary>
-    /// Returns true if a stack slot at the given offset and base is in the scratch/outgoing area.
-    /// Scratch stack slots should only be reported for the active (leaf) stack frame.
-    /// spBase uses the GcStackSlotBase encoding: 0=CALLER_SP_REL, 1=SP_REL, 2=FRAMEREG_REL.
-    /// </summary>
-    static virtual bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
-        => false;
 
     // These are the same across all platforms
     static virtual int POINTER_SIZE_ENCBASE { get; } = 3;

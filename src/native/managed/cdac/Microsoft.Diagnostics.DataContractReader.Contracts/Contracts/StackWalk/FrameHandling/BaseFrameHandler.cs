@@ -13,6 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext context)
 {
     protected readonly Target _target = target;
+    protected readonly FrameHelpers _frameHelpers = new FrameHelpers(target);
     private readonly IPlatformAgnosticContext _context = context;
 
     public virtual void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
@@ -43,10 +44,7 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
     public virtual void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
     {
         Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
-        if (_target.GetTypeInfo(DataType.TransitionBlock).Size is not uint transitionBlockSize)
-        {
-            throw new InvalidOperationException("TransitionBlock size is not set");
-        }
+        uint transitionBlockSize = Data.TransitionBlock.GetSize(_target);
 
         _context.InstructionPointer = transitionBlock.ReturnAddress;
         _context.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
@@ -106,5 +104,16 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
         }
+    }
+
+    protected Data.Frame? GetNextFrame(TargetPointer currentFrameAddress)
+    {
+        Data.Frame current = _target.ProcessedData.GetOrAdd<Data.Frame>(currentFrameAddress);
+        if (current.Next == TargetPointer.Null)
+            return null;
+        ulong terminator = _target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+        if (current.Next.Value == terminator)
+            return null;
+        return _target.ProcessedData.GetOrAdd<Data.Frame>(current.Next);
     }
 }

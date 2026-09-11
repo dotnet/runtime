@@ -18,45 +18,41 @@ bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out Targe
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `SyncTableEntry` | `SyncBlock` | Pointer to the sync block for a sync table entry |
-| `SyncTableEntry` | `Object` | Pointer to the object associated with a sync table entry |
-| `SyncBlockCache` | `FreeSyncTableIndex` | One past the highest sync table entry index allocated |
-| `SyncBlockCache` | `CleanupBlockList` | Head of the cleanup list (points to the first `SyncBlock` in the chain) |
-| `SyncBlock` | `Lock` | Optional pointer to a `System.Threading.Lock` object payload |
-| `SyncBlock` | `ThinLock` | Thin-lock state bits |
-| `SyncBlock` | `LinkNext` | Head pointer for cleanup list link |
-| `SyncBlock` | `InteropInfo` | Optional pointer to an `InteropSyncBlockInfo` for the sync block |
-| `InteropSyncBlockInfo` | `RCW` | RCW pointer; bit 0 is a lock bit and must be masked off |
-| `InteropSyncBlockInfo` | `CCW` | CCW pointer; sentinel value `0x1` means previously had a CCW (treat as null) |
-| `InteropSyncBlockInfo` | `CCF` | COM class factory pointer; sentinel value `0x1` means previously had a CCF (treat as null) |
+<!-- BEGIN GENERATED: usage contract=SyncBlock version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| `SyncTableEntries` | TargetPointer | Pointer to the sync table entries array |
-| `SyncBlockCache` | TargetPointer | Pointer to the runtime sync block cache |
-| `SyncBlockMaskLockThreadId` | uint32 | Mask for extracting thread id from `SyncBlock.ThinLock` |
-| `SyncBlockMaskLockRecursionLevel` | uint32 | Mask for extracting recursion level from `SyncBlock.ThinLock` |
-| `SyncBlockRecursionLevelShift` | uint32 | Shift value for `SyncBlock.ThinLock` recursion level |
-
-### Contract Constants:
-| Name | Type | Purpose | Value |
+| Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
-| `LockStateName` | string | Field name in `System.Threading.Lock` storing monitor-held state bits. | `_state` |
-| `LockOwningThreadIdName` | string | Field name in `System.Threading.Lock` storing owning thread id. | `_owningThreadId` |
-| `LockRecursionCountName` | string | Field name in `System.Threading.Lock` storing monitor recursion count. | `_recursionCount` |
-| `LockName` | string | Type name used to resolve `System.Threading.Lock`. | `Lock` |
-| `LockNamespace` | string | Namespace used to resolve `System.Threading.Lock`. | `System.Threading` |
+| `InteropSyncBlockInfo` | `CCF` | `pointer` | COM class factory pointer; sentinel value 0x1 means previously had a CCF (treat as null) |
+| `InteropSyncBlockInfo` | `CCW` | `pointer` | CCW pointer; sentinel value 0x1 means previously had a CCW (treat as null) |
+| `InteropSyncBlockInfo` | `RCW` | `pointer` | RCW pointer; bit 0 is a lock bit and must be masked off |
+| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
+| `SyncBlock` | `LinkNext` | `pointer` | Head pointer for cleanup list link |
+| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
+| `SyncBlock` | `ThinLock` | `uint32` | Thin-lock state bits |
+| `SyncBlockCache` | `CleanupBlockList` | `pointer` | Head of the cleanup list (points to the first SyncBlock in the chain) |
+| `SyncBlockCache` | `FreeSyncTableIndex` | `uint32` | One past the highest sync table entry index allocated |
+| `SyncTableEntry` | *(type size)* | `uint32` | Size in bytes of each entry in the sync table |
+| `SyncTableEntry` | `Object` | `pointer` | Pointer to the object associated with a sync table entry |
+| `SyncTableEntry` | `SyncBlock` | `pointer` | Pointer to the sync block for a sync table entry |
+| `System.Threading.Lock` | `_owningThreadId` | `int32` | Managed thread ID of the thread that currently owns the lock |
+| `System.Threading.Lock` | `_recursionCount` | `uint32` | Number of recursive acquisitions beyond the initial lock acquisition |
+| `System.Threading.Lock` | `_state` | `uint32` | Bitfield containing lock ownership, waiter, spinner, and wake-up state |
 
-Contracts used:
-| Contract Name |
-| --- |
-| `Loader` |
-| `RuntimeTypeSystem` |
-| `EcmaMetadata` |
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `SyncBlockCache` | `pointer` | Pointer to the runtime sync block cache |
+| `SyncBlockMaskLockRecursionLevel` | `uint32` | Mask for extracting recursion level from SyncBlock.ThinLock |
+| `SyncBlockMaskLockThreadId` | `uint32` | Mask for extracting thread id from SyncBlock.ThinLock |
+| `SyncBlockRecursionLevelShift` | `uint32` | Shift value for SyncBlock.ThinLock recursion level |
+| `SyncTableEntries` | `pointer` | Pointer to the sync table entries array |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=SyncBlock version=c1 -->
 
 ``` csharp
 TargetPointer GetSyncBlock(uint index)
@@ -97,13 +93,15 @@ bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint r
 
     if (lockObject != TargetPointer.Null)
     {
-        // Resolve System.Threading.Lock in System.Private.CoreLib by name using RuntimeTypeSystem contract, LockName and LockNamespace.
-        uint state = ReadUintField(/* Lock type */, "LockStateName", /* RuntimeTypeSystem contract */, /* MetadataReader for SPC */, lockObject);
+        uint state = target.Read<uint>(
+            lockObject + /* Object data offset */ + /* System.Threading.Lock::_state offset */);
         bool monitorHeld = (state & 1) != 0;
         if (monitorHeld)
         {
-            owningThreadId = ReadUintField(/* Lock type */, "LockOwningThreadIdName", /* contracts */, lockObject);
-            recursion = ReadUintField(/* Lock type */, "LockRecursionCountName", /* contracts */, lockObject);
+            owningThreadId = (uint)target.Read<int>(
+                lockObject + /* Object data offset */ + /* System.Threading.Lock::_owningThreadId offset */);
+            recursion = target.Read<uint>(
+                lockObject + /* Object data offset */ + /* System.Threading.Lock::_recursionCount offset */);
         }
 
         return monitorHeld;
@@ -124,16 +122,6 @@ bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint r
     }
 
     return false;
-}
-
-private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)
-{
-    TargetPointer field = rts.GetFieldDescByName(enclosingType, fieldName);
-    uint token = rts.GetFieldDescMemberDef(field);
-    FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
-    FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-    uint offset = rts.GetFieldDescOffset(field, fieldDef);
-    return _target.Read<uint>(dataAddr + offset);
 }
 
 uint GetAdditionalThreadCount(TargetPointer syncBlock)

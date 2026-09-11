@@ -28,7 +28,6 @@ HELPER(READYTORUN_HELPER_ThrowNotImplemented,       CORINFO_HELP_THROW_NOT_IMPLE
 
 HELPER(READYTORUN_HELPER_WriteBarrier,              CORINFO_HELP_ASSIGN_REF,                        )
 HELPER(READYTORUN_HELPER_CheckedWriteBarrier,       CORINFO_HELP_CHECKED_ASSIGN_REF,                )
-HELPER(READYTORUN_HELPER_ByRefWriteBarrier,         CORINFO_HELP_ASSIGN_BYREF,                      )
 HELPER(READYTORUN_HELPER_BulkWriteBarrier,          CORINFO_HELP_BULK_WRITEBARRIER,                 )
 
 HELPER(READYTORUN_HELPER_Stelem_Ref,                CORINFO_HELP_ARRADDR_ST,                        )

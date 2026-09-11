@@ -366,7 +366,6 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSrcVar));
     }
     CONTRACTL_END;
@@ -459,7 +458,6 @@ void DispParamDelegateMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSrcVar));
     }
     CONTRACTL_END;
@@ -589,8 +587,8 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
     }
     CONTRACTL_END;
 
-    SafeComHolder<IUnknown> pUnk = NULL;
-    SafeComHolder<IDispatch> pDisp = NULL;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IDispatch> pDisp;
 
     // Convert the object using the custom marshaler.
     SafeVariantClear(pDestVar);
@@ -630,20 +628,20 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
             // Release the IUnknown pointer since we will put the IDispatch pointer in
             // the VARIANT.
             ULONG cbRef = SafeRelease(pUnk);
-            pUnk.SuppressRelease();
             LogInteropRelease(pUnk, cbRef, "Release IUnknown");
+            pUnk.Detach();
 
             // Put the IDispatch pointer into the VARIANT.
             V_VT(pDestVar) = VT_DISPATCH;
             V_DISPATCH(pDestVar) = pDisp;
-            pDisp.SuppressRelease();
+            pDisp.Detach();
         }
         else
         {
             // Put the IUnknown pointer into the VARIANT.
             V_VT(pDestVar) = VT_UNKNOWN;
             V_UNKNOWN(pDestVar) = pUnk;
-            pUnk.SuppressRelease();
+            pUnk.Detach();
         }
     }
 }

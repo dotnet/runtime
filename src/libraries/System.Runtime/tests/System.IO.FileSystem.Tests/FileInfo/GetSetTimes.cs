@@ -52,15 +52,12 @@ namespace System.IO.Tests
 
             if (!HasNonZeroNanoseconds(fileinfo.LastWriteTime))
             {
-                if (PlatformDetection.IsApplePlatform)
-                    return null;
-
                 DateTime dt = fileinfo.LastWriteTime;
                 dt = dt.AddTicks(1);
                 fileinfo.LastWriteTime = dt;
             }
 
-            Assert.True(HasNonZeroNanoseconds(fileinfo.LastWriteTime));
+            Assert.True(HasNonZeroNanoseconds(fileinfo.LastWriteTime), "Expected non-zero nanoseconds, got: " + fileinfo.LastWriteTime.Ticks);
             return fileinfo;
         }
 
@@ -113,7 +110,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(HighTemporalResolution))]
+        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(MilliSecondTemporalResolution))]
         public void CopyToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -127,24 +124,21 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(HighTemporalResolution))]
+        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(NanoSecondTemporalResolution))]
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
-            if (input == null)
-                return;
-
             FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
 
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
 
             Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
-            Assert.True(HasNonZeroNanoseconds(output.LastWriteTime));
+            Assert.True(HasNonZeroNanoseconds(output.LastWriteTime), "Expected non-zero nanoseconds, got: " + output.LastWriteTime.Ticks);
         }
 
-        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(LowTemporalResolution))]
-        public void CopyToNanosecondsPresent_LowTempRes()
+        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(NotNanoSecondTemporalResolution))]
+        public void CopyToNanosecondsNotPresent()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -153,17 +147,12 @@ namespace System.IO.Tests
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
 
-            // On Browser, we sometimes see a difference of exactly 10M, eg.,
-            // Expected: 637949564520000000
-            // Actual:   637949564530000000
-            double tolerance = PlatformDetection.IsBrowser ? 10_000_000 : 0;
-
-            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks, tolerance);
-            Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
+            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
+            Assert.False(HasNonZeroNanoseconds(output.LastWriteTime), "Expected zero nanoseconds, got: " + output.LastWriteTime.Ticks);
         }
 
-        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(LowTemporalResolution))]
-        public void MoveToMillisecondPresent_LowTempRes()
+        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(NotMilliSecondTemporalResolution))]
+        public void MoveToMillisecondNotPresent()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -174,7 +163,7 @@ namespace System.IO.Tests
             Assert.Equal(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(HighTemporalResolution))]
+        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(MilliSecondTemporalResolution))]
         public void MoveToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -185,8 +174,8 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(LowTemporalResolution))]
-        public void CopyToMillisecondPresent_LowTempRes()
+        [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(NotMilliSecondTemporalResolution))]
+        public void CopyToMillisecondNotPresent()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();

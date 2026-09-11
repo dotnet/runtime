@@ -86,14 +86,14 @@ namespace BINDER_SPACE
 
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
-                                  /* in */ SString &sAppPaths,
-                                  /* in */ BOOL     fAcquireLock);
+                                  /* in */ SString &sAppPaths);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
         inline FailureCache *GetFailureCache();
         inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
-                                         HRESULT  hrBindResult);
+                                         HRESULT  hrBindResult,
+                                         LPCWSTR  diagnosticInfo);
         inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
         inline StringArrayList *GetPlatformResourceRoots();

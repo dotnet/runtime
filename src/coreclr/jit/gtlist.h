@@ -41,6 +41,12 @@ GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLI
 GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
 GTNODE(FTN_ENTRY        , GenTree            ,0,0,GTK_LEAF)             // Address of this function's entry point
 
+// Offset into continuation, starting after the MethodTable*, of a special
+// member. GenTreeVal::gtVal1 is an index into Compiler::m_asyncContinuationMembers.
+// The async transformation allocates and lays out the continuation and
+// substitutes these by constants at that time.
+GTNODE(CONTINUATION_MEMBER_OFFSET, GenTreeVal ,0,0,GTK_LEAF)
+
 //-----------------------------------------------------------------------------
 //  Constant nodes:
 //-----------------------------------------------------------------------------
@@ -225,6 +231,7 @@ GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
+GTNODE(BFX              , GenTreeBfm         ,0,0,GTK_UNOP|GTK_EXOP|DBK_NOTHIR) // Bitfield Extract.
 #endif
 
 //-----------------------------------------------------------------------------
@@ -297,14 +304,16 @@ GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0]) << imm.
 GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif // TARGET_RISCV64
 
-// Maps to bset/bseti instruction. Computes result = op1 | (1 << op2)
+#if defined(TARGET_RISCV64) || defined(TARGET_XARCH)
+// Maps to riscv64 bset/bseti and xarch bts. Computes result = op1 | (1 << op2)
 GTNODE(BIT_SET          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
-// Maps to bclr/bclri instruction. Computes result = op1 & ~(1 << op2)
+// Maps to riscv64 bclr/bclri and xarch btr. Computes result = op1 & ~(1 << op2)
 GTNODE(BIT_CLEAR        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
-// Maps to binv/binvi instruction. Computes result = op1 ^ (1 << op2)
+// Maps to riscv64 binv/binvi and xarch btc. Computes result = op1 ^ (1 << op2)
 GTNODE(BIT_INVERT       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
-#endif
+#endif // TARGET_RISCV64 || TARGET_XARCH
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:
@@ -370,6 +379,9 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //-----------------------------------------------------------------------------
 
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
+#ifdef TARGET_WASM
+GTNODE(FRAME_SIZE       , GenTree            ,0,0,GTK_LEAF|DBK_NOTHIR)              // compLclFrameSize; resolved by wasm codegen
+#endif // TARGET_WASM
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack

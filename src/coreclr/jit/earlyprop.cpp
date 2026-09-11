@@ -637,7 +637,7 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool
                 if (tree->OperIs(GT_STORE_LCL_VAR))
                 {
                     LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVar());
-                    result            = varDsc->lvTracked && !varDsc->lvLiveInOutOfHndlr;
+                    result            = varDsc->lvTracked && !varDsc->IsLiveInOutOfHandler();
                 }
             }
             else

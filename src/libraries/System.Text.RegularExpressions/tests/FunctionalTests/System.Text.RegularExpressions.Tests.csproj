@@ -21,6 +21,7 @@
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
     <Compile Include="CaptureCollectionTests.cs" />
+    <Compile Include="GB18030\RegexTests.cs" />
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
     <Compile Include="MonoRegexTests.cs" />
@@ -28,6 +29,7 @@
     <Compile Include="Regex.Ctor.Tests.cs" />
     <Compile Include="Regex.Cache.Tests.cs" />
     <Compile Include="Regex.EscapeUnescape.Tests.cs" />
+    <Compile Include="Regex.Examples.cs" />
     <Compile Include="Regex.GetGroupNames.Tests.cs" />
     <Compile Include="Regex.Groups.Tests.cs" />
     <Compile Include="Regex.KnownPattern.Tests.cs" />
@@ -104,5 +106,7 @@
   <ItemGroup>
     <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
   </ItemGroup>
+
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 
 </Project>

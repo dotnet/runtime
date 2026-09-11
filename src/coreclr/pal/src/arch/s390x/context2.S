@@ -56,7 +56,7 @@ LEAF_END CONTEXT_CaptureContext, _TEXT
 LEAF_ENTRY RtlCaptureContext, _TEXT
     mvhhi    CONTEXT_ContextFlags+2(%r2), ((CONTEXT_S390X | CONTEXT_FULL) & 0xffff)
     mvhhi    CONTEXT_ContextFlags(%r2), ((CONTEXT_S390X | CONTEXT_FULL) >> 16)
-    jg     C_FUNC(CONTEXT_CaptureContext)
+    jg     EXTERNAL_C_FUNC(CONTEXT_CaptureContext)
 LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY RtlRestoreContext, _TEXT

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -226,6 +227,24 @@ namespace Sequential
     {
         public StructByte fld1;
         public Auto.UInt128Struct fld2;
+    }
+
+    public struct StructStructByte_Decimal32StructAuto
+    {
+        public StructByte fld1;
+        public Auto.Decimal32Struct fld2;
+    }
+
+    public struct StructStructByte_Decimal64StructAuto
+    {
+        public StructByte fld1;
+        public Auto.Decimal64Struct fld2;
+    }
+
+    public struct StructStructByte_Decimal128StructAuto
+    {
+        public StructByte fld1;
+        public Auto.Decimal128Struct fld2;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -497,6 +516,24 @@ namespace Auto
     public struct Int128Struct
     {
         Int128 fld1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Decimal32Struct
+    {
+        Decimal32 fld1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Decimal64Struct
+    {
+        Decimal64 fld1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Decimal128Struct
+    {
+        Decimal128 fld1;
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <EnvironmentVariables>DOTNET_StressLog=1;DOTNET_LogFacility=0xffffffbf;DOTNET_LogLevel=6;DOTNET_StressLogSize=65536</EnvironmentVariables>
+  </PropertyGroup>
+</Project>

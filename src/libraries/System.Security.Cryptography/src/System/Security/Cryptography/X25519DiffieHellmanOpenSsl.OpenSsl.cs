@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
     public sealed partial class X25519DiffieHellmanOpenSsl
     {
         private readonly SafeEvpPKeyHandle _key;
-        private readonly bool _hasPrivate;
+        private readonly bool _hasExportablePrivate;
 
         public partial X25519DiffieHellmanOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
             }
 
             _key = pkeyHandle.DuplicateHandle();
-            bool isValid = Interop.Crypto.X25519IsValidHandle(_key, out _hasPrivate);
+            bool isValid = Interop.Crypto.X25519IsValidHandle(_key, out _hasExportablePrivate);
 
             if (!isValid)
             {
@@ -38,7 +38,6 @@ namespace System.Security.Cryptography
         protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
-            ThrowIfPrivateNeeded();
 
             int written;
 
@@ -54,11 +53,7 @@ namespace System.Security.Cryptography
             {
                 Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
                 otherParty.ExportPublicKey(publicKey);
-
-                using (SafeEvpPKeyHandle peerKeyHandle = Interop.Crypto.X25519ImportPublicKey(publicKey))
-                {
-                    written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, peerKeyHandle, destination);
-                }
+                written = Interop.Crypto.X25519DeriveSecretAgreementWithBytes(_key, publicKey, destination);
             }
 
             if (written != SecretAgreementSizeInBytes)
@@ -68,10 +63,24 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+
+            int written = Interop.Crypto.X25519DeriveSecretAgreementWithBytes(_key, otherPartyPublicKey, destination);
+
+            if (written != SecretAgreementSizeInBytes)
+            {
+                Debug.Fail($"{nameof(Interop.Crypto.X25519DeriveSecretAgreementWithBytes)} wrote an unexpected number of bytes: {written}.");
+                throw new CryptographicException();
+            }
+        }
+
         protected override void ExportPrivateKeyCore(Span<byte> destination)
         {
             Debug.Assert(destination.Length == PrivateKeySizeInBytes);
-            ThrowIfPrivateNeeded();
+            ThrowIfExportablePrivateNeeded();
             Interop.Crypto.X25519ExportPrivateKey(_key, destination);
         }
 
@@ -83,7 +92,7 @@ namespace System.Security.Cryptography
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            ThrowIfPrivateNeeded();
+            ThrowIfExportablePrivateNeeded();
             return TryExportPkcs8PrivateKeyImpl(destination, out bytesWritten);
         }
 
@@ -97,9 +106,9 @@ namespace System.Security.Cryptography
             base.Dispose(disposing);
         }
 
-        private void ThrowIfPrivateNeeded()
+        private void ThrowIfExportablePrivateNeeded()
         {
-            if (!_hasPrivate)
+            if (!_hasExportablePrivate)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
         }
     }

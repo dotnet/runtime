@@ -171,6 +171,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "libinotify on OpenBSD can lose the Created event for a file that is created and immediately deleted on a freshly-started watch.")]
         public void EndInit_ResumesPausedEnableRaisingEvents(bool setBeforeBeginInit)
         {
             FileSystemWatcherTest.Execute(() =>

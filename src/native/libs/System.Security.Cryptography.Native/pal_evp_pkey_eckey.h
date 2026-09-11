@@ -6,16 +6,10 @@
 #include "opensslshim.h"
 
 /*
-Shims the EVP_PKEY_get1_EC_KEY method.
+Creates a new EVP_PKEY from a raw EC_KEY pointer.
+The EC_KEY is duplicated (up-ref'd) so the caller retains ownership of the input.
+Also computes and returns the EC key size via outKeySize (may be NULL).
 
-Returns the EC_KEY instance for the EVP_PKEY.
+Returns a new EVP_PKEY* on success, or NULL on failure (including if key size is 0).
 */
-PALEXPORT EC_KEY* CryptoNative_EvpPkeyGetEcKey(EVP_PKEY* pkey);
-
-/*
-Shims the EVP_PKEY_set1_EC_KEY method to set the EC_KEY
-instance on the EVP_KEY.
-
-Returns 1 upon success, otherwise 0.
-*/
-PALEXPORT int32_t CryptoNative_EvpPkeySetEcKey(EVP_PKEY* pkey, EC_KEY* key);
+PALEXPORT EVP_PKEY* CryptoNative_CreateEvpPkeyFromEcKey(EC_KEY* ecKey, int32_t* outKeySize);

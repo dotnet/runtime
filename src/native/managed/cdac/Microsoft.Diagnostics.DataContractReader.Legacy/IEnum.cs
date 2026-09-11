@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal interface IEnum<T>
 {
     IEnumerator<T> Enumerator { get; }
-    TargetPointer LegacyHandle { get; }
+    nuint LegacyHandle { get; }
     void Dispose() => Enumerator.Dispose();
     long GetHandle()
     {

@@ -26,8 +26,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public SimpleBinaryOpConvTest__DataTable(TOp1[] inArray1, TOp2 inData2, TResult[] outArray, int alignment)
         {
-            int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<TOp1>();
-            int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<TResult>();
+            int sizeOfinArray1 = inArray1.Length * sizeof(TOp1);
+            int sizeOfoutArray = outArray.Length * sizeof(TResult);
             if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
             {
                 throw new ArgumentException("Invalid value of alignment");

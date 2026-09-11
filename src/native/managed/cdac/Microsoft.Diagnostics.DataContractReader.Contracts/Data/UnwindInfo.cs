@@ -1,31 +1,30 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Diagnostics.DataContractReader.Contracts;
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class UnwindInfo : IData<UnwindInfo>
+[CdacType(nameof(DataType.UnwindInfo))]
+internal sealed partial class UnwindInfo : IData<UnwindInfo>
 {
-    static UnwindInfo IData<UnwindInfo>.Create(Target target, TargetPointer address)
-        => new UnwindInfo(target, address);
+    [CustomInit(nameof(InitFunctionLength))] public partial uint? FunctionLength { get; }
+    [CustomInit(nameof(InitHeader))] public partial uint? Header { get; }
 
-    public UnwindInfo(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(FunctionLength), "uint32")]
+    private partial uint? InitFunctionLength(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.UnwindInfo);
-
-        if (type.Fields.ContainsKey(nameof(FunctionLength)))
-        {
-            // The unwind info contains the function length on some platforms (x86)
-            FunctionLength = target.ReadField<uint>(address, type, nameof(FunctionLength));
-        }
-        else
-        {
-            // Otherwise, it starts with a bitfield header
-            Header = target.Read<uint>(address);
-        }
+        // The unwind info contains the function length on some platforms (x86)
+        return type.Fields.ContainsKey(nameof(FunctionLength))
+            ? target.ReadField<uint>(address, type, nameof(FunctionLength))
+            : null;
     }
 
-    public uint? FunctionLength { get; }
-    public uint? Header { get; }
+    private partial uint? InitHeader(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.UnwindInfo);
+        // When the function length is absent, the unwind info starts with a bitfield header
+        return type.Fields.ContainsKey(nameof(FunctionLength))
+            ? null
+            : target.Read<uint>(address);
+    }
 }

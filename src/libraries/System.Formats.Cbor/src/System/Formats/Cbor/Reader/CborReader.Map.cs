@@ -31,6 +31,7 @@ namespace System.Formats.Cbor
         {
             int? length;
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Map);
+            EnsureMaxDepthNotExceeded();
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {

@@ -10,6 +10,7 @@
 #include "common.h"
 #include <limits>
 
+#include <inttypes.h>
 #include "stubgen.h"
 #include "jitinterface.h"
 #include "ilstubcache.h"
@@ -530,11 +531,11 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf("0x%p", pInstruction->uArg);
+            strArgument.Printf("0x%zx", (size_t)pInstruction->uArg);
             break;
 
         case InlineI8:
-            strArgument.Printf("0x%llx", (uint64_t)pInstruction->uArg);
+            strArgument.Printf("0x%" PRIx64, (uint64_t)pInstruction->uArg);
             break;
 
         case InlineMethod:
@@ -546,7 +547,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf("0x%08p", pInstruction->uArg);
+                strArgument.Printf("0x%08zx", (size_t)pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
@@ -1988,38 +1989,11 @@ void ILCodeStream::EmitLoadNullPtr()
     EmitCONV_I();
 }
 
-void ILCodeStream::EmitArgIteratorCreateAndLoad()
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // we insert the ArgIterator in the same spot that the VASigCookie will go for sanity
-    //
-    LocalDesc   aiLoc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
-    int         aiLocNum;
-
-    aiLocNum = NewLocal(aiLoc);
-
-    EmitLDLOCA(aiLocNum);
-    EmitDUP();
-    EmitARGLIST();
-    EmitLoadNullPtr();
-    EmitCALL(METHOD__ARG_ITERATOR__CTOR2, 2, 0);
-
-    aiLoc.ElementType[0]    = ELEMENT_TYPE_BYREF;
-    aiLoc.ElementType[1]    = ELEMENT_TYPE_INTERNAL;
-    aiLoc.cbType            = 2;
-    aiLoc.InternalToken     = CoreLibBinder::GetClass(CLASS__ARG_ITERATOR);
-
-    SetStubTargetArgType(&aiLoc, false);
-}
-
 DWORD ILStubLinker::NewLocal(CorElementType typ)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2057,7 +2031,6 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pLoc));
     }
     CONTRACTL_END;
@@ -2541,7 +2514,6 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 

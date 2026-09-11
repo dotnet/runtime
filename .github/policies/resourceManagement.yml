@@ -199,6 +199,8 @@ configuration:
         - labelAdded:
             label: area-NativeAOT-coreclr
         - labelAdded:
+            label: area-ReadyToRun
+        - labelAdded:
             label: area-Single-File
         - labelAdded:
             label: area-System.Buffers
@@ -395,7 +397,6 @@ configuration:
             - JulieLeeMSFT
             - brzvlad
             - janvorli
-            - kg
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -633,7 +634,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - JulieLeeMSFT
+            - anicka-net
             - dotnet/gc
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -786,6 +787,18 @@ configuration:
             mentionees:
             - agocke
             - dotnet/ilc-contrib
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-ReadyToRun
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/crossgen-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

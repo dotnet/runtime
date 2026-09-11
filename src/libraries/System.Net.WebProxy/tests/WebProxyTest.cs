@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Xunit;
@@ -44,7 +45,7 @@ namespace System.Net.Tests
             Assert.Equal(useDefaultCredentials, p.UseDefaultCredentials);
             Assert.Equal(bypassLocal, p.BypassProxyOnLocal);
             Assert.Equal(bypassedAddresses, p.BypassList);
-            Assert.Equal(bypassedAddresses, (string[])p.BypassArrayList.ToArray(typeof(string)));
+            Assert.Equal(bypassedAddresses, p.BypassArrayList.Cast<string>().ToArray());
             Assert.Equal(creds, p.Credentials);
         }
 
@@ -60,12 +61,12 @@ namespace System.Net.Tests
             strings = new string[] { "hello", "world" };
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
-            Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+            Assert.Equal(strings, p.BypassArrayList.Cast<string>().ToArray());
 
             strings = new string[] { "hello" };
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
-            Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+            Assert.Equal(strings, p.BypassArrayList.Cast<string>().ToArray());
 
             strings = null;
             p.BypassList = strings;
@@ -193,6 +194,8 @@ namespace System.Net.Tests
 
             yield return new object[] { new Uri($"http://nodotinhostname"), true };
             yield return new object[] { new Uri($"http://{Guid.NewGuid():N}"), true };
+            // A non-ASCII hostname without a separator stays local; its IDN form gains no dot.
+            yield return new object[] { new Uri("http://b\u00FCcher"), true };
             foreach (IPAddress address in Dns.GetHostEntryAsync(Dns.GetHostName()).GetAwaiter().GetResult().AddressList)
             {
                 if (address.AddressFamily == AddressFamily.InterNetwork)
@@ -222,6 +225,12 @@ namespace System.Net.Tests
 
             yield return new object[] { new Uri($"http://{Guid.NewGuid():N}.com"), false };
             yield return new object[] { new Uri($"http://{IPAddress.None}"), false };
+
+            // Hosts with non-ASCII dot separators that IDN maps to '.' (ideographic full stop U+3002,
+            // fullwidth full stop U+FF0E, halfwidth ideographic full stop U+FF61) are not local.
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}\u3002com"), false };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}\uFF0Ecom"), false };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}\uFF61com"), false };
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23428", TestPlatforms.AnyUnix)]

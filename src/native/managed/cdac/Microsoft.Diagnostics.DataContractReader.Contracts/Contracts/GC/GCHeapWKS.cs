@@ -28,9 +28,12 @@ internal sealed class GCHeapWKS : IGCHeap
 
         OomData = target.ProcessedData.GetOrAdd<Data.OomHistory>(target.ReadGlobalPointer(Constants.Globals.GCHeapOomData));
 
-        InternalRootArray = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapInternalRootArray));
-        InternalRootArrayIndex = target.ReadNUInt(target.ReadGlobalPointer(Constants.Globals.GCHeapInternalRootArrayIndex));
-        HeapAnalyzeSuccess = target.Read<int>(target.ReadGlobalPointer(Constants.Globals.GCHeapHeapAnalyzeSuccess)) != 0;
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapInternalRootArray, out TargetPointer? internalRootArrayPtr))
+            InternalRootArray = target.ReadPointer(internalRootArrayPtr.Value);
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapInternalRootArrayIndex, out TargetPointer? internalRootArrayIndexPtr))
+            InternalRootArrayIndex = target.ReadNUInt(internalRootArrayIndexPtr.Value);
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapHeapAnalyzeSuccess, out TargetPointer? heapAnalyzeSuccessPtr))
+            HeapAnalyzeSuccess = target.Read<int>(heapAnalyzeSuccessPtr.Value) != 0;
 
         InterestingData = target.ReadGlobalPointer(Constants.Globals.GCHeapInterestingData);
         CompactReasons = target.ReadGlobalPointer(Constants.Globals.GCHeapCompactReasons);
@@ -60,9 +63,9 @@ internal sealed class GCHeapWKS : IGCHeap
 
     public Data.OomHistory OomData { get; }
 
-    public TargetPointer InternalRootArray { get; }
-    public TargetNUInt InternalRootArrayIndex { get; }
-    public bool HeapAnalyzeSuccess { get; }
+    public TargetPointer? InternalRootArray { get; }
+    public TargetNUInt? InternalRootArrayIndex { get; }
+    public bool? HeapAnalyzeSuccess { get; }
 
     public TargetPointer InterestingData { get; }
     public TargetPointer CompactReasons { get; }

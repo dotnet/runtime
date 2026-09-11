@@ -1259,14 +1259,8 @@ namespace System.Collections.Immutable
                 list = new List<T>(this.Count + addedItems.Length);
                 list.AddRange(this);
             }
-#if NET
+
             list.AddRange(addedItems);
-#else
-            foreach (var item in addedItems)
-            {
-                list.Add(item);
-            }
-#endif
             Debug.Assert(list.Count > 0);
 
             // Sort the list and remove duplicate entries.

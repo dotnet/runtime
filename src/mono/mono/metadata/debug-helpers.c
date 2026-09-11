@@ -1076,7 +1076,7 @@ static void
 print_field_value (const char *field_ptr, MonoClassField *field, gssize type_offset)
 {
 	MonoType *type;
-	g_print ("At %p (ofs: %2d) %s: ", field_ptr, m_field_is_from_update (field) ? -1 : (field->offset + type_offset), mono_field_get_name (field));
+	g_print ("At %p (ofs: %2td) %s: ", field_ptr, m_field_is_from_update (field) ? -1 : (field->offset + type_offset), mono_field_get_name (field));
 	type = mono_type_get_underlying_type (field->type);
 
 	switch (type->type) {

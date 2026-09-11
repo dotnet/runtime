@@ -227,6 +227,8 @@ public class Test_Rotate
         return ((uint)usfield << amount) | ((uint)usfield >> (32 - amount));
     }
 
+    public Test_Rotate() { }
+
     Test_Rotate(ulong i, uint j, ushort k)
     {
         field = i;

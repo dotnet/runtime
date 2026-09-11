@@ -16,6 +16,10 @@
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
+// Each floating point register occupies a single 64-bit slot in the context, so FPRegister64 is one
+// ULONGLONG and Get64bitFPRegisters strides one slot per register.
+typedef ULONGLONG                   FPRegister64;
+
 // TODO-RISCV64-CQ: Update when it supports c and other extensions
 #define MAX_INSTRUCTION_LENGTH 4
 
@@ -90,10 +94,10 @@ inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID ip) {
     context->Pc = (DWORD64)ip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->Sp);
+    return (CORDB_ADDRESS)(context->Sp);
 }
 
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID esp) {

@@ -13,29 +13,41 @@ namespace System.Runtime.Intrinsics
 {
     internal static class Scalar<T>
     {
-        public static bool IsFloatingPoint => (typeof(T) == typeof(double))
-                                           || (typeof(T) == typeof(float));
+        public static bool IsFloatingPoint
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(double))
+                || (typeof(T) == typeof(float));
+        }
 
-        public static bool IsSupported => (typeof(T) == typeof(byte))
-                                       || (typeof(T) == typeof(char))
-                                       || (typeof(T) == typeof(double))
-                                       || (typeof(T) == typeof(short))
-                                       || (typeof(T) == typeof(int))
-                                       || (typeof(T) == typeof(long))
-                                       || (typeof(T) == typeof(nint))
-                                       || (typeof(T) == typeof(sbyte))
-                                       || (typeof(T) == typeof(float))
-                                       || (typeof(T) == typeof(ushort))
-                                       || (typeof(T) == typeof(uint))
-                                       || (typeof(T) == typeof(ulong))
-                                       || (typeof(T) == typeof(nuint));
+        public static bool IsSupported
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte))
+                || (typeof(T) == typeof(char))
+                || (typeof(T) == typeof(double))
+                || (typeof(T) == typeof(short))
+                || (typeof(T) == typeof(int))
+                || (typeof(T) == typeof(long))
+                || (typeof(T) == typeof(nint))
+                || (typeof(T) == typeof(sbyte))
+                || (typeof(T) == typeof(float))
+                || (typeof(T) == typeof(ushort))
+                || (typeof(T) == typeof(uint))
+                || (typeof(T) == typeof(ulong))
+                || (typeof(T) == typeof(nuint));
+        }
 
-        public static bool IsUnsigned => (typeof(T) == typeof(byte))
-                                      || (typeof(T) == typeof(char))
-                                      || (typeof(T) == typeof(ushort))
-                                      || (typeof(T) == typeof(uint))
-                                      || (typeof(T) == typeof(ulong))
-                                      || (typeof(T) == typeof(nuint));
+        public static bool IsUnsigned
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte))
+                || (typeof(T) == typeof(char))
+                || (typeof(T) == typeof(ushort))
+                || (typeof(T) == typeof(uint))
+                || (typeof(T) == typeof(ulong))
+                || (typeof(T) == typeof(nuint));
+        }
 
         public static T AllBitsSet
         {
@@ -582,7 +594,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T CopySign(T value, T sign)
         {
-            // byte, char, nuint, ushort, uint, and ulong should have already been handled
+            // byte, char, ushort, uint, ulong, and nuint should have already been handled
             // avoid Math.Abs for integers since it throws for MinValue
             if (typeof(T) == typeof(double))
             {
@@ -1159,7 +1171,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MaxMagnitude(T left, T right)
         {
-            // byte, char, nuint, ushort, uint, and ulong should have already been handled
+            // byte, char, ushort, uint, ulong, and nuint should have already been handled
             if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MaxMagnitude((double)(object)left, (double)(object)right);
@@ -1293,7 +1305,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MinMagnitude(T left, T right)
         {
-            // byte, char, nuint, ushort, uint, and ulong should have already been handled
+            // byte, char, ushort, uint, ulong, and nuint should have already been handled
             if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MinMagnitude((double)(object)left, (double)(object)right);
@@ -1416,6 +1428,24 @@ namespace System.Runtime.Intrinsics
             else if (typeof(T) == typeof(ulong))
             {
                 return (T)(object)((ulong)(object)left * (ulong)(object)right);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Pow(T left, T right)
+        {
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)double.Pow((double)(object)left, (double)(object)right);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)float.Pow((float)(object)left, (float)(object)right);
             }
             else
             {

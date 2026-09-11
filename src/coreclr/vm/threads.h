@@ -329,7 +329,13 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-void InitThreadManagerPerfMapData();
+void InitThreadManagerTracingData();
+#ifndef FEATURE_PORTABLE_HELPERS
+void ReportCopiedWriteBarriersToPerfMap();
+#ifdef FEATURE_EVENT_TRACE
+void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions);
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
@@ -491,11 +497,9 @@ public:
     // If we are trying to suspend a thread, we set the appropriate pending bit to
     // indicate why we want to suspend it (TS_AbortRequested or TS_DebugSuspendPending).
     //
-    // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
-    // this with TS_SyncSuspended.  However, we need to know whether the synchronous
-    // suspension is for a user request, or for an internal one (GC & Debug).  That's
-    // because a user request is not allowed to resume a thread suspended for
-    // debugging or GC.  -- That's not stricly true.  It is allowed to resume such a
+    // If instead the thread has blocked itself, via WaitForDebugSuspend, we indicate
+    // this with TS_DebugSyncSuspended.  A user request is not allowed to resume a thread
+    // suspended for debugging.  -- That's not strictly true.  It is allowed to resume such a
     // thread so long as it was ALSO suspended by the user.  In other words, this
     // ensures that user resumptions aren't unbalanced from user suspensions.
     //
@@ -505,10 +509,10 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
-        TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
+        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code). [cDAC] [Thread]: Contract depends on this value.
+        TS_GCSuspendRedirected    = 0x00000004,    // Thread has been redirected to suspension routine. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
+        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads? [cDAC] [Thread]: Contract depends on this value.
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
         TS_SyncBlockCleanup       = 0x00000020,    // The synch block needs to be cleaned up.
@@ -526,10 +530,10 @@ public:
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread
+        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_InSTA                  = 0x00004000,    // Thread hosts an STA
-        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA
+        TS_InSTA                  = 0x00004000,    // Thread hosts an STA. [cDAC] [Thread]: Contract depends on this value.
+        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA. [cDAC] [Thread]: Contract depends on this value.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         // Some bits that only have meaning for reporting the state to clients.
@@ -538,8 +542,8 @@ public:
 
         // unused                 = 0x00040000,
 
-        TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
-        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
+        TS_DebugSyncSuspended     = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request. [cDAC] [Thread]: Contract depends on this value.
+        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync. [cDAC] [Thread]: Contract depends on this value.
 
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
                                                    // See comment for s_pWaitForStackCrawlEvent for reason.
@@ -560,7 +564,7 @@ public:
                                                    // We can clean up the unmanaged part now.
 
         TS_FailStarted            = 0x40000000,    // The thread fails during startup.
-        TS_Detached               = 0x80000000,    // Thread was detached by DllMain
+        TS_Detached               = 0x80000000,    // Thread was detached by DllMain. [cDAC] [Thread]: Contract depends on this value.
 
         // <TODO> @TODO: We need to reclaim the bits that have no concurrency issues (i.e. they are only
         //         manipulated by the owning thread) and move them off to a different DWORD.  Note if this
@@ -576,7 +580,7 @@ public:
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
-        TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
+        TSNC_DebuggerThreadStartSent    = 0x00000001, // The debugger thread-start event has been sent for this thread.
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
@@ -629,6 +633,14 @@ public:
                                                       // There are cases during managed debugging when we can run into this situation
     };
 
+    // Thread state flags that are only written by the debugger (out-of-proc) and read by the runtime (in-proc).
+    // Separated from ThreadStateNoConcurrency to avoid read-modify-write races between the debugger and the runtime.
+    enum DebuggerControlledThreadState
+    {
+        DCTS_None               = 0x00000000, // [cDAC] [Thread]: Contract depends on this value.
+        DCTS_UserSuspend        = 0x00000001, // Marked "suspended" by the debugger [cDAC] [Thread]: Contract depends on this value.
+    };
+
 public:
     HRESULT DetachThread(BOOL inTerminationCallback);
 
@@ -676,6 +688,24 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return ((DWORD)m_StateNC & tsnc);
+    }
+
+    void SetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() | dcts);
+    }
+
+    void ResetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() & ~dcts);
+    }
+
+    BOOL HasDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return ((DWORD)m_DebuggerControlledThreadState.Load() & dcts);
     }
 
     void MarkEtwStackWalkInProgress()
@@ -895,7 +925,7 @@ public:
 
 #ifdef FEATURE_INTERPRETER
 public:
-    InterpThreadContext *m_pInterpThreadContext;
+    PTR_InterpThreadContext m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
     InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
@@ -906,6 +936,9 @@ public:
 
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
+
+    // Flags for thread states controlled by the debugger.
+    Volatile<DebuggerControlledThreadState> m_DebuggerControlledThreadState;
 
 private:
 #ifdef _DEBUG
@@ -2155,7 +2188,7 @@ public:
     void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind = false);
 
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
-                                           EECodeInfo * pCodeInfo = NULL);
+                                           EECodeInfo * pCodeInfo = NULL ARM64_ARG(TADDR * pSpForPacSign = NULL));
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
@@ -2392,8 +2425,8 @@ private:
 
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
-    void    WaitSuspendEvents();
-    BOOL    WaitSuspendEventsHelper(void);
+    void    WaitForDebugSuspend();
+    BOOL    WaitForDebugSuspendHelper(void);
 
     // Helpers to ensure that the bits for suspension and the number of active
     // traps remain coordinated.
@@ -2426,7 +2459,7 @@ private:
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_DebugSyncSuspended));
 
             if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
@@ -2489,6 +2522,9 @@ private:
     void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
+#ifdef TARGET_ARM64
+    VOID        *m_pSpForPacSign;         // stack pointer value that was used to sign LR with PACIASP
+#endif
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
@@ -2566,12 +2602,11 @@ private:
 
     // <TODO> It would be nice to remove m_ThreadHandleForClose to simplify Thread.Join,
     //   but at the moment that isn't possible without extensive work.
-    //   This handle is used by SwitchOut to store the old handle which may need to be closed
-    //   if we are the owner.  The handle can't be closed before checking the external count
+    //   This handle is used by SwitchOut to store the old handle that needs to be closed.
+    //   The handle can't be closed before checking the external count,
     //   which we can't do in SwitchOut since that may require locking or switching threads.</TODO>
     HANDLE          m_ThreadHandleForClose;
     HANDLE          m_ThreadHandleForResume;
-    BOOL            m_WeOwnThreadHandle;
     SIZE_T          m_OSThreadId;
 
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
@@ -3733,9 +3768,11 @@ struct cdac_data<Thread>
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
     static constexpr size_t State = offsetof(Thread, m_State);
+    static constexpr size_t DebuggerControlledThreadState = offsetof(Thread, m_DebuggerControlledThreadState);
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
+    static constexpr size_t GCFrame = offsetof(Thread, m_pGCFrame);
     static constexpr size_t CachedStackBase = offsetof(Thread, m_CacheStackBase);
     static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
@@ -3749,10 +3786,16 @@ struct cdac_data<Thread>
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+    static constexpr size_t InteropDebuggingHijacked = offsetof(Thread, m_fInteropDebuggingHijacked);
+#ifdef TARGET_WINDOWS
+    static constexpr size_t ThreadHandle = offsetof(Thread, m_ThreadHandle);
+#endif
 #ifndef TARGET_UNIX
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
+
+    static_assert(State == 0, "Thread.NativeThread depends on Thread::m_State being the first field");
 };
 
 // End of class Thread
@@ -5099,7 +5142,7 @@ class GCForbidLoaderUseHolder
 
 #endif
 
-// Declaring this macro turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
+// Declaring this macro turns off the GC_TRIGGERS/THROWS contract in LoadTypeHandle.
 // If you do this, you must restrict your use of the loader only to retrieve TypeHandles
 // for types that have already been loaded and resolved. If you fail to observe this restriction, you will
 // reach a GC_TRIGGERS point somewhere in the loader and assert. If you're lucky, that is.
@@ -5129,8 +5172,7 @@ class GCForbidLoaderUseHolder
 #ifdef ENABLE_CONTRACTS_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    GCForbidLoaderUseHolder __gcfluh; \
                                                        CANNOTTHROWCOMPLUSEXCEPTION();  \
-                                                       GCX_NOTRIGGER(); \
-                                                       FAULT_FORBID();
+                                                       GCX_NOTRIGGER();
 #else   // _DEBUG_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    ;
 #endif  // _DEBUG_IMPL

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -11,6 +12,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
 using System.Xml.Linq;
 using Json.Schema;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -38,8 +40,10 @@ namespace System.Text.Json.Schema.Tests
             AssertValidJsonSchema(testData.Type, testData.ExpectedJsonSchema, schema);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetTestDataUsingAllValues))]
+        [RequiresUnreferencedCode("Uses reflection-based JsonSerializer.SerializeToNode(object, Type, options).")]
+        [RequiresDynamicCode("Uses reflection-based JsonSerializer.SerializeToNode(object, Type, options).")]
         public void TestTypes_SerializedValueMatchesGeneratedSchema(ITestData testData)
         {
             JsonSerializerOptions options = testData.SerializerOptions is { } opts
@@ -215,8 +219,9 @@ namespace System.Text.Json.Schema.Tests
             Assert.Same(JsonSchemaExporterOptions.Default, JsonSchemaExporterOptions.Default);
         }
 
-#if !BUILDING_SOURCE_GENERATOR_TESTS
-        [Fact]
+        [ConditionalFact(typeof(JsonSerializer), nameof(JsonSerializer.IsReflectionEnabledByDefault))]
+        [RequiresUnreferencedCode("Uses private reflection to access System.Text.Json converter internals.")]
+        [RequiresDynamicCode("Uses private reflection to access System.Text.Json converter internals.")]
         public void LegacySchemaExporter_CanAccessReflectedMembers()
         {
             // A number of libraries such as Microsoft.Extensions.AI and Semantic Kernel
@@ -259,7 +264,6 @@ namespace System.Text.Json.Schema.Tests
 
         [JsonSerializable(typeof(PocoWithProperty))]
         partial class PocoWithPropertyContext : JsonSerializerContext;
-#endif
 
         protected void AssertValidJsonSchema(Type type, string expectedJsonSchema, JsonNode actualJsonSchema)
         {
@@ -326,6 +330,6 @@ namespace System.Text.Json.Schema.Tests
         };
 
         private string FormatJson(JsonNode? node) =>
-            JsonSerializer.Serialize(node, _indentedOptions);
+            JsonSerializer.Serialize(node, _indentedOptions.GetTypeInfo<JsonNode>());
     }
 }

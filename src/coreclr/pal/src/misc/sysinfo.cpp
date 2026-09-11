@@ -26,7 +26,7 @@ Revision History:
 #include <unistd.h>
 #include <minipal/utils.h>
 #include <minipal/ospagesize.h>
-#define __STDC_FORMAT_MACROS
+#include <minipal/cpucount.h>
 #include <inttypes.h>
 #include <sys/types.h>
 
@@ -153,14 +153,23 @@ PAL_GetLogicalCpuCountFromOS()
 {
     static int nrcpus = -1;
 
-    if (nrcpus == -1)
+    // Android tries really hard to save power by powering off CPUs on SMP phones which
+    // means the normal way to query cpu count can underestimate the number of available CPUs.
+#if defined(HOST_ANDROID)
+    if (nrcpus <= 0)
+    {
+        nrcpus = minipal_get_cpu_present_count();
+    }
+#endif
+
+    if (nrcpus <= 0)
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
         if (configuredCpuCount == -1)
         {
-            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
             configuredCpuCount = CPU_SETSIZE;
         }
 

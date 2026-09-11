@@ -1210,6 +1210,89 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys, producing a result for each element
+        /// in either sequence that has a match as well as for elements that have no match.
+        /// A default or specified equality comparer is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys, or <see langword="null" /> to use the default equality comparer.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing a full outer join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        /// <para>If <paramref name="comparer" /> is <see langword="null" />, the default equality comparer, <see cref="EqualityComparer{T}.Default" />, is used to hash and compare keys.</para>
+        /// <para>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}" /> whose type argument is one of the <see cref="Func{T,TResult}" /> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}" />.
+        /// </para>
+        /// <para>
+        /// The <see cref="FullJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> method
+        /// generates a <see cref="MethodCallExpression" /> that represents calling
+        /// <see cref="FullJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// </para>
+        /// <para>
+        /// The query behavior that occurs as a result of executing an expression tree that represents calling
+        /// <see cref="FullJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// depends on the implementation of the type of the <paramref name="outer" /> parameter.
+        /// The expected behavior is that of a full outer join.
+        /// </para>
+        /// </remarks>
+        [DynamicDependency("FullJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> FullJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter?, TInner?, TResult>> resultSelector, IEqualityComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter?, TInner?, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(FullJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+        }
+
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys, producing a tuple for each element
+        /// in either sequence that has a match as well as for elements that have no match.
+        /// A default or specified equality comparer is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys, or <see langword="null" /> to use the default equality comparer.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <c>(TOuter?, TInner?)</c> that are obtained by performing a full outer join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
+        [DynamicDependency("FullJoin`3", typeof(Enumerable))]
+        public static IQueryable<(TOuter? Outer, TInner? Inner)> FullJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+
+            return outer.Provider.CreateQuery<(TOuter? Outer, TInner? Inner)>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, IEqualityComparer<TKey>, IQueryable<(TOuter? Outer, TInner? Inner)>>(FullJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+        }
+
         [DynamicDependency("ThenBy`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {

@@ -3,10 +3,9 @@ name: performance-benchmark
 description: Generate and run ad hoc performance benchmarks to validate code changes. Use this when asked to benchmark, profile, or validate the performance impact of a code change in dotnet/runtime.
 ---
 
-# Ad Hoc Performance Benchmarking with @EgorBot
+# Ad Hoc Performance Benchmarking Locally (or with @EgorBot)
 
-When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and trigger @EgorBot to run it.
-The bot will notify you when results are ready, so don't wait for them.
+When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and compare local baseline and changed builds.
 
 ## Step 1: Write the Benchmark
 
@@ -121,11 +120,59 @@ public class Bench
 }
 ```
 
-## Step 2: Mention @EgorBot in a comment/PR description
+## Step 2: Prepare Baseline and Changed Runtime Builds
 
-Post a comment on the PR to trigger EgorBot with your benchmark. The general format is:
+At this point the change is typically already present in the working tree.
 
-> 📝 **AI-generated content disclosure:** When posting benchmark comments to GitHub under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+1. Save only the intended changes safely in a commit, patch, or separate worktree. Do not stash or revert unrelated changes.
+2. Temporarily remove the changes and return the source to the baseline state.
+3. Build Release runtime and testhost artifacts. For JIT, VM, and shared-framework library changes, run the repository build script for the current operating system with:
+
+```text
+./build.cmd|.sh clr+libs -rc Release -lc Release
+```
+
+The `libs` subset includes `libs.pretest`, which constructs and updates the testhost. The `libs.tests` subset is not needed for benchmarking.
+
+4. Copy the generated testhost directory next to itself as `testhost_baseline`:
+
+```text
+artifacts/bin/testhost -> artifacts/bin/testhost_baseline
+```
+
+5. Restore the changes and run exactly the same Release build again. You can save time by just copying the changed bit to the artifacts/bin/testhost if you know exactly which component was changed.
+
+The baseline remains in `artifacts/bin/testhost_baseline`, while the normal `artifacts/bin/testhost` directory now contains the changed runtime. Use the corresponding `CoreRun` executable under each directory.
+
+Copying the directory preserves the baseline while leaving the normal testhost and other artifacts available for an incremental changed build. If the changed runtime was already built before restoring the baseline source, clean or explicitly rebuild the affected component to avoid capturing stale binaries.
+
+For libraries outside the shared framework, build the library in Release and place the exact baseline or changed assembly, plus required dependencies, beside the corresponding `CoreRun`. Use the same layout for both testhosts.
+
+## Step 3: Run the Benchmark Locally
+
+Run the benchmark created in Step 1 against both hosts. The first `CoreRun` is the baseline:
+
+```
+dotnet run -c Release -- --filter "*" --coreRun "<baseline-corerun>" "<changed-corerun>"
+```
+
+Use a BenchmarkDotNet version compatible with the repository's current target framework. If it fails with `GetRuntimeVersion not implemented for NotRecognized`, update BenchmarkDotNet to a compatible preview or nightly version.
+
+Optionally, you can pass additional environment variables to the benchmark process using `--envvars`. For example, to enable JIT disassembly for a specific method:
+
+```
+--envvars DOTNET_JitDisasm:MethodName
+```
+
+## @EgorBot Usage
+
+[@EgorBot](https://github.com/EgorBo/EgorBot/blob/main/README.md) is a GitHub bot that runs BenchmarkDotNet snippets against `dotnet/runtime` PR changes and reports comparisons with the PR's base branch. It is only useful on GitHub for PRs in the `dotnet/runtime` repository.
+
+Only use @EgorBot when the user explicitly asks for it. Prefer the local workflow above otherwise. The bot will notify you when results are ready, so do not wait for them.
+
+Post a comment on the PR to trigger EgorBot with the benchmark. The general format is:
+
+> 📝 **AI-generated content disclosure:** When posting benchmark comments to GitHub under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`) — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
 
 @EgorBot [targets] [options] [BenchmarkDotNet args]
 
@@ -146,7 +193,7 @@ Post a comment on the PR to trigger EgorBot with your benchmark. The general for
 - `-linux_arm64`
 - `-osx_arm64` (baremetal, feel free to always include it)
 
-The most common combination is `-linux_amd -osx_arm64`. Do not include more than 4 targets.
+The most common combination is `-linux_amd -osx_arm64`. Do not include more than 3 targets.
 
 ### Common Options
 

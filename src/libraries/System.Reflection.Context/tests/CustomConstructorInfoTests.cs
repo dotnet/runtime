@@ -142,10 +142,10 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetGenericArguments_ThrowsNotSupported()
+        public void GetGenericArguments_ReturnsEmpty()
         {
-            // Constructors don't support GetGenericArguments
-            Assert.Throws<NotSupportedException>(() => _customConstructor.GetGenericArguments());
+            // Constructors are never generic methods, so GetGenericArguments returns an empty array.
+            Assert.Empty(_customConstructor.GetGenericArguments());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]

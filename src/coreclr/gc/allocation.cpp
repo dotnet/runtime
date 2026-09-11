@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
 
 allocator::allocator (unsigned int num_b, int fbb, alloc_list* b, int gen)
 {
@@ -268,7 +277,7 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
             num_fl_items++;
             // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
+            dprintf (3, ("b#%2d FL %p region %zx heap %d -> %d",
                 i, free_item, (size_t)region, this_hp->heap_number, region->heap->heap_number));
             if (region->heap != this_hp)
             {
@@ -280,7 +289,7 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (3, ("total - %Id items out of %Id items are from a different heap in %I64d us",
+    dprintf (3, ("total - %zd items out of %zd items are from a different heap in %" PRIu64 " us",
         num_fl_items_for_oh, num_fl_items, (end_us - start_us)));
 
     *fl_items_count = num_fl_items;
@@ -364,7 +373,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
             num_fl_items++;
             // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
+            dprintf (3, ("b#%2d FL %p region %zx heap %d -> %d",
                 i, free_item, (size_t)region, current_heap->heap_number, region->heap->heap_number));
             // need to keep track of heap and only check if it's not from our heap!!
             if (region->heap != current_heap)
@@ -400,7 +409,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (8888, ("h%d total %Id items rethreaded out of %Id items in %I64d us (%I64dms)",
+    dprintf (8888, ("h%d total %zd items rethreaded out of %zd items in %" PRIu64 " us (%" PRIu64 "ms)",
         current_heap->heap_number, num_fl_items_rethreaded, num_fl_items, (end_us - start_us), ((end_us - start_us) / 1000)));
 
     (*num_total_fl_items) += num_fl_items;
@@ -995,7 +1004,7 @@ void add_to_hb_numa (
     bool set_ideal_p)
 {
     int tid = (int)GCToOSInterface::GetCurrentThreadIdForLogging ();
-    uint64_t timestamp = RawGetHighPrecisionTimeStamp ();
+    int64_t timestamp = minipal_hires_ticks ();
 
     int saved_proc_no = proc_no;
     int numa_no = -1;
@@ -1305,7 +1314,7 @@ bool gc_heap::new_allocation_allowed (int gen_number)
         if ((allocation_running_amount - dd_new_allocation (dd0)) >
             dd_min_size (dd0))
         {
-            uint64_t ctime = GCToOSInterface::GetLowPrecisionTimeStamp();
+            int64_t ctime = minipal_lowres_ticks();
             if ((ctime - allocation_running_time) > 1000)
             {
                 dprintf (2, (">1s since last gen0 gc"));
@@ -1319,27 +1328,6 @@ bool gc_heap::new_allocation_allowed (int gen_number)
     }
 #endif //MULTIPLE_HEAPS
     return TRUE;
-}
-
-inline
-ptrdiff_t gc_heap::get_desired_allocation (int gen_number)
-{
-    return dd_desired_allocation (dynamic_data_of (gen_number));
-}
-
-inline
-ptrdiff_t  gc_heap::get_new_allocation (int gen_number)
-{
-    return dd_new_allocation (dynamic_data_of (gen_number));
-}
-
-//return the amount allocated so far in gen_number
-inline
-ptrdiff_t  gc_heap::get_allocation (int gen_number)
-{
-    dynamic_data* dd = dynamic_data_of (gen_number);
-
-    return dd_desired_allocation (dd) - dd_new_allocation (dd);
 }
 
 #ifdef SHORT_PLUGS
@@ -3253,29 +3241,6 @@ exit:
     return soh_alloc_state;
 }
 
-#ifdef BACKGROUND_GC
-inline
-void gc_heap::bgc_track_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Increment (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: inc lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-inline
-void gc_heap::bgc_untrack_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Decrement (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: dec lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-#endif //BACKGROUND_GC
-
 size_t gc_heap::get_uoh_seg_size (size_t size)
 {
     size_t default_seg_size =
@@ -3515,7 +3480,7 @@ uoh_allocation_action gc_heap::get_bgc_allocate_action (int gen_number)
     // doesn't make sense.
     if (bgc_begin_uoh_size[uoh_idx] >= (2 * end_uoh_size[uoh_idx]))
     {
-        dprintf (3, ("h%d alloc-ed too much before bgc started, last end %Id, this start %Id, wait",
+        dprintf (3, ("h%d alloc-ed too much before bgc started, last end %zd, this start %zd, wait",
             heap_number, end_uoh_size[uoh_idx], bgc_begin_uoh_size[uoh_idx]));
         return uoh_alloc_wait;
     }
@@ -3571,7 +3536,7 @@ void gc_heap::bgc_record_uoh_end_seg_allocation (int gen_number, size_t size)
 #ifdef SIMPLE_DPRINTF
         dynamic_data* dd_uoh = dynamic_data_of (gen_number);
         size_t gen_size = generation_size (gen_number);
-        dprintf (3, ("h%d g%d size is now %Id (inc-ed %Id), size is %Id (gen size is %Id), budget %.3fmb, new alloc %.3fmb",
+        dprintf (3, ("h%d g%d size is now %zd (inc-ed %zd), size is %zd (gen size is %zd), budget %.3fmb, new alloc %.3fmb",
             heap_number, gen_number, bgc_uoh_current_size[uoh_idx],
             (bgc_uoh_current_size[uoh_idx] - bgc_begin_uoh_size[uoh_idx]), size, gen_size,
             mb (dd_desired_allocation (dd_uoh)), (dd_new_allocation (dd_uoh) / 1000.0 / 1000.0)));
@@ -3947,7 +3912,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     if (gc_heap::gc_started)
     {
         wait_for_gc_done();
-        //dprintf (5555, ("h%d TAMS g%d %Id returning a_state_retry_allocate!", heap_number, gen_number, size));
+        //dprintf (5555, ("h%d TAMS g%d %zd returning a_state_retry_allocate!", heap_number, gen_number, size));
 
         return a_state_retry_allocate;
     }
@@ -3956,7 +3921,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     GCSpinLock* msl = loh_p ? &more_space_lock_uoh : &more_space_lock_soh;
 
 #ifdef SYNCHRONIZATION_STATS
-    int64_t msl_acquire_start = GCToOSInterface::QueryPerformanceCounter();
+    int64_t msl_acquire_start = minipal_hires_ticks();
 #endif //SYNCHRONIZATION_STATS
 
     msl_status = enter_spin_lock_msl (msl);
@@ -3965,7 +3930,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     add_saved_spinlock_info (loh_p, me_acquire, mt_try_alloc, msl_status);
     dprintf (SPINLOCK_LOG, ("[%d]Emsl for alloc", heap_number));
 #ifdef SYNCHRONIZATION_STATS
-    int64_t msl_acquire = GCToOSInterface::QueryPerformanceCounter() - msl_acquire_start;
+    int64_t msl_acquire = minipal_hires_ticks() - msl_acquire_start;
     total_msl_acquire += msl_acquire;
     num_msl_acquired++;
     if (msl_acquire > 200)
@@ -4518,27 +4483,27 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
             else
             {
                 alloc_heap = balance_heaps_uoh (acontext, size, alloc_generation_number);
-                dprintf (3, ("uoh alloc %Id on h%d", size, alloc_heap->heap_number));
+                dprintf (3, ("uoh alloc %zd on h%d", size, alloc_heap->heap_number));
                 saved_alloc_heap = alloc_heap;
             }
 
             bool alloced_on_retry = (status == a_state_retry_allocate);
 
             status = alloc_heap->try_allocate_more_space (acontext, size, flags, alloc_generation_number);
-            dprintf (3, ("UOH h%d %Id returned from TAMS, s %d", alloc_heap->heap_number, size, status));
+            dprintf (3, ("UOH h%d %zd returned from TAMS, s %d", alloc_heap->heap_number, size, status));
 
             uint64_t end_us = GetHighPrecisionTimeStamp ();
 
             if (status == a_state_retry_allocate)
             {
                 // This records that we had to retry due to decommissioned heaps or GC in progress
-                dprintf (5555, ("UOH h%d alloc %Id retry!", alloc_heap->heap_number, size));
+                dprintf (5555, ("UOH h%d alloc %zd retry!", alloc_heap->heap_number, size));
             }
             else
             {
                 if (alloced_on_retry)
                 {
-                    dprintf (5555, ("UOH h%d allocated %Id on retry (%I64dus)", alloc_heap->heap_number, size, (end_us - start_us)));
+                    dprintf (5555, ("UOH h%d allocated %zd on retry (%" PRIu64 "us)", alloc_heap->heap_number, size, (end_us - start_us)));
                 }
             }
         }
@@ -4549,41 +4514,6 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
     while (status == a_state_retry_allocate);
 
     return (status == a_state_can_allocate);
-}
-
-inline
-CObjectHeader* gc_heap::allocate (size_t jsize, alloc_context* acontext, uint32_t flags)
-{
-    size_t size = Align (jsize);
-    assert (size >= Align (min_obj_size));
-    {
-    retry:
-        uint8_t*  result = acontext->alloc_ptr;
-        acontext->alloc_ptr+=size;
-        if (acontext->alloc_ptr <= acontext->alloc_limit)
-        {
-            CObjectHeader* obj = (CObjectHeader*)result;
-            assert (obj != 0);
-            return obj;
-        }
-        else
-        {
-            acontext->alloc_ptr -= size;
-
-#ifdef _MSC_VER
-#pragma inline_depth(0)
-#endif //_MSC_VER
-
-            if (! allocate_more_space (acontext, size, flags, 0))
-                return 0;
-
-#ifdef _MSC_VER
-#pragma inline_depth(20)
-#endif //_MSC_VER
-
-            goto retry;
-        }
-    }
 }
 
 void  gc_heap::leave_allocation_segment (generation* gen)
@@ -5418,15 +5348,6 @@ generation*  gc_heap::ensure_ephemeral_heap_segment (generation* consing_gen)
 #endif //!USE_REGIONS
 
 inline
-void gc_heap::init_alloc_info (generation* gen, heap_segment* seg)
-{
-    generation_allocation_segment (gen) = seg;
-    generation_allocation_pointer (gen) = heap_segment_mem (seg);
-    generation_allocation_limit (gen) = generation_allocation_pointer (gen);
-    generation_allocation_context_start_region (gen) = generation_allocation_pointer (gen);
-}
-
-inline
 heap_segment* gc_heap::get_next_alloc_seg (generation* gen)
 {
 #ifdef USE_REGIONS
@@ -5671,7 +5592,7 @@ retry:
                             ((pinned_plug (oldest_pin()) < heap_segment_allocated (seg)) &&
                              (pinned_plug (oldest_pin()) >= generation_allocation_pointer (gen))))
                         {
-                            LOG((LF_GC, LL_INFO10, "remaining pinned plug %zx while leaving segment on allocation",
+                            LOG((LF_GC, LL_INFO10, "remaining pinned plug %p while leaving segment on allocation",
                                          pinned_plug (oldest_pin())));
                             FATAL_GC_ERROR();
                         }
@@ -5880,3 +5801,5 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     return obj;
 }
+
+} // namespace SVR/WKS

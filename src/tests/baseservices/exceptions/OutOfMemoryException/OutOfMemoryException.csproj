@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <!-- This test spawns a subprocess; not supported on mobile, browser, or WASI platforms -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- https://github.com/dotnet/runtime/issues/129135 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'x64'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <!-- GCStress runs collections very frequently and allocates its own objects, which changes
+         when the program runs out of memory. As a result the small allocations test becomes unreliable. -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Mono doesn't enforce DOTNET_GCHeapHardLimit as a GC heap limit -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="OutOfMemoryException.cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

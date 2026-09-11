@@ -3,6 +3,7 @@
 using System;
 using System.Threading;
 using System.IO;
+using TestLibrary;
 using Xunit;
 
 class UserException1 : Exception {
@@ -41,12 +42,14 @@ class UserException4 : Exception {
 public class HandlerException {
 	private int ThreadId;
 
+	public HandlerException() { }
+
 	private HandlerException(int id){
 		ThreadId = id;
 	}
 		
 	
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint() {
 		String s = "Done";
 		int retVal = 100;

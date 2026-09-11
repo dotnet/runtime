@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
@@ -175,6 +176,48 @@ namespace System.Threading.Tasks.Tests
         {
             await tcs.Task;
             callback();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task FuncWithNestedDelays(List<long> observedTimestamps)
+        {
+            var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
+
+            await Task.Delay(50);
+            lock (continuationTimestamps)
+            {
+                foreach (long ts in continuationTimestamps.Values)
+                    observedTimestamps.Add(ts);
+            }
+
+            await NestedDelay1(observedTimestamps);
+            await NestedDelay2(observedTimestamps);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task NestedDelay1(List<long> observedTimestamps)
+        {
+            var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
+
+            await Task.Delay(50);
+            lock (continuationTimestamps)
+            {
+                foreach (long ts in continuationTimestamps.Values)
+                    observedTimestamps.Add(ts);
+            }
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task NestedDelay2(List<long> observedTimestamps)
+        {
+            var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
+
+            await Task.Delay(50);
+            lock (continuationTimestamps)
+            {
+                foreach (long ts in continuationTimestamps.Values)
+                    observedTimestamps.Add(ts);
+            }
         }
 
         static void ValidateTimestampsCleared()
@@ -526,6 +569,27 @@ namespace System.Threading.Tasks.Tests
                 Assert.Contains(events, e => e.EventId == TraceOperationEndId);
                 Assert.Contains(events, e => e.EventId == TraceSynchronousWorkBeginId);
                 Assert.Contains(events, e => e.EventId == TraceSynchronousWorkEndId);
+
+                DetachDebugger();
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        public void RuntimeAsync_SuspensionTimestampsAreDistinct()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                AttachDebugger();
+
+                var observedTimestamps = new List<long>();
+                await FuncWithNestedDelays(observedTimestamps);
+
+                // Each suspension across nested async methods should produce a fresh, non-zero
+                // timestamp — not one inherited from a parent continuation.
+                Assert.True(observedTimestamps.Count >= 3, $"Expected at least 3 observed timestamps, got {observedTimestamps.Count}");
+                Assert.All(observedTimestamps, ts => Assert.True(ts > 0, "Expected non-zero timestamp"));
+                Assert.True(observedTimestamps.Distinct().Count() > 1, "Expected timestamps from different suspensions to not all be identical");
 
                 DetachDebugger();
 

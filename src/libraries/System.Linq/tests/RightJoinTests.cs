@@ -354,6 +354,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NullKeysRemainUnmatched()
+        {
+            string[] outer = ["#o1", "a", "#o2"];
+            string[] inner = ["#i1", "A", "#i2", "b"];
+            string[] expected =
+            [
+                "<null>:#i1",
+                "a:A",
+                "<null>:#i2",
+                "<null>:b"
+            ];
+
+            Assert.Equal(expected, outer.RightJoin(inner, s => s[0] == '#' ? null : s, s => s[0] == '#' ? null : s, (o, i) => $"{o ?? "<null>"}:{i}", StringComparer.OrdinalIgnoreCase));
+        }
+
+        [Fact]
         public void InnerSameKeyMoreThanOneElementAndMatches()
         {
             CustomerRec[] outer =

@@ -15,7 +15,6 @@
 
 #include "shimpriv.h"
 
-
 // Standard impl of IUnknown::QueryInterface
 HRESULT STDMETHODCALLTYPE ShimDataTarget::QueryInterface(
     REFIID InterfaceId,

@@ -66,8 +66,6 @@ namespace System.Reflection
         #endregion
 
         #region NonPublic Methods
-        RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_handle);
-
         internal override bool CacheEquals(object? o) =>
             o is RuntimeConstructorInfo m && m.m_handle == m_handle &&
             ReferenceEquals(m_declaringType, m.m_declaringType);
@@ -159,7 +157,6 @@ namespace System.Reflection
 
         #region MemberInfo Overrides
         public override string Name => RuntimeMethodHandle.GetName(this);
-        public override MemberTypes MemberType => MemberTypes.Constructor;
 
         public override Type? DeclaringType => m_reflectedTypeCache.IsGlobal ? null : m_declaringType;
 

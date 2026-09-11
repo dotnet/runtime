@@ -15,10 +15,14 @@
       "Heap;Full"  — both heap and full dumps
 
     Each debuggee csproj can also set an R2RModes property to control ReadyToRun behavior:
-      "R2R"        — run with ReadyToRun enabled (default)
-      "Jit"        — run with DOTNET_ReadyToRun=0 (force JIT compilation)
-      "R2R;Jit"    — both modes
+      "R2R"          — run with ReadyToRun enabled (default)
+      "Jit"          — run with DOTNET_ReadyToRun=0 (force JIT compilation)
+      "R2R;Jit"      — both R2R and JIT modes
     Binaries are always compiled with R2R; this property controls runtime behavior only.
+
+    Each debuggee csproj can also set an EnvironmentVariables property to pass additional
+    environment variables when running the debuggee (e.g., DOTNET_Interpreter=MethodA).
+    Multiple variables are separated by semicolons.
 
     Properties:
       DumpOutputDir          — Where dumps are written (default: artifacts/dumps/cdac/)
@@ -146,7 +150,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
-             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes);_DebuggeeR2RModes=%(_DebuggeeWithDumpTypes.R2RModes)" />
+             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes);_DebuggeeR2RModes=%(_DebuggeeWithDumpTypes.R2RModes);_DebuggeeEnvVars=$([MSBuild]::Escape('%(_DebuggeeWithDumpTypes.EnvironmentVariables)'))" />
 
     <!-- Write dump-info.json into each version directory so tests can determine
          the OS/arch the dumps were generated on. -->
@@ -212,7 +216,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDumpType"
-             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity);_DebuggeeR2RModes=$(_DebuggeeR2RModes)" />
+             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity);_DebuggeeR2RModes=$(_DebuggeeR2RModes);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
   </Target>
 
   <Target Name="_GenerateDumpsForDumpType">
@@ -232,7 +236,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForR2RMode"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RModeName=%(_R2RModeItem.Identity)" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RModeName=%(_R2RModeItem.Identity);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
   </Target>
 
   <Target Name="_GenerateDumpsForR2RMode">
@@ -248,7 +252,7 @@
            Text="Invalid R2R mode '$(_R2RModeName)' specified for debuggee '$(DebuggeeName)'. Supported values: 'R2R', 'Jit'." />
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateSingleDump"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RValue=$(_R2RValue);_R2RDirName=$(_R2RDirName);DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RValue=$(_R2RValue);_R2RDirName=$(_R2RDirName);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'));DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
   </Target>
 
   <Target Name="_GenerateSingleDump">
@@ -267,12 +271,12 @@
     <!-- Determine build/run strategy based on runtime version -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateLocalDump"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue)"
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local'" />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GeneratePublishedDump"
-             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue)"
+             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'net10.0' AND '$(_DumpTypeName)' != 'Heap'" />
 
     <Message Text="Dump created: $(_DumpFile)" Importance="high" Condition="Exists('$(_DumpFile)')" />
@@ -295,7 +299,7 @@
     <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue);$([MSBuild]::Unescape('$(_DebuggeeEnvVars)'))" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
@@ -316,7 +320,7 @@
     <Exec Command="&quot;$(_PublishedExe)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue);$([MSBuild]::Unescape('$(_DebuggeeEnvVars)'))" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>

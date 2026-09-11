@@ -23,6 +23,8 @@ namespace System.Text.Json.Serialization.Converters
             IsInternalConverter = elementConverter.IsInternalConverter;
             IsInternalConverterForNumberType = elementConverter.IsInternalConverterForNumberType;
             ConverterStrategy = elementConverter.ConverterStrategy;
+            SupportsMultipleTokenTypes = elementConverter.SupportsMultipleTokenTypes;
+            RequiresReadAhead = elementConverter.RequiresReadAhead;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
@@ -104,5 +106,8 @@ namespace System.Text.Json.Serialization.Converters
                 _elementConverter.WriteNumberWithCustomHandling(writer, value.Value, handling);
             }
         }
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            _elementConverter.GetSupportedJsonValueTypes(numberHandling);
     }
 }

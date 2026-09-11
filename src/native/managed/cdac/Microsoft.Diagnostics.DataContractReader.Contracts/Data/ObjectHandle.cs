@@ -3,21 +3,21 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ObjectHandle : IData<ObjectHandle>
+[CdacType]
+internal sealed partial class ObjectHandle : IData<ObjectHandle>
 {
-    static ObjectHandle IData<ObjectHandle>.Create(Target target, TargetPointer address)
-        => new ObjectHandle(target, address);
+    [CustomInit(nameof(InitHandle))] public partial TargetPointer Handle { get; }
+    [CustomInit(nameof(InitObject))] public partial TargetPointer Object { get; }
 
-    public ObjectHandle(Target target, TargetPointer address)
+    private partial TargetPointer InitHandle(Target target, TargetPointer address)
     {
-        if (address != TargetPointer.Null)
-        {
-            Handle = target.ReadPointer(address);
-            if (Handle != TargetPointer.Null && target.TryReadPointer(Handle, out TargetPointer obj))
-                Object = obj;
-        }
+        return address != TargetPointer.Null ? target.ReadPointer(address) : TargetPointer.Null;
     }
 
-    public TargetPointer Handle { get; init; } = TargetPointer.Null;
-    public TargetPointer Object { get; init; } = TargetPointer.Null;
+    private partial TargetPointer InitObject(Target target, TargetPointer address)
+    {
+        return Handle != TargetPointer.Null && target.TryReadPointer(Handle, out TargetPointer obj)
+            ? obj
+            : TargetPointer.Null;
+    }
 }

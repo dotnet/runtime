@@ -47,6 +47,14 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
                 GetMetadataDependencies(ref dependencies, factory, baseType, "Base type of a reflectable type");
 
+            foreach (GenericParameterDesc genericParameter in _type.Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParameter.TypeConstraints)
+                {
+                    GetMetadataDependencies(ref dependencies, factory, typeConstraint, "Generic parameter constraint of a reflectable type");
+                }
+            }
+
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
             if (_type.IsEnum)

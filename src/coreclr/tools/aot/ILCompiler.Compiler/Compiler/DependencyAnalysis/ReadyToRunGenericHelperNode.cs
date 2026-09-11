@@ -75,8 +75,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.TypeThreadStaticBaseIndex((TypeDesc)target);
                 case ReadyToRunHelperId.MethodDictionary:
                     return factory.GenericLookup.MethodDictionary((MethodDesc)target);
-                case ReadyToRunHelperId.VirtualDispatchCell:
-                    return factory.GenericLookup.VirtualDispatchCell((MethodDesc)target);
+                case ReadyToRunHelperId.DispatchCell:
+                    return factory.GenericLookup.DispatchCell((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 case ReadyToRunHelperId.DelegateCtor:
@@ -316,7 +316,7 @@ namespace ILCompiler.DependencyAnalysis
                     return comparer.Compare((TypeDesc)_target, (TypeDesc)((ReadyToRunGenericHelperNode)other)._target);
                 case ReadyToRunHelperId.MethodHandle:
                 case ReadyToRunHelperId.MethodDictionary:
-                case ReadyToRunHelperId.VirtualDispatchCell:
+                case ReadyToRunHelperId.DispatchCell:
                 case ReadyToRunHelperId.MethodEntry:
                     return comparer.Compare((MethodDesc)_target, (MethodDesc)((ReadyToRunGenericHelperNode)other)._target);
                 case ReadyToRunHelperId.FieldHandle:

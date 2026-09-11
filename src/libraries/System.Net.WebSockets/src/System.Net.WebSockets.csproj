@@ -44,6 +44,8 @@
           Link="Common\System\IO\Compression\ZLibNative.CompressionLevel.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.ZStream.cs"
              Link="Common\System\IO\Compression\ZLibNative.ZStream.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.zlib.cs"
              Link="Common\Interop\Interop.zlib.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
@@ -52,6 +54,8 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
   </ItemGroup>
 
   <!-- Windows specific files -->

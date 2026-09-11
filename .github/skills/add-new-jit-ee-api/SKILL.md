@@ -21,6 +21,8 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresI
 
 #### 3 — Implementation steps (must be completed in order)
 
+NOTE: When inserting new entries/methods into any of the files below, their position and ordering does not matter. Any suggested placement (e.g. "at the end" or "near similar signatures") is just a convenient default, not a requirement.
+
 1. Update the `ThunkInput.txt` file with the new API definition. Example:
 
 ```diff

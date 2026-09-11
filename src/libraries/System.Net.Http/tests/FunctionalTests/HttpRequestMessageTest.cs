@@ -183,6 +183,16 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ArgumentNullException>(() => { rm.Version = null; });
         }
 
+        [Theory]
+        [InlineData((HttpVersionPolicy)(-1))]
+        [InlineData((HttpVersionPolicy)3)]
+        [InlineData((HttpVersionPolicy)int.MaxValue)]
+        public void VersionPolicy_SetInvalidValue_ThrowsArgumentException(HttpVersionPolicy invalidValue)
+        {
+            var rm = new HttpRequestMessage();
+            AssertExtensions.Throws<ArgumentException>("value", () => rm.VersionPolicy = invalidValue);
+        }
+
         [Fact]
         public void Method_SetToNull_ThrowsArgumentNullException()
         {

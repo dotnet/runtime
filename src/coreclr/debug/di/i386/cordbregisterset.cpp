@@ -104,23 +104,23 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
             switch( i )
             {
             case REGISTER_INSTRUCTION_POINTER:
-                regBuffer[iRegister++] = m_rd->PC; break;
+                regBuffer[iRegister++] = m_context.Eip; break;
             case REGISTER_STACK_POINTER:
-                regBuffer[iRegister++] = m_rd->SP; break;
+                regBuffer[iRegister++] = m_context.Esp; break;
             case REGISTER_FRAME_POINTER:
-                regBuffer[iRegister++] = m_rd->FP; break;
+                regBuffer[iRegister++] = m_context.Ebp; break;
             case REGISTER_X86_EAX:
-                regBuffer[iRegister++] = m_rd->Eax; break;
+                regBuffer[iRegister++] = m_context.Eax; break;
             case REGISTER_X86_EBX:
-                regBuffer[iRegister++] = m_rd->Ebx; break;
+                regBuffer[iRegister++] = m_context.Ebx; break;
             case REGISTER_X86_ECX:
-                regBuffer[iRegister++] = m_rd->Ecx; break;
+                regBuffer[iRegister++] = m_context.Ecx; break;
             case REGISTER_X86_EDX:
-                regBuffer[iRegister++] = m_rd->Edx; break;
+                regBuffer[iRegister++] = m_context.Edx; break;
             case REGISTER_X86_ESI:
-                regBuffer[iRegister++] = m_rd->Esi; break;
+                regBuffer[iRegister++] = m_context.Esi; break;
             case REGISTER_X86_EDI:
-                regBuffer[iRegister++] = m_rd->Edi; break;
+                regBuffer[iRegister++] = m_context.Edi; break;
 
             //for floats, copy the bits, not the integer part of
             //the value, into the register
@@ -189,33 +189,3 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
     // Defer to adapter for v1.0 interface
     return GetRegistersAdapter(maskCount, mask, regCount, regBuffer);
 }
-
-
-// This is just a convenience function to convert a regdisplay into a Context.
-// Since a context has more info than a regdisplay, the conversion isn't perfect
-// and the context can't be fully accurate.
-void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT * pInputContext)
-{
-    INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(pInputContext);
-
-    //now update the registers based on the current frame
-    if((pInputContext->ContextFlags & DT_CONTEXT_INTEGER)==DT_CONTEXT_INTEGER)
-    {
-        pInputContext->Eax = m_rd->Eax;
-        pInputContext->Ebx = m_rd->Ebx;
-        pInputContext->Ecx = m_rd->Ecx;
-        pInputContext->Edx = m_rd->Edx;
-        pInputContext->Esi = m_rd->Esi;
-        pInputContext->Edi = m_rd->Edi;
-    }
-
-
-    if((pInputContext->ContextFlags & DT_CONTEXT_CONTROL)==DT_CONTEXT_CONTROL)
-    {
-        pInputContext->Eip = m_rd->PC;
-        pInputContext->Esp = m_rd->SP;
-        pInputContext->Ebp = m_rd->FP;
-    }
-}
-

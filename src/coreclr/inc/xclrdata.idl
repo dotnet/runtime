@@ -882,6 +882,38 @@ interface IXCLRDataProcess2 : IXCLRDataProcess
 	HRESULT SetGcNotification([in] GcEvtArgs gcEvtArgs);
 }
 
+[
+    object,
+    local,
+    uuid(5c552ab6-fc09-4cb3-8e36-22fa03c798b9)
+]
+interface IXCLRDataProcess3 : IXCLRDataProcess2
+{
+    /*
+     * tableAddress identifies the target dynamic-function-table header. Records
+     * are returned in caller-provided storage as contiguous target-native
+     * RUNTIME_FUNCTION bytes. The callee never allocates output storage, and the
+     * caller-provided buffer does not require any particular alignment.
+     *
+     * bytesNeeded and entries are required outputs that are initialized and
+     * reported on every valid call. A null buffer with a zero bufferSize queries
+     * the required size. If the buffer is too small, no data is written,
+     * bytesNeeded and entries report the required byte and record counts, and
+     * the method returns S_FALSE. If the buffer is large enough, the complete
+     * table is written and the method returns S_OK. An empty or unmatched table
+     * returns S_OK with bytesNeeded and entries both set to zero.
+     *
+     * Target memory is an immutable snapshot between IXCLRDataProcess::Flush
+     * calls, so repeated calls before Flush are idempotent. The caller must call
+     * Flush after changing the data target.
+     */
+    HRESULT GetFunctionTable([in] CLRDATA_ADDRESS tableAddress,
+                             [in] ULONG32 bufferSize,
+                             [out, size_is(bufferSize)] BYTE* buffer,
+                             [out] ULONG32* bytesNeeded,
+                             [out] ULONG32* entries);
+}
+
 typedef enum
 {
     CLRDATA_DOMAIN_DEFAULT = 0x00000000,

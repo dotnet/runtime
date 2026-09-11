@@ -14,11 +14,20 @@ namespace System.Security.Cryptography
         public static KeySizes NonceByteSizes { get; } = new KeySizes(7, 13, 1);
         public static KeySizes TagByteSizes { get; } = new KeySizes(4, 16, 2);
 
+        /// <summary>
+        /// Gets the size of the key, in bytes.
+        /// </summary>
+        /// <value>
+        /// The size of the key, in bytes.
+        /// </value>
+        public int KeySizeInBytes { get; }
+
         public AesCcm(ReadOnlySpan<byte> key)
         {
             ThrowIfNotSupported();
 
             AesAEAD.CheckKeySize(key.Length);
+            KeySizeInBytes = key.Length;
             ImportKey(key);
         }
 
@@ -29,6 +38,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(key);
 
             AesAEAD.CheckKeySize(key.Length);
+            KeySizeInBytes = key.Length;
             ImportKey(key);
         }
 

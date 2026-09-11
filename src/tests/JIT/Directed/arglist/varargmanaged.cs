@@ -765,6 +765,34 @@ namespace NativeVarargTest
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int TestPassingRuntimeArgumentHandle(int count, __arglist)
+        {
+            RuntimeArgumentHandle handle = __arglist;
+            return TestPassingRuntimeArgumentHandleWorker(count, handle);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int TestPassingRuntimeArgumentHandleWorker(int count, RuntimeArgumentHandle handle)
+        {
+            int calculatedCount = 0;
+            ArgIterator it = new ArgIterator(handle);
+
+            int sum = 0;
+            while (it.GetRemainingCount() != 0)
+            {
+                int arg = __refvalue(it.GetNextArg(), int);
+
+                sum += arg;
+
+                ++calculatedCount;
+            }
+
+            if (calculatedCount != count) return -1;
+
+            return sum;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static long TestPassingLongs(int count, __arglist)
         {
             ArgIterator it = new ArgIterator(__arglist);

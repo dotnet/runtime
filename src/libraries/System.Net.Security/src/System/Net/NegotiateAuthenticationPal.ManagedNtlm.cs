@@ -378,7 +378,7 @@ namespace System.Net
                 int offset = field.PayloadOffset;
                 int length = field.Length;
 
-                if (length == 0 || offset + length > payload.Length)
+                if (length == 0 || offset < 0 || offset > payload.Length - length)
                 {
                     return ReadOnlySpan<byte>.Empty;
                 }
@@ -508,7 +508,7 @@ namespace System.Net
                 }
             }
 
-            private byte[] ProcessTargetInfo(ReadOnlySpan<byte> targetInfo, out DateTime time, out bool hasNbNames)
+            private byte[]? ProcessTargetInfo(ReadOnlySpan<byte> targetInfo, out DateTime time, out bool hasNbNames)
             {
                 int spnSize = _spn != null ? Encoding.Unicode.GetByteCount(_spn) : 0;
 
@@ -518,10 +518,11 @@ namespace System.Net
                 }
 
                 bool hasNbComputerName = false, hasNbDomainName = false;
-                byte[] targetInfoBuffer = new byte[targetInfo.Length + 20 /* channel binding */ + 4 + spnSize /* SPN */ + 8 /* flags */];
+                byte[] targetInfoBuffer = new byte[targetInfo.Length + 20 /* channel binding */ + 4 + spnSize /* SPN */ + 8 /* flags */ + 4 /* EOL */];
                 int targetInfoOffset = 0;
 
                 time = DateTime.UtcNow;
+                hasNbNames = false;
 
                 if (targetInfo.Length > 0)
                 {
@@ -538,8 +539,19 @@ namespace System.Net
                             break;
                         }
 
+                        // Make sure the AV pair fits in the remaining target info bytes.
+                        if (length > info.Length - 4)
+                        {
+                            return null;
+                        }
+
                         if (ID == AvId.Timestamp)
                         {
+                            if (length < 8)
+                            {
+                                return null;
+                            }
+
                             time = DateTime.FromFileTimeUtc(BinaryPrimitives.ReadInt64LittleEndian(info.Slice(4, 8)));
                         }
                         else if (ID == AvId.TargetName || ID == AvId.ChannelBindings)
@@ -616,7 +628,12 @@ namespace System.Net
             // This gets decoded byte blob and returns response in binary form.
             private unsafe byte[]? ProcessChallenge(ReadOnlySpan<byte> blob, out NegotiateAuthenticationStatusCode statusCode)
             {
-                // TODO: Validate size and offsets
+                // The challenge must be at least large enough to hold the fixed-size header.
+                if (blob.Length < sizeof(ChallengeMessage))
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
+                    return null;
+                }
 
                 ref readonly ChallengeMessage challengeMessage = ref MemoryMarshal.AsRef<ChallengeMessage>(blob.Slice(0, sizeof(ChallengeMessage)));
 
@@ -649,7 +666,12 @@ namespace System.Net
                 }
 
                 ReadOnlySpan<byte> targetInfo = GetField(challengeMessage.TargetInfo, blob);
-                byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time, out bool hasNbNames);
+                byte[]? targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time, out bool hasNbNames);
+                if (targetInfoBuffer is null)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
+                    return null;
+                }
 
                 // If NTLM v2 authentication is used and the CHALLENGE_MESSAGE does not contain both
                 // MsvAvNbComputerName and MsvAvNbDomainName AVPairs and either Integrity is TRUE or

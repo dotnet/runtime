@@ -1,0 +1,1970 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
+using ILCompiler.Reflection.ReadyToRun;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
+using Xunit;
+using ModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
+
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
+
+public unsafe class DacDbiImplTests
+{
+    private const uint IsEditAndContinue = 0x00000008;
+    private const uint IsEncCapable = 0x00000200;
+    private const uint DebuggerAllowJitOptsPriv = 0x00000800;
+    private const uint DebuggerEncEnabledPriv = 0x00002000;
+    private const uint DebuggerIgnorePdbsPriv = 0x00008000;
+    private const ulong CorDBDefaultEnCFunctionVersion = 1;
+
+    private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithLoader(
+        MockTarget.Architecture arch,
+        Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
+    {
+        var (_, target) = LoaderTests.CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            builder.AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion));
+            configure(loader, builder);
+        });
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
+        return (dacDbi, target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsThreadSuspendedOrHijacked_NullOutput_ReturnsEPointer(MockTarget.Architecture arch)
+    {
+        var mockThread = new Mock<IThread>();
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(mockThread)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        int hr = dacDbi.IsThreadSuspendedOrHijacked(0, null);
+
+        Assert.Equal(System.HResults.E_POINTER, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsThreadSuspendedOrHijacked_ContractFailure_InitializesOutput(MockTarget.Architecture arch)
+    {
+        const ulong ThreadAddress = 0x1000;
+        InvalidOperationException exception = new();
+        var mockThread = new Mock<IThread>();
+        mockThread
+            .Setup(t => t.GetThreadData(new TargetPointer(ThreadAddress)))
+            .Throws(exception);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(mockThread)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        Interop.BOOL result = Interop.BOOL.TRUE;
+
+        int hr = dacDbi.IsThreadSuspendedOrHijacked(ThreadAddress, &result);
+
+        Assert.Equal(exception.HResult, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+    }
+
+    [Fact]
+    public void DacSetTargetConsistencyChecks_Standalone_ReturnsSuccess()
+    {
+        MockTarget.Architecture architecture = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture).Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.TRUE));
+        Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.FALSE));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_BothFlagsSet_EncCapable(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule(flags: IsEncCapable | DebuggerIgnorePdbsPriv);
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
+        Assert.Equal(System.HResults.S_OK, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.NotEqual(0u, rawFlags & DebuggerAllowJitOptsPriv);
+        Assert.NotEqual(0u, rawFlags & IsEditAndContinue);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_BothFlagsUnset(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule();
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.FALSE, Interop.BOOL.FALSE);
+        Assert.Equal(System.HResults.S_OK, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(0u, rawFlags & DebuggerAllowJitOptsPriv);
+        Assert.Equal(0u, rawFlags & IsEditAndContinue);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_EnCRequested_NotCapable(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule();
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
+        Assert.Equal(CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(0u, rawFlags & IsEditAndContinue);
+        Assert.Equal(0u, rawFlags & DebuggerEncEnabledPriv);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_EnCCapable_ModifiableAssembliesNone(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule(flags: IsEncCapable | DebuggerIgnorePdbsPriv);
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
+        Assert.Equal(System.HResults.S_OK, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(0u, rawFlags & IsEditAndContinue);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_EncCapable_NoPdbsIgnored(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule(flags: IsEncCapable);
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
+        Assert.Equal(CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(0u, rawFlags & IsEditAndContinue);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_JitOptsToggling(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule();
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        // Enable JIT opts
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.FALSE);
+        Assert.Equal(System.HResults.S_OK, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.NotEqual(0u, rawFlags & DebuggerAllowJitOptsPriv);
+
+        // Disable JIT opts
+        hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.FALSE, Interop.BOOL.FALSE);
+        Assert.Equal(System.HResults.S_OK, hr);
+        rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(0u, rawFlags & DebuggerAllowJitOptsPriv);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_EnCBlocked_ProfilerPresent(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var profLayout = MockProfControlBlock.CreateLayout(arch);
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule(flags: IsEncCapable | DebuggerIgnorePdbsPriv);
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+
+            var profFragment = builder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_1000).Allocate((ulong)profLayout.Size, "ProfControlBlock");
+            MockProfControlBlock profBlock = profLayout.Create(profFragment);
+            profBlock.GlobalEventMask = 0;
+            profBlock.RejitOnAttachEnabled = 0;
+            profBlock.MainProfilerProfInterface = 1;
+            profBlock.NotificationProfilerCount = 0;
+            builder.AddGlobals((Constants.Globals.ProfilerControlBlock, profFragment.Address));
+            builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.ProfControlBlock] = TargetTestHelpers.CreateTypeInfo(profLayout),
+            });
+        });
+
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
+        Assert.Equal(CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(0u, rawFlags & IsEditAndContinue);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetCompilerFlags_EnCBlocked_NotificationProfiler(MockTarget.Architecture arch)
+    {
+        ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var profLayout = MockProfControlBlock.CreateLayout(arch);
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            var module = loader.AddModule(flags: IsEncCapable | DebuggerIgnorePdbsPriv);
+            assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+
+            var profFragment = builder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_1000).Allocate((ulong)profLayout.Size, "ProfControlBlock");
+            MockProfControlBlock profBlock = profLayout.Create(profFragment);
+            profBlock.GlobalEventMask = 0;
+            profBlock.RejitOnAttachEnabled = 0;
+            profBlock.MainProfilerProfInterface = 0;
+            profBlock.NotificationProfilerCount = 2;
+            builder.AddGlobals((Constants.Globals.ProfilerControlBlock, profFragment.Address));
+            builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.ProfControlBlock] = TargetTestHelpers.CreateTypeInfo(profLayout),
+            });
+        });
+
+        int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
+        Assert.Equal(CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(0u, rawFlags & IsEditAndContinue);
+    }
+
+    private static DacDbiImpl CreateDacDbiWithMockLoader(
+        MockTarget.Architecture arch,
+        Mock<ILoader> mockLoader)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
+            .AddMockContract(mockLoader)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null, new());
+    }
+
+    private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithExceptionMT(
+        MockTarget.Architecture arch,
+        Mock<IObject> mockObject,
+        Mock<IRuntimeTypeSystem> mockRts)
+    {
+        var builder = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion));
+        builder.AddMockContract(mockObject);
+        builder.AddMockContract(mockRts);
+        var target = builder.Build();
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
+        return (dacDbi, target);
+    }
+
+    public static IEnumerable<object[]> IsExceptionObjectData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            // Exact exception type
+            yield return new object[] { arch[0], 0, true };
+            // Derived exception type
+            yield return new object[] { arch[0], 1, true };
+            // Deeply derived exception type
+            yield return new object[] { arch[0], 2, true };
+            // Non-exception type (no parent)
+            yield return new object[] { arch[0], 0, false };
+            // Non-exception type (with parent)
+            yield return new object[] { arch[0], 1, false };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(IsExceptionObjectData))]
+    public void IsExceptionObject(MockTarget.Architecture arch, int inheritanceDepth, bool isException)
+    {
+        TargetPointer exceptionMT = new(0x1000);
+        TargetPointer objectAddr = new(0x5000);
+
+        var intermediateMTs = new TargetPointer[inheritanceDepth];
+        for (int i = 0; i < inheritanceDepth; i++)
+            intermediateMTs[i] = new TargetPointer((ulong)(0x2000 + i * 0x1000));
+
+        TargetPointer objectMT = inheritanceDepth == 0 && isException
+            ? exceptionMT
+            : intermediateMTs.Length > 0 ? intermediateMTs[0] : new TargetPointer(0x2000);
+
+        var mockObject = new Mock<IObject>();
+        mockObject.Setup(o => o.GetMethodTableAddress(objectAddr)).Returns(objectMT);
+
+        var mockRts = new Mock<IRuntimeTypeSystem>();
+        mockRts.Setup(r => r.GetWellKnownMethodTable(WellKnownMethodTable.Exception)).Returns(exceptionMT);
+        if (intermediateMTs.Length == 0 && !isException)
+        {
+            ITypeHandle objectTypeHandle = new TargetTypeHandle(objectMT);
+            mockRts.Setup(r => r.GetTypeHandle(objectMT)).Returns(objectTypeHandle);
+            mockRts.Setup(r => r.GetParentMethodTable(objectTypeHandle)).Returns(TargetPointer.Null);
+        }
+        for (int i = 0; i < intermediateMTs.Length; i++)
+        {
+            TargetPointer current = intermediateMTs[i];
+            TargetPointer parent = i + 1 < intermediateMTs.Length
+                ? intermediateMTs[i + 1]
+                : isException ? exceptionMT : TargetPointer.Null;
+
+            ITypeHandle currentTypeHandle = new TargetTypeHandle(current);
+            mockRts.Setup(r => r.GetTypeHandle(current)).Returns(currentTypeHandle);
+            mockRts.Setup(r => r.GetParentMethodTable(currentTypeHandle)).Returns(parent);
+        }
+
+        var (dacDbi, _) = CreateDacDbiWithExceptionMT(arch, mockObject, mockRts);
+
+        Interop.BOOL result;
+        int hr = dacDbi.IsExceptionObject(objectAddr.Value, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(isException ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, result);
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void CollectAssemblyCallback(ulong value, nint pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr(pUserData);
+        ((List<ulong>)handle.Target!).Add(value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_ZeroAppDomain(MockTarget.Architecture arch)
+    {
+        var mockLoader = new Mock<ILoader>();
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(0, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Empty(assemblies);
+        mockLoader.Verify(
+            l => l.GetModuleHandles(It.IsAny<TargetPointer>(), It.IsAny<AssemblyIterationFlags>()),
+            Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_NullCallback(MockTarget.Architecture arch)
+    {
+        var mockLoader = new Mock<ILoader>();
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(0x1000, null, nint.Zero);
+
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_SingleAssembly_CallsCallback(MockTarget.Architecture arch)
+    {
+        ulong appDomainAddr = 0x1000;
+        ulong assemblyAddr = 0x2000;
+        TargetPointer moduleAddr = new(0x3000);
+
+        var mockLoader = new Mock<ILoader>();
+        mockLoader
+            .Setup(l => l.GetModuleHandles(
+                new TargetPointer(appDomainAddr),
+                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            .Returns(new[] { new Contracts.ModuleHandle(moduleAddr) });
+        mockLoader
+            .Setup(l => l.GetAssembly(It.Is<Contracts.ModuleHandle>(h => h.Address == moduleAddr)))
+            .Returns(new TargetPointer(assemblyAddr));
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(appDomainAddr, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Single(assemblies);
+        Assert.Equal(assemblyAddr, assemblies[0]);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_MultipleAssemblies(MockTarget.Architecture arch)
+    {
+        ulong appDomainAddr = 0x1000;
+        ulong[] expectedAssemblies = [0x2000, 0x3000, 0x4000];
+        TargetPointer[] moduleAddrs = [new(0x5000), new(0x6000), new(0x7000)];
+
+        var mockLoader = new Mock<ILoader>();
+        mockLoader
+            .Setup(l => l.GetModuleHandles(
+                new TargetPointer(appDomainAddr),
+                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            .Returns(new[]
+            {
+                new Contracts.ModuleHandle(moduleAddrs[0]),
+                new Contracts.ModuleHandle(moduleAddrs[1]),
+                new Contracts.ModuleHandle(moduleAddrs[2]),
+            });
+
+        for (int i = 0; i < 3; i++)
+        {
+            int index = i;
+            mockLoader
+                .Setup(l => l.GetAssembly(It.Is<Contracts.ModuleHandle>(h => h.Address == moduleAddrs[index])))
+                .Returns(new TargetPointer(expectedAssemblies[index]));
+        }
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(appDomainAddr, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedAssemblies, assemblies.ToArray());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAssembliesInAppDomain_NoAssemblies(MockTarget.Architecture arch)
+    {
+        ulong appDomainAddr = 0x1000;
+
+        var mockLoader = new Mock<ILoader>();
+        mockLoader
+            .Setup(l => l.GetModuleHandles(
+                new TargetPointer(appDomainAddr),
+                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            .Returns(Array.Empty<Contracts.ModuleHandle>());
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        List<ulong> assemblies = new();
+        GCHandle gcHandle = GCHandle.Alloc(assemblies);
+        int hr = dacDbi.EnumerateAssembliesInAppDomain(appDomainAddr, &CollectAssemblyCallback, GCHandle.ToIntPtr(gcHandle));
+        gcHandle.Free();
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Empty(assemblies);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_NoStream(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            moduleAddr = new TargetPointer(loader.AddModule().Address);
+        });
+
+        DacDbiTargetBuffer targetBuffer;
+        SymbolFormat symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, targetBuffer.pAddress);
+        Assert.Equal(0u, targetBuffer.cbSize);
+        Assert.Equal(SymbolFormat.None, symbolFormat);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_WithSymbols(MockTarget.Architecture arch)
+    {
+        byte[] symbolBytes = [0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE];
+        TargetPointer moduleAddr = TargetPointer.Null;
+        ulong expectedBufferAddr = 0;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            MockCGrowableSymbolStream stream = loader.AddInMemorySymbolStream(module, symbolBytes);
+            moduleAddr = new TargetPointer(module.Address);
+            expectedBufferAddr = stream.Buffer;
+        });
+
+        DacDbiTargetBuffer targetBuffer;
+        SymbolFormat symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedBufferAddr, targetBuffer.pAddress);
+        Assert.Equal((uint)symbolBytes.Length, targetBuffer.cbSize);
+        Assert.Equal(SymbolFormat.Pdb, symbolFormat);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_EmptyStream(MockTarget.Architecture arch)
+    {
+        // Stream object exists but contains no bytes - treated like no symbols.
+        TargetPointer moduleAddr = TargetPointer.Null;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            loader.AddInMemorySymbolStream(module, symbols: null);
+            moduleAddr = new TargetPointer(module.Address);
+        });
+
+        DacDbiTargetBuffer targetBuffer;
+        SymbolFormat symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, targetBuffer.pAddress);
+        Assert.Equal(0u, targetBuffer.cbSize);
+        Assert.Equal(SymbolFormat.None, symbolFormat);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeDef_PassesThrough(MockTarget.Architecture arch)
+    {
+        // A token that is already an mdtTypeDef resolves to (referencing module's assembly, same token).
+        ulong assemblyAddr = 0;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            assemblyAddr = module.Assembly;
+        });
+
+        uint typeDefToken = (uint)EcmaMetadataUtils.TokenType.mdtTypeDef | 0x000002;
+        DacDbiTypeRefData input = new() { vmAssembly = assemblyAddr, typeToken = typeDefToken };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(assemblyAddr, output.vmAssembly);
+        Assert.Equal(typeDefToken, output.typeToken);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_NotCached_ReturnsClassNotLoaded(MockTarget.Architecture arch)
+    {
+        const ulong refAsmPtr = 0x100;
+        ModuleHandle refHandle = Mod(0x1000);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        SetupTypeRefCacheMiss(loader, refHandle);
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns((MetadataReader?)null);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = MdtTypeRef | 3 };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED, hr);
+    }
+
+    private const uint MdtTypeRef = (uint)EcmaMetadataUtils.TokenType.mdtTypeRef;
+    private const uint MdtAssemblyRef = (uint)EcmaMetadataUtils.TokenType.mdtAssemblyRef;
+
+    private static TargetPointer Ptr(ulong value) => new TargetPointer(value);
+    private static ModuleHandle Mod(ulong address) => new ModuleHandle(new TargetPointer(address));
+
+    private static (MetadataReader Reader, MetadataReaderProvider Provider) BuildMetadata(Action<MetadataBuilder> configure)
+    {
+        MetadataBuilder mb = new();
+        mb.AddModule(0, mb.GetOrAddString("M"), mb.GetOrAddGuid(Guid.NewGuid()), default, default);
+        mb.AddAssembly(mb.GetOrAddString("Asm"), new Version(1, 0, 0, 0), default, default, default, AssemblyHashAlgorithm.Sha1);
+
+        // TypeDef row 1 must be the <Module> pseudo-type per ECMA-335.
+        mb.AddTypeDefinition(default, default, mb.GetOrAddString("<Module>"), default,
+            MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+
+        configure(mb);
+
+        BlobBuilder blob = new();
+        new MetadataRootBuilder(mb).Serialize(blob, 0, 0);
+        MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(blob.ToArray()));
+        return (provider.GetMetadataReader(), provider);
+    }
+
+    private static TypeDefinitionHandle AddTypeDef(MetadataBuilder mb, string @namespace, string name)
+        => mb.AddTypeDefinition(
+            TypeAttributes.Public | TypeAttributes.Class,
+            @namespace is null ? default : mb.GetOrAddString(@namespace),
+            mb.GetOrAddString(name),
+            default,
+            MetadataTokens.FieldDefinitionHandle(1),
+            MetadataTokens.MethodDefinitionHandle(1));
+
+    private static void SetupLookupMap(Mock<ILoader> loader, ModuleHandle module, ModuleLookupMapKind kind, uint token, ulong result)
+    {
+        TargetNUInt flags = default;
+        loader.Setup(l => l.GetModuleLookupMapElement(module, kind, token, out flags)).Returns(Ptr(result));
+    }
+
+    private static void SetupTypeRefCacheMiss(Mock<ILoader> loader, ModuleHandle module)
+    {
+        // The referencing module's TypeRef->MethodTable cache misses.
+        TargetNUInt flags = default;
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                module,
+                ModuleLookupMapKind.TypeRefToMethodTable,
+                It.IsAny<uint>(),
+                out flags))
+            .Returns(TargetPointer.Null);
+    }
+
+    private static DacDbiImpl CreateDacDbiWithMockContracts(MockTarget.Architecture arch, Mock<ILoader> loader, Mock<IEcmaMetadata> ecma)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
+            .AddMockContract(loader)
+            .AddMockContract(ecma)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null, new());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_AssemblyRefScope_ResolvesToTypeDef(MockTarget.Architecture arch)
+    {
+        // Referencing module: AssemblyRef "Target" (rid 1) and TypeRef "NS.Foo" scoped to it.
+        var (refReader, refProvider) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRef = mb.AddAssemblyReference(mb.GetOrAddString("Target"), new Version(1, 0, 0, 0), default, default, default, default);
+            mb.AddTypeReference(asmRef, mb.GetOrAddString("NS"), mb.GetOrAddString("Foo"));
+        });
+
+        // Target module: TypeDef "NS.Foo" (row 2 -> token 0x02000002).
+        var (targetReader, targetProvider) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Foo"));
+
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, targetModPtr = 0x4000;
+        ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, targetModPtr);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
+        loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(targetHandle)).Returns(targetReader);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = MdtTypeRef | 1 };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(targetAsmPtr, output.vmAssembly);
+        Assert.Equal(0x02000002u, output.typeToken);
+
+        System.GC.KeepAlive(refProvider);
+        System.GC.KeepAlive(targetProvider);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_TypeForwarder_FollowsExportedType(MockTarget.Architecture arch)
+    {
+        // Referencing module: AssemblyRef "A" and TypeRef "NS.Bar" scoped to A.
+        var (refReader, refProvider) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRefA = mb.AddAssemblyReference(mb.GetOrAddString("A"), new Version(1, 0, 0, 0), default, default, default, default);
+            mb.AddTypeReference(asmRefA, mb.GetOrAddString("NS"), mb.GetOrAddString("Bar"));
+        });
+
+        // Module A: forwards "NS.Bar" to AssemblyRef "B" via an ExportedType (no TypeDef).
+        var (readerA, providerA) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRefB = mb.AddAssemblyReference(mb.GetOrAddString("B"), new Version(1, 0, 0, 0), default, default, default, default);
+            mb.AddExportedType(TypeAttributes.Public, mb.GetOrAddString("NS"), mb.GetOrAddString("Bar"), asmRefB, 0);
+        });
+
+        // Module B: defines TypeDef "NS.Bar" (row 2 -> token 0x02000002).
+        var (readerB, providerB) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Bar"));
+
+        const ulong refAsmPtr = 0x100, asmBPtr = 0x300;
+        const ulong modAPtr = 0x4000, modBPtr = 0x5000;
+        ModuleHandle refHandle = Mod(0x1000), handleA = Mod(0x2000), handleB = Mod(0x3000);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, modAPtr);
+        SetupLookupMap(loader, handleA, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, modBPtr);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modAPtr))).Returns(handleA);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modBPtr))).Returns(handleB);
+        loader.Setup(l => l.GetAssembly(handleB)).Returns(Ptr(asmBPtr));
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(handleA)).Returns(readerA);
+        ecma.Setup(e => e.GetMetadata(handleB)).Returns(readerB);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = MdtTypeRef | 1 };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(asmBPtr, output.vmAssembly);
+        Assert.Equal(0x02000002u, output.typeToken);
+
+        System.GC.KeepAlive(refProvider);
+        System.GC.KeepAlive(providerA);
+        System.GC.KeepAlive(providerB);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_NestedType_ResolvesNestedTypeDef(MockTarget.Architecture arch)
+    {
+        // Referencing module: AssemblyRef "T", TypeRef "NS.Outer" scoped to T, and TypeRef "Inner"
+        // whose scope is the "NS.Outer" TypeRef (nested reference).
+        TypeReferenceHandle innerRefHandle = default;
+        var (refReader, refProvider) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRefT = mb.AddAssemblyReference(mb.GetOrAddString("T"), new Version(1, 0, 0, 0), default, default, default, default);
+            TypeReferenceHandle outerRef = mb.AddTypeReference(asmRefT, mb.GetOrAddString("NS"), mb.GetOrAddString("Outer"));
+            innerRefHandle = mb.AddTypeReference(outerRef, default, mb.GetOrAddString("Inner"));
+        });
+
+        // Target module: TypeDef "NS.Outer" (row 2) with nested TypeDef "Inner" (row 3 -> 0x02000003).
+        var (targetReader, targetProvider) = BuildMetadata(mb =>
+        {
+            TypeDefinitionHandle outer = AddTypeDef(mb, "NS", "Outer");
+            TypeDefinitionHandle inner = mb.AddTypeDefinition(
+                TypeAttributes.NestedPublic | TypeAttributes.Class, default, mb.GetOrAddString("Inner"), default,
+                MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+            mb.AddNestedType(inner, outer);
+        });
+
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, targetModPtr = 0x4000;
+        ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
+        uint innerToken = (uint)MetadataTokens.GetToken(innerRefHandle);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, targetModPtr);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
+        loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(targetHandle)).Returns(targetReader);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = innerToken };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(targetAsmPtr, output.vmAssembly);
+        Assert.Equal(0x02000003u, output.typeToken);
+
+        System.GC.KeepAlive(refProvider);
+        System.GC.KeepAlive(targetProvider);
+    }
+
+    public static IEnumerable<object[]> TargetArchitectures()
+    {
+        string[] architectures = ["x64", "arm64", "arm", "x86", "loongarch64", "riscv64"];
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            foreach (string archName in architectures)
+            {
+                yield return [stdArch[0], archName];
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> TargetArchitectures_SpRange()
+    {
+        foreach (object[] archData in TargetArchitectures())
+        {
+            yield return [archData[0], archData[1], (ulong)0x6000, System.HResults.S_OK];
+            yield return [archData[0], archData[1], (ulong)0x2000, CorDbgHResults.CORDBG_E_NON_MATCHING_CONTEXT];
+            yield return [archData[0], archData[1], (ulong)0x8000, CorDbgHResults.CORDBG_E_NON_MATCHING_CONTEXT];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures_SpRange))]
+    public void CheckContext_WithControlFlag_ValidatesSpRange(MockTarget.Architecture arch, string targetArch, ulong sp, int expectedHr)
+    {
+        const ulong ThreadAddr = 0x1000;
+        var (dacDbi, target) = CreateCheckContextDacDbi(arch, targetArch, ThreadAddr, stackBase: 0x8000, stackLimit: 0x4000);
+
+        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+        ctx.RawContextFlags = ctx.ContextControlFlags;
+        ctx.StackPointer = new TargetPointer(sp);
+        byte[] bytes = ctx.GetBytes();
+
+        fixed (byte* pCtx = bytes)
+        {
+            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            Assert.Equal(expectedHr, hr);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CheckContext_NoControlFlag_SkipsSpCheck(MockTarget.Architecture arch, string targetArch)
+    {
+        const ulong ThreadAddr = 0x1000;
+        var mockThread = new Mock<IThread>();
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .AddMockContract(mockThread)
+            .Build();
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
+
+        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+        ctx.RawContextFlags = 0;
+        ctx.StackPointer = new TargetPointer(0x2000);
+        byte[] bytes = ctx.GetBytes();
+
+        fixed (byte* pCtx = bytes)
+        {
+            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        mockThread.Verify(
+            t => t.GetStackLimitData(It.IsAny<TargetPointer>(), out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny),
+            Times.Never);
+    }
+
+    private static (DacDbiImpl DacDbi, Target Target) CreateCheckContextDacDbi(MockTarget.Architecture arch, string targetArch, ulong threadAddr, ulong stackBase, ulong stackLimit)
+    {
+        var mockThread = new Mock<IThread>();
+        mockThread
+            .Setup(t => t.GetStackLimitData(new TargetPointer(threadAddr), out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny))
+            .Callback(new GetStackLimitDataCallback((TargetPointer _, out TargetPointer sb, out TargetPointer sl, out TargetPointer fa) =>
+            {
+                sb = new TargetPointer(stackBase);
+                sl = new TargetPointer(stackLimit);
+                fa = TargetPointer.Null;
+            }));
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .AddMockContract(mockThread)
+            .Build();
+
+        return (new DacDbiImpl(target, legacyObj: null, new()), target);
+    }
+
+    private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
+
+    private const uint MdtMethodDef = 0x06000000;
+
+    private delegate void GetMethodRegionInfoCallback(CodeBlockHandle handle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
+
+    private static ulong AsClrDataAddress(MockTarget.Architecture arch, ulong address)
+        => arch.Is64Bit ? address : unchecked((ulong)(long)(int)address);
+
+    private static DacDbiImpl CreateNativeCodeDacDbi(
+        MockTarget.Architecture arch,
+        Mock<ILoader> loader,
+        Mock<IRuntimeTypeSystem> rts,
+        Mock<IExecutionManager> executionManager,
+        Mock<IPrecodeStubs> precodeStubs,
+        Mock<ICodeVersions> codeVersions,
+        ulong defaultEnCVersion = CorDBDefaultEnCFunctionVersion)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, defaultEnCVersion))
+            .AddMockContract(loader)
+            .AddMockContract(rts)
+            .AddMockContract(executionManager)
+            .AddMockContract(precodeStubs)
+            .AddMockContract(codeVersions)
+            .AddMockContract(new Mock<IPlatformMetadata>())
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null, new());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfo_FillsDataForAsyncVariant(MockTarget.Architecture arch)
+    {
+        const ulong Assembly = 0x1000;
+        const uint MethodToken = MdtMethodDef | 1;
+        TargetPointer module = new(0x2000);
+        TargetPointer methodDesc = new(0x3000);
+        TargetPointer asyncVariant = new(0xf0003100);
+        TargetCodePointer interpreterPrecode = new(0xf0005000);
+        TargetCodePointer nativeCode = new(0xf0006000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
+        ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x8000));
+
+        var loader = new Mock<ILoader>();
+        ModuleHandle moduleHandle = new(module);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(new TargetPointer(Assembly))).Returns(moduleHandle);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                MethodToken,
+                out It.Ref<TargetNUInt>.IsAny))
+            .Returns(methodDesc);
+
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        MethodDescHandle asyncVariantHandle = new(asyncVariant);
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.Setup(r => r.GetMethodDescHandle(asyncVariant)).Returns(asyncVariantHandle);
+        rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.Thunk);
+        rts.Setup(r => r.GetAsyncVariant(methodDescHandle)).Returns(asyncVariant);
+        rts.Setup(r => r.GetNativeCode(asyncVariantHandle)).Returns(interpreterPrecode);
+        rts.Setup(r => r.GetMethodTable(asyncVariantHandle)).Throws(new VirtualReadException());
+
+        var precodeStubs = new Mock<IPrecodeStubs>();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(interpreterPrecode)).Returns(nativeCode);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
+        executionManager
+            .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
+            .Callback(new GetMethodRegionInfoCallback((CodeBlockHandle _, out uint hotSize, out TargetPointer coldStart, out uint coldSize) =>
+            {
+                hotSize = 0x40;
+                coldStart = new TargetPointer(0xf0006800);
+                coldSize = 0x20;
+            }));
+
+        var codeVersions = new Mock<ICodeVersions>();
+        codeVersions.Setup(c => c.GetActiveILCodeVersion(asyncVariant)).Returns(ilCodeVersion);
+        codeVersions.Setup(c => c.GetEnCVersion(ilCodeVersion)).Returns(new TargetNUInt(4));
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(arch, loader, rts, executionManager, precodeStubs, codeVersions);
+        NativeCodeFunctionData result;
+        int hr = dacDbi.GetNativeCodeInfo(Assembly, MethodToken, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(AsClrDataAddress(arch, nativeCode.Value), result.hotRegion.pAddress);
+        Assert.Equal(0x40u, result.hotRegion.cbSize);
+        Assert.Equal(AsClrDataAddress(arch, 0xf0006800), result.coldRegion.pAddress);
+        Assert.Equal(0x20u, result.coldRegion.cbSize);
+        Assert.Equal(Interop.BOOL.FALSE, result.isInstantiatedGeneric);
+        Assert.Equal(AsClrDataAddress(arch, asyncVariant.Value), result.vmNativeCodeMethodDescToken);
+        Assert.Equal(4ul, result.encVersion);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfo_NoNativeCode_ReturnsMethodDesc(MockTarget.Architecture arch)
+    {
+        const ulong Assembly = 0x1000;
+        const ulong DefaultEnCVersion = 0x1_0000_0000;
+        const uint MethodToken = MdtMethodDef | 1;
+        TargetPointer module = new(0x2000);
+        TargetPointer methodDesc = new(0x3000);
+        ModuleHandle moduleHandle = new(module);
+
+        var loader = new Mock<ILoader>();
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(new TargetPointer(Assembly))).Returns(moduleHandle);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                MethodToken,
+                out It.Ref<TargetNUInt>.IsAny))
+            .Returns(methodDesc);
+
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.Setup(r => r.GetNativeCode(methodDescHandle)).Returns(TargetCodePointer.Null);
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(
+            arch, loader, rts, new Mock<IExecutionManager>(), new Mock<IPrecodeStubs>(), new Mock<ICodeVersions>(), DefaultEnCVersion);
+        NativeCodeFunctionData result;
+        int hr = dacDbi.GetNativeCodeInfo(Assembly, MethodToken, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(methodDesc.Value, result.vmNativeCodeMethodDescToken);
+        Assert.Equal(0ul, result.hotRegion.pAddress);
+        Assert.Equal(DefaultEnCVersion, result.encVersion);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfoForAddr_FillsData(MockTarget.Architecture arch)
+    {
+        const ulong CodeAddress = 0xf0005000;
+        const uint MethodToken = MdtMethodDef | 2;
+        TargetCodePointer nativeCode = new(0x6000);
+        TargetPointer codeStart = new(0xf0006100);
+        TargetPointer methodDesc = new(0xf0003000);
+        TargetPointer methodTable = new(0x4000);
+        TargetPointer module = new(0xf0002000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+        ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x8000));
+
+        var precodeStubs = new Mock<IPrecodeStubs>();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
+        executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
+        executionManager
+            .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
+            .Callback(new GetMethodRegionInfoCallback((CodeBlockHandle _, out uint hotSize, out TargetPointer coldStart, out uint coldSize) =>
+            {
+                hotSize = 0x40;
+                coldStart = new TargetPointer(0xf0006800);
+                coldSize = 0x20;
+            }));
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.SetupSequence(r => r.GetMethodTable(methodDescHandle))
+            .Throws(new VirtualReadException())
+            .Returns(methodTable);
+        rts.Setup(r => r.GetTypeHandle(methodTable)).Returns(typeHandle);
+        rts.Setup(r => r.GetModule(typeHandle)).Returns(module);
+        rts.Setup(r => r.GetMethodToken(methodDescHandle)).Returns(MethodToken);
+
+        var codeVersions = new Mock<ICodeVersions>();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(new TargetCodePointer(codeStart.Value))).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetILCodeVersion(nativeCodeVersion)).Returns(ilCodeVersion);
+        codeVersions.Setup(c => c.GetEnCVersion(ilCodeVersion)).Returns(new TargetNUInt(7));
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(arch, new Mock<ILoader>(), rts, executionManager, precodeStubs, codeVersions);
+        NativeCodeFunctionData result;
+        ulong vmModule;
+        uint functionToken;
+        int hr = dacDbi.GetNativeCodeInfoForAddr(AsClrDataAddress(arch, CodeAddress), &result, &vmModule, &functionToken);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(AsClrDataAddress(arch, codeStart.Value), result.hotRegion.pAddress);
+        Assert.Equal(0x40u, result.hotRegion.cbSize);
+        Assert.Equal(AsClrDataAddress(arch, 0xf0006800), result.coldRegion.pAddress);
+        Assert.Equal(0x20u, result.coldRegion.cbSize);
+        Assert.Equal(Interop.BOOL.FALSE, result.isInstantiatedGeneric);
+        Assert.Equal(AsClrDataAddress(arch, methodDesc.Value), result.vmNativeCodeMethodDescToken);
+        Assert.Equal(7ul, result.encVersion);
+        Assert.Equal(AsClrDataAddress(arch, module.Value), vmModule);
+        Assert.Equal(MethodToken, functionToken);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfoForAddr_MissingRegionData_PreservesHotStart(MockTarget.Architecture arch)
+    {
+        const ulong CodeAddress = 0x5000;
+        TargetPointer codeStart = new(0x6100);
+        TargetPointer methodDesc = new(0x3000);
+        TargetPointer methodTable = new(0x4000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
+
+        var precodeStubs = new Mock<IPrecodeStubs>();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(CodeAddress))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
+        executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
+        executionManager
+            .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
+            .Throws(new VirtualReadException());
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.SetupSequence(r => r.GetMethodTable(methodDescHandle))
+            .Throws(new VirtualReadException())
+            .Returns(methodTable);
+        rts.Setup(r => r.GetTypeHandle(methodTable)).Returns(typeHandle);
+        rts.Setup(r => r.GetModule(typeHandle)).Returns(new TargetPointer(0x2000));
+        rts.Setup(r => r.GetMethodToken(methodDescHandle)).Returns(MdtMethodDef | 1);
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(
+            arch, new Mock<ILoader>(), rts, executionManager, precodeStubs, new Mock<ICodeVersions>());
+        NativeCodeFunctionData result;
+        int hr = dacDbi.GetNativeCodeInfoForAddr(CodeAddress, &result, null, null);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(codeStart.Value, result.hotRegion.pAddress);
+        Assert.Equal(0u, result.hotRegion.cbSize);
+        Assert.Equal(CorDBDefaultEnCFunctionVersion, result.encVersion);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfoForAddr_ZeroAddress_ClearsOutputs(MockTarget.Architecture arch)
+    {
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(
+            arch,
+            new Mock<ILoader>(),
+            new Mock<IRuntimeTypeSystem>(),
+            new Mock<IExecutionManager>(),
+            new Mock<IPrecodeStubs>(),
+            new Mock<ICodeVersions>());
+        NativeCodeFunctionData result = new()
+        {
+            hotRegion = new DacDbiTargetBuffer { pAddress = 1, cbSize = 1 },
+            encVersion = 2,
+        };
+        ulong vmModule = 1;
+        uint functionToken = 1;
+
+        int hr = dacDbi.GetNativeCodeInfoForAddr(0, &result, &vmModule, &functionToken);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0ul, result.hotRegion.pAddress);
+        Assert.Equal(CorDBDefaultEnCFunctionVersion, result.encVersion);
+        Assert.Equal(0ul, vmModule);
+        Assert.Equal(0u, functionToken);
+    }
+
+    private static DacDbiImpl CreateDacDbiWithMockContracts(
+        MockTarget.Architecture arch,
+        Mock<ILoader> mockLoader,
+        Mock<ICodeVersions> mockCodeVersions,
+        Mock<IReJIT> mockReJIT)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockCodeVersions)
+            .AddMockContract(mockReJIT)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null, new());
+    }
+
+    private static Mock<ILoader> SetupMockLoader(TargetPointer modulePtr, uint methodTk, TargetPointer methodDesc)
+    {
+        var mockLoader = new Mock<ILoader>();
+        var moduleHandle = new Contracts.ModuleHandle(modulePtr);
+        mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(modulePtr)).Returns(moduleHandle);
+        mockLoader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                methodTk,
+                out It.Ref<TargetNUInt>.IsAny))
+            .Returns(methodDesc);
+        return mockLoader;
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_NullOutput_ReturnsError(MockTarget.Architecture arch)
+    {
+        var dacDbi = CreateDacDbiWithMockContracts(
+            arch, new Mock<ILoader>(), new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        int hr = dacDbi.AreOptimizationsDisabled(0x1000, MdtMethodDef | 1, null);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_InvalidToken_ReturnsError(MockTarget.Architecture arch)
+    {
+        var dacDbi = CreateDacDbiWithMockContracts(
+            arch, new Mock<ILoader>(), new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(0x1000, 0x01000001, &result);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    public static IEnumerable<object[]> ArchWithDeoptimized()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            yield return [stdArch[0], true];
+            yield return [stdArch[0], false];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ArchWithDeoptimized))]
+    public void AreOptimizationsDisabled_WithMethodDesc(MockTarget.Architecture arch, bool deoptimized)
+    {
+        TargetPointer modulePtr = new(0x1000);
+        uint methodTk = MdtMethodDef | 1;
+        TargetPointer methodDesc = new(0x2000);
+        var ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x3000));
+
+        Mock<ILoader> mockLoader = SetupMockLoader(modulePtr, methodTk, methodDesc);
+
+        var mockCodeVersions = new Mock<ICodeVersions>();
+        mockCodeVersions.Setup(cv => cv.GetActiveILCodeVersion(methodDesc)).Returns(ilCodeVersion);
+
+        var mockReJIT = new Mock<IReJIT>();
+        mockReJIT.Setup(r => r.IsDeoptimized(ilCodeVersion)).Returns(deoptimized);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, mockLoader, mockCodeVersions, mockReJIT);
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(modulePtr.Value, methodTk, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(deoptimized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, result);
+    }
+
+    private delegate void TryGetInstrumentedILMapCallback(ILCodeVersionHandle handle, out uint mapEntryCount, out TargetPointer mapEntries);
+
+    public static IEnumerable<object[]> GetILCodeVersionNodeDataValues()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            // arch, pbIL, hasMap, mapCount, mapEntries
+            yield return [stdArch[0], 0x9000ul, true, 4u, 0xA000ul];
+            yield return [stdArch[0], 0x9000ul, false, 0u, 0ul];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetILCodeVersionNodeDataValues))]
+    public void GetILCodeVersionNodeData_FillsData(MockTarget.Architecture arch, ulong pbIL, bool hasMap, uint mapCount, ulong mapEntries)
+    {
+        TargetPointer ilCodeVersionNode = new(0x3000);
+        var ilCodeVersion = ILCodeVersionHandle.CreateExplicit(ilCodeVersionNode);
+
+        var mockCodeVersions = new Mock<ICodeVersions>();
+        mockCodeVersions.Setup(cv => cv.GetIL(ilCodeVersion)).Returns(new TargetPointer(pbIL));
+        mockCodeVersions
+            .Setup(cv => cv.TryGetInstrumentedILMap(ilCodeVersion, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny))
+            .Callback(new TryGetInstrumentedILMapCallback((ILCodeVersionHandle _, out uint count, out TargetPointer entries) =>
+            {
+                count = mapCount;
+                entries = new TargetPointer(mapEntries);
+            }))
+            .Returns(hasMap);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, new Mock<ILoader>(), mockCodeVersions, new Mock<IReJIT>());
+
+        DacDbiSharedReJitInfo data;
+        int hr = dacDbi.GetILCodeVersionNodeData(ilCodeVersionNode.Value, &data);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(pbIL, data.pbIL);
+        Assert.Equal(mapCount, data.cInstrumentedMapEntries);
+        Assert.Equal(mapEntries, data.rgInstrumentedMapEntries);
+    }
+
+    private delegate void TryGetLockInfoCallback(TargetPointer syncBlock, out uint owningThreadId, out uint recursion);
+
+    public static IEnumerable<object[]> GetThreadOwningMonitorLockData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return new object[] { arch[0], false, false, 0u, 0ul, 0u };
+            yield return new object[] { arch[0], true, false, 0u, 0ul, 0u };
+            yield return new object[] { arch[0], true, true, 3u, 0x7000ul, 4u };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetThreadOwningMonitorLockData))]
+    public void GetThreadOwningMonitorLock(MockTarget.Architecture arch, bool hasSyncBlock, bool isLockHeld, uint recursionCount, ulong expectedOwner, uint expectedAcquisitionCount)
+    {
+        const ulong ObjectAddr = 0x5000;
+        const uint OwnerThreadId = 42;
+        TargetPointer syncBlockAddr = new(0x6000);
+        TargetPointer ownerThreadPtr = new(0x7000);
+
+        var mockObject = new Mock<IObject>();
+        mockObject.Setup(o => o.GetSyncBlockAddress(new TargetPointer(ObjectAddr)))
+            .Returns(hasSyncBlock ? syncBlockAddr : TargetPointer.Null);
+
+        var builder = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
+            .AddMockContract(mockObject);
+
+        if (hasSyncBlock)
+        {
+            var mockSyncBlock = new Mock<ISyncBlock>();
+            var lockSetup = mockSyncBlock
+                .Setup(s => s.TryGetLockInfo(syncBlockAddr, out It.Ref<uint>.IsAny, out It.Ref<uint>.IsAny));
+            if (isLockHeld)
+            {
+                lockSetup
+                    .Callback(new TryGetLockInfoCallback((TargetPointer _, out uint threadId, out uint recursion) =>
+                    {
+                        threadId = OwnerThreadId;
+                        recursion = recursionCount;
+                    }))
+                    .Returns(true);
+            }
+            else
+            {
+                lockSetup.Returns(false);
+            }
+            builder.AddMockContract(mockSyncBlock);
+        }
+
+        if (isLockHeld)
+        {
+            var mockThread = new Mock<IThread>();
+            mockThread.Setup(t => t.IdToThread(OwnerThreadId))
+                .Returns(ownerThreadPtr);
+            builder.AddMockContract(mockThread);
+        }
+
+        var dacDbi = new DacDbiImpl(builder.Build(), legacyObj: null, new());
+
+        DacDbiMonitorLockInfo result;
+        int hr = dacDbi.GetThreadOwningMonitorLock(ObjectAddr, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedOwner, result.lockOwner);
+        Assert.Equal(expectedAcquisitionCount, result.acquisitionCount);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_NullMethodDesc_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetPointer modulePtr = new(0x1000);
+        uint methodTk = MdtMethodDef | 1;
+
+        Mock<ILoader> mockLoader = SetupMockLoader(modulePtr, methodTk, TargetPointer.Null);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, mockLoader, new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(modulePtr.Value, methodTk, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+    }
+
+    private static (DacDbiImpl DacDbi, MockThread Thread, MockFrameBuilder FrameBuilder) CreateManagedStoppedContextDacDbi(
+        MockTarget.Architecture arch,
+        Action<MockFrameBuilder>? configureFrames = null)
+    {
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
+        MockFrameBuilder frameBuilder = new(targetBuilder.MemoryBuilder);
+
+        MockThread thread = threadBuilder.AddThread(1, 1234);
+        ulong terminator = arch.Is64Bit ? ulong.MaxValue : uint.MaxValue;
+        thread.Frame = terminator;
+
+        configureFrames?.Invoke(frameBuilder);
+
+        targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.ExceptionInfo] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ExceptionInfoLayout),
+                [DataType.Thread] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ThreadLayout),
+                [DataType.ThreadStore] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ThreadStoreLayout),
+                [DataType.GCAllocContext] = TargetTestHelpers.CreateTypeInfo(threadBuilder.GCAllocContextLayout),
+                [DataType.EEAllocContext] = TargetTestHelpers.CreateTypeInfo(threadBuilder.EEAllocContextLayout),
+                [DataType.RuntimeThreadLocals] = TargetTestHelpers.CreateTypeInfo(threadBuilder.RuntimeThreadLocalsLayout),
+                [DataType.Frame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FrameLayout),
+                [DataType.ResumableFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.ResumableFrameLayout),
+            })
+            .AddGlobals(
+                (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
+                (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
+                (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress),
+                ("RedirectedThreadFrameIdentifier", MockFrameBuilder.RedirectedThreadFrameIdentifierValue))
+            .AddMockContract(new Mock<IExecutionManager>())
+            .AddMockContract(new Mock<IGCInfo>())
+            .AddContract<IThread>(version: "c1")
+            .AddContract<IStackWalk>(version: "c1");
+        TestPlaceholderTarget target = targetBuilder.Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        return (dacDbi, thread, frameBuilder);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_InteropDebuggingHijacked(MockTarget.Architecture arch)
+    {
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+        thread.InteropDebuggingHijacked = 1;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_FilterContextSet(MockTarget.Architecture arch)
+    {
+        const ulong filterContextAddr = 0x0009_0000;
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+        thread.DebuggerFilterContext = filterContextAddr;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(filterContextAddr, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_RedirectedThread(MockTarget.Architecture arch)
+    {
+        const ulong contextAddr = 0x000A_0000;
+        MockResumableFrame? redirectedFrame = null;
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch, frameBuilder =>
+        {
+            redirectedFrame = frameBuilder.AddRedirectedThreadFrame(contextAddr);
+        });
+
+        thread.Frame = redirectedFrame!.Address;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(contextAddr, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_NoContextAvailable(MockTarget.Architecture arch)
+    {
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetStackWalkCurrentFrameInfo_MissingOptionalMemory_PreservesAvailableData(MockTarget.Architecture arch)
+    {
+        TargetPointer methodDescPointer = new(0x1000);
+        MethodDescHandle methodDesc = new(methodDescPointer);
+        TargetPointer methodTablePointer = new(0x2000);
+        ITypeHandle methodTable = new TargetTypeHandle(methodTablePointer);
+        TargetCodePointer controlPC = new(0x3000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x4000));
+        const uint MethodToken = 0x06000001;
+        const ulong NativeOffset = 0x20;
+
+        var frameHandle = new Mock<IStackDataFrameHandle>();
+        frameHandle.SetupGet(h => h.State).Returns(StackWalkState.Frameless);
+        frameHandle.SetupGet(h => h.IsInterrupted).Returns(true);
+        frameHandle.SetupGet(h => h.HasFaulted).Returns(false);
+
+        var stackWalk = new Mock<IStackWalk>();
+        stackWalk
+            .Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>(), It.IsAny<byte[]>(), true))
+            .Returns([frameHandle.Object]);
+        stackWalk.Setup(s => s.GetMethodDescPtr(frameHandle.Object)).Returns(methodDescPointer);
+        stackWalk.Setup(s => s.GetRuntimeFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x5000));
+        stackWalk.Setup(s => s.GetContextFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x6000));
+        stackWalk.Setup(s => s.GetStackPointer(frameHandle.Object)).Returns(new TargetPointer(0x7000));
+        uint parentNativeOffset = 0;
+        stackWalk.Setup(s => s.GetFuncletRootId(frameHandle.Object, out parentNativeOffset)).Returns(new TargetPointer(0x8000));
+        stackWalk.Setup(s => s.GetExactGenericArgsToken(frameHandle.Object)).Throws<VirtualReadException>();
+        stackWalk.Setup(s => s.GetInstructionPointer(frameHandle.Object)).Returns(controlPC);
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDescPointer)).Returns(methodDesc);
+        rts.SetupSequence(r => r.GetMethodTable(methodDesc))
+            .Returns(methodTablePointer)
+            .Throws<VirtualReadException>();
+        rts.Setup(r => r.GetTypeHandle(methodTablePointer)).Returns(methodTable);
+        rts.Setup(r => r.GetModule(methodTable)).Throws<VirtualReadException>();
+        rts.Setup(r => r.GetGenericContextLoc(methodDesc)).Returns(GenericContextLoc.InstArgMethodDesc);
+        rts.Setup(r => r.GetMethodToken(methodDesc)).Returns(MethodToken);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(controlPC)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Throws<VirtualReadException>();
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(NativeOffset));
+        TargetPointer gcInfoAddress = new(0x9000);
+        uint gcVersion = 0;
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfoAddress, out gcVersion));
+
+        var gcInfo = new Mock<IGCInfo>();
+        IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
+        gcInfo.Setup(g => g.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion)).Returns(gcInfoHandle);
+        gcInfo.Setup(g => g.GetAmbientSP(gcInfoHandle, (uint)NativeOffset, new TargetPointer(0x6000), new TargetPointer(0x7000)))
+            .Returns(TargetPointer.Null);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(stackWalk)
+            .AddMockContract(rts)
+            .AddMockContract(executionManager)
+            .AddMockContract(gcInfo)
+            .AddMockContract(new Mock<ILoader>())
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        StackWalkHandleData handleData = new(stackWalk.Object, default);
+        handleData.Reset([], isFirst: true);
+        nuint stackWalkHandle = handleData.GetHandle();
+
+        try
+        {
+            Debugger_STRData data = default;
+            Legacy.FrameType frameType;
+            int hr = dacDbi.GetStackWalkCurrentFrameInfo(stackWalkHandle, (nint)(&data), &frameType);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(Legacy.FrameType.ManagedStackFrame, frameType);
+            Assert.Equal(0UL, data.v.exactGenericArgsToken);
+            Assert.Equal(MethodToken, data.v.funcData.funcMetadataToken);
+            Assert.Equal(0UL, data.v.funcData.vmAssembly);
+            Assert.Equal(0UL, data.v.jitFuncData.nativeStartAddressPtr);
+            Assert.Equal(NativeOffset, data.v.jitFuncData.nativeOffset);
+            Assert.Equal(Interop.BOOL.FALSE, data.v.jitFuncData.isInstantiatedGeneric);
+            Assert.Equal(Interop.BOOL.TRUE, data.v.jitFuncData.justAfterILThrow);
+        }
+        finally
+        {
+            Assert.Equal(System.HResults.S_OK, dacDbi.DeleteStackWalk(stackWalkHandle));
+        }
+    }
+
+    [Theory]
+    [InlineData(DebugVarLocKind.Register, false, false, VarLocType.VLT_REG)]
+    [InlineData(DebugVarLocKind.Register, false, true, VarLocType.VLT_REG_FP)]
+    [InlineData(DebugVarLocKind.Register, true, false, VarLocType.VLT_REG_BYREF)]
+    [InlineData(DebugVarLocKind.Stack, false, false, VarLocType.VLT_STK)]
+    [InlineData(DebugVarLocKind.Stack, true, false, VarLocType.VLT_STK_BYREF)]
+    [InlineData(DebugVarLocKind.RegisterRegister, false, false, VarLocType.VLT_REG_REG)]
+    [InlineData(DebugVarLocKind.RegisterStack, false, false, VarLocType.VLT_REG_STK)]
+    [InlineData(DebugVarLocKind.StackRegister, false, false, VarLocType.VLT_STK_REG)]
+    [InlineData(DebugVarLocKind.DoubleStack, false, false, VarLocType.VLT_STK2)]
+    [InlineData(DebugVarLocKind.FloatingPointStack, false, false, VarLocType.VLT_FPSTK)]
+    [InlineData(DebugVarLocKind.FixedVarArg, false, false, VarLocType.VLT_FIXED_VA)]
+    public void ConvertToVarLoc_MapsVarLocTypeCorrectly(DebugVarLocKind kind, bool isByRef, bool isFloatingPoint, VarLocType expected)
+    {
+        var varInfo = new DebugVarInfo { Kind = kind, IsByRef = isByRef, IsFloatingPoint = isFloatingPoint };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(expected, result.vlType);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_Register_SetsRegisterField()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.Register, Register = 7 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(7u, result.vlrReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_RegisterFP_SetsRegisterField()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.Register, IsFloatingPoint = true, Register = 9 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_REG_FP, result.vlType);
+        Assert.Equal(9u, result.vlrReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_Stack_SetsBaseRegAndOffset()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.Stack, BaseRegister = 5, StackOffset = -0x28 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(5u, result.vlsBaseReg);
+        Assert.Equal(-0x28, result.vlsOffset);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_RegisterRegister_SetsBothRegisters()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.RegisterRegister, Register = 3, Register2 = 4 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(3u, result.vlrrReg1);
+        Assert.Equal(4u, result.vlrrReg2);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_RegisterStack_SetsRegAndStack()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.RegisterStack, Register = 2, BaseRegister2 = 6, StackOffset2 = 0x10 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(2u, result.vlrsReg);
+        Assert.Equal(6u, result.vlrssBaseReg);
+        Assert.Equal(0x10, result.vlrssOffset);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_StackRegister_SetsStackAndReg()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.StackRegister, BaseRegister = 5, StackOffset = -8, Register = 1 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(5u, result.vlsrsBaseReg);
+        Assert.Equal(-8, result.vlsrsOffset);
+        Assert.Equal(1u, result.vlsrReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_DoubleStack_SetsBaseRegAndOffset()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.DoubleStack, BaseRegister = 4, StackOffset = 0x20 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_STK2, result.vlType);
+        Assert.Equal(4u, result.vlsBaseReg);
+        Assert.Equal(0x20, result.vlsOffset);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_FloatingPointStack_SetsRegister()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.FloatingPointStack, FloatingPointStackRegister = 3 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_FPSTK, result.vlType);
+        Assert.Equal(3u, result.vlfReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_FixedVarArg_SetsOffset()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.FixedVarArg, FixedVarArgOffset = 0x28 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_FIXED_VA, result.vlType);
+        Assert.Equal(0x28u, result.vlfvOffset);
+    }
+
+    [Fact]
+    public void DecodeVarInfo_PreservesFloatingPointStackAndFixedVarArgLocations()
+    {
+        const uint maxILNum = unchecked((uint)-6);
+        byte[] encoded = EncodeNibbleUInts(
+            2,
+            unchecked(0u - maxILNum), 1, 2, (uint)VarLocType.VLT_FPSTK, 3,
+            unchecked(1u - maxILNum), 4, 2, (uint)VarLocType.VLT_FIXED_VA, 0x28);
+
+        var reader = new NativeReader(new MemoryStream(encoded));
+        List<DebugVarInfo> result = new(DebugInfoHelpers.DoVars(reader, isX86: true));
+
+        Assert.Collection(
+            result,
+            varInfo =>
+            {
+                Assert.Equal(DebugVarLocKind.FloatingPointStack, varInfo.Kind);
+                Assert.True(varInfo.IsFloatingPoint);
+                Assert.Equal(3u, varInfo.FloatingPointStackRegister);
+            },
+            varInfo =>
+            {
+                Assert.Equal(DebugVarLocKind.FixedVarArg, varInfo.Kind);
+                Assert.Equal(0x28u, varInfo.FixedVarArgOffset);
+            });
+    }
+
+    private static byte[] EncodeNibbleUInts(params uint[] values)
+    {
+        List<byte> nibbles = new();
+        Span<byte> groups = stackalloc byte[11];
+        foreach (uint value in values)
+        {
+            int groupCount = 0;
+            uint remaining = value;
+            do
+            {
+                groups[groupCount++] = (byte)(remaining & 7);
+                remaining >>= 3;
+            }
+            while (remaining != 0);
+
+            for (int i = groupCount - 1; i >= 0; i--)
+            {
+                byte continuation = i == 0 ? (byte)0 : (byte)8;
+                nibbles.Add((byte)(groups[i] | continuation));
+            }
+        }
+
+        byte[] bytes = new byte[(nibbles.Count + 1) / 2];
+        for (int i = 0; i < nibbles.Count; i++)
+            bytes[i / 2] |= (byte)(nibbles[i] << (4 * (i & 1)));
+        return bytes;
+    }
+
+    [Theory]
+    [InlineData(SourceTypes.Default, 0x00u)]
+    [InlineData(SourceTypes.StackEmpty, 0x02u)]
+    [InlineData(SourceTypes.CallInstruction, 0x10u)]
+    [InlineData(SourceTypes.Async, 0x20u)]
+    [InlineData(SourceTypes.StackEmpty | SourceTypes.CallInstruction, 0x12u)]
+    [InlineData(SourceTypes.StackEmpty | SourceTypes.CallInstruction | SourceTypes.Async, 0x32u)]
+    public void ConvertSourceTypesToNative_MapsCorrectly(SourceTypes source, uint expected)
+    {
+        DbiSourceTypes result = DacDbiImpl.ConvertSourceTypesToNative(source);
+        Assert.Equal(expected, (uint)result);
+    }
+
+    [Fact]
+    public void ConvertToNativeVarInfo_MapsAllFields()
+    {
+        var varInfo = new DebugVarInfo
+        {
+            Kind = DebugVarLocKind.Stack,
+            IsByRef = false,
+            StartOffset = 10,
+            EndOffset = 50,
+            CallReturnValueILOffset = 42,
+            VarNumber = 3,
+            BaseRegister = 5,
+            StackOffset = -0x28,
+        };
+        NativeVarInfo nvi = DacDbiImpl.ConvertToNativeVarInfo(varInfo);
+        Assert.Equal(10u, nvi.startOffset);
+        Assert.Equal(50u, nvi.endOffset);
+        Assert.Equal(42u, nvi.callReturnValueILOffset);
+        Assert.Equal(3u, nvi.varNumber);
+        Assert.Equal(VarLocType.VLT_STK, nvi.loc.vlType);
+        Assert.Equal(5u, nvi.loc.vlsBaseReg);
+        Assert.Equal(-0x28, nvi.loc.vlsOffset);
+    }
+
+    private static DacDbiImpl CreateDacDbiForModule(
+        MockTarget.Architecture arch,
+        ulong vmModule,
+        Contracts.ModuleHandle handle,
+        ModuleFlags flags,
+        Mock<IEcmaMetadata> mockEcmaMetadata)
+    {
+        var mockLoader = new Mock<ILoader>();
+        mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(vmModule))).Returns(handle);
+        mockLoader.Setup(l => l.GetFlags(handle)).Returns(flags);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockEcmaMetadata)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null, new());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_NonDynamicModule(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+        TargetPointer metadataAddr = new(0xabc0);
+        uint metadataSize = 0x200;
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(metadataAddr.Value, buffer.pAddress);
+        Assert.Equal(metadataSize, buffer.cbSize);
+        mockEcmaMetadata.Verify(e => e.GetReadWriteSavedMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_DynamicModule(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+        TargetPointer metadataAddr = new(0xdef0);
+        uint metadataSize = 0x80;
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadWriteSavedMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, ModuleFlags.ReflectionEmit, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(metadataAddr.Value, buffer.pAddress);
+        Assert.Equal(metadataSize, buffer.cbSize);
+        mockEcmaMetadata.Verify(e => e.GetReadOnlyMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_EmptyMetadata(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(TargetPointer.Null, 0));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(CorDbgHResults.CORDBG_E_MISSING_METADATA, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_NullBuffer(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        Contracts.ModuleHandle handle = new(new TargetPointer(vmModule));
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        int hr = dacDbi.GetMetadata(vmModule, null);
+        Assert.Equal(System.HResults.E_POINTER, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void HasReadWriteMetadata_NullOutput_ReturnsError(MockTarget.Architecture arch)
+    {
+        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null, new());
+
+        int hr = dacDbi.HasReadWriteMetadata(0x1000, null);
+
+        Assert.Equal(System.HResults.E_INVALIDARG, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void HasReadWriteMetadata_ReturnsMetadataAvailability(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x1000, 0x2000);
+        TargetTestHelpers.LayoutResult peAssemblyLayout = helpers.LayoutFields([
+            new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
+            new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImportIsRW), DataType.int32),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
+        ]);
+        var types = new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride },
+        };
+        MockMemorySpace.HeapFragment readOnlyPEAssembly = allocator.Allocate(peAssemblyLayout.Stride, "ReadOnlyPEAssembly");
+        MockMemorySpace.HeapFragment readWritePEAssembly = allocator.Allocate(peAssemblyLayout.Stride, "ReadWritePEAssembly");
+        helpers.WritePointer(
+            readOnlyPEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImport)].Offset, helpers.PointerSize),
+            0x1800);
+        helpers.Write(
+            readWritePEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImportIsRW)].Offset, sizeof(int)),
+            1);
+        helpers.WritePointer(
+            readWritePEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImport)].Offset, helpers.PointerSize),
+            0x1800);
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(types)
+            .AddContract<IEcmaMetadata>(version: "c1")
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        Interop.BOOL result = Interop.BOOL.TRUE;
+
+        int hr = dacDbi.HasReadWriteMetadata(readOnlyPEAssembly.Address, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+
+        hr = dacDbi.HasReadWriteMetadata(readWritePEAssembly.Address, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.TRUE, result);
+    }
+}

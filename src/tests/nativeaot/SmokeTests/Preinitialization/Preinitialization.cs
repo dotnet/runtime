@@ -40,6 +40,7 @@ internal class Program
         TestDelegateReflectionVisible.Run();
         TestInitFromOtherClass.Run();
         TestInitFromOtherClassDouble.Run();
+        TestNestedPreinitIdentity.Run();
         TestDelegateToOtherClass.Run();
         TestLotsOfBackwardsBranches.Run();
         TestSwitch.Run();
@@ -727,6 +728,38 @@ class TestInitFromOtherClassDouble
     }
 }
 
+class TestNestedPreinitIdentity
+{
+    class OtherClass
+    {
+        public static readonly object ObjectValue = new object();
+    }
+
+    class YetAnotherClass
+    {
+        public static readonly object ObjectValue = OtherClass.ObjectValue;
+    }
+
+    static bool s_areSame;
+    static bool s_areSameIndirect;
+
+    static TestNestedPreinitIdentity()
+    {
+        object first = OtherClass.ObjectValue;
+        object second = OtherClass.ObjectValue;
+        object third = YetAnotherClass.ObjectValue;
+
+        s_areSame = first == second;
+        s_areSameIndirect = first == third;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestNestedPreinitIdentity));
+        Assert.True(s_areSame);
+        Assert.True(s_areSameIndirect);
+    }
+}
 
 class TestDelegateToOtherClass
 {
@@ -1904,6 +1937,20 @@ class TestVTableManipulation
         }
     }
 
+    public unsafe class TinyVtableClearSlotImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableB Vtbl;
+
+        static TinyVtableClearSlotImpl()
+        {
+            Vtbl.First = &First;
+            Vtbl.Second = &Second;
+            Vtbl.Third = &Third;
+            Vtbl.Second = default;
+        }
+    }
+
     public unsafe struct ITinyVtableA
     {
         public delegate*<void> First;
@@ -1946,6 +1993,11 @@ class TestVTableManipulation
         Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableCImpl.Vtbl.Second);
         Assert.AreEqual((nuint)(delegate*<void>)&Third, (nuint)TinyVtableCImpl.Vtbl.Third);
         Assert.AreEqual((nuint)(delegate*<void>)&Fourth, (nuint)TinyVtableCImpl.Vtbl.Fourth);
+
+        Assert.IsPreinitialized(typeof(TinyVtableClearSlotImpl));
+        Assert.AreEqual((void*)(delegate*<void>)&First, TinyVtableClearSlotImpl.Vtbl.First);
+        Assert.AreEqual((void*)null, TinyVtableClearSlotImpl.Vtbl.Second);
+        Assert.AreEqual((void*)(delegate*<void>)&Third, TinyVtableClearSlotImpl.Vtbl.Third);
     }
 }
 

@@ -4,9 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.Unicode;
@@ -20,9 +20,6 @@ namespace System.Buffers
 
         private static readonly SearchValues<char> s_asciiLetters =
             SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-
-        private static readonly SearchValues<char> s_allAsciiExceptLowercase =
-            SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\e\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~\u007F");
 
         public static SearchValues<string> Create(ReadOnlySpan<string> values, bool ignoreCase)
         {
@@ -83,18 +80,8 @@ namespace System.Buffers
             ahoCorasickBuilder.Dispose();
             return searchValues;
 
-            static string NormalizeIfNeeded(string value, bool ignoreCase)
-            {
-                if (ignoreCase && value.AsSpan().ContainsAnyExcept(s_allAsciiExceptLowercase))
-                {
-                    string upperCase = string.FastAllocateString(value.Length);
-                    int charsWritten = Ordinal.ToUpperOrdinal(value, new Span<char>(ref upperCase.GetRawStringData(), upperCase.Length));
-                    Debug.Assert(charsWritten == upperCase.Length);
-                    value = upperCase;
-                }
-
-                return value;
-            }
+            static string NormalizeIfNeeded(string value, bool ignoreCase) =>
+                ignoreCase ? value.ToUpperOrdinal() : value;
 
             static Span<string> RemoveUnreachableValues(Span<string> values, HashSet<string> unreachableValues)
             {
@@ -128,7 +115,7 @@ namespace System.Buffers
                 return CreateForSingleValue(values[0], uniqueValues, ignoreCase, allAscii, asciiLettersOnly);
             }
 
-            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
+            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 TryGetTeddyAcceleratedValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, nonAsciiAffectedByCaseConversion, minLength) is { } searchValues)
             {
                 return searchValues;
@@ -198,7 +185,7 @@ namespace System.Buffers
 
             int n = minLength == 2 ? 2 : 3;
 
-            if (Ssse3.IsSupported)
+            if (Ssse3.IsSupported || PackedSimd.IsSupported)
             {
                 foreach (string value in values)
                 {
@@ -206,8 +193,9 @@ namespace System.Buffers
                     {
                         // If we let null chars through here, Teddy would still work correctly, but it
                         // would hit more false positives that the verification step would have to rule out.
-                        // While we could flow a generic flag like Ssse3AndWasmHandleZeroInNeedle through,
-                        // we expect such values to be rare enough that introducing more code is not worth it.
+                        // Ssse3.PackUnsignedSaturate and PackedSimd.ConvertNarrowingSaturateUnsigned both
+                        // treat negative signed-16 values as 0, so we filter out null-containing needles
+                        // for both to avoid that source of false positives.
                         return null;
                     }
                 }

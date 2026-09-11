@@ -7,10 +7,12 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct ReJIT_1 : IReJIT
+internal readonly struct ReJIT_1 : IReJIT
 {
     internal readonly Target _target;
-    private readonly Data.ProfControlBlock _profControlBlock;
+    private readonly TargetPointer _profControlBlockAddress;
+    private Data.ProfControlBlock _profControlBlock
+        => _target.ProcessedData.GetOrAdd<Data.ProfControlBlock>(_profControlBlockAddress);
 
     // see src/coreclr/inc/corprof.idl
     [Flags]
@@ -33,8 +35,7 @@ internal readonly partial struct ReJIT_1 : IReJIT
     public ReJIT_1(Target target)
     {
         _target = target;
-        TargetPointer profControlBlockAddress = target.ReadGlobalPointer(Constants.Globals.ProfilerControlBlock);
-        _profControlBlock = target.ProcessedData.GetOrAdd<Data.ProfControlBlock>(profControlBlockAddress);
+        _profControlBlockAddress = target.ReadGlobalPointer(Constants.Globals.ProfilerControlBlock);
     }
 
     bool IReJIT.IsEnabled()
@@ -57,6 +58,16 @@ internal readonly partial struct ReJIT_1 : IReJIT
             RejitFlags.kStateActive => RejitState.Active,
             _ => throw new InvalidOperationException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
         };
+    }
+
+    bool IReJIT.IsDeoptimized(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        if (!ilCodeVersionHandle.IsExplicit)
+        {
+            return false;
+        }
+        ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
+        return ilCodeVersionNode.Deoptimized != 0;
     }
 
     TargetNUInt IReJIT.GetRejitId(ILCodeVersionHandle ilCodeVersionHandle)

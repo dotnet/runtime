@@ -10,6 +10,8 @@
 #ifndef IL_INSTRUMENTATION_H
 #define IL_INSTRUMENTATION_H
 
+#include "cdacdata.h"
+
 // declare an array type of COR_IL_MAP entries
 typedef ArrayDPTR(COR_IL_MAP) ARRAY_PTR_COR_IL_MAP;
 
@@ -34,15 +36,24 @@ public:
     // Release the memory used by the array of COR_IL_MAPs.
     void Clear();
 
-    void SetMappingInfo(SIZE_T cMap, COR_IL_MAP * rgMap);
+    void SetMappingInfo(UINT cMap, COR_IL_MAP * rgMap);
 #endif // !DACCESS_COMPILE
 
-    SIZE_T               GetCount()   const;
+    UINT                 GetCount()   const;
     ARRAY_PTR_COR_IL_MAP GetOffsets() const;
 
 private:
-    SIZE_T               m_cMap;        // the number of elements in m_rgMap
+    UINT                 m_cMap;        // the number of elements in m_rgMap
     ARRAY_PTR_COR_IL_MAP m_rgMap;       // an array of COR_IL_MAPs
+
+    friend struct ::cdac_data<InstrumentedILOffsetMapping>;
+};
+
+template<>
+struct cdac_data<InstrumentedILOffsetMapping>
+{
+    static constexpr size_t Count = offsetof(InstrumentedILOffsetMapping, m_cMap);
+    static constexpr size_t Map = offsetof(InstrumentedILOffsetMapping, m_rgMap);
 };
 
 //---------------------------------------------------------------------------------------

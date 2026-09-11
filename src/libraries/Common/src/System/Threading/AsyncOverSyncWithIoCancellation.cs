@@ -82,6 +82,7 @@ namespace System.Threading
         /// performed by the function.
         /// </remarks>
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        [RuntimeAsyncMethodGeneration(false)]
         public static async ValueTask InvokeAsync<TState>(Action<TState> action, TState state, CancellationToken cancellationToken)
         {
             // Queue the work to complete asynchronously. Logically, this is just queueing a work item to the thread pool.
@@ -120,6 +121,7 @@ namespace System.Threading
         /// performed by the function.
         /// </remarks>
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         public static async ValueTask<TResult> InvokeAsync<TState, TResult>(Func<TState, TResult> func, TState state, CancellationToken cancellationToken)
         {
             // Queue the work to complete asynchronously. Logically, this is just queueing a work item to the thread pool.

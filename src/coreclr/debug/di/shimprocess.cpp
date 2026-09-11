@@ -1083,43 +1083,14 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
     GetShimCallback()->LoadAssembly(pAppDomain, pAssembly);
     AddDuplicateCreationEvent(pAssembly);
 
-    //
-    // Send Modules - must be in load order
-    //
-    RSExtSmartPtr<ICorDebugModuleEnum> pModuleEnum;
-    hr = pAssembly->EnumerateModules(&pModuleEnum);
-    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-
-    ULONG countModules;
-    hr = pModuleEnum->GetCount(&countModules);
-    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-
-    // ISSUE WORKAROUND 835869
-    // The CordbEnumFilter used as the implementation of CordbAssembly::EnumerateModules has
-    // a ref counting bug in it. It adds one ref to each item when it is constructed and never
-    // removes that ref. Expected behavior would be that it adds a ref at construction, another on
-    // every call to next, and releases the construction ref when the enumerator is destroyed. The
-    // user is expected to release the reference they receive from Next. Thus enumerating exactly
-    // one time and calling Release() does the correct thing regardless of whether this bug is present
-    // or not. Note that with the bug the enumerator holds 0 references at the end of this loop,
-    // however the assembly also holds references so the modules will not be prematurely released.
-    for(ULONG i = 0; i < countModules; i++)
+    BOOL isModuleLoaded;
+    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *> (pAssembly);
+    VMPTR_Assembly vmAssembly = pAssemblyInternal->GetAssemblyPtr();
+    VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+    static_cast<CordbProcess *>(m_pProcess)->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded);
+    if (isModuleLoaded)
     {
-        ICorDebugModule* pModule = NULL;
-        ULONG countFetched = 0;
-        pModuleEnum->Next(1, &pModule, &countFetched);
-        _ASSERTE(pModule != NULL);
-        if(pModule != NULL)
-        {
-            pModule->Release();
-        }
-    }
-
-    RSExtSmartPtr<ICorDebugModule> * pModules = new RSExtSmartPtr<ICorDebugModule> [countModules];
-    m_pProcess->GetModulesInLoadOrder(pAssembly, pModules, countModules);
-    for(ULONG iModule = 0; iModule < countModules; iModule++)
-    {
-        ICorDebugModule * pModule = pModules[iModule];
+        CordbModule * pModule = pAssemblyInternal->GetAppDomain()->LookupOrCreateModule(vmAssembly, vmModule);
 
         GetShimCallback()->FakeLoadModule(pAppDomain, pModule);
         AddDuplicateCreationEvent(pModule);
@@ -1137,11 +1108,10 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
         // don't want people taking a dependency on a specific format (to give us the ability
         // to innovate for the RefEmit case).  So we must use a private hook here to get the
         // symbol data.
-        CordbModule * pCordbModule = static_cast<CordbModule *>(pModule);
         IDacDbiInterface::SymbolFormat symFormat = IDacDbiInterface::kSymbolFormatNone;
         EX_TRY
         {
-            symFormat = pCordbModule->GetInMemorySymbolStream(&pSymbolStream);
+            symFormat = pModule->GetInMemorySymbolStream(&pSymbolStream);
         }
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);   // Shouldn't be any errors trying to read symbols
@@ -1154,9 +1124,7 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
             _ASSERTE(pSymbolStream != NULL);    // symFormat should have been kSymbolFormatNone if null stream
             GetShimCallback()->UpdateModuleSymbols(pAppDomain, pModule, pSymbolStream);
         }
-
     }
-    delete [] pModules;
 }
 
 //---------------------------------------------------------------------------------------

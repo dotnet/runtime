@@ -206,15 +206,6 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
     }
 }
 
-Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* walkData)
-{
-    GenTree*         tree      = *pTree;
-    Compiler*        comp      = walkData->m_compiler;
-    optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
-
-    return WALK_CONTINUE;
-}
-
 // This functions walks all the node for an given tree
 // and return the mask of CSE defs and uses for the tree
 //
@@ -836,7 +827,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(key);
-                printf("K_%p", dspPtr(kVal));
+                printf("K_%zx", (size_t)dspPtr(kVal));
             }
 
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
@@ -1094,8 +1085,6 @@ void Compiler::optValnumCSE_InitDataFlow()
             }
         }
     }
-
-    fgDebugCheckLinks();
 
 #endif // DEBUG
 }
@@ -1796,13 +1785,27 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         }
     }
 
-    // Don't allow non-SIMD struct CSEs under a return; we don't fully
-    // re-morph these if we introduce a CSE store, and so may create
-    // IR that lower is not yet prepared to handle.
-    //
-    if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
+    if (varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
     {
-        return false;
+        // Don't allow non-SIMD struct CSEs under a return; we don't fully
+        // re-morph these if we introduce a CSE store, and so may create
+        // IR that lower is not yet prepared to handle.
+        //
+        if (isReturn)
+        {
+            return false;
+        }
+
+        // Skip all multireg nodes. The locals we introduce cannot be
+        // enregistered in multiple registers since we do not promote them, so
+        // they would always be spilled. Also, for correctness we would need to
+        // DNER existing store destinations when replacing the CSE uses and we
+        // do not currently do that.
+        //
+        if (tree->IsMultiRegNode())
+        {
+            return false;
+        }
     }
 
     // No good if the expression contains side effects or if it was marked as DONT CSE
@@ -3416,7 +3419,7 @@ void CSE_HeuristicRL::Announce()
 
     if (m_updateParameters)
     {
-        JITDUMP("Operating in update mode with sequence %ls, rewards %ls, and alpha %f\n", JitConfig.JitReplayCSE(),
+        JITDUMP("Operating in update mode with sequence %s, rewards %s, and alpha %f\n", JitConfig.JitReplayCSE(),
                 JitConfig.JitReplayCSEReward(), m_alpha);
     }
 }
@@ -4315,15 +4318,16 @@ void CSE_Heuristic::SortCandidates()
 
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                printf(FMT_CSE ", {$%-3x, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
+                printf(FMT_CSE ", {$%-3zx, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ",
+                       dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dspPtr(kVal), dsc->csdUseCount, def, use, cost, dsc->csdLiveAcrossCall ? ", call" : "      ");
+                printf(FMT_CSE ", {K_%zx} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                       (size_t)dspPtr(kVal), dsc->csdUseCount, def, use, cost,
+                       dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
 
             m_compiler->gtDispTree(expr, nullptr, nullptr, true);
@@ -4975,8 +4979,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         {
             if (isSharedConst)
             {
-                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%p as the base.\n",
-                       dsc->csdConstDefVN, dspPtr(dsc->csdConstDefValue));
+                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%zx as the base.\n",
+                       dsc->csdConstDefVN, (size_t)dspPtr(dsc->csdConstDefValue));
             }
             else // !isSharedConst
             {
@@ -5358,15 +5362,15 @@ void CSE_HeuristicCommon::ConsiderCandidates()
         {
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                printf("\nConsidering " FMT_CSE " {$%-3x, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
+                printf("\nConsidering " FMT_CSE " {$%-3zx, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
                        candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
                        candidate.UseCount(), candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf("\nConsidering " FMT_CSE " {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
-                       dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
+                printf("\nConsidering " FMT_CSE " {K_%zx} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
+                       (size_t)dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             printf("CSE Expression : \n");

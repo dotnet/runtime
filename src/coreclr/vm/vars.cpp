@@ -68,8 +68,10 @@ GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_IMPL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_IMPL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_IMPL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_IMPL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -97,6 +99,10 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 #ifdef FEATURE_COMWRAPPERS
 GARY_IMPL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
 #endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+GVAL_IMPL_INIT(OBJECTHANDLE, g_ObjectiveCTrackingInfoTable, NULL);
+#endif // FEATURE_OBJCMARSHAL
 
 #ifdef FEATURE_INTEROP_DEBUGGING
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
@@ -246,7 +252,11 @@ void OBJECTREF_EnumMemoryRegions(OBJECTREF ref)
 //
 // We need the following to be the compiler's notion of volatile.
 //
+#ifdef FEATURE_READONLY_GS_COOKIE
 extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie = 0;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie = 0;
+#endif
 
 #else
 __GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);

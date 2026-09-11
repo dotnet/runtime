@@ -260,7 +260,7 @@ namespace System.Threading
         private static class BlockingConfig
         {
             public static readonly bool IsCooperativeBlockingEnabled =
-                AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.Blocking.CooperativeBlocking", true);
+                AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.Blocking.CooperativeBlocking", "DOTNET_ThreadPool_CooperativeBlocking", true);
             public static readonly bool IgnoreMemoryUsage =
                 AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.Blocking.IgnoreMemoryUsage", false);
 

@@ -261,13 +261,15 @@ blah blah
                                 culture: null,
                                 activationAttributes: null);
 
-            var syncSendAdapterType = Type.GetType("System.Net.SyncReadWriteAdapter, System.Net.Mail");
+            var syncSendAdapterType = Type.GetType("System.SyncReadWriteAdapter, System.Net.Mail");
 
             // Send the message.
+#pragma warning disable IL3050 // Roslyn analyzer can't see through the private reflection, but publish process can. This is safe.
             typeof(MailMessage)
                 .GetMethod("SendAsync", BindingFlags.Instance | BindingFlags.NonPublic)
                 .MakeGenericMethod(syncSendAdapterType)
                 .Invoke(mail, new object[] { mailWriter, true, true, CancellationToken.None });
+#pragma warning restore IL3050
 
             // Decode contents.
             string result = Encoding.UTF8.GetString(stream.ToArray());

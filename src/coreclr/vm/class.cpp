@@ -41,7 +41,6 @@ void *EEClass::operator new(
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -60,7 +59,6 @@ void EEClass::Destruct()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -80,29 +78,6 @@ void EEClass::Destruct()
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
-
-
-    if (IsDelegate())
-    {
-        DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-        for (Stub* pThunk : {pDelegateEEClass->m_pStaticCallStub, pDelegateEEClass->m_pInstRetBuffCallStub})
-        {
-            if (pThunk == nullptr)
-                continue;
-
-            _ASSERTE(pThunk->IsShuffleThunk());
-
-            if (pThunk->HasExternalEntryPoint()) // IL thunk
-            {
-                pThunk->DecRef();
-            }
-            else
-            {
-                ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
-                stubWriterHolder.GetRW()->DecRef();
-            }
-        }
-    }
 
 #ifdef FEATURE_COMINTEROP
     if (GetSparseCOMInteropVTableMap() != NULL)
@@ -137,7 +112,6 @@ MethodTable *MethodTable::LoadEnclosingMethodTable(ClassLoadLevel targetLevel)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -168,7 +142,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -301,8 +274,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     // We set this when we first created the FieldDesc, but initializing the FieldDesc
     // may have overwritten it so we need to set it again.
     pFD->SetEnCNew();
-
-    return;
 }
 
 //---------------------------------------------------------------------------------------
@@ -322,7 +293,7 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(ppNewFD != NULL);
     }
@@ -442,7 +413,7 @@ HRESULT EEClass::AddFieldDesc(
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(ppNewFD != NULL);
     }
@@ -508,7 +479,7 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(methodDef != mdTokenNil);
     }
@@ -776,7 +747,7 @@ HRESULT EEClass::AddMethodDesc(
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(methodDef != mdTokenNil);
         PRECONDITION(ppNewMD != NULL);
@@ -964,7 +935,7 @@ EEClass::CheckVarianceInSig(
                 return TRUE;
 
             // Covariant and contravariant parameters can *only* appear in resp. covariant and contravariant positions
-            return ((CorGenericParamAttr) (pVarianceInfo[index]) == position);
+            return (CorGenericParamAttr) (pVarianceInfo[index]) == position;
         }
 
         case ELEMENT_TYPE_GENERICINST:
@@ -1252,13 +1223,12 @@ namespace
 /*static*/
 void ClassLoader::LoadExactParents(MethodTable* pMT)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(pMT->CheckLoadLevel(CLASS_LOAD_EXACTPARENTS));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!pMT->IsCanonicalMethodTable())
     {
@@ -1309,7 +1279,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
 
-    RETURN;
+    _ASSERTE(pMT->CheckLoadLevel(CLASS_LOAD_EXACTPARENTS));
 }
 
 // Get CorElementType of the reduced type of a type.
@@ -1318,7 +1288,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
 /*static*/
 CorElementType ClassLoader::GetReducedTypeElementType(TypeHandle hType)
 {
-    CorElementType elemType = hType.GetVerifierCorElementType();
+    CorElementType elemType = hType.GetInternalCorElementType();
     switch (elemType)
     {
         case ELEMENT_TYPE_U1:
@@ -1708,17 +1678,16 @@ void TypeHandle::NotifyDebuggerUnload() const
 // This is needed when creating a delegate to an instance method in a value type
 MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(!pMD->IsUnboxingStub());
-        POSTCONDITION(RETVAL->IsUnboxingStub());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
-    RETURN MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+    return MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
                                                         pMD->GetMethodTable(),
                                                         TRUE /* get unboxing entry point */,
                                                         pMD->GetMethodInstantiation(),
@@ -1731,20 +1700,19 @@ MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 // This is used when generating the code for an BoxedEntryPointStub.
 MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         // reflection needs to call this for methods in non instantiated classes,
         // so move the assert to the caller when needed
         //PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(pMD->IsUnboxingStub());
-        POSTCONDITION(!RETVAL->IsUnboxingStub());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     BOOL allowInstParam = (pMD->GetNumGenericMethodArgs() == 0);
-    RETURN MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+    return MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
                                                         this,
                                                         FALSE /* don't get unboxing entry point */,
                                                         pMD->GetMethodInstantiation(),
@@ -1757,20 +1725,18 @@ MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
 // This is used when generating the code for an BoxedEntryPointStub.
 MethodDesc* MethodTable::GetExistingUnboxedEntryPointMD(MethodDesc *pMD)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         // reflection needs to call this for methods in non instantiated classes,
         // so move the assert to the caller when needed
         //PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(pMD->IsUnboxingStub());
-        POSTCONDITION(!RETVAL->IsUnboxingStub());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     BOOL allowInstParam = (pMD->GetNumGenericMethodArgs() == 0);
-    RETURN MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+    return MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
                                                         this,
                                                         FALSE /* don't get unboxing entry point */,
                                                         pMD->GetMethodInstantiation(),
@@ -1803,45 +1769,64 @@ bool MethodTable::IsHFA()
 #endif // !FEATURE_HFA
 
 //*******************************************************************************
-int MethodTable::GetVectorSize()
+CorInfoHFAElemType MethodTable::GetVectorHFA()
 {
     // This is supported for finding HVA types for Arm64. In order to support the altjit,
     // we support this on 64-bit platforms (i.e. Arm64 and X64).
+    CorInfoHFAElemType hfaType = CORINFO_HFA_ELEM_NONE;
 #ifdef TARGET_64BIT
     if (IsIntrinsicType())
     {
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
-        int vectorSize = 0;
 
         if (strcmp(className, "Vector`1") == 0)
         {
             _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
-            vectorSize = GetNumInstanceFieldBytes();
+#ifdef TARGET_ARM64
+            if (ExecutionManager::GetEEJitManager()->UseScalableVectorT())
+            {
+                // TODO-SVE: This forces Vector<T> to be passed by reference. Implement
+                // CORINFO_HFA_ELEM_VECTORT so we can pass Vector<T> in SVE registers.
+                return CORINFO_HFA_ELEM_NONE;
+            }
+#endif
+            switch (GetNumInstanceFieldBytes())
+            {
+                case 8:
+                    hfaType = CORINFO_HFA_ELEM_VECTOR64;
+                    break;
+                case 16:
+                    hfaType = CORINFO_HFA_ELEM_VECTOR128;
+                    break;
+                default:
+                    _ASSERTE(!"Invalid Vector<T> size");
+                    break;
+            }
         }
         else if (strcmp(className, "Vector128`1") == 0)
         {
             _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-            vectorSize = 16;
+            hfaType = CORINFO_HFA_ELEM_VECTOR128;
         }
         else if (strcmp(className, "Vector64`1") == 0)
         {
             _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-            vectorSize = 8;
+            hfaType = CORINFO_HFA_ELEM_VECTOR64;
         }
-        if (vectorSize != 0)
+
+        if (hfaType != CORINFO_HFA_ELEM_NONE)
         {
-            // We need to verify that T (the element or "base" type) is a primitive type.
+            // We need to verify that T (the element or "base" type) is a numerical type.
             TypeHandle typeArg = GetInstantiation()[0];
-            CorElementType corType = typeArg.GetSignatureCorElementType();
-            if (((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U))
+            if (!CorIsNumericalType(typeArg.GetSignatureCorElementType()))
             {
-                return vectorSize;
+                return CORINFO_HFA_ELEM_NONE;
             }
         }
     }
 #endif // TARGET_64BIT
-    return 0;
+    return hfaType;
 }
 
 //*******************************************************************************
@@ -1863,10 +1848,11 @@ CorInfoHFAElemType MethodTable::GetHFAType()
         _ASSERTE(pMT->IsValueType());
         _ASSERTE(pMT->GetNumInstanceFields() > 0);
 
-        int vectorSize = pMT->GetVectorSize();
-        if (vectorSize != 0)
+        CorInfoHFAElemType hfaType = pMT->GetVectorHFA();
+
+        if (hfaType != CORINFO_HFA_ELEM_NONE)
         {
-            return (vectorSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
+            return hfaType;
         }
 
         PTR_FieldDesc pFirstField = pMT->GetApproxFieldDescListRaw();
@@ -1935,7 +1921,7 @@ EEClass::CheckForHFA()
 
     // The opaque Vector types appear to have multiple fields, but need to be treated
     // as an opaque type of a single vector.
-    if (GetMethodTable()->GetVectorSize() != 0)
+    if (GetMethodTable()->GetVectorHFA() != CORINFO_HFA_ELEM_NONE)
     {
 #if defined(FEATURE_HFA)
         GetMethodTable()->SetIsHFA();
@@ -1961,27 +1947,13 @@ EEClass::CheckForHFA()
         {
         case ELEMENT_TYPE_VALUETYPE:
             {
-#ifdef TARGET_ARM64
                 MethodTable* pMT;
 #if defined(FEATURE_HFA)
                 pMT = pByValueClassCache[i];
 #else
                 pMT = pFD->LookupApproxFieldTypeHandle().AsMethodTable();
 #endif
-                int thisElemSize = pMT->GetVectorSize();
-                if (thisElemSize != 0)
-                {
-                    fieldHFAType = (thisElemSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
-                }
-                else
-#endif // TARGET_ARM64
-                {
-#if defined(FEATURE_HFA)
-                    fieldHFAType = pByValueClassCache[i]->GetHFAType();
-#else
-                    fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
-#endif
-                }
+                fieldHFAType = pMT->GetHFAType();
 
                 int requiredAlignment;
                 switch (fieldHFAType)
@@ -2103,7 +2075,7 @@ bool MethodTable::NativeRequiresAlign8()
 
     if (HasLayout() && !IsBlittable())
     {
-        return (GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= 8);
+        return GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= 8;
     }
     return RequiresAlign8();
 }
@@ -2119,7 +2091,6 @@ TypeHandle MethodTable::GetCoClassForInterface()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2144,7 +2115,6 @@ TypeHandle MethodTable::SetupCoClassForInterface()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsComClassInterface());
 
     }
@@ -2186,7 +2156,6 @@ void MethodTable::GetEventInterfaceInfo(MethodTable **ppSrcItfClass, MethodTable
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2242,7 +2211,6 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2354,7 +2322,6 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     ssBuf.Clear();
@@ -2415,7 +2382,6 @@ SString &MethodTable::_GetFullyQualifiedNameForClass(SString &ssBuf)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2459,7 +2425,6 @@ LPCUTF8 MethodTable::GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -2491,7 +2456,6 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -2794,7 +2758,7 @@ MethodTable::DebugDumpGCDesc(
             {
                 if (fDebug)
                 {
-                    ssBuff.Printf("   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    ssBuff.Printf("   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                         pSeries->GetSeriesOffset(),
                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
@@ -2804,7 +2768,7 @@ MethodTable::DebugDumpGCDesc(
                 else
                 {
                     //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
-                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                          pSeries->GetSeriesOffset(),
                          pSeries->GetSeriesOffset() - OBJECT_SIZE,
                          pSeries->GetSeriesSize(),
@@ -2863,11 +2827,6 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
     if (HasGenericClassInstantiationInHierarchy())
         return clsIfNone;
 
-    // If the class does not support IClassX,
-    // then it is considered ClassInterfaceType.None unless explicitly overridden by the CA
-    if (!ClassSupportsIClassX(this))
-        return clsIfNone;
-
     return ReadClassInterfaceTypeCustomAttribute(TypeHandle(this));
 }
 #endif // FEATURE_COMINTEROP
@@ -2882,7 +2841,6 @@ MethodTable::GetSubstitutionForParent(
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3030,7 +2988,6 @@ WORD SparseVTableMap::LookupVTSlot(WORD MTSlot)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3140,7 +3097,6 @@ ApproxFieldDescIterator::ApproxFieldDescIterator()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3157,7 +3113,6 @@ void ApproxFieldDescIterator::Init(MethodTable *pMT, int iteratorType)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -3188,7 +3143,6 @@ PTR_FieldDesc ApproxFieldDescIterator::Next()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END

@@ -36,7 +36,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             _peReader = peReader;
         }
 
-        public PEReader ImageReader => _peReader;
+        public void GetSectionData(int relativeVirtualAddress, Action<BlobReader> action)
+        {
+            if (_peReader is null)
+            {
+                action(default);
+                return;
+            }
+            action(_peReader.GetSectionData(relativeVirtualAddress).GetReader());
+        }
 
         public MetadataReader MetadataReader => _metadataReader;
 

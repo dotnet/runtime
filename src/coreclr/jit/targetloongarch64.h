@@ -32,6 +32,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
+#define FEATURE_HAS_ZERO_REG          1  // Target has a hardware "zero register" (e.g. REG_R0/$zero) usable as a containable source for zero stores
 #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (8-byte).
 #define MAX_PASS_MULTIREG_BYTES      16  // Maximum size of a struct that could be passed in more than one register
 #define MAX_RET_MULTIREG_BYTES       16  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 2 doubles)
@@ -46,7 +47,9 @@
 #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
 
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
-#define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
+#define TARGET_MASKS_SHIFTS      1       // Shift and rotate instructions implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         1       // Supports GT_MULHI, the high bits of an NxN multiply
+#define EMIT_TRACK_STACK_DEPTH   1         // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                          // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
 #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
@@ -143,15 +146,8 @@
 //       t1: trashed
 //       t3: trashed
 //       t4: trashed
-//       t6: incremented by 8
+//       t6: preserved (the destination address is not modified)
 //       t7: trashed
-// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
-//     On entry:
-//       t8: the source address (points to object reference to write)
-//       t6: the destination address (object reference written here)
-//     On exit:
-//       t8: incremented by 8
-//       t6: incremented by 8
 //
 
 #define REG_WRITE_BARRIER_DST          REG_T6
@@ -160,34 +156,14 @@
 #define REG_WRITE_BARRIER_SRC          REG_T7
 #define RBM_WRITE_BARRIER_SRC          RBM_T7
 
-#define REG_WRITE_BARRIER_DST_BYREF    REG_T6
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_T6
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_T8
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_T8
-
 #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T3|RBM_T4|RBM_T7|RBM_DEFAULT_HELPER_CALL_TARGET)
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_WRITE_BARRIER_DST|RBM_CALLEE_TRASH_NOGC)
+// Note: the destination register (t6) is preserved by the helper, so it is not in the kill set.
+#define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-// Note that a0 and a1 are still valid byref pointers after this helper call, despite their value being changed.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
-
-// GenericPInvokeCalliHelper VASigCookie Parameter
-#define REG_PINVOKE_COOKIE_PARAM          REG_T3
-#define RBM_PINVOKE_COOKIE_PARAM          RBM_T3
-
-// GenericPInvokeCalliHelper unmanaged target Parameter
-#define REG_PINVOKE_TARGET_PARAM          REG_T2
-#define RBM_PINVOKE_TARGET_PARAM          RBM_T2
 
 // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
 #define REG_SECRET_STUB_PARAM     REG_T2

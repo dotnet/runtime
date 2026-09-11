@@ -565,7 +565,7 @@ namespace Internal.Runtime.TypeLoader
 
                 if (isGenericVirtualMethod)
                 {
-                    RuntimeMethodHandle gvmSlot = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeOfVirtualInvoke, token, genericArgs, isAsyncVariant: false);
+                    RuntimeMethodHandle gvmSlot = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeOfVirtualInvoke, token, genericArgs);
 
                     lookupResult = new VirtualResolveDataResult
                     {

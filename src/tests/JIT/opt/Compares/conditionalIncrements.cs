@@ -286,4 +286,37 @@ public class ConditionalIncrementTest
         int result = op1 < 51.0 ? 6 : 5;
         Assert.Equal(expected, result);
     }
+
+    [Fact]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_int_to_long_requires_matching_width()
+    {
+        Assert.Equal(0, SelectIncFromIntCompare(-1, 42));
+        Assert.Equal(42, SelectIncFromIntCompare(0, 42));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long SelectIncFromIntCompare(int x, long fallback)
+    {
+        // This can be lowered to SELECT_INCCC. The selected increment source must remain correctly typed;
+        // using a 64-bit csinc over an int local changes -1 + 1 from 0 to 0x1_0000_0000.
+        return x == -1 ? 0L : fallback;
+    }
+
+    [Fact]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void checked_add_must_not_become_csinc()
+    {
+        Assert.Throws<OverflowException>(() => SelectCheckedAdd(false, int.MaxValue));
+        Assert.Equal(int.MaxValue, SelectCheckedAdd(true, int.MaxValue));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int SelectCheckedAdd(bool condition, int x)
+    {
+        // The checked add must remain explicit so the overflow path is preserved.
+        //ARM64-NOT: csinc
+        //ARM64-NOT: cinc
+        return condition ? x : checked(x + 1);
+    }
 }

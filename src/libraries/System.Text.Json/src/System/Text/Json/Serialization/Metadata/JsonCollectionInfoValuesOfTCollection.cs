@@ -38,9 +38,22 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonNumberHandling NumberHandling { get; init; }
 
         /// <summary>
+        /// Specifies polymorphism metadata to apply to the collection.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public JsonPolymorphismOptions? PolymorphismOptions { get; init; }
+
+        /// <summary>
         /// An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public Action<Utf8JsonWriter, TCollection>? SerializeHandler { get; init; }
+
+        /// <summary>
+        /// Gets or sets a factory used to lazily construct a <see cref="JsonTypeClassifier"/>
+        /// from the polymorphic type's metadata at <see cref="JsonTypeInfo"/> configuration time.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public JsonTypeClassifierFactory? TypeClassifierFactory { get; init; }
     }
 }

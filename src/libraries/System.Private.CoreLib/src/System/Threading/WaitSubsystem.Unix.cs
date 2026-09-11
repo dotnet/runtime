@@ -36,8 +36,8 @@ namespace System.Threading
     ///     interruptible
     ///   - <see cref="LowLevelLock"/> is used for the process-wide lock <see cref="s_lock"/>
     ///   - <see cref="LowLevelMonitor"/> is the main system dependency of the wait subsystem, and all waits are done through
-    ///     it. It is backed by a C++ equivalent in CoreLib.Native's pal_threading.*, which wraps a pthread mutex/condition
-    ///     pair. Each thread has an instance in <see cref="ThreadWaitInfo._waitMonitor"/>, which is used to synchronize the
+    ///   it. It is backed by a native implementation in System.Native that uses a minipal mutex/condition pair.
+    ///   Each thread has an instance in <see cref="ThreadWaitInfo._waitMonitor"/>, which is used to synchronize the
     ///     thread's wait state and for waiting. <see cref="LowLevelLock"/> also uses an instance of
     ///     <see cref="LowLevelMonitor"/> for waiting.
     ///
@@ -107,7 +107,7 @@ namespace System.Threading
     ///   - Most of the wait subsystem is written in C#, so there is no initially required p/invoke
     ///   - <see cref="LowLevelLock"/>, used by the process-wide lock <see cref="s_lock"/>, uses interlocked operations to
     ///     acquire and release the lock when there is no need to wait or to release a waiter. This is significantly faster than
-    ///     using <see cref="LowLevelMonitor"/> as a lock, which uses pthread mutex functionality through p/invoke. The lock is
+    ///     using <see cref="LowLevelMonitor"/> as a lock, which uses native synchronization through p/invoke. The lock is
     ///     typically not held for very long, especially since allocations inside the lock will be rare.
     ///   - Since <see cref="s_lock"/> provides mutual exclusion for the states of all <see cref="WaitableObject"/>s in the
     ///     process, any operation that does not involve waiting or releasing a wait can occur with minimal p/invokes
@@ -189,7 +189,7 @@ namespace System.Threading
             // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
             // possibilities for exceptions have been exhausted.
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
-            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false) == 0;
+            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false) == 0;
             Debug.Assert(acquiredLock);
             return safeWaitHandle;
         }
@@ -242,7 +242,7 @@ namespace System.Threading
                 // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
                 // possibilities for exceptions have been exhausted.
                 ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
-                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false, ref lockHolder);
+                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, ref lockHolder);
                 Debug.Assert(status == 0);
                 return safeWaitHandle;
             }
@@ -361,13 +361,12 @@ namespace System.Threading
         public static int Wait(
             IWaitableObject waitableObject,
             int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            bool interruptible = true)
         {
             Debug.Assert(waitableObject != null);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            return waitableObject.Wait(Thread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible, prioritize);
+            return waitableObject.Wait(Thread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible);
         }
 
         public static int Wait(
@@ -385,7 +384,7 @@ namespace System.Threading
             if (waitHandles.Length == 1 && HandleManager.FromHandle(waitHandles[0]) is NamedMutex namedMutex)
             {
                 // Named mutexes don't participate in the wait subsystem fully.
-                return namedMutex.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
+                return namedMutex.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
             }
 #endif
 
@@ -439,7 +438,7 @@ namespace System.Threading
                 WaitableObject waitableObject = waitableObjects[0]!;
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
             }
 
             return
@@ -449,8 +448,7 @@ namespace System.Threading
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
-                    interruptible: true,
-                    prioritize: false);
+                    interruptible: true);
         }
 
         public static int SignalAndWait(
@@ -471,8 +469,7 @@ namespace System.Threading
             IWaitableObject waitableObjectToSignal,
             IWaitableObject waitableObjectToWaitOn,
             int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            bool interruptible = true)
         {
             Debug.Assert(waitableObjectToSignal != null);
             Debug.Assert(waitableObjectToWaitOn != null);
@@ -498,7 +495,7 @@ namespace System.Threading
                     s_lock.VerifyIsNotLocked();
                     throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts, ex);
                 }
-                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
+                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, ref lockHolder);
             }
             finally
             {

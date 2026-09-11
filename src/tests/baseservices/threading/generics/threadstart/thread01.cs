@@ -34,7 +34,8 @@ class Gen<T>
 
 public class Test_thread01
 {
-	public static int nThreads = 50;
+	// Use fewer threads on 32-bit platforms to avoid OOM from exhausting the virtual address space.
+	public static int nThreads = PlatformDetection.Is32BitProcess ? 5 : 50;
 	public static int counter = 0;
 	public static int Xcounter = 0;
 	public static bool result = true;

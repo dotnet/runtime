@@ -24,7 +24,7 @@ namespace System.IO.Compression
                 _encoder.Flush(destination, out bytesWritten);
 
             public override void Dispose() => _encoder.Dispose();
-            public override void Reset() => throw new NotSupportedException();
+            public override void Reset() => _encoder.Reset();
         }
 
         public class GZipDecoderAdapter : DecoderAdapter
@@ -40,7 +40,7 @@ namespace System.IO.Compression
                 _decoder.Decompress(source, destination, out bytesConsumed, out bytesWritten);
 
             public override void Dispose() => _decoder.Dispose();
-            public override void Reset() => throw new NotSupportedException();
+            public override void Reset() => _decoder.Reset();
         }
 
         protected override EncoderAdapter CreateEncoder() =>

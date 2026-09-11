@@ -416,11 +416,19 @@ int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
     return Error_ENOTSUP;
 }
 
-int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType)
 {
     (void)socket;
     (void)entry;
+    (void)socketType;
     return Error_ENOTSUP;
+}
+
+int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
+{
+    (void)kind;
+    (void)handle;
+    return 0;
 }
 
 int32_t SystemNative_CreateSocketEventPort(intptr_t* port)

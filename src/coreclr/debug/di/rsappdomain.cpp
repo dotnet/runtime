@@ -54,7 +54,7 @@ CordbAppDomain::CordbAppDomain(CordbProcess *  pProcess, VMPTR_AppDomain vmAppDo
     // of whether our ADID is valid or not, and requery if necessary.
     IfFailThrow(m_pProcess->GetDAC()->GetAppDomainId(m_vmAppDomain, &m_AppDomainId));
 
-    LOG((LF_CORDB,LL_INFO10000, "CAD::CAD: this:0x%x (void*)this:0x%x<%d>\n", this, (void *)this, m_AppDomainId));
+    LOG((LF_CORDB,LL_INFO10000, "CAD::CAD: this:%p (void*)this:%p<%d>\n", this, (void *)this, m_AppDomainId));
 
 #ifdef _DEBUG
     m_assemblies.DebugSetRSLock(pProcess->GetProcessLock());
@@ -799,7 +799,7 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Assembly vmAssembly, VMP
 
     if (vmModule.IsNull())
     {
-        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule));
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, NULL));
     }
 
     else if (vmAssembly.IsNull())
@@ -823,33 +823,6 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Assembly vmAssembly, VMP
     return pModule;
 }
 
-
-
-//---------------------------------------------------------------------------------------
-// Callback invoked by DAC for each module in an assembly. Used to populate RS module cache.
-//
-// Arguments:
-//     vmModule - module from enumeration
-//     pUserData - user data, a 'this' pointer to the CordbAssembly to add to.
-//
-// Notes:
-//    This is called from code:CordbAppDomain::PrepopulateModules invoking DAC, which
-//    invokes this callback.
-
-// static
-void CordbAppDomain::ModuleEnumerationCallback(VMPTR_Assembly vmAssembly, void * pUserData)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    CordbAppDomain * pAppDomain = static_cast<CordbAppDomain *> (pUserData);
-    INTERNAL_DAC_CALLBACK(pAppDomain->GetProcess());
-
-    pAppDomain->LookupOrCreateModule(vmAssembly);
-}
 
 
 //
@@ -881,13 +854,17 @@ void CordbAppDomain::PrepopulateModules()
          pAssembly != NULL;
          pAssembly = m_assemblies.FindNext(&hashfind))
     {
+        VMPTR_Assembly vmAssembly = pAssembly->GetAssemblyPtr();
+        VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+        BOOL isModuleLoaded = FALSE;
 
-        // DD-primitive  that invokes a callback.
-        IfFailThrow(GetProcess()->GetDAC()->EnumerateModulesInAssembly(
-            pAssembly->GetAssemblyPtr(),
-            CordbAppDomain::ModuleEnumerationCallback,
-            this)); // user data
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded));
 
+        if (isModuleLoaded)
+        {
+            _ASSERTE(!vmModule.IsNull());
+            LookupOrCreateModule(vmAssembly, vmModule);
+        }
     }
 }
 

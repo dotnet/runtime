@@ -366,9 +366,7 @@ public:
         GCSTRESS_INSTR_JIT          = 4,    // GC on every allowable JITed instr
         GCSTRESS_INSTR_NGEN         = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
-        GCSTRESS_CDAC               = 32,   // Verify cDAC GC references at stress points
 
-        // Excludes cDAC stress as it is fundamentally different from the other stress modes
         GCSTRESS_ALLSTRESS          = GCSTRESS_ALLOC | GCSTRESS_TRANSITION | GCSTRESS_INSTR_JIT | GCSTRESS_INSTR_NGEN,
     };
 
@@ -436,16 +434,6 @@ public:
 #ifdef _DEBUG
 
     DWORD GetHostTestThreadAbort() const {LIMITED_METHOD_CONTRACT; return testThreadAbort;}
-
-#define INJECTFAULT_LOADERHEAP      0x1
-#define INJECTFAULT_GCHEAP          0x2
-#define INJECTFAULT_SO              0x4
-#define INJECTFAULT_GMHEAP          0x8
-#define INJECTFAULT_DYNAMICCODEHEAP 0x10
-#define INJECTFAULT_MAPVIEWOFFILE   0x20
-#define INJECTFAULT_JITHEAP         0x40
-
-    DWORD ShouldInjectFault(DWORD faultType) const {LIMITED_METHOD_CONTRACT; return fShouldInjectFault & faultType;}
 
 #endif
 
@@ -587,7 +575,6 @@ private: //----------------------------------------------------------------
 #endif // _DEBUG
 
 #ifdef _DEBUG
-    DWORD fShouldInjectFault;
     DWORD testThreadAbort;
 #endif
 

@@ -5,24 +5,23 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ReadyToRunCoreHeader : IData<ReadyToRunCoreHeader>
+[CdacType(nameof(DataType.ReadyToRunCoreHeader))]
+internal sealed partial class ReadyToRunCoreHeader : IData<ReadyToRunCoreHeader>
 {
-    static ReadyToRunCoreHeader IData<ReadyToRunCoreHeader>.Create(Target target, TargetPointer address)
-        => new ReadyToRunCoreHeader(target, address);
+    [Field] public partial uint NumberOfSections { get; }
+    [CustomInit(nameof(InitSections))] public partial IReadOnlyList<ReadyToRunSection> Sections { get; }
 
-    public ReadyToRunCoreHeader(Target target, TargetPointer address)
+    private partial IReadOnlyList<ReadyToRunSection> InitSections(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunCoreHeader);
-
-        NumberOfSections = target.ReadField<uint>(address, type, nameof(NumberOfSections));
-        Target.TypeInfo sectionType = target.GetTypeInfo(DataType.ReadyToRunSection);
+        uint headerSize = GetSize(target);
+        uint sectionSize = ReadyToRunSection.GetSize(target);
+        List<ReadyToRunSection> sections = new((int)NumberOfSections);
         for (int i = 0; i < NumberOfSections; i++)
         {
-            TargetPointer sectionAddress = address + (ulong)(type.Size!.Value + i * sectionType.Size!.Value);
-            Sections.Add(target.ProcessedData.GetOrAdd<ReadyToRunSection>(sectionAddress));
+            TargetPointer sectionAddress = address + headerSize + (ulong)i * sectionSize;
+            sections.Add(target.ProcessedData.GetOrAdd<ReadyToRunSection>(sectionAddress));
         }
-    }
 
-    public uint NumberOfSections { get; init; }
-    public List<ReadyToRunSection> Sections { get; } = [];
+        return sections;
+    }
 }

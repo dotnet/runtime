@@ -710,7 +710,23 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	for (i = 0; i < nfields; ++i) {
 		if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
-			pass_on_stack = TRUE;
+			/*
+			 * A field crosses the 8-byte eightbyte boundary. For P/Invoke calls (and for returns
+			 * or structs larger than 16 bytes) such a value must be passed on the stack to follow
+			 * the native ABI. For a managed call of a <=16 byte vtype we keep it in registers
+			 * instead: the value is split into (at most) two integer eightbytes purely by total
+			 * size (see the !sig->pinvoke classification below), which is layout independent. That
+			 * makes a partially-shared caller -- which sees the vtype as an opaque type parameter
+			 * with a single straddling field -- agree with a concrete callee that sees the
+			 * flattened layout. If the value were forced onto the stack here the two would disagree
+			 * on the calling convention (recent LLVM lowers the byval form onto the stack while the
+			 * concrete callee reads the value from registers), corrupting it. This is safe for the
+			 * GC: object references in a <=16 byte managed vtype are always 8-byte aligned (the type
+			 * loader rejects misaligned or overlapped references), so an eightbyte never splits a
+			 * managed pointer and conservative scanning still finds every reference.
+			 */
+			if (sig->pinvoke || is_return || size > 16)
+				pass_on_stack = TRUE;
 			break;
 		}
 	}
@@ -1108,10 +1124,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				ainfo->pair_size [0] = size;
 				continue;
 			} else if (klass == swift_error || klass == swift_error_ptr) {
-				if (sig->pinvoke)
+				if (sig->pinvoke) {
 					ainfo->reg = GINT32_TO_UINT8 (AMD64_R12);
-				else
+					ainfo->swift_error_in_reg = TRUE;
+				} else {
 					add_general (&gr, &stack_size, ainfo);
+					ainfo->swift_error_in_reg = ainfo->storage == ArgInIReg;
+				}
 				ainfo->storage = ArgSwiftError;
 				cinfo->swift_error_index = i;
 				continue;
@@ -1808,7 +1827,10 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
 
-		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgValuetypeAddrInIReg || ainfo->storage == ArgValuetypeAddrOnStack) {
+		if (ainfo->storage == ArgOnStack ||
+			ainfo->storage == ArgValuetypeAddrInIReg ||
+			ainfo->storage == ArgValuetypeAddrOnStack ||
+			(ainfo->storage == ArgSwiftError && !ainfo->swift_error_in_reg)) {
 			/*
 			 * The stack offset can only be determined when the frame
 			 * size is known.
@@ -2149,8 +2171,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			}
 			case ArgSwiftError: {
 				inreg = FALSE;
-				if (ainfo->offset)
+				if (!ainfo->swift_error_in_reg)
 				{
+					g_assert (!cfg->arch.omit_fp);
 					ins->opcode = OP_REGOFFSET;
 					ins->inst_basereg = cfg->frame_reg;
 					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
@@ -8562,7 +8585,7 @@ MONO_RESTORE_WARNING
 				break;
 			case ArgSwiftError:
 				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-					if (ainfo->offset == 0) {
+					if (ainfo->swift_error_in_reg) {
 						amd64_mov_membase_reg (code, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, ainfo->reg, sizeof (target_mgreg_t));
 					}
 				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {

@@ -25,70 +25,77 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
     abort_if_invalid_pointer_argument (cbD);
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    int32_t cbxBn = 0, cbyBn = 0, cbdBn = 0;
+
+    INIT_LOCALS(loc, publicKey, Q, xBn, yBn, privateKey, dBn);
+
+    *qx = *qy = NULL;
+    *cbQx = *cbQy = 0;
+    *d = NULL;
+    *cbD = 0;
 
     // Get the public key
-    jobject publicKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPublicMethod);
+    loc[publicKey] = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPublicMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jobject Q = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetW);
+    loc[Q] = (*env)->CallObjectMethod(env, loc[publicKey], g_ECPublicKeyGetW);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    (*env)->DeleteLocalRef(env, publicKey);
+    loc[xBn] = (*env)->CallObjectMethod(env, loc[Q], g_ECPointGetAffineX);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[yBn] = (*env)->CallObjectMethod(env, loc[Q], g_ECPointGetAffineY);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jobject xBn = (*env)->CallObjectMethod(env, Q, g_ECPointGetAffineX);
-    jobject yBn = (*env)->CallObjectMethod(env, Q, g_ECPointGetAffineY);
-
-    (*env)->DeleteLocalRef(env, Q);
-
-    // Success; assign variables
-    *qx = ToGRef(env, xBn);
-    *cbQx = AndroidCryptoNative_GetBigNumBytes(*qx);
-    xBn = NULL;
-    *qy = ToGRef(env, yBn);
-    *cbQy = AndroidCryptoNative_GetBigNumBytes(*qy);
-    yBn = NULL;
-    if (*cbQx == FAIL || *cbQy == FAIL)
-        goto error;
+    cbxBn = AndroidCryptoNative_GetBigNumBytes(loc[xBn]);
+    cbyBn = AndroidCryptoNative_GetBigNumBytes(loc[yBn]);
+    if (cbxBn == FAIL || cbyBn == FAIL)
+        goto cleanup;
 
     if (includePrivate)
     {
-        abort_if_invalid_pointer_argument (d);
+        loc[privateKey] = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
+        if (!loc[privateKey])
+            goto cleanup;
 
-        if (!privateKey)
-        {
-            *d = NULL;
-            *cbD = 0;
-            goto error;
-        }
+        loc[dBn] = (*env)->CallObjectMethod(env, loc[privateKey], g_ECPrivateKeyGetS);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        jobject dBn = (*env)->CallObjectMethod(env, privateKey, g_ECPrivateKeyGetS);
-
-        (*env)->DeleteLocalRef(env, privateKey);
-
-        *d = ToGRef(env, dBn);
-        *cbD = AndroidCryptoNative_GetBigNumBytes(*d);
-        if (*cbD == FAIL)
-            goto error;
+        cbdBn = AndroidCryptoNative_GetBigNumBytes(loc[dBn]);
+        if (cbdBn == FAIL)
+            goto cleanup;
     }
-    else
+
+    // Clean up any partially promoted global refs if a later promotion fails.
+    *qx = AddGRef(env, loc[xBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    *cbQx = cbxBn;
+    *qy = AddGRef(env, loc[yBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    *cbQy = cbyBn;
+    if (includePrivate)
     {
-        if (d)
-            *d = NULL;
-
-        if (cbD)
-            *cbD = 0;
+        *d = AddGRef(env, loc[dBn]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        *cbD = cbdBn;
     }
 
-    return SUCCESS;
+    ret = SUCCESS;
 
-error:
-    *cbQx = *cbQy = 0;
-    *qx = *qy = 0;
-    if (d)
-        *d = NULL;
-    if (cbD)
-        *cbD = 0;
-    return FAIL;
+cleanup:
+    if (ret != SUCCESS)
+    {
+        ReleaseGRef(env, *qx);
+        ReleaseGRef(env, *qy);
+        ReleaseGRef(env, *d);
+        *qx = *qy = *d = NULL;
+        *cbQx = *cbQy = *cbD = 0;
+    }
+
+    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
@@ -148,16 +155,21 @@ int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
         goto error;
 
     loc[group] = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurve);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     bn[A] = (*env)->CallObjectMethod(env, loc[group], g_EllipticCurveGetA);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
     bn[B] = (*env)->CallObjectMethod(env, loc[group], g_EllipticCurveGetB);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
     loc[field] = (*env)->CallObjectMethod(env, loc[group], g_EllipticCurveGetField);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     if ((*env)->IsInstanceOf(env, loc[field], g_ECFieldF2mClass))
     {
         *curveType = Characteristic2;
         // Get the reduction polynomial p
         bn[P] = (*env)->CallObjectMethod(env, loc[field], g_ECFieldF2mGetReductionPolynomial);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
     else
     {
@@ -165,26 +177,35 @@ int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
         *curveType = PrimeShortWeierstrass;
         // Get the prime p
         bn[P] = (*env)->CallObjectMethod(env, loc[field], g_ECFieldFpGetP);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
     // Extract gx and gy
     loc[G] = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetGenerator);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
     bn[X] = (*env)->CallObjectMethod(env, loc[G], g_ECPointGetAffineX);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
     bn[Y] = (*env)->CallObjectMethod(env, loc[G], g_ECPointGetAffineY);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     // Extract order (n)
     bn[ORDER] = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetOrder);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     // Extract cofactor (h)
     int32_t cofactorInt = (*env)->CallIntMethod(env, key->curveParameters, g_ECParameterSpecGetCofactor);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     bn[COFACTOR] = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)cofactorInt);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     // Extract seed (optional)
     loc[seedArray] = (*env)->CallObjectMethod(env, loc[group], g_EllipticCurveGetSeed);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
     if (loc[seedArray])
     {
         bn[SEED] = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, loc[seedArray]);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
 
         *seed = ToGRef(env, bn[SEED]);
         *cbSeed = AndroidCryptoNative_GetBigNumBytes(*seed);
@@ -270,8 +291,10 @@ static jobject CreateKeyPairFromCurveParameters(
             goto error;
 
         loc[pubKeyPoint] = (*env)->NewObject(env, g_ECPointClass, g_ECPointCtor, bn[QX], bn[QY]);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
         loc[pubKeySpec] =
             (*env)->NewObject(env, g_ECPublicKeySpecClass, g_ECPublicKeySpecCtor, loc[pubKeyPoint], curveParameters);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
 
         // Set private key (optional)
         if (d && dLength)
@@ -281,6 +304,7 @@ static jobject CreateKeyPairFromCurveParameters(
                 goto error;
 
             loc[privKeySpec] = (*env)->NewObject(env, g_ECPrivateKeySpecClass, g_ECPrivateKeySpecCtor, bn[D], curveParameters);
+            ON_EXCEPTION_PRINT_AND_GOTO(error);
         }
     }
     // If we don't have the public key but we have the private key, we can
@@ -292,6 +316,7 @@ static jobject CreateKeyPairFromCurveParameters(
             goto error;
 
         loc[privKeySpec] = (*env)->NewObject(env, g_ECPrivateKeySpecClass, g_ECPrivateKeySpecCtor, bn[D], curveParameters);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
 
         // Java doesn't have a public implementation of operations on points on an elliptic curve
         // so we can't yet derive a new public key from the private key and generator.
@@ -306,6 +331,7 @@ static jobject CreateKeyPairFromCurveParameters(
     // Create the private and public keys and put them into a key pair.
     loc[algorithmName] = make_java_string(env, "EC");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
     loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[pubKeySpec]);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
@@ -374,26 +400,37 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
 }
 
 // Converts a java.math.BigInteger to a positive int32_t value.
-// Returns -1 if bigInteger < 0 or > INT32_MAX
+// Returns -1 if bigInteger < 0 or > INT32_MAX, or if a pending JNI exception is detected.
 ARGS_NON_NULL_ALL static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
 {
-    // bigInteger is negative.
-    if ((*env)->CallIntMethod(env, bigInteger, g_sigNumMethod) < 0)
-    {
-        return -1;
-    }
+    int32_t ret = -1;
+    INIT_LOCALS(loc, int32MaxBigInt);
 
-    jobject int32MaxBigInt = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)INT32_MAX);
-    int willOverflow = (*env)->CallIntMethod(env, bigInteger, g_compareToMethod, int32MaxBigInt);
-    (*env)->DeleteLocalRef(env, int32MaxBigInt);
+    jint signum = (*env)->CallIntMethod(env, bigInteger, g_sigNumMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // bigInteger is negative.
+    if (signum < 0)
+        goto cleanup;
+
+    loc[int32MaxBigInt] = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)INT32_MAX);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    int willOverflow = (*env)->CallIntMethod(env, bigInteger, g_compareToMethod, loc[int32MaxBigInt]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // If bigInteger > int32MaxBigInt, then a conversion to int32_t would be lossy.
     if (willOverflow > 0)
-    {
-        return -1;
-    }
+        goto cleanup;
 
-    return (*env)->CallIntMethod(env, bigInteger, g_intValueMethod);
+    jint result = (*env)->CallIntMethod(env, bigInteger, g_intValueMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = result;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
@@ -435,7 +472,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     EC_KEY* keyInfo = NULL;
     jobject keyPair = NULL;
 
-    INIT_LOCALS(loc, G, field, group, paramSpec, seedArray);
+    INIT_LOCALS(loc, G, field, group, paramSpec, seedArray, ec, keyPairGenerator);
     INIT_LOCALS(bn, P, A, B, GX, GY, ORDER, COFACTOR);
 
     // Java only supports Weierstrass and characteristic-2 type curves.
@@ -489,16 +526,19 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
         loc[seedArray] = make_java_byte_array(env, seedLength);
         (*env)->SetByteArrayRegion(env, loc[seedArray], 0, seedLength, (jbyte*)seed);
         loc[group] = (*env)->NewObject(env, g_EllipticCurveClass, g_EllipticCurveCtorWithSeed, loc[field], bn[A], bn[B], loc[seedArray]);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
     else
     {
         loc[group] = (*env)->NewObject(env, g_EllipticCurveClass, g_EllipticCurveCtor, loc[field], bn[A], bn[B]);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
     // Set generator, order and cofactor
     bn[GX] = AndroidCryptoNative_BigNumFromBinary(gx, gxLength);
     bn[GY] = AndroidCryptoNative_BigNumFromBinary(gy, gyLength);
     loc[G] = (*env)->NewObject(env, g_ECPointClass, g_ECPointCtor, bn[GX], bn[GY]);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     bn[ORDER] = AndroidCryptoNative_BigNumFromBinary(order, orderLength);
 
@@ -514,6 +554,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     }
 
     loc[paramSpec] = (*env)->NewObject(env, g_ECParameterSpecClass, g_ECParameterSpecCtor, loc[group], loc[G], bn[ORDER], cofactorInt);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     if ((qx && qy) || d)
     {
@@ -523,18 +564,14 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     else
     {
         // Otherwise generate a new key pair.
-        jstring ec = make_java_string(env, "EC");
-        jobject keyPairGenerator =
-            (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
-        (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeWithParamsMethod, loc[paramSpec]);
-        if (CheckJNIExceptions(env))
-        {
-            ReleaseLRef(env, keyPairGenerator);
-            ReleaseLRef(env, ec);
-            goto error;
-        }
+        loc[ec] = make_java_string(env, "EC");
+        loc[keyPairGenerator] =
+            (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, loc[ec]);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
+        (*env)->CallVoidMethod(env, loc[keyPairGenerator], g_keyPairGenInitializeWithParamsMethod, loc[paramSpec]);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
 
-        keyPair = AddGRef(env, (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod));
+        keyPair = AddGRef(env, (*env)->CallObjectMethod(env, loc[keyPairGenerator], g_keyPairGenGenKeyPairMethod));
     }
 
     if (!keyPair)

@@ -1092,6 +1092,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_Success()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -1125,29 +1126,15 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_Fails()
         {
-            using PortBlocker portBlocker = new PortBlocker(() =>
-            {
-                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-                socket.DualMode = false;
-                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
-                return socket;
-            });
-            Socket a = portBlocker.MainSocket;
-            // the port blocker did not call Socket.Bind so we called bind() but we did not update properties on Socket
-            Socket b = new Socket(portBlocker.SecondarySocket.SafeHandle);
-
-            // do NOT a.Listen(1);
-            // do NOT b.Listen(1);
-            // Do NOT a.AcceptAsync();
-            // Do NOT b.AcceptAsync();
-
             var mres = new ManualResetEventSlim();
             SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
-            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            // A bound but non-listening port can time out instead of refusing connections on macOS.
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", DualModeBase.UnusedPort);
             saea.Completed += (_, _) => mres.Set();
-            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea, ConnectAlgorithm.Parallel))
             {
                 Assert.True(mres.Wait(TestSettings.PassingTestLongTimeout), "Completed did not get called in time");
             }
@@ -1161,6 +1148,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_FailsOver(bool preferIPv6)
         {
             using PortBlocker portBlocker = new PortBlocker(() =>

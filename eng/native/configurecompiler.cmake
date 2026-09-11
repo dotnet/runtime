@@ -8,6 +8,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable C99 inttypes.h format macros (PRI*, SCN*) for C++ translation units.
+# Some C++ standard library implementations gate these macros behind
+# __STDC_FORMAT_MACROS in C++ mode (e.g. glibc prior to C++11 conformance).
+add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:__STDC_FORMAT_MACROS>)
+
 # We need to set this to Release as there's no way to intercept configuration-specific linker flags
 # for try_compile-style tests (like check_c_source_compiles) and some of the default Debug flags
 # (ie. /INCREMENTAL) conflict with our own flags.
@@ -24,9 +29,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 if(CLR_CMAKE_TARGET_BROWSER AND DEFINED TRYRUN_BROWSER_EMSCRIPTEN_VERSION)
     file(READ "${CMAKE_CURRENT_LIST_DIR}/../../src/mono/browser/emscripten-version.txt" CURRENT_EMSCRIPTEN_VERSION)
     string(STRIP "${CURRENT_EMSCRIPTEN_VERSION}" CURRENT_EMSCRIPTEN_VERSION)
-    
+
     if(NOT TRYRUN_BROWSER_EMSCRIPTEN_VERSION STREQUAL CURRENT_EMSCRIPTEN_VERSION)
-        message(WARNING 
+        message(WARNING
             "Emscripten version mismatch detected!\n"
             "  Current Emscripten: ${CURRENT_EMSCRIPTEN_VERSION}\n"
             "  Cached features for: ${TRYRUN_BROWSER_EMSCRIPTEN_VERSION}\n"
@@ -40,12 +45,10 @@ endif()
 #-----------------------------------------------------
 
 if (CLR_CMAKE_HOST_UNIX)
+    add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-conversion)
-        add_compile_options(-glldb)
-    else()
-        add_compile_options(-g)
     endif()
 endif()
 
@@ -96,9 +99,9 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
-  if (NOT CLR_CMAKE_PGO_INSTRUMENT)
+  if (NOT CLR_CMAKE_PGO_INSTRUMENT AND NOT CLR_CMAKE_ENABLE_SANITIZERS)
     # Load all imported DLLs from the System32 directory.
-    # Don't do this when instrumenting for PGO as a local DLL dependency is introduced by the instrumentation
+    # Don't do this when instrumenting for PGO or when a sanitizer is enabled as a local DLL dependency is introduced by the instrumentation
     add_linker_flag(/DEPENDENTLOADFLAG:0x800)
   endif()
 
@@ -325,11 +328,23 @@ if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag(-Wl,--build-id=sha1)
   add_linker_flag(-Wl,-z,relro,-z,now)
-elseif(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD)
+elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag("-Wl,--build-id=sha1")
-elseif(CLR_CMAKE_HOST_SUNOS)
+elseif(CLR_CMAKE_HOST_OPENBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  add_linker_flag("-Wl,--build-id=sha1")
+  # OpenBSD's ld.so can't resolve native TLS relocs in a .so; rely on clang's default
+  # emulated TLS (don't pass -fno-emulated-tls).
+  # The PAL's hand-written asm lacks endbr64 landing pads, so disable branch-target CFI.
+  add_linker_flag("-Wl,-z,nobtcfi")
+elseif(CLR_CMAKE_HOST_SUNOS)
+  # llvm's assembler crashes with noexecstack with solaris triplet;
+  # bug report with minimal repro at: https://github.com/llvm/llvm-project/issues/202953
+  if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  endif()
+
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
   add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT)
@@ -375,13 +390,15 @@ elseif(CLR_CMAKE_HOST_HAIKU)
     set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE)
     set(CMAKE_LINK_LIBRARY_WHOLE_ARCHIVE_ATTRIBUTES LIBRARY_TYPE=STATIC DEDUPLICATION=YES OVERRIDE=DEFAULT)
   endif()
-  # Haiku uses the GNU toolchain, which supports RESCAN, but only CMake 4.4.0+ recognizes this.
-  if(CMAKE_VERSION VERSION_LESS 4.4)
-    set(CMAKE_LINK_GROUP_USING_RESCAN "LINKER:--start-group" "LINKER:--end-group")
-    set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED TRUE)
-  endif()
+
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag("-Wl,--build-id=sha1")
+endif()
+
+if((CLR_CMAKE_HOST_HAIKU OR CLR_CMAKE_HOST_SUNOS) AND CMAKE_VERSION VERSION_LESS 4.4)
+  # Haiku and illumos uses the GNU toolchain, which supports RESCAN, but only CMake 4.4.0+ recognizes this.
+  set(CMAKE_LINK_GROUP_USING_RESCAN "LINKER:--start-group" "LINKER:--end-group")
+  set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED TRUE)
 endif()
 
 #------------------------------------
@@ -493,6 +510,8 @@ if (CLR_CMAKE_HOST_UNIX)
       message("Detected FreeBSD aarch64")
     elseif(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected FreeBSD amd64")
+    elseif(CLR_CMAKE_HOST_UNIX_POWERPC64)
+      message("Detected FreeBSD ppc64le")
     else()
       message(FATAL_ERROR "Unsupported FreeBSD architecture")
     endif()
@@ -623,19 +642,16 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   endif()
 
   if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
-    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
-    add_compile_options(-fstack-protector)
-    if(CLR_CMAKE_HOST_UNIX_ARM64)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
       # For OSX-Arm64, LSE instructions are enabled by default
       add_definitions(-DLSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
       add_compile_options(-mcpu=apple-m1)
-    endif(CLR_CMAKE_HOST_UNIX_ARM64)
-  elseif(NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
-    check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
-    if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
-      add_compile_options(-fstack-protector-strong)
     endif()
-  endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
+  endif()
+
+  if(NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
+    add_compile_options(-fstack-protector-strong)
+  endif()
 
   # Suppress warnings-as-errors in release branches to reduce servicing churn
   if (PRERELEASE)
@@ -740,8 +756,18 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
 
-  # Separate functions so linker can remove them.
+  # Separate functions and data into their own sections so the linker can remove
+  # unreferenced ones.
   add_compile_options(-ffunction-sections)
+  add_compile_options(-fdata-sections)
+  if(LD_OSX)
+    add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
+  elseif(NOT LD_SOLARIS)
+    add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+    if (NOT LD_GNU AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+      add_linker_flag(-Wl,--icf=all RELEASE RELWITHDEBINFO)
+    endif()
+  endif()
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
@@ -814,12 +840,13 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_TVOS>)
   elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_FREEBSD>)
-  elseif(CLR_CMAKE_TARGET_ANDROID)
-    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   elseif(CLR_CMAKE_TARGET_LINUX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
     if(CLR_CMAKE_TARGET_LINUX_MUSL)
         add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX_MUSL>)
+    endif()
+    if(CLR_CMAKE_TARGET_ANDROID)
+      add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
     endif()
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
@@ -836,42 +863,72 @@ if(CLR_CMAKE_TARGET_UNIX)
   if(CLR_CMAKE_TARGET_BROWSER)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_BROWSER>)
   endif()
+  if(CLR_CMAKE_TARGET_WASI)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
+  endif()
 elseif(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
 else(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WINDOWS>)
 endif(CLR_CMAKE_TARGET_UNIX)
 
-if(CLR_CMAKE_HOST_UNIX_ARM)
-   if (NOT DEFINED CLR_ARM_FPU_TYPE)
-     set(CLR_ARM_FPU_TYPE vfpv3)
-   endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+# OpenBSD only exposes its libunwind symbols through the LLVM C++ runtime
+# (libc++/libc++abi), so default to those there. An explicit selection via
+# CLR_CMAKE_CXX_STANDARD_LIBRARY/CLR_CMAKE_CXX_ABI_LIBRARY (applied by the cross
+# toolchain file) still takes precedence.
+if(CLR_CMAKE_TARGET_OPENBSD)
+  if(NOT CLR_CMAKE_CXX_STANDARD_LIBRARY)
+    add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:--stdlib=libc++>)
+    add_link_options($<$<LINK_LANG_AND_ID:CXX,Clang>:--stdlib=libc++>)
+  endif()
+  if(NOT CLR_CMAKE_CXX_ABI_LIBRARY)
+    add_link_options("LINKER:-lc++abi")
+  endif()
+endif()
 
-   # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
-   # we have to set the triple by adding a compiler argument
-   add_compile_options(-mthumb)
-   add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
-   if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-     set(CLR_ARM_FPU_CAPABILITY 0x7)
-   endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-   add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
-   add_compile_options(-march=armv7-a)
-   if(ARM_SOFTFP)
-     add_definitions(-DARM_SOFTFP)
-     add_compile_options(-mfloat-abi=softfp)
-   endif(ARM_SOFTFP)
+if(CLR_CMAKE_HOST_UNIX_ARM)
+  if (NOT DEFINED CLR_ARM_FPU_TYPE)
+    set(CLR_ARM_FPU_TYPE vfpv3)
+  endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+
+  # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
+  # we have to set the triple by adding a compiler argument
+  add_compile_options(-mthumb)
+  add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
+  if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+    set(CLR_ARM_FPU_CAPABILITY 0x7)
+  endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+  add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+  add_compile_options(-march=armv7-a)
+  if(ARM_SOFTFP)
+    add_definitions(-DARM_SOFTFP)
+    add_compile_options(-mfloat-abi=softfp)
+  endif(ARM_SOFTFP)
 endif(CLR_CMAKE_HOST_UNIX_ARM)
 
 if(CLR_CMAKE_HOST_UNIX_ARMV6)
-   add_compile_options(-mfpu=vfp)
-   add_definitions(-DCLR_ARM_FPU_CAPABILITY=0x0)
-   add_compile_options(-march=armv6zk)
-   add_compile_options(-mcpu=arm1176jzf-s)
-   add_compile_options(-mfloat-abi=hard)
+  add_compile_options(-mfpu=vfp)
+  add_definitions(-DCLR_ARM_FPU_CAPABILITY=0x0)
+  add_compile_options(-march=armv6zk)
+  add_compile_options(-mcpu=arm1176jzf-s)
+  add_compile_options(-mfloat-abi=hard)
 endif(CLR_CMAKE_HOST_UNIX_ARMV6)
+
+if(CLR_CMAKE_HOST_UNIX_RISCV64)
+  add_compile_options(-march=rv64gc)
+  add_compile_options(-mabi=lp64d)
+endif(CLR_CMAKE_HOST_UNIX_RISCV64)
 
 if(CLR_CMAKE_HOST_UNIX_X86)
   add_compile_options(-msse2)
+endif()
+
+if(CLR_CMAKE_HOST_ARCH_AMD64)
+  if(CLR_CMAKE_HOST_WIN32)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/arch:SSE4.2>)
+  else()
+    add_compile_options(-march=x86-64-v2)
+  endif()
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -1095,7 +1152,14 @@ if (CLR_CMAKE_HOST_WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-elseif (NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
+elseif (CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
+    # The wasm toolchains (emscripten / wasi-sdk) use clang, which can assemble
+    # preprocessed (.S) wasm assembly files directly.
+    set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+
+    enable_language(ASM)
+
+else()
     # This is a workaround for upstream issue: https://gitlab.kitware.com/cmake/cmake/-/issues/22995.
     #
     # In Clang.cmake, the decision to use single or double hyphen for target and gcc-toolchain

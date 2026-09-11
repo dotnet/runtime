@@ -90,15 +90,11 @@ internal sealed class MethodValidation
 
     internal TargetPointer GetMethodDescChunkPointerThrowing(TargetPointer methodDescPointer, Data.MethodDesc umd)
     {
-        ulong? methodDescChunkSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size;
-        if (!methodDescChunkSize.HasValue)
-        {
-            throw new InvalidOperationException("Target has no definite MethodDescChunk size");
-        }
+        ulong methodDescChunkSize = Data.MethodDescChunk.GetSize(_target);
         // The runtime allocates a contiguous block of memory for a MethodDescChunk followed by MethodDescAlignment * Size bytes of space
         // that is filled with MethodDesc (or its subclasses) instances.  Each MethodDesc has a ChunkIndex that indicates its
         // offset from the end of the MethodDescChunk.
-        ulong chunkAddress = (ulong)methodDescPointer - methodDescChunkSize.Value - umd.ChunkIndex * _methodDescAlignment;
+        ulong chunkAddress = (ulong)methodDescPointer - methodDescChunkSize - umd.ChunkIndex * _methodDescAlignment;
         return new TargetPointer(chunkAddress);
     }
 
@@ -208,18 +204,24 @@ internal sealed class MethodValidation
                 TargetCodePointer jitCodeAddr = GetCodePointer(umd);
                 Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
                 CodeBlockHandle? codeInfo = executionManager.GetCodeBlockHandle(jitCodeAddr);
-                if (!codeInfo.HasValue)
+                if (codeInfo.HasValue)
                 {
-                    return false;
+                    TargetPointer methodDesc = executionManager.GetMethodDesc(codeInfo.Value);
+                    if (methodDesc != methodDescPointer)
+                    {
+                        return false;
+                    }
                 }
-                TargetPointer methodDesc = executionManager.GetMethodDesc(codeInfo.Value);
-                if (methodDesc == TargetPointer.Null)
+                else
                 {
-                    return false;
-                }
-                if (methodDesc != methodDescPointer)
-                {
-                    return false;
+                    // The NativeCodeSlot may point to a precode or portable entry point
+                    // (e.g., interpreter methods with FEATURE_PORTABLE_ENTRYPOINTS).
+                    // See DacValidateMD for more details.
+                    TargetPointer methodDesc = executionManager.NonVirtualEntry2MethodDesc(jitCodeAddr);
+                    if (methodDesc != methodDescPointer)
+                    {
+                        return false;
+                    }
                 }
             }
         }

@@ -421,6 +421,22 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void IsClosedTypeAttributeTests()
+        {
+            var attr = new IsClosedTypeAttribute();
+            Assert.Empty(attr.DerivedTypes);
+            Assert.Same(Type.EmptyTypes, attr.DerivedTypes);
+
+            Type[] derivedTypes = new[] { typeof(int), typeof(string) };
+            attr.DerivedTypes = derivedTypes;
+            Assert.Same(derivedTypes, attr.DerivedTypes);
+
+            attr.DerivedTypes = null;
+            Assert.Empty(attr.DerivedTypes);
+            Assert.Same(Type.EmptyTypes, attr.DerivedTypes);
+        }
+
+        [Fact]
         public static void OverloadResolutionPriorityAttributeTests()
         {
             var attr = new OverloadResolutionPriorityAttribute(42);

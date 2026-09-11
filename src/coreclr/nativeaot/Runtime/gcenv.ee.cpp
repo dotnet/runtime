@@ -52,7 +52,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
 }
 
-void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
+void GCToEEInterface::RestartEE(bool /* bUnused */)
 {
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
 
@@ -568,7 +568,9 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             delete threadStubArgs;
             return false;
         }
-        strcpy(name_copy, name);
+
+        memcpy(name_copy, name, name_length);
+        name_copy[name_length] = '\0';
         threadStubArgs->m_name = name_copy;
     }
 
@@ -582,6 +584,8 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             PalSetCurrentThreadName(pStartContext->m_name);
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
+
+            delete[] pStartContext->m_name;
             delete pStartContext;
 
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
@@ -797,22 +801,37 @@ uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
 
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
-    UNREFERENCED_PARAMETER(privateKey);
-    UNREFERENCED_PARAMETER(publicKey);
-    UNREFERENCED_PARAMETER(value);
+    if (g_pRhConfig->ReadStringConfigValue(privateKey, value))
+    {
+        return true;
+    }
+
+    if (publicKey)
+    {
+        return g_pRhConfig->ReadKnobStringValue(publicKey, value);
+    }
 
     return false;
 }
 
 void GCToEEInterface::FreeStringConfigValue(const char* value)
 {
-    delete[] value;
+    g_pRhConfig->FreeStringConfigValue(value);
 }
 
 void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
 {
 #ifdef FEATURE_JAVAMARSHAL
     JavaMarshalNative::TriggerClientBridgeProcessing(args);
+#endif
+}
+
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+#ifdef FEATURE_JAVAMARSHAL
+    return JavaMarshalNative::IsGCBridgeActive();
+#else
+    return false;
 #endif
 }
 

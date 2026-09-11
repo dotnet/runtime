@@ -2,22 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
     internal static class CngKeyExtensions
     {
-        [SupportedOSPlatform("windows")]
-        internal static CngKey Duplicate(this CngKey key)
-        {
-            using (SafeNCryptKeyHandle handle = key.Handle)
-            {
-                return CngHelpers.Duplicate(handle, key.IsEphemeral);
-            }
-        }
-
         internal static void SetExportPolicy(this CngKey key, CngExportPolicies exportPolicy)
         {
             using (SafeNCryptKeyHandle keyHandle = key.Handle)

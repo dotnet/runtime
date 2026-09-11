@@ -17,6 +17,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         public uint StartOffset;
         public uint EndOffset;
+        public uint CallReturnValueILOffset;
         // TODO: Eliminate this
         public uint VariableNumber;
         public Variable Variable { get; internal set; }
@@ -82,8 +83,14 @@ namespace ILCompiler.Reflection.ReadyToRun
         VarArgsHandle = -1,
         ReturnBuffer = -2,
         TypeContext = -3,
-        Unknown = -4,
-        Max = Unknown
+        AsyncContinuation = -4,
+        CallReturnValue = -5,
+        Unknown = -6,
+        Max = Unknown,
+
+        MaxV19 = -4,
+        MaxV20 = -5,
+        MaxV22 = -6,
     }
 
     public enum VarLocType

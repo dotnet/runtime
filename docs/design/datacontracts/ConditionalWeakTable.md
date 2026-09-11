@@ -13,38 +13,40 @@ bool TryGetValue(TargetPointer conditionalWeakTable, TargetPointer key, out Targ
 ## Version 1
 
 This contract reads the field layout of `ConditionalWeakTable<TKey, TValue>` and its nested types
-(`Container`, `Container+Entry`) via the `RuntimeTypeSystem` contract rather than cDAC data descriptors.
-Field offsets are resolved by name at runtime.
+(`Container`, `Container+Entry`) via the [`ManagedTypeSource`](ManagedTypeSource.md) contract rather
+than cDAC data descriptors. Most field offsets are resolved by name at runtime.
 
-Contract constants:
-| Constant | Value | Meaning |
-| --- | --- | --- |
-| `CWTNamespace` | `System.Runtime.CompilerServices` | Namespace of the `ConditionalWeakTable` type |
-| `CWTTypeName` | ``ConditionalWeakTable`2`` | Name of the `ConditionalWeakTable<TKey, TValue>` type |
-| `ContainerTypeName` | ``ConditionalWeakTable`2+Container`` | Name of the nested `Container` type |
-| `EntryTypeName` | ``ConditionalWeakTable`2+Entry`` | Name of the nested `Entry` value type |
-| `ContainerFieldName` | `_container` | Field on `ConditionalWeakTable` pointing to the active container |
-| `BucketsFieldName` | `_buckets` | Field on `Container` pointing to the `int[]` buckets array |
-| `EntriesFieldName` | `_entries` | Field on `Container` pointing to the `Entry[]` entries array |
-| `HashCodeFieldName` | `HashCode` | Field on `Entry` storing the hash code (masked to positive int) |
-| `NextFieldName` | `Next` | Field on `Entry` storing the next index in the chain, or -1 |
-| `DepHndFieldName` | `depHnd` | Field on `Entry` storing the dependent handle |
+<!-- BEGIN GENERATED: usage contract=ConditionalWeakTable version=c1 -->
+### Data descriptors used
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `Array` | `m_NumComponents` | Number of elements in the array |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Array` | *(type size)* | `uint32` | Size of the fixed portion of an array object |
+| `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2`` | `_container` | `pointer` | Active container that owns the table's buckets and entries |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Container`` | `_buckets` | `pointer` | Array of entry indexes at the head of each hash bucket; -1 denotes an empty bucket |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Container`` | `_entries` | `pointer` | Array containing the table's dependent handles and hash-chain links |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry`` | `depHnd` | `pointer` | Dependent handle that weakly references the key and conditionally keeps the value alive |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry`` | `HashCode` | `int32` | Cached nonnegative identity hash code of the entry's key; -1 denotes a removed entry |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry`` | `Next` | `int32` | Index of the next entry in the hash bucket chain, or -1 for the end |
 
-Contracts used:
+### Global variables used
+
+_None._
+
+### Contracts used
+
 | Contract Name |
 | --- |
-| `Object` |
 | `GC` |
+| `Object` |
 | `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=ConditionalWeakTable version=c1 -->
+
 
 The algorithm looks up the `_container` field of the `ConditionalWeakTable` object, then reads the
 `_buckets` and `_entries` fields from the container. It resolves `Entry` field offsets (`HashCode`,
-`Next`, `depHnd`) via `RuntimeTypeSystem` and determines the entry stride from the entries array's
+`Next`, `depHnd`) via `ManagedTypeSource` and determines the entry stride from the entries array's
 component size.
 
 ``` csharp
@@ -52,28 +54,19 @@ bool TryGetValue(TargetPointer conditionalWeakTable, TargetPointer key, out Targ
 {
     value = TargetPointer.Null;
 
-    // Resolve field offsets by name from CoreLib via RuntimeTypeSystem.
-    // GetCoreLibFieldDescAndDef returns a FieldDesc address and FieldDefinition;
-    // GetFieldDescOffset extracts the byte offset from those.
+    // Resolve field offsets by name via ManagedTypeSource.
     IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+    IManagedTypeSource mts = target.Contracts.ManagedTypeSource;
+    Target.TypeInfo cwtType = mts.GetTypeInfo("System.Runtime.CompilerServices.ConditionalWeakTable`2");
+    Target.TypeInfo containerType = mts.GetTypeInfo("System.Runtime.CompilerServices.ConditionalWeakTable`2+Container");
+    Target.TypeInfo entryType = mts.GetTypeInfo("System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry");
 
-    rts.GetCoreLibFieldDescAndDef(CWTNamespace, CWTTypeName, ContainerFieldName, out fd, out fDef);
-    uint containerOffset = rts.GetFieldDescOffset(fd, fDef);
-
-    rts.GetCoreLibFieldDescAndDef(CWTNamespace, ContainerTypeName, BucketsFieldName, out fd, out fDef);
-    uint bucketsOffset = rts.GetFieldDescOffset(fd, fDef);
-
-    rts.GetCoreLibFieldDescAndDef(CWTNamespace, ContainerTypeName, EntriesFieldName, out fd, out fDef);
-    uint entriesOffset = rts.GetFieldDescOffset(fd, fDef);
-
-    rts.GetCoreLibFieldDescAndDef(CWTNamespace, EntryTypeName, HashCodeFieldName, out fd, out fDef);
-    uint hashCodeOffset = rts.GetFieldDescOffset(fd, fDef);
-
-    rts.GetCoreLibFieldDescAndDef(CWTNamespace, EntryTypeName, NextFieldName, out fd, out fDef);
-    uint nextOffset = rts.GetFieldDescOffset(fd, fDef);
-
-    rts.GetCoreLibFieldDescAndDef(CWTNamespace, EntryTypeName, DepHndFieldName, out fd, out fDef);
-    uint depHndOffset = rts.GetFieldDescOffset(fd, fDef);
+    uint containerOffset = (uint)cwtType.Fields["_container"].Offset;
+    uint bucketsOffset   = (uint)containerType.Fields["_buckets"].Offset;
+    uint entriesOffset   = (uint)containerType.Fields["_entries"].Offset;
+    uint hashCodeOffset  = (uint)entryType.Fields["HashCode"].Offset;
+    uint nextOffset      = (uint)entryType.Fields["Next"].Offset;
+    uint depHndOffset    = (uint)entryType.Fields["depHnd"].Offset;
 
     // Navigate from the ConditionalWeakTable object to its container
     TargetPointer container = target.ReadPointer(conditionalWeakTable + /* Object data offset */ + containerOffset);

@@ -213,6 +213,13 @@ namespace System.Runtime.CompilerServices
             return GetMethodTable(obj)->HasComponentSize;
         }
 
+        // Returns true iff the type of the object requires finalization,
+        // which includes a finalizer inherited from a base type.
+        internal static unsafe bool ObjectHasFinalizer(object obj)
+        {
+            return GetMethodTable(obj)->IsFinalizable;
+        }
+
         public static void PrepareMethod(RuntimeMethodHandle method)
         {
             if (method.Value == IntPtr.Zero)
@@ -396,7 +403,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>The size of instances of the type.</returns>
         /// <exception cref="ArgumentException">The passed-in type is not a valid type to get the size of.</exception>
         /// <remarks>
-        /// This API returns the same value as <see cref="Unsafe.SizeOf{T}"/> for the type that <paramref name="type"/> represents.
+        /// This API returns the same value as <c>sizeof(T)</c> for the type that <paramref name="type"/> represents.
         /// </remarks>
         public static unsafe int SizeOf(RuntimeTypeHandle type)
         {

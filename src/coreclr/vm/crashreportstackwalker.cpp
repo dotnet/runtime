@@ -8,8 +8,14 @@
 #include "dbginterface.h"
 #include "method.hpp"
 #include "peassembly.h"
+#include <errno.h>
 #include <clrconfignocache.h>
+#include <limits>
 #include <minipal/guid.h>
+#include <minipal/thread.h>
+#include <limits.h>
+#include <new>
+#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -23,7 +29,187 @@ struct WalkContext
     void* userCtx;
 };
 
+struct CrashReportStackWalkerScratch
+{
+    char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
+    char className[CRASHREPORT_STRING_BUFFER_SIZE];
+    GUID moduleGuid;
+    bool hasModuleGuid;
+};
+
+struct CrashReportStackWalkerState
+{
+    CrashReportStackWalkerScratch scratch;
+    WalkContext walkContext;
+};
+
+static CrashReportStackWalkerState* s_crashReportStackWalkerState = nullptr;
+
+inline CrashReportStackWalkerState* GetStackWalkerState()
+{
+    return VolatileLoad(&s_crashReportStackWalkerState);
+}
+
+static
+bool
+EnsureCrashReportStackWalkerState()
+{
+    if (GetStackWalkerState() != nullptr)
+    {
+        return true;
+    }
+
+    CrashReportStackWalkerState* state = new (std::nothrow) CrashReportStackWalkerState();
+    if (state == nullptr)
+    {
+        return false;
+    }
+
+    if (InterlockedCompareExchangeT(&s_crashReportStackWalkerState, state, nullptr) != nullptr)
+    {
+        delete state;
+    }
+
+    return true;
+}
+
+static
+DWORD
+GetCrashReportFrameLimitPerThread()
+{
+    DWORD frameLimitPerThread = CLRConfig::INTERNAL_CrashReportFrameLimitPerThread.defaultValue;
+
+    CLRConfigNoCache frameLimitCfg = CLRConfigNoCache::Get("CrashReportFrameLimitPerThread", /*noprefix*/ false, &getenv);
+    if (frameLimitCfg.IsSet())
+    {
+        DWORD configuredFrameLimitPerThread = 0;
+        if (frameLimitCfg.TryAsInteger(10, configuredFrameLimitPerThread))
+        {
+            frameLimitPerThread = configuredFrameLimitPerThread;
+        }
+    }
+
+    return frameLimitPerThread;
+}
+
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+static bool TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value);
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+static int GetCrashReportTimeoutSeconds();
+
+static
+void
+CrashReportGetModuleDetails(
+    Module* pModule,
+    LPCUTF8* moduleName,
+    GUID* moduleGuid,
+    bool* hasModuleGuid,
+    uint32_t* moduleTimestamp,
+    uint32_t* moduleSize)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (moduleName != nullptr)
+    {
+        *moduleName = nullptr;
+    }
+    if (hasModuleGuid != nullptr)
+    {
+        *hasModuleGuid = false;
+    }
+    if (moduleTimestamp != nullptr)
+    {
+        *moduleTimestamp = 0;
+    }
+    if (moduleSize != nullptr)
+    {
+        *moduleSize = 0;
+    }
+
+    if (pModule == nullptr)
+    {
+        return;
+    }
+
+    if (moduleName != nullptr)
+    {
+        Assembly* pAssembly = pModule->GetAssembly();
+        if (pAssembly != nullptr)
+        {
+            *moduleName = pAssembly->GetSimpleName();
+        }
+    }
+
+    if (moduleTimestamp != nullptr || moduleSize != nullptr)
+    {
+        PEAssembly* pPEAssembly = pModule->GetPEAssembly();
+        if (pPEAssembly != nullptr && pPEAssembly->HasLoadedPEImage())
+        {
+            if (moduleTimestamp != nullptr)
+            {
+                *moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
+            }
+            if (moduleSize != nullptr)
+            {
+                *moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
+            }
+        }
+    }
+
+    if (moduleGuid != nullptr)
+    {
+        IMDInternalImport* pImport = pModule->GetMDImport();
+        if (pImport != nullptr && SUCCEEDED(pImport->GetScopeProps(nullptr, moduleGuid)))
+        {
+            if (hasModuleGuid != nullptr)
+            {
+                *hasModuleGuid = true;
+            }
+        }
+    }
+}
+
+static
+bool
+CrashReportGetModuleInfo(
+    const void* moduleHandle,
+    const char** moduleName,
+    GUID* moduleGuid)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (moduleName == nullptr || moduleGuid == nullptr || moduleHandle == nullptr)
+    {
+        return false;
+    }
+
+    LPCUTF8 resolvedModuleName = nullptr;
+    bool hasModuleGuid = false;
+    Module* pModule = reinterpret_cast<Module*>(const_cast<void*>(moduleHandle));
+    CrashReportGetModuleDetails(pModule, &resolvedModuleName, moduleGuid, &hasModuleGuid, nullptr, nullptr);
+    if (resolvedModuleName == nullptr || resolvedModuleName[0] == '\0' || !hasModuleGuid)
+    {
+        return false;
+    }
+
+    *moduleName = resolvedModuleName;
+    return true;
+}
 
 static
 StackWalkAction
@@ -41,7 +227,8 @@ FrameCallbackAdapter(
     CONTRACTL_END;
 
     WalkContext* ctx = static_cast<WalkContext*>(pData);
-    if (ctx == nullptr)
+    CrashReportStackWalkerState* state = GetStackWalkerState();
+    if (ctx == nullptr || state == nullptr)
     {
         return SWA_CONTINUE;
     }
@@ -68,21 +255,14 @@ FrameCallbackAdapter(
         }
     }
 
-    char classNameBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    BuildTypeName(classNameBuf, sizeof(classNameBuf), namespaceName, className);
+    CrashReportStackWalkerScratch& scratch = state->scratch;
+    scratch.className[0] = '\0';
+    BuildTypeName(scratch.className, sizeof(scratch.className), namespaceName, className);
 
-    LPCUTF8 moduleName = nullptr;
     Module* pModule = pMD->GetModule();
-    if (pModule != nullptr)
-    {
-        Assembly* pAssembly = pModule->GetAssembly();
-        if (pAssembly != nullptr)
-        {
-            moduleName = pAssembly->GetSimpleName();
-        }
-    }
 
-    uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
+    bool canResolveOffsets = pCF->IsFrameless();
+    uint32_t nativeOffset = canResolveOffsets ? pCF->GetRelOffset() : 0;
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
@@ -98,7 +278,7 @@ FrameCallbackAdapter(
         return SWA_CONTINUE;
     }
 
-    if (g_pDebugInterface != nullptr && pMD != nullptr)
+    if (g_pDebugInterface != nullptr && canResolveOffsets)
     {
         DWORD resolvedILOffset = 0;
         BOOL haveILOffset = FALSE;
@@ -122,33 +302,33 @@ FrameCallbackAdapter(
         }
     }
 
+    LPCUTF8 moduleName = nullptr;
     uint32_t moduleTimestamp = 0;
     uint32_t moduleSize = 0;
-    char moduleGuid[MINIPAL_GUID_BUFFER_LEN];
-    moduleGuid[0] = '\0';
+    scratch.hasModuleGuid = false;
+    CrashReportGetModuleDetails(
+        pModule,
+        &moduleName,
+        &scratch.moduleGuid,
+        &scratch.hasModuleGuid,
+        &moduleTimestamp,
+        &moduleSize);
 
-    if (pModule != nullptr)
-    {
-        PEAssembly* pPEAssembly = pModule->GetPEAssembly();
-        if (pPEAssembly != nullptr && pPEAssembly->HasLoadedPEImage())
-        {
-            moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
-            moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
-        }
-
-        IMDInternalImport* pImport = pModule->GetMDImport();
-        if (pImport != nullptr)
-        {
-            GUID mvid;
-            if (SUCCEEDED(pImport->GetScopeProps(nullptr, &mvid)))
-            {
-                minipal_guid_as_string(mvid, moduleGuid, MINIPAL_GUID_BUFFER_LEN);
-            }
-        }
-    }
-
-    className = classNameBuf[0] == '\0' ? nullptr : classNameBuf;
-    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, moduleGuid, ctx->userCtx);
+    className = scratch.className[0] == '\0' ? nullptr : scratch.className;
+    ctx->callback(
+        static_cast<uint64_t>(ip),
+        static_cast<uint64_t>(stackPointer),
+        methodName,
+        className,
+        moduleName,
+        pModule,
+        moduleTimestamp,
+        moduleSize,
+        scratch.hasModuleGuid ? &scratch.moduleGuid : nullptr,
+        nativeOffset,
+        static_cast<uint32_t>(token),
+        ilOffset,
+        ctx->userCtx);
     return SWA_CONTINUE;
 }
 
@@ -159,13 +339,15 @@ CrashReportWalkThread(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    if (pThread == nullptr || frameCallback == nullptr)
+    CrashReportStackWalkerState* state = GetStackWalkerState();
+    if (pThread == nullptr || frameCallback == nullptr || state == nullptr)
     {
         return;
     }
 
-    WalkContext walkContext = { frameCallback, ctx };
-    pThread->StackWalkFrames(FrameCallbackAdapter, &walkContext,
+    state->walkContext.callback = frameCallback;
+    state->walkContext.userCtx = ctx;
+    pThread->StackWalkFrames(FrameCallbackAdapter, &state->walkContext,
         QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 }
 
@@ -302,47 +484,62 @@ CrashReportGetExceptionForThread(
     return result;
 }
 
-// Suspend non-crashing managed threads via SuspendEE so their stacks
-// can be walked from runtime-known safe points. SuspendEE acquires the
-// thread store lock and waits for every other managed thread to reach a
-// safe point (and for any in-progress GC to complete), so skip it when
-// a known pre-condition would prevent forward progress:
+// SuspendEE acquires the ThreadStore lock and retains it until the matching
+// RestartEE. SysIsSuspended becomes true only after all managed threads have
+// reached safe points. That completed suspension is usable when the crashing
+// thread holds the lock and therefore controls when RestartEE runs. This covers
+// the Server GC coordinator. A participating parallel Server GC worker may also
+// use the suspension because it executes as part of that blocking collection.
 //
-//  * g_fFatalErrorOccurredOnGCThread: GC thread faulted mid-GC, so GC
-//    will never finish and SuspendEE's GC wait would hang.
-//  * GCHeapUtilities::IsGCInProgress(): a GC is already running; if it
-//    is wedged (common in runtime-internal crashes) SuspendEE hangs.
-//  * IsGCSpecialThread(): we are a GC thread ourselves; the GC wait
-//    would wait on us.
-//  * ThreadStore::HoldingThreadStore(pCrashThread): SuspendEE's
-//    LockThreadStore asserts the holder is unknown, so it would
-//    assert-fail in checked builds (undefined in release).
+// Avoid calling SuspendEE when a suspension is already in progress (or unwinding) since
+// that can require waiting for the ThreadStore lock. Note that IsGCInProgress is set
+// after LockThreadStore acquires the lock, so this is a best-effort check.
+// In particular, a Server GC coordinator may hold the lock while waiting for a crashing
+// parallel worker at a GC join. A fatal error already recorded on a GC thread also means
+// the interrupted GC may never complete.
 //
-// The crash reporter is best-effort; on hang the Android watchdog
-// kills the process and we keep whatever crash report JSON was flushed
-// beforehand.
+// Otherwise create a reporter-owned suspension. The result records whether a
+// stable suspension is unavailable, inherited, or created by the reporter so
+// only the reporter-created suspension is resumed here.
+enum class CrashReportSuspensionOwnership
+{
+    Unavailable,
+    Existing,
+    Reporter,
+};
 
 static
-bool
+CrashReportSuspensionOwnership
 CrashReportSuspendThreads(Thread* pCrashThread)
 {
+    bool crashThreadOwnsSuspension = ThreadStore::HoldingThreadStore(pCrashThread);
+    if (ThreadSuspend::SysIsSuspended())
+    {
+        // Foreground Server GC workers are non-suspendable GC-special threads.
+        // Suspendable background GC threads have an associated EE Thread.
+        bool isServerGCWorker = IsGCSpecialThread() && pCrashThread == nullptr;
+
+        return (crashThreadOwnsSuspension || isServerGCWorker)
+            ? CrashReportSuspensionOwnership::Existing
+            : CrashReportSuspensionOwnership::Unavailable;
+    }
+
     if (g_fFatalErrorOccurredOnGCThread
         || GCHeapUtilities::IsGCInProgress()
-        || IsGCSpecialThread()
-        || ThreadStore::HoldingThreadStore(pCrashThread))
+        || crashThreadOwnsSuspension)
     {
-        return false;
+        return CrashReportSuspensionOwnership::Unavailable;
     }
 
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-    return true;
+    return CrashReportSuspensionOwnership::Reporter;
 }
 
 static
 void
 CrashReportResumeThreads()
 {
-    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 static
@@ -353,14 +550,25 @@ CrashReportEnumerateThreads(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
+    if (static_cast<uint64_t>(minipal_get_current_thread_id_no_cache()) != crashingTid)
+    {
+        return;
+    }
+
+    CrashReportStackWalkerState* state = GetStackWalkerState();
+    if (state == nullptr)
+    {
+        return;
+    }
+
     Thread* pCrashThread = GetThreadAsyncSafe();
+    CrashReportStackWalkerScratch& scratch = state->scratch;
 
     // Capture the crashing thread's exception state BEFORE suspending the EE
     // so the throwable inspection runs in the thread's natural EE-live context,
     // outside the suspended window which exists for safe-point operations on
     // other threads.
-    char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
-    crashExceptionType[0] = '\0';
+    scratch.crashExceptionType[0] = '\0';
     uint32_t crashHresult = 0;
     bool crashHasException = false;
     bool isCrashingThread = pCrashThread != nullptr
@@ -368,17 +576,20 @@ CrashReportEnumerateThreads(
     if (isCrashingThread)
     {
         crashHasException = CrashReportGetExceptionForThread(
-            pCrashThread, crashExceptionType, sizeof(crashExceptionType), &crashHresult);
+            pCrashThread,
+            scratch.crashExceptionType,
+            sizeof(scratch.crashExceptionType),
+            &crashHresult);
     }
 
-    bool runtimeSuspended = CrashReportSuspendThreads(pCrashThread);
+    CrashReportSuspensionOwnership suspensionOwnership = CrashReportSuspendThreads(pCrashThread);
 
     // Emit the crashing thread first so the report keeps the most important
     // thread even if later enumeration is incomplete.
     if (isCrashingThread)
     {
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
-        threadCallback(crashOsId, true, crashHasException ? crashExceptionType : "", crashHresult, ctx);
+        threadCallback(crashOsId, true, crashHasException ? scratch.crashExceptionType : "", crashHresult, ctx);
 
         CrashReportWalkThread(pCrashThread, frameCallback, ctx);
     }
@@ -386,7 +597,7 @@ CrashReportEnumerateThreads(
     // Walk the remaining managed threads only when the runtime was
     // successfully suspended; otherwise the walker is not guaranteed
     // to be at a safe point for them.
-    if (runtimeSuspended)
+    if (suspensionOwnership != CrashReportSuspensionOwnership::Unavailable)
     {
         Thread* pThread = nullptr;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != nullptr)
@@ -402,13 +613,139 @@ CrashReportEnumerateThreads(
             CrashReportWalkThread(pThread, frameCallback, ctx);
         }
 
-        CrashReportResumeThreads();
+        if (suspensionOwnership == CrashReportSuspensionOwnership::Reporter)
+        {
+            CrashReportResumeThreads();
+        }
     }
+}
+
+static
+bool
+TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value)
+{
+    _ASSERTE(minValue <= maxValue);
+    _ASSERTE(value != nullptr);
+
+    if (!config.IsSet())
+    {
+        return false;
+    }
+
+    const char* configString = config.AsString();
+    if (configString == nullptr)
+    {
+        return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    long parsedValue = strtol(configString, &end, 10);
+    if (end == configString ||
+        *end != '\0' ||
+        errno == ERANGE ||
+        parsedValue < minValue ||
+        parsedValue > maxValue)
+    {
+        return false;
+    }
+
+    *value = static_cast<int>(parsedValue);
+    return true;
+}
+
+// This runs during configuration, not from the crash signal path. maxFileCount
+// is a positive retention bound; values outside [1, INT32_MAX] fall back to the
+// default.
+static
+int32_t
+GetCrashReportMaxFileCount()
+{
+    int32_t maxFileCount = CRASHREPORT_DEFAULT_MAX_FILE_COUNT;
+
+    CLRConfigNoCache maxFileCountCfg = CLRConfigNoCache::Get("CrashReportMaxFileCount", /*noprefix*/ false, &getenv);
+    if (!maxFileCountCfg.IsSet())
+    {
+        return maxFileCount;
+    }
+
+    int configuredMaxFileCount;
+    if (TryParseCrashReportConfigurationInteger(maxFileCountCfg, 1, INT32_MAX, &configuredMaxFileCount))
+    {
+        maxFileCount = configuredMaxFileCount;
+    }
+    else
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report using default CrashReportMaxFileCount: invalid configured value");
+    }
+
+    return maxFileCount;
+}
+
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+// DOTNET_CrashReportTimeoutSeconds is a seconds-based watchdog knob: unset,
+// unparseable, negative, or out-of-range values use the default; 0 disables the
+// watchdog; and positive in-range values configure a fixed timeout. Use
+// CLRConfigNoCache so Android-hosted apps can set DOTNET_* values after PAL
+// initialization but before crash-report configuration.
+static int
+GetCrashReportTimeoutSeconds()
+{
+    // Keep the default conservative: successful reports can be large, while 0
+    // remains available to disable the watchdog for diagnostics.
+    static constexpr int DefaultTimeoutSeconds = 30;
+    static constexpr int TimeoutSecondsToMilliseconds = 1000;
+    static constexpr int MaxTimeoutSeconds = std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds;
+
+    int timeoutSeconds;
+    CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
+    if (!TryParseCrashReportConfigurationInteger(timeoutCfg, 0, MaxTimeoutSeconds, &timeoutSeconds))
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    return timeoutSeconds;
+}
+
+static InProcCrashReporterSettings
+GetDefaultInProcCrashReporterSettings()
+{
+    InProcCrashReporterSettings settings = {};
+    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
+    settings.walkStackCallback = CrashReportWalkStack;
+    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.moduleInfoCallback = CrashReportGetModuleInfo;
+    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
+    return settings;
+}
+
+void
+CrashReportInitialize()
+{
+    if (!EnsureCrashReportStackWalkerState())
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
+        return;
+    }
+
+    InProcCrashReporterSettings settings = GetDefaultInProcCrashReporterSettings();
+    InProcCrashReportInitialize(settings);
 }
 
 void
 CrashReportConfigure()
 {
+#if !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+    // Preserve createdump's existing ownership of EnableCrashReport* when it is enabled.
+    CLRConfigNoCache enabledMiniDumpCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+    DWORD miniDumpEnabled = 0;
+    if (enabledMiniDumpCfg.IsSet() && enabledMiniDumpCfg.TryAsInteger(10, miniDumpEnabled) && miniDumpEnabled != 0)
+    {
+        return;
+    }
+#endif // !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+
     // Read crash report configuration here rather than in PROCAbortInitialize
     // because on Android the DOTNET_* environment variables are set via JNI
     // after PAL_Initialize has already run.
@@ -425,22 +762,26 @@ CrashReportConfigure()
         return;
     }
 
-    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
-    if (dumpName == nullptr || dumpName[0] == '\0')
+    CrashReportInitialize();
+
+    CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
+    const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
+
+    InProcCrashReporterServicesSettings settings = {};
+    settings.enableCreateCrashDump = true;
+    if (crashReportRootPath != nullptr && crashReportRootPath[0] != '\0')
     {
-        return;
+        settings.enableLifecycle = true;
+        settings.reportRootPath = crashReportRootPath;
+        settings.maxFileCount = GetCrashReportMaxFileCount();
     }
 
-    InProcCrashReporterSettings settings = {};
-    settings.reportPath = dumpName;
-    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
-    settings.walkStackCallback = CrashReportWalkStack;
-    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.enableWatchdog = true;
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
 
-    // Initialize the reporter and register the PAL signal-path callback last
+    // Start the crash-dump services and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
-    InProcCrashReportInitialize(settings);
+    InProcCrashReportInitializeServices(settings);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

@@ -5,10 +5,10 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
-using WasiHttpWorld.wit.imports.wasi.http.v0_2_0;
-using WasiHttpWorld.wit.imports.wasi.io.v0_2_0;
-using static WasiHttpWorld.wit.imports.wasi.http.v0_2_0.ITypes;
-using static WasiHttpWorld.wit.imports.wasi.io.v0_2_0.IStreams;
+using WasiHttpWorld.wit.Imports.wasi.http.v0_2_8;
+using WasiHttpWorld.wit.Imports.wasi.io.v0_2_8;
+using static WasiHttpWorld.wit.Imports.wasi.http.v0_2_8.ITypesImports;
+using static WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports;
 
 namespace System.Net.Http
 {
@@ -108,7 +108,7 @@ namespace System.Net.Http
                     }
                     catch (WitException e)
                     {
-                        if (((StreamError)e.Value).Tag == StreamError.CLOSED)
+                        if (((StreamError)e.Value).Tag == StreamError.Tags.Closed)
                         {
                             otherSideClosed = true;
                             return 0;

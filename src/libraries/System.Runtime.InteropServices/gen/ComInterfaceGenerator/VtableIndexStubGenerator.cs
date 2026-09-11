@@ -379,7 +379,8 @@ namespace Microsoft.Interop
                 interfaceType,
                 interfaceType,
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
-                new ObjectUnwrapperInfo(unwrapperSyntax));
+                new ObjectUnwrapperInfo(unwrapperSyntax),
+                MemberKind: StubMemberKind.Method);
         }
 
         private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnosticsBag diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)

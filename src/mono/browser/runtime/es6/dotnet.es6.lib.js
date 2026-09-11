@@ -18,8 +18,8 @@ var methodIndexByName = undefined;
 var gitHash = undefined;
 
 function setup(emscriptenBuildOptions) {
-    // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
-    #if USE_PTHREADS
+    // PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
+    #if PTHREADS
     const modulePThread = PThread;
     #else
     const modulePThread = {};
@@ -45,14 +45,14 @@ function setup(emscriptenBuildOptions) {
         getWasmIndirectFunctionTable: () => { return wasmTable; },
     }, emscriptenBuildOptions);
 
-    #if USE_PTHREADS
+    #if PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
         Module.config = {};
         Module.__dotnet_runtime.configureWorkerStartup(Module);
     } else {
         #endif
         Module.__dotnet_runtime.configureEmscriptenStartup(Module);
-        #if USE_PTHREADS
+        #if PTHREADS
     }
     #endif
 }
@@ -76,7 +76,7 @@ function createWasmImportStubsFrom(collection) {
 function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
 
-    #if USE_PTHREADS
+    #if PTHREADS
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
     #endif
 
@@ -88,7 +88,7 @@ function injectDependencies() {
         `enableLogProfiler: ${ENABLE_LOG_PROFILER}, ` +
         `enableEventPipe: ${WASM_ENABLE_EVENTPIPE}, ` +
         `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
-        `wasmEnableThreads: ${!!USE_PTHREADS}, ` +
+        `wasmEnableThreads: ${!!PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;
 

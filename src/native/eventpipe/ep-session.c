@@ -51,6 +51,10 @@ void
 session_disable_user_events (EventPipeSession *session);
 
 static
+void
+session_free (EventPipeSession *session);
+
+static
 bool
 is_guid_empty(const uint8_t *guid);
 
@@ -96,16 +100,11 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	if (!ep_session_type_uses_streaming_thread (session->session_type))
 		return 1;
 
-	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
-		return 1;
-
-	session->streaming_thread = thread_params->thread;
-
 	bool success = true;
 
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
-	EP_GCX_PREEMP_ENTER
+	{ // The drain runs on a native thread, so no GC-mode transition is needed here.
 		if (ep_session_type_uses_buffer_manager (session->session_type)) {
 			ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 			while (ep_session_get_streaming_enabled (session)) {
@@ -140,9 +139,8 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 		} else {
 			EP_UNREACHABLE ("Unsupported session type for streaming thread.");
 		}
-		session->streaming_thread = NULL;
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
-	EP_GCX_PREEMP_EXIT
+	}
 
 	if (!success)
 		ep_disable ((EventPipeSessionID)session);
@@ -156,7 +154,6 @@ static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool events_written = false;
 	bool ok;
 	if (!ep_session_get_streaming_enabled (session)){
-		session->streaming_thread = NULL;
 		ep_session_dec_ref (session);
 		return 1; // done
 	}
@@ -281,7 +278,8 @@ ep_session_alloc (
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd)
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode)
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
@@ -319,8 +317,23 @@ ep_session_alloc (
 		sequence_point_alloc_budget = 10 * 1024 * 1024;
 	}
 
+#ifndef PERFTRACING_DISABLE_THREADS
+	// Block buffering parks a producer until the drain thread frees buffer capacity, so it only works for
+	// session types that have a continuous drain - the ones with a streaming thread (IPCSTREAM, FILESTREAM).
+	// FILE and LISTENER have a buffer manager but no streaming thread (FILE flushes only at disable; LISTENER
+	// is pumped by an in-proc managed poll), so a parked producer would stall until teardown. Reject the
+	// unsupported combination rather than silently changing the caller's requested configuration.
+	ep_raise_error_if_nok (buffering_mode != EP_BUFFERING_MODE_BLOCK || ep_session_type_uses_streaming_thread (session_type));
+#else
+	// Single-threaded builds have no drain thread to free buffer capacity and wake parked producers (the drain
+	// runs as a cooperative in-proc poll), so a Block-mode producer would park forever. Reject Block here, at the
+	// single point a session adopts a buffering mode, aligning with failing other unsupported buffering-mode
+	// configurations rather than silently downgrading.
+	ep_raise_error_if_nok (buffering_mode != EP_BUFFERING_MODE_BLOCK);
+#endif // PERFTRACING_DISABLE_THREADS
+
 	if (ep_session_type_uses_buffer_manager (session_type)) {
-		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget);
+		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget, buffering_mode);
 		ep_raise_error_if_nok (instance->buffer_manager != NULL);
 	}
 
@@ -389,8 +402,15 @@ ep_session_dec_ref (EventPipeSession *session)
 
 	EP_ASSERT (!ep_session_get_streaming_enabled (session));
 
-	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) != 0)
-		return;
+	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) == 0)
+		session_free (session);
+}
+
+static
+void
+session_free (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
 
 	ep_rt_wait_event_free (&session->rt_thread_shutdown_event);
 
@@ -398,6 +418,18 @@ ep_session_dec_ref (EventPipeSession *session)
 
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
+
+	// Close the user_events data fd if still open. For a USEREVENTS session that was enabled,
+	// ep_session_disable already closed it and set it to -1 (making this a no-op); this also releases it for
+	// inert or alloc-error teardowns that never run ep_session_disable. Closing the fd drops the kernel
+	// tracepoint registrations bound to it, and the per-provider tracepoint state is freed with the provider
+	// list above. Non-USEREVENTS sessions keep the fd at its -1 default (set in ep_session_alloc).
+	if (session->session_type == EP_SESSION_TYPE_USEREVENTS && session->user_events_data_fd != -1) {
+#if HAVE_UNISTD_H
+		close (session->user_events_data_fd);
+#endif
+		session->user_events_data_fd = -1;
+	}
 
 	ep_rt_object_free (session);
 }
@@ -518,8 +550,12 @@ ep_session_wait_for_inflight_thread_ops (EventPipeSession *session)
 			// and cause operating threads to mistake the new session for this one.
 			EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 			if (thread) {
-				// The session is disabled, so wait for any in-progress writes to complete.
-				EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == session->index);
+				// The session is disabled, so wait for any in-progress writes to complete. A producer keeps
+				// this session's index set while writing (WRITE_BUFFER_IN_USE bit set) and while parked for
+				// capacity in Block mode (bit clear); mask the bit to wait out both. A Block-mode teardown
+				// already woke and removed every parked producer (ep_buffer_manager_abort_blocked_writers),
+				// so each will observe the abort, drop, and clear its index - here we only wait it out.
+				EP_YIELD_WHILE ((ep_thread_get_session_use_in_progress (thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == session->index);
 
 				// Since we've already disabled the session, the thread won't call back in to this
 				// session once its done with the current write
@@ -897,7 +933,7 @@ session_tracepoint_write_event (
 }
 #endif // HAVE_SYS_UIO_H && HAVE_ERRNO_H
 
-bool
+EventPipeWriteEventResult
 ep_session_write_event (
 	EventPipeSession *session,
 	ep_rt_thread_handle_t thread,
@@ -911,10 +947,13 @@ ep_session_write_event (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_event != NULL);
 
+	// A paused session (toggled by ep_session_pause) skips the write and drops the event. Today only the GC
+	// gen-analysis session pauses: it is created paused and the GC resumes it only for the gen-analysis heap
+	// walk, dropping everything outside that window. The result is inert here - the only caller acts on BLOCKED.
 	if (session->paused)
-		return true;
+		return EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
-	bool result = false;
+	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	// Filter events specific to "this" session based on precomputed flag on provider/events.
 	if (ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (session))) {
@@ -951,7 +990,7 @@ ep_session_write_event (
 				stack == NULL ? 0 : ep_stack_contents_get_size (stack),
 				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack),
 				session->callback_additional_data);
-			result = true;
+			result = EP_WRITE_EVENT_RESULT_WRITTEN;
 			break;
 		case EP_SESSION_TYPE_USEREVENTS:
 			EP_ASSERT (session->user_events_data_fd != -1);
@@ -963,7 +1002,7 @@ ep_session_write_event (
 				activity_id,
 				related_activity_id,
 				event_thread,
-				stack);
+				stack) ? EP_WRITE_EVENT_RESULT_WRITTEN : EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 			break;
 		default:
 			EP_UNREACHABLE ("Unknown session type.");

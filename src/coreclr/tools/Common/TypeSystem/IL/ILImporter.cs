@@ -276,9 +276,32 @@ namespace Internal.IL
             {
                 var r = _exceptionRegions[i];
 
+                bool hasOutOfRangeBounds =
+                    (uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.TryLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.TryOffset;
+
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
+                    hasOutOfRangeBounds |=
+                        (uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length ||
+                        (uint)r.ILRegion.FilterOffset >= (uint)r.ILRegion.HandlerOffset;
+                }
+
+                hasOutOfRangeBounds |=
+                    (uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.HandlerLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.HandlerOffset;
+
+                if (hasOutOfRangeBounds)
+                {
+                    ReportInvalidExceptionRegion();
+                    continue;
+                }
+
                 CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
                     CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
+                }
                 CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
             }
         }

@@ -18,7 +18,6 @@
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
 #include "rhbinder.h"
-#include "CachedInterfaceDispatch.h"
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
@@ -42,8 +41,6 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #else
 int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
-
-extern "C" void PopulateDebugHeaders();
 
 static bool DetectCPUFeatures();
 
@@ -89,14 +86,6 @@ bool InitializeGC();
 
 static bool InitDLL(HANDLE hPalInstance)
 {
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    //
-    // Initialize interface dispatch.
-    //
-    if (!InterfaceDispatch_Initialize())
-        return false;
-#endif
-
     InitializeGCEventLock();
 
 #ifdef FEATURE_PERFTRACING
@@ -183,7 +172,7 @@ bool DetectCPUFeatures()
     {
 #if defined(HOST_X86) || defined(HOST_AMD64)
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n");
-#elif defined(HOST_ARM64) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(HOST_MACCATALYST))
+#elif defined(HOST_ARM64) && (defined(HOST_OSX) || defined(HOST_MACCATALYST))
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n");
 #elif defined(HOST_ARM64)
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n");
@@ -378,11 +367,8 @@ extern "C" bool RhInitialize(bool isDll)
     g_safeToShutdownTracing = !isDll;
 #endif
 
-    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
+    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize, isDll)))
         return false;
-
-    // Populate the values needed for debugging
-    PopulateDebugHeaders();
 
     return true;
 }

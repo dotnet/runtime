@@ -1,13 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-** Classes:  NativeObjectSecurity class
-**
-**
-===========================================================*/
-
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -23,8 +16,6 @@ namespace System.Security.AccessControl
 {
     public abstract class NativeObjectSecurity : CommonObjectSecurity
     {
-        #region Private Members
-
         private readonly ResourceType _resourceType;
         private readonly ExceptionFromErrorCode? _exceptionFromErrorCode;
         private readonly object? _exceptionContext;
@@ -33,17 +24,7 @@ namespace System.Security.AccessControl
         private readonly uint UnprotectedDiscretionaryAcl = 0x20000000;
         private readonly uint UnprotectedSystemAcl = 0x10000000;
 
-
-
-        #endregion
-
-        #region Delegates
-
         protected internal delegate System.Exception? ExceptionFromErrorCode(int errorCode, string? name, SafeHandle? handle, object? context);
-
-        #endregion
-
-        #region Constructors
 
         protected NativeObjectSecurity(bool isContainer, ResourceType resourceType)
             : base(isContainer)
@@ -89,10 +70,6 @@ namespace System.Security.AccessControl
             : this(isContainer, resourceType, handle, includeSections, null, null)
         {
         }
-
-        #endregion
-
-        #region Private Methods
 
         private static CommonSecurityDescriptor CreateInternal(ResourceType resourceType, bool isContainer, string? name, SafeHandle? handle, AccessControlSections includeSections, bool createByName, ExceptionFromErrorCode? exceptionFromErrorCode, object? exceptionContext)
         {
@@ -174,10 +151,7 @@ namespace System.Security.AccessControl
             return new CommonSecurityDescriptor(isContainer, false /* isDS */, rawSD!, true);
         }
 
-        //
         // Attempts to persist the security descriptor onto the object
-        //
-
         private void Persist(string? name, SafeHandle? handle, AccessControlSections includeSections, object? exceptionContext)
         {
             WriteLock();
@@ -253,10 +227,7 @@ namespace System.Security.AccessControl
 
                 if (securityInfo == 0)
                 {
-                    //
                     // Nothing to persist
-                    //
-
                     return;
                 }
 
@@ -311,15 +282,12 @@ namespace System.Security.AccessControl
                     throw exception;
                 }
 
-                //
                 // Everything goes well, let us clean the modified flags.
                 // We are in proper write lock, so just go ahead
-                //
-
-                this.OwnerModified = false;
-                this.GroupModified = false;
-                this.AccessRulesModified = false;
-                this.AuditRulesModified = false;
+                OwnerModified = false;
+                GroupModified = false;
+                AccessRulesModified = false;
+                AuditRulesModified = false;
             }
             finally
             {
@@ -327,17 +295,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        #endregion
-
-        #region Protected Methods
-
-        //
         // Persists the changes made to the object
         // by calling the underlying Windows API
         //
         // This overloaded method takes a name of an existing object
-        //
-
         protected sealed override void Persist(string name, AccessControlSections includeSections)
         {
             Persist(name, includeSections, _exceptionContext);
@@ -350,12 +311,10 @@ namespace System.Security.AccessControl
             Persist(name, null, includeSections, exceptionContext);
         }
 
-        //
         // Persists the changes made to the object
         // by calling the underlying Windows API
         //
         // This overloaded method takes a handle to an existing object
-        //
         protected sealed override void Persist(SafeHandle handle, AccessControlSections includeSections)
         {
             Persist(handle, includeSections, _exceptionContext);
@@ -367,6 +326,5 @@ namespace System.Security.AccessControl
 
             Persist(null, handle, includeSections, exceptionContext);
         }
-        #endregion
     }
 }

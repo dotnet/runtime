@@ -38,6 +38,27 @@ internal sealed partial class ZipGenericExtraField
             await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    public static async Task WriteAllBlocksExcludingTagAsync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (fields != null)
+        {
+            foreach (ZipGenericExtraField field in fields)
+            {
+                if (field.Tag != excludeTag)
+                {
+                    await field.WriteBlockAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        if (!trailingExtraFieldData.IsEmpty)
+        {
+            await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
+        }
+    }
 }
 
 internal sealed partial class Zip64ExtraField
@@ -147,9 +168,8 @@ internal readonly partial struct ZipLocalFileHeader
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockBytes = new byte[FieldLengths.Signature];
-        long currPosition = stream.Position;
         int bytesRead = await stream.ReadAtLeastAsync(blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-        if (!TrySkipBlockCore(stream, blockBytes, bytesRead, currPosition))
+        if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
         {
             return false;
         }
@@ -246,12 +266,12 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
 
         if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))
         {
-            // // We shouldn't get here becasue we found the eocd block using the signature finder
+            // We shouldn't get here because we found the EOCD block using the signature finder
             throw new InvalidDataException(SR.EOCDNotFound);
         }
         else if (readComment)
         {
-            stream.ReadExactly(eocdBlock._archiveComment);
+            await stream.ReadExactlyAsync(eocdBlock._archiveComment, cancellationToken).ConfigureAwait(false);
         }
         return eocdBlock;
     }

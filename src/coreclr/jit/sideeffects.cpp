@@ -627,9 +627,11 @@ bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool stric
 //    'endExclusive' without its computation changing values?
 //
 // Arguments:
-//    comp         - The compiler
-//    node         - The node.
-//    endExclusive - The exclusive end of the range to check invariance for.
+//    comp              - The compiler
+//    node              - The node.
+//    endExclusive      - The exclusive end of the range to check invariance for.
+//    ignoreFlagsOnNode - GTF flags to mask off the node's own side-effect set
+//                        when computing interference. Use sparingly; see remarks.
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current
@@ -637,9 +639,19 @@ bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool stric
 //    false.
 //
 // Remarks:
-//    This presumes we are operating on nodes that are in LIR form
+//    This presumes we are operating on nodes that are in LIR form.
 //
-bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive)
+//    'ignoreFlagsOnNode' lets the caller drop specific GTF flags from the
+//    moving node's effects only. This is useful when the flag was set as a
+//    conservative ordering hint that does not apply at the new evaluation
+//    point (for example, GTF_ORDER_SIDEEFF on a byref ADD that the caller
+//    intends to fold into a contained addressing mode, where no intermediate
+//    byref register is materialized).
+//
+bool SideEffectSet::IsLirInvariantInRange(Compiler*    comp,
+                                          GenTree*     node,
+                                          GenTree*     endExclusive,
+                                          GenTreeFlags ignoreFlagsOnNode)
 {
     assert((node != nullptr) && (endExclusive != nullptr));
 
@@ -657,6 +669,7 @@ bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree
 
     Clear();
     AddNode(comp, node);
+    m_sideEffectFlags &= ~ignoreFlagsOnNode;
 
     for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
@@ -676,11 +689,13 @@ bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree
 //    specified range, ignoring conflicts with one particular node.
 //
 // Arguments:
-//    comp         - The compiler
-//    node         - The node.
-//    endExclusive - The exclusive end of the range to check invariance for.
-//    ignoreNode   - A node to ignore interference checks with, for example
-//                   because it will retain its relative order with 'node'.
+//    comp              - The compiler
+//    node              - The node.
+//    endExclusive      - The exclusive end of the range to check invariance for.
+//    ignoreNode        - A node to ignore interference checks with, for example
+//                        because it will retain its relative order with 'node'.
+//    ignoreFlagsOnNode - GTF flags to mask off the node's own side-effect set
+//                        when computing interference. See the other overload.
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current location
@@ -689,13 +704,14 @@ bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree
 // Remarks:
 //    This presumes we are operating on nodes that are in LIR form
 //
-bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive, GenTree* ignoreNode)
+bool SideEffectSet::IsLirInvariantInRange(
+    Compiler* comp, GenTree* node, GenTree* endExclusive, GenTree* ignoreNode, GenTreeFlags ignoreFlagsOnNode)
 {
     assert((node != nullptr) && (endExclusive != nullptr));
 
     if (ignoreNode == nullptr)
     {
-        return IsLirInvariantInRange(comp, node, endExclusive);
+        return IsLirInvariantInRange(comp, node, endExclusive, ignoreFlagsOnNode);
     }
 
     if ((node->gtNext == endExclusive) || ((node->gtNext == ignoreNode) && (node->gtNext->gtNext == endExclusive)))
@@ -710,6 +726,7 @@ bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree
 
     Clear();
     AddNode(comp, node);
+    m_sideEffectFlags &= ~ignoreFlagsOnNode;
 
     for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
     {

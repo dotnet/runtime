@@ -198,6 +198,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// </summary>
         [Event(2, Keywords = Keywords.Message, Level = EventLevel.LogAlways, Version = 2)]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<string, string>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ExceptionInfo))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventDynamicDependencySuppressionJustification)]
         internal void Message(

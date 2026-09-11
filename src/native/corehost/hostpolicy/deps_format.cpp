@@ -94,7 +94,7 @@ deps_json_t::rid_fallback_graph_t deps_json_t::get_rid_fallback_graph(const pal:
         return rid_fallback_graph;
 
     json_parser_t json;
-    if (!json.parse_file(deps_path_local))
+    if (!json.parse_fully_trusted_file(deps_path_local))
         return rid_fallback_graph;
 
     populate_rid_fallback_graph(json.document(), rid_fallback_graph);
@@ -364,7 +364,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
             {
                 if (iter->first != matched_rid)
                 {
-                    trace::verbose(_X("    Removing %s assets"),iter->first.c_str(), package.first.c_str());
+                    trace::verbose(_X("    Removing %s assets from %s"), iter->first.c_str(), package.first.c_str());
                     iter = rid_assets.erase(iter);
                 }
                 else
@@ -591,7 +591,7 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
     }
 
     json_parser_t json;
-    if (!json.parse_file(m_deps_file))
+    if (!json.parse_fully_trusted_file(m_deps_file))
     {
         trace::error(_X("Failed to parse file [%s]. %s"), m_deps_file.c_str(), json.get_error_message().c_str());
         return;

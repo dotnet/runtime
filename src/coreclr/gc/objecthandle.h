@@ -81,7 +81,6 @@ int getNumberOfSlots();
  */
 bool Ref_Initialize();
 void Ref_Shutdown();
-bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket);
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket);
 void Ref_DestroyHandleTableBucket(HandleTableBucket *pBucket);
 

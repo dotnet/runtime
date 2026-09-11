@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -13,7 +14,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class CopiedFieldRvaNode : ObjectNode, ISymbolDefinitionNode
+    public class CopiedFieldRvaNode : ObjectNode, ISymbolDefinitionNode, IObjectNodeWithAlignment
     {
         private int _rva;
         private EcmaModule _module;
@@ -37,6 +38,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
 
+        // Keep this in sync with the alignment applied in GetData: the RVA blob is at least
+        // pointer-aligned, raised to the largest packing size among the fields that share this RVA.
+        public int GetAlignment(NodeFactory factory)
+        {
+            int requiredAlignment = factory.Target.PointerSize;
+            foreach (EcmaField field in GetFieldsAtRva())
+            {
+                requiredAlignment = Math.Max(requiredAlignment, (field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1);
+            }
+
+            return requiredAlignment;
+        }
+
+        // Enumerates the fields whose FieldRVA entry points at this node's RVA. The ECMA-335
+        // FieldRVA table (II.22.18) has an RVA column (a fixed 4-byte constant) followed by a
+        // Field column that indexes the Field table; that index is 2 bytes when the Field table
+        // is "small" (< 2^16 rows) and 4 bytes otherwise. So the row size tells us the index width.
+        private unsafe List<EcmaField> GetFieldsAtRva()
+        {
+            MetadataReader metadataReader = _module.MetadataReader;
+            int rowCount = metadataReader.GetTableRowCount(TableIndex.FieldRva);
+            bool smallFieldIndex = (metadataReader.GetTableRowSize(TableIndex.FieldRva) - sizeof(int)) == sizeof(ushort);
+
+            BlobReader metadataBlob = new BlobReader(_module.PEReader.GetMetadata().Pointer, _module.PEReader.GetMetadata().Length);
+            metadataBlob.Offset = metadataReader.GetTableMetadataOffset(TableIndex.FieldRva);
+
+            List<EcmaField> fields = new List<EcmaField>();
+            for (int i = 1; i <= rowCount; i++)
+            {
+                int currentFieldRva = metadataBlob.ReadInt32();
+                int currentFieldRid = smallFieldIndex ? metadataBlob.ReadUInt16() : metadataBlob.ReadInt32();
+                if (currentFieldRva == _rva)
+                {
+                    fields.Add(_module.GetField(MetadataTokens.FieldDefinitionHandle(currentFieldRid)));
+                }
+            }
+
+            return fields;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
@@ -49,49 +90,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
-            byte[] rvaData = GetRvaData(factory.Target.PointerSize, out int requiredAlignment);
-            builder.RequireInitialAlignment(requiredAlignment);
+            byte[] rvaData = GetRvaData(factory.Target.PointerSize);
+            builder.RequireInitialAlignment(GetAlignment(factory));
             builder.AddSymbol(this);
             builder.EmitBytes(rvaData);
             return builder.ToObjectData();
         }
 
-        private unsafe byte[] GetRvaData(int targetPointerSize, out int requiredAlignment)
+        private byte[] GetRvaData(int targetPointerSize)
         {
             int size = 0;
-            requiredAlignment = targetPointerSize;
-
-            MetadataReader metadataReader = _module.MetadataReader;
-            BlobReader metadataBlob = new BlobReader(_module.PEReader.GetMetadata().Pointer, _module.PEReader.GetMetadata().Length);
-            metadataBlob.Offset = metadataReader.GetTableMetadataOffset(TableIndex.FieldRva);
-            bool compressedFieldRef = 6 == metadataReader.GetTableRowSize(TableIndex.FieldRva);
-
-            for (int i = 1; i <= metadataReader.GetTableRowCount(TableIndex.FieldRva); i++)
+            foreach (EcmaField field in GetFieldsAtRva())
             {
-                int currentFieldRva = metadataBlob.ReadInt32();
-                int currentFieldRid;
-                if (compressedFieldRef)
-                {
-                    currentFieldRid = metadataBlob.ReadUInt16();
-                }
-                else
-                {
-                    currentFieldRid = metadataBlob.ReadInt32();
-                }
-                if (currentFieldRva != _rva)
-                    continue;
-
-                EcmaField field = _module.GetField(MetadataTokens.FieldDefinitionHandle(currentFieldRid));
                 Debug.Assert(field.HasRva);
 
-                int currentSize = field.FieldType.GetElementSize().AsInt;
-                requiredAlignment = Math.Max(requiredAlignment, (field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1);
-                if (currentSize > size)
-                {
-                    // We need to handle overlapping fields by reusing blobs based on the rva, and just update
-                    // the size and contents
-                    size = currentSize;
-                }
+                // Handle overlapping fields sharing the RVA by reusing the blob and keeping the largest size.
+                size = Math.Max(size, field.FieldType.GetElementSize().AsInt);
             }
 
             Debug.Assert(size > 0);

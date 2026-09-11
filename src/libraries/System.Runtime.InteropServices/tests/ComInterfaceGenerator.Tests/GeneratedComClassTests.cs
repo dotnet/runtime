@@ -37,8 +37,23 @@ namespace ComInterfaceGenerator.Tests
     {
     }
 
+    [GeneratedComInterface]
+    [Guid("781E56C2-A530-4A8F-90FE-01244426E0CC")]
+    partial interface IActivationFactory
+    {
+        void GetActivationFactory(in Guid iid, [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+    }
+
+    [GeneratedComClass]
+    partial class ActivationFactory : IActivationFactory
+    {
+        public void GetActivationFactory(in Guid iid, out object factory) => factory = new ManagedObjectExposedToCom();
+    }
+
     public unsafe class GeneratedComClassTests
     {
+        private const int E_NOINTERFACE = unchecked((int)0x80004002);
+
         [Fact]
         public void ComInstanceProvidesInterfaceForDirectlyImplementedComInterface()
         {
@@ -83,6 +98,48 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(3, obj.Data);
             obj.Data = 12;
             Assert.Equal(obj.Data, NativeExportsNE.GetComObjectData(obj));
+        }
+
+        [Fact]
+        public void OutObjectWithIidParameterIndexUsesRequestedIidAndPropagatesQIFailure()
+        {
+            ActivationFactory factory = new();
+            StrategyBasedComWrappers wrappers = new();
+            nint unknown = wrappers.GetOrCreateComInterfaceForObject(factory, CreateComInterfaceFlags.None);
+            Assert.NotEqual(0, unknown);
+
+            try
+            {
+                Assert.Equal(0, Marshal.QueryInterface(unknown, typeof(IActivationFactory).GUID, out nint activationFactoryPtr));
+                Assert.NotEqual(0, activationFactoryPtr);
+                try
+                {
+                    void** vtable = *(void***)activationFactoryPtr;
+                    Guid unsupportedIid = new("6B29FC40-CA47-1067-B31D-00DD010662DA");
+                    nint result = 0;
+                    int hr = ((delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int>)vtable[3])((void*)activationFactoryPtr, (Guid*)(&unsupportedIid), (void**)(&result));
+                    Assert.Equal(E_NOINTERFACE, hr);
+                    Assert.Equal(0, result);
+
+                    Guid supportedIid = typeof(IGetAndSetInt).GUID;
+                    result = 0;
+                    hr = ((delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int>)vtable[3])((void*)activationFactoryPtr, (Guid*)(&supportedIid), (void**)(&result));
+                    Assert.Equal(0, hr);
+                    Assert.NotEqual(0, result);
+                    Assert.Equal(0, Marshal.QueryInterface(result, supportedIid, out nint sameRequestedInterface));
+                    Assert.Equal(result, sameRequestedInterface);
+                    Marshal.Release(sameRequestedInterface);
+                    Marshal.Release(result);
+                }
+                finally
+                {
+                    Marshal.Release(activationFactoryPtr);
+                }
+            }
+            finally
+            {
+                Marshal.Release(unknown);
+            }
         }
     }
 }

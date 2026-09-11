@@ -33,6 +33,14 @@
     <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
+    <Compile Include="WritableMemoryStream\WritableMemoryStreamConformanceTests.cs" />
+    <Compile Include="WritableMemoryStream\WritableMemoryStreamTests.cs" />
+    <Compile Include="ReadOnlyMemoryStream\ReadOnlyMemoryStreamConformanceTests.cs" />
+    <Compile Include="ReadOnlyMemoryStream\ReadOnlyMemoryStreamTests.cs" />
+    <Compile Include="StringStream\StringStreamConformanceTests.cs" />
+    <Compile Include="StringStream\StringStreamTestBase.cs" />
+    <Compile Include="StringStream\StringStreamTests_Memory.cs" />
+    <Compile Include="StringStream\StringStreamTests_String.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests_Serial.cs" />
@@ -59,6 +67,12 @@
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="Common\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="GB18030\DirectoryInfoTests.cs" />
+    <Compile Include="GB18030\DirectoryTestBase.cs" />
+    <Compile Include="GB18030\DirectoryTests.cs" />
+    <Compile Include="GB18030\FileInfoTests.cs" />
+    <Compile Include="GB18030\FileTestBase.cs" />
+    <Compile Include="GB18030\FileTests.cs" />
     <Compile Include="TestDataProvider\TestDataProvider.cs" />
     <Compile Include="TextReader\CharArrayTextReader.cs" />
     <Compile Include="TextReader\TextReaderTests.cs" />
@@ -71,4 +85,5 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

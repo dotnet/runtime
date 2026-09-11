@@ -10,17 +10,13 @@ namespace System.Threading
     internal sealed partial class PortableThreadPool
     {
         /// <summary>
-        /// The worker thread infastructure for the CLR thread pool.
+        /// The worker thread infrastructure for the CLR thread pool.
         /// </summary>
         private static partial class WorkerThread
         {
             private static readonly short ThreadsToKeepAlive = DetermineThreadsToKeepAlive();
 
-            // Spinning in the threadpool semaphore is not always useful.
-            // For example the new workitems may be produced by non-pool threads and could only arrive if pool threads start blocking.
-            // We will limit spinning to roughly 512-1024 spinwaits, each taking 35-50ns. That should be under 50 usec total.
-            // For reference the wakeup latency of a futex/event with threads queued up is reported to be in 5-50 usec range. (year 2025)
-            private const int SemaphoreSpinCountDefault = 9;
+            private static readonly short SpuriousDispatchNoSpinThreshold = DetermineSpuriousDispatchNoSpinThreshold();
 
             // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
@@ -42,17 +38,28 @@ namespace System.Threading
                 return threadsToKeepAlive >= -1 ? threadsToKeepAlive : DefaultThreadsToKeepAlive;
             }
 
+            private static short DetermineSpuriousDispatchNoSpinThreshold()
+            {
+                // default to 2/3 of proc count.
+                // At more than this working threads we start parking threads after a spurious dispatch.
+                short DefaultSpuriousDispatchNoSpinThreshold = (short)(Environment.ProcessorCount * 2 / 3);
+
+                // When a worker is invited to dispatch work items but finds none, it may park without spinning first.
+                // That is only preferable while more than this number of workers are still processing work and can take
+                // the next request. Set to 0 to park without spinning when at least one other worker is still processing work.
+                short threshold =
+                    AppContextConfigHelper.GetInt16Config(
+                        "System.Threading.ThreadPool.SpuriousDispatchNoSpinThreshold",
+                        "DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold",
+                        DefaultSpuriousDispatchNoSpinThreshold);
+                return threshold >= 0 ? threshold : DefaultSpuriousDispatchNoSpinThreshold;
+            }
+
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
             private static readonly LowLevelLifoSemaphore s_semaphore =
                 new LowLevelLifoSemaphore(
-                    MaxPossibleThreadCount,
-                    (uint)AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
-                        "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
-                        "ThreadPool_UnfairSemaphoreSpinLimit",
-                        SemaphoreSpinCountDefault,
-                        false),
                     onWait: () =>
                     {
                         if (NativeRuntimeEventSource.Log.IsEnabled())
@@ -116,9 +123,10 @@ namespace System.Threading
 
                 while (true)
                 {
-                    while (semaphore.Wait(timeoutMs))
+                    bool noSpin = false;
+                    while (noSpin ? semaphore.WaitNoSpin(timeoutMs) : semaphore.Wait(timeoutMs))
                     {
-                        WorkerDoWork(threadPoolInstance);
+                        noSpin = WorkerDoWork(threadPoolInstance);
                     }
 
                     // We've timed out waiting on the semaphore. Time to exit.
@@ -130,23 +138,46 @@ namespace System.Threading
                 }
             }
 
-            private static void WorkerDoWork(PortableThreadPool threadPoolInstance)
+            // returns true if the worker should Wait without spinning.
+            private static bool WorkerDoWork(PortableThreadPool threadPoolInstance)
             {
+                bool spurious;
+                short numProcessingWork;
+
                 do
                 {
-                    // We generally avoid spurious wakes as they are wasteful, so we nearly always should see a request.
-                    // However, we allow external wakes when thread goals change, which can result in "stolen" requests,
-                    // thus sometimes there is no active request and we need to check.
+                    // We generally avoid spurious wakes by requesting one thread at a time. We nearly always should see a request.
+                    // However, we allow external wakes when thread goals change, which can result in "stolen" requests.
+                    // Therefore we check for request before clearing it and dispatching workitems.
                     if (threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
                         Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
                     {
                         // We took the request, now we must Dispatch some work items.
                         threadPoolInstance.NotifyDispatchProgress(Environment.TickCount);
-                        if (!ThreadPoolWorkQueue.Dispatch())
+                        switch (ThreadPoolWorkQueue.Dispatch())
                         {
-                            // We are above goal and would have already removed this working worker in the counts.
-                            return;
+                            case ThreadPoolWorkQueue.DispatchResult.Spurious:
+                                // We were invited but found no work. This is counterproductive. We may want to park.
+                                spurious = true;
+                                break;
+
+                            case ThreadPoolWorkQueue.DispatchResult.ShouldStop:
+                                // We are above goal and this worker is already removed in the counts.
+                                // Chances to be invited back right away are low, so just park.
+                                return true;
+
+                            default:
+                                // We did some work, but then there was nothing to do.
+                                // Spin a bit before parking in case we are invited back.
+                                spurious = false;
+                                break;
                         }
+                    }
+                    else
+                    {
+                        // Not a common case. This can happen when worker goal was increased and invited extra threads.
+                        // We will spin in case there is work for all and another request will soon follow.
+                        spurious = false;
                     }
 
                     // We could not find more work in the queue and will try to stop being active.
@@ -154,7 +185,12 @@ namespace System.Threading
                     // to come and see to it. Thus in Saturated state, one thread will clear the state and will come
                     // back for another try to clear the thread request and do Dispatch - without consuming a signal.
                     // See `TryIncrementProcessingWork` for details about Saturated state.
-                } while (!TryRemoveWorkingWorker(threadPoolInstance));
+                } while (!TryRemoveWorkingWorker(threadPoolInstance, out numProcessingWork));
+
+                // Parking right away after a spurious dispatch is only worthwhile while other workers remain
+                // processing work and can take the next request. When few workers are left, the next request is
+                // likely to come to this thread, so it is cheaper to spin and stay available.
+                return spurious && numProcessingWork > SpuriousDispatchNoSpinThreshold;
             }
 
             // returns true if the worker is shutting down
@@ -221,9 +257,10 @@ namespace System.Threading
             /// Tries to reduce the number of working workers by one.
             /// If we are in a Saturated state, clears the state instead and returns false.
             /// Returns true if number of active threads was actually reduced.
+            /// <paramref name="numProcessingWork"/> receives the resulting number of workers processing work.
             /// See `TryDecrementProcessingWork` for details about Saturated state.
             /// </summary>
-            private static bool TryRemoveWorkingWorker(PortableThreadPool threadPoolInstance)
+            private static bool TryRemoveWorkingWorker(PortableThreadPool threadPoolInstance, out short numProcessingWork)
             {
                 uint collisionCount = 0;
                 while (true)
@@ -233,6 +270,7 @@ namespace System.Threading
                     bool decremented = newCounts.TryDecrementProcessingWork();
                     if (threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, oldCounts) == oldCounts)
                     {
+                        numProcessingWork = newCounts.NumProcessingWork;
                         return decremented;
                     }
 

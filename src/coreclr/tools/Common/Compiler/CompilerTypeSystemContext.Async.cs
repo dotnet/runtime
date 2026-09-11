@@ -21,7 +21,7 @@ namespace ILCompiler
 
     public partial class CompilerTypeSystemContext
     {
-        private sealed class AsyncAwareVirtualMethodResolutionAlgorithm : MetadataVirtualMethodAlgorithm
+        private sealed class AsyncAwareVirtualMethodResolutionAlgorithm : CachingVirtualMethodAlgorithm
         {
             private readonly CompilerTypeSystemContext _context;
 
@@ -202,6 +202,26 @@ namespace ILCompiler
 
                 if (taskReturningMethod.HasInstantiation && !taskReturningMethod.IsMethodDefinition)
                     result = GetInstantiatedMethod(result, taskReturningMethod.Instantiation);
+            }
+
+            return result;
+        }
+
+        public MethodDesc GetTargetOfReturnDroppingThunk(MethodDesc returnDroppingThunk)
+        {
+            Debug.Assert(returnDroppingThunk.IsReturnDroppingAsyncThunk());
+            var returnDroppingThunkDefinition = (ReturnDroppingAsyncThunk)returnDroppingThunk.GetTypicalMethodDefinition();
+            MethodDesc result = returnDroppingThunkDefinition.AsyncVariantTarget;
+
+            // If there are generics involved, we need to specialize
+            if (returnDroppingThunk != returnDroppingThunkDefinition)
+            {
+                TypeDesc owningType = returnDroppingThunk.OwningType;
+                if (owningType != returnDroppingThunkDefinition.OwningType)
+                    result = GetMethodForInstantiatedType(result, (InstantiatedType)owningType);
+
+                if (returnDroppingThunk.HasInstantiation && !returnDroppingThunk.IsMethodDefinition)
+                    result = GetInstantiatedMethod(result, returnDroppingThunk.Instantiation);
             }
 
             return result;

@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using MockHostTypes;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading;
@@ -161,6 +162,57 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.NotNull(factory);
             Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
             Assert.True(called);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ArbitraryDiagnosticEventPatternTestSite.Program))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ArbitraryActionsCustomEventCallbackIsCalled(bool stopApplication)
+        {
+            using var callbackCalled = new ManualResetEventSlim(false);
+            object? callbackValue = null;
+            void CustomCallback(object? value)
+            {
+                callbackValue = value;
+                callbackCalled.Set();
+            }
+
+            var arbitraryActions = new Dictionary<string, Action<object?>>
+            {
+                ["CustomEvent"] = CustomCallback
+            };
+
+            var factory = HostFactoryResolver.ResolveHostFactory(
+                typeof(ArbitraryDiagnosticEventPatternTestSite.Program).Assembly,
+                waitTimeout: s_WaitTimeout,
+                stopApplication: stopApplication,
+                arbitraryActions: arbitraryActions);
+
+            Assert.NotNull(factory);
+            using var host = Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+            Assert.True(callbackCalled.Wait(s_WaitTimeout));
+            Assert.Equal(42, callbackValue);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ArbitraryDiagnosticEventPatternTestSite.Program))]
+        public void ArbitraryActionsExceptionIsPropagated()
+        {
+            var arbitraryActions = new Dictionary<string, Action<object?>>
+            {
+                ["CustomEvent"] = _ => throw new InvalidOperationException("arbitrary action failed")
+            };
+
+            var factory = HostFactoryResolver.ResolveHostFactory(
+                typeof(ArbitraryDiagnosticEventPatternTestSite.Program).Assembly,
+                waitTimeout: s_WaitTimeout,
+                stopApplication: true,
+                arbitraryActions: arbitraryActions);
+
+            Assert.NotNull(factory);
+            var exception = Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+            Assert.Equal("arbitrary action failed", exception.Message);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]

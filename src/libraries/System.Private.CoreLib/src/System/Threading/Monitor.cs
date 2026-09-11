@@ -41,6 +41,12 @@ namespace System.Threading
             => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
 #if !MONO
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Enter(object obj)
+        {
+            ObjectHeader.AcquireThinLock(obj);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
@@ -50,6 +56,19 @@ namespace System.Threading
 
             Enter(obj);
             lockTaken = true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj)
+        {
+            return ObjectHeader.TryAcquireThinLock(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj, int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+            return ObjectHeader.TryAcquireThinLock(obj, millisecondsTimeout);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,23 +91,46 @@ namespace System.Threading
             lockTaken = TryEnter(obj, millisecondsTimeout);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsEntered(object obj)
+        {
+            return ObjectHeader.IsAcquired(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Exit(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.Release(obj);
+        }
+
         [DoesNotReturn]
         private static void ThrowLockTakenException()
         {
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
-        #region Object->Condition mapping
-
-        private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
-        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(GetLockObject(o));
-
-        private static Condition GetCondition(object obj)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
         {
-            Debug.Assert(
-                obj is not Condition,
-                "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
-            return s_conditionTable.GetOrAdd(obj, s_createCondition);
+            ObjectHeader.AcquireThinLock(obj);
+            lockTaken = true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SynchronizedMethodExit(object obj, ref bool lockTaken)
+        {
+            // Inlined Monitor.Exit
+            if (!lockTaken)
+                return;
+
+            ObjectHeader.Release(obj);
+        }
+
+        #region Object->Lock mapping
+        private static Lock GetLockObject(object obj)
+        {
+            return ObjectHeader.GetLockObject(obj);
         }
         #endregion
 
@@ -97,22 +139,24 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
+            ArgumentNullException.ThrowIfNull(obj);
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-            return GetCondition(obj).Wait(millisecondsTimeout, obj);
+
+            return GetLockObject(obj).Wait(millisecondsTimeout, obj);
         }
 
         public static void Pulse(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetCondition(obj).SignalOne();
+            GetLockObject(obj).Pulse();
         }
 
         public static void PulseAll(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetCondition(obj).SignalAll();
+            GetLockObject(obj).PulseAll();
         }
 
         #endregion

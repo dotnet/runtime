@@ -65,6 +65,33 @@ enum
     DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000
 };
 
+#ifdef CDAC_STRESS
+// Private requests for the cDAC stress harness.
+enum
+{
+    DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE   = 0xf2000000,
+    DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP = 0xf2000001
+};
+
+// In/out request descriptor for DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP.
+// outBuffer is unused; the caller-allocated blob destination + size are
+// carried by this struct, and the handler writes cbFilled and cbNeeded in
+// place.
+//   S_OK                                              blob fit; cbFilled bytes written to *BlobBuffer; cbNeeded == cbFilled.
+//   HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)    cbFilled = 0, cbNeeded = required size; *BlobBuffer untouched.
+//   E_NOTIMPL                                         encoder declined this MD (bucketed as ARG_SKIP).
+//   E_FAIL                                            encoder threw (bucketed as ARG_ERROR).
+//   E_INVALIDARG                                      bad inBuffer.
+struct DacStressArgGCRefMapRequest
+{
+    CLRDATA_ADDRESS MethodDesc;     // [in]
+    CLRDATA_ADDRESS BlobBuffer;     // [in]  caller-allocated destination (in-proc pointer)
+    ULONG32         BlobBufferLen;  // [in]  capacity at BlobBuffer
+    ULONG32         cbFilled;       // [out] bytes actually written to *BlobBuffer
+    ULONG32         cbNeeded;       // [out] total bytes the blob requires
+};
+#endif // CDAC_STRESS
+
 enum DacpObjectType { OBJ_STRING=0,OBJ_FREE,OBJ_OBJECT,OBJ_ARRAY,OBJ_OTHER };
 struct MSLAYOUT DacpObjectData
 {

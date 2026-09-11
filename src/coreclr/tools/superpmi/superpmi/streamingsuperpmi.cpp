@@ -13,7 +13,6 @@
 #include "methodcontextreader.h"
 #include "spmiutil.h"
 #include "fileio.h"
-#include "commandline.h"
 
 #if defined(_WIN32)
 #define strtok_r strtok_s

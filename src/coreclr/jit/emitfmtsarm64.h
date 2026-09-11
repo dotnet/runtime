@@ -129,6 +129,7 @@ IF_DEF(BI_0B, IS_NONE, JMP)  // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....       
 IF_DEF(BI_0C, IS_NONE, CALL) // BI_0C   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00   bl
 IF_DEF(BI_1A, IS_NONE, JMP)  // BI_1A   X.......iiiiiiii iiiiiiiiiiittttt      Rt       simm19:00   cbz cbnz
 IF_DEF(BI_1B, IS_NONE, JMP)  // BI_1B   B.......bbbbbiii iiiiiiiiiiittttt      Rt imm6  simm14:00   tbz tbnz
+IF_DEF(BR_0A, IS_NONE, CALL) // BR_0A   ................ ................                           retaa retab
 IF_DEF(BR_1A, IS_NONE, CALL) // BR_1A   ................ ......nnnnn.....         Rn                ret
 IF_DEF(BR_1B, IS_NONE, CALL) // BR_1B   ................ ......nnnnn.....         Rn                br blr
 
@@ -232,9 +233,9 @@ IF_DEF(SI_0A, IS_NONE, NONE) // SI_0A   ...........iiiii iiiiiiiiiii.....       
 IF_DEF(SI_0B, IS_NONE, NONE) // SI_0B   ................ ....bbbb........               imm4 - barrier
 
 // Pointer Authentication (PAC) groups
-IF_DEF(PC_0A, IS_NONE, NONE) // PC_0A   ................ ................               (autia1716, autiasp, autiaz, pacia1716, paciasp, paciaz, xpaclri)
-IF_DEF(PC_1A, IS_NONE, NONE) // PC_1A   ................ ...........ddddd      Rd       (autiza, paciza, xpacd, xpaci)
-IF_DEF(PC_2A, IS_NONE, NONE) // PC_2A   X........X...... ......nnnnnddddd      Rd Rn    (autia, pacia)
+IF_DEF(PC_0A, IS_NONE, NONE) // PC_0A   ................ ................               (autia1716, autiasp, autib1716, autibsp, autibz, autiaz, pacia1716, paciasp, pacib1716, pacibsp, pacibz, paciaz, xpaclri)
+IF_DEF(PC_1A, IS_NONE, NONE) // PC_1A   ................ ...........ddddd      Rd       (autiza, autizb, paciza, pacizb, xpacd, xpaci)
+IF_DEF(PC_2A, IS_NONE, NONE) // PC_2A   X........X...... ......nnnnnddddd      Rd Rn    (autia, autib, pacia, pacib)
 
 IF_DEF(SR_1A, IS_NONE, NONE) // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
 

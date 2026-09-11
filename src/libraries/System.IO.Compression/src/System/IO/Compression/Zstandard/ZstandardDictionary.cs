@@ -102,10 +102,11 @@ namespace System.IO.Compression
             // the lengths need to be converted to nuint for the native call. Rent appropriately sized array from pool
             // This incidentally also protects against concurrent modifications of the sampleLengths that could cause
             // access violations later in native code.
-            byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * Unsafe.SizeOf<nuint>());
+            byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * sizeof(nuint));
+            byte[]? dictionaryBuffer = null;
             try
             {
-                Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * Unsafe.SizeOf<nuint>()));
+                Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * sizeof(nuint)));
                 Debug.Assert(lengthsAsNuint.Length == sampleLengths.Length);
 
                 long totalLength = 0;
@@ -127,8 +128,7 @@ namespace System.IO.Compression
 
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
 
-                byte[] dictionaryBuffer = new byte[maxDictionarySize];
-
+                dictionaryBuffer = ArrayPool<byte>.Shared.Rent(maxDictionarySize);
                 nuint dictSize;
 
                 unsafe
@@ -148,6 +148,10 @@ namespace System.IO.Compression
             }
             finally
             {
+                if (dictionaryBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(dictionaryBuffer);
+                }
                 ArrayPool<byte>.Shared.Return(lengthsArray);
             }
         }

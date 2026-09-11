@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
@@ -228,6 +228,60 @@
     <Target>T:System.Xml.Schema.XmlSchemaGroupBase</Target>
     <Left>netstandard2.0/System.Xml.dll</Left>
     <Right>net11.0/System.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>

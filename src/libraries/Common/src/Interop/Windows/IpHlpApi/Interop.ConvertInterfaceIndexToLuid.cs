@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.IpHlpApi)]
         internal static unsafe partial uint ConvertInterfaceIndexToLuid(uint ifIndex, ref ulong interfaceLuid);
     }

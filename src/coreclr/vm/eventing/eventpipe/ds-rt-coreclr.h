@@ -15,9 +15,7 @@
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -160,9 +158,12 @@ ds_rt_transport_get_default_name (
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
+	// PAL_GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
 	PAL_GetTransportName (name_len, name, prefix, id, group_id, suffix);
+	return name [0] != '\0';
+#else
+	return false;
 #endif
-	return true;
 }
 
 /*
@@ -233,7 +234,11 @@ static
 uint32_t
 ds_rt_enable_perfmap (uint32_t type)
 {
-	LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;

@@ -7,6 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern mscorlib{}
 .assembly extern localloc_common{}
 .assembly 'call05_small'{}

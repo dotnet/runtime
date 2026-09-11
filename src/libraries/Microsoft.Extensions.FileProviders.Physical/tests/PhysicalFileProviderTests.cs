@@ -17,8 +17,9 @@ namespace Microsoft.Extensions.FileProviders
 {
     public partial class PhysicalFileProviderTests : FileCleanupTestBase
     {
-        private const int WaitTimeForTokenToFire = 500;
-        private const int WaitTimeForTokenCallback = 10000;
+        private static readonly TimeSpan s_waitTimeForTokenToFire = TimeSpan.FromMilliseconds(500);
+        private static readonly TimeSpan s_waitTimeForTokenCallback = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_maxWaitForTokenToFire = TimeSpan.FromSeconds(30);
 
         [Fact]
         public void Constructor_DoesNotThrow_WhenRootDirectoryDoesNotExist()
@@ -117,7 +118,7 @@ namespace Microsoft.Extensions.FileProviders
                 var oldPollingInterval = PhysicalFilesWatcher.DefaultPollingInterval;
                 try
                 {
-                    PhysicalFilesWatcher.DefaultPollingInterval = TimeSpan.FromMilliseconds(WaitTimeForTokenToFire);
+                    PhysicalFilesWatcher.DefaultPollingInterval = s_waitTimeForTokenToFire;
                     for (int i = 0; i < instances; i++)
                     {
                         PhysicalFileProvider pfp = new PhysicalFileProvider(root.Path)
@@ -133,7 +134,7 @@ namespace Microsoft.Extensions.FileProviders
                     root.CreateFile("test.txt");
 
                     // wait for at least one event.
-                    Assert.True(are.WaitOne(WaitTimeForTokenCallback));
+                    Assert.True(are.WaitOne(s_waitTimeForTokenCallback));
                 }
                 finally
                 {
@@ -374,7 +375,7 @@ namespace Microsoft.Extensions.FileProviders
                             Assert.True(token.ActiveChangeCallbacks);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
                         }
@@ -411,7 +412,7 @@ namespace Microsoft.Extensions.FileProviders
                             }, state: null);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenCallback);
+                            await Task.Delay(s_waitTimeForTokenCallback);
 
                             Assert.True(callbackInvoked, "Callback should have been invoked");
                         }
@@ -442,7 +443,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     var token = provider.Watch(fileName);
                     File.WriteAllText(fileLocation, "some-content");
-                    await Task.Delay(WaitTimeForTokenToFire);
+                    await Task.Delay(s_waitTimeForTokenToFire);
                     Assert.True(token.HasChanged);
                 }
             }
@@ -472,7 +473,7 @@ namespace Microsoft.Extensions.FileProviders
                     var token = provider.Watch(fileName);
                     File.Delete(fileLocation);
 
-                    await Task.Delay(WaitTimeForTokenToFire);
+                    await Task.Delay(s_waitTimeForTokenToFire);
                     Assert.True(token.HasChanged);
                 }
             }
@@ -499,7 +500,7 @@ namespace Microsoft.Extensions.FileProviders
                             Assert.True(token.ActiveChangeCallbacks);
 
                             fileSystemWatcher.CallOnDeleted(new FileSystemEventArgs(WatcherChangeTypes.Deleted, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
+                            await Task.Delay(s_waitTimeForTokenToFire).ConfigureAwait(false);
 
                             Assert.True(token.HasChanged);
                         }
@@ -832,11 +833,11 @@ namespace Microsoft.Extensions.FileProviders
 
                             // Callback expected.
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenCallback);
+                            await Task.Delay(s_waitTimeForTokenCallback);
 
                             // Callback not expected.
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.Equal(1, invocationCount);
                         }
@@ -879,13 +880,13 @@ namespace Microsoft.Extensions.FileProviders
                             var token2 = provider.Watch(fileName2);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName1));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token1.HasChanged);
                             Assert.False(token2.HasChanged);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName2));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token2.HasChanged);
                         }
@@ -915,7 +916,7 @@ namespace Microsoft.Extensions.FileProviders
                             }, null);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenCallback);
+                            await Task.Delay(s_waitTimeForTokenCallback);
 
                             Assert.True(token.HasChanged);
                         }
@@ -1015,7 +1016,7 @@ namespace Microsoft.Extensions.FileProviders
                             var token = provider.Watch(name);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Created, root.Path, name));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
                         }
@@ -1040,7 +1041,7 @@ namespace Microsoft.Extensions.FileProviders
                             var token = provider.Watch(name);
 
                             fileSystemWatcher.CallOnDeleted(new FileSystemEventArgs(WatcherChangeTypes.Deleted, root.Path, name));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
                         }
@@ -1078,7 +1079,7 @@ namespace Microsoft.Extensions.FileProviders
                                 newDirectory,
                                 directoryName));
 
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
                         }
@@ -1124,7 +1125,7 @@ namespace Microsoft.Extensions.FileProviders
                             var token = provider.Watch(slashes + fileName);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
                         }
@@ -1167,7 +1168,7 @@ namespace Microsoft.Extensions.FileProviders
                             var token = provider.Watch(slashes + fileName);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.IsType<NullChangeToken>(token);
                             Assert.False(token.HasChanged);
@@ -1198,7 +1199,7 @@ namespace Microsoft.Extensions.FileProviders
                 var token = provider.Watch(pattern);
 
                 fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, Path.Combine(root.Path, subDirectoryName, subSubDirectoryName), fileName));
-                await Task.Delay(WaitTimeForTokenToFire);
+                await Task.Delay(s_waitTimeForTokenToFire);
 
                 Assert.True(token.HasChanged);
             }
@@ -1234,12 +1235,17 @@ namespace Microsoft.Extensions.FileProviders
                         {
                             var oldFileName = Guid.NewGuid().ToString();
                             var oldToken = provider.Watch(oldFileName);
+                            var oldTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            oldToken.RegisterChangeCallback(_ => oldTcs.TrySetResult(true), null);
 
                             var newFileName = Guid.NewGuid().ToString();
                             var newToken = provider.Watch(newFileName);
+                            var newTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            newToken.RegisterChangeCallback(_ => newTcs.TrySetResult(true), null);
 
                             fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, newFileName, oldFileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+
+                            await Task.WhenAll(oldTcs.Task, newTcs.Task).WaitAsync(s_maxWaitForTokenToFire);
 
                             Assert.True(oldToken.HasChanged);
                             Assert.True(newToken.HasChanged);
@@ -1253,7 +1259,7 @@ namespace Microsoft.Extensions.FileProviders
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
-            var tcsShouldNotFire = new TaskCompletionSource<object>();
+            var tcsShouldNotFire = new TaskCompletionSource<bool>();
             void Fail(object state)
             {
                 tcsShouldNotFire.TrySetException(new InvalidOperationException("This token should not have fired"));
@@ -1281,7 +1287,7 @@ namespace Microsoft.Extensions.FileProviders
                 File.Create(Path.Combine(root.Path, newDirectoryName, newSubDirectoryName, newFileName));
 
                 var oldDirectoryToken = provider.Watch(oldDirectoryName);
-                var oldDirectoryTcs = new TaskCompletionSource<object>();
+                var oldDirectoryTcs = new TaskCompletionSource<bool>();
                 oldDirectoryToken.RegisterChangeCallback(_ => oldDirectoryTcs.TrySetResult(true), null);
                 var oldSubDirectoryToken = provider.Watch(oldSubDirectoryPath);
                 oldSubDirectoryToken.RegisterChangeCallback(Fail, null);
@@ -1289,13 +1295,13 @@ namespace Microsoft.Extensions.FileProviders
                 oldFileToken.RegisterChangeCallback(Fail, null);
 
                 var newDirectoryToken = provider.Watch(newDirectoryName);
-                var newDirectoryTcs = new TaskCompletionSource<object>();
+                var newDirectoryTcs = new TaskCompletionSource<bool>();
                 newDirectoryToken.RegisterChangeCallback(_ => newDirectoryTcs.TrySetResult(true), null);
                 var newSubDirectoryToken = provider.Watch(newSubDirectoryPath);
-                var newSubDirectoryTcs = new TaskCompletionSource<object>();
+                var newSubDirectoryTcs = new TaskCompletionSource<bool>();
                 newSubDirectoryToken.RegisterChangeCallback(_ => newSubDirectoryTcs.TrySetResult(true), null);
                 var newFileToken = provider.Watch(newFilePath);
-                var newFileTcs = new TaskCompletionSource<object>();
+                var newFileTcs = new TaskCompletionSource<bool>();
                 newFileToken.RegisterChangeCallback(_ => newFileTcs.TrySetResult(true), null);
 
                 Assert.False(oldDirectoryToken.HasChanged, "Old directory token should not have changed");
@@ -1307,7 +1313,7 @@ namespace Microsoft.Extensions.FileProviders
 
                 fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, newDirectoryName, oldDirectoryName));
 
-                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).WaitAsync(TimeSpan.FromSeconds(30));
+                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).WaitAsync(s_maxWaitForTokenToFire);
 
                 Assert.False(oldSubDirectoryToken.HasChanged, "Old subdirectory token should not have changed");
                 Assert.False(oldFileToken.HasChanged, "Old file token should not have changed");
@@ -1338,7 +1344,7 @@ namespace Microsoft.Extensions.FileProviders
                             var token = provider.Watch(Path.GetFileName(fileName));
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.False(token.HasChanged);
                         }
@@ -1376,11 +1382,11 @@ namespace Microsoft.Extensions.FileProviders
                             var systemFiletoken = provider.Watch(Path.GetFileName(systemFileName));
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, hiddenFileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
                             Assert.False(hiddenFiletoken.HasChanged);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, systemFileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
                             Assert.False(systemFiletoken.HasChanged);
                         }
                     }
@@ -1405,7 +1411,7 @@ namespace Microsoft.Extensions.FileProviders
                             var token3 = provider.Watch(Guid.NewGuid().ToString());
 
                             fileSystemWatcher.CallOnError(new ErrorEventArgs(new Exception()));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(s_waitTimeForTokenToFire);
 
                             Assert.True(token1.HasChanged);
                             Assert.True(token2.HasChanged);
@@ -1435,7 +1441,7 @@ namespace Microsoft.Extensions.FileProviders
 
                 // Act
                 fileSystemWatcher.CallOnCreated(new FileSystemEventArgs(WatcherChangeTypes.Created, directory, "a.txt"));
-                await Task.Delay(WaitTimeForTokenToFire);
+                await Task.Delay(s_waitTimeForTokenToFire);
 
                 // Assert
                 Assert.True(token.HasChanged);
@@ -1468,7 +1474,7 @@ namespace Microsoft.Extensions.FileProviders
                 // Act
                 fileSystemWatcher.EnableRaisingEvents = false;
                 File.Delete(filePath);
-                await Task.Delay(WaitTimeForTokenToFire);
+                await Task.Delay(s_waitTimeForTokenToFire);
 
                 // Assert
                 Assert.True(token.HasChanged);
@@ -1551,7 +1557,7 @@ namespace Microsoft.Extensions.FileProviders
             var tcs = new TaskCompletionSource<bool>();
             changeToken.RegisterChangeCallback(_ => { tcs.TrySetResult(true); }, null);
 
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var cts = new CancellationTokenSource(s_maxWaitForTokenToFire);
             cts.Token.Register(() => tcs.TrySetCanceled());
 
             // Act
@@ -1581,7 +1587,7 @@ namespace Microsoft.Extensions.FileProviders
             var tcs = new TaskCompletionSource<bool>();
             changeToken.RegisterChangeCallback(_ => { tcs.TrySetResult(true); }, null);
 
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var cts = new CancellationTokenSource(s_maxWaitForTokenToFire);
             cts.Token.Register(() => tcs.TrySetCanceled());
 
             // Act
@@ -1630,7 +1636,7 @@ namespace Microsoft.Extensions.FileProviders
                 var token = provider.Watch(fileName);
                 Directory.Delete(root.Path, true);
 
-                await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
+                await Task.Delay(s_waitTimeForTokenToFire).ConfigureAwait(false);
 
                 Assert.True(token.HasChanged);
             }
