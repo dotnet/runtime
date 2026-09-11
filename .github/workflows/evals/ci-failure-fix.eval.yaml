@@ -127,7 +127,8 @@ stimuli:
                   not isinstance(item, dict) or
                   type(item.get("number")) is not int or item["number"] <= 0 or
                   not isinstance(item.get("created_at"), str) or
-                  not item.get("title", "").startswith("[ci-scan] ") or
+                  not isinstance(item.get("title"), str) or
+                  not item["title"].startswith("[ci-scan] ") or
                   item.get("author") != "github-actions[bot]" or
                   item.get("author_type") != "Bot" or
                   not isinstance(item.get("labels"), list) or
@@ -136,6 +137,29 @@ stimuli:
               ):
                   finish("Invalid candidate list", status="error")
               numbers = {item["number"] for item in candidates}
+
+              def is_current_candidate(result, number):
+                  if not isinstance(result, dict):
+                      return False
+                  issue = result.get("issue", result)
+                  author = issue.get("author", issue.get("user")) if isinstance(issue, dict) else None
+                  labels = issue.get("labels") if isinstance(issue, dict) else None
+                  label_names = [
+                      label.get("name") if isinstance(label, dict) else label
+                      for label in labels
+                  ] if isinstance(labels, list) else []
+                  return (
+                      isinstance(issue, dict) and
+                      issue.get("number") == number and
+                      issue.get("state") == "open" and
+                      isinstance(issue.get("title"), str) and
+                      issue["title"].startswith("[ci-scan] ") and
+                      isinstance(author, dict) and
+                      author.get("login") == "github-actions[bot]" and
+                      author.get("type") == "Bot" and
+                      "Known Build Error" in label_names
+                  )
+
               calls = {}
               read_numbers = set()
               comments_numbers = set()
@@ -161,7 +185,9 @@ stimuli:
                       ):
                           continue
                       if args.get("method") == "get":
-                          if "[Filtered]" in json.dumps(result):
+                          if "[Filtered]" in json.dumps(result) or not is_current_candidate(
+                              result, args["issue_number"]
+                          ):
                               continue
                           read_numbers.add(args["issue_number"])
                       elif args.get("method") == "get_comments":

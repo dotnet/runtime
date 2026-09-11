@@ -10,6 +10,7 @@ import unittest
 
 
 WORKFLOW = Path(__file__).resolve().parents[1] / "ci-failure-fix.md"
+CI_EVAL = WORKFLOW.parent / "ci-eval.yml"
 FILTER_SCRIPT = WORKFLOW.parent / "shared/filter-scanner-kbes.sh"
 EVAL = Path(__file__).with_name("ci-failure-fix.eval.yaml")
 
@@ -173,6 +174,11 @@ gh() {
                 self.assertIn("    needs: activation\n", intake)
                 self.assertIn("      contents: read\n", intake)
 
+    def test_eval_harness_restores_trusted_filter(self):
+        harness = CI_EVAL.read_text()
+        self.assertIn("trusted-evals/filter-scanner-kbes.sh", harness)
+        self.assertIn("cp -- \"$RUNNER_TEMP/trusted-evals/filter-scanner-kbes.sh\"", harness)
+
 
 class EvalEvidenceTests(unittest.TestCase):
     @classmethod
@@ -190,10 +196,17 @@ process.stdout.write(JSON.stringify(spec.stimuli[0]));
 
     def events(
         self, number=42, read_success=True, comments_success=True,
-        comments_number=None, comments_args=None, **read_args
+        comments_number=None, comments_args=None, read_result=None, **read_args
     ):
         comments_number = number if comments_number is None else comments_number
         comments_args = {} if comments_args is None else comments_args
+        read_result = {
+            "number": number,
+            "state": "open",
+            "title": "[ci-scan] Test failure",
+            "author": {"login": "github-actions[bot]", "type": "Bot"},
+            "labels": [{"name": "Known Build Error"}],
+        } if read_result is None else read_result
         calls = [
             ("github-issue_read", {
                 "method": "get", "owner": "dotnet", "repo": "runtime", "issue_number": number,
@@ -209,7 +222,11 @@ process.stdout.write(JSON.stringify(spec.stimuli[0]));
             data = {"toolCallId": str(index), "toolName": name}
             events.extend([
                 {"type": "tool_call", "data": {**data, "arguments": args}},
-                {"type": "tool_result", "data": {**data, "success": success, "result": "Issue body"}},
+                {"type": "tool_result", "data": {
+                    **data,
+                    "success": success,
+                    "result": read_result if index == 0 else "Issue body",
+                }},
             ])
         return events
 
@@ -321,6 +338,27 @@ process.stdout.write(JSON.stringify(await new ProgramGrader().grade(input)));
         events = self.events()
         events[1]["agentId"] = "different-agent"
         self.assertFalse(self.grade(events)["passed"])
+
+    def test_current_candidate_metadata_is_required(self):
+        for read_result in (
+            {"number": 42, "state": "closed"},
+            {
+                "number": 42,
+                "state": "open",
+                "title": "[ci-scan] Test failure",
+                "author": {"login": "maintainer", "type": "User"},
+                "labels": [{"name": "Known Build Error"}],
+            },
+            {
+                "number": 42,
+                "state": "open",
+                "title": "[ci-scan] Test failure",
+                "author": {"login": "github-actions[bot]", "type": "Bot"},
+                "labels": [],
+            },
+        ):
+            with self.subTest(read_result=read_result):
+                self.assertFalse(self.grade(self.events(read_result=read_result))["passed"])
 
     def test_filtered_comment_entries_do_not_invalidate_comments_read(self):
         events = self.events()

@@ -201,6 +201,8 @@ For each result, read the body + latest comments through the `github` MCP (NOT `
 - The `Build:` link (AzDO build) and any `First build it occurred` commit/sha.
 - The applied `area-*` label (added by `.github/workflows/labeler-predict-issues.yml`). If no `area-*` label is present yet, record `-> skipped: not yet area-labeled` and let a later run revisit — owner attribution depends on it.
 
+Before deduplication or analysis, confirm that the body read still reports an open issue with the `[ci-scan] ` title prefix, the exact `Known Build Error` label, and author `github-actions[bot]` with account type `Bot`. If any of these checks fail, record `-> skipped: candidate is stale or no longer scanner-authored` and do not act on it.
+
 **Freshness gate.** Skip any KBE created less than 60 minutes ago (`-> skipped: KBE too fresh, defer to next run`). The scanner and labeler run asynchronously; acting before the labeler has attached the `area-*` label produces mis-attributed hand-offs.
 
 ### Step 3 — Existing-artifact dedup (search live GitHub, every KBE)
