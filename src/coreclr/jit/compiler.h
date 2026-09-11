@@ -6909,6 +6909,8 @@ public:
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
 
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
+
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 
     bool fgOptimizeBranch(BasicBlock* bJump);
