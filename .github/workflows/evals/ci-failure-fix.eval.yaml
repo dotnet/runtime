@@ -147,10 +147,6 @@ stimuli:
                   elif event["type"] == "tool_result" and key in calls:
                       call = calls.pop(key)
                       result = data.get("result")
-                      if data.get("success") is not True or (
-                          isinstance(result, dict) and result.get("isError") is True
-                      ) or "[Filtered]" in json.dumps(result):
-                          continue
                       args = call.get("arguments", {})
                       name = call["toolName"]
                       if not re.fullmatch(r"(?:mcp__)?github[-_.]+issue_read", name):
@@ -160,7 +156,13 @@ stimuli:
                           type(args.get("issue_number")) is not int or args["issue_number"] not in numbers
                       ):
                           continue
+                      if data.get("success") is not True or (
+                          isinstance(result, dict) and result.get("isError") is True
+                      ):
+                          continue
                       if args.get("method") == "get":
+                          if "[Filtered]" in json.dumps(result):
+                              continue
                           read_numbers.add(args["issue_number"])
                       elif args.get("method") == "get_comments":
                           comments_numbers.add(args["issue_number"])

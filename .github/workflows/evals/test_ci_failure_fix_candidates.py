@@ -154,6 +154,8 @@ gh() {
         lock = WORKFLOW.with_suffix(".lock.yml")
         self.assertIn("bash .github/workflows/shared/filter-scanner-kbes.sh", WORKFLOW.read_text())
         self.assertIn("bash .github/workflows/shared/filter-scanner-kbes.sh", lock.read_text())
+        self.assertIn("uses: actions/checkout@", lock.read_text())
+        self.assertIn("sparse-checkout: .github/workflows/shared/filter-scanner-kbes.sh", lock.read_text())
         self.assertTrue(FILTER_SCRIPT.exists())
         agent = lock.read_text().split("\n  agent:\n", 1)[1].split("\n  conclusion:\n", 1)[0]
         self.assertIn("      - scanner_kbes\n", agent)
@@ -168,6 +170,7 @@ gh() {
                 intake = path.read_text().split("\n  scanner_kbes:\n", 1)[1].split("    steps:", 1)[0]
                 self.assertIn("    if: github.repository == 'dotnet/runtime'\n", intake)
                 self.assertIn("    needs: activation\n", intake)
+                self.assertIn("      contents: read\n", intake)
 
 
 class EvalEvidenceTests(unittest.TestCase):
@@ -312,11 +315,16 @@ process.stdout.write(JSON.stringify(await new ProgramGrader().grade(input)));
         for result in ("[Filtered]", {"isError": True}):
             with self.subTest(result=result):
                 events = self.events()
-                events[3]["data"]["result"] = result
+                events[1]["data"]["result"] = result
                 self.assertFalse(self.grade(events)["passed"])
         events = self.events()
-        events[3]["agentId"] = "different-agent"
+        events[1]["agentId"] = "different-agent"
         self.assertFalse(self.grade(events)["passed"])
+
+    def test_filtered_comment_entries_do_not_invalidate_comments_read(self):
+        events = self.events()
+        events[3]["data"]["result"] = {"comments": ["[Filtered]", "scanner comment"]}
+        self.assertTrue(self.grade(events)["passed"])
 
     def test_eval_requires_trusted_candidate_setup_and_comments(self):
         stimulus_environment = self.stimulus["environment"]

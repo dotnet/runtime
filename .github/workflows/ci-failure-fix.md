@@ -59,11 +59,18 @@ jobs:
     if: github.repository == 'dotnet/runtime'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: read
     outputs:
       candidates: ${{ steps.filter.outputs.candidates }}
       count: ${{ steps.filter.outputs.count }}
     steps:
+      - name: Checkout workflow helper
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: .github/workflows/shared/filter-scanner-kbes.sh
+          sparse-checkout-cone-mode: false
       - name: Filter scanner-authored KBEs (deterministic)
         id: filter
         env:
