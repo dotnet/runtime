@@ -1912,7 +1912,7 @@ namespace ILCompiler
                     {
                         var elementType = (MetadataType)method.Instantiation[0];
                         int elementSize = elementType.InstanceFieldSize.AsInt;
-                        byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(createSpanEcmaField);
+                        byte[] rvaData = GetFieldRvaData(createSpanEcmaField);
                         if (rvaData.Length % elementSize != 0)
                             return false;
                         retVal = new SpanValue(elementType, rvaData, 0, rvaData.Length);

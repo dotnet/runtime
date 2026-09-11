@@ -77,6 +77,7 @@ internal class Program
         TestContainsReferences.Run();
         TestDuplicateCallArguments.Run();
         TestSpanAssignmentAliases.Run();
+        TestRvaSpanIdentity.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -2587,6 +2588,34 @@ class TestSpanAssignmentAliases
             Assert.AreEqual(4, result[2]);
             Assert.AreEqual(6, result[3]);
         }
+    }
+}
+
+class TestRvaSpanIdentity
+{
+    static readonly bool s_same;
+    static readonly bool s_differentOffset;
+    static readonly bool s_array;
+
+    static ReadOnlySpan<int> Data => [1, 2, 3, 4, 5, 6];
+
+    static TestRvaSpanIdentity()
+    {
+        ReadOnlySpan<int> first = Data;
+        ReadOnlySpan<int> second = Data;
+        ref int firstElement = ref Unsafe.AsRef(in first[0]);
+        s_same = Unsafe.AreSame(ref firstElement, ref Unsafe.AsRef(in second[0]));
+        s_differentOffset = Unsafe.AreSame(ref firstElement, ref Unsafe.AsRef(in second[1]));
+        int[] array = [1, 2, 3, 4, 5, 6];
+        s_array = Unsafe.AreSame(ref firstElement, ref MemoryMarshal.GetArrayDataReference(array));
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestRvaSpanIdentity));
+        Assert.AreEqual(true, s_same);
+        Assert.AreEqual(false, s_differentOffset);
+        Assert.AreEqual(false, s_array);
     }
 }
 
