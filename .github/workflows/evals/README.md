@@ -27,7 +27,7 @@ The workflow preserves the eval specs and installs Vally from the trusted base
 branch before it checks out the PR head. This lets it evaluate PR changes to the
 workflow prompts without allowing the PR to weaken its graders or toolchain.
 Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
-`repos`, `issues`, and `search` toolsets. The `GITHUB_TOKEN` that the eval job
+`repos`, and `issues` toolsets. The `GITHUB_TOKEN` that the eval job
 supplies to that server has only the job's read permissions. The scanner eval
 invokes a CLI harness for the workflow's `search-kbe-issues` MCP-script tool
 through Node because the eval runner does not launch workflow frontmatter MCP
