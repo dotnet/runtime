@@ -68,10 +68,62 @@
     <TestConsoleAppSourceFiles Include="Collections\StackOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromSpan.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromSpan.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromString.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromString.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\DeserializeAsync.FromStream.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\DeserializeAsync.FromStream.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToByteArray.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToByteArray.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.BoxedObject.WithWriter.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.TypedObject.WithWriter.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\SerializeAsync.ToStream.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\SerializeAsync.ToStream.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="ObjectConvertersTest.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Update="Collections\*.cs" DisabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
+    <TestConsoleAppSourceFiles Update="Collections\*.cs;SerializerEntryPoint\*.cs;ObjectConvertersTest.cs"
+                               DisabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
   </ItemGroup>
 
   <!-- These tests exercise the reflection-based serializer, which is annotated
