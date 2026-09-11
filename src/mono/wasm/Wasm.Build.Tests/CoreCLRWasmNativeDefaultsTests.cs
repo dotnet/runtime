@@ -161,10 +161,9 @@ namespace Wasm.Build.Tests
                 aot: false,
                 TestAsset.WasmBasicTestApp,
                 "coreclr_sdk_crossgen2",
-                extraProperties: $$"""
+                extraProperties: """
                     <PublishReadyToRun>false</PublishReadyToRun>
                     <WasmBuildNative>true</WasmBuildNative>
-                    <WasmBuildOnlyAfterPublish>{{publish}}</WasmBuildOnlyAfterPublish>
                     """,
                 insertAtEnd: $$"""
                     <Target Name="CheckCrossgen2PackRequest" BeforeTargets="ProcessFrameworkReferences">
@@ -204,11 +203,10 @@ namespace Wasm.Build.Tests
                 aot: false,
                 TestAsset.WasmBasicTestApp,
                 "coreclr_missing_crossgen2",
-                extraProperties: $$"""
+                extraProperties: """
                     <PublishReadyToRun>false</PublishReadyToRun>
                     <RequiresCrossgen2Pack>false</RequiresCrossgen2Pack>
                     <WasmBuildNative>true</WasmBuildNative>
-                    <WasmBuildOnlyAfterPublish>{{publish}}</WasmBuildOnlyAfterPublish>
                     """);
 
             string output = publish
