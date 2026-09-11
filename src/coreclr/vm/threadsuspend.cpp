@@ -4550,6 +4550,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif
 
 #ifndef TARGET_X86
+#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     // Except for x86, no registers are scanned as part of the HijackFrame on top of the stack.
     // This still allows scanning of the return value because the registers in question are
     // scanned as part of the calling method's roots. The problem arises if we are returning to
@@ -4562,11 +4563,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     hijackedReturnAddress = (PCODE)PacStripPtr((void*)hijackedReturnAddress);
 #endif // TARGET_ARM64
 
-    if (IsCallDescrWorkerInternalReturnAddress(hijackedReturnAddress))
-    {
-        return;
-    }
-#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     EECodeInfo codeInfo(hijackedReturnAddress);
     if (!codeInfo.IsValid())
     {
