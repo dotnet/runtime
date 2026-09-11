@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Tests
 
             foreach (HpkeExportVector export in vector.Exports)
             {
-                _ = export.Context.HexToByteArray();
+                Assert.InRange(export.Context.HexToByteArray().Length, 0, HpkeTestData.MaxExporterContextLength);
                 Assert.InRange(export.Length, 0, oneStage ? ushort.MaxValue : 255 * hashLength);
                 Assert.Equal(export.Length, export.ExportedValue.HexToByteArray().Length);
             }

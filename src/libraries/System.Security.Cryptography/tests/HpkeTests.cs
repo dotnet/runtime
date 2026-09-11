@@ -1691,7 +1691,10 @@ namespace System.Security.Cryptography.Tests
                         Assert.NotEqual(referenceExport, sender.Export(new byte[] { 0 }, 32));
                         Assert.False(referenceExport.AsSpan().SequenceEqual(sender.Export(context, 33).AsSpan(0, 32)));
                         // HKDF export framing adds 22 bytes; the first two cases straddle the 256-byte stack limit.
-                        foreach (int contextLength in new[] { 234, 235, 65536 })
+                        foreach (int contextLength in new[]
+                        {
+                            234, 235, HpkeTestData.MaxExporterContextLength
+                        })
                         {
                             byte[] longContext = new byte[contextLength];
                             longContext.AsSpan().Fill(0x39);
@@ -2562,8 +2565,7 @@ namespace System.Security.Cryptography.Tests
 
             using (RecordingHpkeSender sender = new(suite))
             {
-                // Unlike setup info, a SHAKE exporter context is not length-prefixed.
-                byte[] exporterContext = new byte[65536];
+                byte[] exporterContext = new byte[HpkeTestData.MaxExporterContextLength];
                 exporterContext.AsSpan().Fill(0x39);
 
                 foreach (int length in new[] { 0, 1, maximumLength })
@@ -2759,7 +2761,7 @@ namespace System.Security.Cryptography.Tests
 
             using (RecordingHpkeRecipient recipient = new(suite))
             {
-                byte[] exporterContext = new byte[65536];
+                byte[] exporterContext = new byte[HpkeTestData.MaxExporterContextLength];
                 exporterContext.AsSpan().Fill(0x39);
 
                 foreach (int length in new[] { 0, 1, maximumLength })

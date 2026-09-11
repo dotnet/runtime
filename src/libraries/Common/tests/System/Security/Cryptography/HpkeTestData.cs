@@ -8,6 +8,9 @@ namespace System.Security.Cryptography.Tests
 {
     public static partial class HpkeTestData
     {
+        // A test-data portability bound, not a limit of the HPKE API.
+        internal const int MaxExporterContextLength = 1024;
+
         // Representative coverage, not a Cartesian product. RFC cases include different KEM and outer HKDF hashes.
         // Generated cases add empty inputs/nonce carry and SHAKE PSK mode at the length-prefix boundaries.
         public static IReadOnlyList<HpkeTestVector> Vectors { get; } = Array.AsReadOnly(
