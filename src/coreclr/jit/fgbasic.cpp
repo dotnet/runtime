@@ -1109,6 +1109,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     ni = resolveNamedIntrinsic(methodHnd, lookupNamedIntrinsic(methodHnd));
 
+                    if (((ni == NI_System_Numerics_Intrinsic) || (ni == NI_System_Runtime_Intrinsics_Intrinsic)) &&
+                        gtIsRecursiveCall(methodHnd, false))
+                    {
+                        ni = NI_Throw_PlatformNotSupportedException;
+                    }
+
                     bool foldableIntrinsic = false;
 
                     if (IsMathIntrinsic(ni))
