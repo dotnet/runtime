@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.ParameterInfos.NativeFormat;
@@ -242,7 +241,9 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             return true;
         }
 
-        public IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.CustomAttributes);
+        public MetadataReader GetMetadataReader() => _reader;
+
+        public CustomAttributeHandleCollection GetCustomAttributeHandles() => _method.CustomAttributes;
 
         public override bool Equals(object obj)
         {

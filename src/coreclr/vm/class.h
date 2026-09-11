@@ -553,6 +553,15 @@ class EEClassLayoutInfo
         };
 
         static NestedFieldFlags GetNestedFieldFlags(Module* pModule, FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
+
+        friend struct ::cdac_data<EEClassLayoutInfo>;
+};
+
+template<> struct cdac_data<EEClassLayoutInfo>
+{
+    static constexpr size_t LayoutType = offsetof(EEClassLayoutInfo, m_LayoutType);
+    static constexpr size_t AlignmentRequirement = offsetof(EEClassLayoutInfo, m_ManagedLargestAlignmentRequirementOfAllMembers);
+    static constexpr size_t Flags = offsetof(EEClassLayoutInfo, m_bFlags);
 };
 
 //
@@ -1806,6 +1815,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
     static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
     static constexpr size_t OptionalFields = offsetof(EEClass, m_rpOptionalFields);
+    static constexpr size_t VMFlags = offsetof(EEClass, m_VMFlags);
 };
 
 template<> struct cdac_data<EEClassOptionalFields>
@@ -1885,6 +1895,11 @@ public:
         m_nativeLayoutInfo = NULL;
     }
 #endif // !DACCESS_COMPILE
+};
+
+template<> struct cdac_data<LayoutEEClass>
+{
+    static constexpr size_t LayoutInfo = offsetof(LayoutEEClass, m_LayoutInfo);
 };
 
 class UMThunkMarshInfo;

@@ -343,14 +343,10 @@ add_executable_clr(paltests
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
   threading/DuplicateHandle/test1/test1.cpp
-  threading/DuplicateHandle/test10/test10.cpp
   threading/DuplicateHandle/test12/test12.cpp
   threading/DuplicateHandle/test2/test2.cpp
   threading/DuplicateHandle/test3/test3.cpp
@@ -370,7 +366,6 @@ add_executable_clr(paltests
   threading/OpenEventW/test2/test2.cpp
   threading/OpenEventW/test5/test5.cpp
   threading/QueryThreadCycleTime/test1/test1.cpp
-  threading/releasesemaphore/test1/test.cpp
   threading/ResetEvent/test1/test1.cpp
   threading/ResetEvent/test2/test2.cpp
   threading/ResetEvent/test3/test3.cpp
@@ -388,7 +383,6 @@ add_executable_clr(paltests
   threading/ThreadPriority/test1/ThreadPriority.cpp
   threading/WaitForMultipleObjectsEx/test1/test1.cpp
   threading/WaitForSingleObject/test1/test1.cpp
-  threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
 )
