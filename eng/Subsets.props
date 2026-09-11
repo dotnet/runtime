@@ -525,8 +525,6 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILTrim.Tests\ILTrim.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
-    <ProjectToBuild Include="$(RepoRoot)src\tests\Common\XUnitWrapperGenerator.Tests\XUnitWrapperGenerator.Tests.csproj"
-      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.r2rtests+'))">

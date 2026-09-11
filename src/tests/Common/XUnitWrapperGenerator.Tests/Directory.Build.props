@@ -1,6 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
-  </PropertyGroup>
-  <Import Project="..\..\..\libraries\Directory.Build.props" />
-</Project>
