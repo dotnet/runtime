@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> extensions.
         /// <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
         [InterceptsLocation(1, "eAEQHTx/qUZMzyaWapEG3uEBAABzcmMtMC5jcw==")] // src-0.cs(15,24)
-        public static global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> Bind<TOptions>(this global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions>? configureBinder) where TOptions : class
+        public static global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> Bind<TOptions>(this global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureBinder) where TOptions : class
         {
             if (optionsBuilder is null)
             {
@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         #region IServiceCollection extensions.
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
-        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration config, Action<BinderOptions>? configureOptions) where TOptions : class
+        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration config, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) where TOptions : class
         {
             if (services is null)
             {
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region Core binding extensions.
         private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Program__MyClass = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList" });
 
-        public static void BindCoreMain(IConfiguration configuration, object instance, Type type, Action<BinderOptions>? configureOptions)
+        public static void BindCoreMain(IConfiguration configuration, object instance, Type type, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions)
         {
             if (instance is null)
             {
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, global::System.Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
@@ -207,7 +207,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return null;
         }
 
-        public static BinderOptions? GetBinderOptions(Action<BinderOptions>? configureOptions)
+        public static BinderOptions? GetBinderOptions(global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions)
         {
             if (configureOptions is null)
             {

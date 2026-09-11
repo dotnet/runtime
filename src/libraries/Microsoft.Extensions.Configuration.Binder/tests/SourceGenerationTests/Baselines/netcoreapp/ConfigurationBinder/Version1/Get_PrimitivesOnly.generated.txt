@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
         [InterceptsLocation(1, "t6tvUrc1mCV/SdIkmk1VLDIBAABzcmMtMC5jcw==")] // src-0.cs(12,16)
-        public static T? Get<T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
+        public static T? Get<T>(this IConfiguration configuration, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
         [InterceptsLocation(1, "t6tvUrc1mCV/SdIkmk1VLA4BAABzcmMtMC5jcw==")] // src-0.cs(11,16)
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
         [InterceptsLocation(1, "t6tvUrc1mCV/SdIkmk1VLGMBAABzcmMtMC5jcw==")] // src-0.cs(13,16)
-        public static object? Get(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions) => GetCore(configuration, type, configureOptions);
+        public static object? Get(this IConfiguration configuration, Type type, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => GetCore(configuration, type, configureOptions);
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return null;
         }
 
-        public static BinderOptions? GetBinderOptions(Action<BinderOptions>? configureOptions)
+        public static BinderOptions? GetBinderOptions(global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions)
         {
             if (configureOptions is null)
             {
