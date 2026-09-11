@@ -73,6 +73,7 @@ internal class Program
         TestArrayLoadBounds.Run();
         TestFloatNaNComparison.Run();
         TestDivisionOverflow.Run();
+        TestTypedStores.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -2338,6 +2339,65 @@ class TestDivisionOverflow
         Assert.AreEqual(true, IntRemOverflow.s_caught);
         Assert.IsLazyInitialized(typeof(LongRemOverflow));
         Assert.AreEqual(true, LongRemOverflow.s_caught);
+    }
+}
+
+class TestTypedStores
+{
+    enum ByteEnum : byte { Value = 0x5A }
+    enum SByteEnum : sbyte { Value = -42 }
+    enum ShortEnum : short { Value = -1234 }
+    enum UShortEnum : ushort { Value = 0xABCD }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    struct Pair<T>
+    {
+        public T Value;
+        public int Sentinel;
+    }
+
+    static readonly Pair<float> s_floatWrite = Make(1.0f, copy: false);
+    static readonly Pair<float> s_floatCopy = Make(1.0f, copy: true);
+    static readonly Pair<ByteEnum> s_byteWrite = Make(ByteEnum.Value, copy: false);
+    static readonly Pair<ByteEnum> s_byteCopy = Make(ByteEnum.Value, copy: true);
+    static readonly Pair<SByteEnum> s_sbyteWrite = Make(SByteEnum.Value, copy: false);
+    static readonly Pair<SByteEnum> s_sbyteCopy = Make(SByteEnum.Value, copy: true);
+    static readonly Pair<ShortEnum> s_shortWrite = Make(ShortEnum.Value, copy: false);
+    static readonly Pair<ShortEnum> s_shortCopy = Make(ShortEnum.Value, copy: true);
+    static readonly Pair<UShortEnum> s_ushortWrite = Make(UShortEnum.Value, copy: false);
+    static readonly Pair<UShortEnum> s_ushortCopy = Make(UShortEnum.Value, copy: true);
+
+    static unsafe Pair<T> Make<T>(T value, bool copy)
+    {
+        Pair<T> result = default;
+        result.Sentinel = 0x12345678;
+        if (copy)
+            Unsafe.Copy(Unsafe.AsPointer(ref result.Value), ref value);
+        else
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref result.Value), value);
+
+        return result;
+    }
+
+    static void Check<T>(T expected, Pair<T> actual)
+    {
+        Assert.AreEqual(0x12345678, actual.Sentinel);
+        Assert.True(expected.Equals(actual.Value));
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestTypedStores));
+        Check(1.0f, s_floatWrite);
+        Check(1.0f, s_floatCopy);
+        Check(ByteEnum.Value, s_byteWrite);
+        Check(ByteEnum.Value, s_byteCopy);
+        Check(SByteEnum.Value, s_sbyteWrite);
+        Check(SByteEnum.Value, s_sbyteCopy);
+        Check(ShortEnum.Value, s_shortWrite);
+        Check(ShortEnum.Value, s_shortCopy);
+        Check(UShortEnum.Value, s_ushortWrite);
+        Check(UShortEnum.Value, s_ushortCopy);
     }
 }
 

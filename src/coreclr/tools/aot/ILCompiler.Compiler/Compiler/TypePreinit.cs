@@ -1766,29 +1766,16 @@ namespace ILCompiler
                     case ILOpcode.stind_i4:
                     case ILOpcode.stind_i8:
                     {
-                        if (opcode == ILOpcode.stobj)
+                        TypeDesc type = opcode switch
                         {
-                            TypeDesc type = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
-                            opcode = type.Category switch
-                            {
-                                TypeFlags.SByte or TypeFlags.Boolean or TypeFlags.Byte => ILOpcode.stind_i1,
-                                TypeFlags.Int16 or TypeFlags.Char or TypeFlags.UInt16 => ILOpcode.stind_i2,
-                                TypeFlags.Int32 or TypeFlags.UInt32 => ILOpcode.stind_i4,
-                                TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.stind_i8,
-                                TypeFlags.IntPtr or TypeFlags.UIntPtr => ILOpcode.stind_i,
-                                _ => ILOpcode.stobj,
-                            };
-                        }
-
-                        Value val = opcode switch
-                        {
-                            ILOpcode.stind_i1 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.Byte)),
-                            ILOpcode.stind_i2 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt16)),
-                            ILOpcode.stind_i4 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt32)),
-                            ILOpcode.stind_i8 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt64)),
-                            ILOpcode.stind_i => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UIntPtr)),
-                            _ => stack.Pop().Value
+                            ILOpcode.stind_i1 => context.GetWellKnownType(WellKnownType.Byte),
+                            ILOpcode.stind_i2 => context.GetWellKnownType(WellKnownType.UInt16),
+                            ILOpcode.stind_i4 => context.GetWellKnownType(WellKnownType.UInt32),
+                            ILOpcode.stind_i8 => context.GetWellKnownType(WellKnownType.UInt64),
+                            ILOpcode.stind_i => context.GetWellKnownType(WellKnownType.UIntPtr),
+                            _ /* stobj */ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
                         };
+                        Value val = stack.PopIntoLocation(type);
 
                         StackEntry location = stack.Pop();
                         if (location.ValueKind != StackValueKind.ByRef && location.ValueKind != StackValueKind.NativeInt)
