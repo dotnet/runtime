@@ -354,19 +354,16 @@ public:
 
     AccessCheckOptions(
         AccessCheckType      accessCheckType,
-        DynamicResolver *    pAccessContext,
         BOOL                 throwIfTargetIsInaccessible,
         TargetTypeForAccessCheck * pTargetType);
 
     AccessCheckOptions(
         AccessCheckType            accessCheckType,
-        DynamicResolver *          pAccessContext,
         BOOL                       throwIfTargetIsInaccessible,
         TargetMethodForAccessCheck* pTargetMethod);
 
     AccessCheckOptions(
         AccessCheckType      accessCheckType,
-        DynamicResolver *    pAccessContext,
         BOOL                 throwIfTargetIsInaccessible,
         FieldDesc *          pTargetFD);
 
@@ -414,10 +411,6 @@ private:
     FieldDesc *             m_pTargetField;
 
     AccessCheckType         m_accessCheckType;
-    // The context used to determine if access is allowed. It is the resolver that carries the compressed-stack used to do the Demand.
-    // If this is NULL, the access is checked against the current call-stack.
-    // This is non-NULL only for m_accessCheckType==kRestrictedMemberAccess
-    DynamicResolver *       m_pAccessContext;
     // If the target is not accessible, should the API return FALSE, or should it throw an exception?
     BOOL                    m_fThrowIfTargetIsInaccessible;
 };

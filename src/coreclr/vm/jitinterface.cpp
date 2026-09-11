@@ -1589,7 +1589,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
         {
             //Well, let's check some visibility at least.
             AccessCheckOptions accessCheckOptions(accessCheckType,
-                NULL,
                 FALSE,
                 pField);
 
@@ -4935,7 +4934,6 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
     if (doAccessCheck)
     {
         AccessCheckOptions accessCheckOptions(accessCheckType,
-                                              NULL,
                                               FALSE /*throw on error*/,
                                               &pCalleeForSecurity);
 
@@ -5547,7 +5545,6 @@ void CEEInfo::getCallInfo(
         if (doAccessCheck)
         {
             AccessCheckOptions accessCheckOptions(accessCheckType,
-                                                  NULL,
                                                   FALSE,
                                                   &calleeForSecurity
                                                   );
@@ -13680,7 +13677,6 @@ static TADDR UnsafeJitFunctionWorker(
         TargetMethodForAccessCheck methodForSecurity(pMethodForSecurity);
         TargetTypeForAccessCheck ownerTargetTypeForSecurity(ownerTypeForSecurity);
         AccessCheckOptions accessCheckOptions(accessCheckType,
-                                            NULL,
                                             TRUE /*Throw on error*/,
                                             &methodForSecurity);
 

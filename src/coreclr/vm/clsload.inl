@@ -75,10 +75,7 @@ inline void AccessCheckOptions::Initialize(
         //   2. we are not going to throw an exception if the accessibility check fails
         PRECONDITION(accessCheckType == kNormalAccessibilityChecks ||
                      !throwIfTargetIsInaccessible ||
-                     ((pTargetMT ? 1 : 0) + (pTargetMethod ? 1 : 0) + (pTargetField ? 1 : 0)) == 1);
-        // m_pAccessContext can only be set for kRestrictedMemberAccess
-        PRECONDITION(m_pAccessContext == NULL ||
-                     accessCheckType == AccessCheckOptions::kRestrictedMemberAccess);
+                     ((pTargetType ? 1 : 0) + (pTargetMethod ? 1 : 0) + (pTargetField ? 1 : 0)) == 1);
     }
     CONTRACTL_END;
 
@@ -93,10 +90,8 @@ inline void AccessCheckOptions::Initialize(
 
 inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
-    DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    TargetTypeForAccessCheck * pTargetType) :
-    m_pAccessContext(pAccessContext)
+    TargetTypeForAccessCheck * pTargetType)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -110,10 +105,8 @@ inline AccessCheckOptions::AccessCheckOptions(
 
 inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
-    DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    TargetMethodForAccessCheck* pTargetMethod) :
-    m_pAccessContext(pAccessContext)
+    TargetMethodForAccessCheck* pTargetMethod)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -127,10 +120,8 @@ inline AccessCheckOptions::AccessCheckOptions(
 
 inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
-    DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    FieldDesc *          pTargetField) :
-    m_pAccessContext(pAccessContext)
+    FieldDesc *          pTargetField)
 {
     WRAPPER_NO_CONTRACT;
 

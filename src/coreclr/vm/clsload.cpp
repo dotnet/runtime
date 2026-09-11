@@ -3696,7 +3696,6 @@ void AccessCheckOptions::Startup()
 
     s_pNormalAccessChecks = new AccessCheckOptions(
                                     AccessCheckOptions::kNormalAccessibilityChecks,
-                                    NULL,
                                     FALSE,
                                     (TargetTypeForAccessCheck *)NULL);
 }
@@ -3704,8 +3703,7 @@ void AccessCheckOptions::Startup()
 //******************************************************************************
 AccessCheckOptions::AccessCheckOptions(
     const AccessCheckOptions & templateOptions,
-    BOOL                       throwIfTargetIsInaccessible) :
-    m_pAccessContext(templateOptions.m_pAccessContext)
+    BOOL                       throwIfTargetIsInaccessible)
 {
     WRAPPER_NO_CONTRACT;
 
