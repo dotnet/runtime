@@ -109,7 +109,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 if (_legacyImpl is not null)
                 {
                     DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
-                    int hrLegacy = _legacyImpl.GetTokenAndScope(token, legacyModOut);
+                    int hrLegacy = _legacyImpl.GetTokenAndScope(null, legacyModOut);
                     if (hrLegacy >= 0)
                         legacyMod = legacyModOut.Interface;
                 }

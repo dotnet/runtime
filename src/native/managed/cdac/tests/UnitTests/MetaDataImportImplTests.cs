@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -175,6 +176,24 @@ public unsafe class MetaDataImportImplTests
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
         return new MetaDataImportImpl(reader, legacyImport: null, new());
+    }
+
+    [Fact]
+    public void UnimplementedMethods_DoNotDelegateToLegacyImport()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        using var _ = provider;
+
+        Mock<IMetaDataImport> legacyImport = new(MockBehavior.Strict);
+        legacyImport.As<IMetaDataImport2>();
+        legacyImport.As<IMetaDataAssemblyImport>();
+
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport.Object, new());
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetPEKind(null, null));
+        Assert.Equal(HResults.E_NOTIMPL, assemblyImport.EnumAssemblyRefs(null, null, 0, null));
     }
 
     [Fact]

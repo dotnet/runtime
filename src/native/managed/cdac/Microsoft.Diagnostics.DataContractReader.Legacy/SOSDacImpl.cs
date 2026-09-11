@@ -31,7 +31,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </remarks>
 [GeneratedComClass]
 public sealed unsafe partial class SOSDacImpl
-    : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
+    : ICustomQueryInterface, ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
       ISOSDacInterface16, ISOSDacInterface17
@@ -103,6 +103,15 @@ public sealed unsafe partial class SOSDacImpl
         _legacyImpl13 = null;
         _legacyProcess = null;
 #endif
+    }
+
+    CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
+    {
+        ppv = default;
+
+        return iid == typeof(ICLRDataEnumMemoryRegions).GUID
+            ? CustomQueryInterfaceResult.Failed
+            : CustomQueryInterfaceResult.NotHandled;
     }
 
     #region ISOSDacInterface
