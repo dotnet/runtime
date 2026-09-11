@@ -1111,10 +1111,10 @@ namespace System.Collections.Generic
                 return OverlapsImpl(otherAsSet, this);
             }
 
-            return OverlapsImpl(this, other);          
+            return OverlapsImpl(this, other);
         }
 
-        private bool OverlapsImpl(HashSet<T> hashSet, IEnumerable<T> other)
+        private static bool OverlapsImpl(HashSet<T> hashSet, IEnumerable<T> other)
         {
             foreach (T element in other)
             {
