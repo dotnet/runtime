@@ -102,6 +102,98 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class PrivateCtorWithInParameters
+    {
+        public int Value { get; }
+        public string Label { get; }
+
+        [JsonConstructor]
+        private PrivateCtorWithInParameters(in int value, ref readonly string label)
+        {
+            Value = value;
+            Label = label;
+        }
+
+        private PrivateCtorWithInParameters(int value, string label) =>
+            throw new InvalidOperationException("Incorrect constructor.");
+    }
+
+    public class PrivateCtorWithByRefParameters<T>
+    {
+        public T Value { get; }
+        public T InValue { get; }
+        public T ReadOnlyValue { get; }
+        public int Count { get; }
+        public T Output { get; }
+
+        [JsonConstructor]
+        private PrivateCtorWithByRefParameters(out T output, ref T value, in T inValue, ref readonly T readOnlyValue, int count)
+        {
+            Output = output = value;
+            Value = value;
+            value = default!;
+            InValue = inValue;
+            ReadOnlyValue = readOnlyValue;
+            Count = count;
+        }
+
+        private PrivateCtorWithByRefParameters(T output, T value, T inValue, T readOnlyValue, int count) =>
+            throw new InvalidOperationException("Incorrect constructor.");
+    }
+
+    public struct PrivateStructCtorWithByRefParameters
+    {
+        public int Value { get; }
+        public string Label { get; }
+        public int Number { get; }
+        public int Count { get; }
+        public int Output { get; }
+
+        [JsonConstructor]
+        private PrivateStructCtorWithByRefParameters(out int output, ref int value, in string label, ref readonly int number, int count)
+        {
+            Output = output = value + 1;
+            Value = value;
+            value = -1;
+            Label = label;
+            Number = number;
+            Count = count;
+        }
+    }
+
+    public struct PrivateGenericStructCtorWithByRefParameters<T>
+    {
+        public T Value { get; }
+        public T InValue { get; }
+        public T ReadOnlyValue { get; }
+        public int Count { get; }
+        public T Output { get; }
+
+        [JsonConstructor]
+        private PrivateGenericStructCtorWithByRefParameters(out T output, ref T value, in T inValue, ref readonly T readOnlyValue, int count)
+        {
+            Output = output = value;
+            Value = value;
+            value = default!;
+            InValue = inValue;
+            ReadOnlyValue = readOnlyValue;
+            Count = count;
+        }
+    }
+
+    public class PrivateCtorWithOutParameters
+    {
+        public int Value { get; }
+        public string Label { get; }
+
+        [JsonConstructor]
+        private PrivateCtorWithOutParameters(out int value, out string label)
+        {
+            Value = value = 42;
+            Label = label = "output";
+        }
+    }
+
     public class PrivateCtorWithGenericMembers<T> where T : class
     {
         public T Value { get; }

@@ -1439,8 +1439,16 @@ namespace System.Text.Json.SourceGeneration
                     }
 
                     string parameterTypeFQN = (useGenericWrapper ? param.OpenParameterTypeFQN : null) ?? param.ParameterType.FullyQualifiedName;
-                    wrapperParams.Append($"{parameterTypeFQN} p{param.ParameterIndex}");
-                    callArgs.Append($"p{param.ParameterIndex}");
+                    string refModifier = param.RefKind switch
+                    {
+                        RefKind.Ref => "ref ",
+                        RefKind.Out => "out ",
+                        // 'in' preserves the readonly by-ref signature without requiring C# 12.
+                        RefKind.In or RefKindRefReadOnlyParameter => "in ",
+                        _ => "",
+                    };
+                    wrapperParams.Append($"{refModifier}{parameterTypeFQN} p{param.ParameterIndex}");
+                    callArgs.Append(param.RefKind is RefKind.Out ? "null" : $"p{param.ParameterIndex}");
                 }
 
                 if (typeSpec.CanUseUnsafeAccessorForConstructor)
@@ -1458,15 +1466,41 @@ namespace System.Text.Json.SourceGeneration
 
                     string argTypes = parameters.Count == 0
                         ? EmptyTypeArray
-                        : $"new global::System.Type[] {{{string.Join(", ", parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}}";
+                        : $"new global::System.Type[] {{{string.Join(", ", parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName}){(p.RefKind is RefKind.None ? "" : ".MakeByRefType()")}"))}}}";
 
                     writer.WriteLine($"private static global::System.Reflection.ConstructorInfo? {cacheName};");
 
                     string invokeArgs = parameters.Count == 0
                         ? "null"
-                        : $"new object?[] {{{string.Join(", ", parameters.Select(p => $"p{p.ParameterIndex}"))}}}";
+                        : $"new object?[] {{{callArgs}}}";
+                    string constructorInfo = $"{cacheName} ??= typeof({typeFQN}).GetConstructor(InstanceMemberBindingFlags, binder: null, {argTypes}, modifiers: null)!";
 
-                    writer.WriteLine($"private static {typeFQN} {wrapperName}({wrapperParams}) => ({typeFQN})InvokeUnwrapped({cacheName} ??= typeof({typeFQN}).GetConstructor(InstanceMemberBindingFlags, binder: null, {argTypes}, modifiers: null)!, {invokeArgs});");
+                    if (parameters.Any(p => p.RefKind is RefKind.Ref or RefKind.Out))
+                    {
+                        writer.WriteLine($$"""
+                            private static {{typeFQN}} {{wrapperName}}({{wrapperParams}})
+                            {
+                                object?[] args = {{invokeArgs}};
+                                {{typeFQN}} result = ({{typeFQN}})InvokeUnwrapped({{constructorInfo}}, args);
+                            """);
+                        writer.Indentation++;
+
+                        foreach (ParameterGenerationSpec param in parameters)
+                        {
+                            if (param.RefKind is RefKind.Ref or RefKind.Out)
+                            {
+                                writer.WriteLine($"p{param.ParameterIndex} = ({param.ParameterType.FullyQualifiedName})args[{param.ParameterIndex}]!;");
+                            }
+                        }
+
+                        writer.WriteLine("return result;");
+                        writer.Indentation--;
+                        writer.WriteLine('}');
+                    }
+                    else
+                    {
+                        writer.WriteLine($"private static {typeFQN} {wrapperName}({wrapperParams}) => ({typeFQN})InvokeUnwrapped({constructorInfo}, {invokeArgs});");
+                    }
                 }
 
                 if (useGenericWrapper)
