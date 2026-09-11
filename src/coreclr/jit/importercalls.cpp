@@ -639,6 +639,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                 }
 
+                if (callInfo->thisTransform != CORINFO_NO_THIS_TRANSFORM)
+                {
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                                   "LDVIRTFTN constrained call requires transforming 'this'"));
+                }
+
                 impPopCallArgs(sig, call->AsCall());
 
                 if (call->AsCall()->IsAsync())
