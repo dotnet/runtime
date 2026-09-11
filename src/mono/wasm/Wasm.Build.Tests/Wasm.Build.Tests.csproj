@@ -79,10 +79,16 @@
     <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="Build">
       <Output TaskParameter="TargetOutputs" ItemName="_DotnetPgoBuiltAssembly" />
     </MSBuild>
+    <PropertyGroup>
+      <_DotnetPgoDir>@(_DotnetPgoBuiltAssembly->'%(RootDir)%(Directory)')</_DotnetPgoDir>
+    </PropertyGroup>
     <ItemGroup>
-      <!-- Root files only; the RID-specific native subdirs (amd64/arm64/x86/shims) are Windows ETW/PDB
-           helpers not needed to read a .nettrace, and copying that tree races/fails on Linux CI. -->
-      <None Include="%(_DotnetPgoBuiltAssembly.RootDir)%(_DotnetPgoBuiltAssembly.Directory)*"
+      <!-- Glob the tool's output dir via a separate item: a wildcard combined with item metadata in a
+           None Include does not expand reliably and silently drops dotnet-pgo.runtimeconfig.json/.deps.json.
+           Root files only (non-recursive) - the RID-specific native subdirs (amd64/arm64/x86/shims) are
+           Windows ETW/PDB helpers not needed to read a .nettrace. -->
+      <_DotnetPgoFile Include="$(_DotnetPgoDir)*" />
+      <None Include="@(_DotnetPgoFile)"
             Link="dotnet-pgo\%(FileName)%(Extension)"
             CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
