@@ -177,24 +177,6 @@ ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 == VTABLE_SLOTS_PER_CHUNK
 
 #define JIT_TailCall_StackOffsetToFlags       0x08
 
-#define CallDescrData__pSrc                0x00
-#define CallDescrData__numStackSlots       0x04
-#define CallDescrData__pArgumentRegisters  0x08
-#define CallDescrData__fpReturnSize        0x0C
-#define CallDescrData__pTarget             0x10
-#ifndef __GNUC__
-#define CallDescrData__returnValue         0x18
-#else
-#define CallDescrData__returnValue         0x14
-#endif
-
-ASMCONSTANTS_C_ASSERT(CallDescrData__pSrc                 == offsetof(CallDescrData, pSrc))
-ASMCONSTANTS_C_ASSERT(CallDescrData__numStackSlots        == offsetof(CallDescrData, numStackSlots))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pArgumentRegisters   == offsetof(CallDescrData, pArgumentRegisters))
-ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrData, fpReturnSize))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
-ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x04
 ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next));
