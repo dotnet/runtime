@@ -100,8 +100,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ArgIterator_GetNextArg2)
 #endif // FEATURE_VARARGS
     DllImportEntry(CustomAttribute_ParseAttributeUsageAttribute)
-    DllImportEntry(CustomAttribute_CreateCustomAttributeInstance)
-    DllImportEntry(CustomAttribute_CreatePropertyOrFieldData)
     DllImportEntry(Enum_GetValuesAndNames)
     DllImportEntry(DebugDebugger_Break)
     DllImportEntry(DebugDebugger_Launch)
