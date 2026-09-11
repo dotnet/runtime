@@ -262,7 +262,7 @@ namespace System.Net.WebSockets.Tests
             cts.Cancel();
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-                websocket.SendAsync(new byte[] { 1, 2, 3 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token).AsTask());
+                websocket.SendAsync(new byte[] { 1, 2, 3 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token));
 
             Assert.Equal(WebSocketState.Aborted, websocket.State);
         }
@@ -276,12 +276,12 @@ namespace System.Net.WebSockets.Tests
             // Start a send with a non-cancelable token; it acquires the send mutex synchronously
             // and then blocks inside the (gated) write, simulating another in-flight send -- e.g. a
             // keep-alive ping -- holding the mutex.
-            Task firstSend = websocket.SendAsync(new byte[] { 1 }, WebSocketMessageType.Binary, endOfMessage: true, CancellationToken.None).AsTask();
+            Task firstSend = websocket.SendAsync(new byte[] { 1 }, WebSocketMessageType.Binary, endOfMessage: true, CancellationToken.None);
             await stream.WriteStarted;
 
             // Issue a second, cancelable send. Since the mutex is held, it must wait to acquire it.
             using var cts = new CancellationTokenSource();
-            Task secondSend = websocket.SendAsync(new byte[] { 2 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token).AsTask();
+            Task secondSend = websocket.SendAsync(new byte[] { 2 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token);
 
             // Cancel while the second send is still waiting on the send mutex.
             cts.Cancel();
