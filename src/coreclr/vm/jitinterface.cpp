@@ -12825,8 +12825,10 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
     {
         if (field->IsObjRef())
         {
-            // there is no point in returning a chunk of a gc handle
-            if ((valueOffset == 0) && (sizeof(CORINFO_OBJECT_HANDLE) <= (UINT)bufferSize) && !field->IsRVA())
+            // There is no point in returning a chunk of a gc handle, and we can only fill
+            // exactly sizeof(CORINFO_OBJECT_HANDLE) bytes - reject any other buffer size,
+            // otherwise the caller would end up reading uninitialized data.
+            if ((valueOffset == 0) && ((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE)) && !field->IsRVA())
             {
                 GCX_COOP();
 
@@ -12863,6 +12865,9 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
 
                         _ASSERT(numSlots > 0);
 
+                        const unsigned requestBegin = (unsigned)valueOffset;
+                        const unsigned requestEnd = (unsigned)(valueOffset + bufferSize);
+
                         useMemcpy = true;
                         for (unsigned i = 0; i < numSlots; i++)
                         {
@@ -12875,13 +12880,13 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                             const unsigned gcSlotBegin = i * TARGET_POINTER_SIZE;
                             const unsigned gcSlotEnd = gcSlotBegin + TARGET_POINTER_SIZE;
 
-                            if (gcSlotBegin >= (unsigned)valueOffset && gcSlotEnd <= (unsigned)(valueOffset + bufferSize))
+                            if (gcSlotBegin < requestEnd && gcSlotEnd > requestBegin)
                             {
                                 // GC slot intersects with our valueOffset + bufferSize - we can't use memcpy...
                                 useMemcpy = false;
 
                                 // ...unless we're interested in that GC slot's value itself
-                                if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize) && ptr[i] == TYPE_GC_REF)
+                                if (gcSlotBegin == requestBegin && gcSlotEnd == requestEnd && ptr[i] == TYPE_GC_REF)
                                 {
                                     GCX_COOP();
 
