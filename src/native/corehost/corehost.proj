@@ -198,6 +198,11 @@
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.js" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.dat" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libcoreclr_static.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libcoreclrminipal.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libcoreclrpal.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libgcinfo_unix_wasm.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libnativeresourcestring.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libBrowserHost.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" />

@@ -470,6 +470,7 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     // The GS cookie is stored in a read only data segment
     DWORD oldProtection;
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
@@ -481,6 +482,7 @@ void InitGSCookie()
     // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
     oldProtection = PAGE_READONLY;
 #endif // TARGET_UNIX
+#endif // FEATURE_READONLY_GS_COOKIE
 
 #ifndef TARGET_UNIX
     // The GSCookie cannot be in a writeable page
@@ -507,10 +509,12 @@ void InitGSCookie()
         val ++;
     *pGSCookiePtr = val;
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &oldProtection))
     {
         ThrowLastError();
     }
+#endif // FEATURE_READONLY_GS_COOKIE
 }
 
 Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized = FALSE;

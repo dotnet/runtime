@@ -102,6 +102,43 @@ namespace Microsoft.Interop
             return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling: false, compilation, getMarshallingInfoForElement: null, IgnoreArityMismatch, out marshallers);
         }
 
+        public static bool TryGetManagedTypeFromEntryType(
+            INamedTypeSymbol entryPointType,
+            Compilation compilation,
+            [NotNullWhen(true)] out ITypeSymbol? managedType)
+        {
+            managedType = null;
+
+            foreach (AttributeData attr in entryPointType.GetAttributes())
+            {
+                if (attr.AttributeClass?.ToDisplayString() != TypeNames.CustomMarshallerAttribute
+                    || attr.AttributeConstructor is null
+                    || attr.ConstructorArguments.Length != 3
+                    || attr.ConstructorArguments[0].Value is not ITypeSymbol managedTypeOnAttribute)
+                {
+                    continue;
+                }
+
+                ITypeSymbol resolvedManagedType = ReplaceGenericPlaceholderInType(managedTypeOnAttribute, entryPointType, compilation);
+                if (!TryResolveManagedType(entryPointType, resolvedManagedType, isLinearCollectionMarshalling: false, IgnoreArityMismatch, out resolvedManagedType))
+                {
+                    continue;
+                }
+
+                if (managedType is null)
+                {
+                    managedType = resolvedManagedType;
+                }
+                else if (!SymbolEqualityComparer.Default.Equals(managedType, resolvedManagedType))
+                {
+                    managedType = null;
+                    return false;
+                }
+            }
+
+            return managedType is not null;
+        }
+
         public static bool TryGetValueMarshallersFromEntryType(
             INamedTypeSymbol entryPointType,
             ITypeSymbol managedType,

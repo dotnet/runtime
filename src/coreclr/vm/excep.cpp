@@ -4718,7 +4718,7 @@ static BOOL GetManagedFormatStringForResourceID(UINT32 resId, SString & converte
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4737,7 +4737,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4753,7 +4753,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -5525,10 +5525,7 @@ AdjustContextForJITHelpers(
         //
         // Question: Why do we unwind before determining whether we will handle the exception or not?
         UnwindFrameChain(GetThread(), (Frame*)GetSP(pContext));
-        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext,
-                               NULL, // establisher frame (x86 only)
-                               NULL  // pThread           (x86 only)
-                               );
+        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord, pContext);
 
         if (fShouldHandleManagedFault)
         {
@@ -5639,16 +5636,13 @@ void FaultingExceptionFrame::InitAndLink(CONTEXT *pContext)
     WRAPPER_NO_CONTRACT;
 
     Init(pContext);
-
     Push();
 }
 
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
-                        CONTEXT*                        pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread)
+                        CONTEXT*                        pContext)
 {
     CONTRACTL
     {
@@ -5700,6 +5694,20 @@ bool ShouldHandleManagedFault(
 
         if (!ExecutionManager::IsManagedCode(GetIP(pContext)))
             return false;
+    }
+
+    Thread *pCurrentThread = GetThreadNULLOk();
+    if (pCurrentThread != nullptr &&
+        !pCurrentThread->PreemptiveGCDisabled() &&
+        InlinedCallFrame::FrameHasActiveCall(pCurrentThread->GetFrame()))
+    {
+        // If the user tries to call an invalid function pointer, some addresses on some architectures trigger a fault
+        // with the IP at the caller's address, not the invalid target address.
+        // If this case occurs after a GC transition to preemptive mode (ie a call to a function pointer with an unmanaged calling convention),
+        // we have semantically already left managed code.
+        // We will consider this a non-managed code address to align the "IP is caller's address" and "IP is callee's address"
+        // user experiences.
+        return false;
     }
 
     // caller should call HandleManagedFault and resume execution.
@@ -5927,10 +5935,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     {
         CantAllocHolder caHolder;
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionInfo->ExceptionRecord,
-                                                             pExceptionInfo->ContextRecord,
-                                                             NULL, // establisher frame (x86 only)
-                                                             NULL  // pThread           (x86 only)
-                                                            );
+                                                             pExceptionInfo->ContextRecord);
     }
 
     if (fShouldHandleManagedFault)
@@ -6575,7 +6580,7 @@ void CLRAddVectoredHandlers(void)
 }
 
 //
-// This does the work of the Unwind and Continue Hanlder inside the catch clause of that handler. The stack has not
+// This does the work of the Unwind and Continue Handler inside the catch clause of that handler. The stack has not
 // been unwound when this is called. Keep that in mind when deciding where to put new code :)
 //
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException)
@@ -6613,7 +6618,75 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 }
 
 //
-// This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
+// This does the work of the Unwind and Continue Handler inside the catch clause of that handler. The stack has not
+// been unwound when this is called. Keep that in mind when deciding where to put new code :)
+//
+void UnwindAndContinueRethrowHelperInsideQCallCatch(
+    Exception* pException,
+    QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame))
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    Thread* pThread = GetThread();
+
+    // The native exception unwind can leave stale entries below the current stack pointer
+    // on the Frame chain. Find the first enclosing InlinedCallFrame without inspecting them.
+    Frame* pCurrentSP = static_cast<Frame*>(GetCurrentSP());
+    Frame* pInlinedCallFrame = pThread->GetFrame();
+    while ((pInlinedCallFrame != FRAME_TOP) &&
+           ((pInlinedCallFrame < pCurrentSP) ||
+            (pInlinedCallFrame->GetFrameIdentifier() != FrameIdentifier::InlinedCallFrame)))
+    {
+        pInlinedCallFrame = pInlinedCallFrame->PtrNextFrame();
+    }
+
+    _ASSERTE(pInlinedCallFrame != FRAME_TOP);
+    _ASSERTE(pInlinedCallFrame == pEntryFrame);
+
+    GCX_COOP();
+
+    LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE inside catch, unwinding frame chain\n"));
+
+    // This SetFrame is OK because we will not have frames that require ExceptionUnwind in strictly unmanaged EE
+    // code chunks which is all that an UnC handler can guard.
+    //
+    // @todo: we'd rather use UnwindFrameChain, but there is a concern: some of the ExceptionUnwind methods on some
+    // of the Frame types do a great deal of work; load classes, throw exceptions, etc. We need to decide on some
+    // policy here. Do we want to let such functions throw, etc.? Right now, we believe that there are no such
+    // frames on the stack to be unwound, so the SetFrame is alright (see the first comment above.) At the very
+    // least, we should add some way to assert that.
+    pThread->SetFrame(pInlinedCallFrame);
+
+    // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
+    // while we are still within the context of the catch block. This will help diagnose
+    // cases where the last thrown object is NULL.
+    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
+    CONSISTENCY_CHECK(orThrowable != NULL);
+    SetQCallExceptionStatusThrowable(pQCallException, orThrowable);
+
+    // The exception status now owns a handle to the throwable. Release the native
+    // exception and its cached throwable handle, as the normal rethrow path does.
+    Exception::Delete(pException);
+}
+
+#ifdef TARGET_UNIX
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExceptionStatus* pQCallException)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    GCX_COOP();
+
+    OBJECTREF throwable = ExInfo::CreateThrowable(exception.GetExceptionRecord(), FALSE);
+    SetQCallExceptionStatusThrowable(pQCallException, throwable);
+}
+#endif
+
+//
+// This does the work of the Unwind and Continue Handler after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
 //
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow)

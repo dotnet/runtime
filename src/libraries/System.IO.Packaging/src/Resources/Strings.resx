@@ -72,6 +72,9 @@
   <data name="ContentTypeCannotHaveLeadingTrailingLWS" xml:space="preserve">
     <value>ContentType string cannot have leading/trailing Linear White Spaces [LWS - RFC 2616].</value>
   </data>
+  <data name="ContentTypeStreamTooLarge" xml:space="preserve">
+    <value>The '[Content_Types].xml' part exceeds the maximum allowed size of {0} bytes.</value>
+  </data>
   <data name="CorePropertiesElementExpected" xml:space="preserve">
     <value>Unrecognized root element in Core Properties part.</value>
   </data>

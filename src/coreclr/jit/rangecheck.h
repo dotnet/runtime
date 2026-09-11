@@ -898,9 +898,7 @@ private:
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
-    Range ComputeRangeForLocalDef(BasicBlock*               block,
-                                  GenTreeLclVarCommon*      lcl,
-                                  Monotonicity monotonicity DEBUGARG(int indent));
+    Range ComputeRangeForLocalDef(GenTreeLclVarCommon* lcl, Monotonicity monotonicity DEBUGARG(int indent));
 
     // Compute the range, rather than retrieve a cached value. Helper for GetRangeWorker.
     Range ComputeRange(BasicBlock* block, GenTree* expr, Monotonicity monotonicity DEBUGARG(int indent));

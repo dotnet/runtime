@@ -865,9 +865,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     };
 
     ArrayStack<Value>               m_valueStack;
-    bool                            m_stmtModified    = false;
-    bool                            m_madeChanges     = false;
-    bool                            m_propagatedAddrs = false;
+    bool                            m_stmtModified            = false;
+    bool                            m_stmtSideEffectsModified = false;
+    bool                            m_madeChanges             = false;
+    bool                            m_propagatedAddrs         = false;
     LocalSequencer*                 m_sequencer;
     LocalEqualsLocalAddrAssertions* m_lclAddrAssertions;
 
@@ -907,7 +908,8 @@ public:
         }
 #endif // DEBUG
 
-        m_stmtModified = false;
+        m_stmtModified            = false;
+        m_stmtSideEffectsModified = false;
 
         if (m_sequencer != nullptr)
         {
@@ -921,6 +923,11 @@ public:
 
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
+
+        if (m_stmtSideEffectsModified)
+        {
+            m_compiler->gtUpdateStmtSideEffects(stmt);
+        }
 
         if (m_sequencer != nullptr)
         {
@@ -1493,7 +1500,7 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        GenTreeFlags defFlag    = GTF_EMPTY;
+        GenTreeFlags defFlags   = GTF_EMPTY;
         GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
         bool         escapeAddr = true;
         if ((callUser != nullptr) && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
@@ -1534,11 +1541,13 @@ private:
             {
                 INDEBUG(varDsc->SetDefinedViaAddress(true));
                 escapeAddr = false;
-                defFlag    = GTF_VAR_DEF;
+                defFlags   = GTF_VAR_DEF;
+                m_stmtSideEffectsModified |= (callUser->gtFlags & GTF_ASG) == 0;
+                callUser->gtFlags |= GTF_ASG;
 
                 if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(defSize)))
                 {
-                    defFlag |= GTF_VAR_USEASG;
+                    defFlags |= GTF_VAR_USEASG;
                 }
             }
         }
@@ -1573,7 +1582,7 @@ private:
 #endif // TARGET_64BIT
 
         MorphLocalAddress(val.Node(), lclNum, val.Offset());
-        val.Node()->gtFlags |= defFlag;
+        val.Node()->gtFlags |= defFlags;
 
         INDEBUG(val.Consume();)
     }
@@ -1621,6 +1630,7 @@ private:
 
             MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
             node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
+            m_stmtSideEffectsModified = true;
         }
         else
         {
@@ -1928,8 +1938,9 @@ private:
             }
         }
 
-        lclNode->gtFlags = lclNodeFlags;
-        m_stmtModified   = true;
+        lclNode->gtFlags          = lclNodeFlags;
+        m_stmtModified            = true;
+        m_stmtSideEffectsModified = true;
     }
 
     //------------------------------------------------------------------------
