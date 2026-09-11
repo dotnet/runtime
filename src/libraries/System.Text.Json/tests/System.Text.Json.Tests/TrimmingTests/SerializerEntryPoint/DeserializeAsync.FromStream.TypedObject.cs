@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -11,7 +12,7 @@ namespace SerializerTrimmingTest
 {
     /// <summary>
     /// Tests that the serializer's JsonSerializer.DeserializeAsync<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo,
-    /// CancellationToken cancellationToken) overload is trimming safe. A collection and a POCO are used.
+    /// CancellationToken cancellationToken) overload is trimming-safe. A collection and a POCO are used.
     /// </summary>
     internal class Program
     {
@@ -23,6 +24,7 @@ namespace SerializerTrimmingTest
                 int[] arr = await JsonSerializer.DeserializeAsync(stream, Context.Default.Int32Array);
                 if (arr is not [1])
                 {
+                    Console.Error.WriteLine("Deserializing int[] returned an unexpected value.");
                     return -1;
                 }
             }
@@ -33,7 +35,8 @@ namespace SerializerTrimmingTest
                 MyClassWithParameterizedCtor obj = await JsonSerializer.DeserializeAsync(stream, Context.Default.MyClassWithParameterizedCtor);
                 if (obj is not { X: 1, Y: 2 })
                 {
-                    return -2;
+                    Console.Error.WriteLine("Deserializing MyClassWithParameterizedCtor returned an unexpected value.");
+                    return -1;
                 }
             }
 

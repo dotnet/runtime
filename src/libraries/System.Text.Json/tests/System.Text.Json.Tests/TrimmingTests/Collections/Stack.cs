@@ -8,13 +8,18 @@ using System.Text.Json.Serialization;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that source generated metadata for (de)serializing Stack is trimming safe.
+    /// Tests that source generated metadata for (de)serializing Stack is trimming-safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            return TestHelper.RoundtripCollection("[1]", Context.Default.Stack) ? 100 : -1;
+            if (!TestHelper.RoundtripCollection("[1]", typeof(Stack), Context.Default))
+            {
+                return -1;
+            }
+
+            return 100;
         }
     }
 

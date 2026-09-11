@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -8,7 +9,7 @@ namespace SerializerTrimmingTest
 {
     /// <summary>
     /// Tests that the serializer's JsonSerializer.Serialize<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
-    /// overload is trimming safe. A collection and a POCO are used.
+    /// overload is trimming-safe. A collection and a POCO are used.
     /// </summary>
     internal class Program
     {
@@ -17,13 +18,15 @@ namespace SerializerTrimmingTest
             int[] arr = [1];
             if (JsonSerializer.Serialize(arr, Context.Default.Int32Array) != "[1]")
             {
+                Console.Error.WriteLine("Serializing int[] produced unexpected JSON.");
                 return -1;
             }
 
             MyStruct obj = default;
             if (!TestHelper.JsonEqual("""{"X":0,"Y":0}""", JsonSerializer.Serialize(obj, Context.Default.MyStruct)))
             {
-                return -2;
+                Console.Error.WriteLine("Serializing MyStruct produced unexpected JSON.");
+                return -1;
             }
 
             return 100;

@@ -8,13 +8,18 @@ using System.Text.Json.Serialization;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that source generated metadata for (de)serializing Hashtable is trimming safe.
+    /// Tests that source generated metadata for (de)serializing Hashtable is trimming-safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            return TestHelper.RoundtripCollection("""{"Key":1}""", Context.Default.Hashtable) ? 100 : -1;
+            if (!TestHelper.RoundtripCollection("""{"Key":1}""", typeof(Hashtable), Context.Default))
+            {
+                return -1;
+            }
+
+            return 100;
         }
     }
 

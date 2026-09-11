@@ -8,13 +8,18 @@ using System.Text.Json.Serialization;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that source generated metadata for (de)serializing IList is trimming safe.
+    /// Tests that source generated metadata for (de)serializing IList is trimming-safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            return TestHelper.RoundtripCollection("[1]", Context.Default.IList) ? 100 : -1;
+            if (!TestHelper.RoundtripCollection("[1]", typeof(IList), Context.Default))
+            {
+                return -1;
+            }
+
+            return 100;
         }
     }
 
