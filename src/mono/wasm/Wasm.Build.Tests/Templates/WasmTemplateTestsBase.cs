@@ -102,7 +102,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
-        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddCoreClrProjectProperties(ref extraProperties);
 
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
@@ -139,7 +139,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
-        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddCoreClrProjectProperties(ref extraProperties);
 
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
@@ -153,36 +153,14 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-    private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    private static void AddCoreClrProjectProperties(ref string extraProperties)
     {
         if (!s_buildEnv.IsCoreClrRuntime)
             return;
 
-        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
-
         extraProperties +=
         """
             <UseMonoRuntime>false</UseMonoRuntime>
-        """;
-        extraItems +=
-        $$"""
-            <KnownFrameworkReference Update="Microsoft.NETCore.App"
-                                     Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-              <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
-              <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
-              <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
-            </KnownFrameworkReference>
-        """;
-        insertAtEnd +=
-        $$"""
-            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences"
-                    Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-                <ItemGroup>
-                <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
-                </KnownWebAssemblySdkPack>
-                </ItemGroup>
-            </Target>
         """;
     }
 
