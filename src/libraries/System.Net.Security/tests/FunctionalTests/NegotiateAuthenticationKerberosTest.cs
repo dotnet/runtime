@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Net.Security.Kerberos;
 using System.Net.Test.Common;
 using Kerberos.NET.Entities.Pac;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -89,7 +90,13 @@ namespace System.Net.Security.Tests
                 using NegotiateAuthentication serverNegotiateAuthentication = AuthenticateLoopback();
                 var identity = Assert.IsAssignableFrom<ClaimsIdentity>(serverNegotiateAuthentication.RemoteIdentity);
 
-                Assert.Equal($"{DomainSid}-1104", identity.FindFirst(ClaimTypes.PrimarySid)?.Value);
+                Claim? primarySid = identity.FindFirst(ClaimTypes.PrimarySid);
+                if (primarySid is null)
+                {
+                    throw new SkipTestException("The GSS mechanism does not expose the Kerberos PAC name attribute.");
+                }
+
+                Assert.Equal($"{DomainSid}-1104", primarySid.Value);
                 Assert.Equal($"{DomainSid}-513", identity.FindFirst(ClaimTypes.PrimaryGroupSid)?.Value);
                 Assert.Equal(
                     new[] { $"{DomainSid}-513", $"{DomainSid}-1105", "S-1-5-21-111-222-333-1201" },

@@ -155,9 +155,9 @@ namespace System.Net.Security
             if (!TryReadGroupMemberships(ref reader, groupIdsReferent, groupCount, out GroupMembership[]? groups) ||
                 !TryReadUnicodeStringData(ref reader, logonServerReferent, out _) ||
                 !TryReadUnicodeStringData(ref reader, logonDomainNameReferent, out string? logonDomainName) ||
-                !TryReadSid(ref reader, logonDomainIdReferent, out string? logonDomainSid) ||
+                !TryReadSid(ref reader, logonDomainIdReferent, MaxSidSubAuthorityCount - 1, out string? logonDomainSid) ||
                 !TryReadExtraSids(ref reader, extraSidsReferent, sidCount, out List<string>? extraSids) ||
-                !TryReadSid(ref reader, resourceDomainIdReferent, out string? resourceDomainSid) ||
+                !TryReadSid(ref reader, resourceDomainIdReferent, MaxSidSubAuthorityCount - 1, out string? resourceDomainSid) ||
                 !TryReadGroupMemberships(ref reader, resourceGroupIdsReferent, resourceGroupCount, out GroupMembership[]? resourceGroups))
             {
                 return false;
@@ -317,7 +317,7 @@ namespace System.Net.Security
             List<string> result = new List<string>();
             for (int i = 0; i < referents.Length; i++)
             {
-                if (!TryReadSid(ref reader, referents[i], out string? sid))
+                if (!TryReadSid(ref reader, referents[i], MaxSidSubAuthorityCount, out string? sid))
                 {
                     return false;
                 }
@@ -332,7 +332,7 @@ namespace System.Net.Security
             return true;
         }
 
-        private static bool TryReadSid(ref NdrReader reader, uint referent, out string? sid)
+        private static bool TryReadSid(ref NdrReader reader, uint referent, int maxSubAuthorityCount, out string? sid)
         {
             sid = null;
             if (referent == 0)
@@ -347,7 +347,7 @@ namespace System.Net.Security
                 !reader.TryReadByte(out byte subAuthorityCount) ||
                 !reader.TryReadBytes(6, out ReadOnlySpan<byte> identifierAuthority) ||
                 revision != 1 ||
-                subAuthorityCount > MaxSidSubAuthorityCount ||
+                subAuthorityCount > maxSubAuthorityCount ||
                 maxCount != subAuthorityCount)
             {
                 return false;

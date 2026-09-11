@@ -83,6 +83,27 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public void Decode_DomainSidWithoutRidCapacity_ReturnsNull()
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            byte[] sid = Convert.FromHexString("04000000010400000000000515000000");
+            int sidOffset = logonInfo.AsSpan().IndexOf(sid);
+            Assert.True(sidOffset >= 0);
+
+            const int ExistingSubAuthorityCount = 4;
+            const int MaximumSubAuthorityCount = 15;
+            int insertionOffset = sidOffset + 12 + ExistingSubAuthorityCount * sizeof(uint);
+            int additionalBytes = (MaximumSubAuthorityCount - ExistingSubAuthorityCount) * sizeof(uint);
+            byte[] expandedLogonInfo = new byte[logonInfo.Length + additionalBytes];
+            logonInfo.AsSpan(0, insertionOffset).CopyTo(expandedLogonInfo);
+            logonInfo.AsSpan(insertionOffset).CopyTo(expandedLogonInfo.AsSpan(insertionOffset + additionalBytes));
+            expandedLogonInfo[sidOffset] = MaximumSubAuthorityCount;
+            expandedLogonInfo[sidOffset + 5] = MaximumSubAuthorityCount;
+
+            Assert.Null(KerberosPacLogonInfo.Decode(expandedLogonInfo));
+        }
+
+        [Fact]
         public void Decode_LargeIdentifierAuthority_FormatsAsDecimal()
         {
             byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
