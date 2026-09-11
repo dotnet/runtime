@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
@@ -19,7 +20,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace System
 {
-    internal sealed unsafe class RuntimeType : TypeInfo, ICloneable
+    internal sealed unsafe partial class RuntimeType : TypeInfo, ICloneable
     {
         private MethodTable* _pUnderlyingEEType;
         private IntPtr _runtimeTypeInfoHandle;
@@ -808,18 +809,14 @@ namespace System
             return GetRuntimeTypeInfo().GetCustomAttributes(attributeType, inherit);
         }
 
-        public override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return GetRuntimeTypeInfo().CustomAttributes;
-            }
-        }
-
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return GetRuntimeTypeInfo().GetCustomAttributesData();
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
+
+        internal MetadataReader? GetMetadataReader() => GetRuntimeTypeInfo().GetMetadataReader();
+
+        internal CustomAttributeHandleCollection GetCustomAttributeHandles() => GetRuntimeTypeInfo().GetCustomAttributeHandles();
 
         public override string Name
         {

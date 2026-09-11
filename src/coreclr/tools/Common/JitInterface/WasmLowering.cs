@@ -589,7 +589,7 @@ namespace Internal.JitInterface
         public static LoweringFlags GetLoweringFlags(MethodDesc method)
         {
             LoweringFlags flags = 0;
-            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg() || method.IsArrayAddressMethod())
             {
                 flags |= LoweringFlags.HasGenericContextArg;
             }
