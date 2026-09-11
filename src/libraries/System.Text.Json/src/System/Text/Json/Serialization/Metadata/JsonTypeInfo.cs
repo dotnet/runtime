@@ -1163,7 +1163,6 @@ namespace System.Text.Json.Serialization.Metadata
         {
             var map = new Dictionary<JsonValueType, Type>();
             JsonValueType ambiguousValueTypes = JsonValueType.None;
-            JsonNumberHandling? unionNumberHandling = target.NumberHandling;
 
             foreach (JsonUnionCaseInfo info in unionCases)
             {
@@ -1176,7 +1175,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 JsonNumberHandling effectiveNumberHandling =
-                    unionNumberHandling ?? caseTypeInfo.NumberHandling ?? options.NumberHandling;
+                    caseTypeInfo.NumberHandling ?? options.NumberHandling;
                 JsonValueType valueTypes = converter.GetSupportedJsonValueTypes(effectiveNumberHandling);
 
                 AddUnionValueTypes(valueTypes, caseType, map, ref ambiguousValueTypes);
@@ -1216,41 +1215,6 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
             }
-        }
-
-        internal Type? ResolveUnionCaseType(JsonValueType valueType, JsonNumberHandling? numberHandling, out bool isAmbiguous)
-        {
-            Type? resolvedCaseType = null;
-
-            foreach (JsonUnionCaseInfo info in UnionCases)
-            {
-                Type caseType = info.CaseType;
-                JsonTypeInfo caseTypeInfo = Options.GetTypeInfoInternal(caseType);
-                JsonConverter converter = caseTypeInfo.Converter;
-                if (converter.ConverterStrategy is ConverterStrategy.Union)
-                {
-                    continue;
-                }
-
-                JsonNumberHandling effectiveNumberHandling =
-                    numberHandling ?? caseTypeInfo.NumberHandling ?? Options.NumberHandling;
-
-                if ((converter.GetSupportedJsonValueTypes(effectiveNumberHandling) & valueType) == 0)
-                {
-                    continue;
-                }
-
-                if (resolvedCaseType is not null)
-                {
-                    isAmbiguous = true;
-                    return null;
-                }
-
-                resolvedCaseType = caseType;
-            }
-
-            isAmbiguous = false;
-            return resolvedCaseType;
         }
 
         /// <summary>

@@ -413,13 +413,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(typeInfo);
         }
 
-        [JsonNumberHandling(JsonNumberHandling.Strict)]
-        public union StrictIntOrString(int, string);
-
+        [JsonUnion(TypeClassifier = typeof(IntCaseClassifierFactory))]
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
-        public union StringEncodedInt(int);
+        public union NumberHandlingIntUnion(int);
 
+        [JsonUnion(TypeClassifier = typeof(IntCaseClassifierFactory))]
         public union PlainIntUnion(int);
+
+        public sealed class IntCaseClassifierFactory : JsonTypeClassifierFactory
+        {
+            public override bool CanClassify(JsonTypeClassifierContext context) =>
+                context.DeclaringType == typeof(NumberHandlingIntUnion) ||
+                context.DeclaringType == typeof(PlainIntUnion);
+
+            public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
+                static (ref Utf8JsonReader reader) => typeof(int);
+        }
 
         public sealed class UnionNumberHandlingContainer
         {
@@ -430,27 +439,16 @@ namespace System.Text.Json.Serialization.Tests
         public sealed class StrictUnionNumberHandlingContainer
         {
             [JsonNumberHandling(JsonNumberHandling.Strict)]
-            public MixedUnion Value { get; set; } = new(0);
-        }
-
-        [Fact]
-        public async Task UnionNumberHandling_TypeAttributeOverridesOptions()
-        {
-            JsonSerializerOptions options = Serializer.CreateOptions(
-                static options => options.NumberHandling = JsonNumberHandling.AllowReadingFromString);
-
-            StrictIntOrString? value = await Serializer.DeserializeWrapper<StrictIntOrString>("\"hello\"", options);
-
-            Assert.Equal("hello", GetUnionValue(value!));
+            public PlainIntUnion Value { get; set; }
         }
 
         [Fact]
         public async Task UnionNumberHandling_TypeAttributeSupportsReadingAndWritingNumbersAsStrings()
         {
-            StringEncodedInt? value = await Serializer.DeserializeWrapper<StringEncodedInt>("\"42\"");
+            NumberHandlingIntUnion? value = await Serializer.DeserializeWrapper<NumberHandlingIntUnion>("\"42\"");
             Assert.Equal(42, GetUnionValue(value!));
 
-            string json = await Serializer.SerializeWrapper(new StringEncodedInt(42));
+            string json = await Serializer.SerializeWrapper(new NumberHandlingIntUnion(42));
             Assert.Equal("\"42\"", json);
         }
 
@@ -488,12 +486,31 @@ namespace System.Text.Json.Serialization.Tests
         public async Task UnionNumberHandling_StrictPropertyAttributeOverridesOptions()
         {
             JsonSerializerOptions options = Serializer.CreateOptions(
-                static options => options.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+                static options => options.NumberHandling = JsonNumberHandling.WriteAsString);
 
-            StrictUnionNumberHandlingContainer? value =
-                await Serializer.DeserializeWrapper<StrictUnionNumberHandlingContainer>("""{"Value":"hello"}""", options);
+            string json = await Serializer.SerializeWrapper(
+                new StrictUnionNumberHandlingContainer { Value = new PlainIntUnion(42) },
+                options);
 
-            Assert.Equal("hello", GetUnionValue(value!.Value));
+            JsonTestHelper.AssertJsonEqual("""{"Value":42}""", json);
+        }
+
+        [Fact]
+        public async Task UnionNumberHandling_CaseTypeInfoOverridesOptions()
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                static options => options.NumberHandling = JsonNumberHandling.WriteAsString,
+                modifier: static typeInfo =>
+                {
+                    if (typeInfo.Type == typeof(int))
+                    {
+                        typeInfo.NumberHandling = JsonNumberHandling.Strict;
+                    }
+                });
+
+            string json = await Serializer.SerializeWrapper(new PlainIntUnion(42), options);
+
+            Assert.Equal("42", json);
         }
 
         public class Animal { }
