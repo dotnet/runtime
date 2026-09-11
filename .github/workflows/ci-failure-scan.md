@@ -41,10 +41,59 @@ concurrency:
 
 tools:
   github:
-    toolsets: [pull_requests, repos, issues, search]
+    type: remote
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    toolsets: [pull_requests, issues]
+    allowed: [issue_read, search_pull_requests, pull_request_read]
+    allowed-repos: [dotnet/runtime]
     min-integrity: approved
   edit:
   bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
+
+mcp-scripts:
+  search-kbe-issues:
+    description: "Search only dotnet/runtime issues and return inert candidate identifiers with author metadata. Use issue_read to inspect every candidate."
+    inputs:
+      query:
+        type: string
+        required: true
+        description: "GitHub issue search query without a repo qualifier. The tool adds repo:dotnet/runtime and is:issue."
+    script: |
+      if (typeof query !== "string" || !query.trim()) {
+        throw new Error("query must be a non-empty string");
+      }
+      const searchUrl = new URL("https://api.github.com/search/issues");
+      searchUrl.searchParams.set("q", `${query.trim()} repo:dotnet/runtime is:issue`);
+      searchUrl.searchParams.set("per_page", "10");
+      const response = await fetch(searchUrl, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          "X-GitHub-Api-Version": "2022-11-28"
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`GitHub issue search failed with status ${response.status}`);
+      }
+      const result = await response.json();
+      if (!Array.isArray(result.items)) {
+        throw new Error("GitHub issue search returned an invalid response");
+      }
+      return result.items.map((item) => {
+        if (item.repository_url !== "https://api.github.com/repos/dotnet/runtime" ||
+            item.pull_request !== undefined ||
+            !Number.isInteger(item.number) ||
+            typeof item.user?.login !== "string" ||
+            item.user.login.length === 0) {
+          throw new Error("GitHub issue search returned an invalid candidate");
+        }
+        return {
+          number: item.number,
+          user: { login: item.user.login }
+        };
+      });
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 checkout:
   fetch-depth: 50
@@ -90,6 +139,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
 11. **AzDO API: anonymous only.** Stay on `_apis/build/...`. Never call `_apis/test/...` or `vstmr.dev.azure.com` (both redirect to sign-in).
 12. **Don't add `area-*` references to issue titles.** Multi-area titles produce multi-label assignments from the labeler bot.
+13. **Issue search transport is fixed.** Use only `search-kbe-issues` for GitHub issue searches, then inspect every returned candidate with `github` `issue_read` method `get`. Never use `github` `search_issues` or shell `gh` issue search.
 
 ## What this run must accomplish
 
@@ -291,6 +341,16 @@ Follow exactly these sections from `.github/workflows/shared/create-kbe.instruct
 3. `<a id="search-area-team-tracker"></a>` / `## Search for an area-team tracker`
 4. `<a id="search-existing-prs"></a>` / `## Search for existing PRs already handling the failure`
 5. `<a id="verify-embedded-issues"></a>` / `## Verify every embedded issue number exists`
+
+All issue-search query variants in those sections MUST go through
+`search-kbe-issues`. The wrapper adds `repo:dotnet/runtime is:issue` and returns
+at most 10 inert candidate records containing only the issue number and
+`user.login`. For every returned number, call `github` `issue_read` with
+`owner: dotnet`, `repo: runtime`, and `method: get` before making any semantic
+duplicate or tracker decision. A wrapper failure or integrity-filtered/failed
+candidate read must fail closed as specified in the shared instructions.
+Use the built-in `search_pull_requests` and `pull_request_read` tools only for
+the PR searches in that flow.
 
 When searching, account for the fact that the same signature can be filed in
 different `ErrorMessage` representations. A KBE recorded in `<a id="kbe-array-form"></a>`

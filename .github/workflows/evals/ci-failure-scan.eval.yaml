@@ -35,6 +35,8 @@ stimuli:
           dest: .github/workflows/ci-failure-scan.md
         - src: ../shared/create-kbe.instructions.md
           dest: .github/workflows/shared/create-kbe.instructions.md
+        - src: search-kbe-issues.cjs
+          dest: .github/workflows/evals/search-kbe-issues.cjs
     constraints:
       max_tokens: 500000
       max_turns: 100
@@ -48,7 +50,7 @@ stimuli:
       1. Find a recent failed build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API. It is anonymous and needs no auth, so stay on `_apis/build/...`. Start with `runtime-extra-platforms`, which is definition 154, and fall back to other outer-loop defs if needed.
          `curl -fsSL "https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=failed&\$top=5&api-version=7.1"`
       2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count.
-      3. Before filing, check whether an equivalent KBE already exists so you would not duplicate it. Run `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open` and also search by your signature text. Assume you would file only if none matches.
+      3. Before filing, check whether an equivalent KBE already exists so you would not duplicate it. The eval runner does not launch workflow-frontmatter MCP servers, so invoke its CLI harness for the workflow's `search-kbe-issues` wrapper with `node .github/workflows/evals/search-kbe-issues.cjs '<query>'` for `in:title "[ci-scan]"` and for your signature text. For every candidate returned by either query, call the GitHub `issue_read` tool with `owner: dotnet`, `repo: runtime`, and `method: get` before deciding whether it matches. Do not use any other shell issue search or the built-in `search_issues` tool. Assume you would file only if every readable candidate is unrelated; fail closed if a candidate cannot be read.
 
       Then **emit the create-issue safe-output you would file, as a single markdown document at `./out/kbe.md`**, in exactly this shape.
 
@@ -111,7 +113,17 @@ stimuli:
         config:
           required:
             - name: '^(bash|powershell)$'
-              command: 'gh (search|issue)'
+              command: '\.github/workflows/evals/search-kbe-issues\.cjs'
+              min_count: 2
+            - name: 'issue_read'
+              args:
+                owner: '^dotnet$'
+                repo: '^runtime$'
+                method: '^get$'
+          disallowed:
+            - name: '^(bash|powershell)$'
+              command: '(gh (search|issue)|api\.github\.com/search/issues)'
+            - name: 'search_issues'
 
       - type: prompt
         name: kbe-format-conformant
