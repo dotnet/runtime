@@ -192,11 +192,12 @@ Copyright (c) .NET Foundation. All rights reserved.
         Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true' and Exists('$(IntermediateLinkDir)%(ResolvedFileToPublish.FileName).dll')" />
     </ItemGroup>
     <ItemGroup>
-      <!-- The linker output is exactly ManagedAssemblyToLink minus what trimming removed, so map that
-           item into IntermediateLinkDir (mirrors ILLink's own _LinkedResolvedFileToPublishCandidate)
-           rather than globbing every *.dll in the dir. -->
-      <_WasmReadyToRunCompileInput Include="@(ManagedAssemblyToLink->'$(IntermediateLinkDir)%(FileName)%(Extension)')"
-                                   Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <!-- Source the compile+publish set from the on-disk linker output, not @(ManagedAssemblyToLink):
+           on an incremental publish where ILLink is up-to-date and its prep target is skipped, that item
+           is not populated, so the trimmed framework assemblies drop out of ResolvedFileToPublish and are
+           omitted from the served bundle (empty coreAssembly, non-bootable). The linked dir holds exactly
+           the trimmed closure, so this is equivalent on a full build and correct on an incremental one. -->
+      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
       <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(FileName)%(Extension)"
