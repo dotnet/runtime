@@ -531,18 +531,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 // The reflection fallback references an InstanceMemberBindingFlags const and, for value-type setters, a
-                // ValueTypeSetter<,> delegate.
+                // ValueTypeSetter<,> delegate; the shared helper owns their declarations so the emitted names and
+                // signatures stay in sync with the fallback code that consumes them.
                 if (needsBindingFlags)
                 {
-                    _writer.WriteLine();
-                    _writer.WriteLine("private const global::System.Reflection.BindingFlags InstanceMemberBindingFlags =");
-                    _writer.WriteLine("    global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic;");
+                    _writer.WriteLine(UnsafeAccessorEmitter.InstanceMemberBindingFlagsDeclaration);
                 }
 
                 if (needsValueTypeSetterDelegate)
                 {
                     _writer.WriteLine();
-                    _writer.WriteLine("private delegate void ValueTypeSetter<TDeclaringType, TValue>(ref TDeclaringType obj, TValue value);");
+                    _writer.WriteLine(UnsafeAccessorEmitter.ValueTypeSetterDelegateDeclaration);
                 }
 
                 _emitBlankLineBeforeNextStatement = true;
