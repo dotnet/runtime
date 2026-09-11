@@ -38,6 +38,7 @@ parameters:
   disableComponentGovernance: ''
   liveRuntimeDir: ''
   dacMode: ''
+  useRuntimeCDac: false
   classFilter: ''
   methodFilter: ''
   testInterpreter: false
@@ -91,6 +92,7 @@ jobs:
       - _TestArgs: '-test'
       - _Cross: ''
       - _DacModeArgs: ''
+      - _CDacPackageArgs: ''
       - _ClassFilterArgs: ''
       - _MethodFilterArgs: ''
       - _TestInterpreterArgs: ''
@@ -106,13 +108,13 @@ jobs:
       - ${{ if or(eq(parameters.buildOnly, 'true'), eq(parameters.isCodeQLRun, 'true')) }}:
         - _TestArgs: ''
 
-      # Selects which DAC/cDAC SOS loads (see DacMode in dotnet/diagnostics SOSRunner). The cdac mode
-      # restores the runtime-under-test's cDAC transport package from the local source configured by
-      # sos-test-leg.yml, which installs its matching cDAC and DBI next to sos.dll.
-      - ${{ if eq(parameters.dacMode, 'cdac') }}:
-        - _DacModeArgs: '-dacMode cdac /p:PackageWithCDac=true /p:runtimewinx64MicrosoftDotNetCdacTransportVersion=$(cdacTransportVersion) /p:RestoreAdditionalProjectSources=$(cdacTransportSource)'
-      - ${{ elseif ne(parameters.dacMode, '') }}:
+      # Selects which DAC/cDAC SOS loads (see DacMode in dotnet/diagnostics SOSRunner).
+      - ${{ if ne(parameters.dacMode, '') }}:
         - _DacModeArgs: '-dacMode ${{ parameters.dacMode }}'
+
+      # Installs the cDAC and DBI produced by the runtime build without changing SOS's default policy.
+      - ${{ if eq(parameters.useRuntimeCDac, 'true') }}:
+        - _CDacPackageArgs: '/p:PackageWithCDac=true /p:runtimewinx64MicrosoftDotNetCdacTransportVersion=$(cdacTransportVersion) /p:RestoreAdditionalProjectSources=$(cdacTransportSource)'
 
       - ${{ if ne(parameters.classFilter, '') }}:
         - _ClassFilterArgs: '-classfilter ${{ parameters.classFilter }}'
@@ -221,6 +223,7 @@ jobs:
           -architecture ${{ parameters.archType }} `
           -privatebuild `
           $(_DacModeArgs) `
+          $(_CDacPackageArgs) `
           $(_TestInterpreterArgs) `
           -liveRuntimeDir ${{ parameters.liveRuntimeDir }} `
           $(_InternalInstallArgs) `
@@ -239,6 +242,7 @@ jobs:
           -architecture ${{ parameters.archType }} `
           -privatebuild `
           $(_DacModeArgs) `
+          $(_CDacPackageArgs) `
           $(_TestInterpreterArgs) `
           -liveRuntimeDir ${{ parameters.liveRuntimeDir }} `
           $(_InternalInstallArgs) `

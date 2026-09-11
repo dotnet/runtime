@@ -1,7 +1,6 @@
 # sos-test-leg.yml -- wraps the matrix + job + dep + artifact download +
-# standard postBuildSteps pattern used by the SOS-style test legs (cDAC,
-# cDAC_verify, DAC) that run on windows_x64. Each of those legs
-# only differs in its `name` and `dacMode` value.
+# standard postBuildSteps pattern used by the SOS-style test legs (PreferCDac
+# and DAC) that run on windows_x64.
 #
 # AzDO tasks workaround:
 #   PublishTestResults v2.270.0 garbles parameterized xUnit test names
@@ -14,6 +13,9 @@ parameters:
 - name: dacMode
   type: string
   default: ''
+- name: useRuntimeCDac
+  type: boolean
+  default: false
 
 jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -28,6 +30,7 @@ jobs:
     jobParameters:
       name: ${{ parameters.name }}
       dacMode: ${{ parameters.dacMode }}
+      useRuntimeCDac: ${{ parameters.useRuntimeCDac }}
       testInterpreter: true
       methodFilter: SOS*
       isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -42,9 +45,7 @@ jobs:
           artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
           unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
           displayName: 'Runtime Build Artifacts'
-      # The cdac leg exercises the runtime-under-test's matching cDAC and DBI pair. Download the
-      # transport package produced by the runtime build and expose it as a local NuGet source.
-      - ${{ if eq(parameters.dacMode, 'cdac') }}:
+      - ${{ if eq(parameters.useRuntimeCDac, true) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac

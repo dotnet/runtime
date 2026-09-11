@@ -3,8 +3,8 @@
 # Pipeline overview:
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by 3 SOS
-#                      legs that run on top of it: cDAC, cDAC_verify, DAC.
+#                      -rc release -lc release -clrinterpreter) consumed by 2 SOS
+#                      legs that run on top of it: PreferCDac and DAC.
 #                      Each leg sets testInterpreter: true so interpreter coverage
 #                      is exercised inline (no separate Interpreter leg).
 #
@@ -116,7 +116,7 @@ extends:
     stages:
 
     # ----------------------------------------------------------------------
-    # SOS tests: shared windows_x64 build + 3 SOS legs that consume it.
+    # SOS tests: shared windows_x64 build + 2 SOS legs that consume it.
     # ----------------------------------------------------------------------
     - stage: SOSTests
       jobs:
@@ -151,7 +151,7 @@ extends:
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
                 displayName: Build Assets
-            # Publish the transport package so the cDAC-only SOS leg consumes the same cDAC and DBI
+            # Publish the transport package so the PreferCDac leg consumes the same cDAC and DBI
             # pair produced by this runtime build.
             - powershell: |
                 $packagePattern = "$(Build.SourcesDirectory)\artifacts\packages\Debug\NonShipping\runtime.win-$(archType).Microsoft.DotNet.Cdac.Transport.*.nupkg"
@@ -178,19 +178,11 @@ extends:
       # SOS test legs: each depends on the shared build above. Differ only in
       # name (artifact namespace) and the cDAC/DAC load mode.
 
-      # cDAC: the runtime-under-test's own standalone cDAC (mscordaccore_universal) loaded through SOS's
-      # standard cDAC hosting path (overlaying the freshly built cDAC next to sos.dll).
+      # Exercise SOS's default behavior, which prefers cDAC and falls back to the DAC.
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
-          name: cDAC
-          dacMode: cdac
-
-      # cDAC_verify: the in-box DAC hosts the cDAC contract reader without fallback,
-      # while still verifying against the legacy DAC.
-      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
-        parameters:
-          name: cDAC_verify
-          dacMode: cdacverify
+          name: PreferCDac
+          useRuntimeCDac: true
 
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
