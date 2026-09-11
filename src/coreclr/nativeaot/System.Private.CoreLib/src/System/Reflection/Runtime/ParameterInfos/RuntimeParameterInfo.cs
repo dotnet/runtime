@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 
+using Internal.Metadata.NativeFormat;
+
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //
@@ -21,7 +23,6 @@ namespace System.Reflection.Runtime.ParameterInfos
         }
 
         public abstract override ParameterAttributes Attributes { get; }
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override object DefaultValue { get; }
         public abstract override object RawDefaultValue { get; }
 
@@ -33,7 +34,11 @@ namespace System.Reflection.Runtime.ParameterInfos
             return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {

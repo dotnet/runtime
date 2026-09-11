@@ -1908,6 +1908,11 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "UG", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "UGviiii", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "UGvriiii", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "MS56Tp", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "MS56Tip", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "MS16Tp", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "IS16Tip", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "IS56Tip", out diag), diag);
         }
     }
 

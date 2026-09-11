@@ -30,7 +30,13 @@ public class GenericVirtualMethodUnloading
     [Fact]
     public static void CallGenericVirtualMethodAcrossUnloads()
     {
-        string payloadPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "GenericVirtualMethodUnloaded.dll");
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return;
+        }
+
+        string payloadPath = Path.Combine(Path.GetDirectoryName(assemblyPath), "GenericVirtualMethodUnloaded.dll");
 
         for (int iteration = 0; iteration < 10; iteration++)
         {
