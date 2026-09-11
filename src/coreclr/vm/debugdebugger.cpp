@@ -194,13 +194,26 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     //        NOT AT ALL!!!, but we can assume it's a function
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
+    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
+
+#ifdef TARGET_WASM
+    // The portable-entrypoint slow path keeps its prestub frame active while it invokes a newly
+    // discovered R2R body. The body is already reported as a frameless method.
+    if (!pCf->IsFrameless() &&
+        pCf->GetFrame()->GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame &&
+        pData->cElements > 0 &&
+        pData->pElements[pData->cElements - 1].pFunc == pFunc &&
+        pData->pElements[pData->cElements - 1].ip != (PCODE)NULL)
+    {
+        return SWA_CONTINUE;
+    }
+#endif // TARGET_WASM
 
     if (pFunc != nullptr && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
     {
         return SWA_CONTINUE;
     }
 
-    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
     if (pData->cElements >= pData->cElementsAllocated)
     {
         DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*pData->cElementsAllocated];
