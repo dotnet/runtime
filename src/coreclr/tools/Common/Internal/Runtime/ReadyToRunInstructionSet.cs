@@ -105,5 +105,6 @@ namespace Internal.ReadyToRunConstants
         PackedSimd = 92,
         Cssc = 93,
         Zicond = 94,
+        Fp16 = 95,
     }
 }

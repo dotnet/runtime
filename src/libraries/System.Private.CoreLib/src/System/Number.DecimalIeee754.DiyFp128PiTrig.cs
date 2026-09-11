@@ -17,21 +17,20 @@ internal static partial class Number
     // below 2^113), so the pi-scaled reduction avoids the large-argument cancellation that motivates a
     // dedicated *Pi routine. The inverse variants are the radian result divided by pi.
 
-    private static readonly DiyFp128 UxQuarter = new DiyFp128(0, -1, UxMsb, 0);
-    private static readonly DiyFp128 UxHalf = new DiyFp128(0, 0, UxMsb, 0);
-    private static readonly DiyFp128 UxThreeQuarter = new DiyFp128(0, 0, 0xC000000000000000, 0);
-    private static readonly DiyFp128 UxOne = new DiyFp128(0, 1, UxMsb, 0);
+    private static DiyFp128 UxQuarter => new DiyFp128(0, -1, UxMsb, 0);
+    private static DiyFp128 UxHalf => new DiyFp128(0, 0, UxMsb, 0);
+    private static DiyFp128 UxThreeQuarter => new DiyFp128(0, 0, 0xC000000000000000, 0);
+    private static DiyFp128 UxOne => new DiyFp128(0, 1, UxMsb, 0);
 
     // 0, 1/4, 1/2, 3/4, 1 -- InvTrigConstants (0, pi/4, pi/2, 3pi/4, pi) divided by pi, for the exact
     // signed-zero/infinity quadrant results of the inverse *Pi variants.
-    private static readonly DiyFp128[] PiFractionConstants = new DiyFp128[]
+    private static DiyFp128 GetPiFractionConstant(int index)
     {
-        new DiyFp128(0, UxZeroExponent, 0, 0), // 0
-        UxQuarter,                             // 1/4
-        UxHalf,                                // 1/2
-        UxThreeQuarter,                        // 3/4
-        UxOne,                                 // 1
-    };
+        ReadOnlySpan<int> exponents = [UxZeroExponent, -1, 0, 0, 1];
+        ReadOnlySpan<ulong> significands = [0, UxMsb, UxMsb, 0xC000000000000000, UxMsb];
+
+        return new DiyFp128(0, exponents[index], significands[index], 0);
+    }
 
     private static bool DiyFp128IsZero(in DiyFp128 value) => (value._hi | value._lo) == 0;
 
@@ -123,7 +122,7 @@ internal static partial class Number
     }
 
     // reduced (in [0, 1/4]) * pi -> a small angle in [0, pi/4].
-    private static DiyFp128 DiyFp128TimesPi(in DiyFp128 reduced) => DiyFp128Product(reduced, InvTrigConstants[4]);
+    private static DiyFp128 DiyFp128TimesPi(in DiyFp128 reduced) => DiyFp128Product(reduced, GetInvTrigConstant(4));
 
     private static DiyFp128 DiyFp128Difference(in DiyFp128 a, in DiyFp128 b)
     {

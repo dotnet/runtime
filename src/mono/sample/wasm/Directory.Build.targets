@@ -33,6 +33,7 @@
     <NestedBuildProperty Include="InvariantGlobalization" />
     <NestedBuildProperty Include="InvariantTimezone" />
     <NestedBuildProperty Include="PublishTrimmed" />
+    <NestedBuildProperty Include="PublishReadyToRun" />
     <NestedBuildProperty Include="RunAOTCompilation" />
     <NestedBuildProperty Include="UsingNativeAOT" />
     <NestedBuildProperty Include="WasmBuildNative" />

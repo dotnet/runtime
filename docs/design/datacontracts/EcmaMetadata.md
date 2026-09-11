@@ -55,6 +55,7 @@ Types from other contracts:
 | `StgPoolSeg` | `DataSize` | `uint32` | Live byte count of this extension segment |
 | `StgPoolSeg` | `NextSegment` | `pointer` | Pointer to the next pool segment, or null |
 | `StgPoolSeg` | `SegData` | `pointer` | Pointer to this extension segment's data |
+| `TableRW` | *(type size)* | `uint32` | Size in bytes of each TableRW entry in the CMiniMdRW tables array |
 
 ### Global variables used
 

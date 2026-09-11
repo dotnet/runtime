@@ -9,6 +9,7 @@ parameters:
   scenarios: ['WasmTestOnWasmtime']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
+  useHelixMonitor: false
 
 jobs:
 
@@ -84,3 +85,4 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
             extraHelixArguments: $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}

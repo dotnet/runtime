@@ -258,7 +258,8 @@ Bumping Emscripten version involves these steps:
 * bump emscripten in https://github.com/dotnet/emsdk
 * bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
 * update version number in docs
-* update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
+* bump `EmsdkVersion` in https://github.com/dotnet/runtime/blob/main/eng/Versions.props
+* update the version and sha hash of the `Microsoft.NET.Runtime.Emscripten.Internal` dependency in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml. The sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6. That package carries no files, it only tracks the version of the emsdk packages, whose own IDs contain the Emscripten version and the RID.
 * update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/WorkloadManifest.json.in
 
 ## Upgrading NPM packages

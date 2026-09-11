@@ -174,7 +174,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        return new MetaDataImportImpl(reader);
+        return new MetaDataImportImpl(reader, legacyImport: null, new());
     }
 
     [Fact]
@@ -629,7 +629,7 @@ public unsafe class MetaDataImportImplTests
         // When only reader is available (no legacy), implemented methods should still work
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         uint flags;
         char* nameBuf = stackalloc char[256];
@@ -647,7 +647,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         uint rva, implFlags;
         // DoWork is MethodDef token 0x06000002
@@ -661,7 +661,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         uint rva;
         // TypeDef token (0x02) is not MethodDef or FieldDef
@@ -674,7 +674,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         void* pData;
         uint cbData;
@@ -693,7 +693,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         void* pData;
         uint cbData;
@@ -711,7 +711,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         uint tkAssembly;
@@ -725,7 +725,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         char* nameBuf = stackalloc char[256];
@@ -750,7 +750,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         // mscorlib assembly ref is token 0x23000001
@@ -775,7 +775,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         char* nameBuf = stackalloc char[5];
@@ -810,7 +810,7 @@ public unsafe class MetaDataImportImplTests
         fixed (byte* ptr = metadata.AsSpan())
         {
             var reader = new MetadataReader(ptr, metadata.Length);
-            IMetaDataImport2 impl = new MetaDataImportImpl(reader);
+            IMetaDataImport2 impl = new MetaDataImportImpl(reader, legacyImport: null, new());
             var assemblyImport = (IMetaDataAssemblyImport)impl;
 
             // Pass an invalid assembly token (wrong RID)
@@ -907,7 +907,7 @@ public unsafe class MetaDataImportImplTests
         fixed (byte* ptr = bytes.AsSpan())
         {
             var reader = new MetadataReader(ptr, bytes.Length);
-            IMetaDataImport2 impl = new MetaDataImportImpl(reader);
+            IMetaDataImport2 impl = new MetaDataImportImpl(reader, legacyImport: null, new());
 
             uint parentClass;
             int hr = impl.GetFieldProps(0x04000001, &parentClass, null, 0, null, null, null, null, null, null, null);
@@ -975,7 +975,7 @@ public unsafe class MetaDataImportImplTests
         var (reader, provider) = CreateTestMetadata();
         using var _ = provider;
 
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(wrapper);
 

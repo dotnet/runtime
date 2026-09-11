@@ -323,6 +323,17 @@ Returns 1 on success, 0 on failure.
 PALEXPORT int32_t CryptoNative_SslSetFd(SSL* ssl, intptr_t fd);
 
 /*
+Sets SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER on the SSL object.
+
+By default OpenSSL remembers the address of the plaintext buffer handed to a
+SSL_write which could not be fully flushed, and fails a subsequent retry that
+supplies a different address with SSL_R_BAD_WRITE_RETRY. Managed callers hand
+over spans of GC-tracked memory which the collector may relocate between the
+WANT_WRITE and the retry, so the address comparison is meaningless for us.
+*/
+PALEXPORT void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl);
+
+/*
 Raw SSL_do_handshake wrapper for fd-bound SSL objects (SSL_set_fd path).
 Returns the SSL_do_handshake return value; errorCode receives SSL_get_error.
 */
@@ -546,7 +557,6 @@ PALEXPORT void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx);
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
-PALEXPORT int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites);
 
 /*
 Determines if TLS 1.3 is supported by this OpenSSL implementation

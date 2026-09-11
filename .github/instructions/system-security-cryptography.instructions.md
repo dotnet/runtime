@@ -1,14 +1,15 @@
 ---
-applyTo: "src/libraries/System.Security.Cryptography/**"
+applyTo: "src/libraries/System.Security.Cryptography*/**,src/libraries/Microsoft.Bcl.Cryptography/**,src/libraries/Common/src/System/Security/Cryptography/**,src/libraries/Common/tests/System/Security/Cryptography/**"
 ---
 
-# System.Security.Cryptography — Folder-Specific Guidance
+# Guidance for .NET Cryptography Libraries
 
 ## Code Style
 
 - Prefer scoped `using (...) { ... }` statements over `using` declarations (`using var ...`) so resource lifetimes and disposal scopes are explicit. This reinforces `csharp_prefer_simple_using_statement = false:none` in `.editorconfig`.
 - When an `if` statement follows another statement in the same block, insert a blank line before the `if`. Do not add an artificial leading blank line when the `if` is the first statement in a block.
 - Declare members of internal types as `internal`, not `public`, except when `public` accessibility is required to implement a contract such as an interface.
+- Do not fix existing code style mistakes unless they are in lines of code already being changed, or have been explicitly instructed to address formatting in unrelated areas.
 
 ## Correctness
 

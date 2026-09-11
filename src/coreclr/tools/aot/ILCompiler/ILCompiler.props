@@ -52,5 +52,6 @@
 
   <ItemGroup>
     <Compile Remove="repro\*" />
+    <Compile Remove="reproZero\*" />
   </ItemGroup>
 </Project>

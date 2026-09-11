@@ -11,11 +11,11 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 8
+#define GC_INTERFACE_MINOR_VERSION 9
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 4
+#define EE_INTERFACE_MAJOR_VERSION 5
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -658,23 +658,23 @@ class IGCHeap {
 public:
     /*
     ===========================================================================
-    Hosting APIs. These are used by GC hosting. The code that
-    calls these methods may possibly be moved behind the interface -
-    today, the VM handles the setting of segment size and max gen 0 size.
-    (See src/vm/corehost.cpp)
+    Heap sizing and virtual memory limit APIs.
     ===========================================================================
     */
 
     // Returns whether or not the given size is a valid segment size.
+    // No longer used by the VM in .NET Core 2.1+
     virtual bool IsValidSegmentSize(size_t size) PURE_VIRTUAL
 
     // Returns whether or not the given size is a valid gen 0 max size.
+    // No longer used by the VM in .NET Core 2.1+
     virtual bool IsValidGen0MaxSize(size_t size) PURE_VIRTUAL
 
     // Gets a valid segment size.
     virtual size_t GetValidSegmentSize(bool large_seg = false) PURE_VIRTUAL
 
     // Sets the limit for reserved virtual memory.
+    // No longer used in .NET Core 2.1+
     virtual void SetReservedVMLimit(size_t vmlimit) PURE_VIRTUAL
 
     /*

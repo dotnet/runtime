@@ -4,7 +4,6 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -36,52 +35,53 @@ internal static class R2RAssert
         return methods;
     }
 
-    /// <summary>
-    /// Returns true if any WASM function body in the image contains a <c>global.get</c> of the
-    /// given ABI well-known-global index, emitted as a maximally padded 5-byte
-    /// <c>WASM_GLOBAL_INDEX_LEB</c> reference (the <c>global.get</c> opcode <c>0x23</c> followed
-    /// by the 5-byte padded ULEB128 of the index).
-    /// </summary>
-    /// <remarks>
-    /// The wasm JIT references only the three ABI well-known globals (0 = stack pointer, 1 = image base,
-    /// 2 = table base) in this padded form; ordinary <c>global.get</c> instructions use the minimal
-    /// LEB128 encoding. The R2R object writer self-resolves the relocation in place, so after
-    /// compilation the padded slot holds the fixed index, e.g. image base -&gt;
-    /// <c>23 81 80 80 80 00</c> and table base -&gt; <c>23 82 80 80 80 00</c>. This is a regression
-    /// smoke check for that self-resolution: it scans raw instruction bytes and does not decode
-    /// wasm instruction boundaries.
-    /// </remarks>
-    public static bool WasmImageContainsWellKnownGlobalGet(WebcilImageReader reader, int wellKnownGlobalIndex)
+    public static bool HasStringThunkWithPrefix(ReadyToRunReader reader, string prefix, out string diagnostic)
     {
-        // The well-known globals are 0/1/2, which all fit in a single ULEB128 payload byte. The padded
-        // encoding below only writes that single payload byte, so it is correct for indices <= 0x7F.
-        Debug.Assert((uint)wellKnownGlobalIndex <= 0x7F,
-            $"Only single-byte well-known-global indices are supported; got {wellKnownGlobalIndex}.");
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Any(key => key.StartsWith(prefix, StringComparison.Ordinal) &&
+            (prefix != "U" || (!key.StartsWith("UG", StringComparison.Ordinal) && !key.StartsWith("UM", StringComparison.Ordinal))));
+        diagnostic = found
+            ? $"Found string thunk with prefix '{prefix}'."
+            : $"Expected string thunk with prefix '{prefix}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
 
-        // global.get (0x23) followed by the 5-byte padded ULEB128 of wellKnownGlobalIndex. Padding sets
-        // the continuation bit on the first four bytes and clears the last, so a small index N
-        // encodes as (N | 0x80), 0x80, 0x80, 0x80, 0x00.
-        Span<byte> pattern = stackalloc byte[6];
-        pattern[0] = 0x23;
-        pattern[1] = (byte)((wellKnownGlobalIndex & 0x7F) | 0x80);
-        pattern[2] = 0x80;
-        pattern[3] = 0x80;
-        pattern[4] = 0x80;
-        pattern[5] = 0x00;
+    public static bool HasStringThunk(ReadyToRunReader reader, string lookupString, out string diagnostic)
+    {
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Contains(lookupString, StringComparer.Ordinal);
+        diagnostic = found
+            ? $"Found string thunk '{lookupString}'."
+            : $"Expected string thunk '{lookupString}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
 
-        for (int functionIndex = 0; ; functionIndex++)
+    private static List<string> GetStringThunkKeys(ReadyToRunReader reader)
+    {
+        var keys = new List<string>();
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
         {
-            WebcilImageReader.WasmFunctionInfo? body = reader.GetWasmFunctionBody(functionIndex);
-            if (body is null)
-                break;
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                string signature = entry.Signature.ToString(new SignatureFormattingOptions());
+                const string marker = " (INJECT_STRING_THUNKS";
+                if (!signature.Contains(marker, StringComparison.Ordinal))
+                    continue;
 
-            ReadOnlySpan<byte> instructions = body.Value.Image.AsSpan().Slice(
-                body.Value.InstructionOffset, body.Value.InstructionLength);
-            if (instructions.IndexOf(pattern) >= 0)
-                return true;
+                int start = 0;
+                while ((start = signature.IndexOf('"', start)) >= 0)
+                {
+                    int end = signature.IndexOf('"', start + 1);
+                    if (end < 0)
+                        break;
+
+                    keys.Add(signature.Substring(start + 1, end - start - 1));
+                    start = end + 1;
+                }
+            }
         }
 
-        return false;
+        return keys;
     }
 
     /// <summary>
@@ -1119,10 +1119,21 @@ internal static class R2RAssert
     /// Optionally checks method-level generic instantiation args.
     /// </summary>
     public static bool HasCompiledMethod(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: false, out diagnostic);
+
+    /// <summary>
+    /// Returns true if the image contains a precompiled unboxing thunk with a body for a value type
+    /// method.
+    /// </summary>
+    public static bool HasUnboxingThunk(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: true, out diagnostic);
+
+    private static bool HasCompiledMethodCore(ReadyToRunReader reader, string declaringType, string methodName, string[]? instanceArgs, bool unboxingThunk, out string diagnostic)
     {
         List<ReadyToRunMethod> allMethods = GetAllMethods(reader);
         List<ReadyToRunMethod> matchingMethods = allMethods
             .Where(m => m.DeclaringType == declaringType && m.Name == methodName)
+            .Where(m => m.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal) == unboxingThunk)
             .Where(m =>
             {
                 if (instanceArgs is null)
@@ -1141,6 +1152,8 @@ internal static class R2RAssert
         string expected = instanceArgs is null
             ? $"'{declaringType}.{methodName}'"
             : $"'{declaringType}.{methodName}<{string.Join(",", instanceArgs)}>'";
+        if (unboxingThunk)
+            expected = $"unboxing thunk for {expected}";
 
         if (matchingMethods.Count > 0)
         {
@@ -1150,7 +1163,7 @@ internal static class R2RAssert
 
         diagnostic =
             $"Expected compiled method {expected} not found.\n" +
-            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name}"))}";
+            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name} {m.SignatureString}"))}";
         return false;
     }
 
@@ -1235,11 +1248,15 @@ internal static class R2RAssert
 /// </summary>
 internal sealed class SimpleAssemblyResolver : IAssemblyResolver
 {
-    private readonly TestPaths _paths;
+    private readonly Dictionary<string, string> _assemblyPaths;
 
-    public SimpleAssemblyResolver(TestPaths paths)
+    public SimpleAssemblyResolver(IEnumerable<string> referencePaths)
     {
-        _paths = paths;
+        _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string referencePath in referencePaths)
+        {
+            _assemblyPaths[Path.GetFileNameWithoutExtension(referencePath)] = referencePath;
+        }
     }
 
     public IAssemblyMetadata? FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
@@ -1258,10 +1275,12 @@ internal sealed class SimpleAssemblyResolver : IAssemblyResolver
 
         string candidate = Path.Combine(dir, simpleName + ".dll");
         if (!File.Exists(candidate))
-            candidate = Path.Combine(_paths.RuntimePackDir, simpleName + ".dll");
+        {
+            if (!_assemblyPaths.TryGetValue(simpleName, out string? referencePath) || referencePath is null)
+                return null;
 
-        if (!File.Exists(candidate))
-            return null;
+            candidate = referencePath;
+        }
 
         return new SimpleAssemblyMetadata(candidate);
     }

@@ -119,9 +119,12 @@ namespace Profiler.Tests
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 
-            foreach (string key in envVars.Keys)
+            Console.WriteLine($"Profilee command: \"{startInfo.FileName}\" {startInfo.Arguments}");
+            Console.WriteLine("Profilee environment variables:");
+            foreach (KeyValuePair<string, string> envVar in envVars)
             {
-                startInfo.EnvironmentVariables[key] = envVars[key];
+                Console.WriteLine($"  {envVar.Key}={envVar.Value}");
+                startInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
             }
 
             ProcessTextOutput result = Process.RunAndCaptureText(startInfo);

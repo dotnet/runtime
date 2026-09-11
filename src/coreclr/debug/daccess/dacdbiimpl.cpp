@@ -237,6 +237,8 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    pMetadataLookup - callback interface to do internal metadata lookup. This is because
 //                  metadata is not dac-ized.
 //    ppInterface - mandatory out-parameter
+//    ppLegacyDac - mandatory out-parameter; receives a reference to the native
+//                  DAC when ppInterface receives a cDAC implementation
 //
 // Return Value:
 //    S_OK on success.
@@ -249,7 +251,7 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    This will yield an IDacDbiInterface to provide structured access to the
 //    data-target.
 //
-//    Must call Release on interface to free its resources.
+//    Must call Release on each returned interface to free its resources.
 //
 //---------------------------------------------------------------------------------------
 STDAPI
@@ -260,7 +262,8 @@ DacDbiInterfaceInstance(
     CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
-    IDacDbiInterface ** ppInterface)
+    IDacDbiInterface ** ppInterface,
+    IUnknown ** ppLegacyDac)
 {
 #ifndef CAN_USE_CDAC
     // Consumed only by the cDAC path, which is compiled out here.
@@ -273,12 +276,13 @@ DacDbiInterfaceInstance(
     SUPPORTS_DAC_HOST_ONLY;
 
     // Since this is public, verify it.
-    if ((ppInterface == NULL) || (pTarget == NULL) || (baseAddress == 0))
+    if ((ppInterface == NULL) || (ppLegacyDac == NULL) || (pTarget == NULL) || (baseAddress == 0))
     {
         return E_INVALIDARG;
     }
 
     *ppInterface = NULL;
+    *ppLegacyDac = NULL;
 
     //
     // Actually allocate the real object and initialize it.
@@ -323,11 +327,11 @@ DacDbiInterfaceInstance(
                         HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
                         if (SUCCEEDED(hr))
                         {
-                            // Lifetime is now managed by cDAC implementation
-                            pDac->Release();
-                            // Release the AddRef from the QI for legacyImpl
+                            // Transfer the QI reference to DBI so the legacy DAC remains alive
+                            // until the managed cDAC interface has been released.
                             pDac->Release();
                             *ppInterface = pCDacDbi;
+                            *ppLegacyDac = legacyImpl;
                             return S_OK;
                         }
                     }
@@ -542,6 +546,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FlushCache()
     // Current impl of Flush() should always succeed. If it ever fails, we want to know.
     _ASSERTE(SUCCEEDED(hr));
     return hr;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Destroy()
+{
+    return S_OK;
 }
 
 // enable or disable DAC target consistency checks
@@ -5513,6 +5522,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 {
     DD_ENTER_MAY_THROW;
 
+#ifndef FEATURE_VARARGS
+    *pArgBase = (CORDB_ADDRESS)NULL;
+    *pRetVal = TargetBuffer();
+    return E_NOTIMPL;
+#else // FEATURE_VARARGS
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -5539,6 +5553,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+#endif // FEATURE_VARARGS
 }
 
 // returns TRUE if the type requires 8-byte alignment
@@ -6632,7 +6647,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     if (threadStore != NULL)
     {
         int count = (int)threadStore->ThreadCountInEE();
-        mAllocInfo = new (nothrow) AllocInfo[count + 1];
+        mAllocInfo = new (nothrow) AllocInfo[count];
         if (mAllocInfo == NULL)
             return E_OUTOFMEMORY;
 
@@ -6659,14 +6674,6 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
-        if (globalCtx.alloc_ptr != nullptr)
-        {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
-            j++;
-        }
-
         mAllocContextCount = j;
     }
 

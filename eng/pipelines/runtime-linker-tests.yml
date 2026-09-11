@@ -116,7 +116,11 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s clr+libs+tools.illink+host.native -c $(_BuildConfig) /p:ToolsConfiguration=Debug
+            # This replaces the previous `clr` subset (which expands to `clr.native` and builds every native component)
+            # with a narrower CoreCLR subset list that the trimming/NativeAOT tests need.
+            # Most notably it drops `alljits` (cross-target alt-JITs) and `spmi` (SuperPMI and shims),
+            # none of which these tests use.
+            buildArgs: -s clr.runtime+clr.nativeaotruntime+clr.corelib+clr.tools+clr.nativecorelib+clr.nativeaotlibs+libs+tools.illink+host.native -c $(_BuildConfig) /p:ToolsConfiguration=Debug
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
                 parameters:

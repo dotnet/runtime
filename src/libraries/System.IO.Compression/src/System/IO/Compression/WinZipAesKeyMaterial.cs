@@ -26,7 +26,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
             Salt = salt;
             EncryptionKey = encryptionKey;
@@ -43,7 +43,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
             int saltSize = GetSaltSize(keySizeBits);
             int keySizeBytes = keySizeBits / 8;

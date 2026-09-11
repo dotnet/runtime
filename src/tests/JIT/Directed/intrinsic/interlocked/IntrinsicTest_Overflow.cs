@@ -4,6 +4,8 @@
 
 // Checks that there are no overflows for the interlocked intrinsics generated.
 
+namespace JitTest_Directed_intrinsic_interlocked_IntrinsicTest_Overflow;
+
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
@@ -130,6 +132,7 @@ public class IntrinsicTest
         return fail;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

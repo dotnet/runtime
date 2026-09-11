@@ -814,6 +814,41 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             || t == CorElementType.I
             || t == CorElementType.U;
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    // Mirrors CEEInfo::getClassAlignmentRequirementStatic for managed value types. TypeDesc and
+    // native-value-type paths are omitted because the managed signature decoder cannot produce them.
+    public int GetClassAlignmentRequirement(ITypeHandle typeHandle)
+    {
+        int result = _target.PointerSize;
+        if (!typeHandle.IsMethodTable())
+            return result;
+
+        TargetPointer eeClassPtr = GetClassPointer(typeHandle);
+        if (eeClassPtr != TargetPointer.Null)
+        {
+            Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
+
+            // LayoutInfo aliases unrelated memory unless HasLayout is set.
+            if (eeClass.HasLayout)
+            {
+                Data.EEClassLayoutInfo layoutInfo =
+                    _target.ProcessedData.GetOrAdd<Data.LayoutEEClass>(eeClassPtr).LayoutInfo;
+                if (layoutInfo.LayoutType == (byte)Data.EEClassLayoutInfo.Type.Sequential || layoutInfo.IsBlittable)
+                {
+                    result = layoutInfo.AlignmentRequirement;
+                }
+            }
+        }
+
+        // RequiresAlign8 is only set on FEATURE_64BIT_ALIGNMENT targets.
+        if (result < 8 && RequiresAlign8(typeHandle))
+        {
+            result = 8;
+        }
+
+        return result;
+    }
+
     public bool IsContinuationWithoutMetadata(ITypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
@@ -2473,14 +2508,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (md is null)
             return TargetPointer.Null;
 
-        TargetPointer fieldDefToDescMap = loader.GetLookupTables(moduleHandle).FieldDefToDesc;
         foreach (FieldDefinitionHandle fieldDefHandle in md.GetTypeDefinition(typeDefHandle).GetFields())
         {
             FieldDefinition fieldDef = md.GetFieldDefinition(fieldDefHandle);
             if (md.GetString(fieldDef.Name) == fieldName)
             {
                 uint fieldDefToken = (uint)MetadataTokens.GetToken(fieldDefHandle);
-                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(fieldDefToDescMap, fieldDefToken, out _);
+                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(
+                    moduleHandle,
+                    ModuleLookupMapKind.FieldDefToDesc,
+                    fieldDefToken,
+                    out _);
                 return fieldDescPtr;
             }
         }
@@ -2511,40 +2549,43 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
         CorElementType type = ((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer);
-        TargetPointer @base;
-        if (type == CorElementType.Class || type == CorElementType.ValueType)
-        {
-            if (thread.HasValue)
-            {
-                @base = GetGCThreadStaticsBasePointer(ctx, thread.Value);
-            }
-            else
-            {
-                @base = GetGCStaticsBasePointer(ctx);
-            }
-        }
-        else
-        {
-            if (thread.HasValue)
-            {
-                @base = GetNonGCThreadStaticsBasePointer(ctx, thread.Value);
-            }
-            else
-            {
-                @base = GetNonGCStaticsBasePointer(ctx);
-            }
-        }
+        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
 
-        if (@base == TargetPointer.Null)
-            return TargetPointer.Null;
+        TargetPointer @base = TargetPointer.Null;
+        if (!isRVA)
+        {
+            if (type == CorElementType.Class || type == CorElementType.ValueType)
+            {
+                if (thread.HasValue)
+                {
+                    @base = GetGCThreadStaticsBasePointer(ctx, thread.Value);
+                }
+                else
+                {
+                    @base = GetGCStaticsBasePointer(ctx);
+                }
+            }
+            else
+            {
+                if (thread.HasValue)
+                {
+                    @base = GetNonGCThreadStaticsBasePointer(ctx, thread.Value);
+                }
+                else
+                {
+                    @base = GetNonGCStaticsBasePointer(ctx);
+                }
+            }
+
+            if (@base == TargetPointer.Null)
+                return TargetPointer.Null;
+        }
 
         MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
         uint token = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
         FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
         FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-
         uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
-        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
         TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
         if (unboxValueTypes && type == CorElementType.ValueType && !isRVA)
         {

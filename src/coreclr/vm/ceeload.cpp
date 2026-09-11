@@ -217,7 +217,6 @@ void Module::UpdateNewlyAddedTypes()
         MODE_PREEMPTIVE;
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -278,7 +277,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -365,7 +363,6 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -683,7 +680,7 @@ void Module::Destruct()
     }
     CONTRACTL_END;
 
-    LOG((LF_EEMEM, INFO3, "Deleting module %x\n", this));
+    LOG((LF_EEMEM, INFO3, "Deleting module %p\n", (void*)this));
 #ifdef PROFILING_SUPPORTED
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
@@ -835,7 +832,6 @@ MethodTable *Module::GetGlobalMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END;
 
@@ -1972,7 +1968,6 @@ void Module::ReleaseISymUnmanagedReader(void)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1998,7 +1993,6 @@ ILStubCache* Module::GetILStubCache()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2221,7 +2215,6 @@ BOOL Module::IsSigInILImpl(PCCOR_SIGNATURE signature)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        FORBID_FAULT;
         MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
@@ -2239,7 +2232,6 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
@@ -2276,7 +2268,6 @@ STRINGREF* ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
@@ -2340,7 +2331,6 @@ Module::GetAssemblyIfLoaded(
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -2465,7 +2455,6 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2524,7 +2513,6 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -2593,8 +2581,6 @@ PTR_Module Module::LookupModule(mdToken kFile)
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT;
-        else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
@@ -2619,7 +2605,6 @@ TypeHandle ModuleBase::LookupTypeRef(mdTypeRef token)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     _ASSERTE(TypeFromToken(token) == mdtTypeRef);
@@ -2648,7 +2633,6 @@ PTR_TADDR LookupMapBase::GrowMap(ModuleBase * pModule, DWORD rid)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -3355,7 +3339,7 @@ void Module::FixupVTables()
 #ifdef _DEBUG
                     if (pMD->IsPInvoke())
                     {
-                        LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
+                        LOG((LF_INTEROP, LL_INFO10, "[0x%zx] <-- PINV thunk for \"%s\" (target = 0x%zx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
                             (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
@@ -3478,7 +3462,6 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
         INSTANCE_CHECK;
         if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
         if (loadAllowed) THROWS;                         else NOTHROW;
-        if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(IsReadyToRun());
     }
@@ -3512,8 +3495,10 @@ void Module::RunEagerFixups()
     COUNT_T nSections;
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
 
+#ifndef TARGET_WASM
     if (nSections == 0)
         return;
+#endif // !TARGET_WASM
 
 #ifdef _DEBUG
     // Loading types during eager fixup is not a tested scenario. Make bugs out of any attempts to do so in a
@@ -3548,6 +3533,12 @@ void Module::RunEagerFixups()
         // For composite images, multiple modules may request initializing eager fixups
         // from multiple threads so we need to lock their resolution.
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
+#ifdef TARGET_WASM
+        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        if (nSections == 0)
+            return;
+#endif // TARGET_WASM
+
         if (compositeNativeImage->EagerFixupsHaveRun())
         {
             if (compositeNativeImage->ReadyToRunCodeDisabled())
@@ -3562,6 +3553,12 @@ void Module::RunEagerFixups()
     else
     {
         // Per-module eager fixups don't need locking
+#ifdef TARGET_WASM
+        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        if (nSections == 0)
+            return;
+#endif // TARGET_WASM
+
         RunEagerFixupsUnlocked();
     }
 }
@@ -3607,10 +3604,7 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
-#ifdef TARGET_WASM
-    // For WASM, register virtual IP ranges instead of real code address ranges.
-    GetReadyToRunInfo()->RegisterVirtualIPRange(this);
-#else
+#ifndef TARGET_WASM
     TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
 
     ExecutionManager::AddCodeRange(
@@ -3618,7 +3612,7 @@ void Module::RunEagerFixupsUnlocked()
         ExecutionManager::GetReadyToRunJitManager(),
         RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
@@ -3836,7 +3830,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -4231,6 +4224,44 @@ static bool MethodSignatureContainsGenericVariables(SigParser& sp)
 }
 
 //==========================================================================
+// Computes the module that should own runtime artifacts (VASigCookies, CALLI IL stubs)
+// created for the given standalone signature.
+//
+// The generic context is stripped if it is not actually used by the signature. This is
+// necessary for both:
+// - Performance: allows more sharing of the created artifacts
+// - Functionality: built-in runtime marshalling is disallowed for generic signatures
+//==========================================================================
+Module* Module::GetLoaderModuleForSignature(Signature signature, SigTypeContext* pTypeContext)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pTypeContext));
+    }
+    CONTRACTL_END;
+
+    SigParser sigParser = signature.CreateSigParser();
+
+    if (pTypeContext->IsEmpty())
+    {
+        // The method signature should not contain any generic variables if the generic context is not provided.
+        _ASSERTE(!MethodSignatureContainsGenericVariables(sigParser));
+        return this;
+    }
+
+    if (!MethodSignatureContainsGenericVariables(sigParser))
+    {
+        *pTypeContext = SigTypeContext();
+        return this;
+    }
+
+    return ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, pTypeContext->m_classInst, pTypeContext->m_methodInst);
+}
+
+#ifdef FEATURE_VARARGS
+//==========================================================================
 // Enregisters a VASig.
 //==========================================================================
 VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
@@ -4239,38 +4270,13 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
-    SigTypeContext emptyContext;
+    SigTypeContext localContext = *typeContext;
+    Module* pLoaderModule = GetLoaderModuleForSignature(vaSignature, &localContext);
 
-    Module* pLoaderModule = this;
-    if (!typeContext->IsEmpty())
-    {
-        // Strip the generic context if it is not actually used by the signature. It is nececessary for both:
-        // - Performance: allow more sharing of vasig cookies
-        // - Functionality: built-in runtime marshalling is disallowed for generic signatures
-        SigParser sigParser = vaSignature.CreateSigParser();
-        if (MethodSignatureContainsGenericVariables(sigParser))
-        {
-            pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
-        }
-        else
-        {
-            typeContext = &emptyContext;
-        }
-    }
-    else
-    {
-#ifdef _DEBUG
-        // The method signature should not contain any generic variables if the generic context is not provided.
-        SigParser sigParser = vaSignature.CreateSigParser();
-        _ASSERTE(!MethodSignatureContainsGenericVariables(sigParser));
-#endif
-    }
-
-    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
+    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, &localContext);
 
     return pCookie;
 }
@@ -4280,7 +4286,6 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -4419,6 +4424,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
     return pCookie;
 }
+#endif // FEATURE_VARARGS
 
 #endif // !DACCESS_COMPILE
 
@@ -4434,7 +4440,6 @@ LookupMapBase::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4460,7 +4465,6 @@ LookupMapBase::ListEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4533,7 +4537,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4614,7 +4617,6 @@ LPCWSTR Module::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
     }
     CONTRACTL_END
 
@@ -4636,7 +4638,6 @@ LPCWSTR ModuleBase::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
     return W("");
@@ -4794,7 +4795,9 @@ void Module::ExpandAll()
 // Wrap all static_assert's in asmconstants.h with a class definition.  Many of the
 // fields referenced below are private, and this class is a friend of the
 // enclosing type.
+#ifdef FEATURE_VARARGS
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
+#endif // FEATURE_VARARGS
 class CheckAsmOffsets
 {
 #ifndef CROSSBITNESS_COMPILE

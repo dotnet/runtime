@@ -770,8 +770,6 @@ public:
 
     BOOL StubHasVoidReturnType();
 
-    Stub *Link(LoaderHeap *pHeap, UINT *pcbSize /* = NULL*/, BOOL fMC);
-
     size_t  Link(UINT* puMaxStack);
 
     size_t GetNumEHClauses();

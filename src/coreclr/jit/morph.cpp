@@ -1756,34 +1756,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else if ((call->gtCallType == CT_INDIRECT) && !call->IsVirtualStub() && (call->gtCallCookie != nullptr))
-    {
-        assert(!call->IsUnmanaged());
-
-        GenTree* arg       = comp->gtNewIconEmbHndNode(call->gtCallCookie, GTF_ICON_PINVKI_HDL, nullptr);
-        call->gtCallCookie = nullptr;
-
-        // TODO: this is preserving existing behavior, but do we actually need these NO_CSEs?
-        GenTree* argConst = arg->OperIs(GT_IND) ? arg->AsIndir()->Addr() : arg;
-        argConst->gtFlags |= GTF_DONT_CSE;
-        arg->gtFlags |= GTF_DONT_CSE;
-
-        // All architectures pass the cookie in a register.
-        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
-        // put destination into R10/EAX
-        arg = comp->gtClone(call->gtControlExpr, true);
-        // On x64 the pinvoke target is passed in r10 which is the same
-        // register as the gs cookie check may use. That would be a problem if
-        // this was a tailcall, but we do not tailcall functions with
-        // non-standard added args except indirection cells currently.
-        assert(!call->IsFastTailCall());
-        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeTarget));
-
-        // finally change this call to a helper call
-        call->gtCallType    = CT_HELPER;
-        call->gtControlExpr = nullptr;
-        call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
-    }
 #if defined(FEATURE_READYTORUN)
 
 #ifdef TARGET_WASM
@@ -2221,6 +2193,19 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     GenTree** use     = GenTree::EffectiveUse(&arg->NodeRef());
     GenTree*  argNode = *use;
     assert(varTypeIsStruct(argNode));
+
+    if (arg->AbiInfo.NumSegments == 0)
+    {
+        // Pseudo arg. One case is WellKnownArg::AsyncAwaiter. We just handle
+        // these as arbitrary struct operands that can be expanded into
+        // FIELD_LIST. The async transformation will later store the value into
+        // the continuation, so FIELD_LIST allows using decomposed stores.
+        if (fgTryReplaceStructLocalWithFields(&arg->NodeRef()))
+        {
+            arg->GetNode()->SetMorphed(this, true);
+        }
+        return true;
+    }
 
     bool isSplit = arg->AbiInfo.IsSplitAcrossRegistersAndStack();
 #ifdef TARGET_ARM
@@ -3506,7 +3491,13 @@ GenTree* Compiler::fgMorphExpandLocal(GenTreeLclVarCommon* lclNode)
         if (varDsc->lvNormalizeOnStore())
         {
             GenTree* value = lclNode->Data();
+#ifdef TARGET_64BIT
             noway_assert(genActualTypeIsInt(value));
+#else
+            // On 32-bit targets, a TYP_BYREF can flow into a normalizing store into a small int local.
+            // i.e., in IL we could have ldloca V_N; stloc <small_type_lcl> with no explicit conversion.
+            noway_assert(genActualTypeIsInt(value) || value->TypeIs(TYP_BYREF));
+#endif
 
             lclNode->gtType = TYP_INT;
 
@@ -4662,7 +4653,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         assert(call->tailCallInfo != nullptr);
 
         // We do not currently handle non-standard args except for VSD stubs.
-        if (!call->IsVirtualStub() && call->HasNonStandardAddedArgs(this))
+        if (!call->IsVirtualStub() && (call->HasNonStandardAddedArgs(this) ||
+                                       (call->gtArgs.FindWellKnownArg(WellKnownArg::SecretStubParam) != nullptr)))
         {
             failTailCall(
                 "Method with non-standard args passed in callee trash register cannot be tail called via helper");
@@ -5805,7 +5797,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 
     // Check for PInvoke call types that we don't handle in codegen yet.
     assert(!call->IsUnmanaged());
-    assert(call->IsVirtual() || (call->gtCallType != CT_INDIRECT) || (call->gtCallCookie == nullptr));
 
     // Don't support tail calling helper methods
     assert(!call->IsHelperCall());
@@ -6407,8 +6398,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // This is call to CORINFO_HELP_VIRTUAL_FUNC_PTR with ignored result.
         // Transform it into a null check.
 
-        assert(call->gtArgs.CountArgs() >= 1);
-        GenTree* objPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
+        assert(call->gtArgs.CountUserArgs() >= 1);
+        GenTree* objPtr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
         GenTree* nullCheck = gtNewNullCheck(objPtr);
 
@@ -6514,7 +6505,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // pointing to a frozen segment
     if (gtIsTypeHandleToRuntimeTypeHelper(call))
     {
-        GenTree*             argNode = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree*             argNode = call->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
         CORINFO_CLASS_HANDLE hClass  = gtGetHelperArgClassHandle(argNode);
         if (hClass != NO_CLASS_HANDLE)
         {
@@ -6778,8 +6769,6 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         InfoAccessType iat = info.compCompHnd->emptyStringLiteral(&pValue);
         return fgMorphTree(gtNewStringLiteralNode(iat, pValue));
     }
-
-    assert(tree->AsStrCon()->gtScpHnd == info.compScopeHnd || !IsUninitialized(tree->AsStrCon()->gtScpHnd));
 
     LPVOID         pValue;
     InfoAccessType iat =
@@ -8275,7 +8264,8 @@ DONE_MORPHING_CHILDREN:
             if (fgGlobalMorph)
             {
                 /* Mark the nodes that are conditionally executed */
-                fgWalkTreePre(&tree, gtMarkColonCond);
+                MarkColonCondVisitor markColonCond(this);
+                markColonCond.WalkTree(&tree, nullptr);
             }
             /* Since we're doing this postorder we clear this if it got set by a child */
             fgRemoveRestOfBlock = false;
@@ -9083,8 +9073,12 @@ SKIP:
         }
 
         GenTree* andOpOp1 = andOp->gtGetOp1();
+        // Note the operand's type does not have to match the AND's; morph can retype nodes to
+        // TYP_BYREF, e. g. when rewriting references to implicit byref parameters. Such operands
+        // cannot be narrowed, but can still be cast to TYP_INT below.
+        //
         // Now we narrow the first operand of AND to int.
-        if (optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
+        if (andOpOp1->TypeIs(TYP_LONG) && optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
         {
             optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
 
@@ -9911,6 +9905,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            if (node->GetOperandCount() != 2)
+            {
+                // These simplifications are not worth specializing for explicit rounding modes.
+                break;
+            }
+
             double multiplier = op2Cns->ToScalarFloating(simdBaseType);
 
             if (multiplier == -1.0)
@@ -9993,7 +9993,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 ExtractEffectiveOp(GT_NEG, node, /* destroyNodes */ true);
                 return result;
             }
-            else if ((op1Oper == GT_MUL) || (op1Oper == GT_DIV))
+            else if (((op1Oper == GT_MUL) || (op1Oper == GT_DIV)) && (op1Intrin->GetOperandCount() == 2))
             {
                 GenTree* op2 = op1Intrin->Op(2);
 
@@ -10085,6 +10085,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (GenTree::OperIsCompare(op1Oper))
             {
+                if (op1IsScalar)
+                {
+                    // Reversing a scalar comparison does not complement the upper elements.
+                    break;
+                }
+
                 assert(op1Intrin->GetOperandCount() == 2);
 
                 GenTree* cmpOp1 = op1Intrin->Op(1);
@@ -10093,9 +10099,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 const bool reverseCond = true;
 
                 var_types lookupType =
-                    op1IsScalar ? op1RetType
-                                : GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType,
-                                                                            op1SimdSize, reverseCond);
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType, op1SimdSize,
+                                                              reverseCond);
                 NamedIntrinsic newId =
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op1Oper, lookupType, cmpOp1, cmpOp2,
                                                                  op1SimdBaseType, op1SimdSize, op1IsScalar,
@@ -10135,7 +10140,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 switch (op1Intrinsic)
                 {
                     case NI_AVX_Compare:
-                    case NI_AVX_CompareScalar:
                     case NI_AVX512_CompareMask:
                     {
                         assert(op1Intrin->GetOperandCount() == 3);
@@ -10193,7 +10197,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (newMode != mode)
                         {
                             ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
-                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(mode));
+                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(newMode));
                             fgUpdateConstTreeValueNumber(cmpOp3);
                             return fgMorphHWIntrinsicRequired(op1Intrin);
                         }
@@ -11709,7 +11713,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
         if ((oper == GT_EQ) || (oper == GT_NE))
         {
-            if (op2->IsCnsVec() && op1->IsVectorPerElementMask(simdBaseType, simdSize))
+            if (op2->IsCnsVec() && op1->IsVectorPerElementMask(this, simdBaseType, simdSize))
             {
                 bool reverseCond = false;
 
@@ -12546,6 +12550,26 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
+            // Explicitly mask the rotate amount to the range [0, bitsize-1]. Otherwise, a later
+            // transform can stick an out of range constant here and trip up lowering.  If the
+            // target's rotate or shift instructions mask their operand implicitly, those targets
+            // remove this mask again during lowering.
+            if (rotateIndex->IsCnsIntOrI())
+            {
+                ssize_t rotateAmount = rotateIndex->AsIntCon()->IconValue();
+
+                if ((rotateAmount < 0) || (rotateAmount > minimalMask))
+                {
+                    rotateIndex->AsIntCon()->SetIconValue(rotateAmount & minimalMask);
+                }
+            }
+            else
+            {
+                rotateIndex =
+                    gtNewOperNode(GT_AND, genActualType(rotateIndex), rotateIndex, gtNewIconNode(minimalMask));
+                rotateIndex->SetMorphed(this, /* doChildren */ true);
+            }
+
             GenTreeFlags inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
 
             // We can use the same tree only during global morph; reusing the tree in a later morph
@@ -13176,7 +13200,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
     {
         printf("\nfgMorphTree (after %d):\n", morphNum);
         gtDispTree(tree);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 #endif
 
@@ -15180,14 +15204,11 @@ PhaseStatus Compiler::fgExpandQmarkNodes(bool early)
         }
     }
 
-#ifdef DEBUG
     if (!early)
     {
-        fgPostExpandQmarkChecks();
+        INDEBUG(fgPostExpandQmarkChecks());
+        compQmarkRationalized = true;
     }
-#endif
-
-    compQmarkRationalized = true;
 
     // TODO: if qmark expansion created throw blocks, try and merge them
     //

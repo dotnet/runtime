@@ -19,6 +19,14 @@ namespace System.Net.Http
     {
         /// <summary>List of available HTTP/2 connections stored in the pool.</summary>
         private List<Http2Connection>? _availableHttp2Connections;
+        /// <summary>
+        /// HTTP/2 connections created by this pool that haven't completed their teardown yet.
+        /// Unlike <see cref="_availableHttp2Connections"/>, this also includes connections that reached
+        /// their stream limit, or that are shutting down (e.g. after a GOAWAY frame) but are still
+        /// processing requests. Only tracked if keep alive pings are enabled, as this list exists
+        /// solely to keep <see cref="HeartBeat"/> working for the whole lifetime of a connection.
+        /// </summary>
+        private List<Http2Connection>? _http2ConnectionsForHeartBeat;
         /// <summary>The number of HTTP/2 connections associated with the pool, including in use, available, and pending.</summary>
         private int _associatedHttp2ConnectionCount;
         /// <summary>Indicates whether an HTTP/2 connection is in the process of being established.</summary>
@@ -576,12 +584,61 @@ namespace System.Net.Http
             }
         }
 
-        public void HeartBeat()
+        /// <summary>Whether HTTP/2 connections in this pool should be sending keep alive PINGs.</summary>
+        private bool Http2KeepAlivePingEnabled => Settings._keepAlivePingDelay != Timeout.InfiniteTimeSpan;
+
+        /// <summary>
+        /// Registers a newly created HTTP/2 connection with the pool so that it participates in <see cref="HeartBeat"/>.
+        /// Called from the <see cref="Http2Connection"/> constructor so that the connection is tracked even if it
+        /// tears down before it's ever handed out to a request.
+        /// </summary>
+        public void AddHttp2ConnectionForHeartBeat(Http2Connection connection)
         {
-            Http2Connection[]? localHttp2Connections;
+            Debug.Assert(!HasSyncObjLock);
+
+            if (!Http2KeepAlivePingEnabled)
+            {
+                return;
+            }
+
             lock (SyncObj)
             {
-                localHttp2Connections = _availableHttp2Connections?.ToArray();
+                (_http2ConnectionsForHeartBeat ??= new List<Http2Connection>()).Add(connection);
+            }
+        }
+
+        /// <summary>Called when an HTTP/2 connection has completed its teardown and no longer needs heart beats.</summary>
+        public void RemoveHttp2ConnectionFromHeartBeat(Http2Connection connection)
+        {
+            Debug.Assert(!HasSyncObjLock);
+
+            if (!Http2KeepAlivePingEnabled)
+            {
+                return;
+            }
+
+            lock (SyncObj)
+            {
+                bool removed = _http2ConnectionsForHeartBeat?.Remove(connection) ?? false;
+                Debug.Assert(removed);
+            }
+        }
+
+        /// <summary>
+        /// Sends keep alive PINGs on all live HTTP/2 connections.
+        /// Returns whether the pool may still have HTTP/2 connections that need heart beats.
+        /// </summary>
+        public bool HeartBeat()
+        {
+            Http2Connection[]? localHttp2Connections;
+            bool anyConnections;
+            lock (SyncObj)
+            {
+                localHttp2Connections = _http2ConnectionsForHeartBeat?.ToArray();
+
+                // Also account for connections that are still being established -- they aren't in the
+                // list yet, but they will need heart beats as soon as they are.
+                anyConnections = localHttp2Connections is { Length: > 0 } || _associatedHttp2ConnectionCount > 0;
             }
 
             // Avoid calling HeartBeat under the lock, as it may call back into HttpConnectionPool.InvalidateHttp2Connection.
@@ -592,6 +649,8 @@ namespace System.Net.Http
                     http2Connection.HeartBeat();
                 }
             }
+
+            return anyConnections;
         }
 
         private static int ScavengeHttp2ConnectionList(List<Http2Connection> list, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)

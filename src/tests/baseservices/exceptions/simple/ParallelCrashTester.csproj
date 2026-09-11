@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Needed for NativeAotIncompatible, ProjectReference CopyToOutputDirectory, and Process.Start -->
+    <!-- TODO: Re-enable when browser OOP host actions can run parallel crashing children and managed threads are available.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <!-- Needed for CLRTestTargetUnsupported, NativeAotIncompatible, ProjectReference CopyToOutputDirectory, and Process.Start -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test expects corerun -->
     <NativeAotIncompatible>true</NativeAotIncompatible>

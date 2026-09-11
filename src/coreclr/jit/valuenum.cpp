@@ -15,6 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
 #include "valuenum.h"
 #include "ssaconfig.h"
 
@@ -423,6 +424,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_nextChunkBase(0)
     , m_fixedPointMapSels(alloc, 8)
     , m_checkedBoundVNs(alloc)
+    , m_checkedBoundIndexVNs(alloc)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -3543,6 +3545,16 @@ TailCall:
         return entry.Result;
     }
 
+    // If it's recursive, stop the recursion. This must be checked before the
+    // budget check below: an outer invocation is in the process of computing a
+    // value for this same selection, so we cannot assign (and cache) an
+    // independent value number for it here.
+    if (SelectIsBeingEvaluatedRecursively(map, index))
+    {
+        *pUsedRecursiveVN = true;
+        return RecursiveVN;
+    }
+
     // Give up if we've run out of budget.
     if (*pBudget == 0)
     {
@@ -3557,13 +3569,6 @@ TailCall:
 
     // Reduce our budget by one
     (*pBudget)--;
-
-    // If it's recursive, stop the recursion.
-    if (SelectIsBeingEvaluatedRecursively(map, index))
-    {
-        *pUsedRecursiveVN = true;
-        return RecursiveVN;
-    }
 
     SmallValueNumSet recMemoryDependencies;
 
@@ -4858,8 +4863,8 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
         return NoVN;
     }
 
-    JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(compileTimeHandle0),
-            m_compiler->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle0)), dspPtr(compileTimeHandle1),
+    JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", (void*)dspPtr(compileTimeHandle0),
+            m_compiler->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle0)), (void*)dspPtr(compileTimeHandle1),
             m_compiler->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle1)));
 
     ValueNum               result = NoVN;
@@ -6703,7 +6708,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             }
             else if (defSize.IsUnknown())
             {
-                JITDUMP("Tree [%06u] performs store to variable-sized local\n", dspTreeID(storeNode), defLclNum);
+                JITDUMP("Tree [%06u] performs store to variable-sized local\n", dspTreeID(storeNode));
                 // We don't know the bounds of this store at compile time, so it's given a unique number.
                 newLclValue = vnStore->VNPairForExpr(compCurBB, defVarDsc->TypeGet());
             }
@@ -7930,6 +7935,12 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
     return false;
 }
 
+bool ValueNumStore::IsVNCheckedBoundIndex(ValueNum vn)
+{
+    bool dummy;
+    return m_checkedBoundIndexVNs.TryGetValue(vn, &dummy);
+}
+
 //----------------------------------------------------------------------------------
 // IsVNCastToULong: checks whether the given VN represents (ulong)op cast
 //
@@ -7957,14 +7968,14 @@ bool ValueNumStore::IsVNCastToULong(ValueNum vn, ValueNum* castedOp)
     return false;
 }
 
-void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
+void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
 {
-    // This is meant to flag VNs for lengths that aren't known at compile time, so we can
+    // This is meant to flag VNs for bounds check operands that aren't known at compile time, so we can
     // form and propagate assertions about them.  Ensure that callers filter out constant
     // VNs since they're not what we're looking to flag, and assertion prop can reason
     // directly about constants.
     assert(!IsVNConstant(vn));
-    m_checkedBoundVNs.AddOrUpdate(vn, true);
+    (isIndex ? m_checkedBoundIndexVNs : m_checkedBoundVNs).AddOrUpdate(vn, true);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -10060,6 +10071,15 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+#if defined(TARGET_ARM64)
+    // TODO-Arm64: Remove this once all AdvSimd compare intrinsics are annotated with
+    // HW_Flag_ReturnsPerElementMask.
+    if (!isScalar && GenTree::OperIsCmpCompare(oper))
+    {
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+#endif // TARGET_ARM64
+
     switch (oper)
     {
         case GT_AND:
@@ -10976,7 +10996,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     {
         ssize_t            val         = ConstantValue<ssize_t>(vn);
         const GenTreeFlags handleFlags = GetHandleFlags(vn);
-        printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
+        printf("Hnd const: 0x%zx %s", (size_t)dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
         if (!comp->IsAot())
         {
             switch (handleFlags & GTF_ICON_HDL_MASK)
@@ -11010,14 +11030,14 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 int val = ConstantValue<int>(vn);
                 if (isPtr)
                 {
-                    printf("PtrCns[%p]", dspPtr(val));
+                    printf("PtrCns[0x%x]", dspPtr(val));
                 }
                 else
                 {
                     printf("IntCns");
                     if ((val > -1000) && (val < 1000))
                     {
-                        printf(" %ld", val);
+                        printf(" %d", val);
                     }
                     else
                     {
@@ -11032,22 +11052,22 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 INT64 val = ConstantValue<INT64>(vn);
                 if (isPtr)
                 {
-                    printf("LngPtrCns: 0x%p", dspPtr(val));
+                    printf("LngPtrCns: 0x%" PRIx64, (int64_t)dspPtr(val));
                 }
                 else
                 {
                     printf("LngCns");
                     if ((val > -1000) && (val < 1000))
                     {
-                        printf(" %ld", val);
+                        printf(" %lld", (long long)val);
                     }
                     else if ((val & 0xFFFFFFFF00000000LL) == 0)
                     {
-                        printf(" 0x%X", val);
+                        printf(" 0x%llX", (unsigned long long)val);
                     }
                     else
                     {
-                        printf(" 0x%llx", val);
+                        printf(" 0x%llx", (unsigned long long)val);
                     }
                 }
             }
@@ -11102,8 +11122,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case TYP_SIMD32:
             {
                 simd32_t cnsVal = GetConstantSimd32(vn);
-                printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", cnsVal.u64[0], cnsVal.u64[1],
-                       cnsVal.u64[2], cnsVal.u64[3]);
+                printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", (unsigned long long)cnsVal.u64[0],
+                       (unsigned long long)cnsVal.u64[1], (unsigned long long)cnsVal.u64[2],
+                       (unsigned long long)cnsVal.u64[3]);
                 break;
             }
 
@@ -11112,8 +11133,10 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 simd64_t cnsVal = GetConstantSimd64(vn);
                 printf(
                     "Simd64Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]",
-                    cnsVal.u64[0], cnsVal.u64[1], cnsVal.u64[2], cnsVal.u64[3], cnsVal.u64[4], cnsVal.u64[5],
-                    cnsVal.u64[6], cnsVal.u64[7]);
+                    (unsigned long long)cnsVal.u64[0], (unsigned long long)cnsVal.u64[1],
+                    (unsigned long long)cnsVal.u64[2], (unsigned long long)cnsVal.u64[3],
+                    (unsigned long long)cnsVal.u64[4], (unsigned long long)cnsVal.u64[5],
+                    (unsigned long long)cnsVal.u64[6], (unsigned long long)cnsVal.u64[7]);
                 break;
             }
 
@@ -11126,23 +11149,24 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 switch (cnsVal.gtSimdScalableKind)
                 {
                     case SimdScalableRepeated:
-                        printf("0x%016llx, 0x%016llx, 0x%016llx...]", cnsVal.gtSimdScalableIndex,
-                               cnsVal.gtSimdScalableIndex, cnsVal.gtSimdScalableIndex);
+                        printf("0x%016llx, 0x%016llx, 0x%016llx...]", (unsigned long long)cnsVal.gtSimdScalableIndex,
+                               (unsigned long long)cnsVal.gtSimdScalableIndex,
+                               (unsigned long long)cnsVal.gtSimdScalableIndex);
                         break;
 
                     case SimdScalableSequence:
                     {
                         uint64_t index = cnsVal.gtSimdScalableIndex;
-                        printf("0x%016llx, ", index);
+                        printf("0x%016llx, ", (unsigned long long)index);
                         index += cnsVal.gtSimdScalableStep;
-                        printf("0x%016llx, ", index);
+                        printf("0x%016llx, ", (unsigned long long)index);
                         index += cnsVal.gtSimdScalableStep;
-                        printf("0x%016llx...]", index);
+                        printf("0x%016llx...]", (unsigned long long)index);
                         break;
                     }
 
                     case SimdScalableScalar:
-                        printf("0x%016llx, 0x0, 0x0...]", cnsVal.gtSimdScalableIndex);
+                        printf("0x%016llx, 0x0, 0x0...]", (unsigned long long)cnsVal.gtSimdScalableIndex);
                         break;
 
                     default:
@@ -13456,6 +13480,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
             case GT_CATCH_ARG:
             case GT_ASYNC_CONTINUATION:
+            case GT_CONTINUATION_MEMBER_OFFSET:
             case GT_SWIFT_ERROR:
                 // We know nothing about the value of these.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
@@ -13790,8 +13815,15 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // next add the bounds check exception set for the current tree node
                         fgValueNumberAddExceptionSet(tree);
 
-                        // Record non-constant value numbers that are used as the length argument to bounds checks, so
-                        // that assertion prop will know that comparisons against them are worth analyzing.
+                        // Record non-constant value numbers that are used as arguments to bounds checks, so that
+                        // assertion prop will know that comparisons against them are worth analyzing.
+                        ValueNum indexVN =
+                            vnStore->VNNormalValue(tree->AsBoundsChk()->GetIndex()->gtVNPair.GetConservative());
+                        if ((indexVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(indexVN))
+                        {
+                            vnStore->SetVNIsCheckedBound(indexVN, true);
+                        }
+
                         ValueNum lengthVN =
                             vnStore->VNNormalValue(tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative());
                         if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
@@ -14951,11 +14983,67 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         }
     }
 
+    // Async calls define the "resumed" indicator: it is set to 1 when the call
+    // suspends and we are later resumed in this frame, and is left alone
+    // otherwise. Thus we know the value after the call is 1 if the call always
+    // suspends, or if the indicator was already known to be 1 before it.
+    GenTreeLclVarCommon* asyncResumedLclAddr = gtCallGetDefinedAsyncResumedLclAddr(call);
+    ValueNumPair         asyncResumedVNP;
+    if (asyncResumedLclAddr != nullptr)
+    {
+        if (call->GetAsyncInfo().AlwaysSuspends)
+        {
+            JITDUMP("Call [%06u] always suspends; establishing always resumed state for V%02u\n", dspTreeID(call),
+                    asyncResumedLclAddr->GetLclNum());
+            asyncResumedVNP.SetBoth(vnStore->VNOneForType(TYP_I_IMPL));
+        }
+        else
+        {
+            CallArg* resumedUseArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
+            if (resumedUseArg != nullptr)
+            {
+                // The arg is usually a TYP_INT use of the TYP_I_IMPL indicator var.
+                assert(genActualTypeIsInt(resumedUseArg->GetNode()));
+
+                // The indicator is monotonic, so it stays 1 for whichever kinds
+                // it was already known to be 1 for.
+                ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
+                for (ValueNumKind vnKind : vnKinds)
+                {
+                    ValueNum resumedUseVN = vnStore->VNNormalValue(resumedUseArg->GetNode()->GetVN(vnKind));
+                    if (vnStore->IsVNConstant(resumedUseVN) && (vnStore->CoercedConstantValue<int>(resumedUseVN) == 1))
+                    {
+                        JITDUMP("Call [%06u] propagates always resumed state for V%02u (%s VN)\n", dspTreeID(call),
+                                asyncResumedLclAddr->GetLclNum(), vnKind == VNK_Liberal ? "liberal" : "conservative");
+                        asyncResumedVNP.Set(vnKind, vnStore->VNOneForType(TYP_I_IMPL));
+                    }
+                }
+            }
+        }
+    }
+
     // If the call generates any definitions, for example because it uses "return buffer", then VN the local
     // as well.
     auto visitDef = [=](const LocalDef& def) {
         ValueNumPair storeValue;
-        storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
+        if (def.Def == asyncResumedLclAddr)
+        {
+            storeValue = asyncResumedVNP;
+        }
+
+        if (!storeValue.BothDefined())
+        {
+            // Use the same new unique VN for any kind we do not know the value of.
+            ValueNum newVN = vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet());
+            if (storeValue.GetLiberal() == ValueNumStore::NoVN)
+            {
+                storeValue.SetLiberal(newVN);
+            }
+            if (storeValue.GetConservative() == ValueNumStore::NoVN)
+            {
+                storeValue.SetConservative(newVN);
+            }
+        }
 
         fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size, storeValue);
         return GenTree::VisitResult::Continue;
@@ -16183,7 +16271,7 @@ void Compiler::JitTestCheckVN()
             {
                 printf("  Node ");
                 Compiler::printTreeID(node);
-                printf(" -- VN class %d.\n", tlAndN.m_num);
+                printf(" -- VN class %d.\n", (int)tlAndN.m_num);
             }
 
             if (tlAndN.m_tl == TL_VNNorm)
@@ -16207,10 +16295,10 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", with value number " FMT_VN ", was declared in VN class %d,\n", nodeVN, tlAndN.m_num);
+                    printf(", with value number " FMT_VN ", was declared in VN class %d,\n", nodeVN, (int)tlAndN.m_num);
                     printf("but this value number " FMT_VN
                            " has already been associated with a different SSA name class: %d.\n",
-                           vn, num2);
+                           vn, (int)num2);
                     assert(false);
                 }
                 // And the current node must be of the specified SSA family.
@@ -16218,7 +16306,7 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", " FMT_VN " was declared in SSA name class %d,\n", nodeVN, tlAndN.m_num);
+                    printf(", " FMT_VN " was declared in SSA name class %d,\n", nodeVN, (int)tlAndN.m_num);
                     printf("but that name class was previously bound to a different value number: " FMT_VN ".\n", vn);
                     assert(false);
                 }
@@ -16231,10 +16319,10 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", " FMT_VN " was declared in value number class %d,\n", nodeVN, tlAndN.m_num);
+                    printf(", " FMT_VN " was declared in value number class %d,\n", nodeVN, (int)tlAndN.m_num);
                     printf(
                         "but this value number has already been associated with a different value number class: %d.\n",
-                        num);
+                        (int)num);
                     assert(false);
                 }
                 // Add to both mappings.
@@ -16269,7 +16357,7 @@ void Compiler::vnPrint(ValueNum vn, unsigned level)
 {
     if (ValueNumStore::isReservedVN(vn))
     {
-        printf(ValueNumStore::reservedName(vn));
+        printf("%s", ValueNumStore::reservedName(vn));
     }
     else
     {
@@ -16401,12 +16489,14 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 
         if (IsVNConstantNonHandle(app.GetArg(0)) && (app.GetArg(0) != VNForNull()))
         {
-            *offset += ConstantValue<target_ssize_t>(app.GetArg(0));
+            // Ref/byref constants are stored as host size_t; GetConstantInt64 reads them as such.
+            //
+            *offset += (target_ssize_t)GetConstantInt64(app.GetArg(0));
             *vn = app.GetArg(1);
         }
         else if (IsVNConstantNonHandle(app.GetArg(1)) && (app.GetArg(1) != VNForNull()))
         {
-            *offset += ConstantValue<target_ssize_t>(app.GetArg(1));
+            *offset += (target_ssize_t)GetConstantInt64(app.GetArg(1));
             *vn = app.GetArg(0);
         }
         else

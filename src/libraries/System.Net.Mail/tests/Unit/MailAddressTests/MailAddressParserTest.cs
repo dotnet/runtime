@@ -567,5 +567,16 @@ namespace System.Net.Mail.Tests
             Assert.Throws<FormatException>(() => MailAddressParser.ParseMultipleAddresses("test\n@example.com, a@b.com"));
             Assert.Throws<FormatException>(() => MailAddressParser.ParseMultipleAddresses("a@b.com, c@d.com, e\r@f.com"));
         }
+
+        [Theory]
+        [InlineData("Display\rName <test@example.com>")]
+        [InlineData("Display\nName <test@example.com>")]
+        [InlineData("Display\r\nName <test@example.com>")]
+        public void MailAddressCollection_Add_DisplayNameContainsCROrLF_ShouldThrow(string address)
+        {
+            MailAddressCollection addresses = new MailAddressCollection();
+
+            Assert.Throws<FormatException>(() => addresses.Add(address));
+        }
     }
 }

@@ -275,7 +275,6 @@ EEHashEntry_t* ContinuationLayoutKeyHashTableHelper::AllocateEntry(ContinuationL
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
 

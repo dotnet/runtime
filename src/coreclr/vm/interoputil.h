@@ -242,9 +242,6 @@ BOOL IsStandardTearOff(IUnknown* pUnk);
  //  is the iid represent an IClassX for this class
 BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT);
 
-// Returns TRUE if we support IClassX for the given class.
-BOOL ClassSupportsIClassX(MethodTable *pMT);
-
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 //---------------------------------------------------------------------------
  //  Calls COM class factory and instantiates a new RCW.
