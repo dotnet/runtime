@@ -55,6 +55,19 @@ namespace System.Net.Security.Tests
             Assert.DoesNotContain($"{DomainSid}-512", result.GroupSids);
         }
 
+        [Theory]
+        [InlineData(124, 128)] // GroupCount, GroupIds
+        [InlineData(212, 216)] // SidCount, ExtraSids
+        [InlineData(224, 228)] // ResourceGroupCount, ResourceGroupIds
+        public void Decode_NonzeroArrayCountWithNullReferent_ReturnsNull(int countOffset, int referentOffset)
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            logonInfo[countOffset] = 1;
+            logonInfo.AsSpan(referentOffset, sizeof(uint)).Clear();
+
+            Assert.Null(KerberosPacLogonInfo.Decode(logonInfo));
+        }
+
         [Fact]
         public void Decode_InvalidSidRevision_ReturnsNull()
         {

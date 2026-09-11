@@ -263,7 +263,7 @@ namespace System.Net.Security
             groups = null;
             if (referent == 0)
             {
-                return true;
+                return count == 0;
             }
 
             // Conformant array of GROUP_MEMBERSHIP.
@@ -293,7 +293,7 @@ namespace System.Net.Security
             sids = null;
             if (referent == 0)
             {
-                return true;
+                return count == 0;
             }
 
             // Conformant array of KERB_SID_AND_ATTRIBUTES. The SID pointers within the array are
