@@ -567,7 +567,8 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
 
-            if (NumberHandingIsApplicable())
+            if (NumberHandingIsApplicable() ||
+                EffectiveConverter.ConverterStrategy is ConverterStrategy.Union)
             {
                 // This logic is to honor JsonNumberHandlingAttribute placed on
                 // custom collections e.g. public class MyNumberList : List<int>.
@@ -576,9 +577,7 @@ namespace System.Text.Json.Serialization.Metadata
                 EffectiveNumberHandling = declaringTypeNumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
-                if (!EffectiveNumberHandling.HasValue &&
-                    Options.NumberHandling != JsonNumberHandling.Strict &&
-                    EffectiveConverter.ConverterStrategy is not ConverterStrategy.Union)
+                if (!EffectiveNumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
                 {
                     EffectiveNumberHandling = Options.NumberHandling;
                 }
@@ -593,15 +592,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
-            if (numberHandlingIsApplicable)
+            if (numberHandlingIsApplicable ||
+                EffectiveConverter.ConverterStrategy is ConverterStrategy.Union)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
                 JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
-                if (!handling.HasValue &&
-                    Options.NumberHandling != JsonNumberHandling.Strict &&
-                    EffectiveConverter.ConverterStrategy is not ConverterStrategy.Union)
+                if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
                 {
                     handling = Options.NumberHandling;
                 }
@@ -692,8 +690,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool NumberHandingIsApplicable()
         {
-            if (EffectiveConverter.IsInternalConverterForNumberType ||
-                EffectiveConverter.ConverterStrategy is ConverterStrategy.Union)
+            if (EffectiveConverter.IsInternalConverterForNumberType)
             {
                 return true;
             }

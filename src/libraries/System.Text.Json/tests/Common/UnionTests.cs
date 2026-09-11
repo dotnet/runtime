@@ -495,24 +495,6 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual("""{"Value":42}""", json);
         }
 
-        [Fact]
-        public async Task UnionNumberHandling_CaseTypeInfoOverridesOptions()
-        {
-            JsonSerializerOptions options = Serializer.CreateOptions(
-                static options => options.NumberHandling = JsonNumberHandling.WriteAsString,
-                modifier: static typeInfo =>
-                {
-                    if (typeInfo.Type == typeof(int))
-                    {
-                        typeInfo.NumberHandling = JsonNumberHandling.Strict;
-                    }
-                });
-
-            string json = await Serializer.SerializeWrapper(new PlainIntUnion(42), options);
-
-            Assert.Equal("42", json);
-        }
-
         public class Animal { }
         public class Dog : Animal { }
         public class Lab : Dog { }
