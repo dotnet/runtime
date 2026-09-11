@@ -76,6 +76,7 @@ internal class Program
         TestTypedStores.Run();
         TestContainsReferences.Run();
         TestDuplicateCallArguments.Run();
+        TestSpanAssignmentAliases.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -2548,6 +2549,44 @@ class TestDuplicateCallArguments
         Assert.AreSame(null, s_nullResult);
         Assert.AreEqual(43, s_byRef);
         Assert.AreEqual(43, s_byRefResult);
+    }
+}
+
+class TestSpanAssignmentAliases
+{
+    static readonly int[] s_span = ReadSpan(new int[] { 1, 2 });
+    static readonly int[] s_readOnlySpan = ReadOnlySpan(new int[] { 1, 2 });
+
+    static int[] ReadSpan(Span<int> span)
+    {
+        Span<int> local = span;
+        ref Span<int> localAlias = ref local;
+        ref Span<int> argumentAlias = ref span;
+        span = new int[] { 3, 4, 5 };
+        local = new int[] { 6, 7, 8, 9 };
+        return new int[] { argumentAlias.Length, argumentAlias[0], localAlias.Length, localAlias[0] };
+    }
+
+    static int[] ReadOnlySpan(ReadOnlySpan<int> span)
+    {
+        ReadOnlySpan<int> local = span;
+        ref ReadOnlySpan<int> localAlias = ref local;
+        ref ReadOnlySpan<int> argumentAlias = ref span;
+        span = new int[] { 3, 4, 5 };
+        local = new int[] { 6, 7, 8, 9 };
+        return new int[] { argumentAlias.Length, argumentAlias[0], localAlias.Length, localAlias[0] };
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestSpanAssignmentAliases));
+        foreach (int[] result in new[] { s_span, s_readOnlySpan })
+        {
+            Assert.AreEqual(3, result[0]);
+            Assert.AreEqual(3, result[1]);
+            Assert.AreEqual(4, result[2]);
+            Assert.AreEqual(6, result[3]);
+        }
     }
 }
 

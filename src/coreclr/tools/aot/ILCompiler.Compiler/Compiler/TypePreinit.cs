@@ -2905,7 +2905,7 @@ namespace ILCompiler
             }
         }
 
-        private sealed class SpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class SpanValue : BaseValueTypeValue, IInternalModelingOnlyValue, IAssignableValue
         {
             private readonly MetadataType _elementType;
             private byte[] _bytes;
@@ -2949,6 +2949,17 @@ namespace ILCompiler
             public override bool TryCreateByRef(out Value value)
             {
                 value = new SpanReferenceValue(this);
+                return true;
+            }
+
+            bool IAssignableValue.TryAssign(Value value)
+            {
+                if (value is not SpanValue other || other._elementType != _elementType)
+                    return false;
+
+                _bytes = other._bytes;
+                _index = other._index;
+                _length = other._length;
                 return true;
             }
 
