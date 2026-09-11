@@ -64,6 +64,18 @@ public class OffsetLimit
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UShortVarPlusK(int[] a, ushort src)
+    {
+        ushort n = src;
+        int sum = 0;
+        for (int i = 0; i < n + 1000; i++)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int DecGtArrayLengthMinusK(int[] a, int initVal)
     {
         int sum = 0;
@@ -182,6 +194,20 @@ public class OffsetLimit
         int got = VarMinusK(a, n);
         int want = ExpectedInc(0, Math.Max(0, n - 4), 1, a);
         Assert.Equal(want, got);
+    }
+
+    [Theory]
+    [InlineData((ushort)0, 1000)]
+    [InlineData((ushort)64535, 65535)]
+    [InlineData((ushort)64536, 65536)]
+    [InlineData((ushort)65000, 66000)]
+    [InlineData(ushort.MaxValue, 66535)]
+    public static void UShortVarPlusKTest(ushort src, int expected)
+    {
+        int[] a = new int[70000];
+        Array.Fill(a, 1);
+        Assert.Equal(expected, UShortVarPlusK(a, src));
+        Assert.Throws<IndexOutOfRangeException>(() => UShortVarPlusK(new int[expected - 1], src));
     }
 
     [Theory]
