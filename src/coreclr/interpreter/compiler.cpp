@@ -8754,7 +8754,7 @@ void InterpCompiler::InstrumentBlockCounts()
     // Insert an INTOP_PGO_COUNT probe at the start of each block, pointing at its counter.
     for (int32_t i = 0; i < numBlocks; i++)
     {
-        int32_t *pCounter = (int32_t*)(pInstrumentationData + pSchema[i].Offset);
+        uint32_t *pCounter = (uint32_t*)(pInstrumentationData + pSchema[i].Offset);
         InterpInst *ins = InsertInsBB(blocks.Get(i), NULL, INTOP_PGO_COUNT);
         // Probe is a pure counter increment with no IL mapping; keep it out of the debug maps.
         ins->ilOffset = -1;
