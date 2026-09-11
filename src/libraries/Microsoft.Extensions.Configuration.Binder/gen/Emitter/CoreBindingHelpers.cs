@@ -535,6 +535,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // signatures stay in sync with the fallback code that consumes them.
                 if (needsBindingFlags)
                 {
+                    _writer.WriteLine();
                     _writer.WriteLine(UnsafeAccessorEmitter.InstanceMemberBindingFlagsDeclaration);
                 }
 
