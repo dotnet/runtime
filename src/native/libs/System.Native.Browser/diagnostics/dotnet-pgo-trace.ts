@@ -19,16 +19,20 @@ export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: bo
     if (!startup && !serverSession) {
         throw new Error("No active JS diagnostic session");
     }
+    if (pgoSession) {
+        throw new Error("A PGO trace collection is already in progress");
+    }
 
     const durationSeconds = options.durationSeconds ?? DEFAULT_PGO_DURATION_SECONDS;
 
     const onClosePromise = dotnetLoaderExports.createPromiseCompletionSource<Uint8Array[]>();
+    let stopTimeoutId: number | undefined = undefined;
     function onSessionStart(session: IDiagnosticSession): void {
         pgoSession = session;
         session.sendCommand(commandResumeRuntime());
         // stop and flush the trace once the duration elapses
-        Module.safeSetTimeout(() => {
-            stopPgoTrace();
+        stopTimeoutId = Module.safeSetTimeout(() => {
+            stopPgoTrace(session);
         }, 1000 * durationSeconds);
     }
 
@@ -39,17 +43,21 @@ export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: bo
         onSessionStart,
         onClose: () => {
             pgoSession = undefined;
+            if (stopTimeoutId !== undefined) {
+                globalThis.clearTimeout(stopTimeoutId);
+                stopTimeoutId = undefined;
+            }
         },
     }, startup);
     return onClosePromise.promise;
 }
 
 // stops the in-progress PGO trace when the collection duration elapses
-function stopPgoTrace(): void {
-    if (!pgoSession) {
+function stopPgoTrace(session: IDiagnosticSession): void {
+    // ignore a stale timer whose session was already closed or replaced
+    if (pgoSession !== session) {
         return;
     }
-    const session = pgoSession;
     pgoSession = undefined;
     session.sendCommand(commandStopTracing(session.sessionId));
 }

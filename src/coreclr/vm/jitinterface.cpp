@@ -13064,8 +13064,12 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 #ifdef FEATURE_PGO
 static bool InterpreterPgoInstrumentationEnabled()
 {
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
     static ConfigDWORD s_interpPgo;
     return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
+#else
+    return false;
+#endif
 }
 #endif // FEATURE_PGO
 
