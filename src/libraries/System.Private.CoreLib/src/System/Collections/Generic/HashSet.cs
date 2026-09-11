@@ -1111,7 +1111,7 @@ namespace System.Collections.Generic
                 return OverlapsImpl(otherAsSet, this);
             }
 
-            return OverlapsImpl(this, otherAsSet);          
+            return OverlapsImpl(this, other);          
         }
 
         private bool OverlapsImpl(HashSet<T> hashSet, IEnumerable<T> other)
