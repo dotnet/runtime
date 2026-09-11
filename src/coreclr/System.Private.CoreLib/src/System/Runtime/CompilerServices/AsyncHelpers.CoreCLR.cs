@@ -908,21 +908,7 @@ namespace System.Runtime.CompilerServices
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     Continuation? nextContinuation = state.SentinelContinuation!.Next;
-                    Task? awaitedTask = (nextContinuation as RuntimeAsyncTaskContinuation)?.Task;
-
-                    AsyncDebugger.HandleSuspended(nextContinuation);
-
-                    TplEventSource log = TplEventSource.Log;
-                    if (awaitedTask is not null &&
-                        log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TaskTransfer | TplEventSource.Keywords.Tasks))
-                    {
-                        log.TaskWaitBegin(
-                            m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
-                            Id,
-                            awaitedTask.Id,
-                            TplEventSource.TaskWaitBehavior.Asynchronous,
-                            Id);
-                    }
+                    AsyncDebugger.HandleSuspended(this, nextContinuation);
 
                     if (!HandleSuspended(ref state))
                     {
@@ -1092,7 +1078,7 @@ namespace System.Runtime.CompilerServices
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
                 refDispatcherInfo = &asyncDispatcherInfo;
 
-                RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags);
+                RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags, asyncDispatcherInfo.NextContinuation);
 
                 while (true)
                 {
@@ -1792,7 +1778,7 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void ResumeRuntimeAsyncContext(Task task, ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags)
+            public static void ResumeRuntimeAsyncContext(Task task, ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation? continuation)
             {
                 info.CurrentTask = task;
                 AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
@@ -1808,7 +1794,7 @@ namespace System.Runtime.CompilerServices
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        AsyncDebugger.ResumeAsyncContext(task);
+                        AsyncDebugger.ResumeAsyncContext(task, continuation);
                     }
                 }
             }
@@ -1965,8 +1951,9 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
             }
 
-            public static void ResumeAsyncContext(Task task)
+            public static void ResumeAsyncContext(Task task, Continuation? continuation)
             {
+                OutputTaskWaitEnd(task, continuation);
                 TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, CausalitySynchronousWork.Execution);
             }
 
@@ -2019,16 +2006,32 @@ namespace System.Runtime.CompilerServices
                 Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
             }
 
-            public static void HandleSuspended(Continuation? nextContinuation)
+            public static void HandleSuspended(Task task, Continuation? nextContinuation)
             {
                 if (nextContinuation != null)
                 {
                     Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
                 }
+
+                if (nextContinuation is RuntimeAsyncTaskContinuation { Task: Task awaitedTask })
+                {
+                    TplEventSource log = TplEventSource.Log;
+                    if (log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TaskTransfer | TplEventSource.Keywords.Tasks))
+                    {
+                        log.TaskWaitBegin(
+                            task.m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
+                            task.Id,
+                            awaitedTask.Id,
+                            TplEventSource.TaskWaitBehavior.Asynchronous,
+                            task.Id);
+                    }
+                }
             }
 
             public static void HandleSuspendedFailed(Task task, Continuation? nextContinuation)
             {
+                OutputTaskWaitEnd(task, nextContinuation);
+
                 if (nextContinuation != null)
                 {
                     Task.RemoveRuntimeAsyncTask(task, nextContinuation);
@@ -2036,6 +2039,21 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     Task.RemoveRuntimeAsyncTask(task);
+                }
+            }
+
+            private static void OutputTaskWaitEnd(Task task, Continuation? continuation)
+            {
+                if (continuation is RuntimeAsyncTaskContinuation { Task: Task awaitedTask })
+                {
+                    TplEventSource log = TplEventSource.Log;
+                    if (log.IsEnabled(EventLevel.Verbose, TplEventSource.Keywords.Tasks))
+                    {
+                        log.TaskWaitEnd(
+                            task.m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
+                            task.Id,
+                            awaitedTask.Id);
+                    }
                 }
             }
         }
