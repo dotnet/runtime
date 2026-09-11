@@ -26,8 +26,10 @@ export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: bo
     const durationSeconds = options.durationSeconds ?? DEFAULT_PGO_DURATION_SECONDS;
 
     const onClosePromise = dotnetLoaderExports.createPromiseCompletionSource<Uint8Array[]>();
+    let startedSession: IDiagnosticSession | undefined = undefined;
     let stopTimeoutId: number | undefined = undefined;
     function onSessionStart(session: IDiagnosticSession): void {
+        startedSession = session;
         pgoSession = session;
         session.sendCommand(commandResumeRuntime());
         // stop and flush the trace once the duration elapses
@@ -42,7 +44,10 @@ export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: bo
         commandOnAdvertise: () => commandPgoTrace(options!),
         onSessionStart,
         onClose: () => {
-            pgoSession = undefined;
+            // clear only if this call's session is still the active one
+            if (pgoSession === startedSession) {
+                pgoSession = undefined;
+            }
             if (stopTimeoutId !== undefined) {
                 globalThis.clearTimeout(stopTimeoutId);
                 stopTimeoutId = undefined;
@@ -52,12 +57,11 @@ export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: bo
     return onClosePromise.promise;
 }
 
-// stops the in-progress PGO trace when the collection duration elapses
+// stops the in-progress PGO trace when the collection duration elapses; pgoSession stays set until onClose
 function stopPgoTrace(session: IDiagnosticSession): void {
     // ignore a stale timer whose session was already closed or replaced
     if (pgoSession !== session) {
         return;
     }
-    pgoSession = undefined;
     session.sendCommand(commandStopTracing(session.sessionId));
 }
