@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (!TryResolveCaseType(ref reader, typeToConvert, typeInfo, out caseType))
+                if (!TryResolveCaseType(ref reader, typeToConvert, typeInfo, state.Current.NumberHandling, out caseType))
                 {
                     value = default;
                     return false;
@@ -74,6 +74,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 caseTypeInfo = options.GetTypeInfoInternal(caseType);
                 state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
+                state.Current.NumberHandling ??= caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
             }
 
             JsonConverter caseConverter = caseTypeInfo.Converter;
@@ -87,7 +88,12 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        private static bool TryResolveCaseType(ref Utf8JsonReader reader, Type typeToConvert, JsonTypeInfo<TUnion> typeInfo, out Type caseType)
+        private static bool TryResolveCaseType(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonTypeInfo<TUnion> typeInfo,
+            JsonNumberHandling? numberHandling,
+            out Type caseType)
         {
             caseType = null!;
             JsonTypeClassifier? classifier = typeInfo.TypeClassifier;
@@ -117,13 +123,23 @@ namespace System.Text.Json.Serialization.Converters
                 JsonTokenType tokenType = reader.TokenType;
                 JsonValueType valueType = GetJsonValueType(tokenType);
 
-                if ((typeInfo.UnionAmbiguousValueTypes & valueType) != 0)
+                Type? resolvedCaseType = null;
+                bool isAmbiguous;
+                if (numberHandling == typeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling)
+                {
+                    isAmbiguous = (typeInfo.UnionAmbiguousValueTypes & valueType) != 0;
+                    typeInfo.UnionValueTypeMap?.TryGetValue(valueType, out resolvedCaseType);
+                }
+                else
+                {
+                    resolvedCaseType = typeInfo.ResolveUnionCaseType(valueType, numberHandling, out isAmbiguous);
+                }
+
+                if (isAmbiguous)
                 {
                     ThrowHelper.ThrowJsonException_UnionAmbiguousJsonValueType(typeToConvert, valueType);
                 }
 
-                Type? resolvedCaseType = null;
-                typeInfo.UnionValueTypeMap?.TryGetValue(valueType, out resolvedCaseType);
                 caseType = resolvedCaseType!;
             }
 
@@ -185,6 +201,7 @@ namespace System.Text.Json.Serialization.Converters
 
             JsonTypeInfo caseTypeInfo = options.GetTypeInfoInternal(caseType);
             state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
+            state.Current.NumberHandling ??= caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
             return caseTypeInfo.Converter.TryWriteAsObject(writer, caseValue, options, ref state);
         }
     }
