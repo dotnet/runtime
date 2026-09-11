@@ -369,13 +369,13 @@ namespace ILCompiler.ObjectWriter
             IDictionary<Utf8String, SymbolDefinition> definedSymbols,
             SortedSet<Utf8String> undefinedSymbols)
         {
-            // Register defined symbols for future use during relocation resolution.
-            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
-
             WriteImports();
             WriteGlobalSection();
-            WriteExports();
             WriteElements();
+
+            // Register defined symbols for use during when resolving exports and relocations.
+            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
+            WriteExports();
         }
 
         private protected abstract void WriteImports();
