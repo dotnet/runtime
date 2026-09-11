@@ -1108,25 +1108,17 @@ namespace System.Collections.Generic
             // Fast path for Overlaps when other is HashSet with same equality comparer and has more items
             if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet) && otherAsSet.Count > Count)
             {
-                return OverlapsHashSetWithSameComparerWhenThisHasLessItems(otherAsSet);
+                return OverlapsImpl(otherAsSet, this);
             }
 
-            foreach (T element in other)
-            {
-                if (Contains(element))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return OverlapsImpl(this, otherAsSet);          
         }
 
-        private bool OverlapsHashSetWithSameComparerWhenThisHasLessItems(HashSet<T> other)
+        private bool OverlapsImpl(HashSet<T> hashSet, IEnumerable<T> other)
         {
-            foreach (T element in this)
+            foreach (T element in other)
             {
-                if (other.Contains(element))
+                if (hashSet.Contains(element))
                 {
                     return true;
                 }
