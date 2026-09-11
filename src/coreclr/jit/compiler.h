@@ -5547,6 +5547,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
