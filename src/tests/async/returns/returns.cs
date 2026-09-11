@@ -14,6 +14,41 @@ public class Async2Returns
         Returns(new C()).Wait();
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void AwaitNullTask(bool generic)
+    {
+        if (generic)
+        {
+            Assert.Throws<NullReferenceException>(() => AwaitNullGenericTask().GetAwaiter().GetResult());
+        }
+        else
+        {
+            Assert.Throws<NullReferenceException>(() => AwaitNullNonGenericTask().GetAwaiter().GetResult());
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<int> AwaitNullGenericTask() => await GetNullTask(Task.FromResult(42));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task AwaitNullNonGenericTask() => await GetNullTask(Task.CompletedTask);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<int> GetNullTask(Task<int> task)
+    {
+        task = null;
+        return task;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task GetNullTask(Task task)
+    {
+        task = null;
+        return task;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Returns(C c)
     {
