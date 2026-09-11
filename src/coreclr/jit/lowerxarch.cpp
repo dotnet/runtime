@@ -3794,7 +3794,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         case NI_X86Base_CompareNotGreaterThan:
                         case NI_AVX_CompareNotGreaterThan:
                         {
-                            cndId = NI_AVX512_CompareGreaterThanMask;
+                            cndId = NI_AVX512_CompareNotGreaterThanMask;
                             break;
                         }
 
