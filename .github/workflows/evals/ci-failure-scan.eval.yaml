@@ -119,7 +119,7 @@ stimuli:
               min_count: 2
           disallowed:
             - name: '^(bash|powershell)$'
-              command: '(gh (search|issue)|api\.github\.com/search/issues)'
+              command: '(gh (search|issue)|gh\s+api\s+search/issues|api\.github\.com/search/issues)'
             - name: 'search_issues'
 
       - type: kbe-candidate-reads

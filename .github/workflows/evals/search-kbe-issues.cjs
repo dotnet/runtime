@@ -11,12 +11,12 @@ async function runGhApi(query, token, execFileImpl = execFileAsync) {
         "search/issues",
         "--method",
         "GET",
-        "--field",
+        "--raw-field",
         `q=${query.trim()} repo:dotnet/runtime is:issue`,
         "--field",
         "per_page=10",
     ], {
-        env: { ...process.env, GITHUB_TOKEN: token },
+        env: { ...process.env, GH_TOKEN: token, GITHUB_TOKEN: token },
         maxBuffer: 1024 * 1024,
     });
 

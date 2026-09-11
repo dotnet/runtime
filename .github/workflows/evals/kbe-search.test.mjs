@@ -62,19 +62,20 @@ test("eval wrapper passes the bounded repository-scoped query to gh", async () =
         return { stdout: JSON.stringify(validResult()) };
     };
 
-    await runGhApi(" sample query ", testToken, execFileImpl);
+    await runGhApi(" sample {owner} query ", testToken, execFileImpl);
     assert.equal(command, "gh");
     assert.deepEqual(args, [
         "api",
         "search/issues",
         "--method",
         "GET",
-        "--field",
-        "q=sample query repo:dotnet/runtime is:issue",
+        "--raw-field",
+        "q=sample {owner} query repo:dotnet/runtime is:issue",
         "--field",
         "per_page=10",
     ]);
     assert.equal(options.env.GITHUB_TOKEN, testToken);
+    assert.equal(options.env.GH_TOKEN, testToken);
 });
 
 function trajectory(events) {
