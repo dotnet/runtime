@@ -9,6 +9,7 @@ namespace System.Runtime.CompilerServices.Tests
     public static class MethodImplAttributeTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static void AggressiveOptimizationTest()
         {

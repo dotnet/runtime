@@ -13,6 +13,7 @@ namespace System.Reflection.Tests
     public static class MethodBaseTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void Test_GetCurrentMethod()
         {
             MethodBase m = MethodBase.GetCurrentMethod();
@@ -24,6 +25,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60334", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void Test_GetCurrentMethod_Inlineable()
         {
             // Verify that the result is not affected by inlining optimizations

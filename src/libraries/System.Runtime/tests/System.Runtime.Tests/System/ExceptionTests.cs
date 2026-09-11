@@ -61,6 +61,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void Exception_TargetSite()
         {
             bool caught = false;
