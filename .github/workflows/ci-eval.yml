@@ -312,7 +312,7 @@ jobs:
         run: |
           grader_args=()
           if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
-            grader_args+=(--grader-plugin ./kbe-candidate-reads-grader.mjs)
+            grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
           fi
           for spec in $SPECS; do
             vally lint --eval-spec "$spec" --strict "${grader_args[@]}"
@@ -348,7 +348,7 @@ jobs:
           rc=0
           grader_args=()
           if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
-            grader_args+=(--grader-plugin ./kbe-candidate-reads-grader.mjs)
+            grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
           fi
           for spec in $SPECS; do
             name="$(basename "$spec" .eval.yaml)"
