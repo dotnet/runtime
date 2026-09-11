@@ -19,6 +19,15 @@ namespace System.Security.Cryptography.Tests
         public static IEnumerable<object[]> VectorNames =>
             Vectors.Select(vector => new object[] { vector.Name });
 
+        public static IEnumerable<object[]> ExportLimits =>
+        [
+            [HpkeKdf.HKDF_SHA256, 8160],
+            [HpkeKdf.HKDF_SHA384, 12240],
+            [HpkeKdf.HKDF_SHA512, 16320],
+            [HpkeKdf.SHAKE128, 65535],
+            [HpkeKdf.SHAKE256, 65535],
+        ];
+
         public static IEnumerable<object[]> RepresentativeSuites
         {
             get

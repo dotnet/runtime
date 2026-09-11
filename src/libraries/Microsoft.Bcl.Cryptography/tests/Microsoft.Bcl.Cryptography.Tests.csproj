@@ -129,6 +129,10 @@
              Link="CommonTest\System\Security\Cryptography\CompositeMLKemAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\HpkeContractTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeRecipientContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\HpkeRecipientContractTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeSenderContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\HpkeSenderContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeSuiteTests.cs"
              Link="CommonTest\System\Security\Cryptography\HpkeSuiteTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeTestData.cs"
