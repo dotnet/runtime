@@ -46,6 +46,26 @@
 #include "async.h"
 
 //------------------------------------------------------------------------
+// IsKnownResumed:
+//   Check whether a "resumed" indicator value is known to be set.
+//
+// Parameters:
+//   resumed - Value of the indicator
+//
+// Returns:
+//   True if the value is known to be non-zero.
+//
+// Remarks:
+//   The indicator is only ever consumed as a boolean, and the suspension helpers that
+//   take it no-op when it is set, so they can be left out entirely in that case. VN based
+//   constant propagation is what turns the indicator into a constant here.
+//
+static bool IsKnownResumed(GenTree* resumed)
+{
+    return resumed->IsIntegralConst() && !resumed->IsIntegralConst(0);
+}
+
+//------------------------------------------------------------------------
 // ContinuationMember::CustomAwaiterOfLayout:
 //   Create a continuation member that stores a custom awaiter with the
 //   specified layout.
@@ -1134,6 +1154,15 @@ PhaseStatus AsyncTransformation::Run()
     if (awaits.NumNormalAwaits <= 0)
     {
         assert(continuationMemberOffsets.Empty());
+        if ((awaits.NumTailAwaits > 0) && m_compiler->doesMethodHavePatchpoints())
+        {
+            // Inlining a tail await can introduce non-tail awaits in the OSR version.
+            // Its continuations still resume through this method.
+            CreateResumptionSwitch(nullptr);
+            m_compiler->fgInvalidateDfsTree();
+            result = PhaseStatus::MODIFIED_EVERYTHING;
+        }
+
         return result;
     }
 
@@ -3521,14 +3550,28 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
     // A frame's own indicator is not enough to see that: it is only set when the frame
     // logically returns, which has not happened yet at a suspension. So accumulate the
     // indicators of the frames walked so far and gate on that instead.
-    unsigned const   anyResumedLcl = m_compiler->lvaGrabTemp(false DEBUGARG("Async any inlined frame resumed"));
-    LclVarDsc* const anyResumedDsc = m_compiler->lvaGetDesc(anyResumedLcl);
-    anyResumedDsc->lvType          = TYP_INT;
-    anyResumedDsc->lvOnlyUsedOnSynchronousPath = true;
+    //
+    // If the optimizer proved one of the indicators to be set then the accumulation is
+    // known to be set from that point on, and all the helpers gated on it are no-ops. In
+    // that case emit none of it.
+    bool anyResumedIsSet = IsKnownResumed(frameResumed);
 
-    GenTree* const initAnyResumed =
-        m_compiler->gtNewStoreLclVarNode(anyResumedLcl, m_compiler->gtCloneExpr(frameResumed));
-    LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, initAnyResumed));
+    unsigned anyResumedLcl = BAD_VAR_NUM;
+    if (!anyResumedIsSet)
+    {
+        anyResumedLcl                  = m_compiler->lvaGrabTemp(false DEBUGARG("Async any inlined frame resumed"));
+        LclVarDsc* const anyResumedDsc = m_compiler->lvaGetDesc(anyResumedLcl);
+        anyResumedDsc->lvType          = TYP_INT;
+        anyResumedDsc->lvOnlyUsedOnSynchronousPath = true;
+
+        GenTree* const initAnyResumed =
+            m_compiler->gtNewStoreLclVarNode(anyResumedLcl, m_compiler->gtCloneExpr(frameResumed));
+        LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, initAnyResumed));
+    }
+    else
+    {
+        JITDUMP("    Frame is known to have resumed; skipping all frame transition handling\n");
+    }
 
     for (unsigned i = 0; i + 1 < numFrames; i++)
     {
@@ -3548,6 +3591,13 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
             m_compiler->TryGetContinuationMemberIndex(ContinuationMember::InlineFrameFlags(depth), &flagsIndex);
         assert(membersAreLive && "suspension tail needs a frame whose members were never registered");
         membersAreLive = membersAreLive && (layout.ContinuationMemberOffsets[flagsIndex] != UINT_MAX);
+
+        if (anyResumedIsSet)
+        {
+            // Both the capture and the restore below no-op on an already resumed frame.
+            JITDUMP("    Skipping no-op frame transition handling for inline frame depth %u\n", depth);
+            continue;
+        }
 
         if (membersAreLive)
         {
@@ -3604,6 +3654,15 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
         // Fold in the frame we are about to hand off to: from here on out its handling,
         // and that of every frame outside it, is likewise only needed the first time.
+        if (IsKnownResumed(outerResumed))
+        {
+            // The accumulation is set from here on, so this restore and everything
+            // after it no-ops. Leave the local alone; nothing reads it anymore.
+            JITDUMP("    Inline frame depth %u is known to have resumed; skipping the rest of the tail\n", depth);
+            anyResumedIsSet = true;
+            continue;
+        }
+
         GenTree* const merged =
             m_compiler->gtNewOperNode(GT_OR, TYP_INT, m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT),
                                       m_compiler->gtCloneExpr(outerResumed));
@@ -3687,6 +3746,36 @@ GenTree* AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* ca
 
     JITDUMP("    Call [%06u] has async contexts; will restore on suspension\n", Compiler::dspTreeID(call));
 
+    // Take the values off the call. They are used from a different block, so anything that
+    // is not invariant or a local use is spilled to a temp first, which leaves its side
+    // effects behind in the block with the call.
+    auto takeValue = [=](CallArg* arg) {
+        GenTree* node = arg->GetNode();
+        if (!node->IsInvariant() && !node->OperIs(GT_LCL_VAR))
+        {
+            LIR::Use use(LIR::AsRange(block), &arg->NodeRef(), call);
+            use.ReplaceWithLclVar(m_compiler);
+            node = use.Def();
+        }
+
+        LIR::AsRange(block).Remove(node);
+        call->gtArgs.RemoveUnsafe(arg);
+        return node;
+    };
+
+    GenTree* const resumed     = takeValue(resumedArg);
+    GenTree* const execContext = takeValue(execContextArg);
+    GenTree* const syncContext = takeValue(syncContextArg);
+
+    if (IsKnownResumed(resumed))
+    {
+        // RestoreContextsOnSuspension no-ops on an already resumed frame, so do not emit
+        // it at all. The values it would have taken are simply left out; any side effects
+        // they had stayed behind in the block with the call.
+        JITDUMP("    Frame is known to have resumed; skipping no-op restore on suspension\n");
+        return resumed;
+    }
+
     // Insert call
     //   AsyncHelpers.RestoreContextsOnSuspension(resumed, execContext, syncContext);
 
@@ -3704,66 +3793,20 @@ GenTree* AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* ca
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
 
-    // Replace resumedPlaceholder with actual resumed arg
-    GenTree* resumed = resumedArg->GetNode();
-    if (!resumed->IsInvariant() && !resumed->OperIs(GT_LCL_VAR))
-    {
-        // We are moving resumed into a different BB so create a temp for it.
-        LIR::Use use(LIR::AsRange(block), &resumedArg->NodeRef(), call);
-        use.ReplaceWithLclVar(m_compiler);
-        resumed = use.Def();
-    }
+    // Replace the placeholders with the actual values.
+    auto replacePlaceholder = [=](GenTree* placeholder, GenTree* value) {
+        LIR::Use use;
+        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(placeholder, &use);
+        assert(gotUse);
 
-    LIR::Use use;
-    bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(resumedPlaceholder, &use);
-    assert(gotUse);
+        LIR::AsRange(suspendBB).InsertBefore(placeholder, value);
+        use.ReplaceWith(value);
+        LIR::AsRange(suspendBB).Remove(placeholder);
+    };
 
-    LIR::AsRange(block).Remove(resumed);
-    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, resumed);
-    use.ReplaceWith(resumed);
-    LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
-
-    call->gtArgs.RemoveUnsafe(resumedArg);
-
-    // Replace execContextPlaceholder with actual value
-    GenTree* execContext = execContextArg->GetNode();
-    if (!execContext->OperIs(GT_LCL_VAR))
-    {
-        // We are moving execContext into a different BB so create a temp for it.
-        LIR::Use use(LIR::AsRange(block), &execContextArg->NodeRef(), call);
-        use.ReplaceWithLclVar(m_compiler);
-        execContext = use.Def();
-    }
-
-    gotUse = LIR::AsRange(suspendBB).TryGetUse(execContextPlaceholder, &use);
-    assert(gotUse);
-
-    LIR::AsRange(block).Remove(execContext);
-    LIR::AsRange(suspendBB).InsertBefore(execContextPlaceholder, execContext);
-    use.ReplaceWith(execContext);
-    LIR::AsRange(suspendBB).Remove(execContextPlaceholder);
-
-    call->gtArgs.RemoveUnsafe(execContextArg);
-
-    // Replace syncContextPlaceholder with actual value
-    GenTree* syncContext = syncContextArg->GetNode();
-    if (!syncContext->OperIs(GT_LCL_VAR))
-    {
-        // We are moving syncContext into a different BB so create a temp for it.
-        LIR::Use use(LIR::AsRange(block), &syncContextArg->NodeRef(), call);
-        use.ReplaceWithLclVar(m_compiler);
-        syncContext = use.Def();
-    }
-
-    gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
-    assert(gotUse);
-
-    LIR::AsRange(block).Remove(syncContext);
-    LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContext);
-    use.ReplaceWith(syncContext);
-    LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
-
-    call->gtArgs.RemoveUnsafe(syncContextArg);
+    replacePlaceholder(resumedPlaceholder, resumed);
+    replacePlaceholder(execContextPlaceholder, execContext);
+    replacePlaceholder(syncContextPlaceholder, syncContext);
 
     JITDUMP("    Created RestoreContexts call on suspension:\n");
     DISPTREERANGE(LIR::AsRange(suspendBB), restoreCall);
@@ -5009,6 +5052,30 @@ ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compile
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::CreateOSRJumpBB:
+//   Create a block that transfers control to the OSR version on resumption.
+//
+// Parameters:
+//   osrAddress - The address of the OSR version.
+//
+// Returns:
+//   The block containing the non-local jump.
+//
+BasicBlock* AsyncTransformation::CreateOSRJumpBB(GenTree* osrAddress)
+{
+    BasicBlock* jmpOSR = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
+    jmpOSR->bbSetRunRarely();
+    jmpOSR->clearTryIndex();
+    jmpOSR->clearHndIndex();
+
+    JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
+
+    GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
+    LIR::AsRange(jmpOSR).InsertAtEnd(LIR::SeqTree(m_compiler, jmpOsr));
+    return jmpOSR;
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::CreateResumptionSwitch:
 //   Create the IR for the entry of the function that checks the continuation
 //   and dispatches on its state number.
@@ -5026,7 +5093,17 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
 
     FlowEdge* resumingEdge;
 
-    if (m_states.size() == 1)
+    if (m_states.empty())
+    {
+        assert(m_compiler->doesMethodHavePatchpoints());
+
+        // Tier0 cannot create its own continuation, so a non-null continuation
+        // must belong to an OSR version that acquired awaits through inlining.
+        continuationArg     = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        GenTree* osrAddress = LoadFromOffset(continuationArg, OFFSETOF__CORINFO_Continuation__data, TYP_I_IMPL);
+        resumingEdge        = m_compiler->fgAddRefPred(CreateOSRJumpBB(osrAddress), newEntryBB);
+    }
+    else if (m_states.size() == 1)
     {
         JITDUMP("  Redirecting entry " FMT_BB " directly to " FMT_BB " as it is the only resumption block\n",
                 newEntryBB->bbNum, m_states[0].ResumptionBB->bbNum);
@@ -5119,16 +5196,13 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         StoreResumedDef(commonAsyncResumedDef, resumingEdge->getDestinationBlock());
     }
 
-    if (m_compiler->doesMethodHavePatchpoints())
+    if (m_compiler->doesMethodHavePatchpoints() && !m_states.empty())
     {
         JITDUMP("  Method has patch points...\n");
         // If we have patchpoints then first check if we need to resume in the OSR version.
-        BasicBlock* jmpOSR = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
-        jmpOSR->bbSetRunRarely();
-        jmpOSR->clearTryIndex();
-        jmpOSR->clearHndIndex();
-
-        JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
+        unsigned osrAddressLclNum = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
+        m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
+        BasicBlock* jmpOSR = CreateOSRJumpBB(m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL));
 
         BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
         BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
@@ -5152,9 +5226,7 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
         unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
         GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
-        unsigned osrAddressLclNum         = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
-        m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
-        GenTree* storeOsrAddress = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
+        GenTree* storeOsrAddress          = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
         LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOsrAddress));
 
         osrAddress      = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
@@ -5162,11 +5234,6 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         GenTree* neZero = m_compiler->gtNewOperNode(GT_NE, TYP_INT, osrAddress, zero);
         GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neZero);
         LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(osrAddress, zero, neZero, jtrue);
-
-        osrAddress = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
-
-        GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
-        LIR::AsRange(jmpOSR).InsertAtEnd(LIR::SeqTree(m_compiler, jmpOsr));
     }
     else if (m_compiler->opts.IsOSR())
     {

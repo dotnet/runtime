@@ -5525,10 +5525,7 @@ AdjustContextForJITHelpers(
         //
         // Question: Why do we unwind before determining whether we will handle the exception or not?
         UnwindFrameChain(GetThread(), (Frame*)GetSP(pContext));
-        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext,
-                               NULL, // establisher frame (x86 only)
-                               NULL  // pThread           (x86 only)
-                               );
+        fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord, pContext);
 
         if (fShouldHandleManagedFault)
         {
@@ -5639,16 +5636,13 @@ void FaultingExceptionFrame::InitAndLink(CONTEXT *pContext)
     WRAPPER_NO_CONTRACT;
 
     Init(pContext);
-
     Push();
 }
 
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
-                        CONTEXT*                        pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread)
+                        CONTEXT*                        pContext)
 {
     CONTRACTL
     {
@@ -5700,6 +5694,20 @@ bool ShouldHandleManagedFault(
 
         if (!ExecutionManager::IsManagedCode(GetIP(pContext)))
             return false;
+    }
+
+    Thread *pCurrentThread = GetThreadNULLOk();
+    if (pCurrentThread != nullptr &&
+        !pCurrentThread->PreemptiveGCDisabled() &&
+        InlinedCallFrame::FrameHasActiveCall(pCurrentThread->GetFrame()))
+    {
+        // If the user tries to call an invalid function pointer, some addresses on some architectures trigger a fault
+        // with the IP at the caller's address, not the invalid target address.
+        // If this case occurs after a GC transition to preemptive mode (ie a call to a function pointer with an unmanaged calling convention),
+        // we have semantically already left managed code.
+        // We will consider this a non-managed code address to align the "IP is caller's address" and "IP is callee's address"
+        // user experiences.
+        return false;
     }
 
     // caller should call HandleManagedFault and resume execution.
@@ -5927,10 +5935,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     {
         CantAllocHolder caHolder;
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionInfo->ExceptionRecord,
-                                                             pExceptionInfo->ContextRecord,
-                                                             NULL, // establisher frame (x86 only)
-                                                             NULL  // pThread           (x86 only)
-                                                            );
+                                                             pExceptionInfo->ContextRecord);
     }
 
     if (fShouldHandleManagedFault)
