@@ -592,8 +592,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
-            if (numberHandlingIsApplicable ||
-                EffectiveConverter.ConverterStrategy is ConverterStrategy.Union)
+            if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
                 JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
