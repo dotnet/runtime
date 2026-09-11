@@ -147,6 +147,12 @@
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
+
+  <!-- NO-MERGE: Run only the native Composite ML-KEM PKCS#8 servicing canaries in library CI. -->
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(IsTestProject)' == 'true'">
+    <WithCategories>CompositeMLKemPkcs8Canary</WithCategories>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsTrimmingTestProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
