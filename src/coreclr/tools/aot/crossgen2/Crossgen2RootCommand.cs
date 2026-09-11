@@ -102,6 +102,10 @@ namespace ILCompiler
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -207,6 +211,8 @@ namespace ILCompiler
             Options.Add(TargetAllowsRuntimeCodeGeneration);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);

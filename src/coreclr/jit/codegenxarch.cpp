@@ -95,7 +95,19 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(m_compiler->gsGlobalSecurityCookieAddr || m_compiler->gsGlobalSecurityCookieVal);
 
-    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall);
+    GenTreeCall* tailCallNode = nullptr;
+    if (tailCall)
+    {
+        assert(m_compiler->compCurBB != nullptr);
+        GenTree* lastNode = m_compiler->compCurBB->lastNode();
+        if (lastNode->OperIs(GT_CALL))
+        {
+            tailCallNode = lastNode->AsCall();
+            assert(tailCallNode->IsFastTailCall());
+        }
+    }
+
+    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall, tailCallNode);
     assert(tempRegs != RBM_NONE);
     regNumber regGSCheck = genFirstRegNumFromMask(tempRegs);
 
@@ -6074,6 +6086,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     {
         params.sigInfo = call->callSig;
     }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
 
     GenTree* target = getCallTarget(call, &params.methHnd);

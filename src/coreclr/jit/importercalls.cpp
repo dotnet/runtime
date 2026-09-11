@@ -7179,7 +7179,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                     result       = gtNewIconNode(BitOperations::TrailingZeroCount(cns), baseType);
                 }
 
-                baseType = retType;
                 break;
             }
 
@@ -7402,10 +7401,10 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
 
-            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32) && call->IsUnmanaged() &&
-                varTypeIsSmall(jitSigType))
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm) &&
+                call->IsUnmanaged() && varTypeIsSmall(jitSigType))
             {
-                // Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                // Wasm, Apple arm64 and arm32 ABIs require arguments to be zero/sign
                 // extended up to 32 bit. The managed ABI does not require
                 // this.
                 if (fgCastNeeded(argNode, jitSigType))
@@ -7947,14 +7946,16 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries() && (call->gtCallType == CT_USER_FUNC))
     {
-        // Query the async variants (twice, to get both directions)
-        CORINFO_METHOD_HANDLE method = call->gtCallMethHnd;
-        bool                  variantIsThunk;
-        method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
-        if (method != NO_METHOD_HANDLE)
-        {
+        eeRunExtraSuperPmiQueries([&]() {
+            // Query the async variants (twice, to get both directions)
+            CORINFO_METHOD_HANDLE method = call->gtCallMethHnd;
+            bool                  variantIsThunk;
             method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
-        }
+            if (method != NO_METHOD_HANDLE)
+            {
+                method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+            }
+        });
     }
 #endif
 }
@@ -8309,8 +8310,12 @@ void Compiler::pickGDV(GenTreeCall*           call,
         for (UINT32 i = 0; i < numberOfMethods; i++)
         {
             CORINFO_CONST_LOOKUP lookup = {};
-            info.compCompHnd->getFunctionFixedEntryPoint((CORINFO_METHOD_HANDLE)likelyMethods[i].handle, false,
-                                                         &lookup);
+            // This query is made only to dump the entry point, so it must not be able to fail
+            // the compilation: an AOT compiler throws for a method it cannot create a fixup for.
+            eeRunExtraSuperPmiQueries([&]() {
+                info.compCompHnd->getFunctionFixedEntryPoint((CORINFO_METHOD_HANDLE)likelyMethods[i].handle, false,
+                                                             &lookup);
+            });
 
             const char* methName = eeGetMethodFullName((CORINFO_METHOD_HANDLE)likelyMethods[i].handle);
             switch (lookup.accessType)

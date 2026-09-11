@@ -16,7 +16,6 @@ using System.Text;
 using Internal.LowLevelLinq;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensions.NonPortable;
 using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.General
@@ -136,112 +135,5 @@ namespace System.Reflection.Runtime.General
             return new BinderBundle(binder, cultureInfo);
         }
 
-        private static object? GetRawDefaultValue(IEnumerable<CustomAttributeData> customAttributes)
-        {
-            foreach (CustomAttributeData attributeData in customAttributes)
-            {
-                Type attributeType = attributeData.AttributeType;
-                if (attributeType == typeof(DecimalConstantAttribute))
-                {
-                    return GetRawDecimalConstant(attributeData);
-                }
-                else if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
-                {
-                    if (attributeType == typeof(DateTimeConstantAttribute))
-                    {
-                        return GetRawDateTimeConstant(attributeData);
-                    }
-                    return GetRawConstant(attributeData);
-                }
-            }
-            return DBNull.Value;
-        }
-
-        private static decimal GetRawDecimalConstant(CustomAttributeData attr)
-        {
-            System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
-
-            return new decimal(
-                lo: GetConstructorArgument(args, 4),
-                mid: GetConstructorArgument(args, 3),
-                hi: GetConstructorArgument(args, 2),
-                isNegative: ((byte)args[1].Value!) != 0,
-                scale: (byte)args[0].Value!);
-
-            static int GetConstructorArgument(IList<CustomAttributeTypedArgument> args, int index)
-            {
-                // The constructor is overloaded to accept both signed and unsigned arguments
-                object obj = args[index].Value!;
-                return (obj is int value) ? value : (int)(uint)obj;
-            }
-        }
-
-        private static DateTime GetRawDateTimeConstant(CustomAttributeData attr)
-        {
-            return new DateTime((long)attr.ConstructorArguments[0].Value!);
-        }
-
-        // We are relying only on named arguments for historical reasons
-        private static object? GetRawConstant(CustomAttributeData attr)
-        {
-            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
-            {
-                if (namedArgument.MemberInfo.Name.Equals("Value"))
-                    return namedArgument.TypedValue.Value;
-            }
-            return DBNull.Value;
-        }
-
-        private static object? GetDefaultValue(IEnumerable<CustomAttributeData> customAttributes)
-        {
-            // we first look for a CustomConstantAttribute, but we will save the first occurrence of DecimalConstantAttribute
-            // so we don't go through all custom attributes again
-            CustomAttributeData? firstDecimalConstantAttributeData = null;
-            foreach (CustomAttributeData attributeData in customAttributes)
-            {
-                Type attributeType = attributeData.AttributeType;
-                if (firstDecimalConstantAttributeData == null && attributeType == typeof(DecimalConstantAttribute))
-                {
-                    firstDecimalConstantAttributeData = attributeData;
-                }
-                else if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
-                {
-                    CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(attributeData.Instantiate());
-                    return customConstantAttribute.Value;
-                }
-            }
-
-            if (firstDecimalConstantAttributeData != null)
-            {
-                DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(firstDecimalConstantAttributeData.Instantiate());
-                return decimalConstantAttribute.Value;
-            }
-            else
-            {
-                return DBNull.Value;
-            }
-        }
-
-        public static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, bool raw, out object? defaultValue)
-        {
-            // The resolution of default value is done by following these rules:
-            // 1. For RawDefaultValue, we pick the first custom attribute holding the constant value
-            //  in the following order: DecimalConstantAttribute, DateTimeConstantAttribute, CustomConstantAttribute
-            // 2. For DefaultValue, we first look for CustomConstantAttribute and pick the first occurrence.
-            //  If none is found, then we repeat the same process searching for DecimalConstantAttribute.
-            // IMPORTANT: Please note that there is a subtle difference in order custom attributes are inspected for
-            //  RawDefaultValue and DefaultValue.
-            object? resolvedValue = raw ? GetRawDefaultValue(customAttributes) : GetDefaultValue(customAttributes);
-            if (resolvedValue != DBNull.Value)
-            {
-                defaultValue = resolvedValue;
-                return true;
-            }
-            else
-            {
-                defaultValue = null;
-                return false;
-            }
-        }
     }
 }

@@ -831,7 +831,6 @@ public class Class1
         Console.WriteLine("foo L1");
     }
 
-
     [Fact]
     static public int TestEntryPoint()
     {

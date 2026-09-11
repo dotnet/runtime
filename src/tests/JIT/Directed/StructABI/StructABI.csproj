@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- No test-specific corerun on wasm: the generator or the wasm linker rejects this test's
-         native interop surface. Native-dependent tests skip instead. Tracked by https://github.com/dotnet/runtime/issues/131811 -->
-    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</WasmBuildTestCorerun>
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133502 -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

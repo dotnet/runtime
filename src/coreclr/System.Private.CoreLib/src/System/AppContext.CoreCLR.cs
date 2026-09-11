@@ -16,6 +16,7 @@ namespace System
                     or "PLATFORM_RESOURCE_ROOTS"
                     or "APP_PATHS";
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_TryGetHostPropertyValue", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool TryGetHostPropertyValue(string name, StringHandleOnStack retValue);
