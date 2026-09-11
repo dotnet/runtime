@@ -1939,7 +1939,8 @@ namespace ILCompiler
                         && isReferenceOrContainsReferencesType.Name == "RuntimeHelpers"u8 && isReferenceOrContainsReferencesType.Namespace == "System.Runtime.CompilerServices"u8
                         && isReferenceOrContainsReferencesType.Module == method.Context.SystemModule:
                 {
-                    bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
+                    bool result = method.Instantiation[0].IsGCPointer
+                        || (method.Instantiation[0] is DefType defType && (defType.ContainsGCPointers || defType.ContainsByRefs));
                     retVal = ValueTypeValue.FromSByte(result ? (sbyte)1 : (sbyte)0);
                     return true;
                 }

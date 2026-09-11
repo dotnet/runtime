@@ -74,6 +74,7 @@ internal class Program
         TestFloatNaNComparison.Run();
         TestDivisionOverflow.Run();
         TestTypedStores.Run();
+        TestContainsReferences.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -2398,6 +2399,57 @@ class TestTypedStores
         Check(ShortEnum.Value, s_shortCopy);
         Check(UShortEnum.Value, s_ushortWrite);
         Check(UShortEnum.Value, s_ushortCopy);
+    }
+}
+
+class TestContainsReferences
+{
+    ref struct WithRef
+    {
+        public ref int Value;
+        public WithRef(ref int value) => Value = ref value;
+    }
+
+    ref struct WithNestedRef
+    {
+        public WithRef Value;
+        public WithNestedRef(ref int value) => Value = new WithRef(ref value);
+    }
+
+    ref struct WithoutReferences
+    {
+        public int Value;
+        public WithoutReferences(int value) => Value = value;
+    }
+
+    struct WithObject
+    {
+        public object Value;
+        public WithObject(object value) => Value = value;
+    }
+
+    static readonly bool s_span = RuntimeHelpers.IsReferenceOrContainsReferences<Span<char>>();
+    static readonly bool s_readOnlySpan = RuntimeHelpers.IsReferenceOrContainsReferences<ReadOnlySpan<char>>();
+    static readonly bool s_withRef = RuntimeHelpers.IsReferenceOrContainsReferences<WithRef>();
+    static readonly bool s_withNestedRef = RuntimeHelpers.IsReferenceOrContainsReferences<WithNestedRef>();
+    static readonly bool s_withoutReferences = RuntimeHelpers.IsReferenceOrContainsReferences<WithoutReferences>();
+    static readonly bool s_int = RuntimeHelpers.IsReferenceOrContainsReferences<int>();
+    static readonly bool s_guid = RuntimeHelpers.IsReferenceOrContainsReferences<Guid>();
+    static readonly bool s_string = RuntimeHelpers.IsReferenceOrContainsReferences<string>();
+    static readonly bool s_withObject = RuntimeHelpers.IsReferenceOrContainsReferences<WithObject>();
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestContainsReferences));
+        Assert.AreEqual(true, s_span);
+        Assert.AreEqual(true, s_readOnlySpan);
+        Assert.AreEqual(true, s_withRef);
+        Assert.AreEqual(true, s_withNestedRef);
+        Assert.AreEqual(false, s_withoutReferences);
+        Assert.AreEqual(false, s_int);
+        Assert.AreEqual(false, s_guid);
+        Assert.AreEqual(true, s_string);
+        Assert.AreEqual(true, s_withObject);
     }
 }
 
