@@ -290,19 +290,16 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
         PAL_SEHException exCopy;                    \
         bool hasCaughtException = false;            \
         try {
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER       \
         }                                           \
         catch (PAL_SEHException& ex)                \
         {                        \
-            if (nativeRethrow || (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy))               \
+            if (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy)               \
             { \
                 throw; \
             } \
@@ -313,9 +310,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             DispatchManagedException(exCopy, false);\
         }
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false)
 
 // Install trap that catches unhandled managed exception and dumps its stack
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                            \
@@ -364,47 +358,10 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     }
 
 
-#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
-
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-
-#define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
-#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
-
-// We use [UN]INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX to backpatch the SEH record installed
-// in CallDescrWorkerInternal from ProcessCLRException to CallDescrWorkerUnwindFrameChainHandler
-// when throwing an exception. This ensures that class loading exceptions are propagated through
-// unmanaged code before being forwarded to the managed one.
-
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX \
-        try \
-        {
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
-        } \
-        catch (...) \
-        { \
-            if (nativeRethrow) \
-            { \
-                PEXCEPTION_REGISTRATION_RECORD pExceptionRecord = GetCurrentSEHRecord(); \
-                _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
-                while (pExceptionRecord->Handler != (PEXCEPTION_ROUTINE)ProcessCLRException) \
-                { \
-                    pExceptionRecord = pExceptionRecord->Next; \
-                    _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
-                } \
-                pExceptionRecord->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler; \
-            } \
-            throw; \
-        }
-
 #else // TARGET_UNIX
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP

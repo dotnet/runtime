@@ -77,8 +77,7 @@ EXTERN_C void checkStack(void);
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         32  // bytes (maximum HFA size is 4 doubles)
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4   // bytes
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_FPARGREGS                     1   // Calling convention has separate floating-point argument registers
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
