@@ -831,9 +831,7 @@ public class Class1
         Console.WriteLine("foo L1");
     }
 
-
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133465", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     static public int TestEntryPoint()
     {
         //Start recording
