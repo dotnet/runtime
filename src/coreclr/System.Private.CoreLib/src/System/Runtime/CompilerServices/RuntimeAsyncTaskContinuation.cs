@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -154,7 +153,6 @@ namespace System.Runtime.CompilerServices
             private static Continuation? ResumeTaskContinuation(Continuation cont, ref byte result)
             {
                 var taskCont = (RuntimeAsyncTaskContinuation)cont;
-
                 taskCont.Next = null;
                 taskCont.RuntimeAsyncTask = null;
                 taskCont.ContinuationContext = null;

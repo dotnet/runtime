@@ -2013,7 +2013,12 @@ namespace System.Runtime.CompilerServices
                     Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
                 }
 
-                if (nextContinuation is RuntimeAsyncTaskContinuation { Task: Task awaitedTask })
+                OutputTaskWaitBegin(task, nextContinuation);
+            }
+
+            private static void OutputTaskWaitBegin(Task task, Continuation? continuation)
+            {
+                if (continuation is RuntimeAsyncTaskContinuation { Task: Task awaitedTask })
                 {
                     TplEventSource log = TplEventSource.Log;
                     if (log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TaskTransfer | TplEventSource.Keywords.Tasks))
