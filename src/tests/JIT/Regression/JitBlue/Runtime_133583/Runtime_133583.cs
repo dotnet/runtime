@@ -15,6 +15,7 @@ public class Runtime_133583
         Assert.Equal(3, LessThanOrEqual());
         Assert.Equal(2, GreaterThan());
         Assert.Equal(3, GreaterThanOrEqual());
+        Assert.Equal(1, SubtractIntMinValue());
         Assert.Throws<OverflowException>(() => { _ = NotEqualOverflow(); });
     }
 
@@ -83,6 +84,20 @@ public class Runtime_133583
         {
             count++;
             i = checked(i - 1);
+        }
+
+        return count;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int SubtractIntMinValue()
+    {
+        int count = 0;
+        int i = int.MinValue;
+        while (i != 0)
+        {
+            count++;
+            i = checked(i - int.MinValue);
         }
 
         return count;
