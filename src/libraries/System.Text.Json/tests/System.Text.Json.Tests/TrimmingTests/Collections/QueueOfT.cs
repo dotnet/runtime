@@ -1,24 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Text.Json;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that source generated metadata for (de)serializing IEnumerable is trimming safe.
+    /// Tests that source generated metadata for (de)serializing Queue<T> is trimming safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            return TestHelper.RoundtripCollection("[1]", Context.Default.IEnumerable) ? 100 : -1;
+            return TestHelper.RoundtripCollection("[1]", Context.Default.QueueInt32) ? 100 : -1;
         }
     }
 
-    [JsonSerializable(typeof(IEnumerable))]
-    [JsonSerializable(typeof(JsonElement))]
+    [JsonSerializable(typeof(Queue<int>))]
     internal partial class Context : JsonSerializerContext;
 }

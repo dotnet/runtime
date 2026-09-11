@@ -8,17 +8,17 @@ using System.Text.Json.Serialization;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that source generated metadata for (de)serializing IEnumerable is trimming safe.
+    /// Tests that source generated metadata for (de)serializing Stack is trimming safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            return TestHelper.RoundtripCollection("[1]", Context.Default.IEnumerable) ? 100 : -1;
+            return TestHelper.RoundtripCollection("[1]", Context.Default.Stack) ? 100 : -1;
         }
     }
 
-    [JsonSerializable(typeof(IEnumerable))]
+    [JsonSerializable(typeof(Stack))]
     [JsonSerializable(typeof(JsonElement))]
     internal partial class Context : JsonSerializerContext;
 }

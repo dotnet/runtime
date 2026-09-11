@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace SerializerTrimmingTest
 {
@@ -84,9 +85,14 @@ namespace SerializerTrimmingTest
             }
         }
 
-        public static bool AssertCollectionAndSerialize<T>(object obj, string json)
+        /// <summary>
+        /// Deserializes and re-serializes a collection payload using source generated
+        /// metadata, asserting that it round trips unchanged.
+        /// </summary>
+        public static bool RoundtripCollection<T>(string json, JsonTypeInfo<T> typeInfo)
         {
-            return obj is T && JsonSerializer.Serialize(obj) == json;
+            T obj = JsonSerializer.Deserialize(json, typeInfo);
+            return obj != null && JsonSerializer.Serialize(obj, typeInfo) == json;
         }
     }
 

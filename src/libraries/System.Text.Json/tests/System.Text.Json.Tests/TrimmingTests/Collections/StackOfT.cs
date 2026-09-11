@@ -2,27 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that the serializer's warm up routine for (de)serializing Stack<T> is trimming-safe.
+    /// Tests that source generated metadata for (de)serializing Stack<T> is trimming safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            // Test is currently disabled until issue #53393 is addressed.
-
-            //string json = "[1]";
-            //object obj = JsonSerializer.Deserialize(json, typeof(Stack<int>));
-            //if (!(TestHelper.AssertCollectionAndSerialize<Stack<int>>(obj, json)))
-            //{
-            //    return -1;
-            //}
-
-            return 100;
+            return TestHelper.RoundtripCollection("[1]", Context.Default.StackInt32) ? 100 : -1;
         }
     }
+
+    [JsonSerializable(typeof(Stack<int>))]
+    internal partial class Context : JsonSerializerContext;
 }

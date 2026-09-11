@@ -3,24 +3,22 @@
 
 using System.Collections;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that the serializer's warm up routine for (de)serializing ICollection is trimming-safe.
+    /// Tests that source generated metadata for (de)serializing ICollection is trimming safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            string json = "[1]";
-            object obj = JsonSerializer.Deserialize(json, typeof(ICollection>));
-            if (!(TestHelper.AssertCollectionAndSerialize<ICollection>(obj, json)))
-            {
-                return -1;
-            }
-
-            return 100;
+            return TestHelper.RoundtripCollection("[1]", Context.Default.ICollection) ? 100 : -1;
         }
     }
+
+    [JsonSerializable(typeof(ICollection))]
+    [JsonSerializable(typeof(JsonElement))]
+    internal partial class Context : JsonSerializerContext;
 }
