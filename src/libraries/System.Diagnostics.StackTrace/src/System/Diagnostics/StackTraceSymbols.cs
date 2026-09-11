@@ -229,8 +229,13 @@ namespace System.Diagnostics
 
             try
             {
-                // Open the file with read and delete FileShare flags. This matches what dll loading does
-                return new FileStream(path!, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+                // Open with the most permissive sharing. On Unix, any FileShare other than ReadWrite
+                // takes an advisory flock, and the provider built on this stream is cached for the
+                // lifetime of the assembly, so the lock would be held for the life of the process.
+                // iOS terminates a suspended app that holds a file lock outside its data container,
+                // and the PDB lives in the app bundle (see #133697). The lock buys nothing here: the
+                // file is read-only, and FileShare.Delete already allows it to be removed underneath us.
+                return new FileStream(path!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             }
             catch
             {
