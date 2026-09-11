@@ -13,6 +13,7 @@ namespace System.Reflection.Tests
     public static class CustomAttributeDataTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         [My]
         public static void Test_CustomAttributeData_ConstructorNullary()
         {
@@ -34,6 +35,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         [My((short)5)]
         public static void Test_CustomAttributeData_Constructor1()
         {
@@ -75,6 +77,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         [ComVisible(false)]
         [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))
             /* Descriptors tell us to remove ComVisibleAttribute */]
@@ -130,6 +133,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         [My(3)]
         public static void Test_CustomAttributeData_ToString()
         {
@@ -147,6 +151,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133617", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/119292", TestRuntimes.Mono)]
         [MyEnumArray(MyTestEnum.Value, null, [], [MyTestEnum.Value, MyTestEnum.Value])]
         public static void Test_CustomAttributeData_EnumArray()

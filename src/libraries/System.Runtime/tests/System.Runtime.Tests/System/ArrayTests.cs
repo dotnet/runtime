@@ -479,6 +479,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(BinarySearch_TypesNotComparable_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133613", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void BinarySearch_TypesNotIComparable_ThrowsInvalidOperationException<T>(T[] array, object value)
         {
             Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, value));
