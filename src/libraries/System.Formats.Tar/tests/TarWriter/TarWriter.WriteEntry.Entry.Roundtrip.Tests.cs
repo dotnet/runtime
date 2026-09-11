@@ -107,7 +107,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream ms = new();
             Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
-            await using (TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true))
+            await using (TarWriterHolder writerHolder = CreateTarWriter(s, async, entryFormat, leaveOpen: true))
             {
                 TarWriter writer = writerHolder;
 
