@@ -604,8 +604,10 @@ uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
 
 int32_t NetSecurityNative_IsGetNameAttributeSupported(void)
 {
-#if HAVE_GSS_GET_NAME_ATTRIBUTE
+#if HAVE_GSS_GET_NAME_ATTRIBUTE && defined(GSS_SHIM)
     return HAS_GSS_GET_NAME_ATTRIBUTE() ? 1 : 0;
+#elif HAVE_GSS_GET_NAME_ATTRIBUTE
+    return 1;
 #else
     return 0;
 #endif
