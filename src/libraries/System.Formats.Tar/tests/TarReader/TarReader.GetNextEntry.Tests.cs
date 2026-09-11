@@ -316,7 +316,7 @@ namespace System.Formats.Tar.Tests
                 await using TarReaderHolder readerHolder = CreateTarReader(wrapped, async, leaveOpen: false);
                 TarReader reader = readerHolder;
 
-                entry = await GetNextEntry(reader, copyData, async: async) as UstarTarEntry;
+                entry = await GetNextEntry(reader, copyData: copyData, async: async) as UstarTarEntry;
                 Assert.NotNull(entry);
                 Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
 
@@ -374,17 +374,17 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(unseekable, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            TarEntry e = await GetNextEntry(reader, copyData, async: async);
+            TarEntry e = await GetNextEntry(reader, copyData: copyData, async: async);
             Assert.Equal(contentSize, e.Length);
 
             byte[] buffer = new byte[contentSize];
             while (e.DataStream.Read(buffer) > 0) ;
             AssertExtensions.SequenceEqual(fileContents, buffer);
 
-            e = await GetNextEntry(reader, copyData, async: async);
+            e = await GetNextEntry(reader, copyData: copyData, async: async);
             Assert.Equal(0, e.Length);
 
-            e = await GetNextEntry(reader, copyData, async: async);
+            e = await GetNextEntry(reader, copyData: copyData, async: async);
             Assert.Null(e);
         }
 

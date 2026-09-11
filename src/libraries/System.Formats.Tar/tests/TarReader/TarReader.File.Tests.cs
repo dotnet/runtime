@@ -464,7 +464,7 @@ namespace System.Formats.Tar.Tests
             TarReader reader = readerHolder;
 
             TarEntry entry;
-            while ((entry = await GetNextEntry(reader, copyData, async: async)) != null)
+            while ((entry = await GetNextEntry(reader, copyData: copyData, async: async)) != null)
             {
                 if (entry.EntryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
                 {

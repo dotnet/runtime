@@ -109,7 +109,7 @@ namespace System.Formats.Tar.Tests
             return new TarReaderHolder(new TarReader(archiveStream, leaveOpen), async);
         }
 
-        protected static async Task DisposeTarReader(TarReader reader, bool async = false)
+        protected static async Task DisposeTarReader(TarReader reader, bool async)
         {
             if (async)
             {
@@ -121,7 +121,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task<TarEntry?> GetNextEntry(TarReader reader, bool copyData = false, bool async = false)
+        protected static async Task<TarEntry?> GetNextEntry(TarReader reader, bool async, bool copyData = false)
         {
             return async
                 ? await reader.GetNextEntryAsync(copyData)
@@ -158,7 +158,7 @@ namespace System.Formats.Tar.Tests
             return new TarWriterHolder(new TarWriter(archiveStream, format, leaveOpen), async);
         }
 
-        protected static async Task DisposeTarWriter(TarWriter writer, bool async = false)
+        protected static async Task DisposeTarWriter(TarWriter writer, bool async)
         {
             if (async)
             {
@@ -170,7 +170,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task WriteEntry(TarWriter writer, TarEntry entry, bool async = false)
+        protected static async Task WriteEntry(TarWriter writer, TarEntry entry, bool async)
         {
             if (async)
             {
@@ -182,7 +182,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task WriteEntry(TarWriter writer, string fileName, string? entryName, bool async = false)
+        protected static async Task WriteEntry(TarWriter writer, string fileName, string? entryName, bool async)
         {
             if (async)
             {
@@ -194,7 +194,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task ExtractToFile(TarEntry entry, string destinationFileName, bool overwrite, bool async = false)
+        protected static async Task ExtractToFile(TarEntry entry, string destinationFileName, bool overwrite, bool async)
         {
             if (async)
             {
@@ -206,7 +206,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, bool includeBaseDirectory, bool async = false)
+        protected static async Task CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, bool includeBaseDirectory, bool async)
         {
             if (async)
             {
@@ -218,7 +218,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, bool includeBaseDirectory, TarEntryFormat format, bool async = false)
+        protected static async Task CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, bool includeBaseDirectory, TarEntryFormat format, bool async)
         {
             if (async)
             {
@@ -230,7 +230,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, bool includeBaseDirectory, TarWriterOptions options, bool async = false)
+        protected static async Task CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, bool includeBaseDirectory, TarWriterOptions options, bool async)
         {
             if (async)
             {
@@ -242,7 +242,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool async = false)
+        protected static async Task CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool async)
         {
             if (async)
             {
@@ -254,7 +254,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format, bool async = false)
+        protected static async Task CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format, bool async)
         {
             if (async)
             {
@@ -266,7 +266,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarWriterOptions options, bool async = false)
+        protected static async Task CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarWriterOptions options, bool async)
         {
             if (async)
             {
@@ -278,7 +278,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, bool async = false)
+        protected static async Task ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, bool async)
         {
             if (async)
             {
@@ -290,7 +290,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, TarExtractOptions options, bool async = false)
+        protected static async Task ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, TarExtractOptions options, bool async)
         {
             if (async)
             {
@@ -302,7 +302,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static async Task ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles, bool async = false)
+        protected static async Task ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles, bool async)
         {
             if (async)
             {

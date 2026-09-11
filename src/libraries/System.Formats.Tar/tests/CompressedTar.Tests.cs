@@ -57,11 +57,11 @@ namespace System.Formats.Tar.Tests
                 await using TarReaderHolder readerHolder = CreateTarReader(decompressorStream, async, leaveOpen: false);
                 TarReader reader = readerHolder;
 
-                TarEntry entry = await GetNextEntry(reader, async: async);
+                TarEntry entry = await GetNextEntry(reader, copyData: false, async: async);
                 Assert.NotNull(entry);
                 Assert.Equal(TarEntryFormat.Pax, entry.Format);
                 Assert.Equal(fileName, entry.Name);
-                Assert.Null(await GetNextEntry(reader, async: async));
+                Assert.Null(await GetNextEntry(reader, copyData: false, async: async));
             }
         }
 
