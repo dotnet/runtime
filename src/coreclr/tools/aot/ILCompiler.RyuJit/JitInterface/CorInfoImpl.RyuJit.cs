@@ -15,7 +15,6 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysis.Wasm;
 using System.Runtime.CompilerServices;
 
 #if SUPPORT_JIT
