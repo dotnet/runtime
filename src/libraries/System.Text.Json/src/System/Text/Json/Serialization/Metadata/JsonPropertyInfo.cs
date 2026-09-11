@@ -688,7 +688,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool NumberHandingIsApplicable()
         {
-            if (EffectiveConverter.IsInternalConverterForNumberType)
+            if (EffectiveConverter.IsInternalConverterForNumberType ||
+                EffectiveConverter.ConverterStrategy is ConverterStrategy.Union)
             {
                 return true;
             }
