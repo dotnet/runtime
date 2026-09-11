@@ -29,6 +29,9 @@ namespace System.Net.Security
         // is far above what Active Directory can issue, since the resulting ticket would exceed
         // the maximum Kerberos token size long before this limit is reached.
         private const int MaxGroupCount = 8192;
+        private const uint GroupEnabled = 0x00000004;
+        private const uint GroupUseForDenyOnly = 0x00000010;
+        private const uint GroupLogonId = 0xC0000000;
 
         private const byte NdrLittleEndian = 0x10;
         private const byte NdrVersion = 1;
@@ -148,13 +151,13 @@ namespace System.Net.Security
                 }
             }
 
-            if (!TryReadGroupMemberships(ref reader, groupIdsReferent, groupCount, out uint[]? groupRids) ||
+            if (!TryReadGroupMemberships(ref reader, groupIdsReferent, groupCount, out GroupMembership[]? groups) ||
                 !TryReadUnicodeStringData(ref reader, logonServerReferent, out _) ||
                 !TryReadUnicodeStringData(ref reader, logonDomainNameReferent, out string? logonDomainName) ||
                 !TryReadSid(ref reader, logonDomainIdReferent, out string? logonDomainSid) ||
                 !TryReadExtraSids(ref reader, extraSidsReferent, sidCount, out List<string>? extraSids) ||
                 !TryReadSid(ref reader, resourceDomainIdReferent, out string? resourceDomainSid) ||
-                !TryReadGroupMemberships(ref reader, resourceGroupIdsReferent, resourceGroupCount, out uint[]? resourceGroupRids))
+                !TryReadGroupMemberships(ref reader, resourceGroupIdsReferent, resourceGroupCount, out GroupMembership[]? resourceGroups))
             {
                 return false;
             }
@@ -168,13 +171,21 @@ namespace System.Net.Security
             if (logonDomainSid is not null)
             {
                 UserSid = FormatRid(logonDomainSid, userId);
-                PrimaryGroupSid = FormatRid(logonDomainSid, primaryGroupId);
 
-                if (groupRids is not null)
+                if (groups is not null)
                 {
-                    foreach (uint rid in groupRids)
+                    foreach (GroupMembership group in groups)
                     {
-                        GroupSids.Add(FormatRid(logonDomainSid, rid));
+                        if (IsEnabledGroup(group.Attributes))
+                        {
+                            string groupSid = FormatRid(logonDomainSid, group.RelativeId);
+                            GroupSids.Add(groupSid);
+
+                            if (group.RelativeId == primaryGroupId)
+                            {
+                                PrimaryGroupSid = groupSid;
+                            }
+                        }
                     }
                 }
             }
@@ -184,11 +195,14 @@ namespace System.Net.Security
                 GroupSids.AddRange(extraSids);
             }
 
-            if (resourceDomainSid is not null && resourceGroupRids is not null)
+            if (resourceDomainSid is not null && resourceGroups is not null)
             {
-                foreach (uint rid in resourceGroupRids)
+                foreach (GroupMembership group in resourceGroups)
                 {
-                    GroupSids.Add(FormatRid(resourceDomainSid, rid));
+                    if (IsEnabledGroup(group.Attributes))
+                    {
+                        GroupSids.Add(FormatRid(resourceDomainSid, group.RelativeId));
+                    }
                 }
             }
 
@@ -197,6 +211,12 @@ namespace System.Net.Security
 
         private static string FormatRid(string domainSid, uint relativeId) =>
             string.Create(CultureInfo.InvariantCulture, $"{domainSid}-{relativeId}");
+
+        private static bool IsEnabledGroup(uint attributes)
+        {
+            const uint RelevantAttributes = GroupEnabled | GroupUseForDenyOnly | GroupLogonId;
+            return (attributes & RelevantAttributes) == GroupEnabled;
+        }
 
         private static bool TryReadUnicodeStringHeader(ref NdrReader reader, out uint referent)
         {
@@ -237,9 +257,9 @@ namespace System.Net.Security
             return true;
         }
 
-        private static bool TryReadGroupMemberships(ref NdrReader reader, uint referent, uint count, out uint[]? relativeIds)
+        private static bool TryReadGroupMemberships(ref NdrReader reader, uint referent, uint count, out GroupMembership[]? groups)
         {
-            relativeIds = null;
+            groups = null;
             if (referent == 0)
             {
                 return true;
@@ -251,17 +271,19 @@ namespace System.Net.Security
                 return false;
             }
 
-            uint[] result = new uint[count];
+            GroupMembership[] result = new GroupMembership[count];
             for (int i = 0; i < result.Length; i++)
             {
-                if (!reader.TryReadUInt32(out result[i]) ||
-                    !reader.TryReadUInt32(out _))                        // Attributes
+                if (!reader.TryReadUInt32(out uint relativeId) ||
+                    !reader.TryReadUInt32(out uint attributes))
                 {
                     return false;
                 }
+
+                result[i] = new GroupMembership(relativeId, attributes);
             }
 
-            relativeIds = result;
+            groups = result;
             return true;
         }
 
@@ -281,24 +303,25 @@ namespace System.Net.Security
             }
 
             uint[] referents = new uint[count];
+            uint[] attributes = new uint[count];
             for (int i = 0; i < referents.Length; i++)
             {
                 if (!reader.TryReadUInt32(out referents[i]) ||
-                    !reader.TryReadUInt32(out _))                        // Attributes
+                    !reader.TryReadUInt32(out attributes[i]))
                 {
                     return false;
                 }
             }
 
             List<string> result = new List<string>();
-            foreach (uint sidReferent in referents)
+            for (int i = 0; i < referents.Length; i++)
             {
-                if (!TryReadSid(ref reader, sidReferent, out string? sid))
+                if (!TryReadSid(ref reader, referents[i], out string? sid))
                 {
                     return false;
                 }
 
-                if (sid is not null)
+                if (sid is not null && IsEnabledGroup(attributes[i]))
                 {
                     result.Add(sid);
                 }
@@ -322,6 +345,7 @@ namespace System.Net.Security
                 !reader.TryReadByte(out byte revision) ||
                 !reader.TryReadByte(out byte subAuthorityCount) ||
                 !reader.TryReadBytes(6, out ReadOnlySpan<byte> identifierAuthority) ||
+                revision != 1 ||
                 maxCount != subAuthorityCount)
             {
                 return false;
@@ -359,6 +383,18 @@ namespace System.Net.Security
 
             sid = builder.ToString();
             return true;
+        }
+
+        private readonly struct GroupMembership
+        {
+            public GroupMembership(uint relativeId, uint attributes)
+            {
+                RelativeId = relativeId;
+                Attributes = attributes;
+            }
+
+            public uint RelativeId { get; }
+            public uint Attributes { get; }
         }
 
         /// <summary>

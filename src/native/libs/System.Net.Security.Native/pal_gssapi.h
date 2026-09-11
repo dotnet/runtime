@@ -214,6 +214,11 @@ Shims the gss_indicate_mechs method to detect if NTLM mech is installed.
 PALEXPORT uint32_t NetSecurityNative_IsNtlmInstalled(void);
 
 /*
+Returns whether gss_get_name_attribute is available from the loaded GSSAPI implementation.
+*/
+PALEXPORT int32_t NetSecurityNative_IsGetNameAttributeSupported(void);
+
+/*
 Shims gss_inquire_context and gss_display_name to get the remote user principal name.
 */
 PALEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,

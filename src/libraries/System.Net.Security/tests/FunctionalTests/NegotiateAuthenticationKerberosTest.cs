@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Net.Security.Kerberos;
+using System.Net.Test.Common;
 using Kerberos.NET.Entities.Pac;
 using Xunit;
 using Xunit.Abstractions;
@@ -15,6 +16,8 @@ namespace System.Net.Security.Tests
     public class NegotiateAuthenticationKerberosTest
     {
         private readonly ITestOutputHelper _testOutputHelper;
+        private static bool IsGssGetNameAttributeSupported =>
+            KerberosExecutor.IsSupported && Capability.IsGssGetNameAttributeSupported();
 
         public NegotiateAuthenticationKerberosTest(ITestOutputHelper testOutputHelper)
         {
@@ -64,7 +67,7 @@ namespace System.Net.Security.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsGssGetNameAttributeSupported))]
         public async Task RemoteIdentity_WithPac_HasSidClaims()
         {
             using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
@@ -74,7 +77,11 @@ namespace System.Net.Security.Tests
                 "user",
                 userId: 1104,
                 groupIds: new uint[] { FakeKerberosPrincipal.DomainUsersGroupId, 1105 },
-                extraGroupSids: new[] { new SecurityIdentifier(IdentifierAuthority.NTAuthority, new uint[] { 21, 111, 222, 333, 1201 }, SidAttributes.SE_GROUP_ENABLED) });
+                extraGroupSids: new[]
+                {
+                    new SecurityIdentifier(IdentifierAuthority.NTAuthority, new uint[] { 21, 111, 222, 333, 1201 }, SidAttributes.SE_GROUP_ENABLED),
+                    new SecurityIdentifier(IdentifierAuthority.NTAuthority, new uint[] { 21, 111, 222, 333, 1202 }, SidAttributes.SE_GROUP_USE_FOR_DENY_ONLY),
+                });
 
             await kerberosExecutor.Invoke(() =>
             {

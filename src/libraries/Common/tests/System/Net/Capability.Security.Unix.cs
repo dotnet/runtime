@@ -20,5 +20,10 @@ namespace System.Net.Test.Common
                 // all supported distributions. The second part of the check should be removed when it does.
                 Interop.NetSecurityNative.IsNtlmInstalled() && (!PlatformDetection.IsOpenSslSupported || PlatformDetection.OpenSslVersion.Major < 3);
         }
+
+        public static bool IsGssGetNameAttributeSupported() =>
+            !OperatingSystem.IsBrowser() &&
+            !OperatingSystem.IsWasi() &&
+            Interop.NetSecurityNative.IsGetNameAttributeSupported();
     }
 }

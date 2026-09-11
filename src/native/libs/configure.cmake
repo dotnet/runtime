@@ -1068,12 +1068,22 @@ else ()
     set (GSS_GET_NAME_ATTRIBUTE_HEADER "gssapi/gssapi_ext.h")
 endif ()
 
+if (DEFINED CMAKE_TRY_COMPILE_TARGET_TYPE)
+    set (SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE "${CMAKE_TRY_COMPILE_TARGET_TYPE}")
+endif ()
+set (CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 check_c_source_compiles(
     "
     #include <${GSS_GET_NAME_ATTRIBUTE_HEADER}>
     int main(void) { __typeof__(gss_get_name_attribute)* p = 0; (void)p; return 0; }
     "
     HAVE_GSS_GET_NAME_ATTRIBUTE)
+if (DEFINED SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE)
+    set (CMAKE_TRY_COMPILE_TARGET_TYPE "${SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE}")
+    unset (SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE)
+else ()
+    unset (CMAKE_TRY_COMPILE_TARGET_TYPE)
+endif ()
 
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)

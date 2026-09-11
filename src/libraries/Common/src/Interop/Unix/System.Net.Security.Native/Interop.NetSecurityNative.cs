@@ -16,6 +16,10 @@ internal static partial class Interop
             byte* bufferPtr,
             ulong length);
 
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_IsGetNameAttributeSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsGetNameAttributeSupported();
+
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_DisplayMinorStatus")]
         internal static partial Status DisplayMinorStatus(
             out Status minorStatus,

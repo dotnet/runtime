@@ -106,7 +106,7 @@ class FakeKerberosPrincipal : IKerberosPrincipal
                 ExtraIds = ExtraGroupSids.Select(sid => new RpcSidAttributes
                 {
                     Sid = sid.ToRpcSid(),
-                    Attributes = SidAttributes.SE_GROUP_ENABLED,
+                    Attributes = sid.Attributes,
                 }).ToList(),
             },
         };

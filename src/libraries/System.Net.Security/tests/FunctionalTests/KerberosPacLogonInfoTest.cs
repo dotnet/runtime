@@ -40,6 +40,35 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public void Decode_DisabledGroup_DoesNotReturnGroupSid()
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            byte[] group = Convert.FromHexString("0002000004000000");
+            int groupOffset = logonInfo.AsSpan().IndexOf(group);
+            Assert.True(groupOffset >= 0);
+
+            logonInfo[groupOffset + 4] = 0x10;
+
+            KerberosPacLogonInfo? result = KerberosPacLogonInfo.Decode(logonInfo);
+
+            Assert.NotNull(result);
+            Assert.DoesNotContain($"{DomainSid}-512", result.GroupSids);
+        }
+
+        [Fact]
+        public void Decode_InvalidSidRevision_ReturnsNull()
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            byte[] sid = Convert.FromHexString("04000000010400000000000515000000");
+            int sidOffset = logonInfo.AsSpan().IndexOf(sid);
+            Assert.True(sidOffset >= 0);
+
+            logonInfo[sidOffset + 4] = 2;
+
+            Assert.Null(KerberosPacLogonInfo.Decode(logonInfo));
+        }
+
+        [Fact]
         public void Decode_TruncatedLogonInfo_DoesNotThrow()
         {
             byte[] logonInfo = Convert.FromHexString(LogonInfoHex);

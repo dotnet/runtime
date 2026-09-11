@@ -602,6 +602,15 @@ uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
 #endif
 }
 
+int32_t NetSecurityNative_IsGetNameAttributeSupported(void)
+{
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+    return HAS_GSS_GET_NAME_ATTRIBUTE() ? 1 : 0;
+#else
+    return 0;
+#endif
+}
+
 uint32_t NetSecurityNative_ReleaseCred(uint32_t* minorStatus, GssCredId** credHandle)
 {
     assert(minorStatus != NULL);
