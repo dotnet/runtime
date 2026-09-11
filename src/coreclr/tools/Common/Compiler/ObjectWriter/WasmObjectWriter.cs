@@ -373,7 +373,7 @@ namespace ILCompiler.ObjectWriter
             WriteGlobalSection();
             WriteElements();
 
-            // Register defined symbols for use during when resolving exports and relocations.
+            // Register defined symbols for use when resolving exports and relocations.
             _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
             WriteExports();
         }
