@@ -3,28 +3,27 @@
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
-    public partial class ECDiffieHellmanProvider : IECDiffieHellmanProvider
+    public sealed partial class DefaultECDiffieHellmanProvider : ECDiffieHellmanProvider
     {
-        public ECDiffieHellman Create()
+        public static readonly DefaultECDiffieHellmanProvider Instance = new DefaultECDiffieHellmanProvider();
+
+        private DefaultECDiffieHellmanProvider() { }
+
+        public override ECDiffieHellman Create()
         {
             return ECDiffieHellman.Create();
         }
 
-        public ECDiffieHellman Create(int keySize)
+        public override ECDiffieHellman Create(int keySize)
         {
             ECDiffieHellman ec = Create();
             ec.KeySize = keySize;
             return ec;
         }
 
-        public ECDiffieHellman Create(ECCurve curve)
+        public override ECDiffieHellman Create(ECCurve curve)
         {
             return ECDiffieHellman.Create(curve);
         }
-    }
-
-    public partial class ECDiffieHellmanFactory
-    {
-        private static readonly IECDiffieHellmanProvider s_provider = new ECDiffieHellmanProvider();
     }
 }

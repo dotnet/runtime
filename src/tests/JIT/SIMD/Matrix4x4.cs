@@ -4,6 +4,8 @@ using System;
 using System.Numerics;
 using Xunit;
 
+namespace SIMDTests.Matrix4x4Tests;
+
 public class Matrix4x4Test
 {
     private const int Pass = 100;
@@ -31,7 +33,6 @@ public class Matrix4x4Test
         return returnVal;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/123104", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [Fact]
     public static int TestEntryPoint()
     {

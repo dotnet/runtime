@@ -6,7 +6,7 @@
 # IMPORTANT: This file is specific to the Emscripten version and WebAssembly target.
 # 
 # Valid for:
-#   - Emscripten version: 5.0.6
+#   - Emscripten version: 6.0.2
 #   - Target: wasm32-unknown-emscripten (browser-wasm)
 #   - Architecture: wasm32
 #   - OS: browser/Emscripten
@@ -85,7 +85,7 @@
 #        mv eng/native/tryrun.browser.cmake.bak eng/native/tryrun.browser.cmake
 
 # Version tracking: This cache is valid for the following Emscripten version
-set(TRYRUN_BROWSER_EMSCRIPTEN_VERSION "5.0.6" CACHE INTERNAL "Emscripten version this cache was generated for")
+set(TRYRUN_BROWSER_EMSCRIPTEN_VERSION "6.0.2" CACHE INTERNAL "Emscripten version this cache was generated for")
 
 # Macro to set cache values (same as eng/native/tryrun.cmake)
 macro(set_cache_value)

@@ -205,37 +205,15 @@ public static class TargetFieldExtensions
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         Debug.Assert(
-            field.TypeName is null or "" || IsCompatiblePrimitiveType<T>(field.TypeName),
+            TargetTypeHelpers.IsCompatiblePrimitiveType<T>(field.TypeName),
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', reading as {typeof(T).Name}");
     }
 
     [Conditional("DEBUG")]
     private static void AssertPointerType(Target.FieldInfo field, string fieldName)
     {
-        // Managed field signatures report IntPtr/UIntPtr as native ints, which the contract descriptor maps to
-        // "nint"/"nuint" (as distinct from raw pointer element types which map to "pointer").
-        // Accept those in addition to "pointer" so pointer-valued fields on managed types can be
-        // read via ReadPointer, which reads the value unsigned at full pointer width.
         Debug.Assert(
-            field.TypeName is null or "" or "pointer" or "nint" or "nuint",
+            TargetTypeHelpers.IsCompatiblePointerType(field.TypeName),
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected pointer");
-    }
-
-    private static bool IsCompatiblePrimitiveType<T>(string typeName)
-        where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-    {
-        return typeName switch
-        {
-            "uint8" => typeof(T) == typeof(byte),
-            "int8" => typeof(T) == typeof(sbyte),
-            "uint16" => typeof(T) == typeof(ushort),
-            "int16" => typeof(T) == typeof(short),
-            "uint32" => typeof(T) == typeof(uint),
-            "int32" => typeof(T) == typeof(int),
-            "uint64" => typeof(T) == typeof(ulong),
-            "int64" => typeof(T) == typeof(long),
-            "bool" => typeof(T) == typeof(byte),
-            _ => false,
-        };
     }
 }

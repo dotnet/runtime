@@ -124,3 +124,27 @@ LOCAL_LABEL(CacheMiss):
         b           C_FUNC(RhpUniversalTransitionTailCall)
 
 NESTED_END RhpInterfaceDispatch, _TEXT
+
+// Resolve helper for the standard calling convention.
+// r0 = object instance, r1 = indirection cell address, result in r0.
+LEAF_ENTRY RhpDispatchResolve, _TEXT
+
+        // Load the MethodTable from the object instance in r0.
+        // The label marks the location of a potential nullref for the unwinder.
+        GLOBAL_LABEL RhpDispatchResolveAVLocation
+        ldr         r2, [r0]
+
+        ldr         r3, [r1]                // load cached MethodTable
+        cmp         r3, r2                  // is this the monomorphic MethodTable?
+        bne         LOCAL_LABEL(ResolveInterfaceMethod)
+
+        // dmb ensures that the Code load below sees the value written before
+        // MethodTable. ARM32 has no load-acquire instruction (LDAR is ARMv8 only).
+        dmb
+        ldr         r0, [r1, #4]            // return cached monomorphic resolved code address
+        bx          lr
+
+LOCAL_LABEL(ResolveInterfaceMethod):
+        b           C_FUNC(RhpResolveInterfaceMethod)
+
+LEAF_END RhpDispatchResolve, _TEXT

@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 public class Test
 {
     bool _aRun = false;
@@ -108,7 +109,8 @@ public class Test
     static bool s_takeLock = false;
     static bool s_contention = false;
 
-    [Fact]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint() => Run(new string[0]);
 
     [MethodImpl(MethodImplOptions.NoInlining)]

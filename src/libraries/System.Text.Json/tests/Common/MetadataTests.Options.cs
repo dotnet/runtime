@@ -89,20 +89,21 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void PassingImmutableOptionsThrowsException()
         {
-            JsonSerializerOptions defaultOptions = JsonSerializerOptions.Default;
-            Assert.Throws<InvalidOperationException>(() => new MyJsonContext(defaultOptions));
+            JsonSerializerOptions options = Serializer.DefaultOptions;
+            Assert.True(options.IsReadOnly);
+
+            Assert.Throws<InvalidOperationException>(() => new MyJsonContext(options));
         }
 
         [Fact]
         public void PassingWrongOptionsInstanceToResolverThrowsException()
         {
-            JsonSerializerOptions defaultOptions = JsonSerializerOptions.Default;
             JsonSerializerOptions contextOptions = new();
             IJsonTypeInfoResolver context = new EmptyContext(contextOptions);
 
             Assert.IsAssignableFrom<JsonTypeInfo<int>>(context.GetTypeInfo(typeof(int), contextOptions));
             Assert.IsAssignableFrom<JsonTypeInfo<int>>(context.GetTypeInfo(typeof(int), null));
-            Assert.Throws<InvalidOperationException>(() => context.GetTypeInfo(typeof(int), defaultOptions));
+            Assert.Throws<InvalidOperationException>(() => context.GetTypeInfo(typeof(int), Serializer.DefaultOptions));
         }
 
         private class MyJsonContext : JsonSerializerContext
@@ -127,7 +128,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             public EmptyContext(JsonSerializerOptions options) : base(options) { }
             protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
-            public override JsonTypeInfo? GetTypeInfo(Type type) => JsonTypeInfo.CreateJsonTypeInfo(type, Options);
+            public override JsonTypeInfo? GetTypeInfo(Type type)
+                => type == typeof(int)
+                    ? JsonMetadataServices.CreateValueInfo<int>(Options, JsonMetadataServices.Int32Converter)
+                    : null;
         }
     }
 }

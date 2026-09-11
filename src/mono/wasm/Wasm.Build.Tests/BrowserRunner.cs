@@ -21,7 +21,7 @@ internal class BrowserRunner : IAsyncDisposable
     private static Regex s_appHostUrlRegex = new Regex("^App url: (?<url>https?://.*$)");
     private static Regex s_appPublishedUrlRegex = new Regex(@"^\s{2}(?<url>https?://.*$)");
     private static readonly Regex s_payloadRegex = new Regex("\"payload\":\"(?<payload>[^\"]*)\"", RegexOptions.Compiled);
-    private static Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>-?[0-9]+)$");
+    internal static readonly Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>-?[0-9]+)$", RegexOptions.Compiled);
     private static readonly Lazy<string> s_chromePath = new(() =>
     {
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(BuildTestBase).Assembly.Location)!, "..", "..", "..", "..");
@@ -236,6 +236,10 @@ internal class BrowserRunner : IAsyncDisposable
             {
                 message = payloadMatch.Groups["payload"].Value;
             }
+            // Capture browser console output. chromedriver/Playwright forwards it natively,
+            // so tests no longer rely on the app host's --forward-console websocket forwarding.
+            lock (OutputLines)
+                OutputLines.Add(message);
             Match exitMatch = s_exitRegex.Match(message);
             if (exitMatch.Success)
             {

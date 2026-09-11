@@ -6,42 +6,47 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
-    [Field] public uint Id { get; }
-    [Field] public TargetNUInt OSId { get; }
-    [Field] public uint State { get; }
-    [Field(Writable = true)] public uint DebuggerControlledThreadState { get; private set; }
-    [Field] public uint PreemptiveGCDisabled { get; }
-    [Field] public TargetPointer Frame { get; }
-    [Field] public TargetPointer GCFrame { get; }
-    [Field] public TargetPointer CachedStackBase { get; }
-    [Field] public TargetPointer CachedStackLimit { get; }
-    [Field] public ObjectHandle ExposedObject { get; }
-    [Field] public ObjectHandle LastThrownObject { get; }
-    [Field] public uint LastThrownObjectIsUnhandled { get; }
-    [Field] public TargetPointer LinkNext { get; }
+    [Field] public partial uint Id { get; }
+    [Field] public partial TargetNUInt OSId { get; }
+    [Field] public partial uint State { get; }
+    [Field(Writable = true)] public partial uint DebuggerControlledThreadState { get; private set; }
+    [Field] public partial uint PreemptiveGCDisabled { get; }
+    [Field] public partial TargetPointer Frame { get; }
+    [Field] public partial TargetPointer GCFrame { get; }
+    [Field] public partial TargetPointer CachedStackBase { get; }
+    [Field] public partial TargetPointer CachedStackLimit { get; }
+    [Field] public partial ObjectHandle ExposedObject { get; }
+    [Field] public partial ObjectHandle LastThrownObject { get; }
+    [Field] public partial uint LastThrownObjectIsUnhandled { get; }
+    [Field] public partial TargetPointer LinkNext { get; }
 
     [FieldAddress]
-    public TargetPointer ExceptionTracker { get; }
+    public partial TargetPointer ExceptionTracker { get; }
 
     // Descriptor-optional: not present on non-Windows platforms.
-    [Field] public TargetPointer? UEWatsonBucketTrackerBuckets { get; }
-    [Field] public TargetPointer ThreadLocalDataPtr { get; }
-    [Field] public TargetPointer DebuggerFilterContext { get; }
-    [Field] public uint InteropDebuggingHijacked { get; }
-    [Field] public ObjectHandle CurrentCustomDebuggerNotification { get; }
+    [Field] public partial TargetPointer? UEWatsonBucketTrackerBuckets { get; }
+    [Field] public partial TargetPointer ThreadLocalDataPtr { get; }
+    [Field] public partial TargetPointer DebuggerFilterContext { get; }
+    [Field] public partial uint InteropDebuggingHijacked { get; }
+    [Field] public partial ObjectHandle CurrentCustomDebuggerNotification { get; }
+    [CustomInit(nameof(InitRuntimeThreadLocals))] public partial RuntimeThreadLocals? RuntimeThreadLocals { get; }
 
-    public RuntimeThreadLocals? RuntimeThreadLocals { get; private set; }
     // Descriptor-optional: not present on all platforms.
-    public TargetPointer ThreadHandle { get; private set; }
+    [CustomInit(nameof(InitThreadHandle))] public partial TargetPointer ThreadHandle { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(RuntimeThreadLocals), "pointer")]
+    private partial RuntimeThreadLocals? InitRuntimeThreadLocals(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);
-
         TargetPointer rtlPointer = target.ReadPointerField(address, type, nameof(RuntimeThreadLocals));
-        if (rtlPointer != TargetPointer.Null)
-            RuntimeThreadLocals = target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(rtlPointer);
-
-        ThreadHandle = target.ReadPointerFieldOrNull(address, type, nameof(ThreadHandle));
+        return rtlPointer != TargetPointer.Null
+            ? target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(rtlPointer)
+            : null;
+    }
+    [DataDescriptorDependency(nameof(ThreadHandle), "pointer")]
+    private partial TargetPointer InitThreadHandle(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);
+        return target.ReadPointerFieldOrNull(address, type, nameof(ThreadHandle));
     }
 }

@@ -16,7 +16,7 @@ internal sealed class RuntimeFunctionLookup
     private RuntimeFunctionLookup(Target target)
     {
         _target = target;
-        _runtimeFunctionSize = target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
+        _runtimeFunctionSize = Data.RuntimeFunction.GetSize(target);
     }
 
     public uint GetFunctionLength(TargetPointer imageBase, Data.RuntimeFunction function)

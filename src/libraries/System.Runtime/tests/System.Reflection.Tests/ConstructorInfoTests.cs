@@ -94,7 +94,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoDimensionalArray_CustomBinder_IncorrectTypeArguments()
         {
             var ctor = typeof(int[,]).GetConstructor(new[] { typeof(int), typeof(int) });
@@ -106,7 +105,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArgument()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));

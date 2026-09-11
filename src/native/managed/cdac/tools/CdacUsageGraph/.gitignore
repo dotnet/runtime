@@ -1,0 +1,7 @@
+# Build artifacts (SDK artifacts output layout + any stray bin/obj)
+artifacts/
+bin/
+obj/
+
+# Generated analysis output
+output/

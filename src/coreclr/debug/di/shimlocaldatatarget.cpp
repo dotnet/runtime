@@ -385,10 +385,10 @@ ShimLocalDataTarget::GetThreadContext(
         return E_INVALIDARG;
     }
 
-    HandleHolder hThread = OpenThread(
+    HandleHolder hThread{ OpenThread(
         THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION ,
         FALSE, // thread handle is not inheritable.
-        dwThreadID);
+        dwThreadID) };
 
     if (hThread != NULL)
     {
@@ -421,10 +421,10 @@ ShimLocalDataTarget::SetThreadContext(
     }
 
 
-    HandleHolder hThread = OpenThread(
+    HandleHolder hThread{ OpenThread(
         THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION,
         FALSE, // thread handle is not inheritable.
-        dwThreadID);
+        dwThreadID) };
 
     if (hThread != NULL)
     {

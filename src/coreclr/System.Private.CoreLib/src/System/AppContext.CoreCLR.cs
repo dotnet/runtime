@@ -9,6 +9,18 @@ namespace System
 {
     public static partial class AppContext
     {
+        // Keep in sync with IsKnownHostProperty in src/coreclr/dlls/mscoree/exports.cpp.
+        private static bool IsKnownHostProperty(string name)
+            => name is "TRUSTED_PLATFORM_ASSEMBLIES"
+                    or "NATIVE_DLL_SEARCH_DIRECTORIES"
+                    or "PLATFORM_RESOURCE_ROOTS"
+                    or "APP_PATHS";
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_TryGetHostPropertyValue", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TryGetHostPropertyValue(string name, StringHandleOnStack retValue);
+
         [UnmanagedCallersOnly]
         private static unsafe void OnProcessExit(Exception* pException)
         {
@@ -42,9 +54,9 @@ namespace System
             {
                 OnFirstChanceException(*pException, AppDomain.CurrentDomain);
             }
-            catch (Exception ex)
+            catch
             {
-                *pOutException = ex;
+                // The VM does not expect exceptions to propagate out of this callback
             }
         }
 

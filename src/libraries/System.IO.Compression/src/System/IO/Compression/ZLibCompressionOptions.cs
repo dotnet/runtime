@@ -8,18 +8,18 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class ZLibCompressionOptions
     {
-        /// <summary>Gets the default window log (base-2 logarithm of the window size) for zlib compression.</summary>
-        public static int DefaultWindowLog => ZLibNative.DefaultWindowLog;
+        /// <summary>Gets the default base-2 logarithm of the window size for zlib compression.</summary>
+        public static int DefaultWindowLog2 => ZLibNative.DefaultWindowLog;
 
-        /// <summary>Gets the minimum window log (base-2 logarithm of the window size) for zlib compression.</summary>
-        public static int MinWindowLog => ZLibNative.MinWindowLog;
+        /// <summary>Gets the minimum base-2 logarithm of the window size for zlib compression.</summary>
+        public static int MinWindowLog2 => ZLibNative.MinWindowLog;
 
-        /// <summary>Gets the maximum window log (base-2 logarithm of the window size) for zlib compression.</summary>
-        public static int MaxWindowLog => ZLibNative.MaxWindowLog;
+        /// <summary>Gets the maximum base-2 logarithm of the window size for zlib compression.</summary>
+        public static int MaxWindowLog2 => ZLibNative.MaxWindowLog;
 
         private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
-        private int _windowLog = -1;
+        private int _windowLog2 = -1;
 
         /// <summary>
         /// Gets or sets the compression level for a compression stream.
@@ -67,11 +67,11 @@ namespace System.IO.Compression
         /// <remarks>
         /// Can accept -1 or any value between 8 and 15 (inclusive). Larger values result in better compression at the expense of memory usage.
         /// When used with <see cref="DeflateStream"/> or <see cref="GZipStream"/>, a value of 8 is treated as 9 by the underlying implementation.
-        /// -1 requests the default window log which is currently equivalent to 15 (32KB window). The default value is -1.
+        /// -1 requests the default base-2 logarithm of the window size, which is currently equivalent to 15 (32KB window). The default value is -1.
         /// </remarks>
-        public int WindowLog
+        public int WindowLog2
         {
-            get => _windowLog;
+            get => _windowLog2;
             set
             {
                 if (value != -1)
@@ -80,7 +80,7 @@ namespace System.IO.Compression
                     ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxWindowLog, nameof(value));
                 }
 
-                _windowLog = value;
+                _windowLog2 = value;
             }
         }
     }

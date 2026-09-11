@@ -16,6 +16,10 @@
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
+// Each floating point register occupies a single 64-bit slot in the context, so FPRegister64 is one
+// ULONGLONG and Get64bitFPRegisters strides one slot per register.
+typedef ULONGLONG                   FPRegister64;
+
 // TODO-RISCV64-CQ: Update when it supports c and other extensions
 #define MAX_INSTRUCTION_LENGTH 4
 

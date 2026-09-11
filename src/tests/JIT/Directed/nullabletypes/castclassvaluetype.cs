@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_nullabletypes_castclassvaluetype;
+
+using JitTest_Directed_nullabletypes_Desktop_StructDefinitions;
+using Assert = JitTest_Directed_nullabletypes_Desktop_StructDefinitions.Assert;
+
 using System.Runtime.InteropServices;
 using System;
 using Xunit;
@@ -4695,7 +4700,6 @@ internal class NullableTest45
 
 public class Test_castclassvaluetype
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/pull/129702", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -4754,4 +4758,3 @@ public class Test_castclassvaluetype
         return 100;
     }
 }
-

@@ -39,6 +39,9 @@ namespace Microsoft.Interop
 
         private static NameSyntax? _System_Diagnostics_StackTraceHiddenAttribute;
         public static NameSyntax System_Diagnostics_StackTraceHiddenAttribute => _System_Diagnostics_StackTraceHiddenAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Diagnostics_StackTraceHiddenAttribute);
+
+        private static NameSyntax? _System_Diagnostics_DebuggerHiddenAttribute;
+        public static NameSyntax System_Diagnostics_DebuggerHiddenAttribute => _System_Diagnostics_DebuggerHiddenAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Diagnostics_DebuggerHiddenAttribute);
     }
 
     public static class TypeSyntaxes
@@ -110,6 +113,7 @@ namespace Microsoft.Interop
         public const string GlobalAlias = "global::";
 
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
+        public const string ErrorHandlerAttribute = "System.Runtime.InteropServices.ErrorHandlerAttribute";
         public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
         public const string LibraryImportAttribute_ShortName = "LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
@@ -176,6 +180,8 @@ namespace Microsoft.Interop
         private const string System_Runtime_InteropServices_MarshalEx = "System.Runtime.InteropServices.MarshalEx";
 
         public const string System_Diagnostics_StackTraceHiddenAttribute = "System.Diagnostics.StackTraceHiddenAttribute";
+
+        public const string System_Diagnostics_DebuggerHiddenAttribute = "System.Diagnostics.DebuggerHiddenAttribute";
 
         public static string MarshalEx(InteropGenerationOptions options)
         {

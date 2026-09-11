@@ -146,7 +146,7 @@ extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0000_v0_0_s_ifspec;
 #define __ICLRDataTarget_INTERFACE_DEFINED__
 
 /* interface ICLRDataTarget */
-/* [unique][uuid][local][object] */ 
+/* [unique][uuid][local][object] */
 
 
 EXTERN_C const IID IID_ICLRDataTarget;
@@ -1405,5 +1405,3 @@ EXTERN_C const IID IID_ICLRDataEnumMemoryRegions;
 #endif
 
 #endif
-
-

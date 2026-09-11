@@ -42,6 +42,8 @@ convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 
 add_library_clr(daccess ${DACCESS_SOURCES})
 set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
+# dacdbiimpl.cpp reconstructs read-write (MDInternalRW) metadata using the internal metadata types.
+target_compile_definitions(daccess PRIVATE FEATURE_METADATA_INTERNAL_APIS)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
 target_link_libraries(daccess PRIVATE cdac_api)
 

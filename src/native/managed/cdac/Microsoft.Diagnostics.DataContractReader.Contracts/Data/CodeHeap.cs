@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CodeHeap))]
 internal sealed partial class CodeHeap : IData<CodeHeap>
 {
-    [Field] public byte HeapType { get; }
+    [Field] public partial byte HeapType { get; }
 }

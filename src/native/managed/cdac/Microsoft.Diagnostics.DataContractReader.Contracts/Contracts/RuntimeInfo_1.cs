@@ -12,6 +12,7 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
     private RuntimeInfoArchitecture? _architecture;
     private RuntimeInfoOperatingSystem? _operatingSystem;
     private RuntimeInfoRuntimeFlavor? _runtimeFlavor;
+    private string? _runtimeProductVersion;
     private uint? _recommendedReaderVersion;
 
     public RuntimeInfo_1(Target target)
@@ -24,6 +25,7 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
         _architecture = null;
         _operatingSystem = null;
         _runtimeFlavor = null;
+        _runtimeProductVersion = null;
         _recommendedReaderVersion = null;
     }
 
@@ -35,6 +37,9 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
 
     RuntimeInfoRuntimeFlavor IRuntimeInfo.GetRuntimeFlavor()
         => _runtimeFlavor ??= ReadRuntimeFlavor();
+
+    string IRuntimeInfo.GetRuntimeProductVersion()
+        => _runtimeProductVersion ??= _target.ReadGlobalString(Constants.Globals.RuntimeProductVersionString);
 
     uint IRuntimeInfo.GetCurrentReaderVersion() => 1;
 

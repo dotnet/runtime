@@ -200,6 +200,24 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int CountWhereAllBitsSet(Vector3 vector) => CountWhereAllBitsSet(vector.AsVector128());
 
+        /// <inheritdoc cref="Vector4.Distance(Vector4, Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static float Distance(Vector128<float> vector1, Vector128<float> vector2)
+        {
+            Vector128<float> difference = vector1 - vector2;
+            return float.Sqrt(Dot(difference, difference));
+        }
+
+        /// <inheritdoc cref="Vector4.DistanceSquared(Vector4, Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static float DistanceSquared(Vector128<float> vector1, Vector128<float> vector2)
+        {
+            Vector128<float> difference = vector1 - vector2;
+            return Dot(difference, difference);
+        }
+
         /// <inheritdoc cref="Vector4.IndexOf(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -240,6 +258,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int LastIndexOfWhereAllBitsSet(Vector3 vector) => LastIndexOfWhereAllBitsSet(vector.AsVector128());
 
+        /// <inheritdoc cref="Vector4.Length()" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static float Length(Vector128<float> vector) => float.Sqrt(Dot(vector, vector));
+
+        /// <inheritdoc cref="Vector4.LengthSquared()" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static float LengthSquared(Vector128<float> vector) => Dot(vector, vector);
+
         /// <inheritdoc cref="Vector4.None(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -259,5 +287,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool NoneWhereAllBitsSet(Vector3 vector) => !EqualsAny(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet);
+
+        /// <inheritdoc cref="Vector4.Normalize(Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> Normalize(Vector128<float> vector)
+        {
+            return vector / Create(float.Sqrt(Dot(vector, vector)));
+        }
     }
 }

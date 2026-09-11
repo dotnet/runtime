@@ -32,6 +32,8 @@ namespace System.Text
 #pragma warning disable SA1001 // Commas should be spaced correctly
         , ISpanFormattable
         , IUtf8SpanFormattable
+        , IParsable<Rune>
+        , ISpanParsable<Rune>
         , IUtf8SpanParsable<Rune>
 #pragma warning restore SA1001
 #endif
@@ -996,6 +998,54 @@ namespace System.Text
             return result;
         }
 
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
+        static Rune IParsable<Rune>.Parse(string s, IFormatProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+
+            if (DecodeFromUtf16(s, out Rune result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s.Length)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        static bool IParsable<Rune>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Rune result)
+        {
+            if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s!.Length)
+            {
+                result = ReplacementChar;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        static Rune ISpanParsable<Rune>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+        {
+            if (DecodeFromUtf16(s, out Rune result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s.Length)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        static bool ISpanParsable<Rune>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Rune result)
+        {
+            if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s.Length)
+            {
+                result = ReplacementChar;
+                return false;
+            }
+
+            return true;
+        }
+
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
 #endif
 
@@ -1540,6 +1590,50 @@ namespace System.Text
             return ChangeCaseCultureAware(value, CultureInfo.InvariantCulture, toUpper: true);
 #endif
         }
+
+#if SYSTEM_PRIVATE_CORELIB
+        /// <summary>
+        /// Returns a copy of <paramref name="value"/> converted to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="value">The character to convert.</param>
+        /// <returns>The uppercase equivalent of <paramref name="value"/>.</returns>
+        public static Rune ToUpperOrdinal(Rune value)
+        {
+            if (value.IsAscii)
+            {
+                return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(value._value));
+            }
+
+            if (value.IsBmp)
+            {
+                return UnsafeCreate(TextInfo.ToUpperOrdinal((char)value._value));
+            }
+
+            // Supplementary characters use the same simple scalar mapping as OrdinalIgnoreCase comparisons.
+            return UnsafeCreate(CharUnicodeInfo.ToUpper(value._value));
+        }
+
+        /// <summary>
+        /// Returns a copy of <paramref name="value"/> converted to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="value">The character to convert.</param>
+        /// <returns>The lowercase equivalent of <paramref name="value"/>.</returns>
+        public static Rune ToLowerOrdinal(Rune value)
+        {
+            if (value.IsAscii)
+            {
+                return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(value._value));
+            }
+
+            if (value.IsBmp)
+            {
+                return UnsafeCreate(TextInfo.ToLowerOrdinal((char)value._value));
+            }
+
+            return UnsafeCreate(CharUnicodeInfo.ToLower(value._value));
+        }
+#endif
 
         /// <inheritdoc cref="IComparable.CompareTo" />
         int IComparable.CompareTo(object? obj)

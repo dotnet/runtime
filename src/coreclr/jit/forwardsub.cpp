@@ -1031,6 +1031,19 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         dstVarDsc->SetIsMultiRegDest();
     }
 
+    // Avoid forward substituting promoted locals if they are not DNER.
+    // This would require DNER'ing for many cases where the consumer
+    // does not support whole-local uses, such as GT_FIELD_LIST.
+    if (fwdSubNode->OperIs(GT_LCL_VAR) && varTypeIsSIMD(fwdSubNode))
+    {
+        LclVarDsc* const fwdSubVarDsc = lvaGetDesc(fwdSubNode->AsLclVar());
+        if (fwdSubVarDsc->lvPromoted && !fwdSubVarDsc->lvDoNotEnregister)
+        {
+            JITDUMP(" promoted SIMD lcl var\n");
+            return false;
+        }
+    }
+
     // If a method returns a multi-reg type, only forward sub locals,
     // and ensure the local and operand have the required markup.
     // (see eg impFixupStructReturnType).

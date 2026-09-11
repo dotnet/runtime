@@ -112,10 +112,10 @@ int fx_ver_t::compare(const fx_ver_t& a, const fx_ver_t& b)
 }
 
 /* static */
-bool fx_ver_t::parse(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production)
+bool fx_ver_t::parse(const pal::string_t& ver, fx_ver_t* fx_ver)
 {
     c_fx_ver_t c_ver;
-    if (!c_fx_ver_parse(ver.c_str(), &c_ver, parse_only_production))
+    if (!c_fx_ver_parse(ver.c_str(), &c_ver))
     {
         c_fx_ver_cleanup(&c_ver);
         return false;

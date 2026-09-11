@@ -308,7 +308,7 @@ private:
         static LADependentHandleToNativeObject *CreateDependentHandle(
             LoaderAllocator *loaderAllocator,
             LADependentKeyToValuesHash *dependentKeyValueStoreHash);
-        ~LAHashDependentHashTracker(); // only accessible via DecRefCount()
+        ~LAHashDependentHashTracker(); // only accessible via Release()
 
     public:
         bool IsLoaderAllocatorLive() const { return _dependentHandle->GetDependentObject() != NULL; }
@@ -325,30 +325,40 @@ private:
         LoaderAllocator *GetLoaderAllocatorUnsafe() const { return _loaderAllocator; }
 
     #ifndef DACCESS_COMPILE
-        void IncRefCount()
+        struct HolderTraits final
         {
+            using Type = LAHashDependentHashTracker*;
+            static constexpr Type Default() { return NULL; }
+            static void Free(Type value)
+            {
+                CONTRACTL
+                {
+                    NOTHROW;
+                    GC_NOTRIGGER;
+                    MODE_ANY;
+                } CONTRACTL_END;
+
+                if (value != NULL)
+                    value->Release();
+            }
+        };
+
+        void AddRef()
+        {
+            LIMITED_METHOD_CONTRACT;
             _ASSERTE(_refCount != 0);
             ++_refCount;
         }
 
-        void DecRefCount()
+        void Release()
         {
+            WRAPPER_NO_CONTRACT;
             _ASSERTE(_refCount != 0);
             if (--_refCount == 0)
             {
                 delete this;
             }
         }
-
-        static void StaticDecRefCount(LAHashDependentHashTracker *dependentTracker)
-        {
-            if (dependentTracker != NULL)
-            {
-                dependentTracker->DecRefCount();
-            }
-        }
-
-        using NewTrackerHolder = SpecializedWrapper<LAHashDependentHashTracker, StaticDecRefCount>;
     #endif // !DACCESS_COMPILE
     };
 
@@ -379,7 +389,7 @@ private:
         #ifndef DACCESS_COMPILE
             // Dependent trackers may be stored in multiple hash tables and are ref-counted when added/removed from a hash
             // table. The ref count decrement may also delete the tracker.
-            dependentTracker->DecRefCount();
+            dependentTracker->Release();
         #endif
         }
 

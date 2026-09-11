@@ -158,10 +158,14 @@ namespace System.Diagnostics
         /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">CREATE_SUSPENDED</see> flag.
         /// </para>
         /// <para>
+        /// On macOS, the process is started with the <c>POSIX_SPAWN_START_SUSPENDED</c> flag.
+        /// </para>
+        /// <para>
         /// This property cannot be used together with <see cref="UseShellExecute" /> set to <see langword="true" />.
         /// </para>
         /// </remarks>
         [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("macos")]
         public bool StartSuspended { get; set; }
 
         /// <summary>
@@ -469,10 +473,17 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
-            if (OperatingSystem.IsWindows() && StartSuspended && UseShellExecute)
+#pragma warning disable CA1416 // StartSuspended getter works on all platforms; the attribute guards the actual effect
+            if (StartSuspended && !OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            if (StartSuspended && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
             }
+#pragma warning restore CA1416
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {

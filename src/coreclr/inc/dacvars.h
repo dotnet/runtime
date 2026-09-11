@@ -150,6 +150,8 @@ DEFINE_DACVAR(ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
 DEFINE_DACVAR(PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
 DEFINE_DACVAR(PTR_BYTE, dac__g_highest_address, ::g_highest_address)
+// Not read by the DAC. Kept so that the (permanently zeroed) global is still captured in
+// mini/triage dumps, where the cDAC reads it for the GC contract c1 GlobalAllocContext global.
 DEFINE_DACVAR(ee_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
 
 DEFINE_DACVAR(IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
@@ -250,6 +252,10 @@ DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 
 DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+DEFINE_DACVAR(TADDR, dac__g_cdacThePreStub, ::g_cdacThePreStub)
+#endif
 
 DEFINE_DACVAR(CDacPlatformMetadata, dac__g_cdacPlatformMetadata, ::g_cdacPlatformMetadata)
 

@@ -2,6 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+namespace JitTest_Directed_nullabletypes_Desktop_boxunboxvaluetype;
+
+using JitTest_Directed_nullabletypes_Desktop_StructDefinitions;
+using Assert = JitTest_Directed_nullabletypes_Desktop_StructDefinitions.Assert;
+
 using System.Runtime.InteropServices;
 using System;
 using Xunit;
@@ -4696,7 +4701,6 @@ internal class NullableTest45
 
 public class Test_boxunboxvaluetype
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/pull/129702", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -4757,4 +4761,3 @@ public class Test_boxunboxvaluetype
         return 100;
     }
 }
-

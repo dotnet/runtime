@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -45,8 +44,8 @@ internal sealed class DacEnumerableHash
             entries.AddRange(elements);
         }
 
-        Debug.Assert(Count == entries.Count);
-
+        // In STRESS testing, we may stop while this table is resizing, so we
+        // can't assert that Count equals the number of walked entries.
         Entries = entries;
     }
 

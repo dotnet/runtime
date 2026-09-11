@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_VirtualMethods_generic_virtual_methods;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -9,6 +11,7 @@ using Xunit;
 
 public class GenericVirtualMethodTests
 {
+    [OuterLoop]
     [Fact]
     public static void ClassBase_NonGenericDerived_AllVariants()
     {
@@ -16,6 +19,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("ClassBase_NonGenericDerived_NoInlining", new ClassBaseCaller(new ClassBase_NonGenericDerived_NoInlining()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void ClassBase_GenericDerived_AllVariants()
     {
@@ -25,6 +29,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("ClassBase_GenericDerived_NoInlining_String", new ClassBaseCaller(new ClassBase_GenericDerived_NoInlining<string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericClassBase_NonGenericDerived_AllVariants()
     {
@@ -34,6 +39,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericClassBase_NonGenericDerived_NoInlining_Shared", new GenericClassBaseCaller<string>(new GenericClassBase_NonGenericDerived_NoInlining_Shared()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericClassBase_GenericDerived_InliningVariants()
     {
@@ -43,6 +49,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericClassBase_GenericDerived_Inlining_String_String", new GenericClassBaseCaller<string>(new GenericClassBase_GenericDerived_Inlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericClassBase_GenericDerived_NoInliningVariants()
     {
@@ -52,6 +59,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericClassBase_GenericDerived_NoInlining_String_String", new GenericClassBaseCaller<string>(new GenericClassBase_GenericDerived_NoInlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_NonGenericClassDerived_AllVariants()
     {
@@ -59,6 +67,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_NonGenericClassDerived_NoInlining", new InterfaceBaseCaller(new InterfaceBase_NonGenericClassDerived_NoInlining()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_NonGenericStructDerived_AllVariants()
     {
@@ -66,6 +75,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_NonGenericStructDerived_NoInlining", new InterfaceBaseCaller(new InterfaceBase_NonGenericStructDerived_NoInlining()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_GenericClassDerived_AllVariants()
     {
@@ -75,6 +85,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_GenericClassDerived_NoInlining_String", new InterfaceBaseCaller(new InterfaceBase_GenericClassDerived_NoInlining<string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void InterfaceBase_GenericStructDerived_AllVariants()
     {
@@ -84,6 +95,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("InterfaceBase_GenericStructDerived_NoInlining_String", new InterfaceBaseCaller(new InterfaceBase_GenericStructDerived_NoInlining<string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_NonGenericClassDerived_AllVariants()
     {
@@ -93,6 +105,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_NonGenericClassDerived_NoInlining_Shared", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_NonGenericClassDerived_NoInlining_Shared()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_NonGenericStructDerived_AllVariants()
     {
@@ -102,6 +115,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_NonGenericStructDerived_NoInlining_Shared", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_NonGenericStructDerived_NoInlining_Shared()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericClassDerived_InliningVariants()
     {
@@ -111,6 +125,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericClassDerived_Inlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericClassDerived_Inlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericClassDerived_NoInliningVariants()
     {
@@ -120,6 +135,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericClassDerived_NoInlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericClassDerived_NoInlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericStructDerived_InliningVariants()
     {
@@ -129,6 +145,7 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericStructDerived_Inlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericStructDerived_Inlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void GenericInterfaceBase_GenericStructDerived_NoInliningVariants()
     {
@@ -138,10 +155,18 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericStructDerived_NoInlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericStructDerived_NoInlining<string, string>()));
     }
 
+    [OuterLoop]
     [Fact]
     public static void RuntimeLookupDelegate()
     {
-        RuntimeLookupDelegateGenericVirtual.Test<string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnNonGenericType<int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnNonGenericType<string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<int, int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<int, string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<string, int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<string, string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnStringType<int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnStringType<string>();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -210,15 +235,130 @@ internal class RuntimeLookupDelegateGenericVirtual
 {
     internal static readonly List<object> s_list = new();
 
-    internal static void Test<T>()
+    internal static void TestGenericMethodOnNonGenericType<T>()
     {
-        var test = new Base();
-        test.Foo<List<T>>();
+        Console.WriteLine("Testing {0}: {1}...", nameof(TestGenericMethodOnNonGenericType), typeof(T));
 
-        var test2 = new Derived();
-        Delegate m1 = test2.Foo<List<T>>();
-        Delegate m2 = test2.Foo<List<List<T>>>;
-        Assert.Equal(m1, m2);
+        Base test1 = new Base();
+        test1.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        IBase test2 = new DerivedClassNoImpl();
+        test2.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        IBase test3 = new DerivedStructNoImpl();
+        test3.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        Base test4 = new DerivedClass();
+        Delegate m1 = test4.Foo<List<T>>();
+        Delegate m2 = test4.Foo<List<List<T>>>;
+        Assert.Equal(m2, m1);
+
+        IBase test5 = new DerivedStructNoRecursion();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<T>>;
+        Assert.Equal(m4.Method, m3.Method);
+
+        // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            IBase test6 = new DerivedStruct();
+            Delegate m5 = test6.Foo<List<T>>();
+            Delegate m6 = test6.Foo<List<List<T>>>;
+            Assert.Equal(m6.Method, m5.Method);
+        }
+    }
+
+    internal static void TestGenericMethodOnGenericType<T, U>()
+    {
+        Console.WriteLine("Testing {0}: {1}, {2}...", nameof(TestGenericMethodOnGenericType), typeof(T), typeof(U));
+
+        Base<U> test1 = new Base<U>();
+        test1.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        IBase<U> test2 = new DerivedClassNoImpl<U>();
+        test2.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        IBase<U> test3 = new DerivedStructNoImpl<U>();
+        test3.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        Base<U> test4 = new DerivedClass<U>();
+        Delegate m1 = test4.Foo<List<T>>();
+        Delegate m2 = test4.Foo<List<List<T>>>;
+        Assert.Equal(m2, m1);
+
+        IBase<U> test5 = new DerivedStructNoRecursion<U>();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<T>>;
+        Assert.Equal(m4.Method, m3.Method);
+
+        // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            IBase<U> test6 = new DerivedStruct<U>();
+            Delegate m5 = test6.Foo<List<T>>();
+            Delegate m6 = test6.Foo<List<List<T>>>;
+            Assert.Equal(m6.Method, m5.Method);
+        }
+    }
+
+    internal static void TestGenericMethodOnStringType<T>()
+    {
+        Console.WriteLine("Testing {0}: {1}...", nameof(TestGenericMethodOnStringType), typeof(T));
+
+        Base<string> test1 = new Base<string>();
+        test1.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        IBase<string> test2 = new DerivedClassStringNoImpl();
+        test2.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        IBase<string> test3 = new DerivedStructStringNoImpl();
+        test3.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        Base<string> test4 = new DerivedClassString();
+        Delegate m1 = test4.Foo<List<T>>();
+        Delegate m2 = test4.Foo<List<List<T>>>;
+        Assert.Equal(m2, m1);
+
+        IBase<string> test5 = new DerivedStructStringNoRecursion();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<T>>;
+        Assert.Equal(m4.Method, m3.Method);
+
+        // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            IBase<string> test6 = new DerivedStructString();
+            Delegate m5 = test6.Foo<List<T>>();
+            Delegate m6 = test6.Foo<List<List<T>>>;
+            Assert.Equal(m6.Method, m5.Method);
+        }
     }
 }
 
@@ -231,17 +371,142 @@ internal class Base
         RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
         RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
         RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
-        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<List<U>>>>>));
-        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<List<List<U>>>>>>));
         return Foo<U>;
     }
 }
 
-internal class Derived : Base
+internal class DerivedClass : Base
 {
     public override Delegate Foo<U1>()
     {
         return Foo<List<U1>>;
+    }
+}
+
+internal interface IBase
+{
+    public virtual Delegate Foo<U>()
+    {
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
+        return Foo<U>;
+    }
+}
+
+internal class DerivedClassNoImpl : IBase
+{
+}
+
+internal struct DerivedStructNoImpl : IBase
+{
+}
+
+internal struct DerivedStruct : IBase
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<List<U>>;
+    }
+}
+
+internal struct DerivedStructNoRecursion : IBase
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<U>;
+    }
+}
+
+internal class Base<T>
+{
+    public virtual Delegate Foo<U>()
+    {
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
+        return Foo<U>;
+    }
+}
+
+internal class DerivedClass<T> : Base<T>
+{
+    public override Delegate Foo<U1>()
+    {
+        return Foo<List<U1>>;
+    }
+}
+
+internal interface IBase<T>
+{
+    public virtual Delegate Foo<U>()
+    {
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
+        return Foo<U>;
+    }
+}
+
+internal class DerivedClassNoImpl<T> : IBase<T>
+{
+}
+
+internal struct DerivedStructNoImpl<T> : IBase<T>
+{
+}
+
+internal struct DerivedStruct<T> : IBase<T>
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<List<U>>;
+    }
+}
+
+internal struct DerivedStructNoRecursion<T> : IBase<T>
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<U>;
+    }
+}
+
+internal class DerivedClassString : Base<string>
+{
+    public override Delegate Foo<U1>()
+    {
+        return Foo<List<U1>>;
+    }
+}
+
+internal class DerivedClassStringNoImpl : IBase<string>
+{
+}
+
+internal struct DerivedStructStringNoImpl : IBase<string>
+{
+}
+
+internal struct DerivedStructString : IBase<string>
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<List<U>>;
+    }
+}
+
+internal struct DerivedStructStringNoRecursion : IBase<string>
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<U>;
     }
 }
 

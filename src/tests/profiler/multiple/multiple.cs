@@ -61,12 +61,32 @@ namespace Profiler.Tests
                                    envVarProfilerPrefix: "CORECLR");
 
             Console.WriteLine($"Running the test using environment variables with DOTNET prefix.");
+            ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+                                   testName: "MultiplyLoaded",
+                                   profilerClsid: MultipleProfilerGuid,
+                                   loadAsNotification: true,
+                                   notificationCopies: 2,
+                                   envVarProfilerPrefix: "DOTNET");
+
+            // A notification profiler list whose final entry has no trailing ';' must still
+            // load every entry.
+            Console.WriteLine($"Running the test with no trailing separator (CORECLR prefix).");
+            ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+                                   testName: "MultiplyLoaded",
+                                   profilerClsid: MultipleProfilerGuid,
+                                   loadAsNotification: true,
+                                   notificationCopies: 2,
+                                   appendNotificationSeparator: false,
+                                   envVarProfilerPrefix: "CORECLR");
+
+            Console.WriteLine($"Running the test with no trailing separator (DOTNET prefix).");
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
-                                          testName: "MultiplyLoaded",
-                                          profilerClsid: MultipleProfilerGuid,
-                                          loadAsNotification: true,
-                                          notificationCopies: 2,
-                                          envVarProfilerPrefix: "DOTNET");
+                                   testName: "MultiplyLoaded",
+                                   profilerClsid: MultipleProfilerGuid,
+                                   loadAsNotification: true,
+                                   notificationCopies: 2,
+                                   appendNotificationSeparator: false,
+                                   envVarProfilerPrefix: "DOTNET");
         }
     }
 }

@@ -289,7 +289,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (count < 2)
                 return;
 
-            uint entrySize = Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
+            uint entrySize = Data.ExceptionLookupTableEntry.GetSize(Target);
 
             Data.ExceptionLookupTableEntry GetEntry(uint index)
                 => Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (index * entrySize));
@@ -319,7 +319,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return;
             }
 
-            uint count = section.Size / Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
+            uint count = section.Size / Data.ExceptionLookupTableEntry.GetSize(Target);
             ulong exceptionLookupTableAddr = section.VirtualAddress + r2rInfo.LoadedImageBase;
 
             GetMethodRVAAndRangeStart(cbh, out TargetPointer methodStart, out TargetPointer rangeStart);

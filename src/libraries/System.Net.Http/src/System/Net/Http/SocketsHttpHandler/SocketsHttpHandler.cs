@@ -299,6 +299,42 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Gets or sets the maximum number of concurrent HTTP/2 streams a new connection may use before it observes
+        /// the server's <c>SETTINGS_MAX_CONCURRENT_STREAMS</c> value.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// HTTP/2 lets the client start sending requests as soon as the connection is established, before the server
+        /// has advertised how many concurrent streams it accepts. Until that <c>SETTINGS</c> frame arrives, the client
+        /// optimistically allows up to this many streams, after which the server's value takes over.
+        /// </para>
+        /// <para>
+        /// The default suits virtually all deployments and most users never need to change it. It is intended for the
+        /// small subset of deployments where the server is known ahead of time to use a lower concurrency limit, and
+        /// starting a connection with a matching value avoids the brief burst of requests above that limit.
+        /// </para>
+        /// <para>
+        /// If an earlier connection to the same host advertised a lower limit,
+        /// that lower value is used instead for new connections to that host.
+        /// </para>
+        /// <para>
+        /// The value must be greater than or equal to 1. Defaults to 100.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is zero or negative.</exception>
+        public int InitialHttp2MaxConcurrentStreams
+        {
+            get => _settings._initialHttp2MaxConcurrentStreams;
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                CheckDisposedOrStarted();
+                _settings._initialHttp2MaxConcurrentStreams = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
         /// doesn't receive any frames on a connection for this period of time. This property is used together with
         /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
@@ -423,6 +459,41 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._plaintextStreamFilter = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a callback that decides whether a pooled connection should be evicted.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When set, the callback is invoked for pooled connections with a
+        /// <see cref="SocketsHttpConnectionEvictionContext"/> describing the connection. Returning <see langword="true"/>
+        /// marks the connection for eviction: it will not be used to serve new requests and is retired once it
+        /// becomes idle (an in-flight request on the connection is allowed to complete first).
+        /// </para>
+        /// <para>
+        /// The callback is not guaranteed to run for every request, and it may run concurrently with the connection
+        /// serving requests as well as concurrently for different connections. Because it is asynchronous, a caller
+        /// may perform work such as a name resolution inside it; however, it is invoked for each pooled connection, so
+        /// keeping it inexpensive (for example, consulting a cached resolution result) is recommended. The supplied
+        /// <see cref="CancellationToken"/> is canceled if the connection is disposed while the callback is running.
+        /// </para>
+        /// <para>
+        /// This callback complements <see cref="PooledConnectionLifetime"/>. Because a caller can use it to evict
+        /// connections in response to their own DNS resolution, it makes it possible to set
+        /// <see cref="PooledConnectionLifetime"/> to <see cref="Timeout.InfiniteTimeSpan"/> and
+        /// retain otherwise healthy connections rather than recycling them purely to observe address changes.
+        /// </para>
+        /// </remarks>
+        [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>>? ShouldEvictConnection
+        {
+            get => _settings._shouldEvictConnection;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._shouldEvictConnection = value;
             }
         }
 

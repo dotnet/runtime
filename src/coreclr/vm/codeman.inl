@@ -13,7 +13,7 @@ inline TADDR IJitManager::JitTokenToModuleRVABase(const METHODTOKEN& MethodToken
 {
 #ifdef TARGET_WASM
     if (MethodToken.m_pRangeSection->_flags & RangeSection::RANGE_SECTION_VIRTUALIP)
-        return (TADDR)MethodToken.m_pRangeSection->_pR2RModule->GetModuleBaseAddress();
+        return dac_cast<TADDR>(MethodToken.m_pRangeSection->_pR2RModule->GetReadyToRunInfo()->GetImage()->GetBase());
 #endif
     // For non-wasm, the rva base is always the same as the range base.
     return MethodToken.m_pRangeSection->_range.RangeStart();

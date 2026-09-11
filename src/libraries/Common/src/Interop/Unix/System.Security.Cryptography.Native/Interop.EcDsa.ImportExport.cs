@@ -215,71 +215,12 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_GetECKeyParameters(
-            SafeEcKeyHandle key,
-            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
-            out SafeBignumHandle qx_bn, out int x_cb,
-            out SafeBignumHandle qy_bn, out int y_cb,
-            out IntPtr d_bn_not_owned, out int d_cb);
-
-        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EvpPKeyGetEcKeyParameters(
             SafeEvpPKeyHandle key,
             [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
             out SafeBignumHandle qy_bn, out int y_cb,
             out SafeBignumHandle d_bn, out int d_cb);
-
-        internal static ECParameters GetECKeyParameters(
-            SafeEcKeyHandle key,
-            bool includePrivate)
-        {
-            SafeBignumHandle qx_bn, qy_bn, d_bn;
-            IntPtr d_bn_not_owned;
-            int qx_cb, qy_cb, d_cb;
-
-            bool refAdded = false;
-            try
-            {
-                key.DangerousAddRef(ref refAdded); // Protect access to d_bn_not_owned
-                int rc = CryptoNative_GetECKeyParameters(
-                    key,
-                    includePrivate,
-                    out qx_bn, out qx_cb,
-                    out qy_bn, out qy_cb,
-                    out d_bn_not_owned, out d_cb);
-
-                using (qx_bn)
-                using (qy_bn)
-                {
-                    if (rc == -1)
-                    {
-                        throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-                    }
-                    else if (rc != 1)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    using (d_bn = new SafeBignumHandle(d_bn_not_owned, false))
-                    {
-                        // Match Windows semantics where qx, qy, and d have same length
-                        int keySizeBits = EcKeyGetSize(key);
-                        int expectedSize = (keySizeBits + 7) / 8;
-                        return GetEcParameters(
-                            expectedSize,
-                            qx_bn, qx_cb,
-                            qy_bn, qy_cb,
-                            d_bn, d_cb);
-                    }
-                }
-            }
-            finally
-            {
-                if (refAdded)
-                    key.DangerousRelease();
-            }
-        }
 
         internal static ECParameters EvpPKeyGetEcKeyParameters(
             SafeEvpPKeyHandle key,
@@ -347,23 +288,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_GetECCurveParameters(
-            SafeEcKeyHandle key,
-            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
-            out ECCurve.ECCurveType curveType,
-            out SafeBignumHandle qx, out int x_cb,
-            out SafeBignumHandle qy, out int y_cb,
-            out IntPtr d_bn_not_owned, out int d_cb,
-            out SafeBignumHandle p, out int P_cb,
-            out SafeBignumHandle a, out int A_cb,
-            out SafeBignumHandle b, out int B_cb,
-            out SafeBignumHandle gx, out int Gx_cb,
-            out SafeBignumHandle gy, out int Gy_cb,
-            out SafeBignumHandle order, out int order_cb,
-            out SafeBignumHandle cofactor, out int cofactor_cb,
-            out SafeBignumHandle seed, out int seed_cb);
-
-        [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_EvpPKeyGetEcCurveParameters(
             SafeEvpPKeyHandle key,
             [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
@@ -379,80 +303,6 @@ internal static partial class Interop
             out SafeBignumHandle order, out int order_cb,
             out SafeBignumHandle cofactor, out int cofactor_cb,
             out SafeBignumHandle seed, out int seed_cb);
-
-        internal static ECParameters GetECCurveParameters(
-            SafeEcKeyHandle key,
-            bool includePrivate)
-        {
-            ECCurve.ECCurveType curveType;
-            SafeBignumHandle qx_bn, qy_bn, p_bn, a_bn, b_bn, gx_bn, gy_bn, order_bn, cofactor_bn, seed_bn;
-            IntPtr d_bn_not_owned;
-            int qx_cb, qy_cb, p_cb, a_cb, b_cb, gx_cb, gy_cb, order_cb, cofactor_cb, seed_cb, d_cb;
-
-            bool refAdded = false;
-            try
-            {
-                key.DangerousAddRef(ref refAdded); // Protect access to d_bn_not_owned
-                int rc = CryptoNative_GetECCurveParameters(
-                    key,
-                    includePrivate,
-                    out curveType,
-                    out qx_bn, out qx_cb,
-                    out qy_bn, out qy_cb,
-                    out d_bn_not_owned, out d_cb,
-                    out p_bn, out p_cb,
-                    out a_bn, out a_cb,
-                    out b_bn, out b_cb,
-                    out gx_bn, out gx_cb,
-                    out gy_bn, out gy_cb,
-                    out order_bn, out order_cb,
-                    out cofactor_bn, out cofactor_cb,
-                    out seed_bn, out seed_cb);
-
-                using (qx_bn)
-                using (qy_bn)
-                using (p_bn)
-                using (a_bn)
-                using (b_bn)
-                using (gx_bn)
-                using (gy_bn)
-                using (order_bn)
-                using (cofactor_bn)
-                using (seed_bn)
-                {
-                    if (rc == -1)
-                    {
-                        throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-                    }
-                    else if (rc != 1)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    using (var d_h = new SafeBignumHandle(d_bn_not_owned, false))
-                    {
-                        return GetEcCurveParameters(
-                            curveType,
-                            qx_bn, qx_cb,
-                            qy_bn, qy_cb,
-                            d_h, d_cb,
-                            p_bn, p_cb,
-                            a_bn, a_cb,
-                            b_bn, b_cb,
-                            gx_bn, gx_cb,
-                            gy_bn, gy_cb,
-                            order_bn, order_cb,
-                            cofactor_bn, cofactor_cb,
-                            seed_bn, seed_cb);
-                    }
-                }
-            }
-            finally
-            {
-                if (refAdded)
-                    key.DangerousRelease();
-            }
-        }
 
         internal static unsafe ECParameters EvpPKeyGetEcCurveParameters(
             SafeEvpPKeyHandle key,

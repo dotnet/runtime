@@ -3655,6 +3655,7 @@ namespace System.Text.Json.Tests
         [Theory, OuterLoop("Very long running test")]
         [MemberData(nameof(JsonOptions_TestData))]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Writing3MBBase64Bytes(JsonWriterOptions options)
         {
             byte[] value = new byte[3 * 1024 * 1024];
@@ -5004,6 +5005,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
         [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void EscapeCharacters(JsonWriterOptions options)
         {
             // Do not include surrogate pairs.
@@ -5887,6 +5889,7 @@ namespace System.Text.Json.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(WriteValue_TestData))]
         [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void WriteNumbers(JsonWriterOptions options, string keyString)
         {
             var random = new Random(42);

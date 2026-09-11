@@ -7,7 +7,6 @@
 
 #include "stublink.h"
 #include "utilcode.h"
-#include <emscripten/stack.h>
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -31,10 +30,15 @@ struct HijackArgs
 {
 };
 
-inline void* GetCurrentSP()
+// Reads the wasm __stack_pointer global (the C stack pointer that LLVM
+// maintains). Shared by browser and WASI: wasi-sdk has no
+// emscripten_stack_get_current() equivalent, and reading the global directly
+// works on both. Naked function: the body is exactly the emitted instructions.
+static __attribute__((naked)) void* GetCurrentSP()
 {
-    WRAPPER_NO_CONTRACT;
-    return (void*)emscripten_stack_get_current();
+    __asm__(
+        "global.get __stack_pointer\n"
+        "return\n");
 }
 
 extern PCODE GetPreStubEntryPoint();
@@ -112,7 +116,7 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return context->InterpreterFP;
 }
 
-#define ENUM_CALLEE_SAVED_REGISTERS()
+#define ENUM_CALLEE_SAVED_REGISTERS() CALLEE_SAVED_REGISTER(InterpreterFP)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS()
 
@@ -157,5 +161,7 @@ inline TADDR GetSecondArgReg(T_CONTEXT *context)
     PORTABILITY_ASSERT("GetSecondArgReg is not implemented on wasm");
     return 0;
 }
+
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC);
 
 #endif // __cgenwasm_h__

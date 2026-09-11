@@ -161,7 +161,7 @@ namespace System.Text.Json
 
         internal bool TryGetTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            if (_cachingContext == null)
+            if (_cachingContext is null)
             {
                 typeInfo = null;
                 return false;
@@ -188,7 +188,7 @@ namespace System.Text.Json
 
         internal bool TryGetPolymorphicTypeInfoForRootType(object rootValue, [NotNullWhen(true)] out JsonTypeInfo? polymorphicTypeInfo)
         {
-            Debug.Assert(rootValue != null);
+            Debug.Assert(rootValue is not null);
 
             Type runtimeType = rootValue.GetType();
             if (runtimeType != JsonTypeInfo.ObjectType)
@@ -429,7 +429,7 @@ namespace System.Text.Json
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
                 Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
-                Debug.Assert(options._typeInfoResolver != null);
+                Debug.Assert(options._typeInfoResolver is not null);
 
                 int hashCode = s_optionsComparer.GetHashCode(options);
 
@@ -513,7 +513,7 @@ namespace System.Text.Json
         {
             public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
             {
-                Debug.Assert(left != null && right != null);
+                Debug.Assert(left is not null && right is not null);
 
                 return
                     left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
@@ -543,6 +543,7 @@ namespace System.Text.Json
                     left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
                     left._allowDuplicateProperties == right._allowDuplicateProperties &&
+                    left._inferClosedTypePolymorphism == right._inferClosedTypePolymorphism &&
                     CompareLists(left._converters, right._converters) &&
                     CompareLists(left._typeClassifiers, right._typeClassifiers);
 
@@ -605,6 +606,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._typeInfoResolver);
                 AddHashCode(ref hc, options._allowDuplicateProperties);
+                AddHashCode(ref hc, options._inferClosedTypePolymorphism);
                 AddListHashCode(ref hc, options._converters);
                 AddListHashCode(ref hc, options._typeClassifiers);
 

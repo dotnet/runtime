@@ -19,14 +19,12 @@ namespace System.Text.RegularExpressions
     /// Represents an immutable regular expression. Also contains static methods that
     /// allow use of regular expressions without instantiating a Regex explicitly.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The <see cref="Regex"/> class represents the .NET regular expression engine.
-    /// It can be used to quickly parse large amounts of text to find specific character patterns;
-    /// to extract, edit, replace, or delete text substrings; and to add the extracted strings to a
-    /// collection to generate a report.
-    /// </para>
-    /// </remarks>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// The <xref:System.Text.RegularExpressions.Regex> class represents the .NET regular expression engine. It can be used to quickly parse large amounts of text to find specific character patterns; to extract, edit, replace, or delete text substrings; and to add the extracted strings to a collection to generate a report.
+    ///
+    /// > [!WARNING]
+    /// > Unrestricted use of this class with untrusted input can subject applications to [denial-of-service attacks](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS). Consult [Best practices for regular expressions in .NET](https://learn.microsoft.com/dotnet/standard/base-types/best-practices-regex) for guidance on how to safely use this class with untrusted input.
+    /// ]]></format></remarks>
     /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference">.NET Regular Expression Language</related>
     /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-options">Regular Expression Options</related>
     /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/best-practices">Best Practices for Regular Expressions</related>

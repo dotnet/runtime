@@ -42,7 +42,7 @@ namespace {Namespace}
 
     public sealed unsafe class CreateFalseMaskTest__{TestName}
     {
-        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int RetElementCount = sizeof({RetVectorType}<{RetBaseType}>) / sizeof({RetBaseType});
 
         public CreateFalseMaskTest__{TestName}()
         {

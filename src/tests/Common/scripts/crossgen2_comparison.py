@@ -823,6 +823,52 @@ def compare_and_print_message(base_result, diff_result, base_dirname, diff_dirna
 
     return base_diff_are_equal
 
+def copy_artifacts_to_upload_root(assembly_name, base_dirname, diff_dirname):
+    """
+        Copies the crossgen compilation artifacts (the produced native/ReadyToRun
+        images) for a failing assembly to the Helix work item upload root so that
+        the lab infrastructure uploads them to Azure, where they appear in the work
+        item's file list and can be downloaded to root cause crossgen comparison
+        failures.
+
+        Returns the list of file names that were copied into the upload root so the
+        names can be surfaced in the test failure output.
+    """
+    upload_root = os.environ.get('HELIX_WORKITEM_UPLOAD_ROOT')
+    if not upload_root:
+        return []
+
+    # assembly_name is loaded from JSON; keep it as a simple file name to avoid path traversal.
+    if ('/' in assembly_name) or ('\\' in assembly_name):
+        print('Unexpected assembly name "{0}"; skipping artifact copy'.format(assembly_name))
+        return []
+
+    ni_filename = add_ni_extension(assembly_name + '.dll')
+
+    try:
+        os.makedirs(upload_root, exist_ok=True)
+    except OSError as ex:
+        print('Failed to create upload root "{0}": {1}'.format(upload_root, ex))
+        return []
+
+    uploaded_filenames = []
+    for label, source_dirname in [('base', base_dirname), ('diff', diff_dirname)]:
+        source_filename = os.path.join(source_dirname, ni_filename)
+        if not os.path.isfile(source_filename):
+            print('Crossgen output "{0}" was not found; cannot copy it to the upload root'.format(source_filename))
+            continue
+
+        destination_basename = '{0}_{1}'.format(label, ni_filename)
+        destination_filename = os.path.join(upload_root, destination_basename)
+        try:
+            shutil.copy2(source_filename, destination_filename)
+            print('Copied crossgen output "{0}" to upload file "{1}"'.format(source_filename, destination_filename))
+            uploaded_filenames.append(destination_basename)
+        except OSError as ex:
+            print('Failed to copy crossgen output "{0}" to upload file "{1}": {2}'.format(source_filename, destination_filename, ex))
+
+    return uploaded_filenames
+
 def compare_results(args):
     """
         Checks whether {base} and {diff} crossgens are "equal":
@@ -969,6 +1015,11 @@ def compare_results(args):
             collection.appendChild(testresult)
 
             if not base_diff_are_equal:
+                output_message = message
+                if output_file_type == FileTypes.NativeOrReadyToRunImage:
+                    uploaded_filenames = copy_artifacts_to_upload_root(assembly_name, args.base_dirname, args.diff_dirname)
+                    if uploaded_filenames:
+                        output_message += ' The following files were uploaded to this Helix work item and are available for download from the work item file list: {0}.'.format(', '.join(uploaded_filenames))
                 failureXml = root.createElement('failure')
                 failureXml.setAttribute('exception-type', 'MismatchOrReturnCodeFail')
                 testresult.appendChild(failureXml)
@@ -978,7 +1029,7 @@ def compare_results(args):
 
                 failureXml.appendChild(messageXml)
                 messageXml = root.createElement('output')
-                messageXml.appendChild(root.createTextNode(message))
+                messageXml.appendChild(root.createTextNode(output_message))
 
                 failureXml.appendChild(messageXml)
 

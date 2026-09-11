@@ -1435,15 +1435,27 @@ static void update_sample_frequency ()
 	double now = profiler_now ();
 	double ms_since_last_sample = now - last_sample_time;
 
-	if (desired_sample_interval_ms > 0 && last_sample_time != 0) {
+	// Only recompute when wall-clock time actually advanced. With coarse browser
+	// timer resolution ms_since_last_sample can round to 0 during a burst of
+	// instrumentation callbacks; dividing by it produces +Inf which, once cast to
+	// int (saturating, nontrapping-float-to-int), pins skips_per_period at INT_MAX
+	// and permanently disables sampling. Also clamp the result to keep sampling
+	// responsive, matching the CoreCLR single-threaded sampler.
+	if (desired_sample_interval_ms > 0 && last_sample_time != 0 && ms_since_last_sample > 0) {
 		// recalculate ideal number of skips per period
 		double skips_per_ms = ((double)sample_skip_counter) / ms_since_last_sample;
 		double newskips_per_period = (skips_per_ms * ((double)desired_sample_interval_ms));
-		skips_per_period = (int)((newskips_per_period + ((double)sample_skip_counter) + ((double)prev_skips_per_period)) / 3.0);
+		double avg_skips = (newskips_per_period + ((double)sample_skip_counter) + ((double)prev_skips_per_period)) / 3.0;
+		if (avg_skips < 1.0)
+			avg_skips = 1.0;
+		else if (avg_skips > 10000.0)
+			avg_skips = 10000.0;
+		skips_per_period = (int)avg_skips;
 		prev_skips_per_period = sample_skip_counter;
-	} else {
+	} else if (last_sample_time == 0 || desired_sample_interval_ms <= 0) {
 		skips_per_period = 0;
 	}
+	// else (ms_since_last_sample == 0): keep the previous skips_per_period unchanged
 	last_sample_time = now;
 	sample_skip_counter = 0;
 }

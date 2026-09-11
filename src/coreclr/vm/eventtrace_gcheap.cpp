@@ -447,7 +447,7 @@ VOID ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
 
 #if defined(TARGET_BROWSER)
     // On single-threaded browser, we cannot call ForceGCForDiagnostics synchronously
-    // from within the provider callback (which runs during ep_enable_3 under the
+    // from within the provider callback (which runs during ep_init_session_3 under the
     // EventPipe lock). Defer the GC to the next event loop turn.
     SystemJS_DiagnosticServerQueueJob(ForceGCForDiagnosticsJob, NULL);
 #else

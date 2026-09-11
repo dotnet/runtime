@@ -12,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
@@ -21,6 +22,7 @@ internal static partial class Interop
             byte[]? lpData,
             ref int lpcbData);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int RegQueryValueEx(
             SafeRegistryHandle hKey,

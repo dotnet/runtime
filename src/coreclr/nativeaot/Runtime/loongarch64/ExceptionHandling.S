@@ -303,6 +303,7 @@
     NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
+        ori  $r23, $a4, 0                               // Save ExKind
 
         GetThreadA2
 
@@ -355,7 +356,7 @@ LOCAL_LABEL(NotHijacked):
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_passNumber   // pExInfo->m_passNumber = 1
         addi.w  $a3, $zero, -1
         st.w  $a3, $a1, OFFSETOF__ExInfo__m_idxCurClause // pExInfo->m_idxCurClause = MaxTryRegionIdx
-        st.b  $a4, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind (from a4)
+        st.b  $r23, $a1, OFFSETOF__ExInfo__m_kind        // pExInfo->m_kind = ExKind
 
         // link the ExInfo into the thread's ExInfo chain
         ld.d  $a3, $a2, OFFSETOF__Thread__m_pExInfoStackHead

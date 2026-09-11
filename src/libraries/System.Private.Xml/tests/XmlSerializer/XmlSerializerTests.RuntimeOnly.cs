@@ -862,6 +862,81 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_XmlSchema()
+    {
+        var expectedXml = WithXmlHeader("<xsd:schema xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" elementFormDefault=\"qualified\" targetNamespace=\"http://example.com/my-schema\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <xsd:element name=\"MyElement\" type=\"xsd:string\" />\r\n  <xsd:group name=\"MyGroup\">\r\n    <xsd:sequence>\r\n      <xsd:element name=\"Item1\" />\r\n      <xsd:element name=\"Item2\" />\r\n    </xsd:sequence>\r\n  </xsd:group>\r\n</xsd:schema>");
+
+        XmlSchema schema = new XmlSchema
+        {
+            TargetNamespace = "http://example.com/my-schema",
+            ElementFormDefault = XmlSchemaForm.Qualified
+        };
+        schema.Items.Add(new XmlSchemaElement
+        {
+            Name = "MyElement",
+            SchemaTypeName = new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema")
+        });
+        schema.Items.Add(new XmlSchemaGroup
+        {
+            Name = "MyGroup",
+            Particle = new XmlSchemaSequence
+            {
+                Items = { new XmlSchemaElement { Name = "Item1" }, new XmlSchemaElement { Name = "Item2" } }
+            }
+        });
+        schema.Namespaces.Add("xsd", "http://www.w3.org/2001/XMLSchema");
+        schema.Namespaces.Add("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+
+        var actual = SerializeAndDeserialize(schema, expectedXml, () => new XmlSerializer(typeof(XmlSchema)));
+
+        Assert.Equal(schema.TargetNamespace, actual.TargetNamespace);
+        Assert.Equal(schema.ElementFormDefault, actual.ElementFormDefault);
+        Assert.Equal(schema.Items.Count, actual.Items.Count);
+    }
+
+    [Fact]
+    public static void XmlSchemaObject_RoundTrip()
+    {
+        // Verify that XmlSchemaObject-derived types can be deserialized with the reflection-based
+        // serializer. Previously a NotImplementedException was thrown during deserialization.
+        var element = new XmlSchemaElement
+        {
+            Name = "TestElement",
+            SchemaTypeName = new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema")
+        };
+        var serializer = new XmlSerializer(typeof(XmlSchemaElement));
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, element);
+        ms.Position = 0;
+
+        var result = (XmlSchemaElement?)serializer.Deserialize(ms);
+        Assert.NotNull(result);
+        Assert.Equal("TestElement", result.Name);
+        Assert.Equal(new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema"), result.SchemaTypeName);
+    }
+
+    [Fact]
+    public static void XmlSchemaObject_RoundTrip_WithConstraintInReadOnlyCollection()
+    {
+        // Verify that items in read-only collection properties (like XmlSchemaElement.Constraints)
+        // are correctly round-tripped using the reflection-based serializer.
+        var element = new XmlSchemaElement { Name = "TestElement" };
+        element.Constraints.Add(new XmlSchemaKey { Name = "PrimaryKey" });
+
+        var serializer = new XmlSerializer(typeof(XmlSchemaElement));
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, element);
+        ms.Position = 0;
+
+        var result = (XmlSchemaElement?)serializer.Deserialize(ms);
+        Assert.NotNull(result);
+        Assert.Equal("TestElement", result.Name);
+        Assert.Equal(1, result.Constraints.Count);
+        var key = Assert.IsType<XmlSchemaKey>(result.Constraints[0]);
+        Assert.Equal("PrimaryKey", key.Name);
+    }
+
+    [Fact]
     public static void Xml_XmlElementAsRoot()
     {
         XmlDocument xDoc = new XmlDocument();
@@ -3078,6 +3153,22 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_TypeWithAliasedChoiceIdentifier()
+    {
+        var value = new TypeWithAliasedChoiceIdentifier()
+        {
+            Item = 42,
+            ChoiceType = AliasedChoiceType.NumberChoice
+        };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithAliasedChoiceIdentifier xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Number>42</Number></TypeWithAliasedChoiceIdentifier>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Item, actual.Item);
+        Assert.Equal(value.ChoiceType, actual.ChoiceType);
+    }
+
+    [Fact]
     public static void Xml_XmlIncludedTypesInTypedCollection()
     {
         var value = new List<BaseClass>() {
@@ -3667,6 +3758,61 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.Number, actual.Number);
     }
 
+    [Fact]
+    public static void Xml_DerivedTypeOverridingVirtualXmlTextProperty_CanSerialize()
+    {
+        // Regression test: XmlSerializer must not throw when a derived class re-declares
+        // [XmlText] on a virtual property override of a base class that also has [XmlText].
+        var value = new CustomerWithGroupIdRef
+        {
+            GroupIdRef = new GroupIdRef("RefValue", "SomeType")
+        };
+        CustomerWithGroupIdRef actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\"?><CustomerWithGroupIdRef xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><GROUP_IDREF type=\"SomeType\">RefValue</GROUP_IDREF></CustomerWithGroupIdRef>");
+        Assert.Equal("RefValue", actual.GroupIdRef?.Value);
+        Assert.Equal("SomeType", actual.GroupIdRef?.Type);
+    }
+
+    [Fact]
+    public static void Xml_DerivedTypeOverridingVirtualXmlAttributeProperty_CanSerialize()
+    {
+        // Overriding a virtual [XmlAttribute] property is allowed as long as the override keeps the
+        // same attribute name. Serialization writes the attribute and deserialization assigns the
+        // overridden property (the derived setter runs).
+        var serializer = new XmlSerializer(typeof(GroupWithSameNameAttributeOverride));
+        var value = new GroupWithSameNameAttributeOverride { Code = "XYZ" };
+
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, value);
+        ms.Position = 0;
+        string xml = new StreamReader(ms).ReadToEnd();
+        Assert.Contains("aprop=\"XYZ\"", xml);
+
+        ms.Position = 0;
+        var actual = (GroupWithSameNameAttributeOverride)serializer.Deserialize(ms);
+        Assert.Equal("XYZ", actual.Code);
+        Assert.True(actual.DerivedSetterInvoked);
+    }
+
+    [Fact]
+    public static void Xml_DerivedTypeRenamingOverriddenXmlAttribute_Throws()
+    {
+        // Overriding a virtual [XmlAttribute] property but giving it a different attribute name is
+        // an invalid override; XmlSerializer rejects it rather than choosing one name over the other.
+        Assert.Throws<InvalidOperationException>(() =>
+            SerializeAndDeserialize(new GroupWithRenamedAttributeOverride { Code = "v" }, string.Empty, skipStringCompare: true));
+    }
+
+    [Fact]
+    public static void Xml_DerivedTypeDroppingOverriddenXmlAttribute_Throws()
+    {
+        // XmlSerializer reads member attributes without inheritance, so an override that omits
+        // [XmlAttribute] maps as an element and conflicts with the base attribute mapping. This is
+        // an invalid override and XmlSerializer rejects it.
+        Assert.Throws<InvalidOperationException>(() =>
+            SerializeAndDeserialize(new GroupWithDroppedAttributeOverride { Code = "v" }, string.Empty, skipStringCompare: true));
+    }
+
     [Theory]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", true, "p", "text")]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null)]
@@ -3694,4 +3840,165 @@ public static partial class XmlSerializerTests
             }
         }
     }
+
+    [Fact]
+    public static void XML_TypeWithFieldsOrdered()
+    {
+        var value = new TypeWithFieldsOrdered()
+        {
+            IntField1 = 1,
+            IntField2 = 2,
+            StringField1 = "foo1",
+            StringField2 = "foo2"
+        };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithFieldsOrdered xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntField2>2</IntField2>\r\n  <IntField1>1</IntField1>\r\n  <strfld>foo2</strfld>\r\n  <strfld>foo1</strfld>\r\n</TypeWithFieldsOrdered>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.IntField1, actual.IntField1);
+        Assert.Equal(value.IntField2, actual.IntField2);
+        Assert.Equal(value.StringField1, actual.StringField1);
+        Assert.Equal(value.StringField2, actual.StringField2);
+    }
+
+    [Fact]
+    public static void XML_TypeWithArrayLikeFieldsOrdered()
+    {
+        var value = new TypeWithArrayLikeFieldsOrdered()
+        {
+            Leading = 9,
+            Numbers = new int[] { 10, 20, 30 },
+            StringField1 = "foo1",
+            StringField2 = "foo2"
+        };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayLikeFieldsOrdered xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Leading>9</Leading>\r\n  <num>10</num>\r\n  <num>20</num>\r\n  <num>30</num>\r\n  <strfld>foo1</strfld>\r\n  <strfld>foo2</strfld>\r\n</TypeWithArrayLikeFieldsOrdered>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Leading, actual.Leading);
+        Assert.Equal(value.Numbers, actual.Numbers);
+        Assert.Equal(value.StringField1, actual.StringField1);
+        Assert.Equal(value.StringField2, actual.StringField2);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithArrayLikeChoiceElement()
+    {
+        // Exercises an [XmlChoiceIdentifier] member where one of the choice element types is
+        // itself an array, so that element's mapping is an ArrayMapping. Deserializing such a
+        // value drives the reflection-based reader's array-reading path while the owning member
+        // carries a choice identifier.
+        var value = new TypeWithArrayLikeChoiceElement()
+        {
+            ManyChoices = new object[] { "hello", new int[] { 1, 2, 3 } },
+            ChoiceArray = new ArrayLikeChoice[] { ArrayLikeChoice.Word, ArrayLikeChoice.Numbers }
+        };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayLikeChoiceElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Word>hello</Word>\r\n  <Numbers>\r\n    <int>1</int>\r\n    <int>2</int>\r\n    <int>3</int>\r\n  </Numbers>\r\n</TypeWithArrayLikeChoiceElement>"));
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.ManyChoices);
+        Assert.Equal(2, actual.ManyChoices.Length);
+        Assert.Equal("hello", actual.ManyChoices[0]);
+        int[] numbers = Assert.IsType<int[]>(actual.ManyChoices[1]);
+        Assert.Equal(new int[] { 1, 2, 3 }, numbers);
+
+        // The [XmlIgnore] choice array is populated during deserialization to mirror, per item,
+        // which element each value was read from.
+        Assert.Equal(new ArrayLikeChoice[] { ArrayLikeChoice.Word, ArrayLikeChoice.Numbers }, actual.ChoiceArray);
+    }
+
+    [Fact]
+    public static void Xml_DerivedIXmlSerializable()
+    {
+        var dClass = new XmlSerializableDerivedClass() { AttributeString = "derivedIXmlSerTest", DateTimeValue = new DateTime(1999, 12, 31), BoolValue = true };
+
+        var expectedXml = WithXmlHeader(@$"<BaseIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" xmlns=""{XmlSerializableBaseClass.XmlNamespace}"" />");
+        var fromBase = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableBaseClass), new Type[] { typeof(XmlSerializableDerivedClass) }));
+        Assert.Equal(dClass.AttributeString, fromBase.AttributeString);
+        Assert.Equal(dClass.DateTimeValue, fromBase.DateTimeValue);
+        Assert.Equal(dClass.BoolValue, fromBase.BoolValue);
+
+        // Derived class does not apply XmlRoot attribute to force itself to be emitted with the base class element name, so update expected xml accordingly.
+        // Since we can't smartly emit xsi:type during serialization though, it is still there even though it isn't needed.
+        expectedXml = WithXmlHeader(@"<DerivedIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" />");
+        var fromDerived = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableDerivedClass)));
+        Assert.Equal(dClass.AttributeString, fromDerived.AttributeString);
+        Assert.Equal(dClass.DateTimeValue, fromDerived.DateTimeValue);
+        Assert.Equal(dClass.BoolValue, fromDerived.BoolValue);
+    }
+
+    [Fact]
+    public static void Xml_DerivedIXmlSerializable_UnknownXsiTypeDoesNotClobberMember()
+    {
+        var serializer = new XmlSerializer(typeof(XmlSerializableMemberWrapper), new Type[] { typeof(XmlSerializableDerivedClass) });
+
+        // Produce valid XML carrying a real xsi:type for the IXmlSerializable member, then swap the
+        // xsi:type to a name that matches neither the declared serializable type nor any known derived
+        // type. On this path the ILGen reader emits only Reader.UnknownNode(null) and leaves the member
+        // untouched; the reflection reader must behave identically rather than overwriting it with null.
+        var wrapper = new XmlSerializableMemberWrapper()
+        {
+            Member = new XmlSerializableDerivedClass() { AttributeString = "derived", DateTimeValue = new DateTime(1999, 12, 31), BoolValue = true }
+        };
+
+        string validXml;
+        using (var sw = new StringWriter())
+        {
+            serializer.Serialize(sw, wrapper);
+            validXml = sw.ToString();
+        }
+
+        string unknownTypeXml = validXml.Replace(@"xsi:type=""DerivedIXmlSerializable""", @"xsi:type=""NonExistentDerivedType""");
+        Assert.DoesNotContain(@"xsi:type=""DerivedIXmlSerializable""", unknownTypeXml);
+
+        XmlSerializableMemberWrapper result;
+        using (var sr = new StringReader(unknownTypeXml))
+        {
+            result = (XmlSerializableMemberWrapper)serializer.Deserialize(sr);
+        }
+
+        Assert.NotNull(result.Member);
+        Assert.Equal(XmlSerializableMemberWrapper.PresetAttributeString, result.Member.AttributeString);
+    }
+}
+
+// These types must be declared at the top level rather than nested inside XmlSerializerTests.
+// The serializer matches an [XmlChoiceIdentifier] value by comparing the choice enum's
+// TypeDesc.FullName against the runtime choiceSource.GetType().FullName. TypeDesc normalizes
+// nested-type names by replacing '+' with '.' (see Types.cs), so a nested enum's TypeDesc name
+// ("XmlSerializerTests.ArrayLikeChoice") would never equal its reflection FullName
+// ("XmlSerializerTests+ArrayLikeChoice"), and the choice would fail to match.
+public class TypeWithArrayLikeChoiceElement
+{
+    // One of the choice element types (Numbers) is an array, so its element mapping is an
+    // ArrayMapping. Each item in ManyChoices is matched to an item in ChoiceArray.
+    [XmlChoiceIdentifier(nameof(ChoiceArray))]
+    [XmlElement("Word", typeof(string))]
+    [XmlElement("Numbers", typeof(int[]))]
+    public object[] ManyChoices;
+
+    [XmlIgnore]
+    public ArrayLikeChoice[] ChoiceArray;
+}
+
+public enum ArrayLikeChoice
+{
+    None,
+    Word,
+    Numbers
+}
+
+public class XmlSerializableMemberWrapper
+{
+    public XmlSerializableMemberWrapper()
+    {
+        // Pre-populate the member so a regression that overwrites it with null when an
+        // unrecognized xsi:type is encountered can be detected.
+        Member = new XmlSerializableBaseClass() { AttributeString = PresetAttributeString };
+    }
+
+    public const string PresetAttributeString = "preset";
+
+    public XmlSerializableBaseClass Member { get; set; }
 }

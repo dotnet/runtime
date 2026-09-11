@@ -5,6 +5,7 @@
 #ifndef _WRAPPERS_H_
 #define _WRAPPERS_H_
 
+#include "holder.h"
 #include "metadata.h"
 #include "interoputil.h"
 
@@ -52,35 +53,28 @@ private:
 };
 
 template <typename TYPE>
-inline void SafeComRelease(TYPE *value)
+struct ReleaseHolderAnyModeTraits final
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
 
-    SafeRelease((IUnknown*)value);
-}
-template <typename TYPE>
-inline void SafeComReleasePreemp(TYPE *value)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+        SafeRelease(value);
+    }
+};
 
-    SafeReleasePreemp((IUnknown*)value);
-}
-
+// Releases the held type with a Release() method regardless of the current GC mode,
+// switching to preemptive internally when required. Use ReleaseHolder instead when
+// the release will always occur in preemptive mode.
 template<typename _TYPE>
-using SafeComHolder = SpecializedWrapper<_TYPE, SafeComRelease<_TYPE>>;
-
-// Use this holder if you're already in preemptive mode for other reasons,
-// use SafeComHolder otherwise.
-template<typename _TYPE>
-using SafeComHolderPreemp = SpecializedWrapper<_TYPE, SafeComReleasePreemp<_TYPE>>;
+using ReleaseHolderAnyMode = LifetimeHolder<ReleaseHolderAnyModeTraits<_TYPE>>;
 
 //--------------------------------------------------------------------------------
 // safe variant helper

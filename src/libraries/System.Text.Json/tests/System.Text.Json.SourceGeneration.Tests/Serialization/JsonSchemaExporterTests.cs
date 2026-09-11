@@ -34,6 +34,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Int128))]
         [JsonSerializable(typeof(Half))]
 #endif
+#if NET11_0_OR_GREATER
+        [JsonSerializable(typeof(System.Numerics.BFloat16))]
+        [JsonSerializable(typeof(System.Numerics.Decimal32))]
+        [JsonSerializable(typeof(System.Numerics.Decimal64))]
+        [JsonSerializable(typeof(System.Numerics.Decimal128))]
+#endif
         [JsonSerializable(typeof(string))]
         [JsonSerializable(typeof(char))]
         [JsonSerializable(typeof(byte[]))]
@@ -76,6 +82,10 @@ namespace System.Text.Json.SourceGeneration.Tests
 #if NET
         [JsonSerializable(typeof(Half?))]
 #endif
+#if NET11_0_OR_GREATER
+        [JsonSerializable(typeof(System.Numerics.BFloat16?))]
+        [JsonSerializable(typeof(System.Numerics.Decimal64?))]
+#endif
         [JsonSerializable(typeof(Guid?))]
         [JsonSerializable(typeof(JsonElement?))]
         [JsonSerializable(typeof(IntEnum?))]
@@ -108,6 +118,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoWithNullableAnnotationAttributesOnConstructorParams))]
         [JsonSerializable(typeof(PocoWithNullableConstructorParameter))]
         [JsonSerializable(typeof(PocoWithOptionalConstructorParams))]
+        [JsonSerializable(typeof(PocoWithGetOnlyProperties))]
         [JsonSerializable(typeof(GenericPocoWithNullableConstructorParameter<string>))]
         [JsonSerializable(typeof(PocoWithPolymorphism))]
         [JsonSerializable(typeof(DiscriminatedUnion))]
@@ -115,8 +126,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoCombiningPolymorphicTypeAndDerivedTypes))]
         [JsonSerializable(typeof(ClassWithComponentModelAttributes))]
         [JsonSerializable(typeof(ClassWithJsonPointerEscapablePropertyNames))]
+        [JsonSerializable(typeof(ClassWithPropertyNameRequiringFragmentEncoding))]
         [JsonSerializable(typeof(ClassWithOptionalObjectParameter))]
         [JsonSerializable(typeof(ClassWithPropertiesUsingCustomConverters))]
+#pragma warning disable CS0612 // Type or member is obsolete
+        [JsonSerializable(typeof(MyObsoleteType))]
+#pragma warning restore CS0612 // Type or member is obsolete
         // Collection types
         [JsonSerializable(typeof(int[]))]
         [JsonSerializable(typeof(List<bool>))]

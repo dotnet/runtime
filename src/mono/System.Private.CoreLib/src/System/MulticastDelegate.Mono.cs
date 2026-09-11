@@ -14,13 +14,6 @@ namespace System
     {
         private Delegate[]? delegates;
 
-        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new SerializationException(SR.Serialization_DelegatesNotSupported);
-        }
-
         protected sealed override object? DynamicInvokeImpl(object?[]? args)
         {
             if (delegates == null)
@@ -94,7 +87,7 @@ namespace System
         //   Return, in order of invocation, the invocation list
         //   of a MulticastDelegate
         // </summary>
-        internal new Delegate[] GetInvocationList()
+        internal Delegate[] GetInvocationListImpl()
         {
             if (delegates != null)
                 return (Delegate[])delegates.Clone();
@@ -126,7 +119,7 @@ namespace System
         //   thing should have better been a simple System.Delegate class.
         //   Compiler generated delegates are always MulticastDelegates.
         // </summary>
-        internal new Delegate CombineImpl(Delegate? follow)
+        internal Delegate CombineImplImpl(Delegate? follow)
         {
             if (follow == null)
                 return this;
@@ -197,7 +190,7 @@ namespace System
             return -1;
         }
 
-        internal new Delegate? RemoveImpl(Delegate? value)
+        internal Delegate? RemoveImplImpl(Delegate? value)
         {
             if (value == null)
                 return this;
@@ -268,7 +261,7 @@ namespace System
             }
         }
 
-        internal override object? GetTarget()
+        internal sealed override object? GetTarget()
         {
             return delegates?.Length > 0 ? delegates[delegates.Length - 1].GetTarget() : base.GetTarget();
         }

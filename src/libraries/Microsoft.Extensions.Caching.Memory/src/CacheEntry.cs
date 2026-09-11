@@ -28,7 +28,6 @@ namespace Microsoft.Extensions.Caching.Memory
         private long _absoluteExpirationTicks = NotSet;
         private short _absoluteExpirationOffsetMinutes;
         private bool _isDisposed;
-        private bool _isExpired;
         private bool _isValueSet;
         private byte _evictionReason;
         private byte _priority = (byte)CacheItemPriority.Normal;
@@ -136,7 +135,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets the <see cref="IChangeToken"/> instances which cause the cache entry to expire.
         /// </summary>
         [MemberNotNull(nameof(_tokens))]
-        public IList<IChangeToken> ExpirationTokens => GetOrCreateTokens().ExpirationTokens;
+        public IList<IChangeToken> ExpirationTokens => GetOrCreateExpirationTokens();
 
         /// <summary>
         /// Gets or sets the callbacks will be fired after the cache entry is evicted from the cache.
@@ -152,6 +151,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal long Size => _size;
 
+        internal bool IsDisposed => _isDisposed;
+
         long? ICacheEntry.Size
         {
             get => _size < 0 ? null : _size;
@@ -160,6 +161,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 if (value < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
+                }
+
+                if (_isDisposed)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.CacheEntrySetAfterDispose, nameof(ICacheEntry.Size)));
                 }
 
                 _size = value ?? NotSet;
@@ -186,15 +192,22 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (!_isDisposed)
             {
-                _isDisposed = true;
-
-                if (_cache.TrackLinkedCacheEntries)
+                bool trackLinkedCacheEntries = _cache.TrackLinkedCacheEntries;
+                if (trackLinkedCacheEntries)
                 {
+                    Volatile.Write(ref _isDisposed, true);
+                    // Ensure either this thread sees the token list or its creator sees the disposed state.
+                    Thread.MemoryBarrier();
+                    _tokens?.EnableConcurrentReads();
                     CommitWithTracking();
                 }
-                else if (_isValueSet)
+                else
                 {
-                    _cache.SetEntry(this);
+                    _isDisposed = true;
+                    if (_isValueSet)
+                    {
+                        _cache.SetEntry(this);
+                    }
                 }
             }
         }
@@ -228,17 +241,20 @@ namespace Microsoft.Extensions.Caching.Memory
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         internal bool CheckExpired(DateTime utcNow)
-            => _isExpired
+            => EvictionReason != EvictionReason.None
                 || CheckForExpiredTime(utcNow)
                 || (_tokens != null && _tokens.CheckForExpiredTokens(this));
 
         internal void SetExpired(EvictionReason reason)
         {
+            // The eviction reason doubles as the "is expired" flag, so that a reader observing an expired
+            // entry always observes the reason that expired it. A separate flag would be a second,
+            // independently visible write: on a weak memory model a concurrent reader could see the entry
+            // as expired while still reading EvictionReason.None, and evict a live entry (dotnet/runtime#72879).
             if (EvictionReason == EvictionReason.None)
             {
                 EvictionReason = reason;
             }
-            _isExpired = true;
             _tokens?.DetachTokens();
         }
 
@@ -314,6 +330,17 @@ namespace Microsoft.Extensions.Caching.Memory
 
             CacheEntryTokens result = new CacheEntryTokens();
             return Interlocked.CompareExchange(ref _tokens, result, null) ?? result;
+        }
+
+        [MemberNotNull(nameof(_tokens))]
+        private ExpirationTokensList GetOrCreateExpirationTokens()
+        {
+            ExpirationTokensList expirationTokens = GetOrCreateTokens().ExpirationTokens;
+            if (_cache.TrackLinkedCacheEntries && Volatile.Read(ref _isDisposed))
+            {
+                expirationTokens.EnableConcurrentReads();
+            }
+            return expirationTokens;
         }
     }
 }

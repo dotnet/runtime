@@ -61,5 +61,5 @@ set_target_properties(mdruntimerw-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdruntimerw-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw_ppdb ${MDRUNTIMERW_SOURCES})
-target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB SELF_NO_HOST)
 target_precompile_headers(mdruntimerw_ppdb PRIVATE stdafx.h)

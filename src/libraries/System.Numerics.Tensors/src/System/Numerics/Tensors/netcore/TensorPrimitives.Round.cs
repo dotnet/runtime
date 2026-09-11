@@ -113,60 +113,21 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            ReadOnlySpan<T> roundPower10;
-            if (typeof(T) == typeof(float))
-            {
-                ReadOnlySpan<float> roundPower10Single = [1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f];
-                roundPower10 = Rename<float, T>(roundPower10Single);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                Debug.Assert(typeof(T) == typeof(double));
-                ReadOnlySpan<double> roundPower10Double = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
-                roundPower10 = Rename<double, T>(roundPower10Double);
-            }
-            else
-            {
-                if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
-                {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
-                }
-
-                InvokeSpanIntoSpan(x, new RoundFallbackOperator<T>(digits, mode), destination);
-                return;
-            }
-
-            if ((uint)digits >= (uint)roundPower10.Length)
+            if (digits < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(digits));
             }
 
-            T power10 = roundPower10[digits];
-            switch (mode)
+            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
             {
-                case MidpointRounding.ToEven:
-                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundToEvenOperator<T>>(power10), destination);
-                    return;
-
-                case MidpointRounding.AwayFromZero:
-                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundAwayFromZeroOperator<T>>(power10), destination);
-                    return;
-
-                case MidpointRounding.ToZero:
-                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, TruncateOperator<T>>(power10), destination);
-                    return;
-
-                case MidpointRounding.ToNegativeInfinity:
-                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, FloorOperator<T>>(power10), destination);
-                    return;
-
-                case MidpointRounding.ToPositiveInfinity:
-                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, CeilingOperator<T>>(power10), destination);
-                    return;
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
             }
+
+            // The digit-based rounding defers to the scalar `T.Round` for every element, which accepts any
+            // non-negative `digits` (matching the scalar API). A correctly-rounded vectorized implementation
+            // needs the exact (e.g. double-double or arbitrary precision) scaled value to match the scalar
+            // result at the midpoints, so that acceleration is left as a future improvement.
+            InvokeSpanIntoSpan(x, new RoundFallbackOperator<T>(digits, mode), destination);
         }
 
         /// <summary>T.Round(x)</summary>
@@ -181,11 +142,6 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Round(x);
-
-#if !NET
-            private const float SingleBoundary = 8388608.0f; // 2^23
-            private const double DoubleBoundary = 4503599627370496.0; // 2^52
-#endif
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
@@ -281,57 +237,6 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(double));
                     return TruncateOperator<double>.Invoke(x.AsDouble() + CopySignOperator<double>.Invoke(Vector512.Create(0.49999999999999994), x.AsDouble())).As<double, T>();
                 }
-            }
-        }
-
-        /// <summary>(T.Round(x * power10, digits, mode)) / power10</summary>
-        private readonly struct MultiplyRoundDivideOperator<T, TDelegatedRound> : IStatefulUnaryOperator<T>
-            where T : IFloatingPoint<T>
-            where TDelegatedRound : IUnaryOperator<T, T>
-        {
-            private readonly T _factor;
-
-            public MultiplyRoundDivideOperator(T factor)
-            {
-                Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
-                _factor = factor;
-            }
-
-            public static bool Vectorizable => true;
-
-            private const float Single_RoundLimit = 1e8f;
-            private const double Double_RoundLimit = 1e16d;
-
-            public T Invoke(T x)
-            {
-                T limit = typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit);
-                return T.Abs(x) < limit ?
-                    TDelegatedRound.Invoke(x * _factor) / _factor :
-                    x;
-            }
-
-            public Vector128<T> Invoke(Vector128<T> x)
-            {
-                Vector128<T> limit = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
-                return Vector128.ConditionalSelect(Vector128.LessThan(Vector128.Abs(x), limit),
-                    TDelegatedRound.Invoke(x * _factor) / _factor,
-                    x);
-            }
-
-            public Vector256<T> Invoke(Vector256<T> x)
-            {
-                Vector256<T> limit = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
-                return Vector256.ConditionalSelect(Vector256.LessThan(Vector256.Abs(x), limit),
-                    TDelegatedRound.Invoke(x * _factor) / _factor,
-                    x);
-            }
-
-            public Vector512<T> Invoke(Vector512<T> x)
-            {
-                Vector512<T> limit = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
-                return Vector512.ConditionalSelect(Vector512.LessThan(Vector512.Abs(x), limit),
-                    TDelegatedRound.Invoke(x * _factor) / _factor,
-                    x);
             }
         }
 

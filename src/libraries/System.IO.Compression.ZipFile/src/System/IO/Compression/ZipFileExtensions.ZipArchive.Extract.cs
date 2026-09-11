@@ -20,7 +20,7 @@ namespace System.IO.Compression
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry's name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
@@ -50,7 +50,7 @@ namespace System.IO.Compression
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry's name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
@@ -71,6 +71,25 @@ namespace System.IO.Compression
             foreach (ZipArchiveEntry entry in source.Entries)
             {
                 entry.ExtractRelativeToDirectory(destinationDirectoryName, overwriteFiles);
+            }
+        }
+
+        /// <summary>
+        /// Extracts all of the files in the archive to a directory on the file system using the specified options.
+        /// </summary>
+        /// <param name="source">The zip archive to extract files from.</param>
+        /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files.</param>
+        /// <param name="options">The extraction options including password, encoding, and overwrite behavior.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, ZipExtractionOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationDirectoryName);
+            ArgumentNullException.ThrowIfNull(options);
+
+            foreach (ZipArchiveEntry entry in source.Entries)
+            {
+                entry.ExtractRelativeToDirectory(destinationDirectoryName, options.OverwriteFiles, options.Password.Span);
             }
         }
     }

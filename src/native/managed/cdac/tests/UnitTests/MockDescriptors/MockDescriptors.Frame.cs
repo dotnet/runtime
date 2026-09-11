@@ -56,6 +56,18 @@ internal sealed class MockInlinedCallFrame : MockFrame
         get => ReadPointerField(CallerReturnAddressFieldName);
         set => WritePointerField(CallerReturnAddressFieldName, value);
     }
+
+    public ulong CallSiteSP
+    {
+        get => ReadPointerField(CallSiteSPFieldName);
+        set => WritePointerField(CallSiteSPFieldName, value);
+    }
+
+    public ulong CalleeSavedFP
+    {
+        get => ReadPointerField(CalleeSavedFPFieldName);
+        set => WritePointerField(CalleeSavedFPFieldName, value);
+    }
 }
 
 internal sealed class MockFramedMethodFrame : MockFrame
@@ -76,15 +88,42 @@ internal sealed class MockFramedMethodFrame : MockFrame
     }
 }
 
+internal sealed class MockInterpMethodContextFrame : TypedView
+{
+    // Field order mirrors src/coreclr/vm/interpexec.h InterpMethodContextFrame.
+    private const string StartIpFieldName = "StartIp";
+    private const string ParentPtrFieldName = "ParentPtr";
+    private const string IpFieldName = "Ip";
+    private const string NextPtrFieldName = "NextPtr";
+    private const string StackFieldName = "Stack";
+
+    public static Layout<MockInterpMethodContextFrame> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpMethodContextFrame", architecture)
+            .AddPointerField(StartIpFieldName)
+            .AddPointerField(ParentPtrFieldName)
+            .AddPointerField(IpFieldName)
+            .AddPointerField(NextPtrFieldName)
+            .AddPointerField(StackFieldName)
+            .Build<MockInterpMethodContextFrame>();
+
+    public ulong StartIp { get => ReadPointerField(StartIpFieldName); set => WritePointerField(StartIpFieldName, value); }
+    public ulong ParentPtr { get => ReadPointerField(ParentPtrFieldName); set => WritePointerField(ParentPtrFieldName, value); }
+    public ulong Ip { get => ReadPointerField(IpFieldName); set => WritePointerField(IpFieldName, value); }
+    public ulong NextPtr { get => ReadPointerField(NextPtrFieldName); set => WritePointerField(NextPtrFieldName, value); }
+    public ulong Stack { get => ReadPointerField(StackFieldName); set => WritePointerField(StackFieldName, value); }
+}
+
 internal sealed class MockFuncEvalFrame : MockFrame
 {
-    // Mirrors the cDAC FuncEvalFrame data class which only reads DebuggerEvalPtr.
-    // Identifier/Next are inherited from the base MockFrame layout so the
-    // FrameIterator.Next() chain walk works the same as for a plain Frame.
+    // Mirrors the cDAC FuncEvalFrame data class which reads DebuggerEvalPtr and
+    // ReturnAddress. Identifier/Next are inherited from the base MockFrame layout so
+    // the FrameIterator.Next() chain walk works the same as for a plain Frame.
     private const string DebuggerEvalPtrFieldName = "DebuggerEvalPtr";
+    private const string ReturnAddressFieldName = "ReturnAddress";
 
     public static Layout<MockFuncEvalFrame> CreateLayout(Layout<MockFrame> baseLayout)
         => new SequentialLayoutBuilder("FuncEvalFrame", baseLayout.Architecture, baseLayout)
+            .AddPointerField(ReturnAddressFieldName)
             .AddPointerField(DebuggerEvalPtrFieldName)
             .Build<MockFuncEvalFrame>();
 
@@ -92,6 +131,12 @@ internal sealed class MockFuncEvalFrame : MockFrame
     {
         get => ReadPointerField(DebuggerEvalPtrFieldName);
         set => WritePointerField(DebuggerEvalPtrFieldName, value);
+    }
+
+    public ulong ReturnAddress
+    {
+        get => ReadCodePointerField(ReturnAddressFieldName);
+        set => WriteCodePointerField(ReturnAddressFieldName, value);
     }
 }
 
@@ -180,6 +225,7 @@ internal sealed class MockFrameBuilder
     public Layout<MockFuncEvalFrame> FuncEvalFrameLayout { get; }
     public Layout<MockDebuggerEval> DebuggerEvalLayout { get; }
     public Layout<MockResumableFrame> ResumableFrameLayout { get; }
+    public Layout<MockInterpMethodContextFrame> InterpMethodContextFrameLayout { get; }
 
     public MockFrameBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -199,6 +245,7 @@ internal sealed class MockFrameBuilder
         FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
         ResumableFrameLayout = MockResumableFrame.CreateLayout(FrameLayout);
+        InterpMethodContextFrameLayout = MockInterpMethodContextFrame.CreateLayout(_helpers.Arch);
     }
 
     public ulong FrameTopTerminator => _terminator;
@@ -220,13 +267,15 @@ internal sealed class MockFrameBuilder
     /// Allocates an InlinedCallFrame. <paramref name="callerReturnAddress"/> set non-zero
     /// makes the frame "active" (matching native InlinedCallFrame::HasActiveCall).
     /// </summary>
-    public MockInlinedCallFrame AddInlinedCallFrame(ulong callerReturnAddress, ulong datum)
+    public MockInlinedCallFrame AddInlinedCallFrame(ulong callerReturnAddress, ulong datum, ulong callSiteSP = 0, ulong calleeSavedFP = 0)
     {
         MockInlinedCallFrame frame = InlinedCallFrameLayout.Create(_allocator.Allocate((ulong)InlinedCallFrameLayout.Size, "InlinedCallFrame"));
         frame.Identifier = InlinedCallFrameIdentifierValue;
         frame.Next = _terminator;
         frame.CallerReturnAddress = callerReturnAddress;
         frame.Datum = datum;
+        frame.CallSiteSP = callSiteSP;
+        frame.CalleeSavedFP = calleeSavedFP;
         return frame;
     }
 
@@ -236,6 +285,19 @@ internal sealed class MockFrameBuilder
         frame.Identifier = FramedMethodFrameIdentifierValue;
         frame.Next = _terminator;
         frame.MethodDescPtr = methodDescPtr;
+        return frame;
+    }
+
+    /// <summary>
+    /// Allocates an InterpMethodContextFrame -- a node in the interpreter's per-thread
+    /// call chain walked by the interpreter virtual unwind (via <c>pParent</c>).
+    /// </summary>
+    public MockInterpMethodContextFrame AddInterpMethodContextFrame(ulong parentPtr, ulong ip, ulong stack)
+    {
+        MockInterpMethodContextFrame frame = InterpMethodContextFrameLayout.Create(_allocator.Allocate((ulong)InterpMethodContextFrameLayout.Size, "InterpMethodContextFrame"));
+        frame.ParentPtr = parentPtr;
+        frame.Ip = ip;
+        frame.Stack = stack;
         return frame;
     }
 
@@ -262,14 +324,15 @@ internal sealed class MockFrameBuilder
 
     /// <summary>
     /// Allocates a FuncEvalFrame whose DebuggerEvalPtr field points at the given
-    /// DebuggerEval address.
+    /// DebuggerEval address and whose ReturnAddress field is set to the given value.
     /// </summary>
-    public MockFuncEvalFrame AddFuncEvalFrame(ulong debuggerEvalPtr)
+    public MockFuncEvalFrame AddFuncEvalFrame(ulong debuggerEvalPtr, ulong returnAddress = 0)
     {
         MockFuncEvalFrame frame = FuncEvalFrameLayout.Create(_allocator.Allocate((ulong)FuncEvalFrameLayout.Size, "FuncEvalFrame"));
         frame.Identifier = FuncEvalFrameIdentifierValue;
         frame.Next = _terminator;
         frame.DebuggerEvalPtr = debuggerEvalPtr;
+        frame.ReturnAddress = returnAddress;
         return frame;
     }
 

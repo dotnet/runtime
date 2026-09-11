@@ -42,6 +42,13 @@ namespace System
 
         internal static object? CheckArgument(object? srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
+            return CheckArgument(srcObject, dstEEType, semantics, binderBundle, out _);
+        }
+
+        internal static object? CheckArgument(object? srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle, out bool copyBack)
+        {
+            copyBack = false;
+
             // Methods with ByRefLike types in signatures should be filtered out earlier
             Debug.Assert(!dstEEType->IsByRefLike);
 
@@ -65,23 +72,24 @@ namespace System
             }
             else
             {
-                MethodTable* srcEEType = srcObject.GetMethodTable();
-
-                if (srcEEType == dstEEType ||
-                    RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                    (dstEEType->IsInterface && srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
-                        && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false)))
+                if (IsArgumentAssignable(srcObject, dstEEType))
                 {
                     return srcObject;
                 }
 
-                return CheckArgumentConversions(srcObject, dstEEType, semantics, binderBundle);
+                return CheckArgumentConversions(srcObject, dstEEType, semantics, binderBundle, out copyBack);
             }
         }
 
         internal static object? CheckArgumentConversions(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
+            return CheckArgumentConversions(srcObject, dstEEType, semantics, binderBundle, out _);
+        }
+
+        internal static object? CheckArgumentConversions(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle, out bool copyBack)
+        {
             object? dstObject;
+            copyBack = false;
             Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, dstEEType, semantics, out dstObject);
             if (exception == null)
                 return dstObject;
@@ -93,9 +101,19 @@ namespace System
             Type exactDstType = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType))!;
 
             srcObject = binderBundle.ChangeType(srcObject, exactDstType);
+            copyBack = srcObject is not null && IsArgumentAssignable(srcObject, dstEEType);
 
             // For compat with desktop, the result of the binder call gets processed through the default rules again.
             return CheckArgument(srcObject, dstEEType, semantics, binderBundle: null);
+        }
+
+        private static bool IsArgumentAssignable(object srcObject, MethodTable* dstEEType)
+        {
+            MethodTable* srcEEType = srcObject.GetMethodTable();
+            return srcEEType == dstEEType ||
+                RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                (dstEEType->IsInterface && srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
+                    && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false));
         }
 
         // Special coersion rules for primitives, enums and pointer.

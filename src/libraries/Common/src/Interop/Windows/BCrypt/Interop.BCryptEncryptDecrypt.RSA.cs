@@ -18,6 +18,7 @@ internal static partial class Interop
             BCRYPT_PAD_OAEP = 4,
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptEncrypt(
             SafeBCryptKeyHandle hKey,
@@ -31,6 +32,7 @@ internal static partial class Interop
             out int cbResult,
             BCryptEncryptFlags dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptDecrypt(
             SafeBCryptKeyHandle hKey,

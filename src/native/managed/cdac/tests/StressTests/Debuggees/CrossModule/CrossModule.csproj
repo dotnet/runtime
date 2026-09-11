@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- The library's source files live under Lib/ and are compiled
+         by Lib/CrossModuleLib.csproj. Exclude them from the main
+         exe's auto-include glob so the types come from the lib
+         assembly, not from this csproj. -->
+    <Compile Remove="Lib\**" />
+    <ProjectReference Include="Lib\CrossModuleLib.csproj" />
+  </ItemGroup>
+</Project>

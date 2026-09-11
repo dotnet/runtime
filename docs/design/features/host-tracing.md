@@ -18,20 +18,20 @@ All these components (with the exception to custom host) include the same code f
 
 ## Trace routing
 
-Tracing is enabled by setting `COREHOST_TRACE=1` env. variable.
+Tracing is enabled by setting `DOTNET_HOST_TRACE=1` env. variable.
 
 In .NET Core 2.1 and below, the host tracing is only written to the `stderr` output of the process.
 
 Starting with .NET Core 3, tracing can be redirected and its verbosity controlled:
 
-* Redirect the trace to a file (always appends) - enable tracing via `COREHOST_TRACE=1` and also set `COREHOST_TRACEFILE=<path>` in the environment for the process. The `<path>` is resolved against current directory and the file is opened for text append write. The directory for the file must exist, the file itself will be created if it doesn't exist.
-* Control trace verbosity via `COREHOST_TRACE_VERBOSITY` env. variable.  If not set, tracing contains the maximum level of detail.  When set in the range 1-4, the tracing verbosity increases with an increase in the value of `COREHOST_TRACE_VERBOSITY`.
-  * `COREHOST_TRACE_VERBOSITY=1` shows errors
-  * `COREHOST_TRACE_VERBOSITY=2` shows errors and warnings
-  * `COREHOST_TRACE_VERBOSITY=3` shows errors, warnings, and info
-  * `COREHOST_TRACE_VERBOSITY=4` shows errors, warnings, info, and verbose. (currently the default and maximum level of detail)
+* Redirect the trace to a file (always appends) - enable tracing via `DOTNET_HOST_TRACE=1` and also set `DOTNET_HOST_TRACEFILE=<path>` in the environment for the process. The `<path>` is resolved against current directory and the file is opened for text append write. The directory for the file must exist, the file itself will be created if it doesn't exist.
+* Control trace verbosity via `DOTNET_HOST_TRACE_VERBOSITY` env. variable.  If not set, tracing contains the maximum level of detail.  When set in the range 1-4, the tracing verbosity increases with an increase in the value of `DOTNET_HOST_TRACE_VERBOSITY`.
+  * `DOTNET_HOST_TRACE_VERBOSITY=1` shows errors
+  * `DOTNET_HOST_TRACE_VERBOSITY=2` shows errors and warnings
+  * `DOTNET_HOST_TRACE_VERBOSITY=3` shows errors, warnings, and info
+  * `DOTNET_HOST_TRACE_VERBOSITY=4` shows errors, warnings, info, and verbose. (currently the default and maximum level of detail)
 
-In .NET 10 and above, if `COREHOST_TRACEFILE` is set to a directory that exists, the host will trace to a file named `<exe_name>.<pid>.log` in that directory. If the specified path does not exist or is not a directory, tracing behaves the same as before .NET 10.
+In .NET 10 and above, if `DOTNET_HOST_TRACEFILE` is set to a directory that exists, the host will trace to a file named `<exe_name>.<pid>.log` in that directory. If the specified path does not exist or is not a directory, tracing behaves the same as before .NET 10.
 
 ## Error routing
 
@@ -57,7 +57,7 @@ Custom host can and should set the error writer as the first thing it does with 
 
 Only one error writer can be registered on a given thread at any given time.
 
-All errors are also written to a trace output if one is enabled (via `COREHOST_TRACE=1`) regardless of which error routing is used.
+All errors are also written to a trace output if one is enabled (via `DOTNET_HOST_TRACE=1`) regardless of which error routing is used.
 
 The `hostfxr` component propagates the error writer to the `hostpolicy` component before it calls into it, so a custom host only needs to register its error writer with the `hostfxr` component. The propagation of the error writer is only done for the duration necessary, after which it will be unregistered again.
 In case of a .NET Core 3+ `hostfxr` which would call into an old (.NET Core 2.1) `hostpolicy` component, the `hostfxr` will not perform the propagation in any way since the older `hostpolicy` doesn't support this mechanism.
@@ -72,7 +72,7 @@ The `message` parameter is a standard `NULL` terminated string. The memory for i
 
 ## Implementation notes
 
-Several components disable error writing to `stderr`. Note that enabling tracing via `COREHOST_TRACE=1` still works and without additional env. variables will output tracing, which includes all errors, into `stderr`.
+Several components disable error writing to `stderr`. Note that enabling tracing via `DOTNET_HOST_TRACE=1` still works and without additional env. variables will output tracing, which includes all errors, into `stderr`.
 
 ### `nethost`
 

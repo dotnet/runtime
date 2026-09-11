@@ -11,11 +11,23 @@ string StringFromEEAddress(TargetPointer address);
 
 ## Version 1
 
-Global variables used
-| Global Name | Type | Purpose |
+<!-- BEGIN GENERATED: usage contract=DacStreams version=c1 -->
+### Data descriptors used
+
+_None._
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| MiniMetaDataBuffAddress | TargetPointer | Identify where the mini metadata stream exists |
-| MiniMetaDataBuffMaxSize | uint | Identify where the size of the mini metadata stream |
+| `MiniMetaDataBuffAddress` | `pointer` | Identify where the mini metadata stream exists |
+| `MiniMetaDataBuffMaxSize` | `pointer` | Identify where the size of the mini metadata stream |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=DacStreams version=c1 -->
+
 
 Magic numbers
 | Name | Value |

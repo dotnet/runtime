@@ -708,6 +708,54 @@ namespace Internal.TypeSystem.Interop
 
     internal sealed class LayoutClassPtrMarshaller : Marshaller
     {
+        // Blittable layout classes passed by value CLR->native are marshalled by pinning the managed
+        // object and passing an interior pointer to its data directly to native code, mirroring CoreCLR's
+        // ILBlittablePtrMarshaller. This preserves pointer identity and gives implicit [In,Out] semantics
+        // regardless of [In]/[Out]. Byref, reverse, return, field, and non-blittable scenarios instead copy
+        // through the struct marshalling thunks.
+        private bool MarshalViaPinning =>
+            MarshalDirection == MarshalDirection.Forward
+            && !IsManagedByRef
+            && !Return
+            && MarshallerType == MarshallerType.Argument
+            && MarshalUtils.IsBlittableType(ManagedType);
+
+        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        {
+            if (!MarshalViaPinning)
+            {
+                base.AllocAndTransformManagedToNative(codeStream);
+                return;
+            }
+
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            ILCodeLabel lNull = emitter.NewCodeLabel();
+
+            // Default the native value to null so a null managed reference marshals as a null pointer.
+            codeStream.EmitLdc(0);
+            codeStream.Emit(ILOpcode.conv_i);
+            StoreNativeValue(codeStream);
+
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNull);
+
+            // Pin the object and pass the address of its first field (the object's data) to native code.
+            ILLocalVariable vPinnedObject = emitter.NewLocal(ManagedType, isPinned: true);
+            LoadManagedValue(codeStream);
+            codeStream.EmitStLoc(vPinnedObject);
+
+            FieldDesc rawDataField = Context.SystemModule
+                .GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8)
+                .GetKnownField("Data"u8);
+
+            codeStream.EmitLdLoc(vPinnedObject);
+            codeStream.Emit(ILOpcode.ldflda, emitter.NewToken(rawDataField));
+            codeStream.Emit(ILOpcode.conv_i);
+            StoreNativeValue(codeStream);
+
+            codeStream.EmitLabel(lNull);
+        }
+
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
@@ -758,6 +806,13 @@ namespace Internal.TypeSystem.Interop
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
+            // When marshalling via pinning the native code operates directly on the managed object's
+            // memory, so there is nothing to copy back.
+            if (MarshalViaPinning)
+            {
+                return;
+            }
+
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeLabel lNull = emitter.NewCodeLabel();
 
@@ -774,6 +829,12 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
+            // Pinning does not allocate any native resources that require cleanup.
+            if (MarshalViaPinning)
+            {
+                return;
+            }
+
             // Only do cleanup if it is IN
             if (!In)
             {

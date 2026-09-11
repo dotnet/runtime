@@ -51,7 +51,7 @@ BOOL ResumeThreadTest()
                             dwStackSize, lpStartAddress, lpParameter, 
                             dwCreationFlags, &dwThreadId ); 
     
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         /* Wait for one second.  This should return WAIT_TIMEOUT */
         dwRet = WaitForSingleObject(hThread,1000);

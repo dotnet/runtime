@@ -11,7 +11,7 @@ using GCStaticRegionConstants = Internal.Runtime.GCStaticRegionConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class GCStaticsNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public class GCStaticsNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode, IObjectNodeWithAlignment
     {
         private readonly MetadataType _type;
         private readonly GCStaticsPreInitDataNode _preinitializationInfo;
@@ -88,13 +88,17 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
+        // The blob holds a pointer that is written at runtime, so it is aligned at a pointer
+        // boundary. Keep this in sync with the alignment applied in GetData.
+        public int GetAlignment(NodeFactory factory) => factory.Target.PointerSize;
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
             // Even though we're only generating 32-bit relocs here (if SupportsRelativePointers),
             // align the blob at pointer boundary since at runtime we're going to write a pointer in here.
-            builder.RequireInitialPointerAlignment();
+            builder.RequireInitialAlignment(GetAlignment(factory));
 
             int delta = GCStaticRegionConstants.Uninitialized;
 

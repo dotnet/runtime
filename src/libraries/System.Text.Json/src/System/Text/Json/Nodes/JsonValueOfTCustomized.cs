@@ -32,7 +32,7 @@ namespace System.Text.Json.Nodes
 
             JsonTypeInfo<TValue> jsonTypeInfo = _jsonTypeInfo;
 
-            if (options != null && options != jsonTypeInfo.Options)
+            if (options is not null && options != jsonTypeInfo.Options)
             {
                 options.MakeReadOnly();
                 jsonTypeInfo = (JsonTypeInfo<TValue>)options.GetTypeInfoInternal(typeof(TValue));

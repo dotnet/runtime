@@ -506,6 +506,21 @@ namespace TypeSystemTests
         [InlineData("StructStructByte_UInt128StructAuto", "X86", 16, 32)]
         [InlineData("StructStructByte_UInt128StructAuto", "X64Linux", 16, 32)]
         [InlineData("StructStructByte_UInt128StructAuto", "X64Windows", 16, 32)]
+        [InlineData("StructStructByte_Decimal32StructAuto", "ARM64", 4, 8)]
+        [InlineData("StructStructByte_Decimal32StructAuto", "ARM", 4, 8)]
+        [InlineData("StructStructByte_Decimal32StructAuto", "X86", 4, 8)]
+        [InlineData("StructStructByte_Decimal32StructAuto", "X64Linux", 4, 8)]
+        [InlineData("StructStructByte_Decimal32StructAuto", "X64Windows", 4, 8)]
+        [InlineData("StructStructByte_Decimal64StructAuto", "ARM64", 8, 16)]
+        [InlineData("StructStructByte_Decimal64StructAuto", "ARM", 8, 16)]
+        [InlineData("StructStructByte_Decimal64StructAuto", "X86", 8, 16)]
+        [InlineData("StructStructByte_Decimal64StructAuto", "X64Linux", 8, 16)]
+        [InlineData("StructStructByte_Decimal64StructAuto", "X64Windows", 8, 16)]
+        [InlineData("StructStructByte_Decimal128StructAuto", "ARM64", 16, 32)]
+        [InlineData("StructStructByte_Decimal128StructAuto", "ARM", 8, 24)]
+        [InlineData("StructStructByte_Decimal128StructAuto", "X86", 16, 32)]
+        [InlineData("StructStructByte_Decimal128StructAuto", "X64Linux", 16, 32)]
+        [InlineData("StructStructByte_Decimal128StructAuto", "X64Windows", 16, 32)]
         // Variation of TestAlignmentBehavior_AutoAlignmentRules above that is able to deal with os specific behavior
         public void TestAlignmentBehavior_AutoAlignmentRulesWithOSDependence(string wrapperType, string osArch, int alignment, int size)
         {

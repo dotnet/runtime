@@ -11,9 +11,12 @@
 #include "appdomain.inl"
 #include "eventtrace.h"
 #include "../binder/inc/defaultassemblybinder.h"
+#include "../binder/inc/applicationcontext.hpp"
+#include <corehost/host_runtime_contract.h>
+#include "stringarraylist.h"
 
 // static
-extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -38,7 +41,7 @@ extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies)
+extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -112,7 +115,126 @@ extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandle
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
+namespace
+{
+    // Append all paths from a StringArrayList into 'output', separated by PATH_SEPARATOR_CHAR_W.
+    void AppendStringArrayList(StringArrayList* pList, SString& output)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(pList != NULL);
+
+        for (DWORD i = 0; i < pList->GetCount(); ++i)
+        {
+            if (i != 0)
+                output.Append(PATH_SEPARATOR_CHAR_W);
+
+            output.Append(pList->Get(i));
+        }
+    }
+}
+
+// Get the value of a known host property from the binder/AppDomain state.
+extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall::StringHandleOnStack retValue, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BOOL found = FALSE;
+
+    BEGIN_QCALL;
+
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
+    DefaultAssemblyBinder* pBinder = pDomain->GetDefaultBinder();
+    BINDER_SPACE::ApplicationContext* pAppContext = pBinder->GetAppContext();
+
+    if (u16_strcmp(name, _T(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
+    {
+        if (pAppContext->IsTpaListProvided())
+        {
+            BINDER_SPACE::SimpleNameToFileNameMap* pMap = pAppContext->GetTpaList();
+            _ASSERTE(pMap != NULL);
+
+            SString result;
+            BINDER_SPACE::SimpleNameToFileNameMap::Iterator i = pMap->Begin();
+            BINDER_SPACE::SimpleNameToFileNameMap::Iterator end = pMap->End();
+            while (i != end)
+            {
+                if (i->m_wszILFileName != NULL)
+                {
+                    if (!result.IsEmpty())
+                        result.Append(PATH_SEPARATOR_CHAR_W);
+
+                    result.Append(i->m_wszILFileName);
+                }
+
+                ++i;
+            }
+
+            if (!result.IsEmpty())
+            {
+                retValue.Set(result);
+                found = TRUE;
+            }
+        }
+    }
+    else if (u16_strcmp(name, _T(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES)) == 0)
+    {
+        SString result;
+        AppDomain::PathIterator iter = pDomain->IterateNativeDllSearchDirectories();
+        while (iter.Next())
+        {
+            if (!result.IsEmpty())
+                result.Append(PATH_SEPARATOR_CHAR_W);
+
+            result.Append(*iter.GetPath());
+        }
+
+        if (!result.IsEmpty())
+        {
+            retValue.Set(result);
+            found = TRUE;
+        }
+    }
+    else if (u16_strcmp(name, _T(HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS)) == 0)
+    {
+        StringArrayList* pList = pAppContext->GetPlatformResourceRoots();
+        if (pList != NULL && pList->GetCount() > 0)
+        {
+            SString result;
+            AppendStringArrayList(pList, result);
+            retValue.Set(result);
+            found = TRUE;
+        }
+    }
+    else if (u16_strcmp(name, _T(HOST_PROPERTY_APP_PATHS)) == 0)
+    {
+        StringArrayList* pList = pAppContext->GetAppPaths();
+        if (pList != NULL && pList->GetCount() > 0)
+        {
+            SString result;
+            AppendStringArrayList(pList, result);
+            retValue.Set(result);
+            found = TRUE;
+        }
+    }
+    else
+    {
+        // Caller is expected to only request known properties.
+        _ASSERTE(!"AppContext_TryGetHostPropertyValue called with unknown name");
+    }
+
+    END_QCALL;
+
+    return found;
+}
+
+extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -129,7 +251,7 @@ extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str)
+extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

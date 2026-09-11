@@ -18,7 +18,7 @@ internal static class RuntimeHelpersPolyfills
                 RuntimeHelpers.EnsureSufficientExecutionStack();
                 return true;
             }
-            catch
+            catch (InsufficientExecutionStackException)
             {
                 return false;
             }

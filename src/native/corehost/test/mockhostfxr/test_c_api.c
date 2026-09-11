@@ -6,5 +6,6 @@
 // Since the runtime repository primarily uses these APIs in C++ code, such issues
 // might not be caught during regular development or testing.
 #include <coreclr_delegates.h>
+#include <error_codes.h>
 #include <hostfxr.h>
 #include <nethost/nethost.h>

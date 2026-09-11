@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -11,9 +12,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionState
 {
+    private readonly Lock _apiLock;
     private readonly Target _target;
     private readonly TargetPointer _threadAddress;
     private readonly uint _flags;
+    private readonly TargetPointer _exceptionInfoAddress;
     private readonly TargetPointer _thrownObjectHandle;
     private readonly TargetPointer _previousExInfoAddress;
     private readonly IXCLRDataExceptionState? _legacyImpl;
@@ -22,13 +25,17 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         Target target,
         TargetPointer threadAddress,
         uint flags,
+        TargetPointer exceptionInfoAddress,
         TargetPointer thrownObjectHandle,
         TargetPointer previousExInfoAddress,
-        IXCLRDataExceptionState? legacyImpl)
+        IXCLRDataExceptionState? legacyImpl,
+        Lock apiLock)
     {
+        _apiLock = apiLock;
         _target = target;
         _threadAddress = threadAddress;
         _flags = flags;
+        _exceptionInfoAddress = exceptionInfoAddress;
         _thrownObjectHandle = thrownObjectHandle;
         _previousExInfoAddress = previousExInfoAddress;
         _legacyImpl = legacyImpl;
@@ -36,6 +43,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetFlags(uint* flags)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -66,6 +74,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetPrevious(DacComNullableByRef<IXCLRDataExceptionState> exState)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataExceptionState? legacyPrevious = null;
 
@@ -91,9 +100,11 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
                     _target,
                     _threadAddress,
                     (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+                    _previousExInfoAddress,
                     prevExThrownObjectHandle,
                     nextNestedException,
-                    legacyPrevious
+                    legacyPrevious,
+                    _apiLock
                 );
             }
         }
@@ -112,14 +123,85 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
     }
 
     int IXCLRDataExceptionState.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK, hrLocal = HResults.S_OK;
+        IXCLRDataValue? legacyValue = null;
 
-    int IXCLRDataExceptionState.GetBaseType(/*CLRDataBaseExceptionType*/ uint* type) => HResults.E_NOTIMPL;
+        if (_legacyImpl is not null && LegacyFallbackHelper.CanFallback())
+        {
+            DacComNullableByRef<IXCLRDataValue> legacyValueOut = new(value.IsNullRef);
+            hrLocal = _legacyImpl.GetManagedObject(legacyValueOut);
+            legacyValue = legacyValueOut.Interface;
+        }
 
-    int IXCLRDataExceptionState.GetCode(uint* code) => HResults.E_NOTIMPL;
+        try
+        {
+            if (_thrownObjectHandle == TargetPointer.Null)
+                throw new ArgumentException();
+
+            TargetPointer exceptionObject;
+            try
+            {
+                exceptionObject = _target.ReadPointer(_thrownObjectHandle);
+            }
+            catch (VirtualReadException)
+            {
+                throw new ArgumentException();
+            }
+
+            IObject objectContract = _target.Contracts.Object;
+            ulong objectSize = objectContract.GetSize(exceptionObject);
+            ITypeHandle typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(
+                objectContract.GetMethodTableAddress(exceptionObject));
+            value.Interface = new ClrDataValue(
+                _target,
+                _threadAddress,
+                (uint)ClrDataValueFlag.DEFAULT,
+                typeHandle,
+                exceptionObject,
+                [
+                    new NativeVarLocation
+                    {
+                        AddressOrValue = exceptionObject.ToClrDataAddress(_target),
+                        Size = objectSize,
+                        IsRegisterValue = false,
+                    },
+                ],
+                legacyValue,
+                _apiLock);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataExceptionState.GetBaseType(/*CLRDataBaseExceptionType*/ uint* type)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataExceptionState.GetCode(uint* code)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataExceptionState.GetString(uint bufLen, uint* strLen, char* str)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -181,6 +263,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.E_INVALIDARG;
 
         if (reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)
@@ -213,11 +296,86 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
     }
 
     int IXCLRDataExceptionState.IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameState(exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = IsSameState2((uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_SECOND_CHANCE, exRecord);
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.IsSameState(exRecord, contextSize, cxRecord);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
+
     int IXCLRDataExceptionState.IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = IsSameState2(flags, exRecord);
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
+
+    private int IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord)
+    {
+        int hr = HResults.S_FALSE;
+        try
+        {
+            if ((flags & ~(uint)(CLRDataExceptionSameFlag.CLRDATA_EXSAME_SECOND_CHANCE | CLRDataExceptionSameFlag.CLRDATA_EXSAME_FIRST_CHANCE)) != 0)
+                throw new ArgumentException();
+
+            if ((_flags & (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL) != 0)
+            {
+                if ((flags & (uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_FIRST_CHANCE) != 0)
+                    hr = HResults.S_OK;
+            }
+            else
+            {
+                if (exRecord is null)
+                    throw new NullReferenceException();
+
+                TargetPointer exceptionRecord;
+                if (_exceptionInfoAddress != TargetPointer.Null)
+                {
+                    Target.TypeInfo exceptionInfoType = _target.GetTypeInfo(DataType.ExceptionInfo);
+                    exceptionRecord = _target.ReadPointer(
+                        _exceptionInfoAddress + (ulong)exceptionInfoType.Fields["ExceptionRecord"].Offset);
+                }
+                else
+                {
+                    ThreadData threadData = _target.Contracts.Thread.GetThreadData(_threadAddress);
+                    exceptionRecord = threadData.OSExceptionRecord;
+                }
+
+                TargetPointer exceptionAddress = _target.ReadPointer(
+                    exceptionRecord + (ulong)(sizeof(uint) * 2 + _target.PointerSize));
+                TargetPointer requestedAddress = new(
+                    _target.PointerSize == sizeof(ulong)
+                        ? exRecord->ExceptionAddress
+                        : (uint)exRecord->ExceptionAddress);
+
+                if (exceptionAddress == requestedAddress)
+                    hr = HResults.S_OK;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
     int IXCLRDataExceptionState.GetTask(DacComNullableByRef<IXCLRDataTask> task)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataTask? legacyTask = null;
 
@@ -229,7 +387,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         }
         try
         {
-            task.Interface = new ClrDataTask(_threadAddress, _target, legacyTask);
+            task.Interface = new ClrDataTask(_threadAddress, _target, legacyTask, _apiLock);
         }
         catch (System.Exception ex)
         {
