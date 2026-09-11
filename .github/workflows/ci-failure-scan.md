@@ -76,7 +76,7 @@ mcp-scripts:
         throw new Error(`GitHub issue search failed with status ${response.status}`);
       }
       const result = await response.json();
-      if (!Array.isArray(result.items)) {
+      if (result.incomplete_results !== false || !Array.isArray(result.items)) {
         throw new Error("GitHub issue search returned an invalid response");
       }
       return result.items.map((item) => {
@@ -113,6 +113,9 @@ network:
     - dev.azure.com
     - helix.dot.net
     - "*.blob.core.windows.net"
+  blocked:
+    - github
+    - api.github.com
 ---
 
 # CI Outer-Loop Failure Scanner

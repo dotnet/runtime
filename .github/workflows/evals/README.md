@@ -26,13 +26,16 @@ for conformance, behavior, and constructiveness. Every grader must pass.
 The workflow preserves the eval specs and installs Vally from the trusted base
 branch before it checks out the PR head. This lets it evaluate PR changes to the
 workflow prompts without allowing the PR to weaken its graders or toolchain.
-Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
-`repos`, and `issues` toolsets. The `GITHUB_TOKEN` that the eval job
-supplies to that server has only the job's read permissions. The scanner eval
+Each eval attaches a read-only GitHub MCP server with the toolsets its scenario
+needs. The `GITHUB_TOKEN` that the eval job supplies to that server has only the
+job's read permissions. The scanner eval omits the built-in `search` toolset and
 invokes a CLI harness for the workflow's `search-kbe-issues` MCP-script tool
 through Node because the eval runner does not launch workflow frontmatter MCP
 servers. It uses the `github` MCP server's `issue_read` tool for candidate
-inspection.
+inspection. A trusted static grader correlates every candidate returned by the
+harness with a successful, unfiltered `issue_read`. Focused Node tests keep the
+workflow-frontmatter and CLI wrapper behavior in sync and exercise the grader's
+candidate correlation.
 
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually

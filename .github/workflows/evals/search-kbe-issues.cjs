@@ -24,7 +24,7 @@ async function searchKbeIssues(query, token, fetchImpl = fetch) {
     }
 
     const result = await response.json();
-    if (!Array.isArray(result.items)) {
+    if (result.incomplete_results !== false || !Array.isArray(result.items)) {
         throw new Error("GitHub issue search returned an invalid response");
     }
 

@@ -117,15 +117,13 @@ stimuli:
             - name: '^(bash|powershell)$'
               command: '\.github/workflows/evals/search-kbe-issues\.cjs'
               min_count: 2
-            - name: 'issue_read'
-              args:
-                owner: '^dotnet$'
-                repo: '^runtime$'
-                method: '^get$'
           disallowed:
             - name: '^(bash|powershell)$'
               command: '(gh (search|issue)|api\.github\.com/search/issues)'
             - name: 'search_issues'
+
+      - type: kbe-candidate-reads
+        name: read-every-search-candidate
 
       - type: prompt
         name: kbe-format-conformant

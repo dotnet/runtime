@@ -122,10 +122,10 @@ likely existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-If a full read fails or returns a `[Filtered]` marker for a variation 5
-candidate, record
-`linked-tracker: integrity-filtered, needs human review` for cross-linking, but
-do not treat it as a KBE substitute.
+If a full read fails or returns a `[Filtered]` marker for any plain tracker
+candidate, stop the search and record
+`skipped: integrity-filtered tracker candidate, needs human review`. Do not
+continue to issue creation.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
