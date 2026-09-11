@@ -69,6 +69,36 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public void Decode_TooManySidSubAuthorities_ReturnsNull()
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            byte[] sid = Convert.FromHexString("04000000010400000000000515000000");
+            int sidOffset = logonInfo.AsSpan().IndexOf(sid);
+            Assert.True(sidOffset >= 0);
+
+            logonInfo[sidOffset] = 16;
+            logonInfo[sidOffset + 5] = 16;
+
+            Assert.Null(KerberosPacLogonInfo.Decode(logonInfo));
+        }
+
+        [Fact]
+        public void Decode_LargeIdentifierAuthority_FormatsAsDecimal()
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            byte[] sid = Convert.FromHexString("04000000010400000000000515000000");
+            int sidOffset = logonInfo.AsSpan().IndexOf(sid);
+            Assert.True(sidOffset >= 0);
+
+            Convert.FromHexString("010203040506").CopyTo(logonInfo, sidOffset + 6);
+
+            KerberosPacLogonInfo? result = KerberosPacLogonInfo.Decode(logonInfo);
+
+            Assert.NotNull(result);
+            Assert.Equal("S-1-1108152157446-21-2127521184-1604012920-1887927527-1104", result.UserSid);
+        }
+
+        [Fact]
         public void Decode_TruncatedLogonInfo_DoesNotThrow()
         {
             byte[] logonInfo = Convert.FromHexString(LogonInfoHex);

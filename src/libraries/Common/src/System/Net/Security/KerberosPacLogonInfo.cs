@@ -29,6 +29,7 @@ namespace System.Net.Security
         // is far above what Active Directory can issue, since the resulting ticket would exceed
         // the maximum Kerberos token size long before this limit is reached.
         private const int MaxGroupCount = 8192;
+        private const byte MaxSidSubAuthorityCount = 15;
         private const uint GroupEnabled = 0x00000004;
         private const uint GroupUseForDenyOnly = 0x00000010;
         private const uint GroupLogonId = 0xC0000000;
@@ -346,6 +347,7 @@ namespace System.Net.Security
                 !reader.TryReadByte(out byte subAuthorityCount) ||
                 !reader.TryReadBytes(6, out ReadOnlySpan<byte> identifierAuthority) ||
                 revision != 1 ||
+                subAuthorityCount > MaxSidSubAuthorityCount ||
                 maxCount != subAuthorityCount)
             {
                 return false;
@@ -358,18 +360,8 @@ namespace System.Net.Security
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append("S-").Append(revision).Append('-');
-
-            // Authorities that do not fit in 32 bits are written in hexadecimal, matching the
-            // SDDL string format produced by Windows.
-            if (authority <= uint.MaxValue)
-            {
-                builder.Append(authority.ToString(CultureInfo.InvariantCulture));
-            }
-            else
-            {
-                builder.Append("0x").Append(authority.ToString("x12", CultureInfo.InvariantCulture));
-            }
+            builder.Append("S-").Append(revision).Append('-')
+                .Append(authority.ToString(CultureInfo.InvariantCulture));
 
             for (int i = 0; i < subAuthorityCount; i++)
             {
