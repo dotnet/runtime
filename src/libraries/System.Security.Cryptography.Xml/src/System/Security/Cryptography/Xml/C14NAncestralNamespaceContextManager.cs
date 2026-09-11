@@ -34,9 +34,9 @@ namespace System.Security.Cryptography.Xml
                 {
                     nsLocallyDeclared.Remove(nsPrefix);
                     if (Utils.IsXmlNamespaceNode(local))
-                        attrListToRender.Add(local, null);
+                        Utils.AddToRenderList(attrListToRender, local);
                     else
-                        nsListToRender.Add(local, null);
+                        Utils.AddToRenderList(nsListToRender, local);
                 }
             }
             else
@@ -46,9 +46,9 @@ namespace System.Security.Cryptography.Xml
                 if (uAncestral != null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
                 {
                     if (Utils.IsXmlNamespaceNode(uAncestral))
-                        attrListToRender.Add(uAncestral, null);
+                        Utils.AddToRenderList(attrListToRender, uAncestral);
                     else
-                        nsListToRender.Add(uAncestral, null);
+                        Utils.AddToRenderList(nsListToRender, uAncestral);
                 }
             }
         }
@@ -67,9 +67,9 @@ namespace System.Security.Cryptography.Xml
                 {
                     nsLocallyDeclared.Remove(Utils.GetNamespacePrefix(attrib));
                     if (Utils.IsXmlNamespaceNode(attrib))
-                        attrListToRender.Add(attrib, null);
+                        Utils.AddToRenderList(attrListToRender, attrib);
                     else
-                        nsListToRender.Add(attrib, null);
+                        Utils.AddToRenderList(nsListToRender, attrib);
                 }
             }
 
