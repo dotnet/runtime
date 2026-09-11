@@ -63,10 +63,10 @@ namespace System.Runtime
     internal unsafe struct ValueClassInfo
     {
         private ValueClassInfo* _next;
-        private void* _methodTable;
+        private MethodTable* _methodTable;
         private void* _data;
 
-        public ValueClassInfo(void* data, void* methodTable, ValueClassInfo* next)
+        public ValueClassInfo(void* data, MethodTable* methodTable, ValueClassInfo* next)
         {
             _next = next;
             _methodTable = methodTable;
