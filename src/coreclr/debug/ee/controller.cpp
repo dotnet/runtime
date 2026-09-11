@@ -7758,8 +7758,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                     }
                     else
                     {
-                        // We're hitting this code path with MC++ assemblies
-                        // that have an unmanaged entry point so the stub returns to CallDescrWorker.
+                        // An interop stub can return to unmanaged code.
                         _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(patch->address))->IsInteropStub());
                     }
 
