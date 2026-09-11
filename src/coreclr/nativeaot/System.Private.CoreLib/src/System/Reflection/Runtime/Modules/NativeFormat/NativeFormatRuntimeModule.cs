@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.Assemblies.NativeFormat;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
@@ -23,14 +22,9 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
 
         public sealed override Assembly Assembly => _assembly;
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                QScopeDefinition scope = _assembly.Scope;
-                return RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.ModuleCustomAttributes);
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => _assembly.Scope.Reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _assembly.Scope.ScopeDefinition.ModuleCustomAttributes;
 
         public sealed override int MetadataToken
         {
