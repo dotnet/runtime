@@ -45,6 +45,7 @@ private:
     {
         CORINFO_CLASS_HANDLE m_cls;               // Valid, but not always available, for TYP_REFs.
         methodPointerInfo*   m_methodPointerInfo; // Valid only for function pointers.
+        mdToken              m_fieldToken;        // Valid only for TYP_BYREFs from fields.
     };
 
 public:
@@ -72,6 +73,12 @@ public:
     {
         assert(methodPointerInfo != nullptr);
         assert(methodPointerInfo->m_token.hMethod != nullptr);
+    }
+
+    typeInfo(mdToken fieldToken)
+        : m_type(TYP_BYREF)
+        , m_fieldToken(fieldToken)
+    {
     }
 
 public:
@@ -107,6 +114,17 @@ public:
     bool IsMethod() const
     {
         return IsType(TYP_I_IMPL) && (m_methodPointerInfo != nullptr);
+    }
+
+    bool HasFieldToken() const
+    {
+        return IsType(TYP_BYREF) && (m_fieldToken != 0);
+    }
+
+    mdToken GetFieldToken() const
+    {
+        assert(HasFieldToken());
+        return m_fieldToken;
     }
 };
 #endif // _TYPEINFO_H_

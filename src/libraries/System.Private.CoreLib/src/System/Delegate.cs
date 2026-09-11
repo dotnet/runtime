@@ -210,5 +210,13 @@ namespace System
 
             return !ReferenceEquals(d2, d1) && !d2.Equals(d1);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The trimmer will never remove the Invoke method from delegates.")]
+        internal static MethodInfo GetInvokeMethod(RuntimeType delegateType)
+        {
+            Debug.Assert(delegateType.IsAssignableTo(typeof(Delegate)));
+            return delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
+        }
     }
 }

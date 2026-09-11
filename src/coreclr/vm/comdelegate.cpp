@@ -772,6 +772,9 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
+static MapSHash<MethodTable*, Object*> s_frozenTargetMap;
+static CrstStatic s_targetCrst;
+
 // One time init.
 void COMDelegate::Init()
 {
@@ -785,6 +788,8 @@ void COMDelegate::Init()
 #if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator());
 #endif
+
+    s_targetCrst.Init(CrstFrozenDelegateTarget);
 }
 
 static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
@@ -1071,7 +1076,7 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, Me
                                                         method->GetMethodInstantiation(),
                                                         false /* do not allow code with a shared-code calling convention to be returned */,
                                                         true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
-                                                        
+
     if (COMDelegate::IsMethodDescCompatible(TypeHandle(pTargetMT),
                                             TypeHandle(pMethMT),
                                             method,
@@ -1505,7 +1510,7 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
     PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
 
     GCX_COOP();
-    
+
     DELEGATEREF refThis = (DELEGATEREF)d.Get();
     refThis->SetMethodPtrAux(target);
     refThis->SetExtraData((INT_PTR)(void*)pMeth);
@@ -1694,6 +1699,148 @@ extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTab
     }
 
     pBindToMethodDetails->extraData = (INT_PTR)pMeth;
+
+    END_QCALL;
+}
+
+static bool PrepareSharedInstance(MethodTable* delegateMt, MethodTable* targetMt, QCall::ObjectHandleOnStack objHandle, QCall::ObjectHandleOnStack targetHandle)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // we create delegates without a target here unless needed
+    if (targetMt != NULL)
+    {
+        if (targetMt->HasFinalizer() || targetMt->HasClassConstructor())
+        {
+            return false;
+        }
+
+        Object* target = NULL;
+        if (!IsDynamicScope(GetScopeHandle(targetMt->GetModule())))
+        {
+            // we need to lock to access the global map
+            CrstHolder crst(&s_targetCrst);
+
+            if (!s_frozenTargetMap.Lookup(targetMt, &target))
+            {
+                target = OBJECTREFToObject(TryAllocateFrozenObject(targetMt));
+                if (target != NULL)
+                {
+                    s_frozenTargetMap.Add(targetMt, target);
+                }
+            }
+        }
+
+        // we should mostly get to the non FOH case here with collectible types
+        // TODO: pool non FOH targets too
+        targetHandle.Set(target != NULL ? ObjectToOBJECTREF(target) : AllocateObject(targetMt));
+
+        assert(targetHandle.Get() != NULL);
+    }
+
+    objHandle.Set(AllocateObject(delegateMt));
+
+    return true;
+}
+
+static void FillSharedInstance(QCall::ObjectHandleOnStack objHandle, QCall::ObjectHandleOnStack targetHandle, BindToMethodDetails* details)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    DELEGATEREF del = (DELEGATEREF)objHandle.Get();
+
+    del->SetMethodPtr(details->methodPtr);
+    del->SetMethodPtrAux(details->methodPtrAux);
+    del->SetExtraData(details->extraData);
+
+    if (details->loaderAllocatorGCHandle)
+    {
+        del->SetHelperObject(ObjectFromHandle(details->loaderAllocatorGCHandle));
+    }
+
+    del->SetTarget(details->selfReferentialTarget != 0 ? del : targetHandle.Get());
+}
+
+void COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* delegateMt, MethodTable* targetMt, QCall::ObjectHandleOnStack objHandle, QCall::ObjectHandleOnStack targetHandle)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    assert(pTargetMD != NULL);
+    assert(delegateMt != NULL);
+
+    // this should only be reachable from the JIT
+    assert(!TypeHandle(delegateMt).IsCanonicalSubtype());
+    assert(delegateMt->IsDelegate());
+
+    assert(targetMt == NULL || !TypeHandle(targetMt).IsCanonicalSubtype());
+
+    MethodDesc* pDelegateInvoke = FindDelegateInvokeMethod(delegateMt);
+
+    UINT invokeCount = MethodDescToNumFixedArgs(pDelegateInvoke);
+    UINT methodCount = MethodDescToNumFixedArgs(pTargetMD);
+    bool isStatic = pTargetMD->IsStatic();
+    if (!isStatic)
+    {
+        methodCount++; // count 'this'
+    }
+
+    bool isOpen = invokeCount == methodCount;
+    // reject invalid closed delegates
+    if (!isOpen && isStatic)
+    {
+        MetaSig sig(pTargetMD);
+        if (sig.NextArgNormalized() == ELEMENT_TYPE_END || sig.GetLastTypeHandleThrowing().IsValueType())
+        {
+            return;
+        }
+    }
+
+    {
+        GCX_COOP();
+        if (!PrepareSharedInstance(delegateMt, targetMt, objHandle, targetHandle))
+        {
+            return;
+        }
+    }
+
+    BindToMethodDetails details = {};
+    MethodTable* declaringType = targetMt == nullptr ? pTargetMD->GetMethodTable() : targetMt;
+    BindToMethod(delegateMt, targetMt, pTargetMD, declaringType, isOpen, targetHandle, &details);
+
+    {
+        GCX_COOP();
+        FillSharedInstance(objHandle, targetHandle, &details);
+    }
+}
+
+extern "C" void QCALLTYPE Delegate_CreateDelegate(MethodTable* pDelegateMt, MethodTable* pTargetMt, PCODE method, QCall::ObjectHandleOnStack objHandle, QCall::ObjectHandleOnStack targetHandle, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(method != (PCODE)NULL);
+    _ASSERTE(pDelegateMt != (PCODE)NULL);
+    BEGIN_QCALL;
+
+    MethodDesc* methodDesc = NonVirtualEntry2MethodDesc(method);
+    COMDelegate::CreateShared(methodDesc, pDelegateMt, pTargetMt, objHandle, targetHandle);
 
     END_QCALL;
 }
