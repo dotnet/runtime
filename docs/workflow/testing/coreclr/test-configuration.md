@@ -69,6 +69,29 @@ This means there must be enough implementation for the C# compiler to find the r
 should simply `throw new PlatformNotSupportedException()` in its dummy method implementations.
 * Add an `[ActiveIssue]` attribute if the test fails due to active bug.
 
+### Adding a simple JIT regression test
+
+Add tests that use optimized compilation without debug information directly to
+`src/tests/JIT/Regression_ro_2/Runtime_<issue_number>.cs`. The
+`Regression_ro_2/Regression_ro_2.csproj` runner recursively includes all `.cs` files in its
+directory, so adding a test requires neither a
+project-file edit nor a directory for a single source file. Related files can be
+grouped in a subdirectory.
+Other source-compiling regression runners use the same convention for their
+grouped sources, retaining their existing partitions and compilation settings.
+Sources shared by multiple runners live in one runner's directory and are
+explicitly included by the others.
+
+Source-glob directories contain sources compiled directly into their respective
+runners. Tests requiring different compilation settings, separate assemblies,
+native dependencies, or process isolation should instead have their own project
+under `src/tests/JIT/Regression_2/Runtime_<issue_number>/`.
+`Regression_2.csproj` discovers these projects recursively rather than compiling
+their sources directly. `Regression_3.csproj` similarly owns the existing
+project-backed `GitHub_*`, `DevDiv_*`, and other tests under `src/tests/JIT/Regression_3/`.
+Keep each project's sources and supporting files together, and do not place them
+in a source-glob runner's directory.
+
 ### Creating a C# test project
 
 1. Use an existing test such as `<repo_root>\tests\src\Exceptions\Finalization\Finalizer.csproj` as a template and copy it to a new folder under `<repo_root>\tests\src`.
