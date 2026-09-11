@@ -1692,7 +1692,9 @@ namespace System.Text.Json.SourceGeneration
 
                 GetLogicForDefaultSerializerOptionsInit(contextSpec.GeneratedOptionsSpec, writer);
 
+                writer.WriteLine("");
                 writer.WriteLine(UnsafeAccessorEmitter.InstanceMemberBindingFlagsDeclaration);
+                writer.WriteLine("");
 
                 if (emitValueTypeSetterDelegate)
                 {

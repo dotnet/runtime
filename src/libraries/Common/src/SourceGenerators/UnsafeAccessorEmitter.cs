@@ -33,12 +33,10 @@ namespace SourceGenerators
         /// must write this once into the scope containing the emitted accessors.
         /// </summary>
         public const string InstanceMemberBindingFlagsDeclaration = """
-
             private const global::System.Reflection.BindingFlags InstanceMemberBindingFlags =
                 global::System.Reflection.BindingFlags.Instance |
                 global::System.Reflection.BindingFlags.Public |
                 global::System.Reflection.BindingFlags.NonPublic;
-
             """;
 
         /// <summary>
