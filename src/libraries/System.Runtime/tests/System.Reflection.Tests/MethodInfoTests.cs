@@ -3,8 +3,11 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -20,6 +23,787 @@ namespace System.Reflection.Tests
         }
 
         protected override bool SupportsMissing => false;
+
+        public static IEnumerable<object[]> Invoke_ReturnValueAcrossTiers_TestData()
+        {
+            yield return new object[] { typeof(bool), true };
+            yield return new object[] { typeof(byte), (byte)42 };
+            yield return new object[] { typeof(sbyte), (sbyte)-42 };
+            yield return new object[] { typeof(char), 'x' };
+            yield return new object[] { typeof(short), (short)-1234 };
+            yield return new object[] { typeof(ushort), (ushort)1234 };
+            yield return new object[] { typeof(int), -12345 };
+            yield return new object[] { typeof(uint), 12345u };
+            yield return new object[] { typeof(long), -1234567890123L };
+            yield return new object[] { typeof(ulong), 1234567890123UL };
+            yield return new object[] { typeof(float), 12.5f };
+            yield return new object[] { typeof(double), -25.5 };
+            yield return new object[] { typeof(nint), (nint)12345 };
+            yield return new object[] { typeof(nuint), (nuint)54321 };
+            yield return new object[] { typeof(string), "returned value" };
+            yield return new object[] { typeof(object), new object() };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [MemberData(nameof(Invoke_ReturnValueAcrossTiers_TestData))]
+        public void Invoke_ReturnValueAcrossTiers(Type returnType, object expected)
+        {
+            Type target = typeof(ReturnValueTarget<>).MakeGenericType(returnType);
+            target.GetField(nameof(ReturnValueTarget<int>.Value)).SetValue(null, expected);
+            MethodInfo method = target.GetMethod(nameof(ReturnValueTarget<int>.GetValue));
+            MethodInvoker invoker = MethodInvoker.Create(method);
+
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            {
+                Assert.Equal(expected, method.Invoke(null, null));
+                Assert.Equal(expected, invoker.Invoke(null));
+            }
+        }
+
+        public static class ReturnValueTarget<T>
+        {
+            public static T Value;
+
+            public static T GetValue() => Value;
+        }
+
+        public static IEnumerable<object[]> Invoke_InstanceReferenceVoid_SharedThunk_TestData()
+        {
+            yield return new object[] { nameof(IntrinsicInvokeReferenceTarget.Void0), Array.Empty<object?>(), -1 };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Void1),
+                new object?[] { new IntrinsicInvokeReference(1) },
+                0
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Void2),
+                new object?[] { new object[] { "array" }, (Action)(() => { }) },
+                1
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Void3),
+                new object?[] { Task.FromResult("task"), new IntrinsicInvokeReference(3), new string[] { "array" } },
+                2
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Void4),
+                new object?[] { new object(), new IntrinsicInvokeReference(4), (Action)(() => { }), Task.FromResult(4) },
+                3
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_InstanceReferenceVoid_SharedThunk_TestData))]
+        public void Invoke_InstanceReferenceVoid_SharedThunk(string methodName, object?[] arguments, int retainedArgument)
+        {
+            var target = new IntrinsicInvokeReferenceTarget();
+            MethodInfo method = typeof(IntrinsicInvokeReferenceTarget).GetMethod(methodName)!;
+
+            Assert.Null(method.Invoke(target, arguments));
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.Equal(1, target.CallCount);
+            Assert.Same(retainedArgument < 0 ? target.Sentinel : arguments[retainedArgument], target.LastValue);
+        }
+
+        public static IEnumerable<object[]> Invoke_InstanceReferenceReturn_SharedThunk_TestData()
+        {
+            yield return new object[] { nameof(IntrinsicInvokeReferenceTarget.Return0), Array.Empty<object?>(), -1 };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Return1),
+                new object?[] { new IntrinsicInvokeReference(1) },
+                0
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Return2),
+                new object?[] { new object[] { "array" }, (Action)(() => { }) },
+                0
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Return3),
+                new object?[] { Task.FromResult("task"), (Func<string>)(() => "delegate"), new IntrinsicInvokeReference(3) },
+                1
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeReferenceTarget.Return4),
+                new object?[] { Task.FromResult("task"), new object[] { "array" }, new IntrinsicInvokeReference(4), (Action)(() => { }) },
+                0
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_InstanceReferenceReturn_SharedThunk_TestData))]
+        public void Invoke_InstanceReferenceReturn_SharedThunk(string methodName, object?[] arguments, int returnedArgument)
+        {
+            var target = new IntrinsicInvokeReferenceTarget();
+            MethodInfo method = typeof(IntrinsicInvokeReferenceTarget).GetMethod(methodName)!;
+
+            object? result = method.Invoke(target, arguments);
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.Same(returnedArgument < 0 ? target.Sentinel : arguments[returnedArgument], result);
+        }
+
+        public static IEnumerable<object[]> Invoke_PrimitiveValues_TestData() =>
+            IntrinsicInvokeTestData.PrimitiveValues();
+
+        [Theory]
+        [MemberData(nameof(Invoke_PrimitiveValues_TestData))]
+        public void Invoke_InstancePrimitiveReturn_SharedThunk(Type returnType, object expected)
+        {
+            Type targetType = typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(returnType);
+            object target = Activator.CreateInstance(targetType)!;
+            targetType.GetProperty(nameof(IntrinsicInvokePrimitiveReturnTarget<int>.Value))!.SetValue(target, expected);
+            MethodInfo method = targetType.GetMethod(nameof(IntrinsicInvokePrimitiveReturnTarget<int>.GetValue))!;
+
+            object? result = method.Invoke(target, null);
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.NotNull(result);
+            Assert.Equal(returnType, result.GetType());
+            Assert.Equal(expected, result);
+        }
+
+        public static IEnumerable<object[]> Invoke_PrimitiveAndEnumValues_TestData()
+        {
+            foreach (object[] data in IntrinsicInvokeTestData.PrimitiveValues())
+            {
+                yield return data;
+            }
+
+            foreach (object[] data in IntrinsicInvokeTestData.EnumValues())
+            {
+                yield return data;
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_PrimitiveAndEnumValues_TestData))]
+        public void Invoke_InstancePrimitiveArgument_SharedThunk(Type argumentType, object value)
+        {
+            Type targetType = typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(argumentType);
+            object target = Activator.CreateInstance(targetType)!;
+            MethodInfo method = targetType.GetMethod(nameof(IntrinsicInvokePrimitiveArgumentTarget<int>.SetValue))!;
+
+            Assert.Null(method.Invoke(target, new object?[] { value }));
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            object? actual = targetType.GetField(nameof(IntrinsicInvokePrimitiveArgumentTarget<int>.Value))!.GetValue(target);
+            Assert.NotNull(actual);
+            Assert.Equal(value.GetType(), actual.GetType());
+            Assert.Equal(value, actual);
+        }
+
+        [Fact]
+        public void Invoke_InstanceTwoReferencesReturningInt_SharedThunk()
+        {
+            var target = new IntrinsicInvokeInstancePatternTarget();
+            var reference = new IntrinsicInvokeReference(40);
+            object[] array = { "first", "second" };
+            MethodInfo method = typeof(IntrinsicInvokeInstancePatternTarget).GetMethod(
+                nameof(IntrinsicInvokeInstancePatternTarget.Sum))!;
+
+            Assert.Equal(42, method.Invoke(target, new object?[] { reference, array }));
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+        }
+
+        [Fact]
+        public void Invoke_InstanceFloatFloatFloatInt_SharedThunk()
+        {
+            var target = new IntrinsicInvokeInstancePatternTarget();
+            MethodInfo method = typeof(IntrinsicInvokeInstancePatternTarget).GetMethod(
+                nameof(IntrinsicInvokeInstancePatternTarget.SetVector))!;
+
+            Assert.Null(method.Invoke(target, new object?[] { 1.25f, 2.5f, 3.75f, 4 }));
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.Equal(1.25f, target.X);
+            Assert.Equal(2.5f, target.Y);
+            Assert.Equal(3.75f, target.Z);
+            Assert.Equal(4, target.W);
+        }
+
+        public static IEnumerable<object[]> Invoke_StaticIntReturningReference_SharedThunk_TestData()
+        {
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeStaticIntReturnTarget),
+                nameof(IntrinsicInvokeStaticIntReturnTarget.ReturnString),
+                "42"
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeGenericStaticIntReturnTarget<int>),
+                nameof(IntrinsicInvokeGenericStaticIntReturnTarget<int>.ReturnComparable),
+                42
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeStaticIntReturnTarget),
+                nameof(IntrinsicInvokeStaticIntReturnTarget.ReturnGeneric),
+                typeof(int)
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_StaticIntReturningReference_SharedThunk_TestData))]
+        public void Invoke_StaticIntReturningReference_SharedThunk(Type declaringType, string methodName, object expected)
+        {
+            MethodInfo method = declaringType.GetMethod(methodName)!;
+            if (method.IsGenericMethodDefinition)
+            {
+                method = method.MakeGenericMethod(typeof(int));
+            }
+
+            object? result = method.Invoke(null, new object?[] { 42 });
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.Equal(expected, result);
+        }
+
+        public static IEnumerable<object[]> Invoke_StaticReferenceOutReference_SharedThunk_TestData()
+        {
+            var falseInput = new IntrinsicInvokeReference(1);
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeByRefTarget.ReturnFalse),
+                new object?[] { falseInput, null },
+                false,
+                falseInput
+            };
+
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeByRefTarget.ReturnNull),
+                new object?[] { new object[] { "input" }, (Action)(() => { }) },
+                true,
+                null
+            };
+
+            Task<string> trueInput = Task.FromResult("input");
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeByRefTarget.ReturnTrue),
+                new object?[] { trueInput, null },
+                true,
+                trueInput
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_StaticReferenceOutReference_SharedThunk_TestData))]
+        public void Invoke_StaticReferenceOutReference_SharedThunk(
+            string methodName,
+            object?[] arguments,
+            bool expectedResult,
+            object? expectedOutput)
+        {
+            MethodInfo method = typeof(IntrinsicInvokeByRefTarget).GetMethod(methodName)!;
+
+            Assert.Equal(expectedResult, method.Invoke(null, arguments));
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.Same(expectedOutput, arguments[1]);
+        }
+
+        [Fact]
+        public void Invoke_StaticReferenceOutReference_DoesNotCopyBackAfterException()
+        {
+            MethodInfo method = typeof(IntrinsicInvokeByRefTarget).GetMethod(nameof(IntrinsicInvokeByRefTarget.ThrowAfterWrite))!;
+            var input = new IntrinsicInvokeReference(42);
+            var originalOutput = new IntrinsicInvokeReference(-1);
+            object?[] arguments = { input, originalOutput };
+
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, arguments));
+
+            Assert.IsType<InvalidOperationException>(exception.InnerException);
+            Assert.Same(originalOutput, arguments[1]);
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+        }
+
+        public static IEnumerable<object[]> Invoke_StaticReferenceReturn_SharedThunk_TestData()
+        {
+            var reference2 = new IntrinsicInvokeReference(2);
+            object[] array2 = { "two" };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeStaticReferenceTarget.Return2),
+                new object?[] { reference2, array2 },
+                1
+            };
+
+            Task<string> task3 = Task.FromResult("three");
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeStaticReferenceTarget.Return3),
+                new object?[] { task3, (Action)(() => { }), new IntrinsicInvokeReference(3) },
+                0
+            };
+
+            Action callback4 = () => { };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeStaticReferenceTarget.Return4),
+                new object?[] { callback4, new object[] { "four" }, new IntrinsicInvokeReference(4), Task.FromResult(4) },
+                0
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_StaticReferenceReturn_SharedThunk_TestData))]
+        public void Invoke_StaticReferenceReturn_SharedThunk(string methodName, object?[] arguments, int returnedArgument)
+        {
+            MethodInfo method = typeof(IntrinsicInvokeStaticReferenceTarget).GetMethod(methodName)!;
+
+            object? result = method.Invoke(null, arguments);
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.Same(arguments[returnedArgument], result);
+        }
+
+        public static IEnumerable<object[]> Invoke_StaticReferenceVoid_SharedThunk_TestData()
+        {
+            var tracker3 = new IntrinsicInvokeActionTracker();
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeStaticReferenceTarget.Void3),
+                new object?[] { Task.FromResult("three"), tracker3.Callback, new IntrinsicInvokeReference(3) },
+                tracker3
+            };
+
+            var tracker4 = new IntrinsicInvokeActionTracker();
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeStaticReferenceTarget.Void4),
+                new object?[] { new object[] { "four" }, new IntrinsicInvokeReference(4), tracker4.Callback, Task.FromResult(4) },
+                tracker4
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_StaticReferenceVoid_SharedThunk_TestData))]
+        public void Invoke_StaticReferenceVoid_SharedThunk(
+            string methodName,
+            object?[] arguments,
+            object trackerObject)
+        {
+            var tracker = (IntrinsicInvokeActionTracker)trackerObject;
+            MethodInfo method = typeof(IntrinsicInvokeStaticReferenceTarget).GetMethod(methodName)!;
+
+            Assert.Null(method.Invoke(null, arguments));
+
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+            Assert.Equal(1, tracker.CallCount);
+        }
+
+        public static IEnumerable<object[]> Invoke_VirtualDispatch_SharedThunk_TestData()
+        {
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeVirtualDispatchBase),
+                nameof(IntrinsicInvokeVirtualDispatchBase.Dispatch),
+                new object[]
+                {
+                    new IntrinsicInvokeVirtualDispatchA(),
+                    new IntrinsicInvokeVirtualDispatchB(),
+                    new IntrinsicInvokeVirtualDispatchA(),
+                    new IntrinsicInvokeVirtualDispatchB()
+                },
+                new string[] { "virtual-a", "virtual-b", "virtual-a", "virtual-b" }
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeAbstractDispatchBase),
+                nameof(IntrinsicInvokeAbstractDispatchBase.Dispatch),
+                new object[]
+                {
+                    new IntrinsicInvokeAbstractDispatchA(),
+                    new IntrinsicInvokeAbstractDispatchB(),
+                    new IntrinsicInvokeAbstractDispatchA(),
+                    new IntrinsicInvokeAbstractDispatchB()
+                },
+                new string[] { "abstract-a", "abstract-b", "abstract-a", "abstract-b" }
+            };
+            yield return new object[]
+            {
+                typeof(IIntrinsicInvokeInterfaceDispatch),
+                nameof(IIntrinsicInvokeInterfaceDispatch.Dispatch),
+                new object[]
+                {
+                    new IntrinsicInvokeInterfaceDispatchA(),
+                    new IntrinsicInvokeInterfaceDispatchB(),
+                    new IntrinsicInvokeInterfaceDispatchA(),
+                    new IntrinsicInvokeInterfaceDispatchB()
+                },
+                new string[] { "interface-a", "interface-b", "interface-a", "interface-b" }
+            };
+            yield return new object[]
+            {
+                typeof(IIntrinsicInvokeDefaultInterfaceDispatch),
+                nameof(IIntrinsicInvokeDefaultInterfaceDispatch.Dispatch),
+                new object[]
+                {
+                    new IntrinsicInvokeDefaultInterfaceDispatch(),
+                    new IntrinsicInvokeDefaultInterfaceOverride(),
+                    new IntrinsicInvokeDefaultInterfaceDispatch(),
+                    new IntrinsicInvokeDefaultInterfaceOverride()
+                },
+                new string[] { "default", "override", "default", "override" }
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeGenericVirtualDispatch),
+                nameof(IntrinsicInvokeGenericVirtualDispatch.Dispatch),
+                new object[] { new IntrinsicInvokeGenericVirtualA(), new IntrinsicInvokeGenericVirtualB() },
+                new string[] { "Int32-generic-a", "Int32-generic-b" }
+            };
+            yield return new object[]
+            {
+                typeof(IIntrinsicInvokeGenericInterfaceDispatch),
+                nameof(IIntrinsicInvokeGenericInterfaceDispatch.Dispatch),
+                new object[] { new IntrinsicInvokeGenericInterfaceA(), new IntrinsicInvokeGenericInterfaceB() },
+                new string[] { "Int32-interface-a", "Int32-interface-b" }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_VirtualDispatch_SharedThunk_TestData))]
+        public void Invoke_VirtualDispatch_SharedThunk(
+            Type declaringType,
+            string methodName,
+            object[] receivers,
+            string[] expected)
+        {
+            MethodInfo method = declaringType.GetMethod(methodName)!;
+            if (method.IsGenericMethodDefinition)
+            {
+                method = method.MakeGenericMethod(typeof(int));
+            }
+            object argument = new object();
+
+            for (int i = 0; i < receivers.Length; i++)
+            {
+                Assert.Equal(expected[i], method.Invoke(receivers[i], new object?[] { argument }));
+                if (i == 0)
+                {
+                    IntrinsicInvokeSelectionAssertions.AssertShared(method);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void DynamicInvoke_DelegateInvokeMethod_SharedThunk(int callbackKind)
+        {
+            var payload = new IntrinsicInvokeDelegatePayload();
+            Delegate callback;
+            string[] expectedLog;
+
+            switch (callbackKind)
+            {
+                case 0:
+                    callback = new IntrinsicInvokeStaticDynamicCallback(IntrinsicInvokeDelegateCallbacks.Static);
+                    expectedLog = new string[] { "static" };
+                    break;
+                case 1:
+                    var instanceTarget = new IntrinsicInvokeDelegateCallbacks("instance");
+                    callback = new IntrinsicInvokeInstanceDynamicCallback(instanceTarget.Instance);
+                    expectedLog = new string[] { "instance" };
+                    break;
+                case 2:
+                    var multicastTarget = new IntrinsicInvokeDelegateCallbacks("instance");
+                    IntrinsicInvokeMulticastDynamicCallback first = IntrinsicInvokeDelegateCallbacks.MulticastStatic;
+                    IntrinsicInvokeMulticastDynamicCallback second = multicastTarget.MulticastInstance;
+                    callback = first + second;
+                    expectedLog = new string[] { "static", "instance" };
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(callbackKind));
+            }
+
+            MethodInfo invokeMethod = callback.GetType().GetMethod(nameof(Action.Invoke))!;
+            object? result = callback.DynamicInvoke(new object?[] { payload });
+
+            Assert.Same(payload, result);
+            Assert.Equal(expectedLog, payload.Log.ToArray());
+            IntrinsicInvokeSelectionAssertions.AssertShared(invokeMethod);
+        }
+
+        public static IEnumerable<object[]> Invoke_ExcludedShapes_Fallback_TestData()
+        {
+            DateTime date = new DateTime(2026, 9, 10);
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.DateTimeArgument),
+                null,
+                new object?[] { date },
+                10,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.DateTimeResult),
+                null,
+                Array.Empty<object?>(),
+                date,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.NullableArgument),
+                null,
+                new object?[] { (int?)42 },
+                42,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.NullableResult),
+                null,
+                Array.Empty<object?>(),
+                43,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.ValueTaskArgument),
+                null,
+                new object?[] { new ValueTask<int>(44) },
+                44,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.ValueTaskResult),
+                null,
+                Array.Empty<object?>(),
+                new ValueTask<int>(45),
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.CancellationTokenArgument),
+                null,
+                new object?[] { new CancellationToken(canceled: true) },
+                true,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.CancellationTokenResult),
+                null,
+                Array.Empty<object?>(),
+                new CancellationToken(canceled: true),
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.ByRefValue),
+                null,
+                new object?[] { 46 },
+                true,
+                0,
+                47
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.TwoPrimitiveArguments),
+                null,
+                new object?[] { 1, 2 },
+                3,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeExcludedMethodTarget),
+                nameof(IntrinsicInvokeExcludedMethodTarget.FiveReferenceArguments),
+                null,
+                new object?[] { "one", "two", "three", "four", "five" },
+                "five",
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeInstancePatternTarget),
+                nameof(IntrinsicInvokeInstancePatternTarget.FiveReferenceArguments),
+                new IntrinsicInvokeInstancePatternTarget(),
+                new object?[] { "one", "two", "three", "four", "five" },
+                "five",
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IntrinsicInvokeStructReceiver),
+                nameof(IntrinsicInvokeStructReceiver.GetValue),
+                new IntrinsicInvokeStructReceiver(48),
+                Array.Empty<object?>(),
+                48,
+                -1,
+                null
+            };
+            yield return new object[]
+            {
+                typeof(IIntrinsicInvokeStructReceiver),
+                nameof(IIntrinsicInvokeStructReceiver.GetValue),
+                new IntrinsicInvokeStructReceiver(49),
+                Array.Empty<object?>(),
+                49,
+                -1,
+                null
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_ExcludedShapes_Fallback_TestData))]
+        public void Invoke_ExcludedShapes_Fallback(
+            Type declaringType,
+            string methodName,
+            object? target,
+            object?[] arguments,
+            object expectedResult,
+            int copyBackIndex,
+            object? expectedCopyBack)
+        {
+            MethodInfo method = declaringType.GetMethod(methodName)!;
+
+            object? result = method.Invoke(target, arguments);
+
+            Assert.Equal(expectedResult, result);
+            if (copyBackIndex >= 0)
+            {
+                Assert.Equal(expectedCopyBack, arguments[copyBackIndex]);
+            }
+
+            IntrinsicInvokeSelectionAssertions.AssertFallback(method);
+        }
+
+        public static IEnumerable<object[]> Invoke_EnumResult_Fallback_TestData()
+        {
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeEnumResultTarget.InstanceResult),
+                new IntrinsicInvokeEnumResultTarget(),
+                IntrinsicInvokeInt32Enum.Value
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeEnumResultTarget.StaticResult),
+                null,
+                IntrinsicInvokeInt64Enum.Value
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(Invoke_EnumResult_Fallback_TestData))]
+        public void Invoke_EnumResult_FallbackPreservesDeclaredType(string methodName, object? target, object expected)
+        {
+            MethodInfo method = typeof(IntrinsicInvokeEnumResultTarget).GetMethod(methodName)!;
+
+            object? result = method.Invoke(target, null);
+
+            Assert.NotNull(result);
+            Assert.Equal(method.ReturnType, result.GetType());
+            Assert.Equal(expected, result);
+            IntrinsicInvokeSelectionAssertions.AssertFallback(method);
+        }
+
+        [Fact]
+        public void Invoke_SharedThunk_UsesNormalArgumentValidation()
+        {
+            var target = new IntrinsicInvokeArgumentValidationTarget();
+
+            MethodInfo referenceMethod = typeof(IntrinsicInvokeArgumentValidationTarget).GetMethod(
+                nameof(IntrinsicInvokeArgumentValidationTarget.Reference))!;
+            Assert.Null(referenceMethod.Invoke(target, new object?[] { new IntrinsicInvokeReference(1) }));
+            IntrinsicInvokeSelectionAssertions.AssertShared(referenceMethod);
+            Assert.Throws<ArgumentException>(() => referenceMethod.Invoke(target, new object?[] { new object() }));
+
+            MethodInfo primitiveMethod = typeof(IntrinsicInvokeArgumentValidationTarget).GetMethod(
+                nameof(IntrinsicInvokeArgumentValidationTarget.Primitive))!;
+            Assert.Null(primitiveMethod.Invoke(target, new object?[] { 1 }));
+            IntrinsicInvokeSelectionAssertions.AssertShared(primitiveMethod);
+            Assert.Throws<ArgumentException>(() => primitiveMethod.Invoke(target, new object?[] { 1L }));
+
+            MethodInfo enumMethod = typeof(IntrinsicInvokeArgumentValidationTarget).GetMethod(
+                nameof(IntrinsicInvokeArgumentValidationTarget.Enum))!;
+            Assert.Null(enumMethod.Invoke(target, new object?[] { IntrinsicInvokeInt32Enum.Value }));
+            IntrinsicInvokeSelectionAssertions.AssertShared(enumMethod);
+            Assert.Throws<ArgumentException>(() => enumMethod.Invoke(target, new object?[] { IntrinsicInvokeInt64Enum.Value }));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void Invoke_CollectibleMethodCanUnload(bool useMethodInvoker, bool referenceArgument)
+        {
+            WeakReference assembly = CreateAndInvokeCollectibleMethod(useMethodInvoker, referenceArgument);
+            for (int i = 0; i < 10 && assembly.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.False(assembly.IsAlive);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference CreateAndInvokeCollectibleMethod(bool useMethodInvoker, bool referenceArgument)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(nameof(CreateAndInvokeCollectibleMethod)), AssemblyBuilderAccess.RunAndCollect);
+            ModuleBuilder module = assembly.DefineDynamicModule("Module");
+            TypeBuilder typeBuilder = module.DefineType("Target", TypeAttributes.Public);
+            Type argumentType = referenceArgument ? typeof(object) : typeof(int);
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+                "Echo", MethodAttributes.Public | MethodAttributes.Static, argumentType, new[] { argumentType });
+            ILGenerator il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ret);
+            Type type = typeBuilder.CreateType();
+            MethodInfo method = type.GetMethod("Echo");
+            MethodInvoker? invoker = useMethodInvoker ? MethodInvoker.Create(method) : null;
+            object expected = referenceArgument ? new object() : 42;
+            object[] arguments = { expected };
+
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            {
+                Assert.Equal(expected, invoker is not null ? invoker.Invoke(null, expected) : method.Invoke(null, arguments));
+            }
+
+            return new WeakReference(type.Assembly);
+        }
 
         [Fact]
         public void CreateDelegate_PublicMethod()
@@ -790,6 +1574,775 @@ namespace System.Reflection.Tests
         private void DummyMethod2()
         {
         }
+    }
+
+    internal static class IntrinsicInvokeSelectionAssertions
+    {
+        internal const int SpecializationThreshold = 10_000;
+        private const string ForceEmitInvokeSwitch = "Switch.System.Reflection.ForceEmitInvoke";
+        private const string ForceInterpretedInvokeSwitch = "Switch.System.Reflection.ForceInterpretedInvoke";
+        private const string SharedThunkMethodName = "InvokeWithSharedThunk";
+        private const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        internal static void AssertShared(MethodBase method)
+        {
+            if (ShouldAssertSharedSelection)
+            {
+                AssertShared(GetCachedInvoker(method));
+            }
+        }
+
+        internal static void AssertShared(object invoker)
+        {
+            if (!ShouldAssertSharedSelection)
+            {
+                return;
+            }
+
+            Assert.Equal(SharedThunkMethodName, GetRefArgsDelegate(invoker).Method.Name);
+            Assert.NotEqual(IntPtr.Zero, GetInvokeStateField<IntPtr>(invoker, "Thunk"));
+        }
+
+        internal static void AssertFallback(MethodBase method)
+        {
+            if (!ShouldAssertSharedSelection)
+            {
+                return;
+            }
+
+            AssertFallback(GetCachedInvoker(method));
+        }
+
+        internal static void AssertFallback(object invoker)
+        {
+            if (!ShouldAssertSharedSelection)
+            {
+                return;
+            }
+
+            Assert.NotEqual(SharedThunkMethodName, GetRefArgsDelegate(invoker).Method.Name);
+            Assert.Equal(IntPtr.Zero, GetInvokeStateField<IntPtr>(invoker, "Thunk"));
+        }
+
+        internal static void AssertPromoted(object invoker)
+        {
+            if (!ShouldAssertSharedSelection)
+            {
+                return;
+            }
+
+            if (!ShouldAssertPromotion)
+            {
+                AssertNotPromoted(invoker, 0);
+                return;
+            }
+
+            Assert.Equal(SpecializationThreshold, GetInvokeStateField<int>(invoker, "InvocationCount"));
+            Assert.True(
+                GetRefArgsDelegate(invoker).Method.Name != SharedThunkMethodName ||
+                GetOptionalDelegate(invoker, "_invokeFunc_Obj4Args") is not null ||
+                GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs") is not null);
+        }
+
+        internal static void AssertNotPromoted(object invoker, int invocationCount)
+        {
+            if (!ShouldAssertSharedSelection)
+            {
+                return;
+            }
+
+            AssertShared(invoker);
+            Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_Obj4Args"));
+            Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs"));
+            Assert.Equal(ShouldAssertPromotion ? invocationCount : 0, GetInvokeStateField<int>(invoker, "InvocationCount"));
+        }
+
+        private static bool ShouldAssertSharedSelection =>
+            PlatformDetection.IsCoreCLR && (!IsForceEmitOnly || !RuntimeFeature.IsDynamicCodeCompiled);
+
+        private static bool ShouldAssertPromotion =>
+            ShouldAssertSharedSelection &&
+            RuntimeFeature.IsDynamicCodeCompiled &&
+            !IsForceInterpretedOnly;
+
+        private static bool IsForceEmitOnly =>
+            IsSwitchEnabled(ForceEmitInvokeSwitch) && !IsSwitchEnabled(ForceInterpretedInvokeSwitch);
+
+        private static bool IsForceInterpretedOnly =>
+            IsSwitchEnabled(ForceInterpretedInvokeSwitch) && !IsSwitchEnabled(ForceEmitInvokeSwitch);
+
+        private static bool IsSwitchEnabled(string name) =>
+            AppContext.TryGetSwitch(name, out bool enabled) && enabled;
+
+        private static object GetCachedInvoker(MethodBase method)
+        {
+            FieldInfo? field = method.GetType().GetField("m_invoker", InstanceFields);
+            Assert.NotNull(field);
+            object? invoker = field.GetValue(method);
+            Assert.NotNull(invoker);
+            return invoker;
+        }
+
+        private static Delegate GetRefArgsDelegate(object invoker)
+        {
+            FieldInfo? field = invoker.GetType().GetField("_invokeFunc_RefArgs", InstanceFields);
+            Assert.NotNull(field);
+            object? value = field.GetValue(invoker);
+            Assert.NotNull(value);
+            return Assert.IsAssignableFrom<Delegate>(value);
+        }
+
+        private static Delegate? GetOptionalDelegate(object invoker, string fieldName)
+        {
+            FieldInfo? field = invoker.GetType().GetField(fieldName, InstanceFields);
+            return field?.GetValue(invoker) as Delegate;
+        }
+
+        private static T GetInvokeStateField<T>(object invoker, string fieldName)
+        {
+            FieldInfo? invokeStateField = invoker.GetType().GetField("_invokeState", InstanceFields);
+            Assert.NotNull(invokeStateField);
+            object? invokeState = invokeStateField.GetValue(invoker);
+            Assert.NotNull(invokeState);
+            FieldInfo? valueField = invokeState.GetType().GetField(fieldName, InstanceFields);
+            Assert.NotNull(valueField);
+            object? value = valueField.GetValue(invokeState);
+            Assert.NotNull(value);
+            return (T)value;
+        }
+    }
+
+    internal static class IntrinsicInvokeTestData
+    {
+        internal static IEnumerable<object[]> PrimitiveValues()
+        {
+            yield return new object[] { typeof(bool), true };
+            yield return new object[] { typeof(byte), (byte)42 };
+            yield return new object[] { typeof(sbyte), (sbyte)-42 };
+            yield return new object[] { typeof(char), 'x' };
+            yield return new object[] { typeof(short), (short)-1234 };
+            yield return new object[] { typeof(ushort), (ushort)1234 };
+            yield return new object[] { typeof(int), -12345 };
+            yield return new object[] { typeof(uint), 12345u };
+            yield return new object[] { typeof(long), -1234567890123L };
+            yield return new object[] { typeof(ulong), 1234567890123UL };
+            yield return new object[] { typeof(float), 12.5f };
+            yield return new object[] { typeof(double), -25.5 };
+            yield return new object[] { typeof(nint), (nint)12345 };
+            yield return new object[] { typeof(nuint), (nuint)54321 };
+        }
+
+        internal static IEnumerable<object[]> EnumValues()
+        {
+            yield return new object[] { typeof(IntrinsicInvokeByteEnum), IntrinsicInvokeByteEnum.Value };
+            yield return new object[] { typeof(IntrinsicInvokeSByteEnum), IntrinsicInvokeSByteEnum.Value };
+            yield return new object[] { typeof(IntrinsicInvokeInt16Enum), IntrinsicInvokeInt16Enum.Value };
+            yield return new object[] { typeof(IntrinsicInvokeUInt16Enum), IntrinsicInvokeUInt16Enum.Value };
+            yield return new object[] { typeof(IntrinsicInvokeInt32Enum), IntrinsicInvokeInt32Enum.Value };
+            yield return new object[] { typeof(IntrinsicInvokeUInt32Enum), IntrinsicInvokeUInt32Enum.Value };
+            yield return new object[] { typeof(IntrinsicInvokeInt64Enum), IntrinsicInvokeInt64Enum.Value };
+            yield return new object[] { typeof(IntrinsicInvokeUInt64Enum), IntrinsicInvokeUInt64Enum.Value };
+        }
+    }
+
+    internal interface IIntrinsicInvokeReference
+    {
+        int Value { get; }
+    }
+
+    internal sealed class IntrinsicInvokeReference : IIntrinsicInvokeReference
+    {
+        internal IntrinsicInvokeReference(int value) => Value = value;
+
+        public int Value { get; }
+    }
+
+    internal sealed class IntrinsicInvokeReferenceTarget
+    {
+        internal int CallCount { get; private set; }
+        internal object? LastValue { get; private set; }
+        internal object Sentinel { get; } = new object();
+
+        public void Void0() => Record(Sentinel);
+
+        public void Void1(IIntrinsicInvokeReference value) => Record(value);
+
+        public void Void2(object[] values, Action callback) => Record(callback, values);
+
+        public void Void3(Task<string> task, IIntrinsicInvokeReference value, string[] values) =>
+            Record(values, task, value);
+
+        public void Void4(object value, IIntrinsicInvokeReference reference, Action callback, Task<int> task) =>
+            Record(task, value, reference, callback);
+
+        public object Return0() => CollectAndReturn(Sentinel);
+
+        public IIntrinsicInvokeReference Return1(IIntrinsicInvokeReference value) => CollectAndReturn(value);
+
+        public object[] Return2(object[] values, Action callback) => CollectAndReturn(values, callback);
+
+        public Func<string> Return3(Task<string> task, Func<string> callback, IIntrinsicInvokeReference value) =>
+            CollectAndReturn(callback, task, value);
+
+        public Task<string> Return4(
+            Task<string> task,
+            object[] values,
+            IIntrinsicInvokeReference reference,
+            Action callback) =>
+            CollectAndReturn(task, values, reference, callback);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Record(object? value, params object?[] keepAlive)
+        {
+            GC.Collect();
+            CallCount++;
+            LastValue = value;
+            GC.KeepAlive(keepAlive);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T CollectAndReturn<T>(T value, params object?[] keepAlive)
+        {
+            GC.Collect();
+            GC.KeepAlive(keepAlive);
+            return value;
+        }
+    }
+
+    internal sealed class IntrinsicInvokePrimitiveReturnTarget<T>
+    {
+        public T Value { get; set; }
+
+        public T GetValue()
+        {
+            GC.Collect();
+            return Value;
+        }
+    }
+
+    internal sealed class IntrinsicInvokePrimitiveArgumentTarget<T>
+    {
+        public object? Value;
+
+        public void SetValue(T value)
+        {
+            GC.Collect();
+            Value = value;
+        }
+    }
+
+    internal sealed class IntrinsicInvokeInstancePatternTarget
+    {
+        internal float X { get; private set; }
+        internal float Y { get; private set; }
+        internal float Z { get; private set; }
+        internal int W { get; private set; }
+
+        public int Sum(IIntrinsicInvokeReference reference, object[] values)
+        {
+            GC.Collect();
+            return reference.Value + values.Length;
+        }
+
+        public void SetVector(float x, float y, float z, int w)
+        {
+            GC.Collect();
+            X = x;
+            Y = y;
+            Z = z;
+            W = w;
+        }
+
+        public object FiveReferenceArguments(object first, object second, object third, object fourth, object fifth)
+        {
+            GC.Collect();
+            GC.KeepAlive(first);
+            GC.KeepAlive(second);
+            GC.KeepAlive(third);
+            GC.KeepAlive(fourth);
+            return fifth;
+        }
+    }
+
+    internal static class IntrinsicInvokeStaticIntReturnTarget
+    {
+        public static string ReturnString(int value)
+        {
+            GC.Collect();
+            return value.ToString();
+        }
+
+        public static Type? ReturnGeneric<T>(int value)
+        {
+            GC.Collect();
+            return value == 42 ? typeof(T) : null;
+        }
+    }
+
+    internal static class IntrinsicInvokeGenericStaticIntReturnTarget<T> where T : IComparable
+    {
+        public static IComparable ReturnComparable(int value)
+        {
+            T result = (T)(object)value;
+            GC.Collect();
+            return result;
+        }
+    }
+
+    internal static class IntrinsicInvokeByRefTarget
+    {
+        public static bool ReturnFalse(IIntrinsicInvokeReference input, out IIntrinsicInvokeReference output)
+        {
+            GC.Collect();
+            output = input;
+            return false;
+        }
+
+        public static bool ReturnNull(object[] input, out Action? output)
+        {
+            GC.Collect();
+            output = null;
+            GC.KeepAlive(input);
+            return true;
+        }
+
+        public static bool ReturnTrue(Task<string> input, out Task<string> output)
+        {
+            GC.Collect();
+            output = input;
+            return true;
+        }
+
+        public static bool ThrowAfterWrite(IIntrinsicInvokeReference input, out IIntrinsicInvokeReference output)
+        {
+            output = input;
+            GC.Collect();
+            throw new InvalidOperationException();
+        }
+    }
+
+    internal static class IntrinsicInvokeStaticReferenceTarget
+    {
+        public static object[] Return2(IIntrinsicInvokeReference reference, object[] values)
+        {
+            GC.Collect();
+            GC.KeepAlive(reference);
+            return values;
+        }
+
+        public static Task<string> Return3(Task<string> task, Action callback, IIntrinsicInvokeReference reference)
+        {
+            GC.Collect();
+            GC.KeepAlive(callback);
+            GC.KeepAlive(reference);
+            return task;
+        }
+
+        public static Action Return4(
+            Action callback,
+            object[] values,
+            IIntrinsicInvokeReference reference,
+            Task<int> task)
+        {
+            GC.Collect();
+            GC.KeepAlive(values);
+            GC.KeepAlive(reference);
+            GC.KeepAlive(task);
+            return callback;
+        }
+
+        public static void Void3(Task<string> task, Action callback, IIntrinsicInvokeReference reference)
+        {
+            GC.Collect();
+            callback();
+            GC.KeepAlive(task);
+            GC.KeepAlive(reference);
+        }
+
+        public static void Void4(
+            object[] values,
+            IIntrinsicInvokeReference reference,
+            Action callback,
+            Task<int> task)
+        {
+            GC.Collect();
+            callback();
+            GC.KeepAlive(values);
+            GC.KeepAlive(reference);
+            GC.KeepAlive(task);
+        }
+    }
+
+    internal sealed class IntrinsicInvokeActionTracker
+    {
+        internal int CallCount { get; private set; }
+        internal Action Callback => Invoke;
+
+        private void Invoke() => CallCount++;
+    }
+
+    internal class IntrinsicInvokeVirtualDispatchBase
+    {
+        public virtual object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "virtual-base";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeVirtualDispatchA : IntrinsicInvokeVirtualDispatchBase
+    {
+        public override object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "virtual-a";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeVirtualDispatchB : IntrinsicInvokeVirtualDispatchBase
+    {
+        public override object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "virtual-b";
+        }
+    }
+
+    internal abstract class IntrinsicInvokeAbstractDispatchBase
+    {
+        public abstract object Dispatch(object value);
+    }
+
+    internal sealed class IntrinsicInvokeAbstractDispatchA : IntrinsicInvokeAbstractDispatchBase
+    {
+        public override object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "abstract-a";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeAbstractDispatchB : IntrinsicInvokeAbstractDispatchBase
+    {
+        public override object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "abstract-b";
+        }
+    }
+
+    internal interface IIntrinsicInvokeInterfaceDispatch
+    {
+        object Dispatch(object value);
+    }
+
+    internal sealed class IntrinsicInvokeInterfaceDispatchA : IIntrinsicInvokeInterfaceDispatch
+    {
+        public object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "interface-a";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeInterfaceDispatchB : IIntrinsicInvokeInterfaceDispatch
+    {
+        public object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "interface-b";
+        }
+    }
+
+    internal interface IIntrinsicInvokeDefaultInterfaceDispatch
+    {
+        object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "default";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeDefaultInterfaceDispatch : IIntrinsicInvokeDefaultInterfaceDispatch
+    {
+    }
+
+    internal sealed class IntrinsicInvokeDefaultInterfaceOverride : IIntrinsicInvokeDefaultInterfaceDispatch
+    {
+        public object Dispatch(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return "override";
+        }
+    }
+
+    internal delegate object? IntrinsicInvokeStaticDynamicCallback(object? value);
+    internal delegate object? IntrinsicInvokeInstanceDynamicCallback(object? value);
+    internal delegate object? IntrinsicInvokeMulticastDynamicCallback(object? value);
+
+    internal abstract class IntrinsicInvokeGenericVirtualDispatch
+    {
+        public abstract object Dispatch<T>(object value);
+    }
+
+    internal sealed class IntrinsicInvokeGenericVirtualA : IntrinsicInvokeGenericVirtualDispatch
+    {
+        public override object Dispatch<T>(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return typeof(T).Name + "-generic-a";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeGenericVirtualB : IntrinsicInvokeGenericVirtualDispatch
+    {
+        public override object Dispatch<T>(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return typeof(T).Name + "-generic-b";
+        }
+    }
+
+    internal interface IIntrinsicInvokeGenericInterfaceDispatch
+    {
+        object Dispatch<T>(object value);
+    }
+
+    internal sealed class IntrinsicInvokeGenericInterfaceA : IIntrinsicInvokeGenericInterfaceDispatch
+    {
+        public object Dispatch<T>(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return typeof(T).Name + "-interface-a";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeGenericInterfaceB : IIntrinsicInvokeGenericInterfaceDispatch
+    {
+        public object Dispatch<T>(object value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+            return typeof(T).Name + "-interface-b";
+        }
+    }
+
+    internal sealed class IntrinsicInvokeDelegatePayload
+    {
+        internal List<string> Log { get; } = new List<string>();
+    }
+
+    internal sealed class IntrinsicInvokeDelegateCallbacks
+    {
+        private readonly string _label;
+
+        internal IntrinsicInvokeDelegateCallbacks(string label) => _label = label;
+
+        internal static object? Static(object? value) => Record(value, "static");
+
+        internal object? Instance(object? value) => Record(value, _label);
+
+        internal static object? MulticastStatic(object? value) => Record(value, "static");
+
+        internal object? MulticastInstance(object? value) => Record(value, _label);
+
+        private static object? Record(object? value, string label)
+        {
+            GC.Collect();
+            ((IntrinsicInvokeDelegatePayload)value!).Log.Add(label);
+            return value;
+        }
+    }
+
+    internal static class IntrinsicInvokeExcludedMethodTarget
+    {
+        public static object DateTimeArgument(DateTime value)
+        {
+            GC.Collect();
+            return value.Day;
+        }
+
+        public static DateTime DateTimeResult()
+        {
+            GC.Collect();
+            return new DateTime(2026, 9, 10);
+        }
+
+        public static object NullableArgument(int? value)
+        {
+            GC.Collect();
+            return value.GetValueOrDefault();
+        }
+
+        public static int? NullableResult()
+        {
+            GC.Collect();
+            return 43;
+        }
+
+        public static object ValueTaskArgument(ValueTask<int> value)
+        {
+            GC.Collect();
+            return value.Result;
+        }
+
+        public static ValueTask<int> ValueTaskResult()
+        {
+            GC.Collect();
+            return new ValueTask<int>(45);
+        }
+
+        public static object CancellationTokenArgument(CancellationToken value)
+        {
+            GC.Collect();
+            return value.IsCancellationRequested;
+        }
+
+        public static CancellationToken CancellationTokenResult()
+        {
+            GC.Collect();
+            return new CancellationToken(canceled: true);
+        }
+
+        public static bool ByRefValue(ref int value)
+        {
+            GC.Collect();
+            value++;
+            return true;
+        }
+
+        public static object TwoPrimitiveArguments(int first, int second)
+        {
+            GC.Collect();
+            return first + second;
+        }
+
+        public static object FiveReferenceArguments(
+            object first,
+            object second,
+            object third,
+            object fourth,
+            object fifth)
+        {
+            GC.Collect();
+            GC.KeepAlive(first);
+            GC.KeepAlive(second);
+            GC.KeepAlive(third);
+            GC.KeepAlive(fourth);
+            return fifth;
+        }
+    }
+
+    internal interface IIntrinsicInvokeStructReceiver
+    {
+        object GetValue();
+    }
+
+    internal readonly struct IntrinsicInvokeStructReceiver : IIntrinsicInvokeStructReceiver
+    {
+        internal IntrinsicInvokeStructReceiver(int value) => Value = value;
+
+        internal int Value { get; }
+
+        public object GetValue()
+        {
+            GC.Collect();
+            return Value;
+        }
+
+        public override string ToString()
+        {
+            GC.Collect();
+            return Value.ToString();
+        }
+    }
+
+    internal sealed class IntrinsicInvokeEnumResultTarget
+    {
+        public IntrinsicInvokeInt32Enum InstanceResult()
+        {
+            GC.Collect();
+            return IntrinsicInvokeInt32Enum.Value;
+        }
+
+        public static IntrinsicInvokeInt64Enum StaticResult()
+        {
+            GC.Collect();
+            return IntrinsicInvokeInt64Enum.Value;
+        }
+    }
+
+    internal sealed class IntrinsicInvokeArgumentValidationTarget
+    {
+        public void Reference(IIntrinsicInvokeReference value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+        }
+
+        public void Primitive(int value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+        }
+
+        public void Enum(IntrinsicInvokeInt32Enum value)
+        {
+            GC.Collect();
+            GC.KeepAlive(value);
+        }
+    }
+
+    internal enum IntrinsicInvokeByteEnum : byte
+    {
+        Value = 211
+    }
+
+    internal enum IntrinsicInvokeSByteEnum : sbyte
+    {
+        Value = -91
+    }
+
+    internal enum IntrinsicInvokeInt16Enum : short
+    {
+        Value = -30001
+    }
+
+    internal enum IntrinsicInvokeUInt16Enum : ushort
+    {
+        Value = 60001
+    }
+
+    internal enum IntrinsicInvokeInt32Enum : int
+    {
+        Value = -123456789
+    }
+
+    internal enum IntrinsicInvokeUInt32Enum : uint
+    {
+        Value = 0xFEDCBA98
+    }
+
+    internal enum IntrinsicInvokeInt64Enum : long
+    {
+        Value = -1234567890123456789
+    }
+
+    internal enum IntrinsicInvokeUInt64Enum : ulong
+    {
+        Value = 0xFEDCBA9876543210
     }
 
 #pragma warning disable 0414

@@ -1096,6 +1096,17 @@ namespace System
             return ptr;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetVirtualFunctionPointer")]
+        private static partial IntPtr GetVirtualFunctionPointer(RuntimeMethodHandleInternal method, QCallTypeHandle declaringType, ObjectHandleOnStack target);
+
+        internal static IntPtr GetVirtualFunctionPointer(RuntimeMethodInfo method, object target)
+        {
+            RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
+            return GetVirtualFunctionPointer(IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref declaringType),
+                ObjectHandleOnStack.Create(ref target));
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsCollectible(RuntimeMethodHandleInternal method);
 
@@ -1198,26 +1209,6 @@ namespace System
                 throw new BadImageFormatException();
             }
             return new MdUtf8String(name);
-        }
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_InvokeMethod")]
-        private static partial void InvokeMethod(ObjectHandleOnStack target, void** arguments, ObjectHandleOnStack sig, Interop.BOOL isConstructor, ObjectHandleOnStack result);
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal static object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor)
-        {
-            object? result = null;
-            InvokeMethod(
-                ObjectHandleOnStack.Create(ref target),
-                arguments,
-                ObjectHandleOnStack.Create(ref sig),
-                isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                ObjectHandleOnStack.Create(ref result));
-            return result;
         }
 
         /// <summary>

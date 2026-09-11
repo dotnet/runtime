@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -17,6 +18,87 @@ namespace System.Reflection.Tests
         }
 
         protected override bool SupportsMissing => false;
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SharedThunk_CachedInvokerPromotes(bool useByRef)
+        {
+            MethodInfo method = typeof(CachedInvokerTarget).GetMethod(
+                useByRef ? nameof(CachedInvokerTarget.TryGetValue) : nameof(CachedInvokerTarget.Echo))!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+            var target = new CachedInvokerTarget();
+            object argument = new object();
+            object?[] arguments = { target, null };
+
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            {
+                if (useByRef)
+                {
+                    Assert.Equal(true, invoker.Invoke(null, arguments.AsSpan()));
+                    Assert.Same(target, arguments[1]);
+                }
+                else
+                {
+                    Assert.Same(argument, invoker.Invoke(target, argument));
+                }
+
+                if (i == 0 || i == IntrinsicInvokeSelectionAssertions.SpecializationThreshold - 1)
+                {
+                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1);
+                }
+            }
+
+            Assert.Equal(IntrinsicInvokeSelectionAssertions.SpecializationThreshold + 1, target.CallCount);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
+        }
+
+        [Fact]
+        public void SharedThunk_ObjectMethodOnBoxedValueReceiverFallsBack()
+        {
+            MethodInfo method = typeof(object).GetMethod(nameof(object.ToString))!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+
+            Assert.Equal("50", invoker.Invoke(new IntrinsicInvokeStructReceiver(50)));
+            IntrinsicInvokeSelectionAssertions.AssertFallback(invoker);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Constructor_ExistingInstanceAcrossTiers(bool useSpan)
+        {
+            ConstructorInfo constructor = typeof(RefConstructorTarget).GetConstructor(new[] { typeof(int).MakeByRefType() });
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            var target = (RefConstructorTarget)RuntimeHelpers.GetUninitializedObject(typeof(RefConstructorTarget));
+
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            {
+                if (useSpan)
+                {
+                    object[] arguments = { i };
+                    Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+                    Assert.Equal(i + 1, arguments[0]);
+                }
+                else
+                {
+                    Assert.Null(invoker.Invoke(target, i));
+                }
+
+                Assert.Equal(i, target.Value);
+            }
+        }
+
+        public sealed class RefConstructorTarget
+        {
+            public int Value;
+
+            public RefConstructorTarget(ref int value)
+            {
+                Value = value;
+                value++;
+            }
+        }
 
         [Fact]
         public void NullTypeValidation()
@@ -296,6 +378,27 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Invoke_TestData() => MethodInfoTests.Invoke_TestData();
+
+        private sealed class CachedInvokerTarget
+        {
+            internal int CallCount { get; private set; }
+
+            public static bool TryGetValue(CachedInvokerTarget target, out object result)
+            {
+                result = target.Echo(target);
+                return true;
+            }
+
+            public object Echo(object value)
+            {
+                if (CallCount++ == 0)
+                {
+                    GC.Collect();
+                }
+
+                return value;
+            }
+        }
 
         private class TestClass
         {
