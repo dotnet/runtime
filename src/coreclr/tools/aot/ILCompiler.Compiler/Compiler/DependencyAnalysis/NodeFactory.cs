@@ -1630,6 +1630,11 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(desc).FuncType);
         }
 
+        public WasmTypeNode WasmTypeNode(INodeWithTypeSignature node)
+        {
+            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(node).FuncType);
+        }
+
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.

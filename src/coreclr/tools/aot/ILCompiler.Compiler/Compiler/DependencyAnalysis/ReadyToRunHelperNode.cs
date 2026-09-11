@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         ConstrainedDirectCall,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode
+    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithTypeSignature
     {
         private static readonly Utf8String s_RhpResolveInterfaceMethod = new Utf8String("RhpResolveInterfaceMethod"u8);
 
@@ -81,6 +81,24 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
             }
+
+            TypeSystemContext context = id switch
+            {
+                ReadyToRunHelperId.DelegateCtor => ((DelegateCreationInfo)target).DelegateType.Context,
+                ReadyToRunHelperId.ResolveVirtualFunction => ((MethodDesc)target).Context,
+                _ => ((TypeDesc)target).Context,
+            };
+
+            TypeDesc nativeIntType = context.GetWellKnownType(WellKnownType.IntPtr);
+            TypeDesc[] parameters = id switch
+            {
+                ReadyToRunHelperId.DelegateCtor => [nativeIntType, nativeIntType],
+                ReadyToRunHelperId.ResolveVirtualFunction => [nativeIntType, nativeIntType, nativeIntType],
+                _ => Array.Empty<TypeDesc>(),
+            };
+            TypeDesc returnType = id == ReadyToRunHelperId.DelegateCtor ?
+                context.GetWellKnownType(WellKnownType.Void) : nativeIntType;
+            Signature = new MethodSignature(MethodSignatureFlags.Static, genericParameterCount: 0, returnType, parameters);
         }
 
         protected override bool IsVisibleFromManagedCode => false;
@@ -89,6 +107,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunHelperId Id => _id;
         public object Target =>  _target;
+        public MethodSignature Signature { get; }
+        public bool IsUnmanagedCallersOnly => false;
+        public bool IsAsyncCall => false;
+        public bool HasGenericContextArg => false;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -121,11 +143,13 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencyList = null;
+
             if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
                 var targetMethod = (MethodDesc)_target;
 
-                DependencyList dependencyList = new DependencyList();
+                dependencyList = new DependencyList();
 
 #if !SUPPORT_JIT
                 factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
@@ -137,12 +161,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
 #endif
 
-                return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
-                DependencyList dependencyList = null;
-
                 var info = (DelegateCreationInfo)_target;
                 if (info.NeedsVirtualMethodUseTracking)
                 {
@@ -162,10 +183,15 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.DelegateType,
                     info.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                return dependencyList;
             }
 
-            return null;
+            if (factory.Target.IsWasm)
+            {
+                dependencyList ??= new DependencyList();
+                dependencyList.Add(factory.WasmTypeNode(this), "Wasm ReadyToRun helper signature");
+            }
+
+            return dependencyList;
         }
 
         public override bool HasConditionalStaticDependencies => _id == ReadyToRunHelperId.DelegateCtor;
