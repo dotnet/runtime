@@ -75,6 +75,7 @@ internal class Program
         TestDivisionOverflow.Run();
         TestTypedStores.Run();
         TestContainsReferences.Run();
+        TestDuplicateCallArguments.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -2450,6 +2451,103 @@ class TestContainsReferences
         Assert.AreEqual(false, s_guid);
         Assert.AreEqual(true, s_string);
         Assert.AreEqual(true, s_withObject);
+    }
+}
+
+class TestDuplicateCallArguments
+{
+    struct Pair
+    {
+        public int First;
+        public int Second;
+    }
+
+    class Box
+    {
+        public int Value;
+        public Box(int value) => Value = value;
+    }
+
+    static int s_intObserved;
+    static long s_longObserved;
+    static double s_doubleObserved;
+    static int s_pairObserved;
+    static readonly int s_intResult = IntProperty = 42;
+    static readonly long s_longResult = LongProperty = 42;
+    static readonly double s_doubleResult = DoubleProperty = 42.5;
+    static readonly Pair s_pairResult = PairProperty = new Pair { First = 42, Second = 84 };
+    static readonly Box s_objectResult = ObjectProperty = new Box(42);
+    static readonly Box s_nullResult = ObjectProperty = null;
+    static int s_byRef = 42;
+    static readonly int s_byRefResult = Increment(ref s_byRef);
+
+    static int IntProperty
+    {
+        set
+        {
+            value++;
+            s_intObserved = value;
+        }
+    }
+
+    static long LongProperty
+    {
+        set
+        {
+            Overwrite(ref value);
+            s_longObserved = value;
+        }
+    }
+
+    static double DoubleProperty
+    {
+        set
+        {
+            value++;
+            s_doubleObserved = value;
+        }
+    }
+
+    static Pair PairProperty
+    {
+        set
+        {
+            value.First = 99;
+            s_pairObserved = ReadFirst(ref value);
+        }
+    }
+
+    static Box ObjectProperty
+    {
+        set
+        {
+            if (value is not null)
+                value.Value = 99;
+        }
+    }
+
+    static void Overwrite(ref long value) => value = 99;
+
+    static int ReadFirst(ref Pair value) => value.First;
+
+    static int Increment(ref int value) => ++value;
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDuplicateCallArguments));
+        Assert.AreEqual(42, s_intResult);
+        Assert.AreEqual(43, s_intObserved);
+        Assert.AreEqual(42L, s_longResult);
+        Assert.AreEqual(99L, s_longObserved);
+        Assert.AreEqual(42.5, s_doubleResult);
+        Assert.AreEqual(43.5, s_doubleObserved);
+        Assert.AreEqual(42, s_pairResult.First);
+        Assert.AreEqual(84, s_pairResult.Second);
+        Assert.AreEqual(99, s_pairObserved);
+        Assert.AreEqual(99, s_objectResult.Value);
+        Assert.AreSame(null, s_nullResult);
+        Assert.AreEqual(43, s_byRef);
+        Assert.AreEqual(43, s_byRefResult);
     }
 }
 
