@@ -51,50 +51,66 @@ tools:
 checkout:
   fetch-depth: 200
 
-steps:
-  - name: Filter scanner-authored KBEs (deterministic)
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      KBE_CANDIDATES: /tmp/gh-aw/agent/scanner-kbe-candidates.json
-    run: |
-      set -euo pipefail
+# Enumerate metadata separately: the pre-agent CLI proxy does not apply approval labels.
+# Bodies and comments are still read through the agent's integrity-gated GitHub MCP.
+jobs:
+  scanner_kbes:
+    needs: activation
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+    outputs:
+      candidates: ${{ steps.filter.outputs.candidates }}
+      count: ${{ steps.filter.outputs.count }}
+    steps:
+      - name: Filter scanner-authored KBEs (deterministic)
+        id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
 
-      mkdir -p /tmp/gh-aw/agent
-      gh issue list \
-        --repo "$GH_REPO" \
-        --state open \
-        --label "Known Build Error" \
-        --limit 1000 \
-        --json number,title,createdAt,author,labels \
-        --jq '
-          {
-            candidates: ([
+          gh api --method GET repos/dotnet/runtime/issues \
+            -f state=open \
+            -f labels="Known Build Error" \
+            -f sort=created \
+            -f direction=asc \
+            -f per_page=100 \
+            --paginate \
+            --jq '[
               .[]
               | select(
-                  .author.login == "github-actions[bot]" and
+                  .pull_request == null and
+                  .state == "open" and
+                  .user.login == "github-actions[bot]" and
+                  .user.type == "Bot" and
                   (.title | startswith("[ci-scan] ")) and
                   ([.labels[].name] | index("Known Build Error") != null)
                 )
-              | {
-                  number,
-                  title,
-                  created_at: .createdAt,
-                  author: .author.login
-                }
-            ] | sort_by(.created_at, .number))
-          }
-        ' > "$KBE_CANDIDATES"
+              | {number, created_at}
+            ]' \
+            | jq -cs '{candidates: (add | sort_by(.created_at, .number))}' \
+            > "$RUNNER_TEMP/scanner-kbe-candidates.json"
 
-      candidate_count="$(jq '.candidates | length' "$KBE_CANDIDATES")"
-      echo "Allowlisted ${candidate_count} scanner-authored KBE(s)."
-      if [ "$candidate_count" -eq 0 ]; then
-        echo '{"type":"noop","message":"No scanner-authored [ci-scan] KBEs found"}' >> "${GH_AW_SAFE_OUTPUTS:?}"
-      fi
+          candidate_count="$(jq '.candidates | length' "$RUNNER_TEMP/scanner-kbe-candidates.json")"
+          echo "Allowlisted ${candidate_count} scanner-authored KBE(s)."
+          {
+            printf 'candidates=%s\n' "$(cat "$RUNNER_TEMP/scanner-kbe-candidates.json")"
+            printf 'count=%s\n' "$candidate_count"
+          } >> "$GITHUB_OUTPUT"
+  agent:
+    needs: scanner_kbes
+    if: needs.scanner_kbes.outputs.count > 0
+
+steps:
+  - name: Save scanner KBE allowlist
+    env:
+      KBE_CANDIDATES: ${{ needs.scanner_kbes.outputs.candidates }}
+    run: |
+      mkdir -p /tmp/gh-aw/agent
+      printf '%s\n' "$KBE_CANDIDATES" > /tmp/gh-aw/agent/scanner-kbe-candidates.json
 
 safe-outputs:
-  noop:
-    report-as-issue: false
   create-pull-request:
     title-prefix: "[ci-fix] "
     draft: true
@@ -190,7 +206,9 @@ Read once at start:
 
 ### Step 2 — Enumerate open KBEs
 
-The deterministic pre-step has written `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. It is the authoritative allowlist: it contains only open issues whose exact `Known Build Error` label, `[ci-scan]` title prefix, and `github-actions[bot]` author were verified through the GitHub API. Process only the issue numbers in `.candidates[].number`, in ascending creation order. Do not enumerate or read other `Known Build Error` issues, even if they appear in GitHub search results.
+The deterministic `scanner_kbes` job has prepared `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. It is the authoritative allowlist: it contains only open `dotnet/runtime` issues whose exact `Known Build Error` label, `[ci-scan]` title prefix, and `github-actions[bot]` author were verified through the GitHub API. Process only the issue numbers in `.candidates[].number`, in ascending creation order. Do not enumerate or read other `Known Build Error` issues, even if they appear in GitHub search results. If the allowlist is missing or invalid, report the error and stop; do not fall back to search.
+
+The enumeration paginates all open KBEs without an `updated:` cutoff, so older issues remain in scope. An empty allowlist skips the agent job entirely.
 
 For each result, read the body + latest comments through the `github` MCP (NOT `gh`, so the integrity gate applies). Extract:
 

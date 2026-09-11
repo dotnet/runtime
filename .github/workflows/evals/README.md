@@ -45,12 +45,13 @@ exist and scores workflow output against them, is deferred.
   `tool-calls` evidence that it actually fetched a real build and searched existing
   KBEs.
 
-- **`ci-failure-fix`** has the agent find a real open `[ci-scan]` Known Build
-  Error issue via `gh`, reason about it, and emit one safe-output at
+- **`ci-failure-fix`** runs the workflow's deterministic scanner-author filter
+  via `gh`, then has the agent reason about a real open `[ci-scan]` Known Build
+  Error from that allowlist and emit one safe-output at
   `out/decision.md`. Graders check that it either created a fix PR, with a
   `[ci-fix]` title, a linked KBE, and a real diff that is never a test-disable,
   or engaged owners with a hand-off comment, and never both, plus `tool-calls`
-  evidence that it acted on a real issue.
+  evidence that it acted on a real issue. An empty allowlist permits only a noop.
 
 - **`ci-failure-scan-feedback`** has the agent scan real recent `[ci-scan]`
   issues and `[ci-fix]` PRs via `gh`, then emit its feedback safe-output at
@@ -67,6 +68,14 @@ token for on the eval step. Live runs are non-deterministic and depend on what
 is failing at eval time.
 
 ## Run locally
+
+The deterministic fixer intake tests need only Python 3, Bash, and jq, with no
+credentials or network access. They exercise the script embedded in the workflow,
+including author filtering, pagination, empty results, and API failures:
+
+```bash
+python3 .github/workflows/evals/test_ci_failure_fix_candidates.py
+```
 
 You need Node 22.12 or newer, Docker, a Copilot token for the agent and judges,
 and a GitHub token for the agent's `gh` calls and the GitHub MCP server.

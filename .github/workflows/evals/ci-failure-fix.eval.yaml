@@ -45,7 +45,7 @@ stimuli:
 
       This is a live run — discover a real, currently-open Known Build Error yourself and act on exactly one. Do not invent one.
 
-      1. Find an open KBE in dotnet/runtime with `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open --label "Known Build Error"`. If none come back, fall back to `--label "Known Build Error"` without the title filter. Pick one whose failing test and error are concrete enough to reason about.
+      1. Run the deterministic filter script from the workflow's `scanner_kbes` job, setting `RUNNER_TEMP` and `GITHUB_OUTPUT` to eval-local scratch paths. Copy its `scanner-kbe-candidates.json` to `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. Pick one issue from this allowlist whose failing test and error are concrete enough to reason about. Do not fall back to other issues. If the allowlist is empty, write `Type: noop` and the reason to `./out/decision.md` and stop; this represents the production agent job being skipped.
       2. Read it with `gh issue view <n> --repo dotnet/runtime` to recover the failing test and error signature, and inspect the relevant product or test source it points at, using `gh api` raw content or the failing area path, enough to decide whether a safe, in-bounds fix exists.
 
       Then **emit the single safe-output you would produce, as a markdown document at `./out/decision.md`.** Pick exactly one outcome per the escalation policy and make the type explicit on the first line.
@@ -57,18 +57,18 @@ stimuli:
 
     rubric:
       - |
-       The agent produced one actionable safe-output about a real open KBE. One valid outcome is a fix PR, meaning a `[ci-fix]` title, a `Linked KBE: #<n>` reference, and a real product or test diff that plausibly addresses the failure. The other valid outcome is an owner-engagement comment that concretely explains why no safe fix is producible and names or @-mentions who to loop in. It emits exactly one outcome, and any fix changes product or test behavior rather than disabling, skipping, or excluding the failing test.
+       The agent produced one actionable safe-output about a real open scanner-authored KBE from the deterministic allowlist. One valid outcome is a fix PR, meaning a `[ci-fix]` title, a `Linked KBE: #<n>` reference, and a real product or test diff that plausibly addresses the failure. The other valid outcome is an owner-engagement comment that concretely explains why no safe fix is producible and names or @-mentions who to loop in. A noop is valid only when the deterministic enumeration succeeded and returned an empty allowlist. It emits exactly one outcome, and any fix changes product or test behavior rather than disabling, skipping, or excluding the failing test.
 
     graders:
       - type: file-matches
         config:
           path: "out/decision.md"
-          pattern: '(?i)^Type:\s*(create-pull-request|add-comment)\b'
+          pattern: '(?i)^Type:\s*(create-pull-request|add-comment|noop)\b'
 
       - type: file-matches
         config:
           path: "out/decision.md"
-          pattern: '(?s)(Type:\s*create-pull-request.*Linked KBE:\s*#\d+.*```diff)|(Type:\s*add-comment.*##\s+Comment)'
+          pattern: '(?s)(Type:\s*create-pull-request.*Linked KBE:\s*#\d+.*```diff)|(Type:\s*add-comment.*##\s+Comment)|(Type:\s*noop\b)'
 
       - type: file-not-matches
         config:
@@ -78,14 +78,14 @@ stimuli:
       - type: file-not-matches
         config:
           path: "out/decision.md"
-          pattern: '(?is)Type:\s*create-pull-request.*Type:\s*add-comment|Type:\s*add-comment.*Type:\s*create-pull-request'
+          pattern: '(?is)Type:\s*(?:create-pull-request|add-comment|noop).*Type:\s*(?:create-pull-request|add-comment|noop)'
 
       - type: tool-calls
         name: acted-on-real-kbe
         config:
           required:
             - name: '^(bash|powershell)$'
-              command: 'gh (search|issue)'
+              command: 'gh (api|issue)'
 
       - type: prompt
         name: fix-or-engages-owners
