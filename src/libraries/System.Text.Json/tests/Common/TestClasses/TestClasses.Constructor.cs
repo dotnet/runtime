@@ -248,6 +248,26 @@ namespace System.Text.Json.Serialization.Tests
 
     public class GenericConstructorOuter<T>
     {
+        public class Middle
+        {
+            public class Inner<TItem>
+            {
+                public T Value { get; }
+                public TItem Item { get; }
+
+                [JsonInclude]
+                private T Extra { get; set; }
+
+                [JsonConstructor]
+                private Inner(T value, TItem item)
+                {
+                    Value = value;
+                    Item = item;
+                    Extra = default!;
+                }
+            }
+        }
+
         public class Nested
         {
             public T Value { get; }

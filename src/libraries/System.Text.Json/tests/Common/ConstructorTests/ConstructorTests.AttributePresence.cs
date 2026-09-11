@@ -56,6 +56,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(PrivateCtorWithInheritedGenericMembers<int>), """{"Value":42}""")]
         [InlineData(typeof(GenericConstructorOuter<int>.Nested), """{"Value":42}""")]
         [InlineData(typeof(GenericConstructorOuter<int>.Nested<string>), """{"Value":42,"Item":"nested"}""")]
+        [InlineData(typeof(GenericConstructorOuter<int>.Middle.Inner<string>), """{"Value":42,"Item":"nested","Extra":17}""")]
+        [InlineData(typeof(GenericConstructorOuter<string>.Middle.Inner<int>), """{"Value":"outer","Item":42,"Extra":"member"}""")]
         public async Task NonPublicGenericCtors_WithJsonConstructorAttribute_WorksAsExpected(Type type, string json)
         {
             object result = await Serializer.DeserializeWrapper(json, type);

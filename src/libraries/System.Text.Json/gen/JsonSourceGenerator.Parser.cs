@@ -182,7 +182,7 @@ namespace System.Text.Json.SourceGeneration
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
                     SupportsDoNotWrapExceptions = _knownSymbols.SupportsDoNotWrapExceptions,
-                    UseUpdatedMemorySafetyRules = contextClassDeclaration.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules"),
+                    UseUpdatedMemorySafetyRules = semanticModel.UsesUpdatedMemorySafetyRules(),
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.
