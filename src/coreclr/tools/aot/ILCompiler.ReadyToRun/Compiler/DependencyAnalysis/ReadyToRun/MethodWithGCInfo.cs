@@ -281,6 +281,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencyList.AddRange(_nonRelocationDependencies);
             }
 
+            // Declined compilations publish empty code. Do not mark their function types because
+            // an unreferenced over-limit type is enough to make the wasm module unloadable.
+            if (factory.Target.IsWasm && !IsEmpty)
+            {
+                dependencyList.Add(factory.WasmTypeNode(_method), "Wasm method code node requires signature");
+            }
+
             return dependencyList;
         }
 
