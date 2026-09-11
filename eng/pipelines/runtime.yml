@@ -51,6 +51,9 @@ variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
     value: true
+  # NO-MERGE: Run only the native Composite ML-KEM PKCS#8 servicing canaries on modern Windows library-test jobs.
+  - name: compositeMLKemPkcs8CanaryBuildArgs
+    value: $[ iif(eq(variables['Agent.OS'], 'Windows_NT'), '/p:WithCategories=CompositeMLKemPkcs8Canary', '') ]
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -317,7 +320,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
           jobParameters:
             nameSuffix: CoreCLR_AllSubsets
-            buildArgs: -s clr+libs+libs.tests+host+packs -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests+host+packs -rc Release -c $(_BuildConfig) /p:ArchiveTests=true $(compositeMLKemPkcs8CanaryBuildArgs)
             timeoutInMinutes: 180
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
@@ -365,7 +368,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
           jobParameters:
             nameSuffix: CoreCLR_AllSubsets
-            buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true $(compositeMLKemPkcs8CanaryBuildArgs)
             timeoutInMinutes: 180
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
@@ -539,7 +542,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true $(compositeMLKemPkcs8CanaryBuildArgs)
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -647,7 +650,7 @@ extends:
           - windows_x64
           jobParameters:
             nameSuffix: CoreCLR_ReleaseLibraries
-            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true $(compositeMLKemPkcs8CanaryBuildArgs)
             timeoutInMinutes: 120
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
