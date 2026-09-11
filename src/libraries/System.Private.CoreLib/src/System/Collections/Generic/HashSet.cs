@@ -1127,19 +1127,13 @@ namespace System.Collections.Generic
             return false;
         }
 
-        private static bool OverlapsHashSetImpl(HashSet<T> hashSet, HashSet<T> other)
+        private static bool OverlapsHashSetImpl(HashSet<T> smaller, HashSet<T> larger)
         {
-            Entry[]? entries = hashSet._entries;
-            for (int i = 0; i < hashSet._count; i++)
+            foreach (T element in smaller)
             {
-                ref Entry entry = ref entries![i];
-                if (entry.Next >= -1)
+                if (larger.Contains(element))
                 {
-                    T item = entry.Value;
-                    if (other.Contains(item))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
