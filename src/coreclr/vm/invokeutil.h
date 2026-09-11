@@ -41,23 +41,11 @@ struct InterfaceMapData
 
 #include <poppack.h>
 
-class ArgDestination;
-
-// This class abstracts the functionality which creats the
-//  parameters on the call stack and deals with the return type
-//  inside reflection.
-//
+// Helpers for reflection field access, primitive conversions, and exception wrapping.
 class InvokeUtil
 {
 
 public:
-    static void CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest);
-
-    // Given a type, this routine will convert an return value representing that
-    //  type into an ObjectReference.  If the type is a primitive, the
-    //  value is wrapped in one of the Value classes.
-    static OBJECTREF CreateObjectAfterInvoke(TypeHandle th, void * pValue);
-
     // This is a special purpose Exception creation function.  It
     //  creates the TargetInvocationException placing the passed
     //  exception into it.
