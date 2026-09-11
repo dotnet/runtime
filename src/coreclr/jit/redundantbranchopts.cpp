@@ -1054,6 +1054,19 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
             if (newRelopFunc != VNF_NONE)
             {
+                // Rewriting just the relop is only valid if the VN relop is over the
+                // actual tree operands. Liberal VN may look through a materialized
+                // predicate and expose a relop over different operands.
+                //
+                const ValueNum treeOp1VN = vnStore->VNNormalValue(tree->AsOp()->gtOp1->GetVN(VNK_Liberal));
+                const ValueNum treeOp2VN = vnStore->VNNormalValue(tree->AsOp()->gtOp2->GetVN(VNK_Liberal));
+
+                if ((pathApp.GetArg(0) != treeOp1VN) || (pathApp.GetArg(1) != treeOp2VN))
+                {
+                    JITDUMP("; relop operands do not match tree operands, cannot simplify\n");
+                    break;
+                }
+
                 newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, &isUnsigned);
 
                 if (newRelop != GT_NONE)
