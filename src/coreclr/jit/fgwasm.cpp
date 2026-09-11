@@ -3293,7 +3293,9 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
             // A nonmatching inner try must preserve the value for an enclosing try.
             //
             resumePad = fgNewBBafter(BBJ_ALWAYS, switchBlock, /* extendRegion */ false);
-            resumePad->copyEHRegion(continuation);
+            // Keep the pad in the switch's region; the edge into the continuation is
+            // repaired by fgWasmRepairTryEntries when it enters a try region.
+            resumePad->copyEHRegion(switchBlock);
             resumePad->inheritWeightPercentage(switchBlock, 0);
 
             FlowEdge* const padEdge = fgAddRefPred(continuation, resumePad);
