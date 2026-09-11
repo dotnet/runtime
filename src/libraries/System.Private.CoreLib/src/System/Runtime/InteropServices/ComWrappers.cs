@@ -817,7 +817,12 @@ namespace System.Runtime.InteropServices
             List<ManagedObjectWrapperHolder> allWrappersForThisInstance = s_allManagedObjectWrapperTable.GetOrCreateValue(instance);
             lock (allWrappersForThisInstance)
             {
-                allWrappersForThisInstance.Add(wrapper);
+                // While this can be an O(n) search for an object that is exposed via N ComWrappers instances to native code
+                // in practice, N = 1 for the vast majority of scenarios.
+                if (!allWrappersForThisInstance.Contains(wrapper))
+                {
+                    allWrappersForThisInstance.Add(wrapper);
+                }
             }
         }
 
