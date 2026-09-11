@@ -1175,7 +1175,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 JsonNumberHandling effectiveNumberHandling =
-                    caseTypeInfo.NumberHandling ?? options.NumberHandling;
+                    target.NumberHandling ?? caseTypeInfo.NumberHandling ?? options.NumberHandling;
                 JsonValueType valueTypes = converter.GetSupportedJsonValueTypes(effectiveNumberHandling);
 
                 AddUnionValueTypes(valueTypes, caseType, map, ref ambiguousValueTypes);

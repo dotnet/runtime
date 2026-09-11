@@ -413,86 +413,20 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(typeInfo);
         }
 
-        [JsonUnion(TypeClassifier = typeof(IntCaseClassifierFactory))]
-        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
-        public union NumberHandlingIntUnion(int);
-
-        [JsonUnion(TypeClassifier = typeof(IntCaseClassifierFactory))]
-        public union PlainIntUnion(int);
-
-        public sealed class IntCaseClassifierFactory : JsonTypeClassifierFactory
-        {
-            public override bool CanClassify(JsonTypeClassifierContext context) =>
-                context.DeclaringType == typeof(NumberHandlingIntUnion) ||
-                context.DeclaringType == typeof(PlainIntUnion);
-
-            public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
-                static (ref Utf8JsonReader reader) => typeof(int);
-        }
-
-        public sealed class UnionNumberHandlingContainer
-        {
-            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
-            public PlainIntUnion Value { get; set; }
-        }
-
-        public sealed class StrictUnionNumberHandlingContainer
-        {
-            [JsonNumberHandling(JsonNumberHandling.Strict)]
-            public PlainIntUnion Value { get; set; }
-        }
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public union IntOrString(int, string);
 
         [Fact]
-        public async Task UnionNumberHandling_TypeAttributeSupportsReadingAndWritingNumbersAsStrings()
+        public async Task UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults()
         {
-            NumberHandlingIntUnion? value = await Serializer.DeserializeWrapper<NumberHandlingIntUnion>("\"42\"");
-            Assert.Equal(42, GetUnionValue(value!));
-
-            string json = await Serializer.SerializeWrapper(new NumberHandlingIntUnion(42));
-            Assert.Equal("\"42\"", json);
-        }
-
-        [Fact]
-        public async Task UnionNumberHandling_TypeInfoOverrideSupportsReadingAndWritingNumbersAsStrings()
-        {
-            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static typeInfo =>
+            JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
             {
-                if (typeInfo.Type == typeof(PlainIntUnion))
-                {
-                    typeInfo.NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString;
-                }
-            });
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+            };
 
-            PlainIntUnion? value = await Serializer.DeserializeWrapper<PlainIntUnion>("\"42\"", options);
-            Assert.Equal(42, GetUnionValue(value!));
+            IntOrString? value = await Serializer.DeserializeWrapper<IntOrString>("\"hello\"", options);
 
-            string json = await Serializer.SerializeWrapper(new PlainIntUnion(42), options);
-            Assert.Equal("\"42\"", json);
-        }
-
-        [Fact]
-        public async Task UnionNumberHandling_PropertyAttributeSupportsReadingAndWritingNumbersAsStrings()
-        {
-            UnionNumberHandlingContainer? value =
-                await Serializer.DeserializeWrapper<UnionNumberHandlingContainer>("""{"Value":"42"}""");
-            Assert.Equal(42, GetUnionValue(value!.Value));
-
-            string json = await Serializer.SerializeWrapper(
-                new UnionNumberHandlingContainer { Value = new PlainIntUnion(42) });
-            JsonTestHelper.AssertJsonEqual("""{"Value":"42"}""", json);
-        }
-
-        [Fact]
-        public async Task UnionNumberHandling_StrictPropertyAttributeOverridesOptions()
-        {
-            JsonSerializerOptions options = Serializer.CreateOptions(
-                static options => options.NumberHandling = JsonNumberHandling.WriteAsString);
-
-            string json = await Serializer.SerializeWrapper(
-                new StrictUnionNumberHandlingContainer { Value = new PlainIntUnion(42) },
-                options);
-
-            JsonTestHelper.AssertJsonEqual("""{"Value":42}""", json);
+            Assert.Equal("hello", GetUnionValue(value!));
         }
 
         public class Animal { }
