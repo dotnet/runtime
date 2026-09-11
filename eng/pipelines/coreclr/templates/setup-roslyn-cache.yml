@@ -1,0 +1,30 @@
+parameters:
+  archType: 'x64'
+  osGroup: 'linux'
+  nameSuffix: ''
+  osSubgroup: ''
+
+steps:
+  # Cache entries restored by pull request builds come only from the pull
+  # request itself or its target branch. This lets rolling builds seed the
+  # cache without allowing pull requests to modify caches used by main.
+  #
+  # The managed configuration is intentionally excluded. Roslyn's
+  # deterministic key includes the compilation options, and some pipeline
+  # legs override the matrix configuration in their build arguments.
+  - task: Cache@2
+    displayName: Roslyn compiler cache
+    continueOnError: true
+    inputs:
+      key: roslyn | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(Build.BuildId)"
+      path: $(Pipeline.Workspace)/.roslyn-cache
+      restoreKeys: |
+        roslyn | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
+
+  - script: |
+      set -euo pipefail
+      echo "##vso[task.setvariable variable=ROSLYN_CACHE_PATH]$(Pipeline.Workspace)/.roslyn-cache"
+      echo "##vso[task.setvariable variable=ROSLYN_CACHE_BUILD_START]$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+      echo "##vso[task.setvariable variable=EnableSourceLink]false"
+      echo "##vso[task.setvariable variable=_compilerCacheBuildArgs]/p:EnableSourceLink=false"
+    displayName: Configure Roslyn compiler cache
