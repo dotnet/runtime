@@ -2068,7 +2068,7 @@ SWITCH_OPCODE:
 #if defined(TARGET_BROWSER) || defined(TARGET_WASI)
                 INTOP_CASE(INTOP_PGO_COUNT)
                     // Increment the block-count PGO counter whose address is stored as a data item.
-                    (*(int32_t*)pMethod->pDataItems[ip[1]])++;
+                    (*(uint32_t*)pMethod->pDataItems[ip[1]])++;
                     ip += 2;
                     INTOP_NEXT;
 #endif // TARGET_BROWSER || TARGET_WASI

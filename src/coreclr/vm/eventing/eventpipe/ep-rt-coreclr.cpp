@@ -176,14 +176,14 @@ void
 ep_rt_coreclr_session_stopping (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-#ifdef FEATURE_PGO
+#if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
 	EX_TRY
 	{
 		PgoManager::FlushInstrumentationData ();
 	}
 	EX_CATCH { }
 	EX_END_CATCH
-#endif // FEATURE_PGO
+#endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }
 
 #endif /* ENABLE_PERFTRACING */

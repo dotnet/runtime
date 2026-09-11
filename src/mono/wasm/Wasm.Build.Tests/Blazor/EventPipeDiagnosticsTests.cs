@@ -281,7 +281,11 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         {
             dumpCmd.ExecuteWithCapturedOutput($"exec \"{pgoTool}\" dump --input \"{mibcPath}\" --output \"{dumpPath}\"").EnsureSuccessful();
         }
-        Assert.Contains(expectedMethod, File.ReadAllText(dumpPath));
+        string dumpText = File.ReadAllText(dumpPath);
+        Assert.Contains(expectedMethod, dumpText);
+        // The method list alone can be populated by Jit method-start events; require actual block-count
+        // instrumentation so the test fails if no INTOP_PGO_COUNT probe ran or the counters weren't flushed.
+        Assert.Contains("BasicBlockIntCount", dumpText);
     }
 
     private string ConvertTrace(ProjectInfo info, string fileName)
