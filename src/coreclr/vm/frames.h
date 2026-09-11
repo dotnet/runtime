@@ -1673,6 +1673,10 @@ struct cdac_data<DynamicHelperFrame>
 // There is a chain of GCFrames on a Thread, separate from the
 // explicit frames derived from the Frame class.
 //------------------------------------------------------------------------
+struct ValueClassInfo;
+typedef DPTR(struct ValueClassInfo) PTR_ValueClassInfo;
+typedef DPTR(PTR_ValueClassInfo) PTR_PTR_ValueClassInfo;
+
 class GCFrame
 {
 public:
@@ -1688,7 +1692,8 @@ public:
         WRAPPER_NO_CONTRACT;
     }
 
-    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags, bool push = true);
+    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags);
+    GCFrame(Thread *pThread, ValueClassInfo **ppValueClasses);
     ~GCFrame();
 
     // Push and pop this frame from the thread's stack.
@@ -1705,8 +1710,8 @@ public:
     BOOL Protects(OBJECTREF *ppORef)
     {
         LIMITED_METHOD_CONTRACT;
-        for (UINT i = 0; i < m_numObjRefs; i++) {
-            if (ppORef == m_pObjRefs + i) {
+        for (UINT i = 0; i < m_payload.m_objectRefs.m_numObjRefs; i++) {
+            if (ppORef == m_payload.m_objectRefs.m_pObjRefs + i) {
                 return TRUE;
             }
         }
@@ -1741,9 +1746,21 @@ public:
 private:
     PTR_GCFrame   m_Next;
     PTR_Thread    m_pCurThread;
-    PTR_OBJECTREF m_pObjRefs;
-    UINT          m_numObjRefs;
-    UINT          m_gcFlags;
+    union Payload
+    {
+        struct
+        {
+            PTR_OBJECTREF m_pObjRefs;
+            UINT          m_numObjRefs;
+            UINT          m_gcFlags;
+        } m_objectRefs;
+        struct
+        {
+            PTR_PTR_ValueClassInfo m_ppValueClasses;
+            UINT                   m_unused;
+            UINT                   m_gcFlags;
+        } m_valueClasses;
+    } m_payload;
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
@@ -1755,15 +1772,13 @@ template<>
 struct cdac_data<GCFrame>
 {
     static constexpr size_t Next = offsetof(GCFrame, m_Next);
-    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pObjRefs);
-    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
-    static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_payload.m_objectRefs.m_pObjRefs);
+    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_payload.m_objectRefs.m_numObjRefs);
+    static constexpr size_t ValueClassInfoList = offsetof(GCFrame, m_payload.m_valueClasses.m_ppValueClasses);
+    static constexpr size_t GCFlags = offsetof(GCFrame, m_payload.m_objectRefs.m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------
-
-struct ValueClassInfo;
-typedef DPTR(struct ValueClassInfo) PTR_ValueClassInfo;
 
 struct ValueClassInfo
 {
@@ -1775,50 +1790,6 @@ struct ValueClassInfo
         : pNext(aNext), pMT(aMT), pData(aData)
     {
     }
-};
-
-//-----------------------------------------------------------------------------
-// ProtectValueClassFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectValueClassFrame) PTR_ProtectValueClassFrame;
-
-class ProtectValueClassFrame : public GCFrame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectValueClassFrame()
-        : GCFrame(GetThread(), NULL, 0, GCFRAME_FLAG_VALUECLASS, false), m_pVCInfo(NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-        Push(GetThread());
-    }
-
-    ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : GCFrame(pThread, NULL, 0, GCFRAME_FLAG_VALUECLASS, false), m_pVCInfo(vcInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Push(pThread);
-    }
-#endif
-
-    ValueClassInfo ** GetValueClassInfoList()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pVCInfo;
-    }
-
-private:
-
-    ValueClassInfo *m_pVCInfo;
-
-    friend struct ::cdac_data<ProtectValueClassFrame>;
-};
-
-template<>
-struct cdac_data<ProtectValueClassFrame>
-{
-    static constexpr size_t ValueClassInfoList = offsetof(ProtectValueClassFrame, m_pVCInfo);
 };
 
 #ifdef _DEBUG

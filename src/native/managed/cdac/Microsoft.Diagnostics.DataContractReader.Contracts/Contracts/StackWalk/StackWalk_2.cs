@@ -54,13 +54,13 @@ internal sealed class StackWalk_2 : StackWalk_1
     private void ReportValueClassFrameRoots(TargetPointer frame, GcScanContext scanContext)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        Data.ProtectValueClassFrame valueClassFrame = _target.ProcessedData.GetOrAdd<Data.ProtectValueClassFrame>(frame);
+        Data.GCFrame valueClassFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(frame);
         HashSet<TargetPointer> seen = [];
-        TargetPointer infoAddress = valueClassFrame.ValueClassInfoList;
+        TargetPointer infoAddress = _target.ReadPointer(valueClassFrame.ValueClassInfoList);
         while (infoAddress != TargetPointer.Null)
         {
             if (!seen.Add(infoAddress))
-                throw new InvalidOperationException("Found a cycle when processing a ProtectValueClassFrame list.");
+                throw new InvalidOperationException("Found a cycle when processing a value-class GCFrame list.");
 
             Data.ValueClassInfo info = _target.ProcessedData.GetOrAdd<Data.ValueClassInfo>(infoAddress);
             ITypeHandle typeHandle = rts.GetTypeHandle(info.MethodTable);

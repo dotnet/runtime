@@ -272,7 +272,7 @@ public:
         // variants.  Using the WithValueTypes variant indicates that the caller
         // has gc-protected the contents of value types of size greater than
         // ENREGISTERED_PARAMTYPE_MAXSIZE (when it is defined, which is currently
-        // only on AMD64).  ProtectValueClassFrame can be used to accomplish this,
+        // only on AMD64). A value-class GCFrame can be used to accomplish this,
         // see CallDescrWithObjectArray in stackbuildersink.cpp.
         //
         // Not all usages of MethodDesc::CallXXX have been ported to the new convention. The end goal is to port them all and get

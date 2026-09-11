@@ -179,7 +179,6 @@ public enum DataType
 
     Frame,
     GCFrame,
-    ProtectValueClassFrame,
     ValueClassInfo,
     InlinedCallFrame,
     SoftwareExceptionFrame,

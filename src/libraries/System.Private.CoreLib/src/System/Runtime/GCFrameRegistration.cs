@@ -22,9 +22,6 @@ namespace System.Runtime
 #if FEATURE_INTERPRETER
         private nuint _osStackLocation;
 #endif
-#if CORECLR
-        private void* _pValueClassInfo;
-#endif
 
         public GCFrameRegistration(void** allocation, uint elemCount, bool areByRefs = true)
         {
@@ -36,23 +33,19 @@ namespace System.Runtime
 #if FEATURE_INTERPRETER
             _osStackLocation = 0;
 #endif
-#if CORECLR
-            _pValueClassInfo = null;
-#endif
         }
 
 #if CORECLR
-        public GCFrameRegistration(void* valueClassInfo)
+        public GCFrameRegistration(void** valueClassInfo)
         {
             _reserved1 = 0;
             _reserved2 = 0;
-            _pObjRefs = null;
+            _pObjRefs = valueClassInfo;
             _numObjRefs = 0;
             _gcFlags = GCFrameValueClassFlag;
 #if FEATURE_INTERPRETER
             _osStackLocation = 0;
 #endif
-            _pValueClassInfo = valueClassInfo;
         }
 #endif
 
