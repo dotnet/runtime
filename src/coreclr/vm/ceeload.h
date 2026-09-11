@@ -700,6 +700,8 @@ private:
         REF_SAFETY_RULES_V11_IS_CACHED = 0x00040000,
         //If this module opted into RefSafetyRules version 11 or above
         REF_SAFETY_RULES_V11 = 0x00080000,
+
+        SKIP_ACCESS_VALIDATION = 0x00100000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -1526,6 +1528,16 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return (m_dwPersistedFlags & SKIP_TYPE_VALIDATION) != 0;
+    }
+
+    // Returns true if crossgen2 has already proven that every typeref/memberref/methodspec/typespec referenced
+    // from a method body in this module is accessible to its caller. When true, the JIT-time access checks
+    // in ClassLoader::CanAccess/CanAccessClass can be skipped for callers defined in this module.
+    bool SkipAccessValidation() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_dwPersistedFlags & SKIP_ACCESS_VALIDATION) != 0;
     }
 #ifdef FEATURE_READYTORUN
     PTR_ReadyToRunInfo GetReadyToRunInfo() const

@@ -438,6 +438,9 @@
   <data name="TypeValidation" xml:space="preserve">
     <value>Configure the runtime's behavior around validating the correctness of types defined in assemblies compiled via crossgen2</value>
   </data>
+  <data name="AccessValidation" xml:space="preserve">
+    <value>Configure the runtime's behavior around validating that typerefs/memberrefs/methodspecs/typespecs referenced from method bodies in assemblies compiled via crossgen2 are accessible to their callers</value>
+  </data>
   <data name="GenericCycleBreadthCutoff" xml:space="preserve">
     <value>Total number of occurrences of potentially cyclic generic types within a generic type to cut off</value>
   </data>

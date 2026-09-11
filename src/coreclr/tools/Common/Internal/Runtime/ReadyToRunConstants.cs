@@ -23,6 +23,9 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
         READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
+        READYTORUN_FLAG_SkipAccessValidation = 0x00001000,     // Runtime should trust that every typeref/memberref/methodspec/typespec referenced
+                                                                // from a method body in this module is accessible to its caller, and skip the
+                                                                // corresponding JIT-time access checks
     }
 
     public enum ReadyToRunImportSectionType : byte

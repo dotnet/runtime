@@ -59,10 +59,19 @@ namespace ILCompiler.DependencyAnalysis
         SkipTypeValidation
     }
 
+    public enum AccessValidationRule
+    {
+        Automatic,
+        AutomaticWithLogging,
+        AlwaysValidate,
+        SkipAccessValidation
+    }
+
     public struct NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
         public TypeValidationRule TypeValidation;
+        public AccessValidationRule AccessValidation;
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
@@ -346,7 +355,8 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
-            int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
+            int genericCycleDepthCutoff, int genericCycleBreadthCutoff,
+            EcmaModule associatedModuleForAccessValidation = null)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -360,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis
             Resolver = compilationModuleGroup.Resolver;
             Format = format;
 
-            Header = new GlobalHeaderNode(flags, associatedModule);
+            Header = new GlobalHeaderNode(flags, associatedModule, associatedModuleForAccessValidation);
             ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);

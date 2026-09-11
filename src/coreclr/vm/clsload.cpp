@@ -4152,6 +4152,15 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
     }
     CONTRACTL_END
 
+    // If crossgen2 has already proven (READYTORUN_FLAG_SKIP_ACCESS_VALIDATION) that every typeref/memberref/
+    // methodspec/typespec referenced from a method body in the caller's module is accessible to its caller,
+    // trust that proof and skip re-deriving the same answer here.
+    MethodDesc* pCallerMethodForSkipCheck = pContext->GetCallerMethod();
+    if (pCallerMethodForSkipCheck != NULL && pCallerMethodForSkipCheck->GetModule()->SkipAccessValidation())
+    {
+        return TRUE;
+    }
+
     // If there is no target class, allow access.
     // @todo: what does that mean?
     //if (!pTargetClass)
@@ -4270,6 +4279,14 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    // See comment in CanAccessClass: trust crossgen2's proof that this caller's module has no illegal
+    // typeref/memberref/methodspec/typespec references and skip re-checking it at JIT time.
+    MethodDesc* pCallerMethodForSkipCheck = pContext->GetCallerMethod();
+    if (pCallerMethodForSkipCheck != NULL && pCallerMethodForSkipCheck->GetModule()->SkipAccessValidation())
+    {
+        return TRUE;
+    }
 
     AccessCheckOptions accessCheckOptionsNoThrow(accessCheckOptions, FALSE);
 
