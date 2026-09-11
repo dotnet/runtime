@@ -106,6 +106,10 @@ namespace ILCompiler
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _dependencyGraph.ComputeMarkedNodes();
+
+            // Release single-threaded JIT state before object emission to reduce peak memory usage.
+            _singleThreadedWorkerState = default;
+
             var nodes = _dependencyGraph.MarkedNodeList;
 
             nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
