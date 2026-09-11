@@ -1166,7 +1166,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 
     // br for false target, if not fallthrough
     //
-    if (falseTarget != block->Next())
+    if (!block->CanRemoveJumpToTarget(falseTarget, m_compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
     }

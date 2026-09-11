@@ -920,8 +920,41 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.GetVersionId(Guid* vid)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (vid is null)
+                throw new NullReferenceException();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
+            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(handle)
+                ?? throw new NotImplementedException();
+            ModuleDefinition module = reader.GetModuleDefinition();
+            *vid = reader.GetGuid(module.Mvid);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            Guid vidLocal = default;
+            int hrLocal;
+            if (vid is null)
+                hrLocal = _legacyModule.GetVersionId(null);
+            else
+                hrLocal = _legacyModule.GetVersionId(&vidLocal);
+
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0)
+                Debug.Assert(*vid == vidLocal);
+        }
+#endif
+
+        return hr;
     }
 
     int IXCLRDataModule2.SetJITCompilerFlags(uint flags)
