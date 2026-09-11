@@ -143,14 +143,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            Utf8String functionName = GetMangledName(node);
-            RegisterFunctionSymbol(functionName);
-
-            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
-            if (!alternateName.IsNull)
-            {
-                _wasmSymbolManager.AddAlias(ExternCName(alternateName), functionName);
-            }
+            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
 
             if (node is INodeWithFunclets nodeWithFunclets)
             {
@@ -177,10 +170,8 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteFunctionEntry(int signatureIndex)
         {
-            WasmFunctionSection section = GetOrCreateSection<WasmFunctionSection>(
-                WasmObjectNodeSection.FunctionSection,
-                out SectionWriter writer);
-            section.WriteEntry(writer, signatureIndex);
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
+            writer.WriteULEB128((ulong)signatureIndex);
         }
 
         /// <summary>

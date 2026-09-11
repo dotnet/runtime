@@ -871,7 +871,7 @@ namespace ILCompiler.ObjectWriter
 
             foreach (SymbolicRelocation reloc in relocs)
             {
-                Debug.Assert(sourceStream.Position != reloc.Offset,
+                Debug.Assert(sourceStream.Position == reloc.Offset,
                     $"Unexpected data in the WASM Function section between offsets {sourceStream.Position} and {reloc.Offset}.");
 
                 ResolveReloc(

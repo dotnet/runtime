@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32) (result))
+            new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32))
                 [
                     Local.Get(0), // (local.get $destPtr)
                     I32.Const(0),
