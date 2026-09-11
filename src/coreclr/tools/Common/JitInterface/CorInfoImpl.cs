@@ -1100,8 +1100,24 @@ namespace Internal.JitInterface
 
         private bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
         {
-            MethodDesc method = HandleToObject(ftn);
-            return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
+            return isIntrinsicInternal(HandleToObject(ftn));
+        }
+
+        private bool isIntrinsicInternal(MethodDesc method)
+        {
+            if (!method.IsIntrinsic && !HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+                return false;
+
+#if READYTORUN
+            // Intrinsic expansion bypasses canInline, so enforce the same ISA requirements here.
+            if (method.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is EcmaMethod ecmaMethod &&
+                ShouldCodeNotBeCompiledIntoFinalImage(_compilation.InstructionSetSupport, ecmaMethod, checkInstructionSetSupportOnly: true))
+            {
+                return false;
+            }
+#endif
+
+            return true;
         }
 
         private bool canValueClassInstancePointerEscape(CORINFO_METHOD_STRUCT_* ftn)
@@ -1143,7 +1159,7 @@ namespace Internal.JitInterface
 
             if (method.IsSynchronized)
                 result |= CorInfoFlag.CORINFO_FLG_SYNCH;
-            if (method.IsIntrinsic)
+            if (isIntrinsicInternal(method))
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
             {
@@ -1225,12 +1241,6 @@ namespace Internal.JitInterface
                 }
             }
 #endif
-
-            // Check for hardware intrinsics
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
-            {
-                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
-            }
 
             // Internal calls typically turn into fcalls that do not always
             // probe for GC. Be conservative here and always let JIT know that

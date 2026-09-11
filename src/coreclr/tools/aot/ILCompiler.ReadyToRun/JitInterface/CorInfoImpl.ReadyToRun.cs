@@ -588,7 +588,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
+        public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method, bool checkInstructionSetSupportOnly = false)
         {
             EcmaMethod ecmaMethod = (EcmaMethod)(method.GetPrimaryMethodDesc().GetTypicalMethodDefinition());
             var metadataReader = ecmaMethod.MetadataReader;
@@ -605,7 +605,8 @@ namespace Internal.JitInterface
                 if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
                     continue;
 
-                if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime"))
+                // Keep non-ISA exclusions separate from the instruction-set checks.
+                if (!checkInstructionSetSupportOnly && metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime"))
                 {
                     if (metadataReader.StringComparer.Equals(nameHandle, "BypassReadyToRunAttribute"))
                     {
