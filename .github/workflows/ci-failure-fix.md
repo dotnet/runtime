@@ -62,7 +62,6 @@ jobs:
       contents: read
       issues: read
     outputs:
-      candidates: ${{ steps.filter.outputs.candidates }}
       count: ${{ steps.filter.outputs.count }}
     steps:
       - name: Checkout workflow helper
@@ -77,17 +76,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           bash .github/workflows/shared/filter-scanner-kbes.sh
+      - name: Upload scanner KBE allowlist
+        uses: actions/upload-artifact@v7
+        with:
+          name: scanner-kbe-candidates
+          path: ${{ runner.temp }}/scanner-kbe-candidates.json
+          if-no-files-found: error
   agent:
     needs: scanner_kbes
     if: needs.scanner_kbes.outputs.count > 0
 
 steps:
-  - name: Save scanner KBE allowlist
-    env:
-      KBE_CANDIDATES: ${{ needs.scanner_kbes.outputs.candidates }}
-    run: |
-      mkdir -p /tmp/gh-aw/agent
-      printf '%s\n' "$KBE_CANDIDATES" > /tmp/gh-aw/agent/scanner-kbe-candidates.json
+  - name: Download scanner KBE allowlist
+    uses: actions/download-artifact@v8
+    with:
+      name: scanner-kbe-candidates
+      path: /tmp/gh-aw/agent
 
 safe-outputs:
   create-pull-request:

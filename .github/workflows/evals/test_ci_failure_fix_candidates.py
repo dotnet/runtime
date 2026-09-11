@@ -76,12 +76,9 @@ gh() {
 
             self.assertEqual(result.returncode, 0, result.stderr)
             outputs = dict(line.split("=", 1) for line in output.read_text().splitlines())
-            candidates = json.loads(outputs["candidates"])["candidates"]
+            candidates = json.loads((temp / "scanner-kbe-candidates.json").read_text())["candidates"]
             self.assertEqual(int(outputs["count"]), len(candidates))
-            self.assertEqual(
-                json.loads((temp / "scanner-kbe-candidates.json").read_text()),
-                {"candidates": candidates},
-            )
+            self.assertEqual(set(outputs), {"count"})
             return candidates
 
     def test_filters_metadata_and_preserves_oldest_first(self):
@@ -156,11 +153,14 @@ gh() {
         self.assertIn("bash .github/workflows/shared/filter-scanner-kbes.sh", lock.read_text())
         self.assertIn("uses: actions/checkout@", lock.read_text())
         self.assertIn("sparse-checkout: .github/workflows/shared/filter-scanner-kbes.sh", lock.read_text())
+        self.assertIn("name: scanner-kbe-candidates", lock.read_text())
         self.assertTrue(FILTER_SCRIPT.exists())
         agent = lock.read_text().split("\n  agent:\n", 1)[1].split("\n  conclusion:\n", 1)[0]
         self.assertIn("      - scanner_kbes\n", agent)
         self.assertIn("(needs.scanner_kbes.outputs.count > 0)", agent)
-        self.assertIn("KBE_CANDIDATES: ${{ needs.scanner_kbes.outputs.candidates }}", agent)
+        self.assertIn("actions/download-artifact@", agent)
+        self.assertIn("path: /tmp/gh-aw/agent", agent)
+        self.assertNotIn("needs.scanner_kbes.outputs.candidates", agent)
         self.assertNotIn("Start DIFC Proxy", agent)
         self.assertIn("GH_AW_APPROVAL_LABELS_EXTRA: Known Build Error", agent)
 

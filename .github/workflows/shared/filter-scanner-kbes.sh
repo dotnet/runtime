@@ -37,6 +37,5 @@ gh api --method GET repos/dotnet/runtime/issues \
 candidate_count="$(jq '.candidates | length' "$RUNNER_TEMP/scanner-kbe-candidates.json")"
 echo "Filtered ${candidate_count} scanner-authored KBE(s)."
 {
-  printf 'candidates=%s\n' "$(cat "$RUNNER_TEMP/scanner-kbe-candidates.json")"
   printf 'count=%s\n' "$candidate_count"
 } >> "$GITHUB_OUTPUT"
