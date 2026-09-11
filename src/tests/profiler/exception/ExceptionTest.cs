@@ -36,9 +36,14 @@ namespace Profiler.Tests
             {
                 Foo();
             }
-            catch (Exception)
+            catch (Exception e) when (Filter(e))
             {
-            }            
+            }
+        }
+
+        private static bool Filter(Exception e)
+        {
+            return e.Message == "Thrown from finally";
         }
 
         public static int RunTest(String[] args)
@@ -61,6 +66,8 @@ namespace Profiler.Tests
                 "ExceptionSearchFunctionEnter: Foo\n"+
                 "ExceptionSearchFunctionLeave\n"+
                 "ExceptionSearchFunctionEnter: Bar\n"+
+                "ExceptionSearchFilterEnter: Bar\n"+
+                "ExceptionSearchFilterLeave\n"+
                 "ExceptionSearchCatcherFound: Bar\n"+
                 "ExceptionSearchFunctionLeave\n"+
                 "ExceptionUnwindFunctionEnter: Foo\n"+

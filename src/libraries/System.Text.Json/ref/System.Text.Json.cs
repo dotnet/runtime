@@ -440,6 +440,7 @@ namespace System.Text.Json
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
+        public bool InferClosedTypePolymorphism { get { throw null; } set { } }
         public bool IsReadOnly { get { throw null; } }
         public int MaxDepth { get { throw null; } set { } }
         public string NewLine { get { throw null; } set { } }
@@ -1141,6 +1142,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonPolymorphicAttribute() { }
         public bool IgnoreUnrecognizedTypeDiscriminators { get { throw null; } set { } }
+        public bool InferClosedTypePolymorphism { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type? TypeClassifier { get { throw null; } set { } }
         public string? TypeDiscriminatorPropertyName { get { throw null; } set { } }
@@ -1202,6 +1204,7 @@ namespace System.Text.Json.Serialization
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
+        public bool InferClosedTypePolymorphism { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
         public string? NewLine { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
@@ -1273,6 +1276,12 @@ namespace System.Text.Json.Serialization
         public JsonUnionAttribute() { }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type? TypeClassifier { get { throw null; } set { } }
+    }
+    public partial class JsonUnionTypeStructuralClassifier : System.Text.Json.Serialization.JsonTypeClassifierFactory
+    {
+        public JsonUnionTypeStructuralClassifier() { }
+        public override bool CanClassify(System.Text.Json.Serialization.JsonTypeClassifierContext context) { throw null; }
+        public override System.Text.Json.Serialization.JsonTypeClassifier CreateJsonClassifier(System.Text.Json.Serialization.JsonTypeClassifierContext context, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
     public enum JsonUnknownDerivedTypeHandling
     {

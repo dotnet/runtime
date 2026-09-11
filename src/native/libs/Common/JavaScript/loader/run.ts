@@ -118,7 +118,6 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const wasmNativePromise: Promise<Response> = fetchMainWasm(resources.wasmNative[0]);
 
         const coreAssembliesPromise = forEachResource(resources.coreAssembly, fetchAssembly);
-        const coreVfsPromise = forEachResource(resources.coreVfs, fetchVfs);
 
         const icuResourceName = getIcuResourceName();
         const icuDataPromise = forEachResource(resources.icu, fetchIcu, asset => asset.name === icuResourceName);
@@ -158,7 +157,6 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         await nativeModulePromiseController.promise;
         runtimeState.nativeReady = true;
         await coreAssembliesPromise;
-        await coreVfsPromise;
         await vfsPromise;
         await icuDataPromise;
         await wasmNativePromise; // this is just to propagate errors

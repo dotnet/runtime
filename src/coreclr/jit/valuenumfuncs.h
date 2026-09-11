@@ -114,6 +114,11 @@ ValueNumFuncDef(LeadingZeroCount, 1, false, false)
 ValueNumFuncDef(TrailingZeroCount, 1, false, false)
 ValueNumFuncDef(PopCount, 1, false, false)
 
+ValueNumFuncDef(SaturateToInt8, 1, false, false)
+ValueNumFuncDef(SaturateToInt16, 1, false, false)
+ValueNumFuncDef(SaturateToUInt8, 1, false, false)
+ValueNumFuncDef(SaturateToUInt16, 1, false, false)
+
 ValueNumFuncDef(ObjGetType, 1, false, true)
 ValueNumFuncDef(GetGcstaticBase, 1, false, true)
 ValueNumFuncDef(GetNongcstaticBase, 1, false, true)
@@ -193,7 +198,7 @@ ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compos
 ValueNumFuncDef(HWI_INTRINSIC_START, -1, false, false)
 
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for x86/x64
+ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS
 #include "hwintrinsiclist.h"
 
 ValueNumFuncDef(HWI_INTRINSIC_END, -1, false, false)

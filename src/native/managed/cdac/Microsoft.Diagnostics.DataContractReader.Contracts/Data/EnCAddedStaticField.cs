@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EnCAddedStaticField))]
 internal sealed partial class EnCAddedStaticField : IData<EnCAddedStaticField>
 {
-    [Field] public TargetPointer FieldDesc { get; }
-    [FieldAddress] public TargetPointer FieldData { get; }
+    [Field] public partial TargetPointer FieldDesc { get; }
+    [FieldAddress] public partial TargetPointer FieldData { get; }
 }

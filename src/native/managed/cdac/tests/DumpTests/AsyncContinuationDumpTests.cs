@@ -44,7 +44,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         TargetPointer continuationMT = Target.ReadPointer(continuationMTGlobal);
         Assert.NotEqual(TargetPointer.Null, continuationMT);
 
-        TypeHandle handle = rts.GetTypeHandle(continuationMT);
+        ITypeHandle handle = rts.GetTypeHandle(continuationMT);
         Assert.False(rts.IsContinuationWithoutMetadata(handle));
     }
 
@@ -58,7 +58,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
         TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
-        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+        ITypeHandle objectHandle = rts.GetTypeHandle(objectMT);
         Assert.False(rts.IsContinuationWithoutMetadata(objectHandle));
     }
 
@@ -111,7 +111,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         // 4. Verify the object's MethodTable is a continuation subtype via the cDAC.
         TargetPointer objMT = Target.Contracts.Object.GetMethodTableAddress(
             new TargetPointer(continuationAddress));
-        TypeHandle handle = rts.GetTypeHandle(objMT);
+        ITypeHandle handle = rts.GetTypeHandle(objMT);
         Assert.True(rts.IsContinuationWithoutMetadata(handle));
     }
 }

@@ -22,7 +22,7 @@ public class ISOSDacInterface13Tests : DumpTestBase
     public unsafe void GetLoaderAllocatorHeapNames_MatchExpectedOrder(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        ISOSDacInterface13 sosDac = (ISOSDacInterface13)new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface13 sosDac = (ISOSDacInterface13)new SOSDacImpl(Target, legacyObj: null, new());
 
         int heapCount;
         int hr = sosDac.GetLoaderAllocatorHeapNames(0, null, &heapCount);
@@ -50,7 +50,6 @@ public class ISOSDacInterface13Tests : DumpTestBase
             "LowFrequencyHeap",
             "HighFrequencyHeap",
             "StaticsHeap",
-            "StubHeap",
             "ExecutableHeap",
             "FixupPrecodeHeap",
             "NewStubPrecodeHeap",

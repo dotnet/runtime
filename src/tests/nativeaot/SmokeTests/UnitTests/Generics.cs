@@ -64,6 +64,7 @@ class Generics
         TestGenericInliningTypeGenericsOnly.Run();
         Test99198Regression.Run();
         Test102259Regression.Run();
+        Test129093Regression.Run();
         Test104913Regression.Run();
         Test105397Regression.Run();
         Test105880Regression.Run();
@@ -3787,6 +3788,33 @@ class Generics
         public static void Run()
         {
             new Gen<object>();
+        }
+    }
+
+    class Test129093Regression
+    {
+        class Gen<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Type Method() => typeof(T);
+        }
+
+        // Inlineable generic method taking the address of a method that needs a generic context.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static unsafe nint GetPtr<U>() => (nint)(delegate*<Type>)&Gen<U>.Method;
+
+        class Caller<X>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static nint Run() => GetPtr<X>();
+        }
+
+        public static unsafe void Run()
+        {
+            if (((delegate*<Type>)Caller<object>.Run())() != typeof(object))
+                throw new Exception();
+            if (((delegate*<Type>)Caller<string>.Run())() != typeof(string))
+                throw new Exception();
         }
     }
 

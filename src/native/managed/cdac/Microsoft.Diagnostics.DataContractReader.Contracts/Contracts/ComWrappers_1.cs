@@ -74,8 +74,7 @@ internal struct ComWrappers_1 : IComWrappers
 
     private TargetPointer IndexIntoDispatchSection(int index, TargetPointer dispatches)
     {
-        Target.TypeInfo dispatchTypeInfo = _target.GetTypeInfo(DataType.InternalComInterfaceDispatch);
-        uint dispatchSize = dispatchTypeInfo.Size!.Value;
+        uint dispatchSize = Data.InternalComInterfaceDispatch.GetSize(_target);
         uint entriesPerThisPtr = (dispatchSize / (uint)_target.PointerSize) - 1;
 
         TargetPointer dispatchAddress = dispatches + (ulong)((uint)(index / (int)entriesPerThisPtr) * dispatchSize);
@@ -93,8 +92,7 @@ internal struct ComWrappers_1 : IComWrappers
             return IndexIntoDispatchSection(layout.UserDefinedCount, layout.Dispatches);
         }
 
-        Target.TypeInfo entryTypeInfo = _target.GetTypeInfo(DataType.ComInterfaceEntry);
-        uint entrySize = entryTypeInfo.Size!.Value;
+        uint entrySize = Data.ComInterfaceEntry.GetSize(_target);
 
         for (int i = 0; i < layout.UserDefinedCount; i++)
         {

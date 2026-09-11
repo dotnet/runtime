@@ -14,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class DispatchCellNode : SortableDependencyNode, ISymbolDefinitionNode
     {
         private const int InvalidOffset = -1;
+        internal const int MaxCellInfoLookupDistance = 100;
 
         private readonly MethodDesc _targetMethod;
         private readonly ISortableSymbolNode _callSiteIdentifier;
@@ -106,5 +107,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+    }
+
+    internal sealed class DispatchCellInfoComparer : IComparer<DispatchCellNode>
+    {
+        private readonly CompilerComparer _comparer = CompilerComparer.Instance;
+
+        public int Compare(DispatchCellNode x, DispatchCellNode y)
+        {
+            int result = _comparer.Compare(x.TargetMethod, y.TargetMethod);
+            return result != 0 ? result : _comparer.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
+        }
     }
 }

@@ -28,13 +28,13 @@ public abstract class BaseGcTransition
     }
 }
 
-public class CalleeSavedRegister : BaseGcTransition
+public class ThisPointerRegister : BaseGcTransition
 {
     public RegMask Register { get; set; }
 
-    public CalleeSavedRegister() { }
+    public ThisPointerRegister() { }
 
-    public CalleeSavedRegister(int codeOffset, RegMask reg)
+    public ThisPointerRegister(int codeOffset, RegMask reg)
         : base(codeOffset)
     {
         Register = reg;

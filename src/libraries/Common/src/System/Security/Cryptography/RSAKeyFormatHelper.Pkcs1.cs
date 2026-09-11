@@ -15,9 +15,10 @@ namespace System.Security.Cryptography
         internal static TRet FromPkcs1PrivateKey<TRet>(
             ReadOnlySpan<byte> keyData,
             RSAParametersCallback<TRet> parametersReader,
-            bool pinAndClearParameters = true)
+            bool pinAndClearParameters = true,
+            AsnEncodingRules ruleSet = AsnEncodingRules.BER)
         {
-            ValueRSAPrivateKeyAsn.Decode(keyData, AsnEncodingRules.BER, out ValueRSAPrivateKeyAsn key);
+            ValueRSAPrivateKeyAsn.Decode(keyData, ruleSet, out ValueRSAPrivateKeyAsn key);
 
             const int MaxSupportedVersion = 0;
 
@@ -79,9 +80,10 @@ namespace System.Security.Cryptography
 
         internal static TRet FromPkcs1PublicKey<TRet>(
             ReadOnlySpan<byte> keyData,
-            RSAParametersCallback<TRet> parametersReader)
+            RSAParametersCallback<TRet> parametersReader,
+            AsnEncodingRules ruleSet = AsnEncodingRules.BER)
         {
-            ValueRSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER, out ValueRSAPublicKeyAsn key);
+            ValueRSAPublicKeyAsn.Decode(keyData, ruleSet, out ValueRSAPublicKeyAsn key);
 
             RSAParameters parameters = new RSAParameters
             {

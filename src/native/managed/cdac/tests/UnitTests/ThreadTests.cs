@@ -44,6 +44,57 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IdToThread_IncludesHighestId(MockTarget.Architecture arch)
+    {
+        const uint HighestId = 3;
+        const ulong ExpectedThread = 0x7000;
+        TargetTestHelpers helpers = new(arch);
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = builder.MemoryBuilder.CreateAllocator(0x1000, 0x9000);
+        TargetTestHelpers.LayoutResult layout = helpers.LayoutFields(
+        [
+            new(nameof(Data.IdDispenser.IdToThread), DataType.pointer),
+            new(nameof(Data.IdDispenser.HighestId), DataType.uint32),
+        ]);
+
+        MockMemorySpace.HeapFragment idToThread = allocator.Allocate(
+            (ulong)((HighestId + 1) * helpers.PointerSize),
+            "IdToThread");
+        helpers.WritePointer(
+            idToThread.Data.AsSpan((int)HighestId * helpers.PointerSize, helpers.PointerSize),
+            ExpectedThread);
+
+        MockMemorySpace.HeapFragment dispenser = allocator.Allocate(layout.Stride, "IdDispenser");
+        helpers.WritePointer(
+            dispenser.Data.AsSpan(layout.Fields[nameof(Data.IdDispenser.IdToThread)].Offset, helpers.PointerSize),
+            idToThread.Address);
+        helpers.Write(
+            dispenser.Data.AsSpan(layout.Fields[nameof(Data.IdDispenser.HighestId)].Offset, sizeof(uint)),
+            HighestId);
+
+        MockMemorySpace.HeapFragment global = allocator.Allocate((ulong)helpers.PointerSize, "ThinlockThreadIdDispenser");
+        helpers.WritePointer(global.Data, dispenser.Address);
+        MockMemorySpace.HeapFragment threadStoreGlobal = allocator.Allocate((ulong)helpers.PointerSize, "ThreadStore");
+        helpers.WritePointer(threadStoreGlobal.Data, 0);
+
+        Target target = builder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.IdDispenser] = new Target.TypeInfo { Fields = layout.Fields, Size = layout.Stride },
+                [DataType.Thread] = new Target.TypeInfo { Fields = new Dictionary<string, Target.FieldInfo>(), Size = 0 },
+            })
+            .AddGlobals(
+                (Constants.Globals.ThinlockThreadIdDispenser, global.Address),
+                (Constants.Globals.ThreadStore, threadStoreGlobal.Address))
+            .AddContract<IThread>("c1")
+            .Build();
+
+        Assert.Equal(new TargetPointer(ExpectedThread), target.Contracts.Thread.IdToThread(HighestId));
+        Assert.Equal(TargetPointer.Null, target.Contracts.Thread.IdToThread(HighestId + 1));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetThreadStoreData(MockTarget.Architecture arch)
     {
         int threadCount = 15;

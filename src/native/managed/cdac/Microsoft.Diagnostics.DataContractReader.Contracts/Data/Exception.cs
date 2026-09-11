@@ -7,26 +7,26 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class Exception : IData<Exception>
 {
     [Field("_message")]
-    public TargetPointer Message { get; }
+    public partial TargetPointer Message { get; }
 
     [Field("_innerException")]
-    public TargetPointer InnerException { get; }
+    public partial TargetPointer InnerException { get; }
 
     [Field("_stackTrace")]
-    public TargetPointer StackTrace { get; }
+    public partial TargetPointer StackTrace { get; }
 
     [Field("_watsonBuckets")]
-    public TargetPointer WatsonBuckets { get; }
+    public partial TargetPointer WatsonBuckets { get; }
 
     [Field("_stackTraceString")]
-    public TargetPointer StackTraceString { get; }
+    public partial TargetPointer StackTraceString { get; }
 
     [Field("_remoteStackTraceString")]
-    public TargetPointer RemoteStackTraceString { get; }
+    public partial TargetPointer RemoteStackTraceString { get; }
 
     [Field("_HResult")]
-    public int HResult { get; }
+    public partial int HResult { get; }
 
     [Field("_xcode")]
-    public int XCode { get; }
+    public partial int XCode { get; }
 }

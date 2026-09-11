@@ -198,7 +198,7 @@ void CodeGen::genCodeForBBlist()
     if (m_compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", m_compiler->compCycleEstimate,
+        printf("compCycleEstimate = %6zu, compSizeEstimate = %5zu ", m_compiler->compCycleEstimate,
                m_compiler->compSizeEstimate);
         printf("%s\n", m_compiler->info.compFullName);
     }
@@ -246,8 +246,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     JITDUMP("\n=============== Generating ");
     JITDUMPEXEC(block->dspBlockHeader(true, true));
     JITDUMPEXEC(m_compiler->fgDispBBLiveness(block));
-
-    assert(LIR::AsRange(block).CheckLIR(m_compiler));
 
     // Figure out which registers hold variables on entry to this block
 
@@ -457,6 +455,13 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     if (block->IsFirst() && m_compiler->lvaHasAnySwiftStackParamToReassemble())
     {
         genHomeSwiftStructStackParameters();
+    }
+#endif
+
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame && block->IsFirst())
+    {
+        genZeroInitializeUnknownSizeFrame();
     }
 #endif
 
@@ -981,6 +986,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
 }
 
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
 //   Record information about an async resume point in the async resume info tabl.e
@@ -999,6 +1006,8 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
 
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
+
+#if HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1109,23 +1118,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
 }
 
-//------------------------------------------------------------------------
-// genUpdateVarReg: Update the current register location for a multi-reg lclVar
-//
-// Arguments:
-//    varDsc   - the LclVarDsc for the lclVar
-//    tree     - the lclVar node
-//    regIndex - the index of the register in the node
-//
-// inline
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    // This should only be called for multireg lclVars.
-    assert(m_compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
-    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
-}
-#endif // !TARGET_WASM
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 // genUpdateVarReg: Update the current register location for a lclVar
@@ -1749,6 +1742,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+#endif
         else if (tree->OperIsFieldList())
         {
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
@@ -1757,7 +1751,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
                 genConsumeRegs(fieldNode);
             }
         }
-#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -2555,7 +2548,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 
     if (castIsLoad)
     {
-        const var_types srcLoadType = src->TypeGet();
+        // A spill temp holds the full actual-type value, already extended per the source's own
+        // signedness, so we allow a bit more leeway with it, in that the cast's own sign can be
+        // allowed to not match the source's, by being executed "as-if" it was from TYP_INT.
+        // This flexibility is used by some HWI lowering which tweaks casts.
+        const var_types srcLoadType = src->isUsedFromSpillTemp() ? srcType : src->TypeGet();
 
         switch (m_extendKind)
         {
@@ -2787,6 +2784,10 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "advsimd") != nullptr))
     {
         genArm64EmitterUnitTestsAdvSimd();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "fp16") != nullptr))
+    {
+        genArm64EmitterUnitTestsFp16();
     }
     if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {

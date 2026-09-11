@@ -15,6 +15,7 @@
 
 #include <utilcode.h>
 #include <minipal/mutex.h>
+#include "debugwait.h"
 
 #include <functional>
 
@@ -3692,20 +3693,25 @@ public:
     RSSmartPtr<Cordb>     m_cordb;
 
 private:
-    // OS process handle to live process.
-    // @dbgtodo - , Move this into the Shim. This should only be needed in the live-process
-    // case. Get rid of this since it breaks the data-target abstraction.
-    // For Mac debugging, this handle is of course not the real process handle.  This is just a handle to
-    // wait on for process termination.
-    HANDLE                m_handle;
+    // Process-exit waitable. On Windows this wraps an OS process handle. On Unix it is a debug-pal latch
+    // that is valid only with the debug-pal wait APIs and must not be exposed to clients.
+    WaitHandle *m_handle;
 
     // Process descriptor - holds PID and App group ID for Mac debugging
     ProcessDescriptor m_processDescriptor;
 
 public:
-    // Wrapper to get the OS process handle. This is unsafe because it breaks the data-target abstraction.
-    // The only things that need this should be calls to DuplicateHandle, and some shimming work.
-    HANDLE  UnsafeGetProcessHandle()
+    // Windows-only callers may also use the returned value as the native process handle.
+    HANDLE UnsafeGetProcessHandle()
+    {
+#ifdef HOST_WINDOWS
+        return m_handle == nullptr ? NULL : m_handle->GetRawHandle();
+#else
+        return NULL;
+#endif
+    }
+
+    WaitHandle *UnsafeGetProcessWaitHandle()
     {
         return m_handle;
     }
@@ -3868,7 +3874,7 @@ public:
 
 
     DebuggerIPCRuntimeOffsets m_runtimeOffsets;
-    HANDLE                    m_leftSideEventAvailable;
+    WaitEvent                *m_leftSideEventAvailable;
     HANDLE                    m_leftSideEventRead;
 #if defined(FEATURE_INTEROP_DEBUGGING)
     HANDLE                    m_leftSideUnmanagedWaitEvent;
@@ -4085,6 +4091,8 @@ private:
     RSExtSmartPtr<ICorDebugMetaDataLocator>   m_pMetaDataLocator;
 
     IDacDbiInterface *  m_pDacPrimitives;
+    // Keeps the native fallback DAC alive until the managed cDAC has been released.
+    IUnknown *           m_pLegacyDac;
 
     IEventChannel *     m_pEventChannel;
 
@@ -6988,6 +6996,19 @@ public:
                                             CordbType * pType,
                                             ICorDebugValue **ppValue);
 
+    // Build a value that lives in two registers, where either register may be an
+    // integer or a floating-point register (e.g. a 16-byte struct returned in
+    // XMM0+XMM1 on Unix x64, or a mixed int/fp multi-register return). lowReg/highReg
+    // hold the low/high 8 bytes of the value; when the corresponding *IsFloat flag is
+    // true the register is a 0-based fp register index, otherwise it is a
+    // CorDebugRegister.
+    HRESULT GetLocalTwoRegisterValue(DWORD lowReg,
+                                            bool lowIsFloat,
+                                            DWORD highReg,
+                                            bool highIsFloat,
+                                            CordbType * pType,
+                                            ICorDebugValue **ppValue);
+
 
     CORDB_ADDRESS GetLSStackAddress(ICorDebugInfo::RegNum regNum, signed offset);
 
@@ -7870,6 +7891,71 @@ protected:
     // The information for the second of two registers in which the value resides.
     const RegisterInfo               m_reg2Info;
 }; // class RegRegValueHome
+
+// class TwoRegisterValueHome
+// EnregisteredValueHome for a value that lives in two registers where at least one is a
+// floating-point register (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64, or a
+// mixed int/fp multi-register return).
+// Floating-point register contents are not reachable through the integer register display, so
+// rather than referencing live registers this home captures a snapshot of the 16-byte value
+// (low 8 bytes followed by high 8 bytes) when it is created. The snapshot is used to populate
+// the value's local object copy and is cloned for field access. Writing back to a
+// multi-register return value is not supported.
+class TwoRegisterValueHome: public EnregisteredValueHome
+{
+public:
+    // initializing constructor
+    // Arguments:
+    //     input:  pFrame - frame to which the value belongs
+    //             pValue - pointer to the snapshot bytes (low 8 bytes followed by high 8 bytes)
+    //             size   - number of valid bytes pointed to by pValue
+    TwoRegisterValueHome(const CordbNativeFrame * pFrame, const BYTE * pValue, ULONG32 size):
+        EnregisteredValueHome(pFrame)
+    {
+        _ASSERTE(size <= sizeof(m_value));
+        memset(m_value, 0, sizeof(m_value));
+        if (pValue != NULL)
+        {
+            memcpy(m_value, pValue, (size < sizeof(m_value)) ? size : (ULONG32)sizeof(m_value));
+        }
+    };
+
+    // copy constructor
+    TwoRegisterValueHome(const TwoRegisterValueHome * pRemoteRegAddr):
+        EnregisteredValueHome(pRemoteRegAddr->m_pFrame)
+    {
+        memcpy(m_value, pRemoteRegAddr->m_value, sizeof(m_value));
+    };
+
+    // make a copy of this instance of TwoRegisterValueHome
+    virtual
+    TwoRegisterValueHome * Clone() const { return new TwoRegisterValueHome(*this); };
+
+    // writing back to a multi-register return value is not supported
+    virtual
+    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+    {
+        ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
+    };
+
+    // Gets the snapshot value and returns it to the caller
+    virtual
+    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+
+    // initializing an instance of RemoteAddress is not supported for a local snapshot
+    virtual
+    void CopyToIPCEType(RemoteAddress * pRegAddr)
+    {
+        ThrowHR(E_NOTIMPL);
+    };
+
+    //-------------------------------------
+    // data members
+    //-------------------------------------
+private:
+    // Snapshot of the value: low 8 bytes followed by high 8 bytes.
+    BYTE m_value[2 * sizeof(double)];
+}; // class TwoRegisterValueHome
 
 // class RegAndMemBaseValueHome
 // derived from RegValueHome, this class is also a base class for RegMemValueHome
@@ -10041,7 +10127,7 @@ private:
 
     HANDLE               m_thread;
     DWORD                m_threadId;
-    HANDLE               m_threadControlEvent;
+    WaitEvent           *m_threadControlEvent;
     HANDLE               m_actionTakenEvent;
     BOOL                 m_run;
 
@@ -10215,7 +10301,7 @@ private:
     HANDLE               m_thread;
     DWORD                m_threadId;
     BOOL                 m_run;
-    HANDLE               m_threadControlEvent;
+    WaitEvent           *m_threadControlEvent;
     BOOL                 m_processStateChanged;
 };
 
@@ -11044,7 +11130,7 @@ public:
 // - we're only being called through a public API.
 //-----------------------------------------------------------------------------
 #define PUBLIC_API_ENTRY(_pThis) \
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API '%s', this=0x%p]\n", __FUNCTION__, _pThis); \
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API '%s', this=%p]\n", __FUNCTION__, static_cast<void*>(_pThis)); \
     PUBLIC_CONTRACT; \
     PublicAPIHolder __pah;
 
@@ -11053,7 +11139,7 @@ public:
 // public version is heavier (eg, checking the HRESULT) so we benefit from having a fast
 // internal version and calling that directly.
 #define PUBLIC_REENTRANT_API_ENTRY(_pThis) \
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API (re) '%s', this=0x%p]\n", __FUNCTION__, _pThis); \
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API (re) '%s', this=%p]\n", __FUNCTION__, static_cast<void*>(_pThis)); \
     PUBLIC_CONTRACT; \
     PublicReentrantAPIHolder __pah;
 

@@ -13,9 +13,6 @@ namespace System.Text.Json.Serialization.Metadata
     public class JsonPolymorphismOptions
     {
         private DerivedTypeList? _derivedTypes;
-        private bool _ignoreUnrecognizedTypeDiscriminators;
-        private JsonUnknownDerivedTypeHandling _unknownDerivedTypeHandling;
-        private string? _typeDiscriminatorPropertyName;
         private bool _isConfigured;
 
         /// <summary>
@@ -40,12 +37,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </exception>
         public bool IgnoreUnrecognizedTypeDiscriminators
         {
-            get => _ignoreUnrecognizedTypeDiscriminators;
+            get;
             set
             {
                 VerifyMutable();
                 _isConfigured = true;
-                _ignoreUnrecognizedTypeDiscriminators = value;
+                field = value;
             }
         }
 
@@ -57,12 +54,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </exception>
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling
         {
-            get => _unknownDerivedTypeHandling;
+            get;
             set
             {
                 VerifyMutable();
                 _isConfigured = true;
-                _unknownDerivedTypeHandling = value;
+                field = value;
             }
         }
 
@@ -76,12 +73,12 @@ namespace System.Text.Json.Serialization.Metadata
         [AllowNull]
         public string TypeDiscriminatorPropertyName
         {
-            get => _typeDiscriminatorPropertyName ?? JsonSerializer.TypePropertyName;
+            get => field ?? JsonSerializer.TypePropertyName;
             set
             {
                 VerifyMutable();
                 _isConfigured = true;
-                _typeDiscriminatorPropertyName = value;
+                field = value;
             }
         }
 

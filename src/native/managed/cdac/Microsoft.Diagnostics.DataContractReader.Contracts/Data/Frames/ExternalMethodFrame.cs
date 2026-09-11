@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ExternalMethodFrame))]
 internal partial class ExternalMethodFrame : IData<ExternalMethodFrame>
 {
-    [Field] public TargetPointer Indirection { get; }
+    [Field] public partial TargetPointer Indirection { get; }
 }

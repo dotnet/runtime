@@ -325,14 +325,34 @@ private:
         LoaderAllocator *GetLoaderAllocatorUnsafe() const { return _loaderAllocator; }
 
     #ifndef DACCESS_COMPILE
+        struct HolderTraits final
+        {
+            using Type = LAHashDependentHashTracker*;
+            static constexpr Type Default() { return NULL; }
+            static void Free(Type value)
+            {
+                CONTRACTL
+                {
+                    NOTHROW;
+                    GC_NOTRIGGER;
+                    MODE_ANY;
+                } CONTRACTL_END;
+
+                if (value != NULL)
+                    value->Release();
+            }
+        };
+
         void AddRef()
         {
+            LIMITED_METHOD_CONTRACT;
             _ASSERTE(_refCount != 0);
             ++_refCount;
         }
 
         void Release()
         {
+            WRAPPER_NO_CONTRACT;
             _ASSERTE(_refCount != 0);
             if (--_refCount == 0)
             {

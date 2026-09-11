@@ -411,7 +411,6 @@ struct InterpVar
     InterpInst *call = nullptr;
 
     unsigned int callArgs : 1; // Var used as argument to a call
-    unsigned int noCallArgs : 1; // Var can't be used as argument to a call, needs to be copied to temp
     unsigned int global : 1; // Dedicated stack offset throughout method execution
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
@@ -427,7 +426,6 @@ struct InterpVar
         bbIndex = -1;
 
         callArgs = false;
-        noCallArgs = false;
         global = false;
         ILGlobal = false;
         alive = false;
@@ -710,6 +708,7 @@ private:
     // suspension point.
     bool m_nextAwaitIsTail = false;
     bool m_asyncVersionIsTailCalling = false;
+    bool m_hasLocalloc = false;
 
     // If true, this is a recognized await of ValueTaskReturn().AsTask(). This
     // does not have strictly the same semantics as 'await ValueTaskReturn()'
@@ -1079,6 +1078,7 @@ private:
     int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
     int32_t* m_pDebugMethodEnterSeqPointSlot = nullptr; // fixup slot for first seq point offset in INTOP_DEBUG_METHOD_ENTER
 
+    void FixLocallocRet();
     void AllocOffsets();
     int32_t ComputeCodeSize();
     void EmitCode();

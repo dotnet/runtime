@@ -9,5 +9,5 @@ internal sealed partial class ImageDosHeader : IData<ImageDosHeader>
     private const int LfanewOffset = 60;
 
     [RawOffset(LfanewOffset, LittleEndian = true)]
-    public int Lfanew { get; }
+    public partial int Lfanew { get; }
 }

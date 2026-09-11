@@ -1426,15 +1426,23 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
-                                   (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+#if MONO
+                byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                    (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+#else
+                byte actualResult = (byte)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
+#if MONO
                 char actualResult = (value >= char.MaxValue) ? char.MaxValue :
                                     (value <= char.MinValue) ? char.MinValue : (char)value;
+#else
+                char actualResult = (char)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1448,8 +1456,12 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ushort))
             {
+#if MONO
                 ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
                                       (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+#else
+                ushort actualResult = (ushort)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1500,25 +1512,25 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<float>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+            return Number.TryParseFloat(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<float>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+            return Number.TryParseFloat(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<float>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result, out int bytesConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result, out int bytesConsumed)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
+            return Number.TryParseFloat(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
         }
 
         //
@@ -1876,23 +1888,17 @@ namespace System
             return result;
         }
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
-        public static float DegreesToRadians(float degrees)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
+        // Multiplying by `head` alone is enough here, without the rest of the triple that `double`
+        // needs: the constant being inexact is under `2^-54.6` relative and the single rounding of
+        // the product is `2^-53`, together under `2^-28.6` of a `float` ulp, while no significand
+        // brings the exact value nearer than `2^-26.5` ulp to the boundary between two results
+        // (`2^-26.470` for `DegreesToRadians`, `2^-24.5` for `RadiansToDegrees`).
 
-            return (degrees * Pi) / 180.0f;
-        }
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static float DegreesToRadians(float degrees) => (float)(degrees * double.DegreesToRadiansHead);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
-        public static float RadiansToDegrees(float radians)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (radians * 180.0f) / Pi;
-        }
+        public static float RadiansToDegrees(float radians) => (float)(radians * double.RadiansToDegreesHead);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         [Intrinsic]

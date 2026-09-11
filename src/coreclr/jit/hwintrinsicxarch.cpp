@@ -1569,7 +1569,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     GenTree* zero = gtNewZeroConNode(retType);
 
-                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
                         op1 = gtNewOperNode(GT_COMMA, retType, op1, zero);
                     }

@@ -255,7 +255,6 @@ VOID ParseNativeType(Module*                     pModule,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pNFD));
     }
     CONTRACTL_END;
@@ -639,14 +638,13 @@ UINT32 NativeFieldDescriptor::AlignmentRequirement() const
 
 PTR_FieldDesc NativeFieldDescriptor::GetFieldDesc() const
 {
-    CONTRACT(PTR_FieldDesc)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN m_pFD;
+    return m_pFD;
 }

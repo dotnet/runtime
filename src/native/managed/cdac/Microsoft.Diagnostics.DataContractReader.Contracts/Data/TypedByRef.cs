@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class TypedByRef : IData<TypedByRef>
 {
     [Field]
-    public TargetPointer Data { get; }
+    public partial TargetPointer Data { get; }
 
     [Field]
-    public TargetPointer Type { get; }
+    public partial TargetPointer Type { get; }
 }

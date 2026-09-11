@@ -427,6 +427,9 @@ namespace System.Text.Json
                     Span<byte> dest = bufferWriter.GetSpan(1);
                     dest[0] = (byte)'\n';
                     bufferWriter.Advance(1);
+
+                    // Each line is a self-contained value that consumers may want to observe in real time,
+                    // so flush it out (PooledByteBufferWriter.FlushAsync also flushes the destination stream).
                     await bufferWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }

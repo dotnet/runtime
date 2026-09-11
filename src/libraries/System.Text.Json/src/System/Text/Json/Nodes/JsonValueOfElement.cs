@@ -142,7 +142,7 @@ namespace System.Text.Json.Nodes
                     if (typeof(TypeToConvert) == typeof(string))
                     {
                         string? result = Value.GetString();
-                        Debug.Assert(result != null);
+                        Debug.Assert(result is not null);
                         value = (TypeToConvert)(object)result;
                         return true;
                     }
@@ -171,7 +171,7 @@ namespace System.Text.Json.Nodes
                     if (typeof(TypeToConvert) == typeof(char) || typeof(TypeToConvert) == typeof(char?))
                     {
                         string? result = Value.GetString();
-                        Debug.Assert(result != null);
+                        Debug.Assert(result is not null);
                         if (result.Length == 1)
                         {
                             value = (TypeToConvert)(object)result[0];

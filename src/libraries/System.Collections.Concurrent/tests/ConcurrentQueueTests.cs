@@ -21,6 +21,51 @@ namespace System.Collections.Concurrent.Tests
         protected override string CopyToNoLengthParamName => null;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void Concurrent_TryDequeue_DoesNotReportEmptyWhileItemsAreQueued()
+        {
+            // Each worker holds at most one of the seeded items at a time, so an item is always
+            // queued and TryDequeue must never report empty
+            const int WorkerCount = 4;
+
+            var q = new ConcurrentQueue<object>();
+            for (int i = 0; i < WorkerCount; i++) q.Enqueue(new object());
+
+            bool stop = false;
+            int falseEmpties = 0;
+
+            // Snapshotting freezes the tail segment, racing the freeze against the empty check
+            Task snapshotter = Task.Run(() =>
+            {
+                while (!Volatile.Read(ref stop)) q.ToArray();
+            });
+
+            // Workers dequeue and immediately re-enqueue, counting any spurious empty
+            Task[] workers = new Task[WorkerCount];
+            for (int i = 0; i < WorkerCount; i++)
+            {
+                workers[i] = Task.Run(() =>
+                {
+                    while (!Volatile.Read(ref stop))
+                    {
+                        if (!q.TryDequeue(out object item))
+                        {
+                            Interlocked.Increment(ref falseEmpties);
+                            item = new object();
+                        }
+                        q.Enqueue(item);
+                    }
+                });
+            }
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(200));
+            Volatile.Write(ref stop, true);
+            Task.WaitAll(workers);
+            snapshotter.Wait();
+
+            Assert.Equal(0, falseEmpties);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Concurrent_Enqueue_TryDequeue_AllItemsReceived()
         {
             int items = 1000;
@@ -212,7 +257,6 @@ namespace System.Collections.Concurrent.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/16413", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ReferenceTypes_NulledAfterDequeue()
         {
             int iterations = 10; // any number <32 will do
@@ -278,7 +322,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ManySegments_ConcurrentEnqueues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();

@@ -33,6 +33,7 @@
     <NestedBuildProperty Include="InvariantGlobalization" />
     <NestedBuildProperty Include="InvariantTimezone" />
     <NestedBuildProperty Include="PublishTrimmed" />
+    <NestedBuildProperty Include="PublishReadyToRun" />
     <NestedBuildProperty Include="RunAOTCompilation" />
     <NestedBuildProperty Include="UsingNativeAOT" />
     <NestedBuildProperty Include="WasmBuildNative" />
@@ -51,7 +52,6 @@
     <NestedBuildProperty Include="WasmTestAppendElementOnExit" />
     <NestedBuildProperty Include="WasmTestLogExitCode" />
     <NestedBuildProperty Include="WasmTestAsyncFlushOnExit" />
-    <NestedBuildProperty Include="WasmTestForwardConsole" />
   </ItemGroup>
 
   <Target Name="_ValidateRuntimeFlavorBuild" BeforeTargets="BuildSampleInTree">

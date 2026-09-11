@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 class UserException1 : Exception {
@@ -48,7 +49,7 @@ public class NestedException {
 	}
 		
 	
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint() {
 		String s = "Done";
 		int retVal = 100;

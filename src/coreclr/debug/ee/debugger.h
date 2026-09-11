@@ -36,6 +36,7 @@
 #include "eedbginterface.h"
 #include "dbginterface.h"
 #include "corhost.h"
+#include "debugwait.h"
 
 
 #include "corjit.h"
@@ -648,10 +649,10 @@ protected:
     // that blew its stack
     FAVORCALLBACK m_fpFavor;
     void                           *m_pFavorData;
-    HANDLE                          m_FavorReadEvent;
+    WaitEvent                      *m_FavorReadEvent;
     Crst                            m_FavorLock;
 
-    HANDLE                          m_FavorAvailableEvent;
+    WaitEvent                      *m_FavorAvailableEvent;
 };
 
 
@@ -865,8 +866,8 @@ private:
     }
     Crst * GetFavorLock()                   { return &m_favorData.m_FavorLock; }
 
-    HANDLE GetFavorReadEvent()              { return m_favorData.m_FavorReadEvent; }
-    HANDLE GetFavorAvailableEvent()         { return m_favorData.m_FavorAvailableEvent; }
+    WaitEvent *GetFavorReadEvent()      { return m_favorData.m_FavorReadEvent; }
+    WaitEvent *GetFavorAvailableEvent() { return m_favorData.m_FavorAvailableEvent; }
 
     HelperThreadFavor m_favorData;
 
@@ -891,9 +892,11 @@ private:
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
     HANDLE                          m_thread;
+    Volatile<BOOL>                  m_helperThreadRunning;
     bool                            m_run;
 
-    HANDLE                          m_threadControlEvent;
+    WaitEvent                      *m_threadControlEvent;
+    WaitEvent                      *m_helperThreadExitedEvent;
     HANDLE                          m_helperThreadCanGoEvent;
     bool                            m_rgfInitRuntimeOffsets[IPC_TARGET_COUNT];
     bool                            m_fDetachRightSide;
@@ -1507,7 +1510,7 @@ public:
             "                     m_lastIL: 0x%x\n"
             "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
+            m_methodInfo, (void*)m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -2013,7 +2016,8 @@ public:
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers);
+                 bool *extendOthers,
+                 unsigned ilCodeSize);
 
     DebuggerMethodInfo *GetOrCreateMethodInfo(Module *pModule, mdMethodDef token);
 
@@ -2284,6 +2288,7 @@ public:
 private:
     void DoNotCallDirectlyPrivateLock(void);
     void DoNotCallDirectlyPrivateUnlock(void);
+    void ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(Thread *pThread);
 
     // This function gets the jit debugger launched and waits for the native attach to complete
     // Make sure you called PreJitAttach and it returned TRUE before you call this
@@ -2886,23 +2891,7 @@ private:
     PTR_DebuggerLazyInit         m_pLazyData;
 
 
-    // A list of all defines that affect layout of MD types
-    typedef enum _Target_Defines
-    {
-        DEFINE__DEBUG = 1,
-    } _Target_Defines;
-
-    // A bitfield that has bits set at build time corresponding
-    // to which defines are active
-    static const int _defines = 0
-#ifdef _DEBUG
-        | DEFINE__DEBUG
-#endif
-        ;
-
 public:
-    DWORD m_defines;
-    DWORD m_mdDataStructureVersion;
 #ifndef DACCESS_COMPILE
     virtual void SuspendForGarbageCollectionStarted();
     virtual void SuspendForGarbageCollectionCompleted();

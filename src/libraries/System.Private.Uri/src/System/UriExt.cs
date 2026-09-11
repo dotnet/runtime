@@ -161,9 +161,7 @@ namespace System
 
             if (hasUnicode)
             {
-                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                IriHelper.EscapeUnescapeIri(ref vsb, _originalUnicodeString, isQuery: false);
-                _string = vsb.ToString();
+                _string = EscapeUnescapeIri(default, _originalUnicodeString, isQuery: false);
             }
 
             DebugSetLeftCtor();

@@ -471,19 +471,17 @@ public:
 
     INT32* AllocateUnmanagedArray(INT32 length)
     {
-        CONTRACT(INT32*)
+        CONTRACTL
         {
             THROWS;
             MODE_PREEMPTIVE;
             PRECONDITION(_alloc == NULL);
-            POSTCONDITION((length == _length));
-            POSTCONDITION((RETVAL != NULL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         _alloc = new INT32[length];
         _length = length;
-        RETURN _alloc;
+        return _alloc;
     }
 
     void AllocateManagedArray(QCall::ObjectHandleOnStack& longResult)
@@ -511,15 +509,14 @@ static void* EnsureResultSize(
     INT32* shortResult,
     ResultMemory& resultMemory)
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         THROWS;
         MODE_PREEMPTIVE;
         PRECONDITION(shortResultLen > 0);
         PRECONDITION(shortResult != NULL);
-        POSTCONDITION((RETVAL != NULL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     void* p;
     if (resultLength <= shortResultLen)
@@ -532,7 +529,8 @@ static void* EnsureResultSize(
         p = resultMemory.AllocateUnmanagedArray(resultLength);
     }
     ZeroMemory(p, (size_t)resultLength * sizeof(INT32));
-    RETURN p;
+    _ASSERTE((p != NULL));
+    return p;
 }
 
 extern "C" void QCALLTYPE MetadataImport_Enum(
@@ -541,7 +539,8 @@ extern "C" void QCALLTYPE MetadataImport_Enum(
     mdToken tkParent,
     /* in/out */ INT32* length,
     INT32* shortResult,
-    QCall::ObjectHandleOnStack longResult)
+    QCall::ObjectHandleOnStack longResult,
+    QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {

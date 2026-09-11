@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.StressLogModuleDesc))]
 internal sealed partial class StressLogModuleDesc : IData<StressLogModuleDesc>
 {
-    [Field] public TargetPointer BaseAddress { get; }
-    [Field] public TargetNUInt Size { get; }
+    [Field] public partial TargetPointer BaseAddress { get; }
+    [Field] public partial TargetNUInt Size { get; }
 }

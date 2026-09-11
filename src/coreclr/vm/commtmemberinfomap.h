@@ -91,14 +91,13 @@ public:
     // Allocate some bytes from the pool.
     BYTE* Alloc(size_t nBytes)
     {
-        CONTRACT (BYTE*)
+        CONTRACTL
         {
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         nBytes = ALIGN_UP(nBytes, sizeof(void*));
 
@@ -118,7 +117,7 @@ public:
 
         BYTE* pResult = m_pCurrent->data + m_cbUsed;
         m_cbUsed += nBytes;
-        RETURN pResult;
+        return pResult;
     }
 }; // class CDescPool
 
@@ -221,10 +220,3 @@ private:
 };
 
 #endif // _COMMTMEMBERINFOMAP_H
-
-
-
-
-
-
-

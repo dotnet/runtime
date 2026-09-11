@@ -177,5 +177,31 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Core types such as enums (e.g. System.AttributeTargets), the 'init' accessor marker (System.Runtime.CompilerServices.IsExternalInit),
+       the System.Enum generic constraint and System.Decimal are defined in the runtime implementation assemblies (System.Private.CoreLib
+       and the shared framework, e.g. System.Private.Uri) and merely type-forwarded by the reference facades. Those implementation
+       assemblies are never part of a reference pack, so they aren't on the assembly resolution path that GenAPI derives from ReferencePath.
+       Without them GenAPI can't resolve those types and silently degrades its output (emitting raw enum integers like
+       'EditorBrowsableAttribute(1)', turning 'init' accessors into 'set', dropping the 'System.Enum' constraint and rendering 'decimal' as
+       'System.Decimal'), which is the source of most of the manual fixups the reference sources have accumulated. Seed GenAPILibPath with
+       the ReferencePath directories plus the CoreLib and shared framework directories so the generated source is faithful. This only
+       affects GenAPI's resolution, not the compilation reference set. -->
+  <Target Name="AddImplementationAssembliesToGenAPIResolutionPath"
+          AfterTargets="ResolveAssemblyReferences"
+          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(GenAPILibPath)' == '' and (Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll') or Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll'))">
+    <PropertyGroup>
+      <!-- CoreLib normally sits directly under CoreCLRArtifactsPath, but a crossgen'd build places the IL (metadata)
+           copy GenAPI needs under an 'IL' subdirectory, matching the fallback in liveBuilds.targets. -->
+      <_genAPICoreLibDir Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)</_genAPICoreLibDir>
+      <_genAPICoreLibDir Condition="'$(_genAPICoreLibDir)' == '' and Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)IL/</_genAPICoreLibDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_genAPIReferencePathDirectory Include="@(ReferencePath->'%(RootDir)%(Directory)'->Distinct())" />
+    </ItemGroup>
+    <PropertyGroup>
+      <GenAPILibPath>@(_genAPIReferencePathDirectory);$(_genAPICoreLibDir);$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</GenAPILibPath>
+    </PropertyGroup>
+  </Target>
+
   <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

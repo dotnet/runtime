@@ -6,21 +6,25 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.UnwindInfo))]
 internal sealed partial class UnwindInfo : IData<UnwindInfo>
 {
-    public uint? FunctionLength { get; private set; }
-    public uint? Header { get; private set; }
+    [CustomInit(nameof(InitFunctionLength))] public partial uint? FunctionLength { get; }
+    [CustomInit(nameof(InitHeader))] public partial uint? Header { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(FunctionLength), "uint32")]
+    private partial uint? InitFunctionLength(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.UnwindInfo);
-        if (type.Fields.ContainsKey(nameof(FunctionLength)))
-        {
-            // The unwind info contains the function length on some platforms (x86)
-            FunctionLength = target.ReadField<uint>(address, type, nameof(FunctionLength));
-        }
-        else
-        {
-            // Otherwise, it starts with a bitfield header
-            Header = target.Read<uint>(address);
-        }
+        // The unwind info contains the function length on some platforms (x86)
+        return type.Fields.ContainsKey(nameof(FunctionLength))
+            ? target.ReadField<uint>(address, type, nameof(FunctionLength))
+            : null;
+    }
+
+    private partial uint? InitHeader(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.UnwindInfo);
+        // When the function length is absent, the unwind info starts with a bitfield header
+        return type.Fields.ContainsKey(nameof(FunctionLength))
+            ? null
+            : target.Read<uint>(address);
     }
 }

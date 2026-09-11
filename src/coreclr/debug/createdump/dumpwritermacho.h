@@ -28,6 +28,8 @@ private:
 
     std::vector<segment_command_64> m_segmentLoadCommands;
     std::vector<ThreadCommand> m_threadLoadCommands;
+    note_command m_processMetadataNote{};
+    std::string m_processMetadata;
     BYTE m_tempBuffer[0x4000];
 
     // no public copy constructor
@@ -43,6 +45,7 @@ public:
 
 private:
     bool WriteDiagInfo(size_t size);
+    void BuildProcessMetadataNote();
     void BuildSegmentLoadCommands();
     void BuildThreadLoadCommands();
     bool WriteHeader(uint64_t* pFileOffset);

@@ -120,7 +120,7 @@ namespace Wasm.Build.Tests
                 "with.per.iod",
                 "with🚀unicode#"
             } })]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
         {
             var extraItems = @"<NativeFileReference Include=""*.c"" />";

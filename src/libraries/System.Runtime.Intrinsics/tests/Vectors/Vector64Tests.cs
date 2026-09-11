@@ -2436,6 +2436,103 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        // nint/nuint are the only Vector64 shuffle overloads with a pointer-sized element, so on a
+        // 64-bit platform they are the only way to reach a 64-bit element type (a 1D arrangement).
+        // The indices are passed through a non-inlined call so they stay variable, which is what
+        // selects the index fix-up path in the JIT.
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nint> ShuffleNativeNoInline(Vector64<nint> vector, Vector64<nint> indices) => Vector64.ShuffleNative(vector, indices);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nuint> ShuffleNativeNoInline(Vector64<nuint> vector, Vector64<nuint> indices) => Vector64.ShuffleNative(vector, indices);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nint> ShuffleNoInline(Vector64<nint> vector, Vector64<nint> indices) => Vector64.Shuffle(vector, indices);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nuint> ShuffleNoInline(Vector64<nuint> vector, Vector64<nuint> indices) => Vector64.Shuffle(vector, indices);
+
+        [Fact]
+        public void Vector64NIntShuffleWithVariableIndicesTest()
+        {
+            Vector64<nint> vector = Vector64<nint>.Zero;
+            Vector64<nint> indices = Vector64<nint>.Zero;
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nint)(index + 1));
+                indices = indices.WithElement(index, (nint)(Vector64<nint>.Count - index - 1));
+            }
+
+            Vector64<nint> result = ShuffleNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                Assert.Equal((nint)(Vector64<nint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64NUIntShuffleWithVariableIndicesTest()
+        {
+            Vector64<nuint> vector = Vector64<nuint>.Zero;
+            Vector64<nuint> indices = Vector64<nuint>.Zero;
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nuint)(index + 1));
+                indices = indices.WithElement(index, (nuint)(Vector64<nuint>.Count - index - 1));
+            }
+
+            Vector64<nuint> result = ShuffleNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                Assert.Equal((nuint)(Vector64<nuint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64NIntShuffleNativeWithVariableIndicesTest()
+        {
+            Vector64<nint> vector = Vector64<nint>.Zero;
+            Vector64<nint> indices = Vector64<nint>.Zero;
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nint)(index + 1));
+                indices = indices.WithElement(index, (nint)(Vector64<nint>.Count - index - 1));
+            }
+
+            Vector64<nint> result = ShuffleNativeNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                Assert.Equal((nint)(Vector64<nint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64NUIntShuffleNativeWithVariableIndicesTest()
+        {
+            Vector64<nuint> vector = Vector64<nuint>.Zero;
+            Vector64<nuint> indices = Vector64<nuint>.Zero;
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nuint)(index + 1));
+                indices = indices.WithElement(index, (nuint)(Vector64<nuint>.Count - index - 1));
+            }
+
+            Vector64<nuint> result = ShuffleNativeNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                Assert.Equal((nuint)(Vector64<nuint>.Count - index), result.GetElement(index));
+            }
+        }
+
         [Fact]
         public void Vector64SByteShuffleNativeOneInputTest()
         {

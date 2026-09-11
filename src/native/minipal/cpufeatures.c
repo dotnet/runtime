@@ -7,6 +7,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h>
+
+#include "minipalconfig.h"
+
+#if HAVE_ELF_AUX_INFO
+#include <sys/auxv.h>
+#endif
 
 #include "cpufeatures.h"
 #include "cpuid.h"
@@ -14,6 +21,10 @@
 #if HOST_WINDOWS
 
 #include <Windows.h>
+
+#ifndef PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE (67)
+#endif
 
 #ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
 #define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
@@ -41,8 +52,6 @@
 
 #else // HOST_WINDOWS
 
-#include "minipalconfig.h"
-
 #if HAVE_AUXV_HWCAP_H
 
 #include <sys/auxv.h>
@@ -51,6 +60,14 @@
 // Light-up for hardware capabilities that are not present in older headers used by the portable build.
 #ifndef HWCAP_ASIMDRDM
 #define HWCAP_ASIMDRDM  (1 << 12)
+#endif
+
+#ifndef HWCAP_FPHP
+#define HWCAP_FPHP      (1 << 9)
+#endif
+
+#ifndef HWCAP_ASIMDHP
+#define HWCAP_ASIMDHP   (1 << 10)
 #endif
 #ifndef HWCAP_LRCPC
 #define HWCAP_LRCPC     (1 << 15)
@@ -510,8 +527,17 @@ int minipal_getcpufeatures(void)
 #if defined(HOST_ARM64)
 #if defined(HOST_UNIX)
 
+#if HAVE_AUXV_HWCAP_H || HAVE_ELF_AUX_INFO
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
+    unsigned long hwCap2 = getauxval(AT_HWCAP2);
+#elif HAVE_ELF_AUX_INFO
+    unsigned long hwCap = 0;
+    unsigned long hwCap2 = 0;
+
+    elf_aux_info(AT_HWCAP, &hwCap, sizeof(hwCap));
+    elf_aux_info(AT_HWCAP2, &hwCap2, sizeof(hwCap2));
+#endif
 
     if ((hwCap & HWCAP_ASIMD) == 0)
     {
@@ -552,10 +578,12 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
 
+    // FEAT_FP16 provides both scalar (FPHP) and Advanced SIMD (ASIMDHP) half-precision arithmetic.
+    if ((hwCap & HWCAP_FPHP) && (hwCap & HWCAP_ASIMDHP))
+        result |= ARM64IntrinsicConstants_Fp16;
+
     if (hwCap & HWCAP_SVE)
         result |= ARM64IntrinsicConstants_Sve;
-
-    unsigned long hwCap2 = getauxval(AT_HWCAP2);
 
     if (hwCap2 & HWCAP2_SVE2)
         result |= ARM64IntrinsicConstants_Sve2;
@@ -571,10 +599,7 @@ int minipal_getcpufeatures(void)
 
     if (hwCap2 & HWCAP2_CSSC)
         result |= ARM64IntrinsicConstants_Cssc;
-
-#else // !HAVE_AUXV_HWCAP_H
-
-#if HAVE_SYSCTLBYNAME
+#elif HAVE_SYSCTLBYNAME
     int64_t valueFromSysctl = 0;
     size_t sz = sizeof(valueFromSysctl);
 
@@ -609,6 +634,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_RDM", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rdm;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_FP16", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Fp16;
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SHA1", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Sha1;
@@ -646,17 +674,16 @@ int minipal_getcpufeatures(void)
     if ((sysctlbyname("hw.optional.arm.FEAT_CSSC", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Cssc;
 #endif // HAVE_SYSCTLBYNAME
-#endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
 
 #if defined(HOST_WINDOWS)
-    if (!IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE) ||
-        !IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
+    if (!IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE))
     {
         // One of the baseline ISAs is not supported
         result |= IntrinsicConstants_Invalid;
     }
-    else
+
+    if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Atomics;
     }
@@ -695,6 +722,11 @@ int minipal_getcpufeatures(void)
     }
 
     // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+    if (IsProcessorFeaturePresent(PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Fp16;
+    }
 
     if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
     {
@@ -760,6 +792,16 @@ int minipal_getcpufeatures(void)
         if (pairs[0].value & RISCV_HWPROBE_EXT_ZBS)
         {
             result |= RiscV64IntrinsicConstants_Zbs;
+        }
+
+#ifndef RISCV_HWPROBE_EXT_ZICOND
+// Alpine 3.21's linux-headers package was built on 6.6 LTS kernel, which doesn't define this extension
+#define RISCV_HWPROBE_EXT_ZICOND (1ULL << 35)
+#endif
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZICOND)
+        {
+            result |= RiscV64IntrinsicConstants_Zicond;
         }
     }
 

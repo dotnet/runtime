@@ -145,19 +145,22 @@ namespace System.Formats.Tar
             {
                 KeyValuePair<string, string> kvp = enumerator.Current;
 
-                int index = kvp.Key.AsSpan().IndexOfAny('=', '\n');
-                if (index >= 0)
-                {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, kvp.Key[index] == '\n' ? "\\n" : kvp.Key[index]));
-                }
-                if (kvp.Value.Contains('\n'))
-                {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, kvp.Key, "\\n"));
-                }
-
+                ValidateExtendedAttribute(kvp);
                 _ea ??= new Dictionary<string, string>();
-
                 _ea.Add(kvp.Key, kvp.Value);
+            }
+        }
+
+        private static void ValidateExtendedAttribute(KeyValuePair<string, string> extendedAttribute)
+        {
+            int index = extendedAttribute.Key.AsSpan().IndexOfAny('=', '\n');
+            if (index >= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, extendedAttribute.Key, extendedAttribute.Key[index] == '\n' ? "\\n" : extendedAttribute.Key[index]));
+            }
+            if (extendedAttribute.Value.Contains('\n'))
+            {
+                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, extendedAttribute.Key, "\\n"));
             }
         }
 

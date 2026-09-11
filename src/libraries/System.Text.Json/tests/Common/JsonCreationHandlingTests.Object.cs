@@ -550,6 +550,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
             async () => await Serializer.DeserializeWrapper<BaseClassRecursive>(json, options));
     }
 
+#pragma warning disable SYSLIB1240 // Derived types are intentionally not assignable to the base type for these tests.
     [JsonDerivedType(typeof(BaseClassWithPolymorphism), "base")]
     [JsonDerivedType(typeof(DerivedClass_DerivingFrom_BaseClassWithPolymorphism), "derived")]
     public class BaseClassRecursive
@@ -559,6 +560,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
 
         public string BaseClassProp { get; set; } = "BaseInitial";
     }
+#pragma warning restore SYSLIB1240
 
     public class DerivedClass_DerivingFrom_BaseClassRecursive : BaseClassRecursive
     {

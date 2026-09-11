@@ -157,19 +157,19 @@ public abstract class ContractRegistry
     /// <param name="contract">
     /// When this method returns <see langword="true"/>, contains the requested contract instance; otherwise, <see langword="null"/>.
     /// </param>
-    /// <param name="failureReason">
-    /// When this method returns <see langword="false"/>, contains a human-readable explanation of why the contract could not be retrieved; otherwise, <see langword="null"/>.
+    /// <param name="failureException">
+    /// When this method returns <see langword="false"/>, contains the exception that describes why the contract could not be retrieved; otherwise, <see langword="null"/>.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the requested contract is present and was retrieved successfully; <see langword="false"/> if the contract is not present or registered"/>.
     /// </returns>
-    public abstract bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason) where TContract : IContract;
+    public abstract bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException) where TContract : IContract;
 
     public TContract GetContract<TContract>() where TContract : IContract
     {
-        if (!TryGetContract(out TContract contract, out string? failureReason))
+        if (!TryGetContract(out TContract contract, out System.Exception? failureException))
         {
-            throw new NotImplementedException($"Contract '{typeof(TContract).Name}' is not supported by the target. Reason: {failureReason ?? "no reason provided"}");
+            throw failureException ?? new ContractMissingException(TContract.Name);
         }
         return contract;
     }
@@ -180,10 +180,41 @@ public abstract class ContractRegistry
     }
 
     /// <summary>
+    /// Determines whether this cDAC can provide the requested contract for the target. Implementations
+    /// should resolve the target-advertised version against the registered implementations only, without
+    /// instantiating the contract, so that validation performs no target memory reads (safe on partial or
+    /// triage dumps) and never triggers contract-to-contract chaining.
+    /// </summary>
+    /// <typeparam name="TContract">The contract type to validate.</typeparam>
+    /// <param name="failureException">
+    /// When this method returns <see langword="false"/>, contains the exception describing why the
+    /// contract cannot be provided; otherwise, <see langword="null"/>.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the contract is advertised by the target and a matching implementation
+    /// is registered; otherwise, <see langword="false"/>.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation delegates to <see cref="TryGetContract{TContract}(out TContract, out System.Exception?)"/>,
+    /// which instantiates the contract and therefore does read target memory. Registries that need the
+    /// no-instantiation guarantee above must override this method (<c>CachingContractRegistry</c> does).
+    /// </remarks>
+    public virtual bool TryValidate<TContract>([NotNullWhen(false)] out System.Exception? failureException) where TContract : IContract
+    {
+        return TryGetContract<TContract>(out _, out failureException);
+    }
+
+    /// <summary>
     /// Register a contract implementation for a specific version.
     /// External packages use this to add contract versions or entirely new contract interfaces.
     /// </summary>
     public abstract void Register<TContract>(string version, Func<Target, TContract> creator)
+        where TContract : IContract;
+
+    /// <summary>
+    /// Register a contract version that is recognized but intentionally not implemented.
+    /// </summary>
+    public abstract void RegisterUnsupported<TContract>(string version)
         where TContract : IContract;
 
     /// <summary>

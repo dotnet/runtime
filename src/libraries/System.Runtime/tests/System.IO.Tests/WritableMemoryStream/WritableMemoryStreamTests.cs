@@ -80,34 +80,34 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void WriteOverExistingDataReplacesData()
+        public void SetLengthBeyondCapacityThrows()
         {
-            byte[] initialData = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-            byte[] backing = new byte[10];
-            Stream stream = new WritableMemoryStream(new Memory<byte>(backing));
-            stream.Write(initialData, 0, initialData.Length);
+            byte[] buffer = new byte[8];
+            Stream stream = new WritableMemoryStream(new Memory<byte>(buffer));
 
-            stream.Position = 3;
-            stream.Write(new byte[] { 100, 101, 102 }, 0, 3);
-
-            stream.Position = 0;
-            byte[] result = new byte[10];
-            int bytesRead = stream.Read(result, 0, 10);
-
-            Assert.Equal(10, bytesRead);
-            Assert.Equal(new byte[] { 1, 2, 3, 100, 101, 102, 7, 8, 9, 10 }, result);
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(9));
+            Assert.Equal(8, stream.Length);
         }
 
         [Fact]
-        public void GetBuffer_Throws_TryGetBuffer_ReturnsFalse()
+        public void WritePastShrunkenLengthExtendsAndZeroesGap()
         {
-            using var stream = new WritableMemoryStream(new byte[8]);
+            byte[] buffer = { 1, 2, 3, 4, 5, 6, 7, 8 };
+            Stream stream = new WritableMemoryStream(new Memory<byte>(buffer));
 
-            Assert.Throws<UnauthorizedAccessException>(() => stream.GetBuffer());
-            Assert.False(stream.TryGetBuffer(out ArraySegment<byte> segment));
-            Assert.Null(segment.Array);
-            Assert.Equal(0, segment.Offset);
-            Assert.Equal(0, segment.Count);
+            stream.SetLength(2);
+            Assert.Equal(2, stream.Length);
+
+            stream.Position = 5;
+            stream.WriteByte(42);
+
+            Assert.Equal(6, stream.Length);
+            Assert.Equal(6, stream.Position);
+
+            stream.Position = 0;
+            byte[] readBack = new byte[6];
+            Assert.Equal(6, stream.Read(readBack, 0, readBack.Length));
+            Assert.Equal(new byte[] { 1, 2, 0, 0, 0, 42 }, readBack);
         }
     }
 }

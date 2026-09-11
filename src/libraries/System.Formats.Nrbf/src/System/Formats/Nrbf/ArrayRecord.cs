@@ -114,6 +114,14 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType();
 
+    private protected void CheckExpectedRecordCount(List<SerializationRecord> records, bool allowNulls)
+    {
+        if (!allowNulls && ArrayInfo.FlattenedLength != records.Count)
+        {
+            ThrowHelper.ThrowArrayContainedNulls();
+        }
+    }
+
     internal static void Populate(List<SerializationRecord> source, Array destination, int[] lengths, AllowedRecordTypes allowedRecordTypes, bool allowNulls)
     {
         int[] indices = new int[lengths.Length];

@@ -45,8 +45,9 @@ internal class GcScanner
 
         IGCInfoHandle handle = _gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
 
-        uint stackBaseRegister = _gcInfo.GetStackBaseRegister(handle);
-        uint scratchAreaSize = _gcInfo.GetSizeOfStackParameterArea(handle);
+        GCInfoHeader header = _gcInfo.GetHeader(handle);
+        uint stackBaseRegister = header.StackBaseRegister;
+        uint scratchAreaSize = header.SizeOfStackParameterArea;
         bool filterScratchStackSlots = !options.IsActiveFrame;
         TargetPointer? callerSP = null;
         uint offsetToUse = relOffsetOverride ?? (uint)relativeOffset.Value;

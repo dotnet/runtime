@@ -347,7 +347,8 @@ replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
-replay_common_parser.add_argument("-details", help="Specify full path to details file")
+replay_common_parser.add_argument("-details", help="Specify full path to details file or folder")
+replay_common_parser.add_argument("-no_ir_checks", action="store_true", help="Disable the phase IR checks in every JIT that is invoked.")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -376,6 +377,7 @@ asm_diff_parser.add_argument("-tag", help="Specify a word to add to the director
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
+asm_diff_parser.add_argument("-full_ir_checks", action="store_true", help="Run the phase IR checks in the base JIT as well. By default they are only run in the diff JIT, since the base JIT is already validated.")
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -1106,8 +1108,6 @@ class SuperPMICollect:
                             rsp_write_handle.write("--obj-format:wasm" + "\n")
                             # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
                             rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
-                            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported once wasm codegen covers all SIMD cases
-                            rsp_write_handle.write("--codegenopt:JitWasmSimdNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -1663,6 +1663,14 @@ def report_replay_asserts(asserts, output_mch_file):
                     logging.info("  ... omitting %s instances", assertion_instance_count - instance_num)
                     break
 
+def get_details_file_path(coreclr_args, mch_file, temp_location):
+    if coreclr_args.details:
+        if os.path.isdir(coreclr_args.details):
+            return os.path.join(coreclr_args.details, os.path.basename(mch_file) + ".csv")
+        else:
+            return coreclr_args.details
+    else:
+        return os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
 ################################################################################
 # SuperPMI Replay
@@ -1732,13 +1740,6 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
-            if self.coreclr_args.target_arch == "wasm":
-                # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
-                repro_flags += [
-                    "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
-                    "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
-                ]
-
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 if not self.coreclr_args.parallelism:
                     common_flags += [ "-p" ]
@@ -1764,6 +1765,11 @@ class SuperPMIReplay:
                 for o in self.coreclr_args.jitoption:
                     repro_flags += "-jitoption", o
 
+            if self.coreclr_args.no_ir_checks:
+                # This changes what the JIT does, so it has to be part of the repro command
+                # line as well.
+                repro_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+
             common_flags += repro_flags
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
@@ -1787,10 +1793,7 @@ class SuperPMIReplay:
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
 
-                if self.coreclr_args.details:
-                  details_info_file = self.coreclr_args.details
-                else:
-                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 flags += [
                     "-f", fail_mcl_file,  # Failing mc List
@@ -2212,6 +2215,20 @@ class SuperPMIReplayAsmDiffs:
                 diff_option_flags += "-jit2option", o
                 diff_option_flags_for_diff_artifact += "-jitoption", o
 
+        # The base JIT is already validated, so the phase IR checks are turned off for it by
+        # default and left on for the diff JIT, which is the one under test. -full_ir_checks
+        # turns them back on for the base JIT, and -no_ir_checks turns them off everywhere.
+        #
+        # The diff artifact runs compare the base and diff JitDumps textually, so the checks
+        # have to be configured identically there. That rules out the asymmetric default, but
+        # -no_ir_checks applies to both JITs and can be passed along.
+        if not self.coreclr_args.full_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+        if self.coreclr_args.no_ir_checks:
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+            base_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
                 "-jitoption", "force", "AltJit=*",
@@ -2223,12 +2240,6 @@ class SuperPMIReplayAsmDiffs:
             altjit_replay_flags += [
                 "-jitoption", "force", "AltJit=*",
                 "-jitoption", "force", "AltJitNgen=*"
-            ]
-
-        if self.coreclr_args.target_arch == "wasm":
-            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
-            altjit_replay_flags += [
-                "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1"
             ]
 
         # Keep track if any MCH file replay had asm diffs
@@ -2256,10 +2267,7 @@ class SuperPMIReplayAsmDiffs:
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
 
-                if self.coreclr_args.details:
-                    details_info_file = self.coreclr_args.details
-                else:
-                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 flags = [
                     "-a",  # Asm diffs
@@ -2314,14 +2322,6 @@ class SuperPMIReplayAsmDiffs:
                             "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
                             "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
                         ]
-
-                # TODO: Remove this (and add under the above ignoreStoredConfig option)
-                # once we have collections which include JitWasmSimdNyiToR2RUnsupported
-                if self.coreclr_args.target_arch == "wasm":
-                    flags += [
-                            "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
-                            "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
-                    ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
@@ -2413,21 +2413,6 @@ class SuperPMIReplayAsmDiffs:
                                 if proc.returncode != 0:
                                     # No miss/replay failure is expected in contexts that were reported as having diffs since then they succeeded during the diffs run.
                                     raise create_exception()
-
-                                # A Wasm JIT may exit successfully without writing any disassembly to DOTNET_JitStdOutFile. For example, the wasm JIT
-                                # with JitWasmSimdNyiToR2RUnsupported=1 exits via
-                                # implReadyToRunUnsupported() (CORJIT_R2R_UNSUPPORTED) for NYI_WASM_SIMD during import, so no code is produced. This is an expected behavior.
-                                # TODO-WASM: This check can potentially be removed once we no longer have any NYI's in the import stage.
-                                if not os.path.exists(item_path) and self.coreclr_args.target_arch == "wasm":
-                                    # Log a warning so that unexpected misses (vs the expected JitWasmSimdNyiToR2RUnsupported path) remain diagnosable
-                                    # rather than being silently masked as empty diffs.
-                                    stderr_snippet = stderr.decode(errors='replace').strip().splitlines()
-                                    stderr_first_line = stderr_snippet[0] if stderr_snippet else ""
-                                    logging.warning(
-                                        "%sNo JitStdOutFile produced for wasm context %s at %s (exit=%d, stderr first line: %r). "
-                                        "Treating as empty diff; verify this is the expected JitWasmSimdNyiToR2RUnsupported path.",
-                                        print_prefix, context_index, item_path, proc.returncode, stderr_first_line)
-                                    return ""
 
                                 try:
                                     with open(item_path, 'r') as file_handle:
@@ -3137,6 +3122,12 @@ class SuperPMIReplayThroughputDiff:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
+        # Both JITs have to be configured the same way here, since this measures the base
+        # against the diff.
+        if self.coreclr_args.no_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
         diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
 
@@ -3169,10 +3160,7 @@ class SuperPMIReplayThroughputDiff:
 
                 logging.info("Running throughput diff of %s", mch_file)
 
-                if self.coreclr_args.details:
-                    details_info_file = self.coreclr_args.details
-                else:
-                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 pin_options = [
                     "-follow_execv", # attach to child processes
@@ -3496,6 +3484,12 @@ class SuperPMIReplayMetricDiff:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
+        # Both JITs have to be configured the same way here, since this compares metrics
+        # from the base against the diff.
+        if self.coreclr_args.no_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+
         metric_diffs = []
 
         with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
@@ -3507,10 +3501,7 @@ class SuperPMIReplayMetricDiff:
 
                 logging.info("Running metric diff of %s", mch_file)
 
-                if self.coreclr_args.details:
-                    details_info_file = self.coreclr_args.details
-                else:
-                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 flags = [
                     "-applyDiff",
@@ -5262,6 +5253,11 @@ def setup_args(args):
         verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
+                            "no_ir_checks",
+                            lambda unused: True,
+                            "Unable to set no_ir_checks.")
+
+        coreclr_args.verify(args,
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
@@ -5406,6 +5402,11 @@ def setup_args(args):
                             "details",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set details")
+
+        coreclr_args.verify(args,
+                            "no_ir_checks",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set no_ir_checks.")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -5736,6 +5737,15 @@ def setup_args(args):
                             "git_diff",
                             lambda unused: True,
                             "Unable to set git_diff.")
+
+        coreclr_args.verify(args,
+                            "full_ir_checks",
+                            lambda unused: True,
+                            "Unable to set full_ir_checks.")
+
+        if coreclr_args.full_ir_checks and coreclr_args.no_ir_checks:
+            print("Warning: both -full_ir_checks and -no_ir_checks were specified; ignoring -no_ir_checks.")
+            coreclr_args.no_ir_checks = False
 
         process_base_jit_path_arg(coreclr_args)
 

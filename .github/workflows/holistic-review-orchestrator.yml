@@ -1,0 +1,736 @@
+name: Holistic Review Orchestrator
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      pr_numbers:
+        description: 'Comma-separated open pull request numbers to consider, including drafts and retry-limited review targets; an unchanged head with a durable review is not reviewed again'
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: holistic-review-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.repository.fork }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      pull-requests: write
+    steps:
+      - name: Dispatch reviews for new pull request heads
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+          MAX_DISPATCH: '20'
+          MAX_REVIEW_ATTEMPTS: '5'
+          PR_NUMBERS: ${{ inputs.pr_numbers }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          open_prs_file="$(mktemp)"
+          dispatched_prs_file="$(mktemp)"
+          retry_limited_prs_file="$(mktemp)"
+          already_reviewed_prs_file="$(mktemp)"
+          trap 'rm -f "$open_prs_file" "$dispatched_prs_file" "$retry_limited_prs_file" "$already_reviewed_prs_file"' EXIT
+          state_comment_intro="Workflow state for the [Holistic Review Orchestrator](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+          state_comment_pattern='^Workflow state for the \[(Holistic Review Orchestrator|Code Review Orchestrator)\]\([^)]*/actions/runs/[0-9]+\)\.( Please ignore and do not edit\.)?\n\n```json\n'
+          previous_state_comment_prefix='Code review workflow state (managed automatically; do not edit).'
+
+          requested_pr_numbers='[]'
+          if [ -n "$PR_NUMBERS" ]; then
+            requested_pr_numbers="$(jq -Rn --arg pr_numbers "$PR_NUMBERS" '
+              $pr_numbers
+              | split(",")
+              | map(gsub("^\\s+|\\s+$"; ""))
+              | if any(.[]; test("^[1-9][0-9]*$") | not) then
+                  error("pr_numbers must be a comma-separated list of positive pull request numbers")
+                else
+                  map(tonumber) | unique
+                end
+            ')"
+          fi
+
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 \
+            --json number,baseRefName,baseRefOid,headRefOid,isDraft,updatedAt \
+            --jq '[.[]]' > "$open_prs_file"
+          if ! jq -e --argjson requested_pr_numbers "$requested_pr_numbers" '
+            if ($requested_pr_numbers | length) == 0 then
+              true
+            else
+              ([.[] | .number] as $open_pr_numbers
+               | all($requested_pr_numbers[]; . as $requested | any($open_pr_numbers[]; . == $requested)))
+            end
+          ' "$open_prs_file" > /dev/null; then
+            echo "One or more requested pull requests are not open." >&2
+            exit 1
+          fi
+          jq --argjson requested_pr_numbers "$requested_pr_numbers" '
+            if ($requested_pr_numbers | length) == 0 then
+              .
+            else
+              [.[] | select(.number as $number | any($requested_pr_numbers[]; . == $number))]
+            end
+          ' "$open_prs_file" > "${open_prs_file}.filtered"
+          if [ "$(jq 'length' <<< "$requested_pr_numbers")" -eq 0 ]; then
+            jq '[.[] | select(.isDraft == false)]' "${open_prs_file}.filtered" > "$open_prs_file"
+          else
+            mv "${open_prs_file}.filtered" "$open_prs_file"
+          fi
+          echo "Eligible pull requests: $(jq 'length' "$open_prs_file")"
+
+          worker_runs_since="$(date -u -d '7 days ago' '+%Y-%m-%dT%H:%M:%SZ')"
+          worker_runs="$(
+            gh api --method GET --paginate --slurp \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/holistic-review.lock.yml/runs" \
+              -f per_page=100 \
+              -f "created=>=${worker_runs_since}" |
+              jq -c '{ workflow_runs: [ .[] | .workflow_runs[] ] }'
+          )"
+
+          get_review_history() {
+            local pr_number="$1"
+            local include_legacy_reviews="$2"
+            local expected_run_id="${3:-}"
+            local submitted_after="${4:-}"
+            gh api --paginate --slurp \
+              "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}/reviews?per_page=100" |
+              jq -c \
+                --argjson include_legacy_reviews "$include_legacy_reviews" \
+                --arg expected_run_id "$expected_run_id" \
+                --arg submitted_after "$submitted_after" '
+                [
+                  .[][]
+                  | select(
+                      .user.login == "github-actions[bot]"
+                      and .state == "COMMENTED"
+                      and ((.body // "") | contains("<!-- gh-aw-threat-detected -->") | not)
+                      and (
+                        $submitted_after == ""
+                        or (.submitted_at // "") >= $submitted_after
+                      )
+                      and (
+                        $expected_run_id == ""
+                        or (
+                          (.body // "")
+                          | contains(
+                              ", id: "
+                              + $expected_run_id
+                              + ", workflow_id: holistic-review,"
+                            )
+                        )
+                      )
+                      and (
+                        (
+                          (.body // "") as $body
+                          | ($body | startswith("## Holistic Review\n\n**Motivation**:"))
+                          and ($body | contains("\n\n**Approach**:"))
+                          and ($body | contains("\n\n**Summary**:"))
+                          and (
+                            (
+                              ($body | contains("<!-- gh-aw-agentic-workflow: Holistic Review,"))
+                              and ($body | contains("workflow_id: holistic-review"))
+                            )
+                            or ($body | contains("This review was generated by this repository'\''s [Holistic Review]"))
+                            or ($body | contains("This review was generated by this repository'\''s [Holistic Code Review]"))
+                          )
+                        )
+                        or (
+                          $include_legacy_reviews
+                          and ((.body // "") | contains("Holistic Assessment"))
+                          and ((.body // "") | contains("This review was generated by GitHub Copilot"))
+                        )
+                      )
+                    )
+                  | {
+                      commit: .commit_id,
+                      review_id: .id,
+                      submitted_at: .submitted_at
+                    }
+                ]
+                | sort_by(.submitted_at)
+                | reduce .[] as $review (
+                    [];
+                    if any(.[]; .review_id == $review.review_id)
+                    then .
+                    else . + [$review]
+                    end
+                  )
+                | if length > 1 then [.[0], .[-1]] else . end
+                | map(del(.submitted_at))
+              '
+          }
+
+          dispatched=0
+          while IFS= read -r entry; do
+            pr_number="$(jq -er '.pr_number' <<< "$entry")"
+            base_ref="$(jq -er '.base_ref' <<< "$entry")"
+            base_sha="$(jq -er '.base_sha' <<< "$entry")"
+            head_sha="$(jq -er '.head_sha' <<< "$entry")"
+
+            comments="$(gh api --paginate --slurp \
+              "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments?per_page=100")"
+            state_comment="$(jq -c --arg state_comment_pattern "$state_comment_pattern" '
+              [ .[][]
+                | select(
+                    .user.login == "github-actions[bot]"
+                    and ((.body // "") | test($state_comment_pattern))
+                  )
+              ]
+              | last // empty
+            ' <<< "$comments")"
+
+            # Recognize the prior machine-only format once so active PRs retain their state
+            # when this workflow first writes the human-readable fenced format.
+            state_comment_is_legacy=false
+            if [ -z "$state_comment" ]; then
+              state_comment="$(jq -c --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                [ .[][]
+                  | select(
+                      .user.login == "github-actions[bot]"
+                      and (
+                        ((.body // "") | startswith($previous_state_comment_prefix + "\n\n```json\n"))
+                        or ((.body // "") | startswith("<!-- code-review-orchestrator-state -->"))
+                      )
+                    )
+                ]
+                | last // empty
+              ' <<< "$comments")"
+              if [ -n "$state_comment" ]; then
+                state_comment_is_legacy=true
+              fi
+            elif jq -e '(.body // "") | startswith("Workflow state for the [Code Review Orchestrator]")' \
+              <<< "$state_comment" > /dev/null; then
+              state_comment_is_legacy=true
+            fi
+
+            last_dispatched_commit=''
+            last_dispatched_base_ref=''
+            last_dispatched_base_sha=''
+            last_reviewed_commit=''
+            last_reviewed_base_ref=''
+            last_reviewed_base_sha=''
+            last_recorded_worker_run_id=''
+            review_history='[]'
+            review_history_requires_migration=true
+            review_attempt_commit=''
+            review_attempt_base_ref=''
+            review_attempt_count=0
+            manual_retry_reset=false
+            retry_state_requires_migration=false
+            state_comment_id=''
+            if [ -n "$state_comment" ]; then
+              state_comment_id="$(jq -er '.id' <<< "$state_comment")"
+              last_dispatched_commit="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .last_dispatched_commit // .last_dispatched_head // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              last_dispatched_base_sha="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .last_dispatched_base_sha // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              last_dispatched_base_ref="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .last_dispatched_base_ref // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              last_reviewed_commit="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .last_reviewed_commit // .last_reviewed_head // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              last_reviewed_base_sha="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .last_reviewed_base_sha // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              last_reviewed_base_ref="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .last_reviewed_base_ref // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              last_recorded_worker_run_id="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .last_recorded_worker_run_id // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              review_history="$(jq -c --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .review_history // []
+                ) catch []
+              ' <<< "$state_comment")"
+              review_history_requires_migration="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | ((.review_history | type) != "array" or .review_history_format != "holistic-review-disclosure-v1")
+                ) catch true
+              ' <<< "$state_comment")"
+              review_attempt_commit="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .review_attempt_commit // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              review_attempt_base_ref="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .review_attempt_base_ref // ""
+                ) catch ""
+              ' <<< "$state_comment")"
+              review_attempt_count="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | .review_attempt_count // 0
+                ) catch 0
+              ' <<< "$state_comment")"
+              retry_state_requires_migration="$(jq -r --arg state_comment_pattern "$state_comment_pattern" --arg previous_state_comment_prefix "$previous_state_comment_prefix" --argjson max_review_attempts "$MAX_REVIEW_ATTEMPTS" '
+                try (
+                  .body
+                  | if test($state_comment_pattern)
+                       or startswith($previous_state_comment_prefix + "\n\n```json\n")
+                    then split("```json\n")[1] | split("\n```")[0]
+                    else sub("^<!-- code-review-orchestrator-state -->\\n"; "")
+                    end
+                  | fromjson
+                  | (
+                      .version != 5
+                      or has("last_dispatched_base_ref") == false
+                      or has("last_dispatched_base_sha") == false
+                      or has("last_reviewed_base_ref") == false
+                      or has("last_reviewed_base_sha") == false
+                      or has("review_attempt_commit") == false
+                      or has("review_attempt_base_ref") == false
+                      or has("review_attempt_count") == false
+                      or .max_review_attempts != $max_review_attempts
+                    )
+                ) catch true
+              ' <<< "$state_comment")"
+              if ! [[ "$review_attempt_count" =~ ^[0-9]+$ ]]; then
+                review_attempt_count=0
+                retry_state_requires_migration=true
+              fi
+              if [ -z "$review_attempt_commit" ] && [ -n "$last_dispatched_commit" ]; then
+                review_attempt_commit="$last_dispatched_commit"
+                review_attempt_base_ref="$last_dispatched_base_ref"
+                review_attempt_count=1
+                retry_state_requires_migration=true
+              fi
+            fi
+
+            # Legacy state does not identify its base branch, so it must not suppress one conservative full review.
+
+            write_state_comment() {
+              state_json="$(
+                jq -n \
+                  --arg last_dispatched_commit "$last_dispatched_commit" \
+                  --arg last_dispatched_base_ref "$last_dispatched_base_ref" \
+                  --arg last_dispatched_base_sha "$last_dispatched_base_sha" \
+                  --arg last_reviewed_commit "$last_reviewed_commit" \
+                  --arg last_reviewed_base_ref "$last_reviewed_base_ref" \
+                  --arg last_reviewed_base_sha "$last_reviewed_base_sha" \
+                  --arg last_recorded_worker_run_id "$last_recorded_worker_run_id" \
+                  --arg review_attempt_commit "$review_attempt_commit" \
+                  --arg review_attempt_base_ref "$review_attempt_base_ref" \
+                  --argjson review_attempt_count "$review_attempt_count" \
+                  --argjson max_review_attempts "$MAX_REVIEW_ATTEMPTS" \
+                  --argjson review_history "$review_history" '
+                    {
+                      version: 5,
+                      last_dispatched_commit: $last_dispatched_commit,
+                      last_dispatched_base_ref: $last_dispatched_base_ref,
+                      last_dispatched_base_sha: $last_dispatched_base_sha,
+                      last_reviewed_commit: $last_reviewed_commit,
+                      last_reviewed_base_ref: $last_reviewed_base_ref,
+                      last_reviewed_base_sha: $last_reviewed_base_sha,
+                      last_recorded_worker_run_id: $last_recorded_worker_run_id,
+                      review_attempt_commit: $review_attempt_commit,
+                      review_attempt_base_ref: $review_attempt_base_ref,
+                      review_attempt_count: $review_attempt_count,
+                      max_review_attempts: $max_review_attempts,
+                      review_history_format: "holistic-review-disclosure-v1",
+                      review_history: $review_history
+                    }
+                  '
+              )"
+              state_body="$(
+                printf '%s\n\n```json\n%s\n```' "$state_comment_intro" "$state_json"
+              )"
+              if [ -n "$state_comment_id" ]; then
+                gh api --method PATCH \
+                  "repos/${GITHUB_REPOSITORY}/issues/comments/${state_comment_id}" \
+                  -f "body=${state_body}" > /dev/null
+              else
+                gh api --method POST \
+                  "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \
+                  -f "body=${state_body}" > /dev/null
+              fi
+            }
+
+            # A submitted workflow review is authoritative even if the worker later fails. The
+            # state comment records that commit separately from the most recently dispatched
+            # commit so a later worker reviews only the commits since this durable review.
+            state_needs_update="$state_comment_is_legacy"
+            if [ "$retry_state_requires_migration" = true ]; then
+              state_needs_update=true
+            fi
+            include_legacy_reviews=false
+            if [ "$state_comment_is_legacy" = true ] || [ "$review_history_requires_migration" = true ]; then
+              include_legacy_reviews=true
+              review_history="$(get_review_history "$pr_number" "$include_legacy_reviews")"
+              state_needs_update=true
+            fi
+            if [ -n "$last_dispatched_commit" ]; then
+              completed_review_run_name="Holistic Review #${pr_number} (${last_dispatched_commit})"
+              legacy_completed_review_run_name="Code Review Worker #${pr_number} (${last_dispatched_commit})"
+              completed_review_run="$(jq -c --arg review_run_name "$completed_review_run_name" --arg legacy_review_run_name "$legacy_completed_review_run_name" '
+                [
+                  .workflow_runs[]
+                  | select(.display_title == $review_run_name or .display_title == $legacy_review_run_name)
+                ]
+                | sort_by(.created_at)
+                | last // empty
+              ' <<< "$worker_runs")"
+              if [ -n "$completed_review_run" ] &&
+                 [ "$(jq -r '.status' <<< "$completed_review_run")" = "completed" ] &&
+                 [ "$last_recorded_worker_run_id" != "$(jq -r '.id' <<< "$completed_review_run")" ]; then
+                completed_review_created_at="$(jq -r '.created_at' <<< "$completed_review_run")"
+                completed_review_run_id="$(jq -r '.id' <<< "$completed_review_run")"
+                discovered_review_history="$(
+                  get_review_history \
+                    "$pr_number" \
+                    "$include_legacy_reviews" \
+                    "$completed_review_run_id" \
+                    "$completed_review_created_at"
+                )"
+                if jq -e --arg commit "$last_dispatched_commit" \
+                  'any(.[]; .commit == $commit)' <<< "$discovered_review_history" > /dev/null; then
+                  current_review="$(jq -c --arg commit "$last_dispatched_commit" '
+                    [ .[] | select(.commit == $commit) ] | last
+                  ' <<< "$discovered_review_history")"
+                  review_history="$(jq -cn \
+                    --argjson review_history "$review_history" \
+                    --argjson current_review "$current_review" '
+                      if ($review_history | length) == 0 then
+                        [$current_review]
+                      elif $review_history[0].review_id == $current_review.review_id then
+                        $review_history
+                      else
+                        [$review_history[0], $current_review]
+                      end
+                    '
+                  )"
+                  last_recorded_worker_run_id="$(jq -r '.id' <<< "$completed_review_run")"
+                  if [ "$last_reviewed_commit" != "$last_dispatched_commit" ]; then
+                    last_reviewed_commit="$last_dispatched_commit"
+                  fi
+                  last_reviewed_base_ref="$last_dispatched_base_ref"
+                  last_reviewed_base_sha="$last_dispatched_base_sha"
+                  review_attempt_commit=''
+                  review_attempt_base_ref=''
+                  review_attempt_count=0
+                  state_needs_update=true
+                elif [ "$(jq -r '.conclusion // ""' <<< "$completed_review_run")" = "success" ]; then
+                  last_recorded_worker_run_id="$(jq -r '.id' <<< "$completed_review_run")"
+                  if [ "$review_attempt_commit" = "$last_dispatched_commit" ] &&
+                     [ "$review_attempt_base_ref" = "$last_dispatched_base_ref" ] &&
+                     [ "$review_attempt_count" -ge "$MAX_REVIEW_ATTEMPTS" ]; then
+                    echo "Completed review run for commit ${last_dispatched_commit} did not submit a review; retry limit reached."
+                  else
+                    echo "Completed review run for commit ${last_dispatched_commit} did not submit a review; retrying."
+                    last_dispatched_commit=''
+                    last_dispatched_base_ref=''
+                    last_dispatched_base_sha=''
+                  fi
+                  state_needs_update=true
+                fi
+              fi
+            fi
+
+            if [ -n "$PR_NUMBERS" ] &&
+               { [ "$last_reviewed_commit" != "$head_sha" ] ||
+                 [ "$last_reviewed_base_ref" != "$base_ref" ]; } &&
+               [ "$review_attempt_commit" = "$head_sha" ] &&
+               [ "$review_attempt_base_ref" = "$base_ref" ] &&
+               [ "$review_attempt_count" -ge "$MAX_REVIEW_ATTEMPTS" ]; then
+              review_attempt_commit=''
+              review_attempt_base_ref=''
+              review_attempt_count=0
+              manual_retry_reset=true
+              state_needs_update=true
+            fi
+
+            if [ "$last_reviewed_commit" = "$head_sha" ] &&
+               [ "$last_reviewed_base_ref" = "$base_ref" ]; then
+              if [ -n "$review_attempt_commit" ] ||
+                 [ -n "$review_attempt_base_ref" ] ||
+                 [ "$review_attempt_count" -ne 0 ]; then
+                review_attempt_commit=''
+                review_attempt_base_ref=''
+                review_attempt_count=0
+                state_needs_update=true
+              fi
+              if [ -n "$PR_NUMBERS" ]; then
+                printf '| [#%s](%s/%s/pull/%s) | `%s` |\n' \
+                  "$pr_number" \
+                  "$GITHUB_SERVER_URL" \
+                  "$GITHUB_REPOSITORY" \
+                  "$pr_number" \
+                  "$head_sha" >> "$already_reviewed_prs_file"
+              fi
+              if [ "$state_needs_update" = true ]; then
+                write_state_comment
+              fi
+              continue
+            fi
+
+            if [ "$review_attempt_commit" = "$head_sha" ] &&
+               [ "$review_attempt_base_ref" = "$base_ref" ] &&
+               [ "$review_attempt_count" -ge "$MAX_REVIEW_ATTEMPTS" ]; then
+              printf '| [#%s](%s/%s/pull/%s) | `%s` | %s |\n' \
+                "$pr_number" \
+                "$GITHUB_SERVER_URL" \
+                "$GITHUB_REPOSITORY" \
+                "$pr_number" \
+                "$head_sha" \
+                "$review_attempt_count" >> "$retry_limited_prs_file"
+              if [ "$state_needs_update" = true ]; then
+                write_state_comment
+              fi
+              continue
+            fi
+
+            review_run_name="Holistic Review #${pr_number} (${head_sha})"
+            legacy_review_run_name="Code Review Worker #${pr_number} (${head_sha})"
+            review_run="$(jq -c --arg review_run_name "$review_run_name" --arg legacy_review_run_name "$legacy_review_run_name" '
+              [
+                .workflow_runs[]
+                | select(.display_title == $review_run_name or .display_title == $legacy_review_run_name)
+              ]
+              | sort_by(.created_at)
+              | last // empty
+            ' <<< "$worker_runs")"
+            if [ "$last_dispatched_commit" = "$head_sha" ] &&
+               [ "$last_dispatched_base_ref" = "$base_ref" ] &&
+               [ -n "$review_run" ]; then
+              review_status="$(jq -r '.status' <<< "$review_run")"
+              review_conclusion="$(jq -r '.conclusion // ""' <<< "$review_run")"
+              if [ "$review_status" != "completed" ] ||
+                 { [ "$review_conclusion" = "success" ] &&
+                   [ "$manual_retry_reset" != true ]; }; then
+                if [ "$state_needs_update" = true ]; then
+                  write_state_comment
+                fi
+                continue
+              fi
+            fi
+
+            if [ "$dispatched" -ge "$MAX_DISPATCH" ]; then
+              if [ "$manual_retry_reset" = true ]; then
+                last_dispatched_commit=''
+                last_dispatched_base_ref=''
+                last_dispatched_base_sha=''
+              fi
+              if [ "$state_needs_update" = true ]; then
+                write_state_comment
+              fi
+              if [ -n "$PR_NUMBERS" ]; then
+                continue
+              fi
+              break
+            fi
+
+            previous_head_sha="$last_reviewed_commit"
+            previous_base_sha="$last_reviewed_base_sha"
+            if [ -z "$last_reviewed_base_ref" ]; then
+              previous_head_sha=''
+              previous_base_sha=''
+            fi
+
+            fetch_sha="$previous_head_sha"
+            if [ -z "$fetch_sha" ]; then
+              fetch_sha="$head_sha"
+            fi
+
+            aw_context="$(jq -cn \
+              --arg run_id "$GITHUB_RUN_ID" \
+              --arg repo "$GITHUB_REPOSITORY" \
+              --arg workflow_id "$GITHUB_WORKFLOW_REF" \
+              --argjson item_number "$pr_number" \
+              '{
+                run_id: $run_id,
+                repo: $repo,
+                workflow_id: $workflow_id,
+                item_type: "pull_request",
+                item_number: $item_number
+              }')"
+
+            gh api --method POST \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/holistic-review.lock.yml/dispatches" \
+              -f "ref=${DEFAULT_BRANCH}" \
+              -f "inputs[pr_number]=${pr_number}" \
+              -f "inputs[pr_base_ref]=${base_ref}" \
+              -f "inputs[pr_head_sha]=${head_sha}" \
+              -f "inputs[previous_head_sha]=${previous_head_sha}" \
+              -f "inputs[previous_base_sha]=${previous_base_sha}" \
+              -f "inputs[previous_review_history]=${review_history}" \
+              -f "inputs[fetch_sha]=${fetch_sha}" \
+              -f "inputs[aw_context]=${aw_context}" > /dev/null
+
+            if [ "$review_attempt_commit" != "$head_sha" ] ||
+               [ "$review_attempt_base_ref" != "$base_ref" ]; then
+              review_attempt_count=0
+            fi
+            review_attempt_commit="$head_sha"
+            review_attempt_base_ref="$base_ref"
+            review_attempt_count=$((review_attempt_count + 1))
+            last_dispatched_commit="$head_sha"
+            last_dispatched_base_ref="$base_ref"
+            last_dispatched_base_sha="$base_sha"
+            write_state_comment
+
+            previous_commit_display="$previous_head_sha"
+            if [ -z "$previous_commit_display" ]; then
+              previous_commit_display='_Initial review_'
+            else
+              previous_commit_display="\`$previous_commit_display\`"
+            fi
+            printf '| [#%s](%s/%s/pull/%s) | `%s` | %s |\n' \
+              "$pr_number" \
+              "$GITHUB_SERVER_URL" \
+              "$GITHUB_REPOSITORY" \
+              "$pr_number" \
+              "$head_sha" \
+              "$previous_commit_display" >> "$dispatched_prs_file"
+
+            dispatched=$((dispatched + 1))
+          done < <(jq -c 'sort_by(.updatedAt)[] | {
+            pr_number: .number,
+            base_ref: .baseRefName,
+            base_sha: .baseRefOid,
+            head_sha: .headRefOid
+          }' "$open_prs_file")
+
+          echo "Dispatched ${dispatched} holistic review workflow(s)."
+          {
+            echo '## Holistic Review Orchestrator'
+            echo
+            if [ -s "$dispatched_prs_file" ]; then
+              echo "Dispatched ${dispatched} holistic review workflow(s):"
+              echo
+              echo '| Pull request | Dispatched commit | Previously reviewed commit |'
+              echo '| --- | --- | --- |'
+              cat "$dispatched_prs_file"
+            else
+              echo 'No holistic review workflows were dispatched.'
+            fi
+            if [ -s "$retry_limited_prs_file" ]; then
+              echo
+              echo '### Retry limit reached'
+              echo
+              echo '| Pull request | Commit | Attempts |'
+              echo '| --- | --- | ---: |'
+              cat "$retry_limited_prs_file"
+              echo
+              echo "Scheduled retries stop after ${MAX_REVIEW_ATTEMPTS} attempts for one commit and target branch. A targeted manual dispatch resets that review target's retry budget."
+            fi
+            if [ -s "$already_reviewed_prs_file" ]; then
+              echo
+              echo '### Already reviewed'
+              echo
+              echo 'These targeted pull requests already have a durable review for their current commit and target branch, so no duplicate review was dispatched.'
+              echo
+              echo '| Pull request | Commit |'
+              echo '| --- | --- |'
+              cat "$already_reviewed_prs_file"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

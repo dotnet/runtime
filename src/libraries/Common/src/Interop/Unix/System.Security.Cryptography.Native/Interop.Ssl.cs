@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -30,9 +31,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetError")]
         internal static partial SslErrorCode SslGetError(SafeSslHandle ssl, int ret);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetError")]
-        internal static partial SslErrorCode SslGetError(IntPtr ssl, int ret);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetQuietShutdown")]
         internal static partial void SslSetQuietShutdown(SafeSslHandle ssl, int mode);
@@ -117,6 +115,18 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
+        // The OpenSSL shims below report errors via out params + the OpenSSL error
+        // queue (SSL_get_error / ERR_get_error); they do not set errno. SetLastError is
+        // omitted so we don't pay the marshaller cost of capturing a value no caller reads.
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd")]
+        internal static partial int SslSetFd(SafeSslHandle ssl, SafeSocketHandle socket);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAcceptMovingWriteBuffer")]
+        internal static partial void SslSetAcceptMovingWriteBuffer(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
+        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
         internal static unsafe partial int SslHandshake(
             SafeSslHandle ssl,
@@ -156,15 +166,43 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsSslStateOK(SafeSslHandle ssl);
 
-        // NOTE: this is just an (unsafe) overload to the BioWrite method from Interop.Bio.cs.
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static unsafe partial int BioWrite(SafeBioHandle b, byte* data, int len);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewManagedSpan")]
         internal static partial SafeBioHandle BioNewManagedSpan();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewSocketReplay")]
+        private static unsafe partial SafeBioHandle BioNewSocketReplay(IntPtr fd, byte* prefix, int prefixLen);
+
+        internal static unsafe SafeBioHandle BioNewSocketReplay(SafeSocketHandle socket, ReadOnlySpan<byte> prefix)
+        {
+            fixed (byte* pPrefix = prefix)
+            {
+                return BioNewSocketReplay(socket.DangerousGetHandle(), pPrefix, prefix.Length);
+            }
+        }
+
+        // Reads directly from the BIO's bound fd into its internal peek buffer until a
+        // full TLS record is present. Returns:
+        //   1  = have full frame; framePtr / frameLen point into the BIO's buffer.
+        //   0  = need more data (fd would block); caller polls SelectRead and retries.
+        //  -1  = error (EOF, oversized record, or recv failure).
+        //
+        // The returned pointer is valid until the BIO is destroyed or SocketReplayBioRead
+        // starts consuming the buffer (i.e. once SSL_do_handshake runs against this BIO).
+        // Callers must span-wrap and parse before creating the SSL* that owns the BIO.
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioPeekTlsFrame")]
+        internal static unsafe partial int BioPeekTlsFrame(SafeBioHandle bio, out byte* framePtr, out int frameLen);
+
+        // Returns the socket-replay BIO's retained peek buffer (bytes captured by
+        // BioPeekTlsFrame). Valid until the BIO is destroyed, even after OpenSSL has
+        // drained it during handshake.
+        //   1  = prefix present; prefixPtr / prefixLen wrap the internal buffer.
+        //   0  = BIO has no captured prefix.
+        //  -1  = error (invalid args).
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetReplayPrefix")]
+        internal static unsafe partial int BioGetReplayPrefix(SafeBioHandle bio, out byte* prefixPtr, out int prefixLen);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
         internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);
@@ -224,18 +262,14 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
         private static unsafe partial byte* GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
         internal static partial void SslSetVerifyPeer(SafeSslHandle ssl, [MarshalAs(UnmanagedType.Bool)] bool failIfNoPeerCert);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
-        internal static partial IntPtr SslGetData(IntPtr ssl);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetRetryVerify")]
+        internal static partial int SslSetRetryVerify(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
-        internal static partial IntPtr SslGetData(SafeSslHandle ssl);
+        internal static partial IntPtr SslGetData(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
         internal static partial int SslSetData(SafeSslHandle ssl, IntPtr data);
@@ -381,7 +415,18 @@ internal static partial class Interop
                     dupCertHandle.Dispose(); // we still own the safe handle; clean it up
                     return false;
                 }
-                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+
+                // CryptoNative_SslAddExtraChainCert is SSL_ctrl(ssl, SSL_CTRL_CHAIN_CERT, 1, ...) --
+                // SSL_add1_chain_cert -- so OpenSSL has taken a reference of its own. The up-ref above
+                // exists only to close the SafeHandle GC hole for the duration of the call, so we still
+                // own that reference and must release it here. Transferring it instead
+                // (SetHandleAsInvalid) leaves two references taken and one never returned; because that
+                // also disarms the SafeHandle nothing finalizes it either, so the X509, its X509_PUBKEY
+                // and the EVP_PKEY cached inside it survive until process exit, invisible to the GC.
+                //
+                // The SSL_CTX path in Interop.SslCtx is deliberately different: SSL_CTX_add_extra_chain_cert
+                // is add0 and does consume the caller's reference, so SetHandleAsInvalid is correct there.
+                dupCertHandle.Dispose();
             }
 
             return true;
@@ -422,6 +467,7 @@ internal static partial class Interop
             SSL_ERROR_WANT_X509_LOOKUP = 4,
             SSL_ERROR_SYSCALL = 5,
             SSL_ERROR_ZERO_RETURN = 6,
+            SSL_ERROR_WANT_RETRY_VERIFY = 12,
 
             // NOTE: this SslErrorCode value doesn't exist in OpenSSL, but
             // we use it to distinguish when a renegotiation is pending.
@@ -449,6 +495,17 @@ namespace Microsoft.Win32.SafeHandles
         // Storage for the exception that occurred during certificate validation callback so that
         // we may rethrow it after returning to managed code.
         public Exception? CertificateValidationException;
+
+        // OpenSSL 3.0+ retry-verify state (dormant infrastructure). When CertVerifyCallback
+        // eventually opts into SSL_set_retry_verify (currently disabled — upstream OpenSSL
+        // does not re-enter the peer-cert verify callback on either client or server SSLs),
+        // it will set RetryVerifyAttempted = true and, on re-entry, honor
+        // ExternalValidationAccepted (posted by TlsSession.PushExternalValidationVerdict-
+        // ToPalIfRetryVerify). Both fields are read but never written today, hence CS0649.
+#pragma warning disable CS0649
+        public bool RetryVerifyAttempted;
+        public bool ExternalValidationAccepted;
+#pragma warning restore CS0649
 
         public bool IsServer
         {
@@ -478,13 +535,43 @@ namespace Microsoft.Win32.SafeHandles
 
         public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
         {
-            SafeBioHandle readBio = Interop.Ssl.BioNewManagedSpan();
-            SafeBioHandle writeBio = Interop.Ssl.BioNewManagedSpan();
-            SafeSslHandle handle = Interop.Ssl.SslCreate(context);
-            if (readBio.IsInvalid || writeBio.IsInvalid || handle.IsInvalid)
+            SafeSocketHandle? socket = options.SocketHandle;
+            bool useFd = socket is not null && !socket.IsInvalid;
+            SafeBioHandle? preallocatedReadBio = useFd ? options.PreallocatedReadBio : null;
+            byte[]? replayPrefix = useFd ? options.ReplayPrefix : null;
+            bool usePreallocatedBio = preallocatedReadBio is not null;
+            bool useReplayBio = usePreallocatedBio || (useFd && replayPrefix is not null);
+
+            SafeBioHandle? readBio = null;
+            SafeBioHandle? writeBio = null;
+            if (usePreallocatedBio)
             {
-                readBio.Dispose();
-                writeBio.Dispose();
+                // Deferred-server flow (native pre-fetch): the caller populated a
+                // socket-replay BIO via BioPeekTlsFrame; adopt it as the read BIO
+                // and create a peer write BIO for OpenSSL's outbound records.
+                // Clear the field so ownership transfer happens exactly once.
+                readBio = preallocatedReadBio;
+                options.PreallocatedReadBio = null;
+                writeBio = Interop.Ssl.BioNewSocketReplay(socket!, ReadOnlySpan<byte>.Empty);
+            }
+            else if (useReplayBio)
+            {
+                // Legacy deferred-server flow (managed pre-fetch): install a socket-
+                // replay BIO seeded with the peeked ClientHello bytes.
+                readBio = Interop.Ssl.BioNewSocketReplay(socket!, replayPrefix);
+                writeBio = Interop.Ssl.BioNewSocketReplay(socket!, ReadOnlySpan<byte>.Empty);
+            }
+            else if (!useFd)
+            {
+                readBio = Interop.Ssl.BioNewManagedSpan();
+                writeBio = Interop.Ssl.BioNewManagedSpan();
+            }
+
+            SafeSslHandle handle = Interop.Ssl.SslCreate(context);
+            if (((readBio is not null) && (readBio.IsInvalid || writeBio!.IsInvalid)) || handle.IsInvalid)
+            {
+                readBio?.Dispose();
+                writeBio?.Dispose();
                 handle.Dispose(); // will make IsInvalid==true if it's not already
                 return handle;
             }
@@ -492,22 +579,49 @@ namespace Microsoft.Win32.SafeHandles
             handle._authOptionsHandle = new WeakGCHandle<SslAuthenticationOptions>(options);
             Interop.Ssl.SslSetData(handle, WeakGCHandle<SslAuthenticationOptions>.ToIntPtr(handle._authOptionsHandle));
 
-            // SslSetBio will transfer ownership of the BIO handles to the SSL context
-            try
+            // CertVerifyCallback needs the SafeSslHandle to stash a
+            // CertificateValidationException; expose it via the options.
+            options.SafeSslHandle = handle;
+
+            if (useFd)
             {
-                readBio.TransferOwnershipToParent(handle);
-                writeBio.TransferOwnershipToParent(handle);
-                handle._readBio = readBio;
-                handle._writeBio = writeBio;
-                Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+                // Socket-bound sessions can see SSL_write flush only part of a record and
+                // report WANT_WRITE. The retry hands OpenSSL a span over the same managed
+                // buffer, but the GC may have relocated it in the meantime; without this
+                // mode OpenSSL rejects the changed address with SSL_R_BAD_WRITE_RETRY.
+                Interop.Ssl.SslSetAcceptMovingWriteBuffer(handle);
             }
-            catch (Exception exc)
+
+            if (useFd && !useReplayBio)
             {
-                // The only way this should be able to happen without thread aborts is if we hit OOMs while
-                // manipulating the safe handles, in which case we may leak the bio handles.
-                Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
-                throw;
+                if (Interop.Ssl.SslSetFd(handle, socket!) != 1)
+                {
+                    handle.Dispose();
+                    throw Interop.OpenSsl.CreateSslException(SR.net_allocate_ssl_context_failed);
+                }
             }
+            else
+            {
+                // SslSetBio will transfer ownership of the BIO handles to the SSL context
+                try
+                {
+                    readBio!.TransferOwnershipToParent(handle);
+                    writeBio!.TransferOwnershipToParent(handle);
+                    handle._readBio = readBio;
+                    handle._writeBio = writeBio;
+                    Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+                }
+                catch (Exception exc)
+                {
+                    // The only way this should be able to happen without thread aborts is if we hit OOMs while
+                    // manipulating the safe handles, in which case we may leak the bio handles.
+                    Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
+                    throw;
+                }
+            }
+
+            // Consumed exactly once: the BIO holds its own copy of the prefix bytes.
+            options.ReplayPrefix = null;
 
             if (options.IsServer)
             {

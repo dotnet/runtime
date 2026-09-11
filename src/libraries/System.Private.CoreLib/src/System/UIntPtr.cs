@@ -56,8 +56,9 @@ namespace System
 #endif
         }
 
+        /// <safety>Stores the pointer as an integer value; the pointed-to memory is never accessed.</safety>
         [NonVersionable]
-        public unsafe UIntPtr(void* value)
+        public UIntPtr(void* value)
         {
             _value = (nuint)value;
         }
@@ -115,11 +116,13 @@ namespace System
         [NonVersionable]
         public static explicit operator nuint(ulong value) => checked((nuint)value);
 
+        /// <safety>Converts between a pointer and an integer of the same width; no memory is accessed.</safety>
         [NonVersionable]
-        public static unsafe explicit operator nuint(void* value) => (nuint)value;
+        public static explicit operator nuint(void* value) => (nuint)value;
 
+        /// <safety>Converts between an integer and a pointer of the same width; no memory is accessed.</safety>
         [NonVersionable]
-        public static unsafe explicit operator void*(nuint value) => (void*)value;
+        public static explicit operator void*(nuint value) => (void*)value;
 
         [NonVersionable]
         public static explicit operator uint(nuint value)
@@ -158,8 +161,9 @@ namespace System
             get => sizeof(nuint_t);
         }
 
+        /// <safety>Returns the stored value reinterpreted as a pointer; no memory is accessed.</safety>
         [NonVersionable]
-        public unsafe void* ToPointer() => (void*)_value;
+        public void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static nuint MaxValue
@@ -1170,28 +1174,28 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<nuint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
         {
             Unsafe.SkipInit(out result);
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<nuint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
         {
             Unsafe.SkipInit(out result);
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<nuint>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nuint result, out int bytesConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nuint result, out int bytesConsumed)
         {
             Unsafe.SkipInit(out result);
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out bytesConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
         //

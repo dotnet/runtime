@@ -341,6 +341,12 @@ namespace System.Tests
             yield return new object[] { (Half)(-180f), (Half)(180f), -1};
             yield return new object[] { (Half)(180f), (Half)(-180f), 1};
             yield return new object[] { (Half)(-65535), (object)null, 1};
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), BitConverter.UInt16BitsToHalf(0x8000), 0 }; // +0 vs -0
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), BitConverter.UInt16BitsToHalf(0x0000), 0 }; // -0 vs +0
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), Half.Epsilon, -1 }; // -subnormal vs +subnormal
+            yield return new object[] { Half.NaN, Half.PositiveInfinity, -1 };
+            yield return new object[] { Half.PositiveInfinity, Half.NaN, 1 };
+            yield return new object[] { Half.NaN, Half.NegativeInfinity, -1 };
         }
 
         [Theory]
@@ -2592,6 +2598,33 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, Half.RadiansToDegrees(+value), allowedVariance);
         }
 
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones the bulk data cannot reach: zero, the subnormal range
+        // on either side of the conversion, and an overflow.
+        [Theory]
+        [InlineData(0x0000, 0x0000, 0x0000)] // 0
+        [InlineData(0x0001, 0x0000, 0x0039)] // Epsilon
+        [InlineData(0x0200, 0x0009, 0x1729)] // 0x1p-15
+        [InlineData(0x0400, 0x0012, 0x1B29)] // MinNormal
+        [InlineData(0x3C00, 0x2478, 0x5329)] // One
+        [InlineData(0x7BFF, 0x6477, 0x7C00)] // MaxValue, overflows for RadiansToDegrees
+        [InlineData(0x7C00, 0x7C00, 0x7C00)] // PositiveInfinity
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ushort valueBits, ushort degreesToRadiansBits, ushort radiansToDegreesBits)
+        {
+            const ushort SignMask = 0x8000;
+
+            Half value = BitConverter.UInt16BitsToHalf(valueBits);
+
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf(degreesToRadiansBits), Half.DegreesToRadians(value));
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf(radiansToDegreesBits), Half.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            Half negativeValue = BitConverter.UInt16BitsToHalf((ushort)(valueBits ^ SignMask));
+
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf((ushort)(degreesToRadiansBits ^ SignMask)), Half.DegreesToRadians(negativeValue));
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf((ushort)(radiansToDegreesBits ^ SignMask)), Half.RadiansToDegrees(negativeValue));
+        }
+
         [Theory]
         [InlineData(float.PositiveInfinity, int.MaxValue)]
         [InlineData(float.NaN, int.MaxValue)]
@@ -2617,51 +2650,51 @@ namespace System.Tests
             Assert.Equal(-15, Half.ILogB(subnormal));
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
             // Basic Half parsing with trailing invalid characters
-            yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
-            yield return new object[] { "1.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5, 3 };
-            yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)0.123, 5 };
+            yield return new object[] { "123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)123.45, 6 };
+            yield return new object[] { "1.5xyz", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)1.5, 3 };
+            yield return new object[] { "0.123abc", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)0.123, 5 };
 
             // With leading whitespace
-            yield return new object[] { "  12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 6 };
+            yield return new object[] { "  12.5abc", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)12.5, 6 };
 
             // With signs
-            yield return new object[] { "+12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 5 };
-            yield return new object[] { "-45.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)(-45.5), 5 };
+            yield return new object[] { "+12.5abc", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)12.5, 5 };
+            yield return new object[] { "-45.5xyz", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)(-45.5), 5 };
 
             // With exponent
-            yield return new object[] { "1.5e2abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5e2, 5 };
+            yield return new object[] { "1.5e2abc", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)1.5e2, 5 };
 
             // Special values
-            yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 8 };
-            yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NegativeInfinity, 9 };
-            yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NaN, 3 };
+            yield return new object[] { "Infinityabc", NumberStyles.Float, CultureInfo.InvariantCulture, Half.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinityxyz", NumberStyles.Float, CultureInfo.InvariantCulture, Half.NegativeInfinity, 9 };
+            yield return new object[] { "NaNabc", NumberStyles.Float, CultureInfo.InvariantCulture, Half.NaN, 3 };
 
             // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
-            yield return new object[] { "Infinity   ", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
-            yield return new object[] { "Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
-            yield return new object[] { "+Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
-            yield return new object[] { "-Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NegativeInfinity, 11 };
-            yield return new object[] { "NaN  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NaN, 5 };
+            yield return new object[] { "Infinity   ", NumberStyles.Float, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, Half.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", NumberStyles.Float, CultureInfo.InvariantCulture, Half.NaN, 5 };
 
             // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
-            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite), CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
 
             // Valid number without trailing characters
-            yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
+            yield return new object[] { "123.45", NumberStyles.Float, CultureInfo.InvariantCulture, (Half)123.45, 6 };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, Half expectedValue, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, Half expectedValue, int expectedCharsConsumed)
         {
             Half result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.True(NumberBaseHelper<Half>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Half>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             if (Half.IsNaN(expectedValue))
             {
                 Assert.True(Half.IsNaN(result));
@@ -2673,7 +2706,7 @@ namespace System.Tests
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.True(NumberBaseHelper<Half>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Half>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             if (Half.IsNaN(expectedValue))
             {
                 Assert.True(Half.IsNaN(result));
@@ -2687,7 +2720,7 @@ namespace System.Tests
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(NumberBaseHelper<Half>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<Half>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             if (Half.IsNaN(expectedValue))
             {
                 Assert.True(Half.IsNaN(result));
@@ -2703,38 +2736,209 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
             // Empty string
-            yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+            yield return new object[] { "", NumberStyles.Float, CultureInfo.InvariantCulture };
 
             // Only invalid characters (no valid number)
-            yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+            yield return new object[] { "abc", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
         {
             Half result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.False(NumberBaseHelper<Half>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Half>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             Assert.Equal((Half)0.0, result);
             Assert.Equal(0, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.False(NumberBaseHelper<Half>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Half>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal((Half)0.0, result);
             Assert.Equal(0, charsConsumed);
 
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(NumberBaseHelper<Half>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<Half>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal((Half)0.0, result);
             Assert.Equal(0, bytesConsumed);
+        }
+
+        // Half.ReciprocalEstimate/ReciprocalSqrtEstimate are hardware-accelerated on some
+        // targets (e.g. Arm64 FRECPE/FRSQRTE, x86 RCPPH/RSQRTPH). The special-value results
+        // below are exact on every path and specifically guard against bad scalar codegen -- a
+        // wrong Arm64 half encoding previously emitted the double-precision form, producing +0.0
+        // for all of these inputs. The finite cases use a generous variance that comfortably
+        // exceeds the estimate error plus Half rounding so they don't depend on the exact
+        // hardware estimate.
+        public static IEnumerable<object[]> ReciprocalEstimate_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity,                   BitConverter.UInt16BitsToHalf(0x8000), (Half)0.0f };      // -Infinity -> -0.0
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000),   Half.NegativeInfinity,                 (Half)0.0f };      // -0.0      -> -Infinity
+            yield return new object[] { Half.NaN,                                Half.NaN,                              (Half)0.0f };
+            yield return new object[] { (Half)0.0f,                              Half.PositiveInfinity,                 (Half)0.0f };
+            yield return new object[] { Half.PositiveInfinity,                   (Half)0.0f,                            (Half)0.0f };
+            yield return new object[] { (Half)1.0f,                              (Half)1.0f,                            (Half)0.0625f };
+            yield return new object[] { (Half)2.0f,                              (Half)0.5f,                            (Half)0.03125f };
+            yield return new object[] { (Half)0.5f,                              (Half)2.0f,                            (Half)0.125f };
+            yield return new object[] { (Half)4.0f,                              (Half)0.25f,                           (Half)0.015625f };
+        }
+
+        [Theory]
+        [MemberData(nameof(ReciprocalEstimate_TestData))]
+        public static void ReciprocalEstimate(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, Half.ReciprocalEstimate(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> ReciprocalSqrtEstimate_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity,                   Half.NaN,                              (Half)0.0f };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000),   Half.NegativeInfinity,                 (Half)0.0f };      // -0.0      -> -Infinity
+            yield return new object[] { (Half)(-1.0f),                           Half.NaN,                              (Half)0.0f };
+            yield return new object[] { Half.NaN,                                Half.NaN,                              (Half)0.0f };
+            yield return new object[] { (Half)0.0f,                              Half.PositiveInfinity,                 (Half)0.0f };
+            yield return new object[] { Half.PositiveInfinity,                   (Half)0.0f,                            (Half)0.0f };
+            yield return new object[] { (Half)1.0f,                              (Half)1.0f,                            (Half)0.0625f };
+            yield return new object[] { (Half)4.0f,                              (Half)0.5f,                            (Half)0.03125f };
+            yield return new object[] { (Half)0.25f,                             (Half)2.0f,                            (Half)0.125f };
+        }
+
+        [Theory]
+        [MemberData(nameof(ReciprocalSqrtEstimate_TestData))]
+        public static void ReciprocalSqrtEstimate(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, Half.ReciprocalSqrtEstimate(value), allowedVariance);
+        }
+
+        // The remaining tests operate on raw bit patterns so that signed zero and NaN payloads are
+        // observable, since Half.Equals treats +0.0 and -0.0 as equal.
+        private static void AssertBitsOrNaN(ushort expectedBits, Half actual)
+        {
+            if (Half.IsNaN(BitConverter.UInt16BitsToHalf(expectedBits)))
+            {
+                Assert.True(Half.IsNaN(actual), $"expected NaN, got 0x{BitConverter.HalfToUInt16Bits(actual):X4}");
+            }
+            else
+            {
+                Assert.Equal(expectedBits, BitConverter.HalfToUInt16Bits(actual));
+            }
+        }
+
+        [Theory]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        [InlineData((ushort)0x7E00, 0, 0u, 0L, 0ul)] // NaN
+        [InlineData((ushort)0xFE00, 0, 0u, 0L, 0ul)] // -NaN
+        [InlineData((ushort)0x7C00, int.MaxValue, uint.MaxValue, long.MaxValue, ulong.MaxValue)] // +Infinity
+        [InlineData((ushort)0xFC00, int.MinValue, 0u, long.MinValue, 0ul)] // -Infinity
+        [InlineData((ushort)0x0000, 0, 0u, 0L, 0ul)] // +0.0
+        [InlineData((ushort)0x8000, 0, 0u, 0L, 0ul)] // -0.0
+        [InlineData((ushort)0x0001, 0, 0u, 0L, 0ul)] // Epsilon
+        [InlineData((ushort)0x3E00, 1, 1u, 1L, 1ul)] // 1.5
+        [InlineData((ushort)0xBE00, -1, 0u, -1L, 0ul)] // -1.5
+        [InlineData((ushort)0xB800, 0, 0u, 0L, 0ul)] // -0.5
+        [InlineData((ushort)0x7BFF, 65504, 65504u, 65504L, 65504ul)] // MaxValue
+        [InlineData((ushort)0xFBFF, -65504, 0u, -65504L, 0ul)] // MinValue
+        public static void ExplicitConversion_ToInteger(ushort bits, int expectedInt32, uint expectedUInt32, long expectedInt64, ulong expectedUInt64)
+        {
+            Half value = BitConverter.UInt16BitsToHalf(bits);
+
+            Assert.Equal(expectedInt32, (int)value);
+            Assert.Equal(expectedUInt32, (uint)value);
+            Assert.Equal(expectedInt64, (long)value);
+            Assert.Equal(expectedUInt64, (ulong)value);
+        }
+
+        [Theory]
+        [InlineData((ushort)0x0000, (ushort)0x8000, (ushort)0x0000, (ushort)0x0000, (ushort)0x8000, (ushort)0x7E00)] // +0.0, -0.0
+        [InlineData((ushort)0x8000, (ushort)0x8000, (ushort)0x8000, (ushort)0x0000, (ushort)0x0000, (ushort)0x7E00)] // -0.0, -0.0
+        [InlineData((ushort)0x3C00, (ushort)0x3C00, (ushort)0x4000, (ushort)0x0000, (ushort)0x3C00, (ushort)0x3C00)] //  1.0,  1.0
+        [InlineData((ushort)0x7E00, (ushort)0x3C00, (ushort)0x7E00, (ushort)0x7E00, (ushort)0x7E00, (ushort)0x7E00)] //  NaN,  1.0
+        [InlineData((ushort)0x7C00, (ushort)0x7C00, (ushort)0x7C00, (ushort)0x7E00, (ushort)0x7C00, (ushort)0x7E00)] // +Inf, +Inf
+        [InlineData((ushort)0x3C00, (ushort)0x0000, (ushort)0x3C00, (ushort)0x3C00, (ushort)0x0000, (ushort)0x7C00)] //  1.0, +0.0
+        [InlineData((ushort)0xBC00, (ushort)0x0000, (ushort)0xBC00, (ushort)0xBC00, (ushort)0x8000, (ushort)0xFC00)] // -1.0, +0.0
+        [InlineData((ushort)0x7BFF, (ushort)0x7BFF, (ushort)0x7C00, (ushort)0x0000, (ushort)0x7C00, (ushort)0x3C00)] // MaxValue, MaxValue
+        [InlineData((ushort)0x0001, (ushort)0x0001, (ushort)0x0002, (ushort)0x0000, (ushort)0x0000, (ushort)0x3C00)] // Epsilon, Epsilon
+        public static void ArithmeticOperators(ushort leftBits, ushort rightBits, ushort expectedAdd, ushort expectedSub, ushort expectedMul, ushort expectedDiv)
+        {
+            Half left = BitConverter.UInt16BitsToHalf(leftBits);
+            Half right = BitConverter.UInt16BitsToHalf(rightBits);
+
+            AssertBitsOrNaN(expectedAdd, left + right);
+            AssertBitsOrNaN(expectedSub, left - right);
+            AssertBitsOrNaN(expectedMul, left * right);
+            AssertBitsOrNaN(expectedDiv, left / right);
+        }
+
+        [Theory]
+        [InlineData((ushort)0x7E00, (ushort)0x3C00, false, false, false, false, false)] //  NaN,  1.0
+        [InlineData((ushort)0x3C00, (ushort)0x7E00, false, false, false, false, false)] //  1.0,  NaN
+        [InlineData((ushort)0x7E00, (ushort)0x7E00, false, false, false, false, false)] //  NaN,  NaN
+        [InlineData((ushort)0x0000, (ushort)0x8000, true, false, true, false, true)] // +0.0, -0.0
+        [InlineData((ushort)0x8000, (ushort)0x0000, true, false, true, false, true)] // -0.0, +0.0
+        [InlineData((ushort)0x3C00, (ushort)0x4000, false, true, true, false, false)] //  1.0,  2.0
+        [InlineData((ushort)0x4000, (ushort)0x3C00, false, false, false, true, true)] //  2.0,  1.0
+        [InlineData((ushort)0xFC00, (ushort)0x7C00, false, true, true, false, false)] // -Inf, +Inf
+        [InlineData((ushort)0x7C00, (ushort)0x7C00, true, false, true, false, true)] // +Inf, +Inf
+        public static void ComparisonOperators(ushort leftBits, ushort rightBits, bool expectedEqual, bool expectedLess, bool expectedLessOrEqual, bool expectedGreater, bool expectedGreaterOrEqual)
+        {
+            Half left = BitConverter.UInt16BitsToHalf(leftBits);
+            Half right = BitConverter.UInt16BitsToHalf(rightBits);
+
+            Assert.Equal(expectedEqual, left == right);
+            Assert.Equal(!expectedEqual, left != right);
+            Assert.Equal(expectedLess, left < right);
+            Assert.Equal(expectedLessOrEqual, left <= right);
+            Assert.Equal(expectedGreater, left > right);
+            Assert.Equal(expectedGreaterOrEqual, left >= right);
+        }
+
+        [Theory]
+        [InlineData((ushort)0x3E00, (ushort)0x4000, (ushort)0x3C00, (ushort)0x3C00, (ushort)0x4000)] //  1.5
+        [InlineData((ushort)0x4100, (ushort)0x4200, (ushort)0x4000, (ushort)0x4000, (ushort)0x4000)] //  2.5 -- ties to even
+        [InlineData((ushort)0xBE00, (ushort)0xBC00, (ushort)0xC000, (ushort)0xBC00, (ushort)0xC000)] // -1.5
+        [InlineData((ushort)0x3800, (ushort)0x3C00, (ushort)0x0000, (ushort)0x0000, (ushort)0x0000)] //  0.5 -- ties to even
+        [InlineData((ushort)0xB800, (ushort)0x8000, (ushort)0xBC00, (ushort)0x8000, (ushort)0x8000)] // -0.5 -- ties to even
+        [InlineData((ushort)0x0000, (ushort)0x0000, (ushort)0x0000, (ushort)0x0000, (ushort)0x0000)] // +0.0
+        [InlineData((ushort)0x8000, (ushort)0x8000, (ushort)0x8000, (ushort)0x8000, (ushort)0x8000)] // -0.0
+        [InlineData((ushort)0x0001, (ushort)0x3C00, (ushort)0x0000, (ushort)0x0000, (ushort)0x0000)] // Epsilon
+        [InlineData((ushort)0x8001, (ushort)0x8000, (ushort)0xBC00, (ushort)0x8000, (ushort)0x8000)] // -Epsilon
+        [InlineData((ushort)0x7E00, (ushort)0x7E00, (ushort)0x7E00, (ushort)0x7E00, (ushort)0x7E00)] //  NaN
+        [InlineData((ushort)0x7C00, (ushort)0x7C00, (ushort)0x7C00, (ushort)0x7C00, (ushort)0x7C00)] // +Inf
+        [InlineData((ushort)0xFC00, (ushort)0xFC00, (ushort)0xFC00, (ushort)0xFC00, (ushort)0xFC00)] // -Inf
+        [InlineData((ushort)0x7BFF, (ushort)0x7BFF, (ushort)0x7BFF, (ushort)0x7BFF, (ushort)0x7BFF)] // MaxValue
+        public static void RoundingFunctions(ushort bits, ushort expectedCeiling, ushort expectedFloor, ushort expectedTruncate, ushort expectedRound)
+        {
+            Half value = BitConverter.UInt16BitsToHalf(bits);
+
+            AssertBitsOrNaN(expectedCeiling, Half.Ceiling(value));
+            AssertBitsOrNaN(expectedFloor, Half.Floor(value));
+            AssertBitsOrNaN(expectedTruncate, Half.Truncate(value));
+            AssertBitsOrNaN(expectedRound, Half.Round(value));
+        }
+
+        [Theory]
+        [InlineData((ushort)0x4000, (ushort)0x4200, (ushort)0x3C00, (ushort)0x4700)] //  2.0 *  3.0 +  1.0 == 7.0
+        [InlineData((ushort)0x3E00, (ushort)0x3956, (ushort)0x0001, (ushort)0x3C01)] // single rounding differs from double rounding
+        [InlineData((ushort)0x24F0, (ushort)0x567B, (ushort)0x6F75, (ushort)0x6F75)] // single rounding differs from double rounding
+        [InlineData((ushort)0x8000, (ushort)0x0000, (ushort)0x0000, (ushort)0x0000)] // -0.0 * +0.0 + +0.0 == +0.0
+        [InlineData((ushort)0x8000, (ushort)0x0000, (ushort)0x8000, (ushort)0x8000)] // -0.0 * +0.0 + -0.0 == -0.0
+        [InlineData((ushort)0x7C00, (ushort)0x0000, (ushort)0x3C00, (ushort)0x7E00)] // +Inf * +0.0 is NaN
+        [InlineData((ushort)0x7E00, (ushort)0x3C00, (ushort)0x3C00, (ushort)0x7E00)] //  NaN propagates
+        [InlineData((ushort)0x7BFF, (ushort)0x7BFF, (ushort)0x0000, (ushort)0x7C00)] // overflows to +Inf
+        public static void FusedMultiplyAdd(ushort leftBits, ushort rightBits, ushort addendBits, ushort expectedBits)
+        {
+            Half left = BitConverter.UInt16BitsToHalf(leftBits);
+            Half right = BitConverter.UInt16BitsToHalf(rightBits);
+            Half addend = BitConverter.UInt16BitsToHalf(addendBits);
+
+            AssertBitsOrNaN(expectedBits, Half.FusedMultiplyAdd(left, right, addend));
         }
     }
 }

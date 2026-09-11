@@ -668,6 +668,8 @@ class DebuggerPatchTable : private CHashTableAndData<CNewZeroData>
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerPatchTable);
 
+    friend struct ::cdac_data<DebuggerPatchTable>;
+
 public:
     virtual ~DebuggerPatchTable() = default;
 
@@ -922,6 +924,13 @@ public:
     int GetNumberOfPatches();
 };
 
+template<>
+struct cdac_data<DebuggerPatchTable>
+{
+    static constexpr size_t Entries = offsetof(DebuggerPatchTable, m_pcEntries);
+    static constexpr size_t Count = offsetof(DebuggerPatchTable, m_iEntries);
+};
+
 typedef VPTR(class DebuggerPatchTable) PTR_DebuggerPatchTable;
 
 
@@ -1055,6 +1064,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 class DebuggerController
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerController);
+    friend struct ::cdac_data<DebuggerController>;
 
 #if !defined(DACCESS_COMPILE)
 
@@ -1496,8 +1506,13 @@ private:
 #endif // !DACCESS_COMPILE
 };
 
-
 #if !defined(DACCESS_COMPILE)
+
+template<>
+struct cdac_data<DebuggerController>
+{
+    static constexpr DebuggerPatchTable **PatchTable = &DebuggerController::g_patches;
+};
 
 // this structure stores useful information about single-stepping over a call instruction
 // it is used to communicate the patch skip opcode and current state between the controller on left side and HandleSetThreadContextNeeded on the right side

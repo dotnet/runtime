@@ -26,6 +26,8 @@ public class MethodTableTests
         {
             [DataType.MethodTable] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.MethodTableLayout),
             [DataType.EEClass] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.EEClassLayout),
+            [DataType.LayoutEEClass] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.LayoutEEClassLayout),
+            [DataType.EEClassLayoutInfo] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.EEClassLayoutInfoLayout),
             [DataType.MethodTableAuxiliaryData] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.MethodTableAuxiliaryDataLayout),
             [DataType.TypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.TypeDescLayout),
             [DataType.FnPtrTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.FnPtrTypeDescLayout),
@@ -83,10 +85,26 @@ public class MethodTableTests
             builder => freeObjectMethodTableAddress = builder.FreeObjectMethodTableAddress);
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle handle = contract.GetTypeHandle(freeObjectMethodTableAddress);
+        ITypeHandle handle = contract.GetTypeHandle(freeObjectMethodTableAddress);
         Assert.NotEqual(TargetPointer.Null, handle.Address);
         Assert.True(contract.IsFreeObjectMethodTable(handle));
         Assert.False(contract.IsObject(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetTypeHandleReturnsCanonicalInstance(MockTarget.Architecture arch)
+    {
+        TargetPointer freeObjectMethodTableAddress = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            builder => freeObjectMethodTableAddress = builder.FreeObjectMethodTableAddress);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle first = contract.GetTypeHandle(freeObjectMethodTableAddress);
+        ITypeHandle second = contract.GetTypeHandle(freeObjectMethodTableAddress);
+
+        Assert.Same(first, second);
     }
 
     [Theory]
@@ -99,7 +117,7 @@ public class MethodTableTests
             rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle systemObjectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        ITypeHandle systemObjectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
         Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemObjectTypeHandle));
         Assert.True(contract.IsObject(systemObjectTypeHandle));
@@ -139,7 +157,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle systemStringTypeHandle = contract.GetTypeHandle(systemStringMethodTablePtr);
+        ITypeHandle systemStringTypeHandle = contract.GetTypeHandle(systemStringMethodTablePtr);
         Assert.Equal(systemStringMethodTablePtr.Value, systemStringTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemStringTypeHandle));
         Assert.True(contract.IsString(systemStringTypeHandle));
@@ -249,7 +267,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle genericInstanceTypeHandle = contract.GetTypeHandle(genericInstanceMethodTablePtr);
+        ITypeHandle genericInstanceTypeHandle = contract.GetTypeHandle(genericInstanceMethodTablePtr);
         Assert.Equal(genericInstanceMethodTablePtr.Value, genericInstanceTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(genericInstanceTypeHandle));
         Assert.False(contract.IsString(genericInstanceTypeHandle));
@@ -305,7 +323,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle arrayInstanceTypeHandle = contract.GetTypeHandle(arrayInstanceMethodTablePtr);
+        ITypeHandle arrayInstanceTypeHandle = contract.GetTypeHandle(arrayInstanceMethodTablePtr);
         Assert.Equal(arrayInstanceMethodTablePtr.Value, arrayInstanceTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(arrayInstanceTypeHandle));
         Assert.False(contract.IsString(arrayInstanceTypeHandle));
@@ -341,7 +359,7 @@ public class MethodTableTests
                 methodTable.EEClassOrCanonMT = tinyEEClass.Address;
             });
 
-        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
         DacpMethodTableData mtData = default;
         int hr = sosDac.GetMethodTableData(new ClrDataAddress(methodTablePtr), &mtData);
         AssertHResult(HResults.E_INVALIDARG, hr);
@@ -368,7 +386,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        ITypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
         Assert.False(contract.IsFreeObjectMethodTable(continuationTypeHandle));
         Assert.False(contract.IsString(continuationTypeHandle));
@@ -424,7 +442,7 @@ public class MethodTableTests
                     helpers.PointerSize), tinyMethodTableAddr);
             });
 
-        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
         DacpMethodTableData mtData = default;
         int hr = sosDac.GetMethodTableData(new ClrDataAddress(tinyMethodTableAddr), &mtData);
         AssertHResult(HResults.E_INVALIDARG, hr);
@@ -467,11 +485,11 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle rank4Handle = contract.GetTypeHandle(rank4MethodTablePtr);
+        ITypeHandle rank4Handle = contract.GetTypeHandle(rank4MethodTablePtr);
         Assert.True(contract.IsArray(rank4Handle, out uint rank4));
         Assert.Equal(4u, rank4);
 
-        Contracts.TypeHandle rank1Handle = contract.GetTypeHandle(rank1MultiDimMethodTablePtr);
+        ITypeHandle rank1Handle = contract.GetTypeHandle(rank1MultiDimMethodTablePtr);
         Assert.True(contract.IsArray(rank1Handle, out uint rank1));
         Assert.Equal(1u, rank1);
     }
@@ -501,10 +519,10 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        ITypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
         Assert.False(contract.IsContinuationWithoutMetadata(objectTypeHandle));
 
-        Contracts.TypeHandle childTypeHandle = contract.GetTypeHandle(childMethodTablePtr);
+        ITypeHandle childTypeHandle = contract.GetTypeHandle(childMethodTablePtr);
         Assert.False(contract.IsContinuationWithoutMetadata(childTypeHandle));
     }
 
@@ -538,7 +556,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        ITypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
         Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
@@ -566,7 +584,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        ITypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
@@ -594,7 +612,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        ITypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
@@ -608,7 +626,7 @@ public class MethodTableTests
             rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        ITypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
         Assert.False(contract.IsContinuationWithoutMetadata(objectTypeHandle));
     }
 
@@ -647,10 +665,10 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
 
-        TypeHandle canonTh = contract.GetTypeHandle(canonicalMethodTablePtr);
+        ITypeHandle canonTh = contract.GetTypeHandle(canonicalMethodTablePtr);
         Assert.True(contract.IsCanonicalMethodTable(canonTh));
 
-        TypeHandle nonCanonTh = contract.GetTypeHandle(nonCanonicalMethodTablePtr);
+        ITypeHandle nonCanonTh = contract.GetTypeHandle(nonCanonicalMethodTablePtr);
         Assert.False(contract.IsCanonicalMethodTable(nonCanonTh));
     }
 
@@ -846,7 +864,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
         Assert.Equal(flagSet, contract.RequiresAlign2xPtr(typeHandle));
     }
 
@@ -865,7 +883,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeDescHandle = contract.GetTypeHandle(typeDescAddress);
+        ITypeHandle typeDescHandle = contract.GetTypeHandle(typeDescAddress);
         Assert.Empty(contract.GetGCDescSeries(typeDescHandle));
     }
 
@@ -891,7 +909,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.False(contract.ContainsGCPointers(typeHandle));
         Assert.Empty(contract.GetGCDescSeries(typeHandle));
     }
@@ -938,7 +956,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
 
         (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
@@ -993,7 +1011,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
 
         (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle).ToArray();
         Assert.Equal(expectedSeries.Length, series.Length);
@@ -1049,7 +1067,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
 
         // Pass numComponents=1 because value-class GCDesc iterates one element per component.
@@ -1108,7 +1126,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
 
         // Pass numComponents=1 because value-class GCDesc iterates one element per component.
         (uint Offset, uint Size)[] series = contract.GetGCDescSeries(typeHandle, 1).ToArray();
@@ -1169,7 +1187,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
         uint pointerSz = (uint)target.PointerSize;
 
@@ -1227,7 +1245,7 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
         Assert.True(contract.ContainsGCPointers(typeHandle));
         uint elemSize = 2 * (uint)target.PointerSize;
         uint startOff = 3u * (uint)target.PointerSize;
@@ -1446,5 +1464,152 @@ public class MethodTableTests
         var blobBuilder = new BlobBuilder();
         rootBuilder.Serialize(blobBuilder, 0, 0);
         return blobBuilder.ToArray();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_NoLayout_ReturnsPointerSize(MockTarget.Architecture arch)
+    {
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("NoLayout");
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("NoLayout");
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.NumVirtuals = 3;
+                methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                eeClass.MethodTable = methodTable.Address;
+                methodTablePtr = methodTable.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+        Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_PreLayoutDescriptor_ReturnsPointerSize(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
+        MockEEClass eeClass = rtsBuilder.AddEEClass("PreLayoutDescriptor");
+        MockMethodTable methodTable = rtsBuilder.AddMethodTable("PreLayoutDescriptor");
+        methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+        methodTable.NumVirtuals = 3;
+        methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+        methodTable.EEClassOrCanonMT = eeClass.Address;
+        eeClass.MethodTable = methodTable.Address;
+
+        Dictionary<DataType, Target.TypeInfo> types = CreateContractTypes(rtsBuilder);
+        Target.TypeInfo eeClassType = types[DataType.EEClass];
+        types[DataType.EEClass] = eeClassType with
+        {
+            Fields = eeClassType.Fields
+                .Where(field => field.Key != nameof(Data.EEClass.VMFlags))
+                .ToDictionary(field => field.Key, field => field.Value),
+        };
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(types)
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .Build();
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTable.Address);
+
+        Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_SequentialOrBlittableLayout_ReturnsLayoutAlignment(MockTarget.Architecture arch)
+    {
+        const byte Sequential = (byte)Data.EEClassLayoutInfo.Type.Sequential;
+        const byte Blittable = 0x01;
+        const byte Alignment = 16;
+
+        foreach ((byte layoutType, byte flags) in new[] { (Sequential, (byte)0), ((byte)0, Blittable) })
+        {
+            TargetPointer methodTablePtr = default;
+            TestPlaceholderTarget target = CreateTarget(
+                arch,
+                rtsBuilder =>
+                {
+                    MockEEClass eeClass = rtsBuilder.AddLayoutEEClass("Layout", layoutType, Alignment, flags);
+                    MockMethodTable methodTable = rtsBuilder.AddMethodTable("Layout");
+                    methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                    methodTable.NumVirtuals = 3;
+                    methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                    methodTable.EEClassOrCanonMT = eeClass.Address;
+                    eeClass.MethodTable = methodTable.Address;
+                    methodTablePtr = methodTable.Address;
+                });
+
+            IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+            ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+            Assert.Equal(Alignment, contract.GetClassAlignmentRequirement(handle));
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_AutoNonBlittableLayout_ReturnsPointerSize(MockTarget.Architecture arch)
+    {
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddLayoutEEClass(
+                    "AutoLayout", (byte)Data.EEClassLayoutInfo.Type.Auto, alignmentRequirement: 16, flags: 0);
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("AutoLayout");
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.NumVirtuals = 3;
+                methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                eeClass.MethodTable = methodTable.Address;
+                methodTablePtr = methodTable.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+        Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_RequiresAlign2xPtr_BumpsToTwicePointerSize(MockTarget.Architecture arch)
+    {
+        const uint RequiresAlign2xPtrFlag = 0x00800000; // MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign2xPtr
+
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddLayoutEEClass(
+                    "Align2xPtr", (byte)Data.EEClassLayoutInfo.Type.Sequential, alignmentRequirement: 4, flags: 0);
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align2xPtr");
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.NumVirtuals = 3;
+                methodTable.MTFlags = RequiresAlign2xPtrFlag;
+                methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                eeClass.MethodTable = methodTable.Address;
+                methodTablePtr = methodTable.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+        Assert.True(contract.RequiresAlign2xPtr(handle));
+        Assert.Equal(2 * target.PointerSize, contract.GetClassAlignmentRequirement(handle));
     }
 }

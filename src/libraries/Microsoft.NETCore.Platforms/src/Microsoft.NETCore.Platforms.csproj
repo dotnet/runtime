@@ -48,7 +48,6 @@
   <ItemGroup>
     <Reference Include="$(NetCoreSdkRoot)Microsoft.Build.Framework.dll" Private="false" />
     <Reference Include="$(NetCoreSdkRoot)Microsoft.Build.Utilities.Core.dll" Private="false" />
-    <Reference Include="$(NetCoreSdkRoot)Newtonsoft.Json.dll" Private="false" />
   </ItemGroup>
 
   <UsingTask TaskName="UpdateRuntimeIdentifierGraph" AssemblyFile="$(TargetPath)" Runtime="NET" TaskFactory="TaskHostFactory" />

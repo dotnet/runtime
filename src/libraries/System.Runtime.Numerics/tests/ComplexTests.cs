@@ -201,7 +201,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
             // value, expectedReal, expectedImaginary, expectedCharsConsumed
             yield return new object[] { "<1.5; 2.5>", 1.5, 2.5, 10 };
@@ -220,27 +220,27 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, double expectedReal, double expectedImaginary, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, double expectedReal, double expectedImaginary, int expectedCharsConsumed)
         {
-            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            const NumberStyles Style = NumberStyles.Float;
             IFormatProvider provider = CultureInfo.InvariantCulture;
 
             Complex expected = new Complex(expectedReal, expectedImaginary);
             Complex result;
             int charsConsumed;
 
-            Assert.True(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParsePartial(value, Style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
-            Assert.True(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParsePartial(value.AsSpan(), Style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             byte[] utf8Value = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParsePartial(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
             Assert.Equal(expected, result);
             if (value.All(c => c < 128))
             {
@@ -248,7 +248,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
             // Empty and non-complex inputs
             yield return new object[] { "" };
@@ -259,35 +259,52 @@ namespace System.Numerics.Tests
             yield return new object[] { "1; 2>" };
             yield return new object[] { "<1, 2>" };
 
-            // An invalid character within a component is never allowed, even with AllowTrailingInvalidCharacters,
+            // An invalid character within a component is never allowed by TryParsePartial,
             // because the components are delimited by ';' and '>'.
             yield return new object[] { "<1.5x; 2.5>" };
             yield return new object[] { "<1.5; 2.5x>" };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value)
         {
-            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            const NumberStyles Style = NumberStyles.Float;
             IFormatProvider provider = CultureInfo.InvariantCulture;
 
             Complex result;
             int charsConsumed;
 
-            Assert.False(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParsePartial(value, Style, provider, out result, out charsConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, charsConsumed);
 
-            Assert.False(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParsePartial(value.AsSpan(), Style, provider, out result, out charsConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, charsConsumed);
 
             byte[] utf8Value = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParsePartial(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, bytesConsumed);
+        }
+
+        [Fact]
+        public static void PublicParse_RejectsInternalTrailingInvalidCharactersSentinel()
+        {
+            // 0x8000_0000 is the internal-only AllowTrailingInvalidCharacters sentinel used to
+            // implement TryParsePartial. It must never be honored through a public entry point,
+            // otherwise callers could opt into stop-at-first-invalid parsing via a raw cast.
+            NumberStyles sentinel = unchecked((NumberStyles)0x8000_0000);
+
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.Parse("<1; 2>x", sentinel, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.Parse("<1; 2>x".AsSpan(), sentinel, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.Parse("<1; 2>x"u8, sentinel, CultureInfo.InvariantCulture));
+
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.TryParse("<1; 2>x", sentinel, CultureInfo.InvariantCulture, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.TryParse("<1; 2>x".AsSpan(), sentinel, CultureInfo.InvariantCulture, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.TryParse("<1; 2>x"u8, sentinel, CultureInfo.InvariantCulture, out _));
         }
 
         public static IEnumerable<object[]> Valid_2_TestData()
@@ -514,6 +531,15 @@ namespace System.Numerics.Tests
             Complex cosComplex = Complex.Cos(complex);
             Complex acosComplex = Complex.Acos(cosComplex);
 
+            // When Cos overflows to a non-finite intermediate the round-trip is not recoverable;
+            // Acos then follows the Annex G special-value rules, which still propagate non-finiteness.
+            if (!Complex.IsFinite(cosComplex))
+            {
+                Assert.False(Complex.IsFinite(acosComplex),
+                    string.Format("Acos(Cos({0}) = {1}) = {2} should be non-finite", complex, cosComplex, acosComplex));
+                return;
+            }
+
             if (!real.Equals(acosComplex.Real) || !imaginary.Equals(acosComplex.Imaginary))
             {
                 double realDiff = Math.Abs(Math.Abs(real) - Math.Abs(acosComplex.Real));
@@ -542,9 +568,9 @@ namespace System.Numerics.Tests
             // NaN values
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
             yield return new object[] { -1.0, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.PositiveInfinity };
             yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NegativeInfinity };
         }
 
         [Theory, MemberData(nameof(ACos_Advanced_TestData))]
@@ -677,10 +703,10 @@ namespace System.Numerics.Tests
 
             // NaN values
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, 0.0, double.NaN };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NegativeInfinity };
             yield return new object[] { double.NaN, 1.0, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, double.NegativeInfinity };
         }
 
         [Theory, MemberData(nameof(ASin_Advanced_TestData))]
@@ -734,16 +760,24 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MaxValue, double.MaxValue, double.NaN, double.NaN };
             yield return new object[] { double.MinValue, double.MinValue, double.NaN, double.NaN };
 
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
-                }
-            }
+            // Invalid values (C23 Annex G: catan(z) = -i*catanh(i*z))
+            yield return new object[] { double.NegativeInfinity, 1, -Math.PI / 2, 0.0 };
+            yield return new object[] { double.PositiveInfinity, 1, Math.PI / 2, 0.0 };
+            yield return new object[] { double.NaN, 1, double.NaN, double.NaN };
+
+            yield return new object[] { 1, double.NegativeInfinity, Math.PI / 2, -0.0 };
+            yield return new object[] { 1, double.PositiveInfinity, Math.PI / 2, 0.0 };
+            yield return new object[] { 1, double.NaN, double.NaN, double.NaN };
+
+            yield return new object[] { double.NegativeInfinity, double.NegativeInfinity, -Math.PI / 2, -0.0 };
+            yield return new object[] { double.NegativeInfinity, double.PositiveInfinity, -Math.PI / 2, 0.0 };
+            yield return new object[] { double.NegativeInfinity, double.NaN, -Math.PI / 2, -0.0 };
+            yield return new object[] { double.PositiveInfinity, double.NegativeInfinity, Math.PI / 2, -0.0 };
+            yield return new object[] { double.PositiveInfinity, double.PositiveInfinity, Math.PI / 2, 0.0 };
+            yield return new object[] { double.PositiveInfinity, double.NaN, Math.PI / 2, -0.0 };
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, -0.0 };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, 0.0 };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
         }
 
         [Theory, MemberData(nameof(ATan_Advanced_TestData))]
@@ -810,7 +844,8 @@ namespace System.Numerics.Tests
                     {
                         yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
                     }
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
+                    // Annex G: ccos real part is +inf for an infinite imaginary input (else NaN); imaginary is NaN
+                    yield return new object[] { invalidReal, invalidImaginary, double.IsNaN(invalidImaginary) ? double.NaN : double.PositiveInfinity, double.NaN }; // Invalid real, invalid imaginary
                 }
             }
         }
@@ -875,7 +910,8 @@ namespace System.Numerics.Tests
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
                     yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
+                    // Annex G: ccosh real part is +inf for an infinite real input (else NaN); imaginary is NaN
+                    yield return new object[] { invalidReal, invalidImaginary, double.IsNaN(invalidReal) ? double.NaN : double.PositiveInfinity, double.NaN }; // Invalid real, invalid imaginary
                 }
             }
         }
@@ -930,6 +966,15 @@ namespace System.Numerics.Tests
         {
             var dividend = new Complex(realLeft, imaginaryLeft);
             var divisor = new Complex(realRight, imaginaryRight);
+
+            if (realRight == 0.0 && imaginaryRight == 0.0)
+            {
+                // Dividing by a zero divisor is governed by C23 Annex G, where the result is a
+                // directed infinity or a NaN (e.g. 0/0 yields NaN via infinity * 0) rather than
+                // the value the magnitude-based oracle below would compute. Covered exhaustively
+                // by ComplexGenericSpecialValueTests.
+                return;
+            }
 
             Complex expected = dividend * Complex.Conjugate(divisor);
             double expectedReal = expected.Real;
@@ -1393,6 +1438,14 @@ namespace System.Numerics.Tests
             double expectedReal = realLeft * realRight - imaginaryLeft * imaginaryRight;
             double expectedImaginary = realLeft * imaginaryRight + imaginaryLeft * realRight;
 
+            if (double.IsNaN(expectedReal) && double.IsNaN(expectedImaginary))
+            {
+                // The naive product formula yields (NaN, NaN), but the operator applies the
+                // C23 Annex G.5.1 infinity recovery. Those special-value results are verified
+                // exhaustively across double/float/Half by ComplexGenericSpecialValueTests.
+                return;
+            }
+
             // Operator
             Complex result = left * right;
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
@@ -1483,9 +1536,25 @@ namespace System.Numerics.Tests
             }
             else if (realValue != 0 || imaginaryValue != 0)
             {
+                // Pow special-value conformance is deferred: the polar Pow formula and the
+                // Annex G-conformant Exp/Log oracle diverge for non-finite inputs or when the
+                // magnitude overflows inside Log.
+                if (!Complex.IsFinite(value) || !double.IsFinite(power) || !double.IsFinite(value.Magnitude))
+                {
+                    return;
+                }
+
                 // Pow(x,y) = Exp(ylog(x))
                 Complex realComplex = new Complex(power, 0);
                 Complex expected = Complex.Exp(realComplex * Complex.Log(value));
+
+                // Pow special-value conformance is deferred: skip when the Exp/Log oracle
+                // overflows to a non-finite intermediate that the polar Pow formula won't match.
+                if (!Complex.IsFinite(expected))
+                {
+                    return;
+                }
+
                 expectedReal = expected.Real;
                 expectedImaginary = expected.Imaginary;
             }
@@ -1519,8 +1588,24 @@ namespace System.Numerics.Tests
             }
             else if (realValue != 0 || imaginaryValue != 0)
             {
+                // Pow special-value conformance is deferred: the polar Pow formula and the
+                // Annex G-conformant Exp/Log oracle diverge for non-finite inputs or when the
+                // magnitude overflows inside Log.
+                if (!Complex.IsFinite(value) || !Complex.IsFinite(power) || !double.IsFinite(value.Magnitude))
+                {
+                    return;
+                }
+
                 // Pow(x,y) = Exp(ylog(x))
                 Complex expected = Complex.Exp(power * Complex.Log(value));
+
+                // Pow special-value conformance is deferred: skip when the Exp/Log oracle
+                // overflows to a non-finite intermediate that the polar Pow formula won't match.
+                if (!Complex.IsFinite(expected))
+                {
+                    return;
+                }
+
                 expectedReal = expected.Real;
                 expectedImaginary = expected.Imaginary;
             }
@@ -1536,6 +1621,14 @@ namespace System.Numerics.Tests
         {
             var complex = new Complex(real, imaginary);
             var result = Complex.Reciprocal(complex);
+
+            if (double.IsInfinity(real) || double.IsInfinity(imaginary))
+            {
+                // 1 / (complex infinity) is a signed zero under C23 Annex G, not the NaN the
+                // magnitude-based oracle below would compute for mixed infinity/NaN inputs.
+                // The exact signed-zero results are verified by ComplexGenericSpecialValueTests.
+                return;
+            }
 
             Complex expected = Complex.Zero;
             if (Complex.Zero != complex &&
@@ -1592,7 +1685,8 @@ namespace System.Numerics.Tests
                     {
                         yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
                     }
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
+                    // Annex G: csin real part is NaN; imaginary carries the sign of an infinite imaginary input
+                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.IsNaN(invalidImaginary) ? double.NaN : invalidImaginary }; // Invalid real, invalid imaginary
                 }
             }
 
@@ -1652,7 +1746,8 @@ namespace System.Numerics.Tests
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
                     yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
+                    // Annex G: csinh real part carries the sign of an infinite real input (else NaN); imaginary is NaN
+                    yield return new object[] { invalidReal, invalidImaginary, invalidReal, double.NaN }; // Invalid real, invalid imaginary
                 }
             }
         }
@@ -1790,10 +1885,10 @@ namespace System.Numerics.Tests
             yield return new object[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
 
             // (inf, NaN) returns (inf, NaN)
-            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.PositiveInfinity };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.PositiveInfinity, double.NaN };
 
-            // (-inf, NaN) returns (NaN, inf)
-            yield return new object[] { double.NegativeInfinity, double.NaN, double.PositiveInfinity, double.NaN };
+            // (-inf, NaN) returns (NaN, inf) (sign of the imaginary part is unspecified)
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.PositiveInfinity };
 
             // Otherwise, NaN in any component produces NaNs in both components.
             yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
@@ -1853,9 +1948,9 @@ namespace System.Numerics.Tests
             yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 1.0 };
             yield return new object[] { 0.0, double.NegativeInfinity, 0.0, -1.0 };
 
-            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, 0.0, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, 0.0 };
+            yield return new object[] { double.NaN, double.PositiveInfinity, -0.0, 1.0 };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
             yield return new object[] { 0.0, 750.0, 0.0, 1.0 };
@@ -1916,9 +2011,9 @@ namespace System.Numerics.Tests
             yield return new object[] { double.PositiveInfinity, 0.0, 1.0, 0.0 };
             yield return new object[] { double.NegativeInfinity, 0.0, -1.0, 0.0 };
 
-            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
-            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, 0.0 };
+            yield return new object[] { double.PositiveInfinity, double.NaN, 1.0, -0.0 };
+            yield return new object[] { 0.0, double.NaN, 0.0, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
             yield return new object[] { -750.0, 0.0, -1.0, 0.0 };

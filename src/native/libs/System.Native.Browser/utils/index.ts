@@ -11,7 +11,7 @@ import {
     getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
     localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
     zeroRegion,
-    isSharedArrayBuffer,
+    arrayBufferNeedsCopy,
     viewOrCopy,
 } from "./memory";
 import { stringsInit, stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString, utf8ToStringRelaxed } from "./strings";
@@ -52,7 +52,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         stringToUTF8,
         utf8ToStringRelaxed,
         zeroRegion,
-        isSharedArrayBuffer,
+        arrayBufferNeedsCopy,
         viewOrCopy,
         abortBackgroundTimers,
         abortPosix,
@@ -70,7 +70,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.stringToUTF8,
             map.utf8ToStringRelaxed,
             map.zeroRegion,
-            map.isSharedArrayBuffer,
+            map.arrayBufferNeedsCopy,
             map.viewOrCopy,
             map.abortBackgroundTimers,
             map.abortPosix,

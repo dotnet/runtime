@@ -500,7 +500,7 @@ bool CodeGenInterface::instIsFP(instruction ins)
     assert((unsigned)ins < ArrLen(instInfo));
 
 #ifdef TARGET_XARCH
-    return (instInfo[ins] & INS_FLAGS_x87Instr) != 0;
+    return (instInfo[ins] & INS_FLAGS_X87Instr) != 0;
 #else
     return (instInfo[ins] & INST_FP) != 0;
 #endif
@@ -2070,12 +2070,15 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         case TYP_DOUBLE:
             return INS_f64_load;
 #if defined(FEATURE_SIMD)
+        case TYP_SIMD8:
+            // SIMD8 (Vector2) lives as a v128 with the low 8 bytes populated. SIMD12 (Vector3) is
+            // handled at the callers since it needs a trailing lane load for the upper 4 bytes.
+            return INS_v128_load64_zero;
         case TYP_SIMD16:
             return INS_v128_load;
 #endif
         default:
-            NYI_WASM("ins_Load");
-            return INS_none;
+            unreached();
     }
 #endif // defined(TARGET_WASM)
 
@@ -2487,8 +2490,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             return INS_v128_store;
 #endif
         default:
-            NYI_WASM("ins_Store");
-            return INS_none;
+            unreached();
     }
 #endif // defined(TARGET_WASM)
 
@@ -2927,6 +2929,7 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
 #endif
 }
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Machine independent way to move a Zero value into a register
@@ -2945,14 +2948,13 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #elif defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
-#elif defined(TARGET_WASM)
-    NYI_WASM("instGen_Set_Reg_To_Zero");
 #else
 #error "Unknown TARGET"
 #endif
 
     regSet.verifyRegUsed(reg);
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_AMD64)
 //------------------------------------------------------------------------
