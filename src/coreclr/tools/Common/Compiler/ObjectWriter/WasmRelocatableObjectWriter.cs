@@ -165,8 +165,8 @@ namespace ILCompiler.ObjectWriter
                         {
                             if (_sections[definedSymbol.SectionIndex] is WasmDataSegmentEmitter segment)
                             {
-                                int targetOffsetFromMemoryBase = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend));
-                                Relocation.WriteValue(reloc.Type, pData, targetOffsetFromMemoryBase);
+long targetAddress = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend)) + reloc.Addend;
+                                Relocation.WriteValue(reloc.Type, pData, targetAddress);
                             }
                             else
                             {
