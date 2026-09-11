@@ -16,15 +16,37 @@ namespace SourceGenerators
     /// </summary>
     /// <remarks>
     /// The reflection fallback emitted for members references an <c>InstanceMemberBindingFlags</c> constant (of type
-    /// <see cref="System.Reflection.BindingFlags"/>) that the consuming generator must emit into the same scope, and a
-    /// <c>ValueTypeSetter&lt;TDeclaringType, TValue&gt;</c> delegate when <see cref="EmitMemberAccessors"/> returns
-    /// <see langword="true"/> for a value-type setter.
+    /// <see cref="System.Reflection.BindingFlags"/>) that the consuming generator must emit into the same scope by
+    /// writing <see cref="InstanceMemberBindingFlagsDeclaration"/>, and a <c>ValueTypeSetter&lt;TDeclaringType, TValue&gt;</c>
+    /// delegate (written via <see cref="ValueTypeSetterDelegateDeclaration"/>) when <see cref="EmitMemberAccessors"/>
+    /// returns <see langword="true"/> for a value-type setter.
     /// </remarks>
     internal static class UnsafeAccessorEmitter
     {
         private const string UnsafeAccessorAttributeTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorAttribute";
         private const string UnsafeAccessorKindTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorKind";
         private const string EmptyTypeArray = "global::System.Array.Empty<global::System.Type>()";
+
+        /// <summary>
+        /// The declaration of the <c>InstanceMemberBindingFlags</c> constant that the reflection fallback (emitted by
+        /// <see cref="EmitMemberAccessors"/> and <see cref="EmitConstructorAccessor"/>) references. A consuming generator
+        /// must write this once into the scope containing the emitted accessors.
+        /// </summary>
+        public const string InstanceMemberBindingFlagsDeclaration = """
+
+            private const global::System.Reflection.BindingFlags InstanceMemberBindingFlags =
+                global::System.Reflection.BindingFlags.Instance |
+                global::System.Reflection.BindingFlags.Public |
+                global::System.Reflection.BindingFlags.NonPublic;
+
+            """;
+
+        /// <summary>
+        /// The declaration of the <c>ValueTypeSetter&lt;TDeclaringType, TValue&gt;</c> delegate that the value-type
+        /// setter reflection fallback references. A consuming generator must write this once when
+        /// <see cref="EmitMemberAccessors"/> returns <see langword="true"/>.
+        /// </summary>
+        public const string ValueTypeSetterDelegateDeclaration = "private delegate void ValueTypeSetter<TDeclaringType, TValue>(ref TDeclaringType obj, TValue value);";
 
         internal enum AccessorMemberKind
         {

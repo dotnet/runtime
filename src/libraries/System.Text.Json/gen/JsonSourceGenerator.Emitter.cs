@@ -1692,18 +1692,11 @@ namespace System.Text.Json.SourceGeneration
 
                 GetLogicForDefaultSerializerOptionsInit(contextSpec.GeneratedOptionsSpec, writer);
 
-                writer.WriteLine($"""
-
-                    private const global::System.Reflection.BindingFlags InstanceMemberBindingFlags =
-                        global::System.Reflection.BindingFlags.Instance |
-                        global::System.Reflection.BindingFlags.Public |
-                        global::System.Reflection.BindingFlags.NonPublic;
-
-                    """);
+                writer.WriteLine(UnsafeAccessorEmitter.InstanceMemberBindingFlagsDeclaration);
 
                 if (emitValueTypeSetterDelegate)
                 {
-                    writer.WriteLine("private delegate void ValueTypeSetter<TDeclaringType, TValue>(ref TDeclaringType obj, TValue value);");
+                    writer.WriteLine(UnsafeAccessorEmitter.ValueTypeSetterDelegateDeclaration);
                     writer.WriteLine();
                 }
 
