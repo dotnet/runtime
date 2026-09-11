@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 caseTypeInfo = options.GetTypeInfoInternal(caseType);
                 state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
-                state.Current.NumberHandling ??= caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
+                state.Current.NumberHandling ??= caseTypeInfo.NumberHandling ?? options.NumberHandling;
             }
 
             JsonConverter caseConverter = caseTypeInfo.Converter;
@@ -125,7 +125,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 Type? resolvedCaseType = null;
                 bool isAmbiguous;
-                if (numberHandling == typeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling)
+                if (numberHandling == typeInfo.NumberHandling)
                 {
                     isAmbiguous = (typeInfo.UnionAmbiguousValueTypes & valueType) != 0;
                     typeInfo.UnionValueTypeMap?.TryGetValue(valueType, out resolvedCaseType);
@@ -201,7 +201,7 @@ namespace System.Text.Json.Serialization.Converters
 
             JsonTypeInfo caseTypeInfo = options.GetTypeInfoInternal(caseType);
             state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
-            state.Current.NumberHandling ??= caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
+            state.Current.NumberHandling ??= caseTypeInfo.NumberHandling ?? options.NumberHandling;
             return caseTypeInfo.Converter.TryWriteAsObject(writer, caseValue, options, ref state);
         }
     }

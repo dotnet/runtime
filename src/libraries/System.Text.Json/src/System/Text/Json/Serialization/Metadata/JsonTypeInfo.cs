@@ -1163,7 +1163,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             var map = new Dictionary<JsonValueType, Type>();
             JsonValueType ambiguousValueTypes = JsonValueType.None;
-            JsonNumberHandling? unionNumberHandling = target.PropertyInfoForTypeInfo.EffectiveNumberHandling;
+            JsonNumberHandling? unionNumberHandling = target.NumberHandling;
 
             foreach (JsonUnionCaseInfo info in unionCases)
             {
