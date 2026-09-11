@@ -2138,6 +2138,13 @@ namespace Internal.JitInterface
                 // Static methods are always direct calls
                 directCall = true;
             }
+            else if (isCallVirt && targetMethod.IsArrayMethod())
+            {
+                // Multidimensional array methods are synthetic non-vtable methods whose slots follow
+                // the virtual slots in the MethodTable. They cannot become virtual across versions.
+                directCall = true;
+                resolvedCallVirt = true;
+            }
             else if (!isCallVirt || resolvedConstraint)
             {
                 directCall = true;
