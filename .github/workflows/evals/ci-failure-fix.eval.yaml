@@ -33,8 +33,20 @@ stimuli:
       files:
         - src: ../ci-failure-fix.md
           dest: .github/workflows/ci-failure-fix.md
+        - src: ../shared/filter-scanner-kbes.sh
+          dest: .github/workflows/shared/filter-scanner-kbes.sh
         - src: ../shared/create-kbe.instructions.md
           dest: .github/workflows/shared/create-kbe.instructions.md
+      commands:
+        - |
+          set -euo pipefail
+          export RUNNER_TEMP="$PWD/.scanner-kbe-intake"
+          export GITHUB_OUTPUT="$PWD/.scanner-kbe-output"
+          mkdir -p "$RUNNER_TEMP"
+          bash .github/workflows/shared/filter-scanner-kbes.sh
+          mkdir -p out /tmp/gh-aw/agent
+          cp "$RUNNER_TEMP/scanner-kbe-candidates.json" out/scanner-kbe-candidates.json
+          cp "$RUNNER_TEMP/scanner-kbe-candidates.json" /tmp/gh-aw/agent/scanner-kbe-candidates.json
     constraints:
       max_tokens: 500000
       max_turns: 100
@@ -45,7 +57,7 @@ stimuli:
 
       This is a live run — discover a real, currently-open Known Build Error yourself and act on exactly one. Do not invent one.
 
-      1. Execute the deterministic filter script from the workflow's `scanner_kbes` job inline in a bash call, setting `RUNNER_TEMP` and `GITHUB_OUTPUT` to eval-local scratch paths. After it succeeds, copy its `scanner-kbe-candidates.json` to both `/tmp/gh-aw/agent/scanner-kbe-candidates.json` and `./out/scanner-kbe-candidates.json` for grading. Pick one issue from this list whose failing test and error are concrete enough to reason about. Do not fall back to other issues. If the list is empty, write `Type: unavailable` and the reason to `./out/decision.md` and stop. An empty list does not pass this live remediation eval; the production skip path is tested separately.
+      1. The trusted eval setup has already executed the workflow's deterministic filter and copied its result to both `/tmp/gh-aw/agent/scanner-kbe-candidates.json` and `./out/scanner-kbe-candidates.json`. Do not regenerate, overwrite, or replace this file. Pick one issue from this list whose failing test and error are concrete enough to reason about. Do not fall back to other issues. If the list is empty, write `Type: unavailable` and the reason to `./out/decision.md` and stop. An empty list does not pass this live remediation eval; the production skip path is tested separately.
       2. Read the selected issue body with the GitHub MCP `issue_read` tool (`method: get`, `owner: dotnet`, `repo: runtime`, `issue_number: <n>`), and use `method: get_comments` for comments. Do not retrieve bodies or comments through `gh`. Inspect the relevant product or test source it points at, using `gh api` raw content or the failing area path, enough to decide whether a safe, in-bounds fix exists.
 
       Then **emit the single safe-output you would produce, as a markdown document at `./out/decision.md`.** Pick exactly one outcome per the escalation policy and make the type explicit on the first line.
@@ -112,21 +124,28 @@ stimuli:
 
               candidates = candidate_data.get("candidates") if isinstance(candidate_data, dict) else None
               if not isinstance(candidates, list) or any(
-                  not isinstance(item, dict) or type(item.get("number")) is not int or item["number"] <= 0
+                  not isinstance(item, dict) or
+                  type(item.get("number")) is not int or item["number"] <= 0 or
+                  not isinstance(item.get("created_at"), str) or
+                  not item.get("title", "").startswith("[ci-scan] ") or
+                  item.get("author") != "github-actions[bot]" or
+                  item.get("author_type") != "Bot" or
+                  not isinstance(item.get("labels"), list) or
+                  "Known Build Error" not in item.get("labels", [])
                   for item in candidates
               ):
                   finish("Invalid candidate list", status="error")
               numbers = {item["number"] for item in candidates}
               calls = {}
-              enumerated = False
               read_numbers = set()
+              comments_numbers = set()
               for event in events:
                   data = event.get("data", {})
                   key = (event.get("agentId"), data.get("toolCallId"))
                   if event["type"] == "tool_call":
-                      calls[key] = (data, enumerated)
+                      calls[key] = data
                   elif event["type"] == "tool_result" and key in calls:
-                      call, after_enumeration = calls.pop(key)
+                      call = calls.pop(key)
                       result = data.get("result")
                       if data.get("success") is not True or (
                           isinstance(result, dict) and result.get("isError") is True
@@ -134,29 +153,27 @@ stimuli:
                           continue
                       args = call.get("arguments", {})
                       name = call["toolName"]
-                      if name == "bash" and re.search(
-                          r"\bgh api\b[^\n]*\brepos/dotnet/runtime/issues\b",
-                          args.get("command", ""),
+                      if not re.fullmatch(r"(?:mcp__)?github[-_.]+issue_read", name):
+                          continue
+                      if (
+                          args.get("owner") != "dotnet" or args.get("repo") != "runtime" or
+                          type(args.get("issue_number")) is not int or args["issue_number"] not in numbers
                       ):
-                          enumerated = True
-                      if after_enumeration and re.fullmatch(r"(?:mcp__)?github[-_.]+issue_read", name) and (
-                          args.get("method") == "get" and args.get("owner") == "dotnet" and
-                          args.get("repo") == "runtime" and type(args.get("issue_number")) is int and
-                          args["issue_number"] in numbers
-                      ):
+                          continue
+                      if args.get("method") == "get":
                           read_numbers.add(args["issue_number"])
+                      elif args.get("method") == "get_comments":
+                          comments_numbers.add(args["issue_number"])
 
-              if not enumerated:
-                  finish("No successful repository issue enumeration")
               if not numbers:
                   finish("Live remediation eval unavailable: no scanner candidates", status="error")
               outcomes = re.findall(r"^Type:\s*(\S+)\s*$", decision, re.MULTILINE)
               linked = re.findall(r"^Linked KBE:\s*#(\d+)\s*$", decision, re.MULTILINE)
               if len(outcomes) != 1 or outcomes[0] not in ("create-pull-request", "add-comment"):
                   finish("Expected one remediation outcome; noop is not a passing result")
-              if len(linked) != 1 or int(linked[0]) not in read_numbers:
-                  finish("Decision must reference the same candidate as a successful MCP issue-body read")
-              finish(f"Enumerated candidates, read #{linked[0]} through MCP, and linked it in the decision", passed=True)
+              if len(linked) != 1 or int(linked[0]) not in read_numbers or int(linked[0]) not in comments_numbers:
+                  finish("Decision must reference a candidate with successful MCP body and comments reads")
+              finish(f"Read #{linked[0]} body and comments through MCP, and linked it in the decision", passed=True)
 
       - type: prompt
         name: fix-or-engages-owners
