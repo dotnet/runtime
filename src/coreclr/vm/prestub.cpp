@@ -1821,17 +1821,6 @@ PCODE MakeInstantiatingStubWorker(MethodDesc *pMD)
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
-extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
-
-bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
-
-    return pCode == CallDescrWorkerInternalReturnAddress;
-}
-
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
 // It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
@@ -1929,11 +1918,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
         EX_TRY
         {
-            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
             INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
-            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             // Make sure the method table is restored, and method instantiation if present
             pMD->CheckRestore();
@@ -1984,8 +1971,8 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                 pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
             }
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
             UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
@@ -2832,11 +2819,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     pEMFrame->Push(CURRENT_THREAD);         // Push the new ExternalMethodFrame onto the frame stack
 
-    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pEMFrame);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     bool fVirtual = false;
     MethodDesc * pMD = NULL;
@@ -3133,8 +3118,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     }
     // Ready to return
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack

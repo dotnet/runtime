@@ -2186,10 +2186,6 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
 
     EH_LOG((LL_INFO100, "Exception is going into unmanaged code, unwinding frame chain to %p\n", MemoryStackFpForFrameChain));
 
-    // On AMD64 the establisher pointer is the live stack pointer, but on
-    // ARM and ARM64 it's the caller's stack pointer.  It makes no difference, since there
-    // is no Frame anywhere in CallDescrWorker's region of stack.
-
     // First make sure that unwinding the frame chain does not remove any transition frames
     // that report managed methods that will not be unwound.
     // If this assert fires it's probably the personality routine of some assembly code that
@@ -2304,37 +2300,6 @@ UMEntryPrestubUnwindFrameChainHandler(
                 );
 
     return disposition;
-}
-
-// This is the personality routine setup for the assembly helper (CallDescrWorker) that calls into
-// managed code.
-EXTERN_C EXCEPTION_DISPOSITION __cdecl
-CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                       IN     PVOID               pEstablisherFrame,
-                                       IN OUT PCONTEXT            pContextRecord,
-                                       IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                                      )
-{
-
-    Thread* pThread = GetThread();
-    if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
-    {
-        if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-        {
-            GCX_COOP_NO_DTOR();
-            CleanUpForSecondPass(pThread, true, pEstablisherFrame, pEstablisherFrame);
-        }
-
-        InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
-        // We'll let the SO infrastructure handle this exception... at that point, we
-        // know that we'll have enough stack to do it.
-    }
-    else if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-    {
-        CleanUpForSecondPass(pThread, false, pEstablisherFrame, pEstablisherFrame);
-    }
-
-    return ExceptionContinueSearch;
 }
 
 #endif // TARGET_UNIX
@@ -3191,16 +3156,6 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
 #endif // HOST_WINDOWS
     SetSP(pContext, targetSp - 8);
 #elif defined(HOST_X86)
-
-#ifdef HOST_WINDOWS
-    // Disarm the managed code SEH handler installed in CallDescrWorkerInternal
-    if (IsCallDescrWorkerInternalReturnAddress(pContext->Eip))
-    {
-        PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
-        if (currentContext->Handler == (PEXCEPTION_ROUTINE)ProcessCLRException)
-            currentContext->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler;
-    }
-#endif
 
     ULONG32* returnAddress = (ULONG32*)(targetSp - 4);
     *returnAddress = pContext->Eip;
@@ -4127,7 +4082,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
     isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
 
-    // Check for reverse pinvoke or CallDescrWorkerInternal.
+    // Check for a reverse pinvoke transition.
     if (isNativeTransition)
     {
         bool isPropagatingToNativeCode = false;
@@ -4187,19 +4142,10 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 }
             }
         }
-        else
+        else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
         {
-            // Propagating to CallDescrWorkerInternal, filter funclet or CallEHFunclet.
-            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext)))
-            {
-                EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal\n"));
-                isPropagatingToNativeCode = true;
-            }
-            else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
-            {
-                EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet\n"));
-                isPropagatingToNativeCode = true;
-            }
+            EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet\n"));
+            isPropagatingToNativeCode = true;
         }
 
         if (isPropagatingToNativeCode)
