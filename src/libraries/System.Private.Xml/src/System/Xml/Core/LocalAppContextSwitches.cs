@@ -67,5 +67,16 @@ namespace System.Xml
                 return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault);
             }
         }
+        private static int s_disableOptimizedXmlTextReaderAttributeBufferInvalidation;
+        public static bool DisableOptimizedXmlTextReaderAttributeBufferInvalidation
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue(
+                    "Switch.System.Xml.DisableOptimizedXmlTextReaderAttributeBufferInvalidation",
+                    ref s_disableOptimizedXmlTextReaderAttributeBufferInvalidation);
+            }
+        }
     }
 }

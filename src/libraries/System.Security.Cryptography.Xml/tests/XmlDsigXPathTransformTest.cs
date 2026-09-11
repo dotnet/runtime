@@ -10,8 +10,12 @@
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
 
 using System.IO;
+using System.Text;
 using System.Xml;
 using Xunit;
+#if NET
+using Microsoft.DotNet.RemoteExecutor;
+#endif
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -280,5 +284,67 @@ namespace System.Security.Cryptography.Xml.Tests
             nl = (XmlNodeList)t.GetOutput();
             Assert.Equal(0, nl.Count);
         }
+
+#if NET
+        private const int DeepInputDepth = 100000;
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DeepStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                byte[] payload = Encoding.UTF8.GetBytes(BuildDeepXml(DeepInputDepth));
+                Assert.Throws<CryptographicException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(payload);
+                    XmlDsigXPathTransform transform = new XmlDsigXPathTransform();
+                    transform.LoadInput(ms);
+                    transform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        private static string BuildDeepXml(int depth)
+        {
+            StringBuilder sb = new StringBuilder(depth * 7 + 1);
+            for (int i = 0; i < depth; i++)
+                sb.Append("<a>");
+            sb.Append('x');
+            for (int i = 0; i < depth; i++)
+                sb.Append("</a>");
+            return sb.ToString();
+        }
+
+        private const string DtdPayload = "<!DOCTYPE r []><r>x</r>";
+        private const string CryptoXmlAllowDtdProcessingAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing";
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.Throws<XmlException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                    XmlDsigXPathTransform transform = new XmlDsigXPathTransform();
+                    transform.LoadInput(ms);
+                    transform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_WithOptIn_Succeeds()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
+                using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                XmlDsigXPathTransform transform = new XmlDsigXPathTransform();
+                transform.LoadInput(ms);
+                Assert.NotNull(transform.GetOutput());
+            }).Dispose();
+        }
+#endif
     }
 }
