@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -17,12 +16,9 @@ using System.Reflection.Runtime.EventInfos;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.PropertyInfos;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
 
 using Internal.Metadata.NativeFormat;
 
