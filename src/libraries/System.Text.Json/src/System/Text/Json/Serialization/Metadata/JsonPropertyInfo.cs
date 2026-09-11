@@ -576,7 +576,9 @@ namespace System.Text.Json.Serialization.Metadata
                 EffectiveNumberHandling = declaringTypeNumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
-                if (!EffectiveNumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                if (!EffectiveNumberHandling.HasValue &&
+                    Options.NumberHandling != JsonNumberHandling.Strict &&
+                    EffectiveConverter.ConverterStrategy is not ConverterStrategy.Union)
                 {
                     EffectiveNumberHandling = Options.NumberHandling;
                 }
@@ -597,7 +599,9 @@ namespace System.Text.Json.Serialization.Metadata
                 JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
-                if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                if (!handling.HasValue &&
+                    Options.NumberHandling != JsonNumberHandling.Strict &&
+                    EffectiveConverter.ConverterStrategy is not ConverterStrategy.Union)
                 {
                     handling = Options.NumberHandling;
                 }
