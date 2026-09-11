@@ -17,33 +17,35 @@ public class Async2Returns
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public static void AwaitNullTask(bool generic)
+    public static void NullTaskReturnMustNotFold(bool generic)
     {
         if (generic)
         {
-            Assert.Throws<NullReferenceException>(() => AwaitNullGenericTask().GetAwaiter().GetResult());
+            Assert.Throws<NullReferenceException>(() => AwaitGenericTaskWithNullReturn().GetAwaiter().GetResult());
         }
         else
         {
-            Assert.Throws<NullReferenceException>(() => AwaitNullNonGenericTask().GetAwaiter().GetResult());
+            Assert.Throws<NullReferenceException>(() => AwaitTaskWithNullReturn().GetAwaiter().GetResult());
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<int> AwaitNullGenericTask() => await GetNullTask(Task.FromResult(42));
+    private static async Task<int> AwaitGenericTaskWithNullReturn() => await StoreAndReturnNullTask(Task.FromResult(42));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task AwaitNullNonGenericTask() => await GetNullTask(Task.CompletedTask);
+    private static async Task AwaitTaskWithNullReturn() => await StoreAndReturnNullTask(Task.CompletedTask);
 
+    // Keep the parameter store followed by the return in both helpers: their async versions
+    // must not fold this pattern as a zero-initialized ValueTask return.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Task<int> GetNullTask(Task<int> task)
+    private static Task<int> StoreAndReturnNullTask(Task<int> task)
     {
         task = null;
         return task;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Task GetNullTask(Task task)
+    private static Task StoreAndReturnNullTask(Task task)
     {
         task = null;
         return task;
