@@ -1710,8 +1710,8 @@ public:
     BOOL Protects(OBJECTREF *ppORef)
     {
         LIMITED_METHOD_CONTRACT;
-        for (UINT i = 0; i < m_payload.m_objectRefs.m_numObjRefs; i++) {
-            if (ppORef == m_payload.m_objectRefs.m_pObjRefs + i) {
+        for (UINT i = 0; i < m_numObjRefs; i++) {
+            if (ppORef == m_pointers.m_pObjRefs + i) {
                 return TRUE;
             }
         }
@@ -1746,25 +1746,18 @@ public:
 private:
     PTR_GCFrame   m_Next;
     PTR_Thread    m_pCurThread;
-    union Payload
+    union
     {
-        struct
-        {
-            PTR_OBJECTREF m_pObjRefs;
-            UINT          m_numObjRefs;
-            UINT          m_gcFlags;
-        } m_objectRefs;
-        struct
-        {
-            PTR_PTR_ValueClassInfo m_ppValueClasses;
-            UINT                   m_unused;
-            UINT                   m_gcFlags;
-        } m_valueClasses;
-    } m_payload;
+        PTR_OBJECTREF           m_pObjRefs;
+        PTR_PTR_ValueClassInfo  m_ppValueClasses;
+    } m_pointers;
+    UINT          m_numObjRefs;
+    UINT          m_gcFlags;
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
 
+    friend class CoreLibBinder;
     friend struct ::cdac_data<GCFrame>;
 };
 
@@ -1772,10 +1765,10 @@ template<>
 struct cdac_data<GCFrame>
 {
     static constexpr size_t Next = offsetof(GCFrame, m_Next);
-    static constexpr size_t ObjRefs = offsetof(GCFrame, m_payload.m_objectRefs.m_pObjRefs);
-    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_payload.m_objectRefs.m_numObjRefs);
-    static constexpr size_t ValueClassInfoList = offsetof(GCFrame, m_payload.m_valueClasses.m_ppValueClasses);
-    static constexpr size_t GCFlags = offsetof(GCFrame, m_payload.m_objectRefs.m_gcFlags);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pointers.m_pObjRefs);
+    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
+    static constexpr size_t ValueClassInfoList = offsetof(GCFrame, m_pointers.m_ppValueClasses);
+    static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------

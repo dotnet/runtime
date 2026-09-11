@@ -36,11 +36,11 @@ namespace System.Runtime
         }
 
 #if CORECLR
-        public GCFrameRegistration(void** valueClassInfo)
+        public GCFrameRegistration(ValueClassInfo** valueClassInfo)
         {
             _reserved1 = 0;
             _reserved2 = 0;
-            _pObjRefs = valueClassInfo;
+            _pObjRefs = (void**)valueClassInfo;
             _numObjRefs = 0;
             _gcFlags = GCFrameValueClassFlag;
 #if FEATURE_INTERPRETER
@@ -57,4 +57,21 @@ namespace System.Runtime
         internal static extern void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
 #endif
     }
+
+#if CORECLR
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct ValueClassInfo
+    {
+        private ValueClassInfo* _next;
+        private void* _methodTable;
+        private void* _data;
+
+        public ValueClassInfo(void* data, void* methodTable, ValueClassInfo* next)
+        {
+            _next = next;
+            _methodTable = methodTable;
+            _data = data;
+        }
+    }
+#endif
 }

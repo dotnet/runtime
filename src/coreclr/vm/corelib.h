@@ -1438,6 +1438,21 @@ DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)
 
 DEFINE_CLASS(EXINFO, Runtime, EH+ExInfo)
 
+DEFINE_CLASS_U(Runtime, GCFrameRegistration, GCFrame)
+DEFINE_FIELD_U(_reserved1, GCFrame, m_Next)
+DEFINE_FIELD_U(_reserved2, GCFrame, m_pCurThread)
+DEFINE_FIELD_U(_pObjRefs, GCFrame, m_pointers.m_pObjRefs)
+DEFINE_FIELD_U(_numObjRefs, GCFrame, m_numObjRefs)
+DEFINE_FIELD_U(_gcFlags, GCFrame, m_gcFlags)
+#ifdef FEATURE_INTERPRETER
+DEFINE_FIELD_U(_osStackLocation, GCFrame, m_osStackLocation)
+#endif
+
+DEFINE_CLASS_U(Runtime, ValueClassInfo, ValueClassInfo)
+DEFINE_FIELD_U(_next, ValueClassInfo, pNext)
+DEFINE_FIELD_U(_methodTable, ValueClassInfo, pMT)
+DEFINE_FIELD_U(_data, ValueClassInfo, pData)
+
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
 DEFINE_FIELD_U(_totalAvailableMemoryBytes, GCMemoryInfoData, totalAvailableMemoryBytes)
