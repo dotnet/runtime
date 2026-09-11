@@ -5287,6 +5287,12 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     ValueNum       vnBase = vn;
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
+    if ((offset < 0) || fgIsBigOffset(static_cast<size_t>(offset)))
+    {
+        // A non-null base does not imply a non-null address for these offsets.
+        // Still allow assertions about the full address.
+        vnBase = vn;
+    }
 
     // Check each assertion to find if we have a vn != null assertion. Note that 'assertions'
     // may be uninit here (e.g. when the current block has no live assertions); in that case we
