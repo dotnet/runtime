@@ -59,19 +59,10 @@ namespace ILCompiler.DependencyAnalysis
         SkipTypeValidation
     }
 
-    public enum AccessValidationRule
-    {
-        Automatic,
-        AutomaticWithLogging,
-        AlwaysValidate,
-        SkipAccessValidation
-    }
-
     public struct NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
         public TypeValidationRule TypeValidation;
-        public AccessValidationRule AccessValidation;
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;

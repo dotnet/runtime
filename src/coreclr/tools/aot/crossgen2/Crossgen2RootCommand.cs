@@ -48,8 +48,6 @@ namespace ILCompiler
             new("--generate-unboxing-stubs") { Description = SR.GenerateUnboxingStubsOption };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
-        public Option<AccessValidationRule> AccessValidation { get; } =
-            new("--access-validation") { DefaultValueFactory = _ => AccessValidationRule.Automatic, Description = SR.AccessValidation, HelpName = "arg" };
         public Option<bool> InputBubble { get; } =
             new("--inputbubble") { Description = SR.InputBubbleOption };
         public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
@@ -186,7 +184,6 @@ namespace ILCompiler
             Options.Add(EnableCachedInterfaceDispatchSupport);
             Options.Add(GenerateUnboxingStubs);
             Options.Add(TypeValidation);
-            Options.Add(AccessValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
             Options.Add(Composite);
@@ -328,9 +325,6 @@ namespace ILCompiler
             Console.WriteLine();
 
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
-            Console.WriteLine();
-
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--access-validation", String.Join("', '", Enum.GetNames<AccessValidationRule>()), nameof(AccessValidationRule.Automatic)));
             Console.WriteLine();
 
             Console.WriteLine(SR.CrossModuleInliningExtraHelp);

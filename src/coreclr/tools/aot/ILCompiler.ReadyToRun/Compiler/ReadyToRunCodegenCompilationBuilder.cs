@@ -264,8 +264,7 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
-            bool automaticAccessValidation = _nodeFactoryOptimizationFlags.AccessValidation == AccessValidationRule.Automatic || _nodeFactoryOptimizationFlags.AccessValidation == AccessValidationRule.AutomaticWithLogging;
-            if (_nodeFactoryOptimizationFlags.AccessValidation == AccessValidationRule.SkipAccessValidation)
+            if (_nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipAccessValidation;
             }
@@ -286,7 +285,7 @@ namespace ILCompiler
                 automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
                 genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff,
-                associatedModuleForAccessValidation: automaticAccessValidation ? singleModule : null
+                associatedModuleForAccessValidation: automaticTypeValidation ? singleModule : null
                 );
 
             factory.CompositeImageSettings = _compositeImageSettings;
