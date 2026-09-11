@@ -2207,6 +2207,15 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             if (targetIp == NULL)
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
+#ifdef TARGET_WASM
+                // Keep the transition and argument roots while invoking R2R code, but report
+                // the managed activation through its R2R body rather than this prestub.
+                // An FCall can still need the prestub to represent its native implementation.
+                if (!pMethod->IsFCall())
+                {
+                    pPFrame->MarkPrestubComplete();
+                }
+#endif // TARGET_WASM
                 Object* continuationRet = nullptr;
                 Object** pContinuationRet = nullptr;
 #ifdef TARGET_WASM
