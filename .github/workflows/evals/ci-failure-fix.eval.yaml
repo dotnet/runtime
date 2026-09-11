@@ -45,30 +45,30 @@ stimuli:
 
       This is a live run — discover a real, currently-open Known Build Error yourself and act on exactly one. Do not invent one.
 
-      1. Run the deterministic filter script from the workflow's `scanner_kbes` job, setting `RUNNER_TEMP` and `GITHUB_OUTPUT` to eval-local scratch paths. Copy its `scanner-kbe-candidates.json` to `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. Pick one issue from this allowlist whose failing test and error are concrete enough to reason about. Do not fall back to other issues. If the allowlist is empty, write `Type: noop` and the reason to `./out/decision.md` and stop; this represents the production agent job being skipped.
-      2. Read it with `gh issue view <n> --repo dotnet/runtime` to recover the failing test and error signature, and inspect the relevant product or test source it points at, using `gh api` raw content or the failing area path, enough to decide whether a safe, in-bounds fix exists.
+      1. Execute the deterministic filter script from the workflow's `scanner_kbes` job inline in a bash call, setting `RUNNER_TEMP` and `GITHUB_OUTPUT` to eval-local scratch paths. After it succeeds, copy its `scanner-kbe-candidates.json` to both `/tmp/gh-aw/agent/scanner-kbe-candidates.json` and `./out/scanner-kbe-candidates.json` for grading. Pick one issue from this list whose failing test and error are concrete enough to reason about. Do not fall back to other issues. If the list is empty, write `Type: unavailable` and the reason to `./out/decision.md` and stop. An empty list does not pass this live remediation eval; the production skip path is tested separately.
+      2. Read the selected issue body with the GitHub MCP `issue_read` tool (`method: get`, `owner: dotnet`, `repo: runtime`, `issue_number: <n>`), and use `method: get_comments` for comments. Do not retrieve bodies or comments through `gh`. Inspect the relevant product or test source it points at, using `gh api` raw content or the failing area path, enough to decide whether a safe, in-bounds fix exists.
 
       Then **emit the single safe-output you would produce, as a markdown document at `./out/decision.md`.** Pick exactly one outcome per the escalation policy and make the type explicit on the first line.
 
       - `Type: create-pull-request` is for a confident, in-bounds, low-risk fix. Then add `Title: [ci-fix] <summary>`, a `Linked KBE: #<n>` line referencing the real issue, a one-paragraph `## Description`, and the candidate change as a fenced ` ```diff ` block. The diff must be a genuine product or test-logic change, never a test-disable, `[ActiveIssue]`, `[SkipOnPlatform]`, `<*Incompatible>`, `Skip="..."`, or csproj exclusion.
-      - `Type: add-comment` is for when the fix is out of the agent's bounds or needs an owner. Then add a `## Comment` section that concretely explains why no safe diff is producible and @-mentions or names the owning area or team to loop in, linking the KBE.
+      - `Type: add-comment` is for when the fix is out of the agent's bounds or needs an owner. Then add a `Linked KBE: #<n>` line and a `## Comment` section that concretely explains why no safe diff is producible and @-mentions or names the owning area or team to loop in.
 
       Emit exactly one `Type:` line. Keep all scratch state under /tmp.
 
     rubric:
       - |
-       The agent produced one actionable safe-output about a real open scanner-authored KBE from the deterministic allowlist. One valid outcome is a fix PR, meaning a `[ci-fix]` title, a `Linked KBE: #<n>` reference, and a real product or test diff that plausibly addresses the failure. The other valid outcome is an owner-engagement comment that concretely explains why no safe fix is producible and names or @-mentions who to loop in. A noop is valid only when the deterministic enumeration succeeded and returned an empty allowlist. It emits exactly one outcome, and any fix changes product or test behavior rather than disabling, skipping, or excluding the failing test.
+       The agent produced one actionable safe-output about a real open scanner-authored KBE from the deterministic candidate list. One valid outcome is a fix PR, meaning a `[ci-fix]` title, a `Linked KBE: #<n>` reference, and a real product or test diff that plausibly addresses the failure. The other valid outcome is an owner-engagement comment that concretely explains why no safe fix is producible and names or @-mentions who to loop in. A noop or unavailable result is not a successful remediation. It emits exactly one outcome, and any fix changes product or test behavior rather than disabling, skipping, or excluding the failing test.
 
     graders:
       - type: file-matches
         config:
           path: "out/decision.md"
-          pattern: '(?i)^Type:\s*(create-pull-request|add-comment|noop)\b'
+          pattern: '(?i)^Type:\s*(create-pull-request|add-comment)\b'
 
       - type: file-matches
         config:
           path: "out/decision.md"
-          pattern: '(?s)(Type:\s*create-pull-request.*Linked KBE:\s*#\d+.*```diff)|(Type:\s*add-comment.*##\s+Comment)|(Type:\s*noop\b)'
+          pattern: '(?s)(Type:\s*create-pull-request.*Linked KBE:\s*#\d+.*```diff)|(Type:\s*add-comment.*Linked KBE:\s*#\d+.*##\s+Comment)'
 
       - type: file-not-matches
         config:
@@ -80,12 +80,83 @@ stimuli:
           path: "out/decision.md"
           pattern: '(?is)Type:\s*(?:create-pull-request|add-comment|noop).*Type:\s*(?:create-pull-request|add-comment|noop)'
 
-      - type: tool-calls
-        name: acted-on-real-kbe
+      # Keep the grader in the spec: ci-eval.yml preserves specs from the base branch.
+      - type: program
+        name: read-and-decided-on-candidate
         config:
-          required:
-            - name: '^(bash|powershell)$'
-              command: 'gh (api|issue)'
+          program: python3
+          args:
+            - -c
+            - |
+              import json
+              import os
+              from pathlib import Path
+              import re
+              import sys
+
+              def finish(evidence, passed=False, status="success"):
+                  print(json.dumps({
+                      "name": "read-and-decided-on-candidate", "kind": "code",
+                      "passed": passed, "score": int(passed), "status": status,
+                      "evidence": evidence,
+                  }))
+                  sys.exit(0)
+
+              try:
+                  workspace = Path(os.environ["EVALUATE_WORKSPACE"])
+                  candidate_data = json.loads((workspace / "out/scanner-kbe-candidates.json").read_text())
+                  decision = (workspace / "out/decision.md").read_text()
+                  events = json.loads(Path(os.environ["EVALUATE_GRADER_INPUT"]).read_text())["trajectory"]["events"]
+              except (OSError, ValueError, KeyError) as error:
+                  finish(f"Missing or invalid eval evidence: {error}", status="error")
+
+              candidates = candidate_data.get("candidates") if isinstance(candidate_data, dict) else None
+              if not isinstance(candidates, list) or any(
+                  not isinstance(item, dict) or type(item.get("number")) is not int or item["number"] <= 0
+                  for item in candidates
+              ):
+                  finish("Invalid candidate list", status="error")
+              numbers = {item["number"] for item in candidates}
+              calls = {}
+              enumerated = False
+              read_numbers = set()
+              for event in events:
+                  data = event.get("data", {})
+                  key = (event.get("agentId"), data.get("toolCallId"))
+                  if event["type"] == "tool_call":
+                      calls[key] = (data, enumerated)
+                  elif event["type"] == "tool_result" and key in calls:
+                      call, after_enumeration = calls.pop(key)
+                      result = data.get("result")
+                      if data.get("success") is not True or (
+                          isinstance(result, dict) and result.get("isError") is True
+                      ) or "[Filtered]" in json.dumps(result):
+                          continue
+                      args = call.get("arguments", {})
+                      name = call["toolName"]
+                      if name == "bash" and re.search(
+                          r"\bgh api\b[^\n]*\brepos/dotnet/runtime/issues\b",
+                          args.get("command", ""),
+                      ):
+                          enumerated = True
+                      if after_enumeration and re.fullmatch(r"(?:mcp__)?github[-_.]+issue_read", name) and (
+                          args.get("method") == "get" and args.get("owner") == "dotnet" and
+                          args.get("repo") == "runtime" and type(args.get("issue_number")) is int and
+                          args["issue_number"] in numbers
+                      ):
+                          read_numbers.add(args["issue_number"])
+
+              if not enumerated:
+                  finish("No successful repository issue enumeration")
+              if not numbers:
+                  finish("Live remediation eval unavailable: no scanner candidates", status="error")
+              outcomes = re.findall(r"^Type:\s*(\S+)\s*$", decision, re.MULTILINE)
+              linked = re.findall(r"^Linked KBE:\s*#(\d+)\s*$", decision, re.MULTILINE)
+              if len(outcomes) != 1 or outcomes[0] not in ("create-pull-request", "add-comment"):
+                  finish("Expected one remediation outcome; noop is not a passing result")
+              if len(linked) != 1 or int(linked[0]) not in read_numbers:
+                  finish("Decision must reference the same candidate as a successful MCP issue-body read")
+              finish(f"Enumerated candidates, read #{linked[0]} through MCP, and linked it in the decision", passed=True)
 
       - type: prompt
         name: fix-or-engages-owners

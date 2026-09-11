@@ -10,6 +10,7 @@ import unittest
 
 
 WORKFLOW = Path(__file__).resolve().parents[1] / "ci-failure-fix.md"
+EVAL = Path(__file__).with_name("ci-failure-fix.eval.yaml")
 
 
 def candidate_script(workflow):
@@ -143,6 +144,131 @@ gh() {
         self.assertIn("KBE_CANDIDATES: ${{ needs.scanner_kbes.outputs.candidates }}", agent)
         self.assertNotIn("Start DIFC Proxy", agent)
         self.assertIn("GH_AW_APPROVAL_LABELS_EXTRA: Known Build Error", agent)
+
+    def test_repository_guard(self):
+        for path in (WORKFLOW, WORKFLOW.with_suffix(".lock.yml")):
+            with self.subTest(path=path):
+                intake = path.read_text().split("\n  scanner_kbes:\n", 1)[1].split("    steps:", 1)[0]
+                self.assertIn("    if: github.repository == 'dotnet/runtime'\n", intake)
+                self.assertIn("    needs: activation\n", intake)
+
+
+class EvalEvidenceTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        result = subprocess.run(
+            ["node", "-e", """
+const fs = require('node:fs');
+const yaml = require('yaml');
+const spec = yaml.parse(fs.readFileSync('ci-failure-fix.eval.yaml', 'utf8'));
+process.stdout.write(JSON.stringify(spec.stimuli[0]));
+"""],
+            cwd=EVAL.parent, capture_output=True, text=True, check=True,
+        )
+        cls.stimulus = json.loads(result.stdout)
+
+    def events(self, number=42, read_success=True, enumeration_success=True, **read_args):
+        calls = [
+            ("bash", {"command": "gh api --method GET repos/dotnet/runtime/issues --paginate"},
+             enumeration_success),
+            ("github-issue_read", {
+                "method": "get", "owner": "dotnet", "repo": "runtime", "issue_number": number,
+                **read_args,
+            }, read_success),
+        ]
+        events = []
+        for index, (name, args, success) in enumerate(calls):
+            data = {"toolCallId": str(index), "toolName": name}
+            events.extend([
+                {"type": "tool_call", "data": {**data, "arguments": args}},
+                {"type": "tool_result", "data": {**data, "success": success, "result": "Issue body"}},
+            ])
+        return events
+
+    def grade(self, events, candidates=None, decision="Type: add-comment\nLinked KBE: #42\n## Comment\n"):
+        graders = [grader for grader in self.stimulus["graders"] if grader["type"] == "program"]
+        self.assertEqual(len(graders), 1, "Candidate/read/decision evidence needs a deterministic grader")
+        config = graders[0]["config"]
+        with tempfile.TemporaryDirectory() as directory:
+            temp = Path(directory)
+            (temp / "out").mkdir()
+            (temp / "out/decision.md").write_text(decision)
+            (temp / "out/scanner-kbe-candidates.json").write_text(json.dumps(
+                {"candidates": [{"number": 42}]} if candidates is None else candidates
+            ))
+            input_path = temp / "grader-input.json"
+            input_path.write_text(json.dumps({
+                "trajectory": {"events": events, "workDir": directory},
+                "config": config,
+            }))
+            result = subprocess.run(
+                ["node", "--input-type=module", "-e", """
+import fs from 'node:fs';
+import { ProgramGrader } from './node_modules/@microsoft/vally/dist/graders/static/program-grader.js';
+const input = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
+process.stdout.write(JSON.stringify(await new ProgramGrader().grade(input)));
+""", str(input_path)],
+                cwd=EVAL.parent,
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads(result.stdout)
+
+    def test_reads_and_decides_on_same_candidate(self):
+        for outcome in ("add-comment", "create-pull-request"):
+            with self.subTest(outcome=outcome):
+                result = self.grade(self.events(), decision=f"Type: {outcome}\nLinked KBE: #42\n")
+                self.assertTrue(result["passed"], result)
+
+    def test_rejects_missing_failed_or_mismatched_evidence(self):
+        for events in (
+            [],
+            self.events()[:2],
+            self.events()[2:],
+            self.events(read_success=False),
+            self.events(enumeration_success=False),
+            self.events(number=43),
+            self.events(owner="another-owner"),
+            self.events(repo="another-repo"),
+            self.events(method="get_comments"),
+            self.events()[:-1],
+        ):
+            with self.subTest(events=events):
+                self.assertFalse(self.grade(events)["passed"])
+        self.assertFalse(self.grade(self.events(), decision="Type: add-comment\nLinked KBE: #43\n")["passed"])
+
+    def test_noop_does_not_pass(self):
+        self.assertFalse(self.grade(self.events(), decision="Type: noop\n")["passed"])
+        for grader in self.stimulus["graders"]:
+            if grader["type"] == "file-matches":
+                pattern = grader["config"]["pattern"]
+                self.assertNotIn("noop", pattern)
+
+    def test_empty_candidates_are_unavailable_not_passed(self):
+        result = self.grade(self.events()[:2], candidates={"candidates": []}, decision="Type: unavailable\n")
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["status"], "error")
+        self.assertIn("unavailable", result["evidence"].lower())
+
+    def test_candidate_metadata_must_be_valid(self):
+        for candidates in ({}, {"candidates": None}, {"candidates": [{"number": "42"}]}):
+            with self.subTest(candidates=candidates):
+                self.assertFalse(self.grade(self.events(), candidates=candidates)["passed"])
+
+    def test_read_results_must_be_successful_and_from_the_same_agent(self):
+        for result in ("[Filtered]", {"isError": True}):
+            with self.subTest(result=result):
+                events = self.events()
+                events[-1]["data"]["result"] = result
+                self.assertFalse(self.grade(events)["passed"])
+        events = self.events()
+        events[-1]["agentId"] = "different-agent"
+        self.assertFalse(self.grade(events)["passed"])
+
+    def test_eval_requires_mcp_body_reads(self):
+        prompt = self.stimulus["prompt"]
+        self.assertNotIn("gh issue view", prompt)
+        self.assertIn("issue_read", prompt)
 
 
 if __name__ == "__main__":

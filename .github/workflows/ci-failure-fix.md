@@ -56,6 +56,7 @@ checkout:
 jobs:
   scanner_kbes:
     needs: activation
+    if: github.repository == 'dotnet/runtime'
     runs-on: ubuntu-latest
     permissions:
       issues: read
@@ -206,7 +207,9 @@ Read once at start:
 
 ### Step 2 — Enumerate open KBEs
 
-The deterministic `scanner_kbes` job has prepared `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. It is the authoritative allowlist: it contains only open `dotnet/runtime` issues whose exact `Known Build Error` label, `[ci-scan]` title prefix, and `github-actions[bot]` author were verified through the GitHub API. Process only the issue numbers in `.candidates[].number`, in ascending creation order. Do not enumerate or read other `Known Build Error` issues, even if they appear in GitHub search results. If the allowlist is missing or invalid, report the error and stop; do not fall back to search.
+The deterministic `scanner_kbes` job has prepared `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. It selects remediation candidates: only open `dotnet/runtime` issues whose exact `Known Build Error` label, `[ci-scan]` title prefix, and `github-actions[bot]` author were verified through the GitHub API. Select work only from `.candidates[].number`, in ascending creation order. If the candidate file is missing or invalid, report the error and stop; do not fall back to search for other candidates.
+
+This is a task-selection rule, not an issue-ID restriction on the tools. Search remains available for existing-artifact deduplication and investigation; do not treat issues found during that work as additional remediation candidates. Enforcing candidate IDs at the tool layer would require a larger change and is outside this workflow update.
 
 The enumeration paginates all open KBEs without an `updated:` cutoff, so older issues remain in scope. An empty allowlist skips the agent job entirely.
 
