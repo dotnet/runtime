@@ -39,7 +39,7 @@ stimuli:
           dest: .github/workflows/shared/create-kbe.instructions.md
       commands:
         - |
-          set -euo pipefail
+          set -eu
           export RUNNER_TEMP="$PWD/.scanner-kbe-intake"
           export GITHUB_OUTPUT="$PWD/.scanner-kbe-output"
           mkdir -p "$RUNNER_TEMP"

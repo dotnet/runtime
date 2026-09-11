@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -336,6 +337,61 @@ process.stdout.write(JSON.stringify(await new ProgramGrader().grade(input)));
         self.assertIn("out/scanner-kbe-candidates.json", stimulus_environment["commands"][0])
         self.assertIn("Do not regenerate, overwrite, or replace", self.stimulus["prompt"])
         self.assertIn("get_comments", self.stimulus["prompt"])
+
+    def test_eval_setup_runs_under_posix_shell(self):
+        command = self.stimulus["environment"]["commands"][0]
+        with tempfile.TemporaryDirectory() as directory:
+            temp = Path(directory)
+            script = temp / ".github/workflows/shared/filter-scanner-kbes.sh"
+            script.parent.mkdir(parents=True)
+            shutil.copy(FILTER_SCRIPT, script)
+
+            fake_bin = temp / "bin"
+            fake_bin.mkdir()
+            (fake_bin / "gh").write_text(
+                "#!/bin/sh\n"
+                "while [ \"$#\" -gt 0 ]; do\n"
+                "  if [ \"$1\" = \"--jq\" ]; then\n"
+                "    printf '%s\\n' '[{\"number\":42,\"created_at\":\"2026-01-01T00:00:00Z\","
+                "\"title\":\"[ci-scan] Test failure\",\"author\":\"github-actions[bot]\","
+                "\"author_type\":\"Bot\",\"labels\":[\"Known Build Error\"]}]'\n"
+                "    exit 0\n"
+                "  fi\n"
+                "  shift\n"
+                "done\n"
+                "exit 2\n"
+            )
+            (fake_bin / "gh").chmod(0o755)
+
+            agent_directory = temp / "agent"
+            command = command.replace("/tmp/gh-aw/agent", str(agent_directory))
+            # Ubuntu's /bin/sh is dash; use it explicitly when available so this
+            # test also catches non-portable shell options on macOS.
+            shell = shutil.which("dash") or "/bin/sh"
+            result = subprocess.run(
+                [shell, "-c", command],
+                cwd=temp,
+                env={**os.environ, "PATH": f"{fake_bin}:{os.environ['PATH']}"},
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                json.loads((temp / ".scanner-kbe-intake/scanner-kbe-candidates.json").read_text()),
+                {
+                    "candidates": [{
+                        "number": 42,
+                        "created_at": "2026-01-01T00:00:00Z",
+                        "title": "[ci-scan] Test failure",
+                        "author": "github-actions[bot]",
+                        "author_type": "Bot",
+                        "labels": ["Known Build Error"],
+                    }]
+                },
+            )
+            self.assertTrue((temp / "out/scanner-kbe-candidates.json").exists())
+            self.assertTrue((agent_directory / "scanner-kbe-candidates.json").exists())
 
     def test_eval_requires_mcp_body_reads(self):
         prompt = self.stimulus["prompt"]
