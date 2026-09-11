@@ -18,6 +18,9 @@ steps:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     useHelixMonitor: ${{ parameters.useHelixMonitor }}
+
+    # IMPORTANT: Use ${{ variables.* }} for queue aliases, not $(...), so helix.yml can strip the .Open suffix
+    # at template expansion time for internal runs. Runtime macros expand too late.
     helixQueues:
 
     # Linux arm
@@ -42,11 +45,11 @@ steps:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - $(helix_macos_arm64)
+      - ${{ variables.helix_macos_arm64 }}
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
-      - $(helix_macos_x64)
+      - ${{ variables.helix_macos_x64 }}
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
