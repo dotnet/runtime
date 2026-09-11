@@ -4,7 +4,7 @@
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
 #                      -rc release -lc release -clrinterpreter) consumed by 2 SOS
-#                      legs that run on top of it: PreferCDac and DAC.
+#                      legs that run on top of it: cDAC and DAC.
 #                      Each leg sets testInterpreter: true so interpreter coverage
 #                      is exercised inline (no separate Interpreter leg).
 #
@@ -151,7 +151,7 @@ extends:
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
                 displayName: Build Assets
-            # Publish the transport package so the PreferCDac leg consumes the same cDAC and DBI
+            # Publish the transport package so the cDAC leg consumes the same cDAC and DBI
             # pair produced by this runtime build.
             - powershell: |
                 $packagePattern = "$(Build.SourcesDirectory)\artifacts\packages\Debug\NonShipping\runtime.win-$(archType).Microsoft.DotNet.Cdac.Transport.*.nupkg"
@@ -178,10 +178,11 @@ extends:
       # SOS test legs: each depends on the shared build above. Differ only in
       # name (artifact namespace) and the cDAC/DAC load mode.
 
-      # Exercise SOS's default behavior, which prefers cDAC and falls back to the DAC.
+      # Exercise SOS's strict standalone cDAC mode with the matching cDAC and DBI.
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
-          name: PreferCDac
+          name: cDAC
+          dacMode: cdac
           useRuntimeCDac: true
 
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
