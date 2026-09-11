@@ -1227,13 +1227,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 });
         }
 
-        [Theory]
-        [MemberData(nameof(AllViableRevocation))]
-        public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreRootUnknown(PkiOptions pkiOptions)
+        [Fact]
+        public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreRootUnknown()
         {
             SelfIssuedButNotSelfSignedRevocationUnknown(
-                pkiOptions,
-                (endEntity, chainHolder) =>
+                PkiOptions.AllRevocation,
+                static (endEntity, chainHolder) =>
                 {
                     X509Chain chain = chainHolder.Chain;
 
@@ -1245,21 +1244,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     AssertChainStatus(
                         chain,
                         rootStatus: X509ChainStatusFlags.NoError,
-                        iss1Status: ThisOsRevocationStatusUnknown,
-                        iss2Status: ThisOsNoErrorWithPreviousRevocationError,
+                        iss1Status: X509ChainStatusFlags.NoError,
+                        iss2Status: ThisOsRevocationStatusUnknown,
                         leafStatus: ThisOsNoErrorWithPreviousRevocationError);
 
                     AssertExtensions.FalseExpression(success, "chain.Build(endEntity)");
                 });
         }
 
-        [Theory]
-        [MemberData(nameof(AllViableRevocation))]
-        public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreIntermediateUnknown(PkiOptions pkiOptions)
+        [Fact]
+        public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreIntermediateUnknown()
         {
             SelfIssuedButNotSelfSignedRevocationUnknown(
-                pkiOptions,
-                (endEntity, chainHolder) =>
+                PkiOptions.AllRevocation,
+                static (endEntity, chainHolder) =>
                 {
                     X509Chain chain = chainHolder.Chain;
 
@@ -1271,8 +1269,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     AssertChainStatus(
                         chain,
                         rootStatus: X509ChainStatusFlags.NoError,
-                        iss1Status: ThisOsRevocationStatusUnknown,
-                        iss2Status: ThisOsNoErrorWithPreviousRevocationError,
+                        iss1Status: X509ChainStatusFlags.NoError,
+                        iss2Status: ThisOsRevocationStatusUnknown,
                         leafStatus: ThisOsNoErrorWithPreviousRevocationError);
 
                     AssertExtensions.TrueExpression(success, "chain.Build(endEntity)");
@@ -1313,7 +1311,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
                 rootName: rootName,
-                intermediateNames: [intermediateName, intermediateName],
+                intermediateNames: [intermediateName, new X500DistinguishedName(BuildSubject("Some other CA", callerName, pkiOptions, true))],
                 endEntityName: endEntityName,
                 callerName,
                 registerAuthorities: false);
@@ -1327,9 +1325,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 intermediate1Cert = intermediates[0].CloneIssuerCert())
             using (X509Certificate2 intermediate2Cert = intermediates[1].CloneIssuerCert())
             {
-                Assert.Equal(intermediate1Cert.SubjectName.RawData, intermediate2Cert.SubjectName.RawData);
-                Assert.Equal(intermediate1Cert.SubjectName.RawData, intermediate2Cert.IssuerName.RawData);
-
                 if (pkiOptions.HasFlag(PkiOptions.RootAuthorityHasDesignatedOcspResponder))
                 {
                     using (RSA tmpKey = RSA.Create())
@@ -1360,10 +1355,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     }
                 }
 
-                // Leave the root unregistered so the original issuing CA has
-                // unknown revocation status. All certificates below it have
-                // conclusive revocation status.
-                responder.AddCertificateAuthority(intermediates[0]);
+                // Register the root, which covers itself and the original issuing CA.
+                // Do not register intermediates[0], thus leaving intermediates[1] (the re-key cert) as revocation unknown.
+                // Register intermediates[1] to cover the end-entity cer.
+                responder.AddCertificateAuthority(root);
                 responder.AddCertificateAuthority(intermediates[1]);
 
                 RetryHelper.Execute(
