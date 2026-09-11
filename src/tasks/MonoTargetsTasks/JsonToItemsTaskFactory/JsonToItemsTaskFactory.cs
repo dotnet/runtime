@@ -3,11 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -138,11 +133,6 @@ namespace JsonToItemsTaskFactory
                 Log = new TaskLoggingHelper(buildEngine, TaskName);
             }
 
-            public static JsonSerializerOptions JsonOptions => new()
-                        {
-                            PropertyNameCaseInsensitive =  true,
-                            AllowTrailingCommas = true,
-                        };
             private string? jsonFilePath;
 
             private readonly bool _logDebugTask; // print stuff to the log for debugging the task
@@ -157,18 +147,7 @@ namespace JsonToItemsTaskFactory
 
             public bool Execute()
             {
-                if (jsonFilePath == null)
-                {
-                    Log.LogError($"no {nameof(JsonFilePath)} specified");
-                    return false;
-                }
-                if (!File.Exists(jsonFilePath))
-                {
-                    Log.LogError($"Could not find {nameof(JsonFilePath)}={jsonFilePath}");
-                    return false;
-                }
-
-                if (!TryGetJson(jsonFilePath, out var json))
+                if (!JsonToItemsReader.TryRead(jsonFilePath, Log, out JsonModelRoot? json))
                     return false;
 
                 if (_logDebugTask)
@@ -177,51 +156,6 @@ namespace JsonToItemsTaskFactory
                 }
                 jsonModel = json;
                 return true;
-            }
-
-            public bool TryGetJson(string jsonFilePath, [NotNullWhen(true)] out JsonModelRoot? json)
-            {
-                FileStream? file = null;
-                try
-                {
-                    try
-                    {
-                        file = File.OpenRead(jsonFilePath);
-                    }
-                    catch (FileNotFoundException fnfe)
-                    {
-                        Log.LogErrorFromException(fnfe);
-                        json = null;
-                        return false;
-                    }
-                    json = GetJsonAsync(jsonFilePath, file).Result;
-                    if (json == null)
-                    {
-                        // the async task may have already caught an exception and logged it.
-                        if (!Log.HasLoggedErrors) Log.LogError($"Failed to deserialize json from file {jsonFilePath}");
-                        return false;
-                    }
-                    return true;
-                }
-                finally
-                {
-                    file?.Dispose();
-                }
-            }
-
-            public async Task<JsonModelRoot?> GetJsonAsync(string jsonFilePath, FileStream file)
-            {
-                JsonModelRoot? json = null;
-                try
-                {
-                    json = await JsonSerializer.DeserializeAsync<JsonModelRoot>(file, JsonOptions).ConfigureAwait(false);
-                }
-                catch (JsonException e)
-                {
-                    Log.LogError($"Failed to deserialize json from file '{jsonFilePath}', JSON Path: {e.Path}, Line: {e.LineNumber}, Position: {e.BytePositionInLine}");
-                    Log.LogErrorFromException(e, showStackTrace: false, showDetail: true, file: null);
-                }
-                return json;
             }
 
             internal void LogParsedJson (JsonModelRoot json)
@@ -276,33 +210,13 @@ namespace JsonToItemsTaskFactory
                 }
                 else
                 {
-                    if (jsonModel?.Items != null && jsonModel.Items.TryGetValue(property.Name, out var itemModels))
+                    if (jsonModel?.Items != null && jsonModel.Items.ContainsKey(property.Name))
                     {
-                        return ConvertItems(itemModels);
+                        return jsonModel.GetItems(property.Name);
                     }
 
                 }
                 return null;
-            }
-
-            public static ITaskItem[] ConvertItems(JsonModelItem[] itemModels)
-            {
-                var items = new ITaskItem[itemModels.Length];
-                for (int i = 0; i < itemModels.Length; i++)
-                {
-                    var itemModel = itemModels[i];
-                    var item = new TaskItem(itemModel.Identity);
-                    if (itemModel.Metadata != null)
-                    {
-                        // assume Identity key was already removed in JsonModelItem
-                        foreach (var metadata in itemModel.Metadata)
-                        {
-                            item.SetMetadata(metadata.Key, metadata.Value);
-                        }
-                    }
-                    items[i] = item;
-                }
-                return items;
             }
 
             public void SetPropertyValue(TaskPropertyInfo property, object? value)
@@ -316,77 +230,6 @@ namespace JsonToItemsTaskFactory
                     throw new Exception($"JsonToItemsTask {TaskName} cannot set property {property.Name}");
             }
 
-        }
-
-        public class JsonModelRoot
-        {
-            [JsonConverter(typeof(CaseInsensitiveDictionaryConverter))]
-            public Dictionary<string, string>? Properties {get; set;}
-            public Dictionary<string, JsonModelItem[]>? Items {get; set;}
-
-            public JsonModelRoot() {}
-        }
-
-        [JsonConverter(typeof(JsonModelItemConverter))]
-        public class JsonModelItem
-        {
-            public string Identity {get;}
-            // n.b. will  be deserialized case insensitive
-            public Dictionary<string, string>? Metadata {get;}
-
-            public JsonModelItem(string identity, Dictionary<string, string>? metadata)
-            {
-                Identity = identity;
-                Metadata = metadata;
-            }
-        }
-
-        public class CaseInsensitiveDictionaryConverter : JsonConverter<Dictionary<string, string>>
-        {
-            public override Dictionary<string, string> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
-                if (dict == null)
-                    return null!;
-                return new Dictionary<string, string>(dict, StringComparer.OrdinalIgnoreCase);
-            }
-            public override void Write(Utf8JsonWriter writer, Dictionary<string, string>? value, JsonSerializerOptions options) =>
-                JsonSerializer.Serialize(writer, value, options);
-        }
-        public  class JsonModelItemConverter : JsonConverter<JsonModelItem>
-        {
-            public JsonModelItemConverter() {}
-
-            public override JsonModelItem Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                switch (reader.TokenType)
-                {
-                    case JsonTokenType.String:
-                        var stringItem = reader.GetString();
-                        if (string.IsNullOrEmpty(stringItem))
-                            throw new JsonException ("deserialized json string item was null or the empty string");
-                        return new JsonModelItem(stringItem!, metadata: null);
-                    case JsonTokenType.StartObject:
-                        var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
-                        if (dict == null)
-                            return null!;
-                        var idict = new Dictionary<string, string>(dict, StringComparer.OrdinalIgnoreCase);
-                        if  (!idict.TryGetValue("Identity", out var identity) || string.IsNullOrEmpty(identity))
-                            throw new JsonException ("deserialized json dictionary item did not have a non-empty Identity metadata");
-                        else
-                            idict.Remove("Identity");
-                        return new JsonModelItem(identity, metadata: idict);
-                    default:
-                        throw new NotSupportedException();
-                }
-            }
-            public override void Write(Utf8JsonWriter writer, JsonModelItem value, JsonSerializerOptions options)
-            {
-                if (value.Metadata == null)
-                    JsonSerializer.Serialize(writer, value.Identity);
-                else
-                    JsonSerializer.Serialize(writer, value.Metadata); /* assumes Identity is in there */
-            }
         }
     }
 }
