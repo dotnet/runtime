@@ -38,6 +38,7 @@ parameters:
   disableComponentGovernance: ''
   liveRuntimeDir: ''
   dacMode: ''
+  useRuntimeCDac: false
   classFilter: ''
   methodFilter: ''
   testInterpreter: false
@@ -91,6 +92,7 @@ jobs:
       - _TestArgs: '-test'
       - _Cross: ''
       - _DacModeArgs: ''
+      - _CDacPackageArgs: ''
       - _ClassFilterArgs: ''
       - _MethodFilterArgs: ''
       - _TestInterpreterArgs: ''
@@ -106,13 +108,13 @@ jobs:
       - ${{ if or(eq(parameters.buildOnly, 'true'), eq(parameters.isCodeQLRun, 'true')) }}:
         - _TestArgs: ''
 
-      # Selects which DAC/cDAC SOS loads (see DacMode in dotnet/diagnostics SOSRunner). The cdac mode
-      # additionally overlays the runtime-under-test's own cDAC next to sos.dll; the freshly built cDAC is
-      # downloaded by sos-test-leg.yml into artifacts/cdac and passed via -cdacPath.
-      - ${{ if eq(parameters.dacMode, 'cdac') }}:
-        - _DacModeArgs: '-dacMode cdac -cdacPath $(Build.SourcesDirectory)/artifacts/cdac/mscordaccore_universal.dll'
-      - ${{ elseif ne(parameters.dacMode, '') }}:
+      # Selects which DAC/cDAC SOS loads (see DacMode in dotnet/diagnostics SOSRunner).
+      - ${{ if ne(parameters.dacMode, '') }}:
         - _DacModeArgs: '-dacMode ${{ parameters.dacMode }}'
+
+      # Installs the cDAC and DBI produced by the runtime build without changing SOS's default policy.
+      - ${{ if eq(parameters.useRuntimeCDac, 'true') }}:
+        - _CDacPackageArgs: '/p:PackageWithCDac=true /p:runtimewinx64MicrosoftDotNetCdacTransportVersion=$(cdacTransportVersion) /p:RestoreAdditionalProjectSources=$(cdacTransportSource)'
 
       - ${{ if ne(parameters.classFilter, '') }}:
         - _ClassFilterArgs: '-classfilter ${{ parameters.classFilter }}'
@@ -212,27 +214,43 @@ jobs:
         - ${{ else }}:
           - ${{ preBuildStep }}
 
-    # Build
-    - script: $(_buildScript)
-          -ci
-          -configuration ${{ parameters.buildConfig }}
-          -architecture ${{ parameters.archType }}
-          -privatebuild
-          $(_DacModeArgs)
-          $(_TestInterpreterArgs)
-          -liveRuntimeDir ${{ parameters.liveRuntimeDir }}
-          $(_TestArgs)
-          $(_Cross)
-          $(_InternalInstallArgs)
-          $(_ClassFilterArgs)
-          $(_MethodFilterArgs)
+    - powershell: |
+        & "$(Build.SourcesDirectory)\eng\build.ps1" `
+          -restore `
+          -build `
+          -ci `
+          -configuration ${{ parameters.buildConfig }} `
+          -architecture ${{ parameters.archType }} `
+          -privatebuild `
+          $(_DacModeArgs) `
+          $(_CDacPackageArgs) `
+          $(_TestInterpreterArgs) `
+          -liveRuntimeDir ${{ parameters.liveRuntimeDir }} `
+          $(_InternalInstallArgs) `
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
-      ${{ if eq(parameters.testOnly, 'true') }}:
-        displayName: Test
-      ${{ elseif eq(parameters.buildOnly, 'true') }}:
-        displayName: Build
-      ${{ else }}:
-        displayName: Build / Test
+        exit $LASTEXITCODE
+      displayName: Build
+      condition: succeeded()
+
+    - powershell: |
+        & "$(Build.SourcesDirectory)\eng\build.ps1" `
+          -test `
+          -skipnative `
+          -skipmanaged `
+          -ci `
+          -configuration ${{ parameters.buildConfig }} `
+          -architecture ${{ parameters.archType }} `
+          -privatebuild `
+          $(_DacModeArgs) `
+          $(_CDacPackageArgs) `
+          $(_TestInterpreterArgs) `
+          -liveRuntimeDir ${{ parameters.liveRuntimeDir }} `
+          $(_InternalInstallArgs) `
+          $(_ClassFilterArgs) `
+          $(_MethodFilterArgs) `
+          /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
+        exit $LASTEXITCODE
+      displayName: Test
       condition: succeeded()
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:

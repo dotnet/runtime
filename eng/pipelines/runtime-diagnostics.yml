@@ -3,8 +3,8 @@
 # Pipeline overview:
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by 3 SOS
-#                      legs that run on top of it: cDAC, cDAC_verify, DAC.
+#                      -rc release -lc release -clrinterpreter) consumed by 2 SOS
+#                      legs that run on top of it: cDAC and DAC.
 #                      Each leg sets testInterpreter: true so interpreter coverage
 #                      is exercised inline (no separate Interpreter leg).
 #
@@ -116,7 +116,7 @@ extends:
     stages:
 
     # ----------------------------------------------------------------------
-    # SOS tests: shared windows_x64 build + 3 SOS legs that consume it.
+    # SOS tests: shared windows_x64 build + 2 SOS legs that consume it.
     # ----------------------------------------------------------------------
     - stage: SOSTests
       jobs:
@@ -151,15 +151,23 @@ extends:
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
                 displayName: Build Assets
-            # The cDAC (mscordaccore_universal) is built by tools.cdac but is not part of the shared
-            # framework (testhost), so upload it separately for the cDAC-only SOS leg to consume.
+            # Publish the transport package so the cDAC leg consumes the same cDAC and DBI
+            # pair produced by this runtime build.
             - powershell: |
-                $cdacDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\mscordaccore_universal\*\win-$(archType)\publish" | Select-Object -ExpandProperty FullName -First 1
-                Write-Host "##vso[task.setvariable variable=cdacDir]$cdacDir"
-              displayName: 'Set Path to cDAC Artifacts'
+                $packagePattern = "$(Build.SourcesDirectory)\artifacts\packages\Debug\NonShipping\runtime.win-$(archType).Microsoft.DotNet.Cdac.Transport.*.nupkg"
+                $packages = @(Get-ChildItem -File -Path $packagePattern | Where-Object Name -NotLike '*.symbols.nupkg')
+                if ($packages.Count -ne 1) {
+                  throw "Expected one cDAC transport package matching '$packagePattern', but found $($packages.Count)."
+                }
+
+                $cdacTransportUploadDir = "$(Build.ArtifactStagingDirectory)\cdac-transport"
+                New-Item -ItemType Directory -Force -Path $cdacTransportUploadDir | Out-Null
+                Copy-Item -Path $packages[0].FullName -Destination $cdacTransportUploadDir
+                Write-Host "##vso[task.setvariable variable=cdacTransportUploadDir]$cdacTransportUploadDir"
+              displayName: 'Stage cDAC Transport Package'
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
-                rootFolder: $(cdacDir)
+                rootFolder: $(cdacTransportUploadDir)
                 includeRootFolder: false
                 archiveType: $(archiveType)
                 archiveExtension: $(archiveExtension)
@@ -170,19 +178,12 @@ extends:
       # SOS test legs: each depends on the shared build above. Differ only in
       # name (artifact namespace) and the cDAC/DAC load mode.
 
-      # cDAC: the runtime-under-test's own standalone cDAC (mscordaccore_universal) loaded through SOS's
-      # standard cDAC hosting path (overlaying the freshly built cDAC next to sos.dll).
+      # Exercise SOS's strict standalone cDAC mode with the matching cDAC and DBI.
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: cDAC
           dacMode: cdac
-
-      # cDAC_verify: the in-box DAC hosts the cDAC contract reader without fallback,
-      # while still verifying against the legacy DAC.
-      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
-        parameters:
-          name: cDAC_verify
-          dacMode: cdacverify
+          useRuntimeCDac: true
 
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:

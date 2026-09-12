@@ -1,7 +1,6 @@
 # sos-test-leg.yml -- wraps the matrix + job + dep + artifact download +
-# standard postBuildSteps pattern used by the SOS-style test legs (cDAC,
-# cDAC_verify, DAC) that run on windows_x64. Each of those legs
-# only differs in its `name` and `dacMode` value.
+# standard postBuildSteps pattern used by the SOS-style test legs (cDAC and
+# DAC) that run on windows_x64.
 #
 # AzDO tasks workaround:
 #   PublishTestResults v2.270.0 garbles parameterized xUnit test names
@@ -14,6 +13,9 @@ parameters:
 - name: dacMode
   type: string
   default: ''
+- name: useRuntimeCDac
+  type: boolean
+  default: false
 
 jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -28,6 +30,7 @@ jobs:
     jobParameters:
       name: ${{ parameters.name }}
       dacMode: ${{ parameters.dacMode }}
+      useRuntimeCDac: ${{ parameters.useRuntimeCDac }}
       testInterpreter: true
       methodFilter: SOS*
       isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -42,17 +45,26 @@ jobs:
           artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
           unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
           displayName: 'Runtime Build Artifacts'
-      # The cdac leg exercises the runtime-under-test's own cDAC through SOS's standard cDAC hosting.
-      # SOS resolves the cDAC from next to sos.dll, which is the copy restored from a referenced runtime
-      # package -- not the runtime being tested. Download the freshly built cDAC so the build can overlay
-      # it (see -cdacPath in runtime-diag-job.yml / eng/build.* in dotnet/diagnostics).
-      - ${{ if eq(parameters.dacMode, 'cdac') }}:
+      - ${{ if eq(parameters.useRuntimeCDac, true) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
             artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts/cdac
-            displayName: 'cDAC Build Artifacts'
+            displayName: 'cDAC Transport Package'
+        - powershell: |
+            $packageId = "runtime.win-$(archType).Microsoft.DotNet.Cdac.Transport"
+            $packages = @(Get-ChildItem -File -Path "$(Build.SourcesDirectory)\artifacts\cdac\$packageId.*.nupkg" | Where-Object Name -NotLike '*.symbols.nupkg')
+            if ($packages.Count -ne 1) {
+              throw "Expected one cDAC transport package, but found $($packages.Count)."
+            }
+
+            $packageNamePrefix = "$packageId."
+            $packageVersion = $packages[0].BaseName.Substring($packageNamePrefix.Length)
+
+            Write-Host "##vso[task.setvariable variable=cdacTransportSource]$($packages[0].DirectoryName)"
+            Write-Host "##vso[task.setvariable variable=cdacTransportVersion]$packageVersion"
+          displayName: 'Configure cDAC Transport Package'
       postBuildSteps:
       - task: PublishTestResults@2
         inputs:
