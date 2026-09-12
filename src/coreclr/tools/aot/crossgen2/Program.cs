@@ -108,7 +108,8 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
                 allowOptimistic: allowOptimistic,
-                isReadyToRun: true);
+                isReadyToRun: true,
+                optimisticInstructionSetOverrides: Get(_command.OptimisticInstructionSetOverrides));
             if (!targetAllowsRuntimeCodeGeneration)
             {
                 instructionSetSupport = Helpers.GetFixedInstructionSetSupport(instructionSetSupport);

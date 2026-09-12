@@ -189,6 +189,9 @@
   <data name="InstructionSetInvalidImplication" xml:space="preserve">
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
   </data>
+  <data name="OptimisticInstructionSets" xml:space="preserve">
+    <value>Instruction set(s) to add to or remove from optimistic compilation without changing baseline requirements</value>
+  </data>
   <data name="MaxVectorTBitWidths" xml:space="preserve">
     <value>The maximum width, in bits, for System.Numerics.Vector&lt;T&gt;. For example '128', '256', or '512'.</value>
   </data>
