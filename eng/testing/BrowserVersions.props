@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <linux_ChromeVersion>152.0.7977.64</linux_ChromeVersion>
+    <linux_ChromeVersion>152.0.7977.82</linux_ChromeVersion>
     <linux_ChromeRevision>1669021</linux_ChromeRevision>
     <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1669021</linux_ChromeBaseSnapshotUrl>
     <linux_V8Version>15.2.124</linux_V8Version>
@@ -8,7 +8,7 @@
     <macos_ChromeRevision>1681091</macos_ChromeRevision>
     <macos_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Mac_Arm/1681095</macos_ChromeBaseSnapshotUrl>
     <macos_V8Version>15.3.76</macos_V8Version>
-    <win_ChromeVersion>153.0.8010.12</win_ChromeVersion>
+    <win_ChromeVersion>153.0.8010.27</win_ChromeVersion>
     <win_ChromeRevision>1681091</win_ChromeRevision>
     <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1681099</win_ChromeBaseSnapshotUrl>
     <win_V8Version>15.3.76</win_V8Version>
