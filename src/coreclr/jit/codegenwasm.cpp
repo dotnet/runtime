@@ -187,6 +187,14 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
+
+        // Ensure the resume IP is initialized to a non-resuming value.
+        if ((m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX) && (m_compiler->lvaWasmResumeIP != BAD_VAR_NUM))
+        {
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_4BYTE, 0);
+            GetEmitter()->emitIns_S(ins_Store(TYP_INT), EA_4BYTE, m_compiler->lvaWasmResumeIP, 0);
+        }
     }
 }
 
