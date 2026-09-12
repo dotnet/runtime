@@ -1,0 +1,20 @@
+<Project>
+  <!-- In-tree only: override ResolveReadyToRunCompilers to use the in-build crossgen2.
+       Imported after the SDK targets so it wins. -->
+  <Target Name="ResolveReadyToRunCompilers"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          DependsOnTargets="$(ResolveReadyToRunCompilersDependsOn)">
+    <PropertyGroup>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(Crossgen2Path)')"
+           Text="The in-build crossgen2 was not found at '$(Crossgen2Path)'. Build clr.aot for wasi first." />
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="$(TargetOS)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,47 @@
+<Project>
+  <PropertyGroup>
+    <_WasiR2RToolOS Condition="'$(HostOS)' == 'linux'">linux</_WasiR2RToolOS>
+    <_WasiR2RToolOS Condition="'$(HostOS)' == 'osx'">macos</_WasiR2RToolOS>
+    <_WasiR2RToolArch Condition="'$(BuildArchitecture)' == 'x64'">x86_64</_WasiR2RToolArch>
+    <_WasiR2RToolArch Condition="'$(BuildArchitecture)' == 'arm64'">aarch64</_WasiR2RToolArch>
+    <_BinaryenArch>$(_WasiR2RToolArch)</_BinaryenArch>
+    <_BinaryenArch Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">arm64</_BinaryenArch>
+    <_BinaryenArchiveName>binaryen-version_$(BinaryenVersion)-$(_BinaryenArch)-$(_WasiR2RToolOS)</_BinaryenArchiveName>
+    <_WasmToolsArchiveName>wasm-tools-$(WasmToolsVersion)-$(_WasiR2RToolArch)-$(_WasiR2RToolOS)</_WasmToolsArchiveName>
+  </PropertyGroup>
+
+  <!-- The splice runs on the test host, not on the wasm target. Use the same
+       version/host-keyed cache and atomic acquisition as wasi-sdk and wasmtime. -->
+  <Target Name="ProvisionWasiR2RTools">
+    <Error Condition="'$(_WasiR2RToolOS)' == '' or '$(_WasiR2RToolArch)' == ''"
+           Text="WASI R2R tool provisioning requires a Linux or macOS x64/arm64 host, not $(WasmToolHostRid)." />
+
+    <MSBuild Projects="$(RepositoryEngineeringDir)wasm\AcquireWasmTool.proj"
+             Targets="AcquireWasmTool"
+             Properties="WasmToolName=Binaryen $(BinaryenVersion);
+                         WasmToolUrl=https://github.com/WebAssembly/binaryen/releases/download/version_$(BinaryenVersion)/$(_BinaryenArchiveName).tar.gz;
+                         WasmToolKind=targz;
+                         WasmToolInnerDir=binaryen-version_$(BinaryenVersion);
+                         WasmToolCacheEntryDir=$(BinaryenCacheDir);
+                         WasmToolStampFile=$(BinaryenStampFile);
+                         WasmToolVerify=$(BinaryenCacheDir)bin/wasm-merge;
+                         WasmToolChmod=$(BinaryenCacheDir)bin/wasm-merge;
+                         WasmToolDownloadDir=$(WasmToolDownloadDir);
+                         HostOS=$(HostOS)" />
+    <Error Condition="!Exists('$(BinaryenCacheDir)bin/wasm-opt')"
+           Text="The Binaryen $(BinaryenVersion) cache entry is missing wasm-opt: $(BinaryenCacheDir)" />
+
+    <MSBuild Projects="$(RepositoryEngineeringDir)wasm\AcquireWasmTool.proj"
+             Targets="AcquireWasmTool"
+             Properties="WasmToolName=wasm-tools $(WasmToolsVersion);
+                         WasmToolUrl=https://github.com/bytecodealliance/wasm-tools/releases/download/v$(WasmToolsVersion)/$(_WasmToolsArchiveName).tar.gz;
+                         WasmToolKind=targz;
+                         WasmToolInnerDir=$(_WasmToolsArchiveName);
+                         WasmToolCacheEntryDir=$(WasmToolsCacheDir);
+                         WasmToolStampFile=$(WasmToolsStampFile);
+                         WasmToolVerify=$(WasmToolsCacheDir)wasm-tools;
+                         WasmToolChmod=$(WasmToolsCacheDir)wasm-tools;
+                         WasmToolDownloadDir=$(WasmToolDownloadDir);
+                         HostOS=$(HostOS)" />
+  </Target>
+</Project>

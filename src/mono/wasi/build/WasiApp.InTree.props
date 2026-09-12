@@ -8,11 +8,21 @@
        WasiApp.CoreCLR.targets). -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <UseMonoRuntime>false</UseMonoRuntime>
+    <WasiCoreCLRHostNativeDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'wasi-wasm.$(Configuration)', 'sharedFramework'))</WasiCoreCLRHostNativeDir>
+    <WasiCoreCLRNativeRuntimeDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', 'wasi.wasm.$(Configuration)', 'sharedFramework'))</WasiCoreCLRNativeRuntimeDir>
+    <WasiCoreCLRSystemPrivateCoreLibPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', 'wasi.wasm.$(Configuration)', 'IL', 'System.Private.CoreLib.dll'))</WasiCoreCLRSystemPrivateCoreLibPath>
+    <WasiR2RComposeToolPath>$(MSBuildThisFileDirectory)compose-r2r.py</WasiR2RComposeToolPath>
     <!-- Full ICU globalization: the wasihost corehost preloads icudt.dat (see
          src/native/corehost/wasihost / WasiApp.CoreCLR.targets), so the leg no longer needs
          invariant mode. -->
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <!-- Import the in-build crossgen2 targets after the SDK, then override compiler resolution
+         with the direct in-build layout. -->
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets Condition="Exists('$(MSBuildThisFileDirectory)WasiApp.ReadyToRun.targets')">$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)WasiApp.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
+  <Import Project="$(Crossgen2SdkOverridePropsPath)"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
     <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>

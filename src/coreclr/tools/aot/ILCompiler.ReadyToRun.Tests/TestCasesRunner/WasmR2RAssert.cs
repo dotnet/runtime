@@ -65,13 +65,13 @@ internal static class WasmR2RAssert
         Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(reader);
         (string Name, WasmImportKind Kind, uint Index)[] expectedImports =
         [
-            ("stackPointer", WasmImportKind.Global, 0),
-            ("imageBase", WasmImportKind.Global, 1),
-            ("tableBase", WasmImportKind.Global, 2),
-            ("asyncContinuation", WasmImportKind.Global, 3),
-            ("table", WasmImportKind.Table, 0),
+            ("__stack_pointer", WasmImportKind.Global, 0),
+            ("__memory_base", WasmImportKind.Global, 1),
+            ("__table_base", WasmImportKind.Global, 2),
+            ("__async_continuation", WasmImportKind.Global, 3),
+            ("__indirect_function_table", WasmImportKind.Table, 0),
             ("memory", WasmImportKind.Memory, 0),
-            ("rtlRestoreContextTag", WasmImportKind.Tag, 0),
+            ("__coreclr_wasm_rtlrestorecontext_tag", WasmImportKind.Tag, 0),
         ];
 
         var failures = new List<string>();
@@ -123,6 +123,102 @@ internal static class WasmR2RAssert
             ? "WASM imports, definitions, exports, names, and instruction references use the expected per-kind indices."
             : string.Join(Environment.NewLine, failures);
         return failures.Count == 0;
+    }
+
+    /// <summary>
+    /// Verifies that a code-carrying Webcil module installs its payload and function table through
+    /// active segments at the imported image and table base globals.
+    /// </summary>
+    public static bool WasmSelfInstallingSegmentsHaveExpectedModes(WebcilImageReader reader, out string diagnostic)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        var failures = new List<string>();
+
+        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Data, out int dataOffset, out int dataEnd))
+        {
+            failures.Add("WASM image does not contain a data section.");
+        }
+        else
+        {
+            uint dataSegmentCount = ReadWasmUleb32(image, ref dataOffset, dataEnd);
+            if (dataSegmentCount != 2)
+            {
+                failures.Add($"WASM data section contains {dataSegmentCount} segments; expected 2.");
+            }
+            else
+            {
+                uint countSegmentMode = ReadWasmUleb32(image, ref dataOffset, dataEnd);
+                if (countSegmentMode != 1)
+                    failures.Add($"The webcilCount data segment has mode {countSegmentMode}; expected passive mode 1.");
+
+                uint countSegmentSize = ReadWasmUleb32(image, ref dataOffset, dataEnd);
+                if (countSegmentSize > dataEnd - dataOffset)
+                    throw new BadImageFormatException("The webcilCount data segment extends beyond the data section.");
+                dataOffset += (int)countSegmentSize;
+
+                uint payloadSegmentMode = ReadWasmUleb32(image, ref dataOffset, dataEnd);
+                if (payloadSegmentMode != 0)
+                {
+                    failures.Add($"The webcilPayload data segment has mode {payloadSegmentMode}; expected active mode 0.");
+                }
+                else
+                {
+                    CheckGlobalGetOffsetExpression(image, ref dataOffset, dataEnd, expectedGlobalIndex: 1, "webcilPayload", failures);
+                }
+            }
+        }
+
+        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Element, out int elementOffset, out int elementEnd))
+        {
+            failures.Add("WASM image does not contain an element section.");
+        }
+        else
+        {
+            uint elementSegmentCount = ReadWasmUleb32(image, ref elementOffset, elementEnd);
+            if (elementSegmentCount != 1)
+            {
+                failures.Add($"WASM element section contains {elementSegmentCount} segments; expected 1.");
+            }
+            else
+            {
+                uint elementSegmentMode = ReadWasmUleb32(image, ref elementOffset, elementEnd);
+                if (elementSegmentMode != 0)
+                {
+                    failures.Add($"The function-table element segment has mode {elementSegmentMode}; expected active mode 0.");
+                }
+                else
+                {
+                    CheckGlobalGetOffsetExpression(image, ref elementOffset, elementEnd, expectedGlobalIndex: 2, "function-table", failures);
+                }
+            }
+        }
+
+        diagnostic = failures.Count == 0
+            ? "WASM payload and function-table segments use the expected self-installing modes."
+            : string.Join(Environment.NewLine, failures);
+        return failures.Count == 0;
+    }
+
+    private static void CheckGlobalGetOffsetExpression(
+        ReadOnlySpan<byte> image,
+        ref int offset,
+        int end,
+        uint expectedGlobalIndex,
+        string segmentName,
+        List<string> failures)
+    {
+        const byte GlobalGetOpcode = 0x23;
+        const byte EndOpcode = 0x0B;
+
+        byte opcode = ReadWasmByte(image, ref offset, end);
+        uint globalIndex = ReadWasmUleb32(image, ref offset, end);
+        byte endOpcode = ReadWasmByte(image, ref offset, end);
+        if (opcode != GlobalGetOpcode || globalIndex != expectedGlobalIndex || endOpcode != EndOpcode)
+        {
+            failures.Add(
+                $"The {segmentName} segment offset was opcode 0x{opcode:X2}, global {globalIndex}, " +
+                $"end 0x{endOpcode:X2}; expected global.get {expectedGlobalIndex}, end.");
+        }
     }
 
     private static uint CountWasmImports(
@@ -578,6 +674,7 @@ internal static class WasmR2RAssert
         Global = 6,
         Export = 7,
         Element = 9,
+        Data = 11,
         Tag = 13,
     }
 

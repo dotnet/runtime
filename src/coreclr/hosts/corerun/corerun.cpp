@@ -308,6 +308,10 @@ static char* s_core_root_path = nullptr;
 extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 #endif // TARGET_BROWSER
 
+// WASI R2R external-assembly probe, shared with the wasihost corehost (libWasiHost.a)
+// so both hosts serve R2R identically. See wasi_r2r_probe.hpp.
+#include "wasi_r2r_probe.hpp"
+
 static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
     const host_runtime_contract_native_code_context* context,
     host_runtime_contract_native_code_data* data)
@@ -375,6 +379,14 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     const char* pos = strrchr(name, '/');
     if (pos != NULL)
         name = pos + 1;
+
+#ifdef TARGET_WASI
+    {
+        const char* const r2r_dirs[] = { s_core_libs_path, s_core_root_path };
+        if (wasi_r2r::WasiStaticR2RProbe(name, r2r_dirs, 2, data_start, size))
+            return true;
+    }
+#endif // TARGET_WASI
 
     // Try to map the file from our known app assembly paths
     for (const char* dir : { s_core_libs_path, s_core_root_path })

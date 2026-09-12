@@ -69,12 +69,14 @@
   <!-- WASI: ensure wasmtime is provisioned into $(WasmtimeDir) before the
        correlation payload gets copied for the Helix send job. -->
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-r2r-provisioning.targets" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'" />
 
   <PropertyGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
     <!-- Helix writes a .payload marker into the correlation-payload source
          directory; $(WasmtimeDir) isn't writable, so stage a copy first
          (matches sendtohelix-wasi.targets). -->
     <WasmtimeDirForHelixPayload>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'helix-staging', 'wasmtime'))</WasmtimeDirForHelixPayload>
+    <WasiR2RToolsDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'helix-staging', 'wasi-r2r-tools', '$(BinaryenVersion)-$(WasmToolsVersion)-$(WasmToolHostRid)'))</WasiR2RToolsDirForHelixPayload>
   </PropertyGroup>
 
   <!-- Stage $(WasmtimeDir) -> $(WasmtimeDirForHelixPayload) before the
@@ -96,6 +98,29 @@
           SkipUnchangedFiles="true" />
     <Touch Files="$(WasmtimeDirForHelixPayload).staged-$([System.IO.Path]::GetFileName('$(WasmtimeStampFile)'))" AlwaysCreate="true" />
   </Target>
+
+  <!-- PrepareCorrelationPayloadDirectory runs with the inner RunCrossGen2 property
+       before scenarios are dispatched in parallel. CoreTest also covers direct sends.
+       Keep staging version-keyed: Helix writes markers into these writable copies. -->
+  <Target Name="StageWasiR2RToolsForHelixPayload"
+          Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and '$(RunCrossGen2)' == 'true'"
+          BeforeTargets="PrepareCorrelationPayloadDirectory;CoreTest"
+          DependsOnTargets="ProvisionWasiR2RTools"
+          Inputs="$(BinaryenStampFile);$(WasmToolsStampFile)"
+          Outputs="$(WasiR2RToolsDirForHelixPayload).staged">
+    <ItemGroup>
+      <_BinaryenFilesToStage Include="$(BinaryenCacheDir)**\*" />
+      <_WasmToolsFilesToStage Include="$(WasmToolsCacheDir)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_BinaryenFilesToStage)"
+          DestinationFiles="@(_BinaryenFilesToStage->'$(WasiR2RToolsDirForHelixPayload)binaryen/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WasmToolsFilesToStage)"
+          DestinationFiles="@(_WasmToolsFilesToStage->'$(WasiR2RToolsDirForHelixPayload)wasm-tools/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <Touch Files="$(WasiR2RToolsDirForHelixPayload).staged" AlwaysCreate="true" />
+  </Target>
+
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
@@ -705,6 +730,7 @@
     <HelixPreCommand Include="export RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="export RunWithNodeJS=1" Condition=" '$(TargetsBrowserOnCoreCLR)' == 'true' " />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" Condition=" '$(TargetsWasiOnCoreCLR)' == 'true' " />
+    <HelixPreCommand Include="export PATH=&quot;$HELIX_CORRELATION_PAYLOAD/wasi-r2r-tools/binaryen/bin:$HELIX_CORRELATION_PAYLOAD/wasi-r2r-tools/wasm-tools:$PATH&quot;" Condition="'$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true'" />
     <HelixPreCommand Include="export HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
     <HelixPreCommand Include="export LargeVersionBubble=1" Condition=" '$(LargeVersionBubble)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -771,6 +797,7 @@
          Uses the staged copy (see WasmtimeDirForHelixPayload) rather
          than $(WasmtimeDir) directly, matching sendtohelix-wasi.targets. -->
     <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(TargetsWasiOnCoreCLR)' == 'true'" />
+    <HelixCorrelationPayload Include="$(WasiR2RToolsDirForHelixPayload)" Destination="wasi-r2r-tools" Condition="'$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true'" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
     <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowserOnMono)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
