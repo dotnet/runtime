@@ -5996,12 +5996,6 @@ BOOL PInvoke::TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD)
     if (!pNMD->PInvokeTargetIsImportThunk())
         return TRUE;
 
-    if (pNMD->IsEarlyBound())
-    {
-        pNMD->InitEarlyBoundPInvokeTarget();
-        return TRUE;
-    }
-
     return TryResolvePInvokeTargetFromOverride(pNMD);
 }
 #endif // TARGET_WASM
