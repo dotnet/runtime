@@ -63,6 +63,8 @@ namespace ILCompiler.DependencyAnalysis
                                                        // e.g. in R2R scenarios as an offset from $imageBase
         WASM_TABLE_INDEX_REL_I32   = 0x20A,  // Wasm: a table index encoded as a 4-byte uint32 relative to the tableBase of the R2R image
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB = 0x20B, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
+        WASM_FUNCTION_COUNT_SLEB = 0x1003, // Wasm: For webcil only, the total count of functions emitted that should be copied via the fillWebcilTable exported method
+
 
         //
         // Relocation operators related to TLS access
@@ -680,6 +682,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
+                case RelocType.WASM_FUNCTION_COUNT_SLEB:
                     DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
                 case RelocType.WASM_TABLE_INDEX_I32:
@@ -713,6 +716,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
+                case RelocType.WASM_FUNCTION_COUNT_SLEB:
                     DwarfHelper.WriteSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return (int)DwarfHelper.SizeOfSLEB128(value);
                 default:
@@ -762,6 +766,7 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_TABLE_INDEX_I32 => 4,
                 RelocType.WASM_TABLE_INDEX_REL_I32 => 4,
                 RelocType.WASM_TABLE_INDEX_I64 => 8,
+                RelocType.WASM_FUNCTION_COUNT_SLEB => WASM_PADDED_RELOC_SIZE_32,
 
                 _ => throw new NotSupportedException(),
             };
@@ -780,6 +785,7 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_MEMORY_ADDR_REL_LEB or
                 RelocType.WASM_MEMORY_ADDR_REL_SLEB or
                 RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => true,
+                RelocType.WASM_FUNCTION_COUNT_SLEB => true,
                 _ => false,
             };
         }
@@ -799,6 +805,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
+                case RelocType.WASM_FUNCTION_COUNT_SLEB:
                     return (int)DwarfHelper.SizeOfSLEB128(resolvedValue);
                 default:
                     Debug.Fail("Invalid reloc type");
@@ -863,6 +870,7 @@ namespace ILCompiler.DependencyAnalysis
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
                 case RelocType.WASM_TYPE_INDEX_LEB:
+                    return (long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets
                     return 0;
@@ -874,6 +882,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
+                case RelocType.WASM_FUNCTION_COUNT_SLEB:
                     return DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
                 case RelocType.WASM_TABLE_INDEX_I32:
                 case RelocType.WASM_TABLE_INDEX_REL_I32:
