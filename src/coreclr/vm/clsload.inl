@@ -61,8 +61,8 @@ inline PTR_Module ClassLoader::ComputeLoaderModuleForParamType(TypeHandle paramT
 inline void AccessCheckOptions::Initialize(
     AccessCheckType      accessCheckType,
     BOOL                 throwIfTargetIsInaccessible,
-    MethodTable *        pTargetMT,
-    MethodDesc *         pTargetMethod,
+    TargetTypeForAccessCheck* pTargetType,
+    TargetMethodForAccessCheck* pTargetMethod,
     FieldDesc *          pTargetField)
 {
     CONTRACTL
@@ -75,16 +75,13 @@ inline void AccessCheckOptions::Initialize(
         //   2. we are not going to throw an exception if the accessibility check fails
         PRECONDITION(accessCheckType == kNormalAccessibilityChecks ||
                      !throwIfTargetIsInaccessible ||
-                     ((pTargetMT ? 1 : 0) + (pTargetMethod ? 1 : 0) + (pTargetField ? 1 : 0)) == 1);
-        // m_pAccessContext can only be set for kRestrictedMemberAccess
-        PRECONDITION(m_pAccessContext == NULL ||
-                     accessCheckType == AccessCheckOptions::kRestrictedMemberAccess);
+                     ((pTargetType ? 1 : 0) + (pTargetMethod ? 1 : 0) + (pTargetField ? 1 : 0)) == 1);
     }
     CONTRACTL_END;
 
     m_accessCheckType = accessCheckType;
     m_fThrowIfTargetIsInaccessible = throwIfTargetIsInaccessible;
-    m_pTargetMT = pTargetMT;
+    m_pTargetType = pTargetType;
     m_pTargetMethod = pTargetMethod;
     m_pTargetField = pTargetField;
 }
@@ -93,27 +90,23 @@ inline void AccessCheckOptions::Initialize(
 
 inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
-    DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    MethodTable *        pTargetMT) :
-    m_pAccessContext(pAccessContext)
+    TargetTypeForAccessCheck * pTargetType)
 {
     WRAPPER_NO_CONTRACT;
 
     Initialize(
         accessCheckType,
         throwIfTargetIsInaccessible,
-        pTargetMT,
+        pTargetType,
         NULL,
         NULL);
 }
 
 inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
-    DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    MethodDesc *         pTargetMethod) :
-    m_pAccessContext(pAccessContext)
+    TargetMethodForAccessCheck* pTargetMethod)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -127,10 +120,8 @@ inline AccessCheckOptions::AccessCheckOptions(
 
 inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
-    DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    FieldDesc *          pTargetField) :
-    m_pAccessContext(pAccessContext)
+    FieldDesc *          pTargetField)
 {
     WRAPPER_NO_CONTRACT;
 
