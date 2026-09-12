@@ -130,12 +130,9 @@ namespace System.Formats.Tar.Tests
 
             foreach ((long size, long[] layout) in layouts)
             {
-                foreach (bool copyData in new[] { false, true })
+                foreach (object[] booleans in GetTwoBooleansData())
                 {
-                    foreach (bool useAsync in new[] { false, true })
-                    {
-                        yield return new object[] { size, layout, copyData, useAsync };
-                    }
+                    yield return new object[] { size, layout, (bool)booleans[0], (bool)booleans[1] };
                 }
             }
         }
