@@ -89,7 +89,7 @@ namespace System.Configuration
                 throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
-            if (name.Contains('/'))
+            if (name.Contains('/') && BaseGet(name) is null)
                 return null;
 
             // get the section group
