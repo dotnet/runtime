@@ -87,6 +87,7 @@ namespace System.Net.Security
             int trailerSize)
         {
             ProtocolToken token = default;
+            token.RentBuffer = true;
             Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
 
             try
@@ -218,6 +219,7 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             ProtocolToken token = default;
+            token.RentBuffer = true;
             consumed = 0;
 
             try
