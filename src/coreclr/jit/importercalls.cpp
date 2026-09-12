@@ -639,6 +639,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                 }
 
+                if (callInfo->thisTransform != CORINFO_NO_THIS_TRANSFORM)
+                {
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                                   "LDVIRTFTN constrained call requires transforming 'this'"));
+                }
+
                 impPopCallArgs(sig, call->AsCall());
 
                 if (call->AsCall()->IsAsync())
@@ -1034,17 +1040,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // The main group of arguments, and the this pointer.
 
     // 'this' is pushed on the IL stack before all call args, but if this is a
-    // constrained call 'this' is a byref that may need to be dereferenced.
-    // That dereference should happen _after_ all args, so we need to spill
-    // them if they can interfere.
+    // constrained call 'this' is a byref that may need to be dereferenced or
+    // boxed. That transformation should happen _after_ all args, so we need
+    // to spill them if they can interfere.
     bool hasThis;
     hasThis = ((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
               ((opcode != CEE_NEWOBJ) || (newobjThis != nullptr));
 
-    if (hasThis && (constraintCallThisTransform == CORINFO_DEREF_THIS))
+    if (hasThis && (constraintCallThisTransform != CORINFO_NO_THIS_TRANSFORM))
     {
         impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
-                                       "constrained call requires dereference for 'this' right before call"));
+                                       "constrained call requires transforming 'this' right before call"));
     }
 
     impPopCallArgs(sig, call->AsCall());
