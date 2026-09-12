@@ -2861,6 +2861,8 @@ public:
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
 
+    virtual HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo) = 0;
+
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
@@ -3599,6 +3601,8 @@ public:
     // Get the DAC interface.
     IDacDbiInterface * GetDAC();
 
+    HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
+
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
 
@@ -3967,7 +3971,7 @@ public:
     PRD_TYPE             *m_rgUncommittedOpcode;
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
-#if defined(TARGET_64BIT)
+#if defined(HOST_64BIT)
 #define MAX_ADDRESS     (UINT64_MAX)
 #else
 #define MAX_ADDRESS     (UINT32_MAX)
@@ -4093,6 +4097,9 @@ private:
     IDacDbiInterface *  m_pDacPrimitives;
     // Keeps the native fallback DAC alive until the managed cDAC has been released.
     IUnknown *           m_pLegacyDac;
+
+    IDacDbiInterface::TargetInfo m_cachedTargetInfo;
+    bool                m_fHasCachedTargetInfo;
 
     IEventChannel *     m_pEventChannel;
 
@@ -4778,11 +4785,9 @@ public:
     // Is this type a GC-root.
     bool IsGCRoot();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
     // checks if the type requires 8-byte alignment.
     // this is not exposed via ICorDebug at present.
     HRESULT RequiresAlign8(BOOL* isRequired);
-#endif
 
     //-----------------------------------------------------------
     // Data members
@@ -9028,7 +9033,7 @@ public:
     // an array or string
     static
     void GetObjectData(CordbProcess *            pProcess,
-                       void *                    objectAddress,
+                       CORDB_ADDRESS             objectAddress,
                        CorElementType            type,
                        VMPTR_AppDomain           vmAppdomain,
                        DacDbiObjectData * pInfo);
@@ -9042,7 +9047,7 @@ public:
                            DacDbiObjectData * pInfo);
 
     //  get the address of the object referenced
-    void * GetObjectAddress(MemoryRange localValue);
+    CORDB_ADDRESS GetObjectAddress(MemoryRange localValue);
 
     // update type information after initializing -- when we initialize, we may get more exact type
     // information than we previously had
@@ -10502,7 +10507,7 @@ public:
         return (DWORD) this->m_id;
     }
 
-#ifdef TARGET_X86
+#ifdef HOST_X86
     // Stores the thread's current leaf SEH handler
     HRESULT SaveCurrentLeafSeh();
     // Restores the thread's leaf SEH handler from the previously saved value
@@ -10550,7 +10555,7 @@ private:
     ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
 
 
-#ifdef TARGET_X86
+#ifdef HOST_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
 #endif
@@ -11392,17 +11397,13 @@ inline void ValidateOrThrow(const void * p)
 // aligns argBase on platforms that require it else it's a no-op
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
-#ifdef TARGET_ARM
-// TODO: review the following
 #ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
     HRESULT hr = pArgType->RequiresAlign8(&align);
-    _ASSERTE(SUCCEEDED(hr));
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
-#endif // FEATURE_64BIT_ALIGNMENT
-#endif // TARGET_ARM
+#endif
 }
 
 //-----------------------------------------------------------------------------

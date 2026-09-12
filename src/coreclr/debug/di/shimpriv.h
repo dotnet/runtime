@@ -20,6 +20,7 @@
 // Forward declarations
 class CordbWin32EventThread;
 class Cordb;
+struct IDacDbiInterface;
 
 class ShimStackWalk;
 class ShimChain;

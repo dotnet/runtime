@@ -5099,55 +5099,6 @@ ClrDataAccess::Initialize(void)
     HRESULT hr;
     CLRDATA_ADDRESS base = { 0 };
 
-    //
-    // We do not currently support cross-platform
-    // debugging.  Verify that cross-platform is not
-    // being attempted.
-    //
-
-    // Determine our platform based on the pre-processor macros set when we were built
-
-#ifdef TARGET_UNIX
-    #if defined(TARGET_X86)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_X86;
-    #elif defined(TARGET_AMD64)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_AMD64;
-    #elif defined(TARGET_ARM)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
-    #elif defined(TARGET_ARM64)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM64;
-    #elif defined(TARGET_LOONGARCH64)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
-    #elif defined(TARGET_RISCV64)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_RISCV64;
-    #else
-        #error Unknown Processor.
-    #endif
-#else
-    #if defined(TARGET_X86)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_X86;
-    #elif defined(TARGET_AMD64)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
-    #elif defined(TARGET_ARM)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-    #elif defined(TARGET_ARM64)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
-    #else
-        #error Unknown Processor.
-    #endif
-#endif
-
-    CorDebugPlatform targetPlatform;
-    IfFailRet(m_pTarget->GetPlatform(&targetPlatform));
-
-    if (targetPlatform != hostPlatform)
-    {
-        // DAC fatal error: Platform mismatch - the platform reported by the data target
-        // is not what this version of mscordacwks.dll was built for.
-        return CORDBG_E_INCOMPATIBLE_PLATFORMS;
-    }
-
-    //
     // Get the current DLL base for mscorwks globals.
     // In case of multiple-CLRs, there may be multiple dlls named "mscorwks".
     // code:OpenVirtualProcess can take the base address (clrInstanceId) to select exactly
