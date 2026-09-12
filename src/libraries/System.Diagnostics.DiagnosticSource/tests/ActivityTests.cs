@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -231,6 +232,69 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Key, Key + i);
                 Assert.Equal(tags[i].Value, Value + i);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void ConcurrentTagAddsPreserveAllValues()
+        {
+            const int Count = 1_000;
+            Activity activity = new Activity("activity");
+
+            Parallel.For(0, Count, i => activity.AddTag(i.ToString(CultureInfo.InvariantCulture), i));
+
+            KeyValuePair<string, object?>[] tags = activity.TagObjects.ToArray();
+            Assert.Equal(Count, tags.Length);
+            Assert.Equal(Count, tags.Select(tag => tag.Key).Distinct().Count());
+            foreach (KeyValuePair<string, object?> tag in tags)
+            {
+                Assert.Equal(int.Parse(tag.Key, CultureInfo.InvariantCulture), tag.Value);
+            }
+        }
+
+        [Fact]
+        public void TagsLinkedListClearsLastRemovedValue()
+        {
+            object value = new object();
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", value));
+
+            MethodInfo remove = Assert.IsAssignableFrom<MethodInfo>(tags.GetType().GetMethod("Remove"));
+            PropertyInfo first = Assert.IsAssignableFrom<PropertyInfo>(tags.GetType().GetProperty("First"));
+            FieldInfo storedValue = Assert.IsAssignableFrom<FieldInfo>(tags.GetType().GetField("Value"));
+            remove.Invoke(tags, new object[] { "key" });
+
+            Assert.Null(first.GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)storedValue.GetValue(tags));
+        }
+
+        [Fact]
+        public void TagsLinkedListDoesNotRetainIgnoredSetValue()
+        {
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", null), set: true);
+            PropertyInfo first = Assert.IsAssignableFrom<PropertyInfo>(tags.GetType().GetProperty("First"));
+            FieldInfo storedValue = Assert.IsAssignableFrom<FieldInfo>(tags.GetType().GetField("Value"));
+
+            Assert.Null(first.GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)storedValue.GetValue(tags));
+        }
+
+        [Fact]
+        public void TagsLinkedListToStringFormatsValues()
+        {
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("string", "value"));
+            MethodInfo add = Assert.IsAssignableFrom<MethodInfo>(tags.GetType().GetMethod("Add", new Type[] { typeof(KeyValuePair<string, object>) }));
+            add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("object", 42) });
+            add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("null", null) });
+
+            Assert.Equal("string:value, object:42, null:", tags.ToString());
+        }
+
+        private static object CreateTagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false)
+        {
+            Type? tagsType = typeof(Activity).GetNestedType("TagsLinkedList", BindingFlags.NonPublic);
+            Assert.NotNull(tagsType);
+            object? tags = Activator.CreateInstance(tagsType, new object[] { firstValue, set });
+            Assert.NotNull(tags);
+            return tags;
         }
 
         /// <summary>
