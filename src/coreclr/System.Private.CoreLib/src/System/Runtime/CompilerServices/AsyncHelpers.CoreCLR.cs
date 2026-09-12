@@ -365,7 +365,6 @@ namespace System.Runtime.CompilerServices
 #endif
 
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void Suspend(Task task, ConfigureAwaitOptions options)
         {
@@ -401,7 +400,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T Suspend<T>(Task<T> task, ConfigureAwaitOptions options)
         {
@@ -448,7 +446,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="valueTask">ValueTask whose completion we are awaiting.</param>
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentSuspend(ValueTask valueTask)
         {
@@ -498,7 +495,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void Suspend(IValueTaskSource source, short token, bool continueOnCapturedContext)
         {
@@ -536,7 +532,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentSuspend<T>(ValueTask<T> valueTask)
         {
@@ -586,7 +581,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T Suspend<T>(IValueTaskSource<T> source, short token, bool continueOnCapturedContext)
         {
@@ -629,7 +623,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="task">Task whose completion we are awaiting.</param>
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentSuspend(Task task)
         {
@@ -660,7 +653,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="task">Task whose completion we are awaiting.</param>
         [Intrinsic]
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentSuspend<T>(Task<T> task)
         {
