@@ -24,7 +24,7 @@ environment:
         - --env
         - GITHUB_READ_ONLY=1
         - --env
-        - GITHUB_TOOLSETS=pull_requests,repos,issues,search
+        - GITHUB_TOOLSETS=pull_requests,repos,issues
         - ghcr.io/github/github-mcp-server:v1.5.0@sha256:e25564dccc9110a70a77b9df560cbde11aa392fcb5f08b9abe5c4ebc6d146ea4
 
 stimuli:
@@ -35,6 +35,8 @@ stimuli:
           dest: .github/workflows/ci-failure-scan.md
         - src: ../shared/create-kbe.instructions.md
           dest: .github/workflows/shared/create-kbe.instructions.md
+        - src: search-kbe-issues.cjs
+          dest: .github/workflows/evals/search-kbe-issues.cjs
     constraints:
       max_tokens: 500000
       max_turns: 100
@@ -48,7 +50,7 @@ stimuli:
       1. Find a recent failed build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API. It is anonymous and needs no auth, so stay on `_apis/build/...`. Start with `runtime-extra-platforms`, which is definition 154, and fall back to other outer-loop defs if needed.
          `curl -fsSL "https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=failed&\$top=5&api-version=7.1"`
       2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count.
-      3. Before filing, check whether an equivalent KBE already exists so you would not duplicate it. Run `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open` and also search by your signature text. Assume you would file only if none matches.
+      3. Before filing, check whether an equivalent KBE already exists so you would not duplicate it. The eval runner does not launch workflow-frontmatter MCP servers, so invoke its CLI harness for the workflow's `search-kbe-issues` wrapper with `node .github/workflows/evals/search-kbe-issues.cjs '<query>'` for `in:title "[ci-scan]"` and for your signature text. For every candidate returned by either query, call the GitHub `issue_read` tool with `owner: dotnet`, `repo: runtime`, and `method: get` before deciding whether it matches. Do not use any other shell issue search or the built-in `search_issues` tool. Assume you would file only if every readable candidate is unrelated; fail closed if a candidate cannot be read.
 
       Then **emit the create-issue safe-output you would file, as a single markdown document at `./out/kbe.md`**, in exactly this shape.
 
@@ -62,6 +64,8 @@ stimuli:
     rubric:
       - |
        The emitted `./out/kbe.md` conforms to the static Known Build Error format. It has a `[ci-scan] ` title naming exactly one failure shape with no run-specific IDs, the `Known Build Error` label plus exactly one of `blocking-clean-ci` or `blocking-clean-ci-optional`, the three body sections, a collapsed `KBE authoring guidance (ci-failure-scan)` block, and exactly one fenced json block with all four keys where exactly one of ErrorMessage or ErrorPattern is a non-empty specific substring rather than a bare identifier and the other is `""`. The Build Information section cites a concrete real build id. After the JSON, it has a collapsed `Agentic workflow metadata (ci-failure-scan)` block identifying the `kbe-verification` artifact and a positive verified match count.
+      - |
+       The trajectory invokes only the `search-kbe-issues` CLI harness for issue searches, parses every candidate returned by both required queries, and successfully calls `issue_read` for every returned issue number before deciding that no candidate matches. If any candidate cannot be read, the run fails closed instead of emitting `./out/kbe.md`.
 
     graders:
       - type: file-matches
@@ -111,7 +115,15 @@ stimuli:
         config:
           required:
             - name: '^(bash|powershell)$'
-              command: 'gh (search|issue)'
+              command: '\.github/workflows/evals/search-kbe-issues\.cjs'
+              min_count: 2
+          disallowed:
+            - name: '^(bash|powershell)$'
+              command: '(gh (search|issue)|gh\s+api\s+search/issues|api\.github\.com/search/issues)'
+            - name: 'search_issues'
+
+      - type: kbe-candidate-reads
+        name: read-every-search-candidate
 
       - type: prompt
         name: kbe-format-conformant

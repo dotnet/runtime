@@ -26,10 +26,16 @@ for conformance, behavior, and constructiveness. Every grader must pass.
 The workflow preserves the eval specs and installs Vally from the trusted base
 branch before it checks out the PR head. This lets it evaluate PR changes to the
 workflow prompts without allowing the PR to weaken its graders or toolchain.
-Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
-`repos`, `issues`, and `search` toolsets. The `GITHUB_TOKEN` that the eval job
-supplies to that server has only the job's read permissions, allowing the
-scanner to use the `github` MCP server's `search_issues` tool.
+Each eval attaches a read-only GitHub MCP server with the toolsets its scenario
+needs. The `GITHUB_TOKEN` that the eval job supplies to that server has only the
+job's read permissions. The scanner eval omits the built-in `search` toolset and
+invokes a CLI harness for the workflow's `search-kbe-issues` MCP-script tool
+through Node because the eval runner does not launch workflow frontmatter MCP
+servers. It uses the `github` MCP server's `issue_read` tool for candidate
+inspection. A trusted static grader correlates every candidate returned by the
+harness with a successful, unfiltered `issue_read`. Focused Node tests keep the
+workflow-frontmatter and CLI wrapper behavior in sync and exercise the grader's
+candidate correlation.
 
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually
@@ -42,8 +48,9 @@ exist and scores workflow output against them, is deferred.
   title, exactly `Known Build Error` plus one blocking label, the three sections,
   collapsed authoring guidance, a single json signature, the collapsed
   workflow-owned positive match-count metadata, and no test-muting. They also check
-  `tool-calls` evidence that it actually fetched a real build and searched existing
-  KBEs.
+  `tool-calls` evidence that it actually fetched a real build, searched existing
+  KBEs through the wrapper, and inspected returned candidates through
+  `issue_read`.
 
 - **`ci-failure-fix`** has the agent find a real open `[ci-scan]` Known Build
   Error issue via `gh`, reason about it, and emit one safe-output at

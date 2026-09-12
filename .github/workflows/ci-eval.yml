@@ -231,7 +231,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Preserve the trusted eval specs
+      - name: Preserve the trusted eval inputs
         if: steps.guard.outputs.run == 'true'
         env:
           SPECS: ${{ steps.sel.outputs.specs }}
@@ -240,6 +240,18 @@ jobs:
           for spec in $SPECS; do
             cp "$spec" "$RUNNER_TEMP/trusted-evals/$(basename "$spec")"
           done
+          if test -f .github/workflows/evals/search-kbe-issues.cjs; then
+            cp .github/workflows/evals/search-kbe-issues.cjs \
+              "$RUNNER_TEMP/trusted-evals/search-kbe-issues.cjs"
+          fi
+          if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
+            cp .github/workflows/evals/kbe-candidate-reads-grader.mjs \
+              "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"
+          fi
+          if test -f .github/workflows/evals/kbe-search.test.mjs; then
+            cp .github/workflows/evals/kbe-search.test.mjs \
+              "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"
+          fi
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: steps.guard.outputs.run == 'true'
@@ -261,7 +273,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh pr checkout ${{ github.event.issue.number }}
 
-      - name: Restore the trusted eval specs
+      - name: Restore the trusted eval inputs
         if: steps.guard.outputs.run == 'true'
         env:
           SPECS: ${{ steps.sel.outputs.specs }}
@@ -270,14 +282,40 @@ jobs:
             rm -f -- "$spec"
             cp -- "$RUNNER_TEMP/trusted-evals/$(basename "$spec")" "$spec"
           done
+          rm -f -- .github/workflows/evals/search-kbe-issues.cjs
+          if test -f "$RUNNER_TEMP/trusted-evals/search-kbe-issues.cjs"; then
+            cp -- "$RUNNER_TEMP/trusted-evals/search-kbe-issues.cjs" \
+              .github/workflows/evals/search-kbe-issues.cjs
+          fi
+          rm -f -- .github/workflows/evals/kbe-candidate-reads-grader.mjs
+          if test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
+            cp -- "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs" \
+              .github/workflows/evals/kbe-candidate-reads-grader.mjs
+          fi
+          rm -f -- .github/workflows/evals/kbe-search.test.mjs
+          if test -f "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"; then
+            cp -- "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs" \
+              .github/workflows/evals/kbe-search.test.mjs
+          fi
+
+      - name: Test the KBE search support
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          if test -f .github/workflows/evals/kbe-search.test.mjs; then
+            node --test .github/workflows/evals/kbe-search.test.mjs
+          fi
 
       - name: Lint the selected spec(s)
         if: steps.guard.outputs.run == 'true'
         env:
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
+          grader_args=()
+          if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
+            grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
+          fi
           for spec in $SPECS; do
-            vally lint --eval-spec "$spec" --strict
+            vally lint --eval-spec "$spec" --strict "${grader_args[@]}"
           done
 
       - name: Run the eval(s)
@@ -308,11 +346,16 @@ jobs:
           report="$workdir/report.md"
           : > "$report"
           rc=0
+          grader_args=()
+          if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
+            grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
+          fi
           for spec in $SPECS; do
             name="$(basename "$spec" .eval.yaml)"
             echo "## $name" >> "$report"
             if vally eval --eval-spec "$spec" --skill-dir .github/workflows \
-                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" > "$workdir/log-$name.txt" 2>&1; then
+                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" \
+                 "${grader_args[@]}" > "$workdir/log-$name.txt" 2>&1; then
               echo "✅ passed" >> "$report"
             else
               rc=1
