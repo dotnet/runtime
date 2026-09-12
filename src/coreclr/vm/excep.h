@@ -160,7 +160,7 @@ LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
 #ifdef HOST_WINDOWS
 #include <generatedumpflags.h>
 void InitializeCrashDump();
-void CreateCrashDumpIfEnabled(bool stackoverflow = false);
+void CreateCrashDumpIfEnabled(EXCEPTION_POINTERS* pExceptionInfo = nullptr, bool stackoverflow = false);
 #endif
 bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMessageBuffer, INT cbErrorMessageBuffer);
 

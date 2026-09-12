@@ -74,7 +74,7 @@ void GetLastThrownObjectExceptionFromThread(Exception** ppException)
 }
 
 #ifdef HOST_WINDOWS
-void CreateCrashDumpIfEnabled(bool stackoverflow)
+void CreateCrashDumpIfEnabled(EXCEPTION_POINTERS* pExceptionInfo, bool stackoverflow)
 {
 }
 #endif
