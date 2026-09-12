@@ -15,12 +15,6 @@
     "language": "C#",
     "type": "project"
   },
-  "constraints": {
-    "sdk-version": {
-      "type": "sdk-version",
-      "args": "[11.0.100-0,)"
-    }
-  },
   "symbols": {
     "kestrelHttpPortGenerated": {
       "type": "generated",
