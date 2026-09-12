@@ -178,7 +178,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void EmitManagedTailCall(List<WasmExpr> expressions, ISymbolNode target)
         {
-            expressions.Add(I32.ConstRVA(target));
             expressions.Add(ControlFlow.ReturnCall(target));
         }
     }
