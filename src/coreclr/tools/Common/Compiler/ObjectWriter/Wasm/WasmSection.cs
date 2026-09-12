@@ -145,6 +145,14 @@ namespace ILCompiler.ObjectWriter
         protected virtual int EncodeCustomPayloadPrefix(Span<byte> destination) => 0;
     }
 
+    internal sealed class NamedWasmCustomSection : WasmCustomSection
+    {
+        public NamedWasmCustomSection(Stream stream, Utf8String customSectionName, int sectionIndex)
+            : base(stream, customSectionName, sectionIndex)
+        {
+        }
+    }
+
     internal sealed class PaddingWasmSection : IWasmSection
     {
         private const int MinimumSectionSize = 3;

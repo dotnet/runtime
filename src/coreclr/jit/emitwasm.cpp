@@ -120,13 +120,15 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //   imm         - immediate value (depth in control flow stack)
 //   targetBlock - block at that depth (may be null, in the case of jump table which doesn't target a real block)
 //
-void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
+void emitter::emitIns_J(
+    instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock, WasmBranchHint branchHint)
 {
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idSetWasmBranchHint(branchHint);
 
     if (m_debugInfoSize > 0 && targetBlock != nullptr)
     {
@@ -960,6 +962,40 @@ size_t emitter::emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype
     }
 }
 
+//------------------------------------------------------------------------
+// emitReportBranchHint: Report a branch hint for the current Wasm function.
+//
+// Arguments:
+//   ig                 - Instruction group containing the branch
+//   id                 - Branch instruction descriptor
+//   instructionAddress - Address of the encoded branch opcode
+//
+void emitter::emitReportBranchHint(insGroup* ig, const instrDesc* id, const BYTE* instructionAddress)
+{
+    WasmBranchHint const branchHint = id->idWasmBranchHint();
+    if (branchHint == WasmBranchHint::None)
+    {
+        return;
+    }
+
+    FuncInfoDsc* const func                = m_compiler->funGetFunc(ig->igFuncIdx);
+    unsigned const     functionStartOffset = func->startLoc->CodeOffset(this);
+    unsigned const     instructionOffset   = emitCurCodeOffs(instructionAddress);
+    assert(instructionOffset >= functionStartOffset + PADDED_RELOC_SIZE);
+
+    uint32_t const offsetFromLocals = instructionOffset - functionStartOffset - PADDED_RELOC_SIZE;
+    uint8_t        metadata[9];
+
+    for (unsigned byteIndex = 0; byteIndex < sizeof(uint32_t); byteIndex++)
+    {
+        metadata[byteIndex]     = static_cast<uint8_t>(ig->igFuncIdx >> (byteIndex * 8));
+        metadata[byteIndex + 4] = static_cast<uint8_t>(offsetFromLocals >> (byteIndex * 8));
+    }
+    metadata[8] = branchHint == WasmBranchHint::LikelyTrue ? 1 : 0;
+
+    JitMetadata::report(m_compiler, JitMetadata::WasmBranchHint, metadata, sizeof(metadata));
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     const bool SIGNED   = true;
@@ -1197,6 +1233,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
 #endif
+
+    emitReportBranchHint(ig, id, *dp);
 
     *dp = dst;
     return sz;

@@ -7220,6 +7220,10 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     instrDesc* prevId = nullptr;
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
 
+#ifdef TARGET_WASM
+    JitMetadata::report(m_compiler, JitMetadata::WasmBranchHintsReset, nullptr, 0);
+#endif
+
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
 

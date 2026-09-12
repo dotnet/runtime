@@ -1207,6 +1207,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 {
+    static constexpr weight_t LikelyThreshold = 0.8;
+
     BasicBlock* const block = m_compiler->compCurBB;
     assert(block->KindIs(BBJ_COND));
 
@@ -1223,9 +1225,25 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     //
     assert(trueTarget != block->Next());
 
+    WasmBranchHint branchHint = WasmBranchHint::None;
+    bool const     hasStaticProfile =
+        (m_compiler->fgPgoSource == ICorJitInfo::PgoSource::Static) && m_compiler->fgHaveSufficientProfileWeights();
+    if (hasStaticProfile || (JitConfig.JitWasmBranchHintStress() != 0))
+    {
+        weight_t const trueLikelihood = block->GetTrueEdge()->getLikelihood();
+        if (trueLikelihood >= LikelyThreshold)
+        {
+            branchHint = WasmBranchHint::LikelyTrue;
+        }
+        else if (trueLikelihood <= (1.0 - LikelyThreshold))
+        {
+            branchHint = WasmBranchHint::LikelyFalse;
+        }
+    }
+
     // br_if for true target
     //
-    inst_JMP(EJ_jmpif, trueTarget);
+    inst_JMP(EJ_jmpif, trueTarget, branchHint);
 
     // br for false target, if not fallthrough
     //
@@ -4278,11 +4296,11 @@ void CodeGen::genEmitEndBlock()
 //   jmp      - kind of jump to emit
 //   tgtBlock - target of the jump
 //
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, WasmBranchHint branchHint)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
     unsigned const depth = findTargetDepth(tgtBlock) + wasmExtraControlFlowDepth;
-    GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
+    GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock, branchHint);
 }
 
 #if defined(DEBUG)

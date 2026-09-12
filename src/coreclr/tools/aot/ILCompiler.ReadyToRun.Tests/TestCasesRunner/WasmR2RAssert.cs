@@ -51,6 +51,161 @@ internal static class WasmR2RAssert
     }
 
     /// <summary>
+    /// Verifies the WebAssembly branch-hint custom section and all referenced instructions.
+    /// </summary>
+    public static bool WasmBranchHintsAreValid(WebcilImageReader reader, out string diagnostic)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (!TryGetWasmCustomSection(image, "metadata.code.branch_hint", out int offset, out int sectionEnd, out int sectionStart))
+        {
+            diagnostic = "WASM image does not contain a 'metadata.code.branch_hint' custom section.";
+            return false;
+        }
+
+        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Code, out int codeOffset, out _))
+        {
+            diagnostic = "WASM image does not contain a code section.";
+            return false;
+        }
+
+        if (sectionStart >= codeOffset)
+        {
+            diagnostic = "WASM branch-hint custom section must precede the code section.";
+            return false;
+        }
+
+        Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(reader);
+        uint importedFunctionCount = CountWasmImports(imports, WasmImportKind.Function);
+        uint functionCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+        if (functionCount == 0)
+        {
+            diagnostic = "WASM branch-hint custom section contains no function entries.";
+            return false;
+        }
+
+        long previousFunctionIndex = -1;
+        for (uint functionEntry = 0; functionEntry < functionCount; functionEntry++)
+        {
+            uint functionIndex = ReadWasmUleb32(image, ref offset, sectionEnd);
+            if (functionIndex <= previousFunctionIndex)
+            {
+                diagnostic = $"WASM branch-hint function index {functionIndex} is not strictly increasing.";
+                return false;
+            }
+
+            if (functionIndex < importedFunctionCount)
+            {
+                diagnostic = $"WASM branch hint refers to imported function index {functionIndex}.";
+                return false;
+            }
+
+            WebcilImageReader.WasmFunctionInfo? function =
+                reader.GetWasmFunctionBody(checked((int)(functionIndex - importedFunctionCount)));
+            if (function is null)
+            {
+                diagnostic = $"WASM branch hint refers to missing function index {functionIndex}.";
+                return false;
+            }
+
+            int localsSize = GetWasmLocalsEncodingSize(function.Value.Locals);
+            int localsOffset = function.Value.InstructionOffset - localsSize;
+            uint hintCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+            if (hintCount == 0)
+            {
+                diagnostic = $"WASM branch-hint entry for function {functionIndex} contains no hints.";
+                return false;
+            }
+
+            long previousCodeOffset = -1;
+            for (uint hintIndex = 0; hintIndex < hintCount; hintIndex++)
+            {
+                uint branchOffset = ReadWasmUleb32(image, ref offset, sectionEnd);
+                uint metadataCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+                uint likelyTaken = ReadWasmUleb32(image, ref offset, sectionEnd);
+
+                if (branchOffset <= previousCodeOffset)
+                {
+                    diagnostic = $"WASM branch offsets for function {functionIndex} are not strictly increasing.";
+                    return false;
+                }
+
+                if (metadataCount != 1 || likelyTaken > 1)
+                {
+                    diagnostic =
+                        $"WASM branch hint at function {functionIndex}, offset {branchOffset} has invalid metadata.";
+                    return false;
+                }
+
+                if (branchOffset < localsSize ||
+                    branchOffset > int.MaxValue ||
+                    branchOffset >= (uint)(localsSize + function.Value.InstructionLength))
+                {
+                    diagnostic =
+                        $"WASM branch hint at function {functionIndex}, offset {branchOffset} is outside the function body.";
+                    return false;
+                }
+
+                byte opcode = image[localsOffset + (int)branchOffset];
+                if (opcode is not 0x04 and not 0x0D)
+                {
+                    diagnostic =
+                        $"WASM branch hint at function {functionIndex}, offset {branchOffset} points to opcode 0x{opcode:X2}.";
+                    return false;
+                }
+
+                previousCodeOffset = branchOffset;
+            }
+
+            previousFunctionIndex = functionIndex;
+        }
+
+        if (offset != sectionEnd)
+        {
+            diagnostic = "WASM branch-hint custom section contains trailing data.";
+            return false;
+        }
+
+        diagnostic = $"Validated {functionCount} function entries in the WASM branch-hint custom section.";
+        return true;
+    }
+
+    public static bool WasmBranchHintsAreAbsent(WebcilImageReader reader, out string diagnostic)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (TryGetWasmCustomSection(image, "metadata.code.branch_hint", out _, out _, out _))
+        {
+            diagnostic = "WASM image unexpectedly contains a 'metadata.code.branch_hint' custom section.";
+            return false;
+        }
+
+        diagnostic = "WASM image does not contain a branch-hint custom section.";
+        return true;
+    }
+
+    private static int GetWasmLocalsEncodingSize(IReadOnlyList<(uint Count, byte ValType)> locals)
+    {
+        int size = GetWasmUleb32Size((uint)locals.Count);
+        foreach ((uint count, _) in locals)
+        {
+            size += GetWasmUleb32Size(count) + sizeof(byte);
+        }
+
+        return size;
+    }
+
+    private static int GetWasmUleb32Size(uint value)
+    {
+        int size = 1;
+        while (value >= 0x80)
+        {
+            value >>= 7;
+            size++;
+        }
+
+        return size;
+    }
+
+    /// <summary>
     /// Returns true if the default Webcil imports and defined section entries occupy the expected
     /// indices in their respective WASM external-kind index spaces.
     /// </summary>
@@ -331,6 +486,48 @@ internal static class WasmR2RAssert
         return false;
     }
 
+    private static bool TryGetWasmCustomSection(
+        ReadOnlySpan<byte> image,
+        string name,
+        out int payloadOffset,
+        out int sectionEnd,
+        out int sectionStart)
+    {
+        payloadOffset = 0;
+        sectionEnd = 0;
+        sectionStart = 0;
+
+        if (image.Length < 8)
+            throw new BadImageFormatException("WASM image is shorter than its magic and version header.");
+
+        int offset = 8;
+        while (offset < image.Length)
+        {
+            int currentSectionStart = offset;
+            byte sectionId = ReadWasmByte(image, ref offset, image.Length);
+            uint sectionSize = ReadWasmUleb32(image, ref offset, image.Length);
+            if (sectionSize > int.MaxValue || sectionSize > image.Length - offset)
+                throw new BadImageFormatException($"WASM section {sectionId} extends beyond the image boundary.");
+
+            int currentSectionEnd = offset + (int)sectionSize;
+            if (sectionId == 0)
+            {
+                int cursor = offset;
+                if (ReadWasmName(image, ref cursor, currentSectionEnd) == name)
+                {
+                    payloadOffset = cursor;
+                    sectionEnd = currentSectionEnd;
+                    sectionStart = currentSectionStart;
+                    return true;
+                }
+            }
+
+            offset = currentSectionEnd;
+        }
+
+        return false;
+    }
+
     private static Dictionary<(string Module, string Name), WasmImportIndex> ReadWasmImports(WebcilImageReader reader)
     {
         ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
@@ -578,6 +775,7 @@ internal static class WasmR2RAssert
         Global = 6,
         Export = 7,
         Element = 9,
+        Code = 10,
         Tag = 13,
     }
 
