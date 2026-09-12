@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
     <NoWarn>$(NoWarn);CS0809</NoWarn>
-    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB5006;SYSLIB5009</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
@@ -406,6 +406,26 @@
              Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
              Link="Common\System\Security\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Hpke.cs"
+             Link="Common\System\Security\Cryptography\Hpke.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAead.cs"
+             Link="Common\System\Security\Cryptography\HpkeAead.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeAeadMetadata.cs"
+             Link="Common\System\Security\Cryptography\HpkeAeadMetadata.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKdf.cs"
+             Link="Common\System\Security\Cryptography\HpkeKdf.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKdfMetadata.cs"
+             Link="Common\System\Security\Cryptography\HpkeKdfMetadata.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKem.cs"
+             Link="Common\System\Security\Cryptography\HpkeKem.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeKemMetadata.cs"
+             Link="Common\System\Security\Cryptography\HpkeKemMetadata.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeRecipient.cs"
+             Link="Common\System\Security\Cryptography\HpkeRecipient.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSender.cs"
+             Link="Common\System\Security\Cryptography\HpkeSender.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
+             Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\IImportExportShape.cs"
@@ -540,6 +560,7 @@
     <Compile Include="System\Security\Cryptography\AsnEncodedDataEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
@@ -617,6 +638,8 @@
     <Compile Include="System\Security\Cryptography\HMACSHA3_384.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA3_512.cs" />
     <Compile Include="System\Security\Cryptography\HMACStatic.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeKdfMetadata.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeKemMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\ILiteSymmetricCipher.cs" />
@@ -877,6 +900,7 @@
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeImplementation.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Browser.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
@@ -1437,7 +1461,6 @@
     <Compile Include="System\Security\Cryptography\AppleCCCryptor.cs" />
     <Compile Include="System\Security\Cryptography\AppleCCCryptorLite.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
-    <Compile Include="System\Security\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
@@ -2095,6 +2118,18 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.GetCertContentType.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.PublicKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.X500DistinguishedName.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and '$(TargetPlatformIdentifier)' != 'browser'">
+    <Compile Include="System\Security\Cryptography\HpkeAeadMetadata.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeECDiffieHellmanKemAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManagedAeadAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManagedAesAeadAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManagedChaCha20Poly1305AeadAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManagedKdfAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManagedKemAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeX25519DiffieHellmanKemAdapter.cs" />
   </ItemGroup>
 
   <ItemGroup>
