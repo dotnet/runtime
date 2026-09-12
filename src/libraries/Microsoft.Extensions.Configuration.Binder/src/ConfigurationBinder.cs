@@ -600,7 +600,7 @@ namespace Microsoft.Extensions.Configuration
 
                 for (int index = 0; index < parameters.Length; index++)
                 {
-                    parameterValues[index] = BindParameter(parameters[index], type, config, options);
+                    parameterValues[index] = BindParameter(parameters[index], FindMatchingProperty(parameters[index].Name!, properties)!, type, config, options);
                 }
 
                 constructorParameters = parameters;
@@ -624,23 +624,12 @@ namespace Microsoft.Extensions.Configuration
         private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
             List<PropertyInfo> properties, out string missing)
         {
-            HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
-            foreach (PropertyInfo prop in properties)
-            {
-                if (IsIgnoredProperty(prop))
-                {
-                    continue;
-                }
-
-                propertyNames.Add(prop.Name);
-            }
-
             List<string> missingParameters = new();
 
             foreach (ParameterInfo parameter in parameters)
             {
                 string name = parameter.Name!;
-                if (!propertyNames.Contains(name))
+                if (FindMatchingProperty(name, properties) is null)
                 {
                     missingParameters.Add(name);
                 }
@@ -649,6 +638,20 @@ namespace Microsoft.Extensions.Configuration
             missing = string.Join(",", missingParameters);
 
             return missing.Length == 0;
+        }
+
+        private static PropertyInfo? FindMatchingProperty(string name, List<PropertyInfo> properties)
+        {
+            foreach (PropertyInfo property in properties)
+            {
+                if (!IsIgnoredProperty(property) &&
+                    string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return property;
+                }
+            }
+
+            return null;
         }
 
         private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters, out string nameOfInvalidParameter)
@@ -1141,7 +1144,7 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
+        private static object? BindParameter(ParameterInfo parameter, PropertyInfo property, Type type, IConfiguration config,
             BinderOptions options)
         {
             string? parameterName = parameter.Name;
@@ -1156,7 +1159,7 @@ namespace Microsoft.Extensions.Configuration
             BindInstance(
                 parameter.ParameterType,
                 propertyBindingPoint,
-                config.GetSection(parameterName),
+                config.GetSection(GetPropertyName(property)),
                 options,
                 false);
 

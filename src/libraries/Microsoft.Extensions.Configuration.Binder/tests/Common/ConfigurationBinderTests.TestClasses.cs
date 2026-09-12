@@ -157,6 +157,20 @@ namespace Microsoft.Extensions
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorAndConfigurationKeyName(string color, int length)
+        {
+            [ConfigurationKeyName("config-color")]
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
+
+        public class ClassWithPrimaryCtorAndConfigurationKeyNameOnNonMatchingProperty(string color, int length)
+        {
+            [ConfigurationKeyName("color")]
+            public string Shade { get; } = color;
+            public int Length { get; } = length;
+        }
+
         public class ClassWithPrimaryCtorAndIgnoredProperty(string color, int length)
         {
             [ConfigurationIgnore]
