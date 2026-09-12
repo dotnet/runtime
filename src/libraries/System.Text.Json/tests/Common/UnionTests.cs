@@ -413,6 +413,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(typeInfo);
         }
 
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public union IntOrString(int, string);
+
+        [Fact]
+        public async Task UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults()
+        {
+            JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+            };
+
+            IntOrString? value = await Serializer.DeserializeWrapper<IntOrString>("\"hello\"", options);
+
+            Assert.Equal("hello", GetUnionValue(value!));
+        }
+
         public class Animal { }
         public class Dog : Animal { }
         public class Lab : Dog { }
