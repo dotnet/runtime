@@ -36,6 +36,8 @@
     'precedence' has to grow with the .NET version: when several versions of this package are installed side
     by side, 'dotnet new' resolves a template group by precedence and only then evaluates constraints, so
     equal values make 'dotnet new wasmbrowser' fail as ambiguous instead of picking the newest template.
+    This is the same scheme the in-box SDK and ASP.NET Core templates use - both bump precedence by 1000 for
+    every major version, and the ASP.NET Core ones use these very values (net10 10000, net11 11000).
   -->
   <Target Name="_ValidateTemplateVersions" BeforeTargets="Build;Pack">
     <PropertyGroup>
