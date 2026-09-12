@@ -739,6 +739,7 @@ namespace System.Net
             NegotiateAuthentication? sessionContext = null;
             bool keepSessionContext = false;
             string? contextPackage = null;
+            ExtendedProtectionPolicy? contextExtendedProtectionPolicy = null;
             AuthenticationSchemes headerScheme = AuthenticationSchemes.None;
             AuthenticationSchemes authenticationScheme = AuthenticationSchemes;
             ExtendedProtectionPolicy extendedProtectionPolicy = _extendedProtectionPolicy;
@@ -756,6 +757,7 @@ namespace System.Net
                 {
                     sessionContext = disconnectResult.Session;
                     contextPackage = disconnectResult.SessionPackage;
+                    contextExtendedProtectionPolicy = disconnectResult.SessionExtendedProtectionPolicy;
                 }
 
                 httpContext = new HttpListenerContext(session, memoryBlob);
@@ -881,7 +883,8 @@ namespace System.Net
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"context: {sessionContext} for connectionId: {connectionId}");
 
                             string package = headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate;
-                            if (sessionContext is null || sessionContext.IsAuthenticated || contextPackage != package)
+                            if (sessionContext is null || sessionContext.IsAuthenticated || contextPackage != package ||
+                                !AreExtendedProtectionPoliciesEquivalent(contextExtendedProtectionPolicy, extendedProtectionPolicy))
                             {
                                 sessionContext?.Dispose();
 
@@ -1110,6 +1113,7 @@ namespace System.Net
 
                     disconnectResult.Session = sessionContext;
                     disconnectResult.SessionPackage = contextPackage;
+                    disconnectResult.SessionExtendedProtectionPolicy = extendedProtectionPolicy;
                     // Prevent finally from disposing the context
                     sessionContext = null;
                 }
@@ -1149,6 +1153,7 @@ namespace System.Net
                         {
                             disconnectResult.Session = null;
                             disconnectResult.SessionPackage = null;
+                            disconnectResult.SessionExtendedProtectionPolicy = null;
                         }
 
                         sessionContext?.Dispose();
@@ -1242,6 +1247,60 @@ namespace System.Net
                 policy.PolicyEnforcement,
                 policy.ProtectionScenario,
                 _defaultServiceNames.ServiceNames.Merge("HTTP/localhost"));
+        }
+
+        // Returns true only if the stored policy (used to create an existing NegotiateAuthentication
+        // context) and the current request's policy are equivalent, meaning the saved context can be
+        // safely reused. Any difference in enforcement level, scenario, or service names requires a
+        // fresh context so that the current request's policy is correctly applied.
+        private static bool AreExtendedProtectionPoliciesEquivalent(ExtendedProtectionPolicy? stored, ExtendedProtectionPolicy current)
+        {
+            if (stored is null)
+            {
+                // No policy was recorded for the saved context; treat as incompatible to be safe.
+                return false;
+            }
+
+            if (stored.PolicyEnforcement != current.PolicyEnforcement)
+            {
+                return false;
+            }
+
+            // Both are Never — no channel binding or service name enforcement either way.
+            if (stored.PolicyEnforcement == PolicyEnforcement.Never)
+            {
+                return true;
+            }
+
+            if (stored.ProtectionScenario != current.ProtectionScenario)
+            {
+                return false;
+            }
+
+            // Compare custom service name lists.  Null means "use listener defaults", which is the
+            // same object for both calls, so null == null is always equivalent.
+            ServiceNameCollection? storedNames = stored.CustomServiceNames;
+            ServiceNameCollection? currentNames = current.CustomServiceNames;
+
+            if (storedNames is null && currentNames is null)
+            {
+                return true;
+            }
+
+            if (storedNames is null || currentNames is null || storedNames.Count != currentNames.Count)
+            {
+                return false;
+            }
+
+            foreach (string? name in storedNames)
+            {
+                if (!currentNames.Contains(name))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         // This only works for context-destroying errors.
@@ -1702,6 +1761,8 @@ namespace System.Net
             internal NegotiateAuthentication? Session { get; set; }
 
             internal string? SessionPackage { get; set; }
+
+            internal ExtendedProtectionPolicy? SessionExtendedProtectionPolicy { get; set; }
         }
     }
 }
