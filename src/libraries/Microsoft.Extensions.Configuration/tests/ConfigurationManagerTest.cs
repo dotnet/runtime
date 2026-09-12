@@ -97,6 +97,39 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void AllowExpansionsEnablesResolutionForExistingAndLaterAddedSources()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Alias"] = "ref(Target)",
+            });
+
+            // Without AllowExpansions the value is verbatim.
+            Assert.Equal("ref(Target)", config["Alias"]);
+
+            builder.AllowExpansions();
+
+            // Still no Target → engine returns the raw expression.
+            Assert.Equal("ref(Target)", config["Alias"]);
+
+            // Sources added after AllowExpansions participate in resolution; the engine is
+            // rebuilt as the source list changes.
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Target"] = "actual",
+            });
+
+            Assert.Equal("actual", config["Alias"]);
+
+            // Toggling off restores verbatim behaviour.
+            builder.AllowExpansions(false);
+            Assert.Equal("ref(Target)", config["Alias"]);
+        }
+
+        [Fact]
         public void DisposesProvidersOnDispose()
         {
             var provider1 = new TestConfigurationProvider("foo", "foo-value");
