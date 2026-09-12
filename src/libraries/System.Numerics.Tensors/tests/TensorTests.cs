@@ -1081,7 +1081,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(NonDenseTensorData))]
-        public static void TensorResizeToNonDenseSourceTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        public static void TensorResizeToBigNonDenseSourceTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
         {
             var src = new ReadOnlyTensorSpan<int>(data, shape, strides);
             Assert.False(src.IsDense);
@@ -1089,6 +1089,7 @@ namespace System.Numerics.Tensors.Tests
             // Resize to a larger dense destination
             nint srcFlatLen = src.FlattenedLength;
             int[] dstData = new int[(int)srcFlatLen + 2];
+            Array.Fill(dstData, -1);
             var dst = new TensorSpan<int>(dstData, [(nint)dstData.Length], [1]);
             Assert.True(dst.IsDense);
 
@@ -1107,30 +1108,128 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(NonDenseTensorData))]
-        public static void TensorResizeToNonDenseDestinationTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        public static void TensorResizeToSmallNonDenseSourceTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            var src = new ReadOnlyTensorSpan<int>(data, shape, strides);
+            Assert.False(src.IsDense);
+
+            // Resize to a smaller dense destination
+            nint srcFlatLen = src.FlattenedLength;
+            int[] dstData = new int[(int)srcFlatLen - 1];
+            Array.Fill(dstData, -1);
+            var dst = new TensorSpan<int>(dstData);
+            Assert.True(dst.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            for (int i = 0; i < dstData.Length; i++)
+            {
+                Assert.Equal(expectedLogical[i], dstData[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorResizeToBigNonDenseDestinationTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
         {
             // Create a dense source with known values
-            var src = new ReadOnlyTensorSpan<int>(expectedLogical, [(nint)expectedLogical.Length], [1]);
+            var srcData = expectedLogical.AsSpan().Slice(0, expectedLogical.Length - 1);
+            var src = new ReadOnlyTensorSpan<int>(srcData);
             Assert.True(src.IsDense);
 
             // Create a non-dense destination
             int[] dstData = new int[data.Length];
+            Array.Fill(dstData, -1);
             var dst = new TensorSpan<int>(dstData, shape, strides);
             Assert.False(dst.IsDense);
 
-            nint copyLength = Math.Min(src.FlattenedLength, dst.FlattenedLength);
             Tensor.ResizeTo(src, dst);
 
             // Verify logical elements were written correctly
             int logicalIdx = 0;
             foreach (int val in dst)
             {
-                if (logicalIdx < expectedLogical.Length)
+                if (logicalIdx < srcData.Length)
                 {
-                    Assert.Equal(expectedLogical[logicalIdx], val);
+                    Assert.Equal(srcData[logicalIdx], val);
+                }
+                else
+                {
+                    Assert.Equal(0, val);
                 }
                 logicalIdx++;
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorResizeToSmallNonDenseDestinationTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            // Create a dense source with known values
+            var srcData = new int[expectedLogical.Length + 1];
+            expectedLogical.CopyTo(srcData);
+            srcData[^1] = -2;
+            var src = new ReadOnlyTensorSpan<int>(srcData, [(nint)expectedLogical.Length + 1], [1]);
+            Assert.True(src.IsDense);
+
+            // Create a non-dense destination
+            int[] dstData = new int[data.Length];
+            Array.Fill(dstData, -1);
+            var dst = new TensorSpan<int>(dstData, shape, strides);
+            Assert.False(dst.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            // Verify logical elements were written correctly
+            int logicalIdx = 0;
+            foreach (int val in dst)
+            {
+                Assert.Equal(srcData[logicalIdx], val);
+                logicalIdx++;
+            }
+        }
+
+        [Fact]
+        public static void TensorResizeToDenseSmallDestinationTests()
+        {
+            // Create a dense source with known values
+            var srcData = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            var src = new ReadOnlyTensorSpan<int>(srcData, [9]);
+            Assert.True(src.IsDense);
+
+            var dstData = new int[4];
+            var dst = new TensorSpan<int>(dstData, [2, 2]);
+            Assert.True(src.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            Assert.Equal(1, dstData[0]);
+            Assert.Equal(2, dstData[1]);
+            Assert.Equal(3, dstData[2]);
+            Assert.Equal(4, dstData[3]);
+        }
+
+        [Fact]
+        public static void TensorResizeToDenseBigDestinationTests()
+        {
+            // Create a dense source with known values
+            var srcData = new int[] { 1, 2, 3, 4 };
+            var src = new ReadOnlyTensorSpan<int>(srcData, [4]);
+            Assert.True(src.IsDense);
+
+            var dstData = new int[6];
+            Array.Fill(dstData, -1);
+            var dst = new TensorSpan<int>(dstData, [3, 2]);
+            Assert.True(src.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            Assert.Equal(1, dstData[0]);
+            Assert.Equal(2, dstData[1]);
+            Assert.Equal(3, dstData[2]);
+            Assert.Equal(4, dstData[3]);
+            Assert.Equal(0, dstData[4]);
+            Assert.Equal(0, dstData[5]);
         }
 
         [Fact]
