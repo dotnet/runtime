@@ -107,13 +107,13 @@ namespace System.Security.Cryptography.X509Certificates
                 });
         }
 
-        public void FindByTimeValid(DateTime dateTime) => FindByTime(dateTime, 0);
-        public void FindByTimeNotYetValid(DateTime dateTime) => FindByTime(dateTime, -1);
-        public void FindByTimeExpired(DateTime dateTime) => FindByTime(dateTime, 1);
+        public void FindByTimeValid(DateTimeOffset instant) => FindByTime(instant, 0);
+        public void FindByTimeNotYetValid(DateTimeOffset instant) => FindByTime(instant, -1);
+        public void FindByTimeExpired(DateTimeOffset instant) => FindByTime(instant, 1);
 
-        private unsafe void FindByTime(DateTime dateTime, int compareResult)
+        private unsafe void FindByTime(DateTimeOffset instant, int compareResult)
         {
-            Interop.Crypt32.FILETIME fileTime = Interop.Crypt32.FILETIME.FromDateTime(dateTime);
+            Interop.Crypt32.FILETIME fileTime = Interop.Crypt32.FILETIME.FromDateTimeOffset(instant);
 
             FindCore(
                 (fileTime, compareResult),

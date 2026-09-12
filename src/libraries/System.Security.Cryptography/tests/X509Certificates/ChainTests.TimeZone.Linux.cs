@@ -6,13 +6,18 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    // Chain time validity must not depend on the process time zone.
+    // Chain and managed certificate time validity must not depend on the process time zone.
     // OpenSSL/Linux only (Windows/macOS convert the verify time correctly).
     // RemoteExecutor + TZ isolates the time-zone change to a child process.
     [PlatformSpecific(TestPlatforms.Linux)]
     public static class ChainTimeZoneTests
     {
         private static readonly DateTimeOffset s_verify = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+
+        // Validity window of +/-2h around the query, narrower than the UTC+14 shift below.
+        private static readonly DateTimeOffset s_managedNotBefore = new(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        private static readonly DateTimeOffset s_managedNotAfter = new(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        private static readonly DateTimeOffset s_managedQuery = new(2024, 6, 15, 13, 0, 0, TimeSpan.Zero);
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
@@ -55,16 +60,91 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }, asLocal.ToString()).Dispose();
         }
 
+        // Find(FindByTimeValid) for an instant inside the validity window must keep matching
+        // across a mid-process time-zone change.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void FindByTimeValid_StableAcrossTimeZoneChange()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                SetZone("UTC");
+
+                using X509Certificate2 cert = MakeCert(s_managedNotBefore, s_managedNotAfter, "CN=managed-tz");
+
+                // Read the validity dates before the zone change.
+                _ = cert.NotBefore;
+                _ = cert.NotAfter;
+
+                var coll = new X509Certificate2Collection(cert);
+                Assert.Equal(1, FindCount(coll, s_managedQuery));
+
+                SetZone("Pacific/Kiritimati"); // UTC+14
+                Assert.Equal(1, FindCount(coll, s_managedQuery));
+            }).Dispose();
+        }
+
+        // CertificateRequest.Create checks that the leaf validity nests inside the issuer's.
+        // A request that nests must keep succeeding across a mid-process time-zone change.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void CreateNesting_StableAcrossTimeZoneChange()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                SetZone("UTC");
+
+                DateTimeOffset issuerNotBefore = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+                DateTimeOffset issuerNotAfter = new(2025, 6, 15, 0, 0, 0, TimeSpan.Zero);
+
+                using RSA issuerKey = RSA.Create(2048);
+                var issuerReq = new CertificateRequest("CN=issuer", issuerKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                issuerReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+                using X509Certificate2 issuer = issuerReq.CreateSelfSigned(issuerNotBefore, issuerNotAfter);
+
+                // Leaf nests 1h inside the issuer on each boundary.
+                DateTimeOffset leafNotBefore = issuerNotBefore.AddHours(1);
+                DateTimeOffset leafNotAfter = issuerNotAfter.AddHours(-1);
+
+                using RSA leafKey = RSA.Create(2048);
+                var leafReq = new CertificateRequest("CN=leaf", leafKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                byte[] serial = [1, 2, 3, 4, 5, 6, 7, 8];
+
+                // Read the issuer's validity dates before the zone change.
+                _ = issuer.NotBefore;
+                _ = issuer.NotAfter;
+
+                using (X509Certificate2 leaf = leafReq.Create(issuer, leafNotBefore, leafNotAfter, serial))
+                {
+                    Assert.NotNull(leaf);
+                }
+
+                SetZone("Pacific/Kiritimati"); // UTC+14
+
+                using X509Certificate2 leaf2 = leafReq.Create(issuer, leafNotBefore, leafNotAfter, serial);
+                Assert.NotNull(leaf2);
+            }).Dispose();
+        }
+
+        private static int FindCount(X509Certificate2Collection coll, DateTimeOffset when)
+        {
+            X509Certificate2Collection found = coll.Find(X509FindType.FindByTimeValid, when.UtcDateTime, validOnly: false);
+            int count = found.Count;
+            foreach (X509Certificate2 c in found)
+            {
+                c.Dispose();
+            }
+            return count;
+        }
+
         internal static void SetZone(string tz)
         {
             Environment.SetEnvironmentVariable("TZ", tz);
             TimeZoneInfo.ClearCachedData();
         }
 
-        internal static X509Certificate2 MakeCert(DateTimeOffset notBefore, DateTimeOffset notAfter)
+        internal static X509Certificate2 MakeCert(DateTimeOffset notBefore, DateTimeOffset notAfter, string subjectName = "CN=109039")
         {
             using RSA key = RSA.Create(2048);
-            var req = new CertificateRequest("CN=109039", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            var req = new CertificateRequest(subjectName, key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             return req.CreateSelfSigned(notBefore, notAfter);
         }
 
