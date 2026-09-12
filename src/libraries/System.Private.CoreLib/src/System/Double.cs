@@ -663,7 +663,7 @@ namespace System
         public static TInteger ConvertToIntegerNative<TInteger>(double value)
             where TInteger : IBinaryInteger<TInteger>
         {
-            if (typeof(TInteger).IsPrimitive)
+            if (typeof(TInteger).IsPrimitive && RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // We need this to be recursive so indirect calls (delegates
                 // for example) produce the same result as direct invocation
@@ -1219,7 +1219,9 @@ namespace System
 #if MONO
             return (left * right) + addend;
 #else
-            return MultiplyAddEstimate(left, right, addend);
+            return RuntimeFeature.IsDynamicCodeCompiled
+                ? MultiplyAddEstimate(left, right, addend)
+                : (left * right) + addend;
 #endif
         }
 

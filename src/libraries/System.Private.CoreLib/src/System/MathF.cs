@@ -317,7 +317,9 @@ namespace System
 #if MONO
             return 1.0f / x;
 #else
-            return ReciprocalEstimate(x);
+            return RuntimeFeature.IsDynamicCodeCompiled
+                ? ReciprocalEstimate(x)
+                : 1.0f / x;
 #endif
         }
 
@@ -335,7 +337,9 @@ namespace System
 #if MONO || TARGET_LOONGARCH64
             return 1.0f / Sqrt(x);
 #else
-            return ReciprocalSqrtEstimate(x);
+            return RuntimeFeature.IsDynamicCodeCompiled
+                ? ReciprocalSqrtEstimate(x)
+                : 1.0f / Sqrt(x);
 #endif
         }
 
