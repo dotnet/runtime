@@ -1054,8 +1054,6 @@ protected:
         ASYNC_CONTINUATION_REGISTER_EDX   = 0x00C0,
 #endif
 
-        METHOD_INVOKE_NEEDS_ACTIVATION    = 0x0100,   // Flag used by ArgIteratorForMethodInvoke
-
         RETURN_FP_SIZE_SHIFT              = 10,       // The rest of the flags is cached value of GetFPReturnSize
     };
 

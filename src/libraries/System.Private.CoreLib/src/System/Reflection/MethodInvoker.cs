@@ -68,8 +68,10 @@ namespace System.Reflection
                 // such as created from RuntimeHelpers.GetUninitializedObject(Type).
                 MethodInvoker invoker = new MethodInvoker(rci);
 
+#if MONO
                 // Use the interpreted version to avoid having to generate a new method that doesn't allocate.
                 invoker._strategy = GetStrategyForUsingInterpreted();
+#endif
 
                 return invoker;
             }
@@ -264,7 +266,7 @@ namespace System.Reflection
                 }
             }
 
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
+            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
             {
                 ThrowForBadInvocationFlags();
             }
