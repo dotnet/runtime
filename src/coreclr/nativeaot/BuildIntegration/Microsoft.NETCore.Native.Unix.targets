@@ -50,11 +50,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' != 'true'">aarch64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' == 'true'">arm64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">armv7</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-armel'))">arm</CrossCompileArch>
 
       <CrossCompileAbi>gnu</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android-'))">android24</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl-')) or $(CrossCompileRid.StartsWith('alpine-'))">musl</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
+      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-armel'">gnueabi</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi24</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-musl-arm'">musleabihf</CrossCompileAbi>
     </PropertyGroup>
@@ -316,6 +318,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- Tizen requires additional linker args -->
       <LinkerArg Include="-L&quot;$(SysRoot)/$(_TizenToolchainLibDir)&quot;" Condition="'$(_IsTizenExitCode)' == '0'" />
+      <LinkerArg Include="-L&quot;$(SysRoot)/usr/$(_TizenToolchainLibDir)&quot;" Condition="'$(_IsTizenExitCode)' == '0'" />
     </ItemGroup>
 
     <Exec Command="xcodebuild -version" Condition="'$(_IsApplePlatform)' == 'true' and '$(UseLdClassicXCodeLinker)' == ''" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
