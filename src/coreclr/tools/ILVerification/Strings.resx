@@ -462,4 +462,7 @@
   <data name="BadTypeSpec" xml:space="preserve">
     <value>Invalid TypeSpec metadata.</value>
   </data>
+  <data name="InvalidMethodImpl" xml:space="preserve">
+    <value>Invalid MethodImpl: body '{0}' cannot implement declaration '{1}'. {2}</value>
+  </data>
 </root>
