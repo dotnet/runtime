@@ -25,13 +25,13 @@ public class AuxiliarySymbolsDumpTests : DumpTestBase
             "CORINFO_HELP_NEWFAST",
             "CORINFO_HELP_NEWFAST_MAYBEFROZEN",
             "CORINFO_HELP_NEWSFAST",
-            "CORINFO_HELP_NEWSFAST_ALIGN8",
-            "CORINFO_HELP_NEWSFAST_ALIGN8_VC",
+            "CORINFO_HELP_NEWSFAST_ALIGN_2XPTR",
+            "CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC",
             "CORINFO_HELP_NEWARR_1_DIRECT",
             "CORINFO_HELP_NEWARR_1_MAYBEFROZEN",
             "CORINFO_HELP_NEWARR_1_PTR",
             "CORINFO_HELP_NEWARR_1_VC",
-            "CORINFO_HELP_NEWARR_1_ALIGN8",
+            "CORINFO_HELP_NEWARR_1_ALIGN_2XPTR",
         ];
         Dictionary<TargetCodePointer, string> helpersByAddress = [];
 

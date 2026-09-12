@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.AddSymbol(this);
             foreach (FrozenObjectNode node in factory.MetadataManager.GetFrozenObjects())
             {
-                Debug.Assert(node is not FrozenObjectNode frozenObj || !frozenObj.ObjectType.RequiresAlign8());
+                Debug.Assert(node is not FrozenObjectNode frozenObj || !frozenObj.ObjectType.RequiresAlign2xPtr());
                 AlignNextObject(ref builder, factory);
 
                 node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);

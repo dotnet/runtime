@@ -10,7 +10,7 @@ extern bool g_oldMethodTableFlags;
 
 // Some 32-bit platform ABIs require that 64-bit primitive types and composite types containing them are aligned at 64-bit boundaries.
 #if defined(TARGET_ARM) || defined(TARGET_WASM)
-#define FEATURE_64BIT_ALIGNMENT
+#define FEATURE_2XPTR_ALIGNMENT
 #endif
 
 //-------------------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ public:
 
 static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
 
-#define MTFlag_RequiresAlign8           0x00001000 // enum_flag_RequiresAlign8
+#define MTFlag_RequiresAlign2xPtr       0x00001000 // enum_flag_RequiresAlign2xPtr
 #define MTFlag_Category_ValueType       0x00040000 // enum_flag_Category_ValueType
 #define MTFlag_Category_ValueType_Mask  0x000C0000 // enum_flag_Category_ValueType_Mask
 #define MTFlag_ContainsGCPointers       0x01000000 // enum_flag_ContainsGCPointers
@@ -108,9 +108,9 @@ public:
         return ContainsGCPointers() || Collectible();
     }
 
-    bool RequiresAlign8()
+    bool RequiresAlign2xPtr()
     {
-        return (m_flags & MTFlag_RequiresAlign8) != 0;
+        return (m_flags & MTFlag_RequiresAlign2xPtr) != 0;
     }
 
     bool IsValueType()

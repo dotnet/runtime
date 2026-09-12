@@ -47,8 +47,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
             GCPointerMap map = GCPointerMap.FromStaticLayout(_type);
-            bool requiresAlign8 = _type.GCStaticFieldAlignment.AsInt > factory.Target.PointerSize;
-            return factory.GCStaticEEType(map, requiresAlign8);
+            bool requiresAlign2xPtr = _type.GCStaticFieldAlignment.AsInt > factory.Target.PointerSize;
+            return factory.GCStaticEEType(map, requiresAlign2xPtr);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

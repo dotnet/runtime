@@ -682,12 +682,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsHFA)
             return false;
 
-        // ARM shortcut: no HVA, and RequiresAlign8 encodes the R4-vs-R8 choice
+        // ARM shortcut: no HVA, and RequiresAlign2xPtr encodes the R4-vs-R8 choice
         // (CheckForHFA sets the alignment flag based on the resolved element
         // type). Avoids walking fields.
         if (arch == RuntimeInfoArchitecture.Arm)
         {
-            elementSize = _methodTables[typeHandle.Address].Flags.RequiresAlign8 ? 8 : 4;
+            elementSize = _methodTables[typeHandle.Address].Flags.RequiresAlign2xPtr ? 8 : 4;
             return true;
         }
 
@@ -813,7 +813,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         => (t >= CorElementType.I1 && t <= CorElementType.R8)
             || t == CorElementType.I
             || t == CorElementType.U;
-    public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+    public bool RequiresAlign2xPtr(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign2xPtr;
 
     // Mirrors CEEInfo::getClassAlignmentRequirementStatic for managed value types. TypeDesc and
     // native-value-type paths are omitted because the managed signature decoder cannot produce them.
@@ -840,10 +840,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
         }
 
-        // RequiresAlign8 is only set on FEATURE_64BIT_ALIGNMENT targets.
-        if (result < 8 && RequiresAlign8(typeHandle))
+        // RequiresAlign2xPtr is only set on FEATURE_2XPTR_ALIGNMENT targets.
+        if (result < (2 * _target.PointerSize) && RequiresAlign2xPtr(typeHandle))
         {
-            result = 8;
+            result = 2 * _target.PointerSize;
         }
 
         return result;

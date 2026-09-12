@@ -274,6 +274,8 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
     MEND
 
 #define GC_ALLOC_FINALIZE 1
+#define GC_ALLOC_ALIGN_2XPTR_BIAS 4
+#define GC_ALLOC_ALIGN_2XPTR 8
 
 ;-----------------------------------------------------------------------------
 ; Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling

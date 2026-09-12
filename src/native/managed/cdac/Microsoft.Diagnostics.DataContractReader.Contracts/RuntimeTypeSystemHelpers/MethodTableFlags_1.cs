@@ -50,7 +50,7 @@ internal struct MethodTableFlags_1
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000, // GC depends on this bit.
-        RequiresAlign8 = 0x00800000,
+        RequiresAlign2xPtr = 0x00800000,
 
         ContainsGCPointers = 0x01000000,
         IsTrackedReferenceWithFinalizer = 0x04000000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
@@ -108,7 +108,7 @@ internal struct MethodTableFlags_1
     public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
     public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
     public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
-    public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
+    public bool RequiresAlign2xPtr => GetFlag(WFLAGS_HIGH.RequiresAlign2xPtr) != 0;
     public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
     public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
     public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;

@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return PointerSize;
         }
 
-        public bool RequiresAlign8()
+        public bool RequiresAlign2xPtr()
         {
             if (_type.Context.Target.Architecture != TargetArchitecture.ARM)
             {
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 return false;
             }
-            return _type.RequiresAlign8();
+            return _type.RequiresAlign2xPtr();
         }
 
         public bool IsHomogeneousAggregate()
@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             switch (_type.Context.Target.Architecture)
             {
                 case TargetArchitecture.ARM:
-                    return RequiresAlign8() ? 8 : 4;
+                    return RequiresAlign2xPtr() ? 8 : 4;
 
                 case TargetArchitecture.ARM64:
                     return ((DefType)_type).GetHomogeneousAggregateElementSize();

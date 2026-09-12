@@ -84,8 +84,8 @@ partial interface IRuntimeTypeSystem : IContract
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
     // src/coreclr/vm/class.cpp.
     public virtual bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize);
-    // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
-    public virtual bool RequiresAlign8(ITypeHandle typeHandle);
+    // True if the type requires 2 * pointer-size alignment on platforms that don't provide it by default (FEATURE_2XPTR_ALIGNMENT)
+    public virtual bool RequiresAlign2xPtr(ITypeHandle typeHandle);
     // Returns the alignment requirement of a type. Mirrors
     // CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp. The result is
     // unclamped -- callers such as ArgIterator apply their own clamping. This is optional
@@ -399,7 +399,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
-        RequiresAlign8 = 0x00800000,
+        RequiresAlign2xPtr = 0x00800000,
         ContainsGCPointers = 0x01000000,
         IsTrackedReferenceWithFinalizer = 0x04000000,
         ContainsGenericVariables = 0x20000000,
@@ -448,7 +448,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
-        public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
+        public bool RequiresAlign2xPtr => GetFlag(WFLAGS_HIGH.RequiresAlign2xPtr) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsIntrinsicType => GetFlag(WFLAGS2_ENUM.IsIntrinsicType) != 0;
@@ -831,7 +831,7 @@ static class RuntimeTypeSystem_1_Helpers
     //   TryGetHFAElementSize(th):
     //       if targetArch is not ARM/ARM64:               return false
     //       if !th.Flags.IsHFA:                           return false
-    //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign8 ? 8 : 4)
+    //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign2xPtr ? 8 : 4)
     //       mt = th
     //       loop (bounded depth):
     //           if (elem = GetVectorHFAElementSize(mt)):  return (true, elem)
@@ -855,7 +855,7 @@ static class RuntimeTypeSystem_1_Helpers
     //       return elem
     public bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) { ... }
 
-    public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+    public bool RequiresAlign2xPtr(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign2xPtr;
 
     // Mirrors CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp.
     //   result = target pointer size
@@ -866,9 +866,10 @@ static class RuntimeTypeSystem_1_Helpers
     //       layoutInfo = EEClassLayoutInfo at (eeClass + offsetof(LayoutEEClass, LayoutInfo))
     //       if layoutInfo.LayoutType == Sequential or layoutInfo.Flags has e_BLITTABLE:
     //         result = layoutInfo.AlignmentRequirement
-    //   // FEATURE_64BIT_ALIGNMENT (ARM, WASM). RequiresAlign8 is only set on targets with that
+    //   // FEATURE_2XPTR_ALIGNMENT. RequiresAlign2xPtr is only set on targets with that
     //   // requirement, so this is a no-op elsewhere.
-    //   if result < 8 and RequiresAlign8(typeHandle): result = 8
+    //   if result < 2 * target pointer size and RequiresAlign2xPtr(typeHandle):
+    //     result = 2 * target pointer size
     //   return result
     //
     // Note: the native implementation also handles the native (marshalled) value type view via

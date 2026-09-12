@@ -6,7 +6,7 @@
 
 #include "AsmMacros_Shared.h"
 
-// Shared code for RhpNewFast, RhpNewFastAlign8 and RhpNewFastMisalign
+// Shared code for RhpNewFast, RhpNewFastAlign2xPtr and RhpNewFastMisalign
 //  r0 == MethodTable
 .macro NEW_FAST Variation
         PROLOG_PUSH "{r4,lr}"
@@ -32,7 +32,7 @@
         // allocation.
 .ifnc \Variation,
         tst         r3, #0x7
-.ifc \Variation,Align8
+.ifc \Variation,Align2xPtr
         beq         1f // AlreadyAligned
 .else // Variation == "Misalign"
         bne         1f // AlreadyAligned
@@ -97,10 +97,10 @@
 .ifc \Variation,
         mov         r1, #0
 .else
-.ifc \Variation,Align8
-        mov         r1, #GC_ALLOC_ALIGN8
+.ifc \Variation,Align2xPtr
+        mov         r1, #GC_ALLOC_ALIGN_2XPTR
 .else
-        mov         r1, #(GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS)
+        mov         r1, #(GC_ALLOC_ALIGN_2XPTR | GC_ALLOC_ALIGN_2XPTR_BIAS)
 .endif
 .endif
         EPILOG_POP  "{r4,lr}"
@@ -118,9 +118,9 @@ LEAF_END RhpNewFast, _TEXT
 
 // Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFastAlign8, _TEXT
-        NEW_FAST Align8
-LEAF_END RhpNewFastAlign8, _TEXT
+LEAF_ENTRY RhpNewFastAlign2xPtr, _TEXT
+        NEW_FAST Align2xPtr
+LEAF_END RhpNewFastAlign2xPtr, _TEXT
 
 
 // Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
@@ -141,10 +141,10 @@ LEAF_END RhpNewFinalizable, _TEXT
 
 // Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFinalizableAlign8, _TEXT
-        mov         r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8)
+LEAF_ENTRY RhpNewFinalizableAlign2xPtr, _TEXT
+        mov         r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN_2XPTR)
         b           C_FUNC(RhpNewObject)
-LEAF_END RhpNewFinalizableAlign8, _TEXT
+LEAF_END RhpNewFinalizableAlign2xPtr, _TEXT
 
 
 // Allocate non-array object.
@@ -393,7 +393,7 @@ NESTED_END RhpNewVariableSizeObject, _TEXT
 // Allocate an array on an 8 byte boundary.
 //  r0 == MethodTable
 //  r1 == element count
-NESTED_ENTRY RhpNewArrayFastAlign8, _TEXT, NoHandler
+NESTED_ENTRY RhpNewArrayFastAlign2xPtr, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME r3
 
@@ -411,8 +411,8 @@ NESTED_ENTRY RhpNewArrayFastAlign8, _TEXT, NoHandler
         // Preserve the MethodTable in r5.
         mov         r5, r0
 
-        mov         r2, r1                  // numElements
-        mov         r1, #GC_ALLOC_ALIGN8    // uFlags
+        mov         r2, r1                     // numElements
+        mov         r1, #GC_ALLOC_ALIGN_2XPTR  // uFlags
 
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         blx         C_FUNC(RhpGcAlloc)
@@ -452,4 +452,4 @@ LOCAL_LABEL(Array8OutOfMemory1):
         POP_COOP_PINVOKE_FRAME
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewArrayFastAlign8, _TEXT
+NESTED_END RhpNewArrayFastAlign2xPtr, _TEXT

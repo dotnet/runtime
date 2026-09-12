@@ -61,9 +61,9 @@ namespace ILCompiler.DependencyAnalysis
                     _inlined.GetOffsets(),
                     _inlined.GetSize(),
                     factory.Target.PointerSize);
-            bool requiresAlign8 = _type is not null && _type.ThreadGcStaticFieldAlignment.AsInt > factory.Target.PointerSize;
+            bool requiresAlign2xPtr = _type is not null && _type.ThreadGcStaticFieldAlignment.AsInt > factory.Target.PointerSize;
 
-            return factory.GCStaticEEType(map, requiresAlign8);
+            return factory.GCStaticEEType(map, requiresAlign2xPtr);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)

@@ -639,11 +639,11 @@ namespace ILCompiler
         /// This method decides whether the type needs aligned base offset in order to have layout resilient to
         /// base class layout changes.
         /// </summary>
-        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
+        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign2xPtr, bool requiresAlignedBase)
         {
             if (requiresAlignedBase || _compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)type.BaseType, derivedType: type))
             {
-                bool use8Align = (requiresAlign8 || type.BaseType.RequiresAlign8()) && type.Context.Target.Architecture != TargetArchitecture.X86;
+                bool use8Align = (requiresAlign2xPtr || type.BaseType.RequiresAlign2xPtr()) && type.Context.Target.Architecture != TargetArchitecture.X86;
                 LayoutInt alignment = new LayoutInt(use8Align ? 8 : type.Context.Target.PointerSize);
                 baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
             }

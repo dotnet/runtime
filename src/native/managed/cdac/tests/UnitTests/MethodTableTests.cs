@@ -836,7 +836,7 @@ public class MethodTableTests
 
     [Theory]
     [MemberData(nameof(StdArchBool))]
-    public void RequiresAlign8(MockTarget.Architecture arch, bool flagSet)
+    public void RequiresAlign2xPtr(MockTarget.Architecture arch, bool flagSet)
     {
         TargetPointer methodTablePtr = default;
         TestPlaceholderTarget target = CreateTarget(
@@ -845,11 +845,11 @@ public class MethodTableTests
             {
                 if (flagSet)
                 {
-                    MockEEClass eeClass = rtsBuilder.AddEEClass("Align8Type");
+                    MockEEClass eeClass = rtsBuilder.AddEEClass("Align2xPtrType");
                     eeClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
 
-                    MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8Type");
-                    methodTable.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType | MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8);
+                    MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align2xPtrType");
+                    methodTable.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType | MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign2xPtr);
                     methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
                     methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
                     methodTable.NumVirtuals = 3;
@@ -865,7 +865,7 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         ITypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
-        Assert.Equal(flagSet, contract.RequiresAlign8(typeHandle));
+        Assert.Equal(flagSet, contract.RequiresAlign2xPtr(typeHandle));
     }
 
     [Theory]
@@ -1585,9 +1585,9 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetClassAlignmentRequirement_RequiresAlign8_BumpsToEight(MockTarget.Architecture arch)
+    public void GetClassAlignmentRequirement_RequiresAlign2xPtr_BumpsToTwicePointerSize(MockTarget.Architecture arch)
     {
-        const uint RequiresAlign8Flag = 0x00800000; // MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8
+        const uint RequiresAlign2xPtrFlag = 0x00800000; // MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign2xPtr
 
         TargetPointer methodTablePtr = default;
         TestPlaceholderTarget target = CreateTarget(
@@ -1595,11 +1595,11 @@ public class MethodTableTests
             rtsBuilder =>
             {
                 MockEEClass eeClass = rtsBuilder.AddLayoutEEClass(
-                    "Align8", (byte)Data.EEClassLayoutInfo.Type.Sequential, alignmentRequirement: 4, flags: 0);
-                MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8");
+                    "Align2xPtr", (byte)Data.EEClassLayoutInfo.Type.Sequential, alignmentRequirement: 4, flags: 0);
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align2xPtr");
                 methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
                 methodTable.NumVirtuals = 3;
-                methodTable.MTFlags = RequiresAlign8Flag;
+                methodTable.MTFlags = RequiresAlign2xPtrFlag;
                 methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
                 methodTable.EEClassOrCanonMT = eeClass.Address;
                 eeClass.MethodTable = methodTable.Address;
@@ -1609,7 +1609,7 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
 
-        Assert.True(contract.RequiresAlign8(handle));
-        Assert.Equal(8, contract.GetClassAlignmentRequirement(handle));
+        Assert.True(contract.RequiresAlign2xPtr(handle));
+        Assert.Equal(2 * target.PointerSize, contract.GetClassAlignmentRequirement(handle));
     }
 }

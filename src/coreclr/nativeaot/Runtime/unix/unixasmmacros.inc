@@ -37,8 +37,8 @@
 
 // GC type flags
 #define GC_ALLOC_FINALIZE           1
-#define GC_ALLOC_ALIGN8_BIAS        4
-#define GC_ALLOC_ALIGN8             8
+#define GC_ALLOC_ALIGN_2XPTR_BIAS   4
+#define GC_ALLOC_ALIGN_2XPTR        8
 
 #define G_FREE_OBJECT_METHOD_TABLE  g_pFreeObjectEEType
 

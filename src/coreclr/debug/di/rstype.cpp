@@ -2726,10 +2726,10 @@ void CordbType::GatherTypeDataForInstantiation(unsigned int genericArgsCount, IC
     }
 }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-// checks if the type requires 8-byte alignment. the algorithm used here
+#ifdef FEATURE_2XPTR_ALIGNMENT
+// checks if the type requires 2 * pointer-size alignment. the algorithm used here
 // was adapted from AdjustArgPtrForAlignment() in bcltype/VarArgsNative.cpp
-HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
+HRESULT CordbType::RequiresAlign2xPtr(BOOL* isRequired)
 {
     if (isRequired == NULL)
         return E_INVALIDARG;
@@ -2756,7 +2756,7 @@ HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
                         InitInstantiationTypeHandle(FALSE);
 
                     BOOL _alignResult;
-                    IfFailThrow(GetProcess()->GetDAC()->RequiresAlign8(m_typeHandleExact, &_alignResult));
+                    IfFailThrow(GetProcess()->GetDAC()->RequiresAlign2xPtr(m_typeHandleExact, &_alignResult));
                     *isRequired = _alignResult;
                 }
                 else

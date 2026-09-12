@@ -48,16 +48,16 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEWFAST_MAYBEFROZEN, // allocator for objects that *might* allocate them on a frozen segment
         CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
         CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
-        CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
-        CORINFO_HELP_NEWSFAST_ALIGN8_VC, // allocator for small, value class, 8 byte aligned
-        CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
+        CORINFO_HELP_NEWSFAST_ALIGN_2XPTR, // allocator for small, non-finalizer, non-array object, 2 * pointer-size aligned
+        CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC, // allocator for small, value class, 2 * pointer-size aligned
+        CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_FINALIZE, // allocator for small, finalizable, non-array object, 2 * pointer-size aligned
         CORINFO_HELP_NEW_MDARR, // multi-dim array helper for arrays Rank != 1 (with or without lower bounds - dimensions passed in as unmanaged array)
         CORINFO_HELP_NEW_MDARR_RARE, // rare multi-dim array helper (Rank == 1)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
         CORINFO_HELP_NEWARR_1_PTR,      // optimized arrays of pointer sized elements
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
-        CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
+        CORINFO_HELP_NEWARR_1_ALIGN_2XPTR, // like VC, but aligns the array start
 
         /* Object model */
 

@@ -148,11 +148,11 @@
 
 // Some 32-bit platform ABIs require that 64-bit primitive types and composite types containing them are aligned at 64-bit boundaries.
 #if defined(TARGET_ARM) || defined(TARGET_WASM)
-#define FEATURE_64BIT_ALIGNMENT
+#define FEATURE_2XPTR_ALIGNMENT
 #endif
 
 // Prefer double alignment for structs with doubles on the stack.
-#if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(HOST_64BIT)
+#if !defined(FEATURE_2XPTR_ALIGNMENT) && !defined(HOST_64BIT)
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
 
