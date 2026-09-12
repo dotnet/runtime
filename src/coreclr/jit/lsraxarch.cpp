@@ -424,13 +424,21 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             else
             {
-                srcCount = BuildOperandUses(tree->gtGetOp1());
+                srcCount = BuildUnaryRMWUses(tree->gtGetOp1());
             }
             BuildDef(tree);
             break;
 
         case GT_NOT:
-            srcCount = BuildOperandUses(tree->gtGetOp1());
+            srcCount = BuildUnaryRMWUses(tree->gtGetOp1());
+            BuildDef(tree);
+            break;
+
+        case GT_BSWAP:
+        case GT_BSWAP16:
+            // These are "bswap reg" / "ror reg.16, 8", which are RMW, unless the
+            // operand is contained, in which case we generate a "movbe reg, [mem]".
+            srcCount = BuildUnaryRMWUses(tree->gtGetOp1());
             BuildDef(tree);
             break;
 
@@ -818,6 +826,34 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         default:
             return true;
     }
+}
+
+//------------------------------------------------------------------------
+// BuildUnaryRMWUses: Build the use RefPosition for a unary node whose instruction
+//                    form is read-modify-write, e.g. "neg reg", "not reg", "bswap reg".
+//
+// Arguments:
+//    op1        - the operand of the unary node
+//    candidates - the register candidates for the use
+//
+// Return Value:
+//    The number of sources consumed by the node.
+//
+// Notes:
+//    Unlike the binary case handled by BuildRMWUses, there is no second operand that
+//    could be assigned the target register, so no `delayRegFree` is needed here; we
+//    only preference the operand to the target so that codegen can elide the "mov"
+//    that emitIns_BASE_R_R() would otherwise emit ahead of the instruction.
+//
+int LinearScan::BuildUnaryRMWUses(GenTree* op1, SingleTypeRegSet candidates)
+{
+    if (op1->isContained())
+    {
+        return BuildOperandUses(op1, candidates);
+    }
+
+    tgtPrefUse = BuildUse(op1, candidates);
+    return 1;
 }
 
 // Support for building RefPositions for RMW nodes.

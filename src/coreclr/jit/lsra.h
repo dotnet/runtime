@@ -1955,6 +1955,7 @@ private:
 #ifdef TARGET_XARCH
     int BuildRMWUses(
         GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
+    int                     BuildUnaryRMWUses(GenTree* op1, SingleTypeRegSet candidates = RBM_NONE);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
     inline SingleTypeRegSet ForceLowGprForApx(GenTree*         tree,
                                               SingleTypeRegSet candidates = RBM_NONE,
