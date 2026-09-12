@@ -221,6 +221,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ReverseBitsTest()
+        {
+            Assert.Equal(unchecked((short)0x8000), BinaryIntegerHelper<short>.ReverseBits(0x0001));
+            Assert.Equal(unchecked((short)0b10000_1000_100_10_1_0), BinaryIntegerHelper<short>.ReverseBits(0b0_1_01_001_0001_00001));
+            Assert.Equal(unchecked((short)0xC480), BinaryIntegerHelper<short>.ReverseBits(0x0123));
+            Assert.Equal(unchecked((short)0x8421), BinaryIntegerHelper<short>.ReverseBits(unchecked((short)0x8421)));
+            Assert.Equal(unchecked((short)0xAAAA), BinaryIntegerHelper<short>.ReverseBits(0x5555));
+        }
+
+        [Fact]
         public static void RotateLeftTest()
         {
             Assert.Equal((short)0x0000, BinaryIntegerHelper<short>.RotateLeft((short)0x0000, 1));
