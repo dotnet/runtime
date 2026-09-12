@@ -34,6 +34,8 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
 
 schedules:
 - cron: "30 2 * * *"
@@ -48,7 +50,18 @@ extends:
   parameters:
     stages:
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: ${{ iif(and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')), '$(HelixApiAccessToken)', '') }}
+          # Cap monitoring at six hours even though slow jobs can run longer.
+          timeoutInMinutes: 360
+          allowNoHelixJobs: true
+
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - template: /eng/pipelines/runtime-slow-perf-jobs.yml@performance
           parameters:
