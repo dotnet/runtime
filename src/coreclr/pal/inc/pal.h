@@ -369,6 +369,20 @@ bool
 PALAPI
 PAL_PerfJitDump_IsStarted();
 
+typedef struct _PAL_PerfJitDumpDebugEntry
+{
+    ULONG64 address;    // absolute native code address
+    INT32 line;         // "line number" (IL-offset based, see PerfMap::LogJITCompiledMethod)
+    INT32 discrim;
+} PAL_PerfJitDumpDebugEntry;
+
+typedef struct _PAL_PerfJitDumpDebugInfo
+{
+    ULONG64 nrEntries;
+    const char* fileName;                       // shared by all entries
+    const PAL_PerfJitDumpDebugEntry* entries;
+} PAL_PerfJitDumpDebugInfo;
+
 PALIMPORT
 int
 PALAPI
