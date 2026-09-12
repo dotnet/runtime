@@ -84,9 +84,14 @@ namespace SerializerTrimmingTest
             }
         }
 
-        public static bool AssertCollectionAndSerialize<T>(object obj, string json)
+        /// <summary>
+        /// Deserializes and re-serializes a collection payload using source generated
+        /// metadata, asserting that it round trips unchanged.
+        /// </summary>
+        public static bool RoundtripCollection(string json, Type type, JsonSerializerContext context)
         {
-            return obj is T && JsonSerializer.Serialize(obj) == json;
+            object obj = JsonSerializer.Deserialize(json, type, context);
+            return obj != null && JsonSerializer.Serialize(obj, type, context) == json;
         }
     }
 
