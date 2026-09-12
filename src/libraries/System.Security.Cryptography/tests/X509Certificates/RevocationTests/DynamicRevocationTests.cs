@@ -1228,6 +1228,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreRootUnknown()
         {
             SelfIssuedButNotSelfSignedRevocationUnknown(
@@ -1253,6 +1254,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreIntermediateUnknown()
         {
             SelfIssuedButNotSelfSignedRevocationUnknown(
