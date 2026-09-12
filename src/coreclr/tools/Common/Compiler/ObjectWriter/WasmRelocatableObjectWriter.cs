@@ -10,6 +10,7 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem.TypesDebugInfo;
 using ILCompiler.DependencyAnalysis.Wasm;
+using System.Linq;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -59,6 +60,7 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
             FinalizeSectionEntryCounts();
+            _dataSection?.AssignSegmentLayout();
             ResolveSectionRelocations();
 
             EmitWasmHeader(outputFileStream);
@@ -112,6 +114,7 @@ namespace ILCompiler.ObjectWriter
 
         private unsafe void ResolveRelocations(int sectionIndex, MemoryStream sectionStream, List<SymbolicRelocation> relocs, long sectionStart = 0)
         {
+            // TODO: We also need to emit relocations in the reloc section for the linker to resolve.
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
             foreach (SymbolicRelocation reloc in relocs)
@@ -158,12 +161,25 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
                             break;
                         }
+                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                        {
+                            if (_sections[definedSymbol.SectionIndex] is WasmDataSegmentEmitter segment)
+                            {
+long targetAddress = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend)) + reloc.Addend;
+                                Relocation.WriteValue(reloc.Type, pData, targetAddress);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException();
+                            }
+                            break;
+                        }
 
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
                             throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' at "
-                                + $"offset 0x{reloc.Offset:X} in section {sectionIndex} not yet implemented");
+                                + $"offset 0x{reloc.Offset:X} in section {_sections[sectionIndex].SectionName} not yet implemented");
 
                     }
 
@@ -185,6 +201,9 @@ namespace ILCompiler.ObjectWriter
                 sectionStream.Write(new Span<byte>(pData, Relocation.GetSize(reloc.Type)));
             }
         }
+
+        // TODO: This is a temporary workaround for the fact that we don't yet emit a COMDAT section (or any reloc / linking sections)
+        private protected override bool UsesSubsectionsViaSymbols => true;
 
         private protected override SectionDataEmitter CreateDataSection(
             ObjectNodeSection section,
@@ -245,12 +264,23 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteExports()
         {
+            WasmSection codeSection = GetOrCreateSection<WasmSection>(ObjectNodeSection.WasmCodeSection, out _);
+            int codeSectionIndex = codeSection.SectionIndex;
+            foreach (var symbol in _definedSymbols)
+            {
+                // We only export methods for now
+                if (!symbol.Value.Global || symbol.Value.SectionIndex != codeSectionIndex)
+                    continue;
+
+                WasmSymbol methodEntry = _wasmSymbolManager.GetSymbol(symbol.Key);
+                Debug.Assert(methodEntry.IndexSpace == WasmIndexSpace.Function);
+                WriteFunctionExport(symbol.Key.ToString(), methodEntry.Index);
+            }
         }
 
         private protected override void WriteElements()
         {
         }
-
 
         // ObjectWriter.Aot.cs methods
         private protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo, Utf8String currentSymbolName)
