@@ -40,6 +40,79 @@ public static class XmlDictionaryWriterTest
         Assert.Equal(expect, actual);
     }
 
+    public static IEnumerable<object[]> WriteNode_ReaderKinds()
+    {
+        yield return new object[] { "wrapped" };
+        yield return new object[] { "text" };
+    }
+
+    // Source document where the "my" prefix (bound on the ancestor) is referenced only from
+    // content: the xsi:type attribute value and the element text. A plain copy therefore drops
+    // xmlns:my; the opt-in preserveNamespacesInScope re-declares it on the copied root.
+    private const string WriteNode_SourceXml =
+        "<s:sourceRoot xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+        "xmlns:s=\"common-schema\" xmlns:my=\"my-custom-schema\">" +
+        "<s:target xsi:type=\"my:customType\">my:otherType</s:target>" +
+        "</s:sourceRoot>";
+
+    [Theory]
+    [MemberData(nameof(WriteNode_ReaderKinds))]
+    public static void WriteNode_PreserveNamespacesInScope_ReDeclaresContentOnlyNamespace(string readerKind)
+    {
+        string copied = WriteNode_CopyTargetElement(readerKind, preserveNamespacesInScope: true);
+
+        Assert.Contains("xmlns:my=\"my-custom-schema\"", copied);
+
+        // The xsi:type value can now be resolved in the copied fragment.
+        using XmlReader verify = XmlReader.Create(new StringReader(copied));
+        verify.MoveToContent();
+        Assert.Equal("my-custom-schema", verify.LookupNamespace("my"));
+    }
+
+    [Theory]
+    [MemberData(nameof(WriteNode_ReaderKinds))]
+    public static void WriteNode_Default_DropsContentOnlyNamespace(string readerKind)
+    {
+        string copied = WriteNode_CopyTargetElement(readerKind, preserveNamespacesInScope: false);
+
+        // Prefixes used by element/attribute names are still declared...
+        Assert.Contains("common-schema", copied);
+        Assert.Contains("http://www.w3.org/2001/XMLSchema-instance", copied);
+        // ...but the content-only namespace is dropped (documents the long-standing behavior).
+        Assert.DoesNotContain("my-custom-schema", copied);
+    }
+
+    private static string WriteNode_CopyTargetElement(string readerKind, bool preserveNamespacesInScope)
+    {
+        var sb = new StringBuilder();
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateDictionaryWriter(
+            XmlWriter.Create(sb, new XmlWriterSettings { OmitXmlDeclaration = true })))
+        using (XmlDictionaryReader reader = WriteNode_CreateReader(readerKind))
+        {
+            reader.MoveToContent();   // s:sourceRoot
+            reader.Read();            // s:target
+            Assert.Equal("target", reader.LocalName);
+
+            if (preserveNamespacesInScope)
+                writer.WriteNode(reader, defattr: true, preserveNamespacesInScope: true);
+            else
+                writer.WriteNode(reader, defattr: true);
+
+            writer.Flush();
+        }
+
+        return sb.ToString();
+    }
+
+    private static XmlDictionaryReader WriteNode_CreateReader(string readerKind) => readerKind switch
+    {
+        // Exercises XmlWrappedReader delegating to an inner IXmlNamespaceResolver.
+        "wrapped" => XmlDictionaryReader.CreateDictionaryReader(XmlReader.Create(new StringReader(WriteNode_SourceXml))),
+        // Exercises the native XmlBaseReader NamespaceManager path.
+        "text" => XmlDictionaryReader.CreateTextReader(Encoding.UTF8.GetBytes(WriteNode_SourceXml), XmlDictionaryReaderQuotas.Max),
+        _ => throw new ArgumentOutOfRangeException(nameof(readerKind)),
+    };
+
     [Fact]
     public static void XmlBaseWriter_WriteBinHex()
     {
