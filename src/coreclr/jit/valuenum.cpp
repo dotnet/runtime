@@ -10345,7 +10345,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
         }
         else
         {
-            assert(typ == TYP_INT);
+            assert((typ == TYP_INT) || ((typ == TYP_LONG) && m_compiler->IsBitCountingIntrinsic(gtMathFN)));
             int res = 0;
 
             if (gtMathFN == NI_System_Math_ILogB)
@@ -10445,7 +10445,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 unreached();
             }
 
-            return VNForIntCon(res);
+            return (typ == TYP_LONG) ? VNForLongCon(res) : VNForIntCon(res);
         }
     }
     else
