@@ -718,7 +718,7 @@ namespace System.Collections.Generic
         /// completely different from <see cref="TreeSubSet"/>'s, and that the two should not be mixed.
         /// </para>
         /// </remarks>
-        internal virtual int InternalIndexOf(T item)
+        internal int InternalIndexOf(T item)
         {
             Node? current = root;
             int count = 0;
@@ -737,11 +737,12 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
+        internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true, level: out _);
 
-        internal Node? FindRange(T? from, T? to, bool lowerBoundActive, bool upperBoundActive)
+        internal Node? FindRange(T? from, T? to, bool lowerBoundActive, bool upperBoundActive, out int level)
         {
             Node? current = root;
+            level = 0;
             while (current != null)
             {
                 if (lowerBoundActive && comparer.Compare(from, current.Item) > 0)
@@ -759,6 +760,7 @@ namespace System.Collections.Generic
                         return current;
                     }
                 }
+                level++;
             }
 
             return null;
@@ -1382,8 +1384,18 @@ namespace System.Collections.Generic
                 return result;
             }
 
-            int originalLastIndex = Count;
-            int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
+            int maxHeight = GetApproximateMaxHeight();
+
+            // maxHeight = 12 needs 8kb for bitHelper, use fallback with HashSet if maxHeight > 12 to mitigate
+            // this by limiting memory complexity to O(n).
+            if (maxHeight > 12)
+            {
+                return CheckUniqueAndUnfoundElementsFallback(other, returnIfUnfound);
+            }
+
+            // A perfect tree of height H has H^2 - 1 nodes; (round up to H^2).
+            int indexLimit = (1 << maxHeight);
+            int intArrayLength = BitHelper.ToIntArrayLength(indexLimit);
 
             Span<int> span = stackalloc int[StackAllocThreshold];
             BitHelper bitHelper = (uint)intArrayLength <= StackAllocThreshold ?
@@ -1391,14 +1403,14 @@ namespace System.Collections.Generic
                 new BitHelper(new int[intArrayLength], clear: false);
 
             // count of items in other not found in this
-            int UnfoundCount = 0;
+            int unfoundCount = 0;
             // count of unique items in other found in this
             int uniqueFoundCount = 0;
 
             foreach (T item in other)
             {
                 int index = InternalIndexOf(item);
-                if (index >= 0)
+                if ((uint)index < (uint)indexLimit) // Equivalent of "index >= 0 && index < indexLimit"
                 {
                     if (!bitHelper.IsMarked(index))
                     {
@@ -1407,9 +1419,53 @@ namespace System.Collections.Generic
                         uniqueFoundCount++;
                     }
                 }
+                else if (index < 0)
+                {
+                    unfoundCount++;
+                    if (returnIfUnfound)
+                    {
+                        break;
+                    }
+                }
                 else
                 {
-                    UnfoundCount++;
+                    // Safe guard: since maxHeight isn't guaranteed, we might need to grow the bitHelper.
+                    indexLimit = (int)BitOperations.RoundUpToPowerOf2((uint)index);
+                    intArrayLength = BitHelper.ToIntArrayLength(indexLimit);
+                    Span<int> newSpan = new int[intArrayLength];
+                    bitHelper.Span.CopyTo(newSpan);
+                    bitHelper = new BitHelper(newSpan, clear: false);
+                }
+            }
+
+            result.UniqueCount = uniqueFoundCount;
+            result.UnfoundCount = unfoundCount;
+            return result;
+        }
+
+        private ElementCount CheckUniqueAndUnfoundElementsFallback(IEnumerable<T> other, bool returnIfUnfound)
+        {
+            ElementCount result;
+            HashSet<Node>? seenNodes = null;
+            // count of items in other not found in this
+            int unfoundCount = 0;
+            // count of unique items in other found in this
+            int uniqueFoundCount = 0;
+
+            foreach (T item in other)
+            {
+                Node? node = FindNode(item);
+                if (node != null)
+                {
+                    seenNodes ??= new HashSet<Node>();
+                    if (seenNodes.Add(node))
+                    {
+                        uniqueFoundCount++;
+                    }
+                }
+                else
+                {
+                    unfoundCount++;
                     if (returnIfUnfound)
                     {
                         break;
@@ -1418,7 +1474,7 @@ namespace System.Collections.Generic
             }
 
             result.UniqueCount = uniqueFoundCount;
-            result.UnfoundCount = UnfoundCount;
+            result.UnfoundCount = unfoundCount;
             return result;
         }
 
@@ -2009,6 +2065,20 @@ namespace System.Collections.Generic
 
         // Used for set checking operations (using enumerables) that rely on counting
         private static int Log2(int value) => BitOperations.Log2((uint)value);
+
+        // The max height is approximate for two reasons:
+        // - SortedSet: the limit is based on "Introduction to algorithms" by Thomas H. Cormen,
+        //   but this implementation deviates slightly from the one in the book;
+        //   it does not immediately do the foxups after Adds/Removes elements, but it is lazily done
+        //   on subsequent Adds/Removes. Further proof is needed to guarantee the max height.
+        // - TreeSubSet: it is based on _rootLevel which can be out-of-date
+        //   (and _underlying.GetApproximateMaxHeight which is approximate).
+        internal virtual int GetApproximateMaxHeight()
+        {
+            // The maximum height of a red-black tree is 2 * log2(n+1).
+            // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
+            return 2 * BitOperations.Log2((uint)count + 1);
+        }
 
         #endregion
     }
