@@ -167,6 +167,9 @@ public:
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
 
     static void ResolvePInvokeTarget(PInvokeMethodDesc* pNMD);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    static BOOL TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 private:
     PInvoke() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class

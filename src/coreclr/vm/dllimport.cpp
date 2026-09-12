@@ -5814,6 +5814,16 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
 
 namespace
 {
+    void RunPInvokeClassConstructor(PInvokeMethodDesc* pMD)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pMD->IsClassConstructorTriggeredAtLinkTime())
+        {
+            pMD->GetMethodTable()->CheckRunClassInitThrowing();
+        }
+    }
+
     LPVOID PInvokeGetEntryPoint(PInvokeMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
     {
         // GetProcAddress cannot be called while preemptive GC is disabled.
@@ -5829,9 +5839,9 @@ namespace
     }
 
     //---------------------------------------------------------
-    // Loads the DLL and finds the procaddress for an PInvoke call.
+    // Resolves P/Invokes handled by runtime-provided static lookup tables.
     //---------------------------------------------------------
-    VOID PInvokeLink(PInvokeMethodDesc *pMD)
+    BOOL TryResolvePInvokeTargetFromOverride(PInvokeMethodDesc* pMD)
     {
         CONTRACTL
         {
@@ -5839,11 +5849,6 @@ namespace
             PRECONDITION(CheckPointer(pMD));
         }
         CONTRACTL_END;
-
-        if (pMD->IsClassConstructorTriggeredAtLinkTime())
-        {
-            pMD->GetMethodTable()->CheckRunClassInitThrowing();
-        }
 
         if (pMD->IsQCall())
         {
@@ -5854,21 +5859,39 @@ namespace
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetPInvokeTarget(pvTarget);
-            return;
+            return TRUE;
         }
 
-        // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
         pMD->EnsureActive();
 
-        {
-            LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
-            if (pvTarget != NULL)
-            {
-                pMD->SetPInvokeTarget(pvTarget);
-                return;
-            }
-        }
+        LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
+        if (pvTarget == NULL)
+            return FALSE;
 
+        pMD->SetPInvokeTarget(pvTarget);
+        return TRUE;
+    }
+
+    //---------------------------------------------------------
+    // Loads the DLL and finds the procaddress for an PInvoke call.
+    //---------------------------------------------------------
+    VOID PInvokeLink(PInvokeMethodDesc* pMD)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pMD));
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(!pMD->IsEarlyBound());
+
+        RunPInvokeClassConstructor(pMD);
+
+        if (TryResolvePInvokeTargetFromOverride(pMD))
+            return;
+
+        // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
         NATIVE_LIBRARY_HANDLE hmod = NativeLibrary::LoadLibraryFromMethodDesc(pMD);
         _ASSERTE(hmod != NULL);
 
@@ -5963,6 +5986,35 @@ void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
         PInvokeLink(pNMD);
     }
 }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+BOOL PInvoke::TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+
+        PRECONDITION(CheckPointer(pNMD));
+    }
+    CONTRACTL_END;
+
+    if (!pNMD->PInvokeTargetIsImportThunk())
+    {
+        RunPInvokeClassConstructor(pNMD);
+        return TRUE;
+    }
+
+    PopulatePInvokeMethodDesc(pNMD);
+
+    if (!TryResolvePInvokeTargetFromOverride(pNMD))
+        return FALSE;
+
+    RunPInvokeClassConstructor(pNMD);
+    return TRUE;
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 PCODE JitILStub(MethodDesc* pStubMD)
 {
