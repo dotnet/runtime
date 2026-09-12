@@ -1772,6 +1772,87 @@ namespace System.Numerics.Tensors.Tests
             });
         }
         #endregion
+
+        #region Number aggregates
+        [Fact]
+        public void NumberAggregates_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengths, length =>
+            {
+                T[] values = new T[length];
+                for (int i = 0; i < length; i++)
+                {
+                    T value = T.CreateChecked(i + 1);
+                    values[i] = (i & 1) == 0 ? value : -value;
+                }
+
+                T expectedMinNumber = values[0];
+                T expectedMaxNumber = values[0];
+                T expectedMinMagnitudeNumber = values[0];
+                T expectedMaxMagnitudeNumber = values[0];
+
+                for (int i = 1; i < values.Length; i++)
+                {
+                    expectedMinNumber = T.MinNumber(expectedMinNumber, values[i]);
+                    expectedMaxNumber = T.MaxNumber(expectedMaxNumber, values[i]);
+                    expectedMinMagnitudeNumber = T.MinMagnitudeNumber(expectedMinMagnitudeNumber, values[i]);
+                    expectedMaxMagnitudeNumber = T.MaxMagnitudeNumber(expectedMaxMagnitudeNumber, values[i]);
+                }
+
+                Assert.Equal(expectedMinNumber, TensorPrimitives.MinNumber<T>(values));
+                Assert.Equal(expectedMaxNumber, TensorPrimitives.MaxNumber<T>(values));
+                Assert.Equal(expectedMinMagnitudeNumber, TensorPrimitives.MinMagnitudeNumber<T>(values));
+                Assert.Equal(expectedMaxMagnitudeNumber, TensorPrimitives.MaxMagnitudeNumber<T>(values));
+            });
+        }
+
+        [Fact]
+        public void NumberAggregates_IgnoreNaN_AllLengths()
+        {
+            // IEEE 754:2019 minimumNumber/maximumNumber ignore a NaN operand when a numeric one is
+            // available. Exercise every reduction length so scalar, Vector128, Vector256, Vector512,
+            // and scalar-tail paths are covered where supported.
+            T nan = T.CreateTruncating(float.NaN);
+            T one = T.One;
+            T two = one + one;
+
+            Assert.All(Helpers.TensorLengths, length =>
+            {
+                T[] allNaNs = new T[length];
+                Array.Fill(allNaNs, nan);
+
+                Assert.Equal(nan, TensorPrimitives.MinNumber<T>(allNaNs));
+                Assert.Equal(nan, TensorPrimitives.MaxNumber<T>(allNaNs));
+                Assert.Equal(nan, TensorPrimitives.MinMagnitudeNumber<T>(allNaNs));
+                Assert.Equal(nan, TensorPrimitives.MaxMagnitudeNumber<T>(allNaNs));
+
+                if (length == 1)
+                {
+                    return;
+                }
+
+                T[] values = new T[length];
+                T expectedMaximum = length > 2 ? two : one;
+
+                foreach (int nanIndex in new[] { 0, length / 2, length - 1 })
+                {
+                    Array.Fill(values, two);
+                    values[nanIndex] = nan;
+                    values[(nanIndex + 1) % length] = one;
+
+                    Assert.Equal(one, TensorPrimitives.MinNumber<T>(values));
+                    Assert.Equal(expectedMaximum, TensorPrimitives.MaxNumber<T>(values));
+                    Assert.Equal(one, TensorPrimitives.MinMagnitudeNumber<T>(values));
+                    Assert.Equal(expectedMaximum, TensorPrimitives.MaxMagnitudeNumber<T>(values));
+                }
+            });
+
+            // Signed zeros follow minimumNumber/maximumNumber: +0 is greater than -0.
+            T[] signedZeros = { -T.Zero, T.Zero };
+            Assert.True(T.IsNegative(TensorPrimitives.MinNumber<T>(signedZeros)));
+            Assert.False(T.IsNegative(TensorPrimitives.MaxNumber<T>(signedZeros)));
+        }
+        #endregion
     }
 
     public unsafe abstract class GenericSignedIntegerTensorPrimitivesTests<T> : GenericIntegerTensorPrimitivesTests<T>
