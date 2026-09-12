@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization
         WhenWritingDefault = 2,
         /// <summary>
         /// If the value is <see langword="null"/>, the property is ignored during serialization.
-        /// This is applied only to reference-type properties and fields.
+        /// This is applied only to reference and nullable value-type properties and fields.
         /// </summary>
         WhenWritingNull = 3,
         /// <summary>
