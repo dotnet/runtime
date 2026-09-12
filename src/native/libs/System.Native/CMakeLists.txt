@@ -57,7 +57,7 @@ else() # WASI
     )
 endif()
 
-if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
+if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU OR CLR_CMAKE_TARGET_OPENHARMONY)
     # These platforms do not support robust mutexes.
     # Keep an OS list instead of CMake configure checks since we also need to synchronize this with
     # the compile-time guards on the managed code side at

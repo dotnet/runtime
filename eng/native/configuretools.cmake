@@ -28,11 +28,27 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
       return()
     endif()
 
+    # For NDK-style toolchains (OpenHarmony) the compiler lives outside PATH.
+    # Hint find_program at the compiler's directory so tools like llvm-ar/nm are located.
+    # Guarded to OHOS only so other platforms keep their existing lookup behavior.
+    if(CLR_CMAKE_HOST_OPENHARMONY)
+      get_filename_component(CLR_COMPILER_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
+    endif()
+
     unset(EXEC_LOCATION_${exec} CACHE)
-    find_program(EXEC_LOCATION_${exec}
-      NAMES
-      "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
-      "${TOOLSET_PREFIX}${exec}")
+    if(CLR_CMAKE_HOST_OPENHARMONY)
+      find_program(EXEC_LOCATION_${exec}
+        NAMES
+        "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
+        "${TOOLSET_PREFIX}${exec}"
+        HINTS
+        "${CLR_COMPILER_DIR}")
+    else()
+      find_program(EXEC_LOCATION_${exec}
+        NAMES
+        "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
+        "${TOOLSET_PREFIX}${exec}")
+    endif()
 
     if (required AND EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
       message(FATAL_ERROR "Unable to find toolchain executable. Name: '${exec}', Prefix: '${TOOLSET_PREFIX}'")
