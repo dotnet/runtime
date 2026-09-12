@@ -46,6 +46,11 @@ namespace System.Buffers
                 else
                 {
                     memory = startSegment.Memory.Slice(startIndex, endIndex - startIndex);
+                    if (memory.IsEmpty)
+                    {
+                        // The position is at the end of the sequence, no segment to return.
+                        return false;
+                    }
                 }
             }
             else
@@ -53,24 +58,32 @@ namespace System.Buffers
                 if (positionObject != endObject)
                     ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
+                int length = endIndex - startIndex;
+                if (length == 0)
+                {
+                    // The position is at the end of the sequence, no segment to return.
+                    memory = default;
+                    return false;
+                }
+
                 if (type == SequenceType.Array)
                 {
                     Debug.Assert(positionObject is T[]);
 
-                    memory = new ReadOnlyMemory<T>((T[])positionObject, startIndex, endIndex - startIndex);
+                    memory = new ReadOnlyMemory<T>((T[])positionObject, startIndex, length);
                 }
                 else if (typeof(T) == typeof(char) && type == SequenceType.String)
                 {
                     Debug.Assert(positionObject is string);
 
-                    memory = (ReadOnlyMemory<T>)(object)((string)positionObject).AsMemory(startIndex, endIndex - startIndex);
+                    memory = (ReadOnlyMemory<T>)(object)((string)positionObject).AsMemory(startIndex, length);
                 }
                 else // type == SequenceType.MemoryManager
                 {
                     Debug.Assert(type == SequenceType.MemoryManager);
                     Debug.Assert(positionObject is MemoryManager<T>);
 
-                    memory = ((MemoryManager<T>)positionObject).Memory.Slice(startIndex, endIndex - startIndex);
+                    memory = ((MemoryManager<T>)positionObject).Memory.Slice(startIndex, length);
                 }
             }
 
