@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -242,6 +243,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(BackendSupportsAlpn))]
+        [SkipOnPlatform(TestPlatforms.Android, "JSSE rejects the oversized ALPN list during the handshake, surfacing AuthenticationException instead of ArgumentException.")]
         public async Task SslStream_StreamToStream_AlpnListTotalSizeExceedsLimit_Throws()
         {
             // Each protocol is 255 bytes, serialized with a 1-byte length prefix = 256 bytes each.
