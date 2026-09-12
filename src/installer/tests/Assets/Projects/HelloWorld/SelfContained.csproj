@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>HelloWorld</AssemblyName>
-    <TargetFramework>net6.0</TargetFramework>
+    <!-- Intentionally an older version - used for host/runtime back-compat testing -->
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <SelfContained>true</SelfContained>
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
