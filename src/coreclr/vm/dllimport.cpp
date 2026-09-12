@@ -5879,6 +5879,8 @@ namespace
         }
         CONTRACTL_END;
 
+        _ASSERTE(!pMD->IsEarlyBound());
+
         if (TryResolvePInvokeTargetFromOverride(pMD))
             return;
 
