@@ -3336,16 +3336,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Generate a direct call to a non-virtual user defined or helper method
         assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-        assert(call->gtEntryPoint.addr == NULL);
-
         if (call->IsHelperCall())
         {
             assert(!call->IsFastTailCall());
-            CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
-            CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-            assert(helperLookup.accessType == IAT_VALUE);
-            params.addr = helperLookup.addr;
+
+            if (call->gtDirectCallAddress != nullptr)
+            {
+                params.addr = call->gtDirectCallAddress;
+            }
+            else
+            {
+                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+                assert(helperLookup.accessType == IAT_VALUE);
+                params.addr = helperLookup.addr;
+            }
         }
         else
         {
@@ -3388,9 +3394,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
     else
     {
-        params.addr = nullptr;
         assert(helperFunction.accessType == IAT_PVALUE);
-
+        params.addr     = nullptr;
         params.callType = EC_INDIR_R;
     }
 
@@ -3401,6 +3406,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     CorInfoWasmType* types           = nullptr;
     size_t           typeCount       = 0;
     bool             helperIsManaged = false;
+    bool             helperUsesPep   = false;
 
     const bool MANAGED = true, UNMANAGED = false;
 #ifdef TARGET_64BIT
@@ -3416,6 +3422,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         types                                      = helper_id##_types;                                                \
         typeCount                                  = ArrLen(helper_id##_types);                                        \
         helperIsManaged                            = is_managed;                                                       \
+        helperUsesPep = helperIsManaged && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS); \
+        if (helperIsManaged /* `types` includes PEP */ && !helperUsesPep)                                              \
+            typeCount--;                                                                                               \
         break;                                                                                                         \
     }
 
@@ -3458,7 +3467,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
-    if (helperIsManaged)
+    if (helperUsesPep)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
         // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP

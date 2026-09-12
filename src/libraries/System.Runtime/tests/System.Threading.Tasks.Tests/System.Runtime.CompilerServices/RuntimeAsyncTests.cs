@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -21,6 +22,7 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo s_continuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
         private static readonly FieldInfo s_activeTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
         private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "s_activeFlags");
+        private static readonly FieldInfo s_taskIdField = GetCorLibClassInstanceField("System.Threading.Tasks.Task", "m_taskId");
 
         private static readonly object s_debuggerLock = new object();
 
@@ -88,6 +90,23 @@ namespace System.Threading.Tasks.Tests
             if (field == null)
             {
                 throw new InvalidOperationException($"Expected static field '{fieldName}' to exist on type '{className}'.");
+            }
+
+            return field;
+        }
+
+        private static FieldInfo GetCorLibClassInstanceField(string className, string fieldName)
+        {
+            Type? classType = typeof(object).Assembly.GetType(className);
+            if (classType == null)
+            {
+                throw new InvalidOperationException($"Type '{className}' doesn't exist in System.Private.CoreLib.");
+            }
+
+            FieldInfo? field = classType.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Expected instance field '{fieldName}' to exist on type '{className}'.");
             }
 
             return field;
@@ -169,6 +188,12 @@ namespace System.Threading.Tasks.Tests
         {
             await tcs1.Task;
             await tcs2.Task;
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task FuncThatWaitsOnce(Task task)
+        {
+            await task;
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -405,8 +430,8 @@ namespace System.Threading.Tasks.Tests
             {
                 AttachDebugger();
 
-                var tcs1 = new TaskCompletionSource();
-                var tcs2 = new TaskCompletionSource();
+                var tcs1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tcs2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 Task inflight = FuncThatWaitsTwice(tcs1, tcs2);
 
                 // Task is suspended on tcs1 — should be in active tasks
@@ -576,6 +601,169 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        public void RuntimeAsync_TaskWaitEvents()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                const int TaskWaitBeginId = 10;
+                const int TaskWaitEndId = 11;
+
+                AttachDebugger();
+
+                var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
+                {
+                    listener.RunWithCallback(events.Enqueue, () =>
+                    {
+                        var tcs1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        var tcs2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        Task runtimeAsyncTask = FuncThatWaitsTwice(tcs1, tcs2);
+                        int runtimeAsyncTaskId = runtimeAsyncTask.Id;
+                        int firstAwaitedTaskId = tcs1.Task.Id;
+                        int secondAwaitedTaskId = tcs2.Task.Id;
+
+                        Assert.True(
+                            SpinWait.SpinUntil(
+                                () => events.Any(e =>
+                                    e.EventId == TaskWaitBeginId &&
+                                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                                    (int)e.Payload[2]! == firstAwaitedTaskId &&
+                                    (int)e.Payload[4]! == runtimeAsyncTaskId),
+                                TimeSpan.FromSeconds(30)),
+                            "Expected the RuntimeAsync task to suspend on the first task.");
+                        Assert.DoesNotContain(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload![2]! == firstAwaitedTaskId);
+
+                        tcs1.SetResult();
+
+                        Assert.True(
+                            SpinWait.SpinUntil(
+                                () => events.Any(e =>
+                                    e.EventId == TaskWaitBeginId &&
+                                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                                    (int)e.Payload[2]! == secondAwaitedTaskId),
+                                TimeSpan.FromSeconds(30)),
+                            "Expected the RuntimeAsync task to suspend on the second task.");
+                        Assert.Contains(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload[2]! == firstAwaitedTaskId);
+                        Assert.Contains(events, e =>
+                            e.EventId == TaskWaitBeginId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload[2]! == secondAwaitedTaskId &&
+                            (int)e.Payload[4]! == runtimeAsyncTaskId);
+                        Assert.DoesNotContain(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload![2]! == secondAwaitedTaskId);
+
+                        tcs2.SetResult();
+                        runtimeAsyncTask.GetAwaiter().GetResult();
+
+                        Assert.True(
+                            SpinWait.SpinUntil(
+                                () => events.Any(e =>
+                                    e.EventId == TaskWaitEndId &&
+                                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                                    (int)e.Payload[2]! == secondAwaitedTaskId),
+                                TimeSpan.FromSeconds(30)),
+                            "Expected the RuntimeAsync task to finish waiting on the second task.");
+                        Assert.Contains(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload[2]! == secondAwaitedTaskId);
+                    });
+                }
+
+                DetachDebugger();
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        public void RuntimeAsync_TaskWaitEndEventsForFaultedAndCanceledTasks()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                const int TaskWaitBeginId = 10;
+                const int TaskWaitEndId = 11;
+
+                AttachDebugger();
+
+                var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
+                {
+                    listener.RunWithCallback(events.Enqueue, () =>
+                    {
+                        foreach (bool cancel in new[] { false, true })
+                        {
+                            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                            Task runtimeAsyncTask = FuncThatWaitsOnce(tcs.Task);
+                            int runtimeAsyncTaskId = runtimeAsyncTask.Id;
+                            int awaitedTaskId = tcs.Task.Id;
+
+                            Assert.True(
+                                SpinWait.SpinUntil(
+                                    () => events.Any(e =>
+                                        e.EventId == TaskWaitBeginId &&
+                                        (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                                        (int)e.Payload[2]! == awaitedTaskId),
+                                    TimeSpan.FromSeconds(30)),
+                                $"Expected a wait-begin event for the {(cancel ? "canceled" : "faulted")} task.");
+
+                            if (cancel)
+                            {
+                                tcs.SetCanceled();
+                                Assert.ThrowsAny<OperationCanceledException>(() => runtimeAsyncTask.GetAwaiter().GetResult());
+                            }
+                            else
+                            {
+                                tcs.SetException(new InvalidOperationException());
+                                Assert.Throws<InvalidOperationException>(() => runtimeAsyncTask.GetAwaiter().GetResult());
+                            }
+
+                            Assert.True(
+                                SpinWait.SpinUntil(
+                                    () => events.Any(e =>
+                                        e.EventId == TaskWaitEndId &&
+                                        (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                                        (int)e.Payload[2]! == awaitedTaskId),
+                                    TimeSpan.FromSeconds(30)),
+                                $"Expected a wait-end event for the {(cancel ? "canceled" : "faulted")} task.");
+                        }
+                    });
+                }
+
+                DetachDebugger();
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        public void RuntimeAsync_TaskWaitEventsArePayForPlay()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AttachDebugger();
+
+                var tcs1 = new TaskCompletionSource();
+                var tcs2 = new TaskCompletionSource();
+                Task runtimeAsyncTask = FuncThatWaitsTwice(tcs1, tcs2);
+
+                Assert.Equal(0, (int)s_taskIdField.GetValue(tcs1.Task)!);
+
+                tcs1.SetResult();
+                Assert.Equal(0, (int)s_taskIdField.GetValue(tcs2.Task)!);
+
+                tcs2.SetResult();
+                runtimeAsyncTask.GetAwaiter().GetResult();
+
+                DetachDebugger();
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
         public void RuntimeAsync_SuspensionTimestampsAreDistinct()
         {
             RemoteExecutor.Invoke(async () =>
@@ -601,6 +789,8 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
+                const int TaskWaitBeginId = 10;
+                const int TaskWaitEndId = 11;
                 const int TraceOperationBeginId = 14;
                 const string RuntimeAsyncTaskOperationName = "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask";
 
@@ -608,6 +798,9 @@ namespace System.Threading.Tasks.Tests
                 // The AsyncDebugger guard should prevent the V2 async instrumentation
                 // from emitting any TPL causality events.
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                int runtimeAsyncTaskId = 0;
+                int firstAwaitedTaskId = 0;
+                int secondAwaitedTaskId = 0;
                 using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
                 {
                     listener.RunWithCallback(events.Enqueue, () =>
@@ -616,8 +809,27 @@ namespace System.Threading.Tasks.Tests
                         {
                             Func().GetAwaiter().GetResult();
                         }
+
+                        var tcs1 = new TaskCompletionSource();
+                        var tcs2 = new TaskCompletionSource();
+                        Task runtimeAsyncTask = FuncThatWaitsTwice(tcs1, tcs2);
+                        runtimeAsyncTaskId = runtimeAsyncTask.Id;
+                        firstAwaitedTaskId = tcs1.Task.Id;
+                        secondAwaitedTaskId = tcs2.Task.Id;
+                        tcs1.SetResult();
+                        tcs2.SetResult();
+                        runtimeAsyncTask.GetAwaiter().GetResult();
                     });
                 }
+
+                Assert.DoesNotContain(events, e =>
+                    e.EventId == TaskWaitBeginId &&
+                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                    ((int)e.Payload[2]! == firstAwaitedTaskId || (int)e.Payload[2]! == secondAwaitedTaskId));
+                Assert.DoesNotContain(events, e =>
+                    e.EventId == TaskWaitEndId &&
+                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                    ((int)e.Payload[2]! == firstAwaitedTaskId || (int)e.Payload[2]! == secondAwaitedTaskId));
 
                 // TraceOperationBegin with the RuntimeAsyncTask operation name is uniquely
                 // emitted by V2 async instrumentation. It must not appear without a debugger.

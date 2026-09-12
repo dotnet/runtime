@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <cwchar>
+#include <algorithm>
 #include <sal.h>
 #include "config.h"
 #include <pthread.h>
@@ -481,16 +482,17 @@ void InitializeCurrentProcessCpuCount()
             configuredCpuCount = CPU_SETSIZE;
         }
 
-        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
         if (pCpuSet != nullptr)
         {
-            size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+            size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
             CPU_ZERO_S(cpuSetSize, pCpuSet);
 
             int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
             if (st == 0)
             {
-                count = (uint32_t)CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+                count = (uint32_t)CPU_COUNT_S(cpuSetSize, pCpuSet);
             }
             else
             {
