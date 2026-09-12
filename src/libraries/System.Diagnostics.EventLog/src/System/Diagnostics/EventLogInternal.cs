@@ -332,7 +332,7 @@ namespace System.Diagnostics
             {
                 string currentMachineName = this.machineName;
 
-                if (parent!.ComponentDesignMode)
+                if (parent?.ComponentDesignMode == true)
                     this.boolFlags[Flag_monitoring] = value;
                 else
                 {
@@ -377,7 +377,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (this.synchronizingObject == null && parent!.ComponentDesignMode)
+                if (this.synchronizingObject == null && parent?.ComponentDesignMode == true)
                 {
                     IDesignerHost? host = (IDesignerHost?)parent.ComponentGetService(typeof(IDesignerHost));
                     if (host != null)
@@ -559,15 +559,16 @@ namespace System.Diagnostics
                     while (i < count)
                     {
                         EventLogEntry entry = GetEntryWithOldest(i);
-                        if (onEntryWrittenHandler != null)
+                        EntryWrittenEventHandler? handler = onEntryWrittenHandler;
+                        if (handler != null)
                         {
                             if (this.SynchronizingObject != null && this.SynchronizingObject.InvokeRequired)
                             {
-                                this.SynchronizingObject.BeginInvoke(this.onEntryWrittenHandler, new object[] { this, new EntryWrittenEventArgs(entry) });
+                                this.SynchronizingObject.BeginInvoke(handler, new object[] { this, new EntryWrittenEventArgs(entry) });
                             }
                             else
                             {
-                                onEntryWrittenHandler(this, new EntryWrittenEventArgs(entry));
+                                handler(this, new EntryWrittenEventArgs(entry));
                             }
                         }
 
@@ -1173,7 +1174,7 @@ namespace System.Diagnostics
 
         private void StartRaisingEvents(string currentMachineName, string currentLogName)
         {
-            if (!boolFlags[Flag_initializing] && !boolFlags[Flag_monitoring] && !parent!.ComponentDesignMode)
+            if (!boolFlags[Flag_initializing] && !boolFlags[Flag_monitoring] && parent?.ComponentDesignMode != true)
             {
                 StartListening(currentMachineName, currentLogName);
             }
@@ -1216,7 +1217,7 @@ namespace System.Diagnostics
 
         private void StopRaisingEvents(/*string currentMachineName,*/ string currentLogName)
         {
-            if (!boolFlags[Flag_initializing] && boolFlags[Flag_monitoring] && !parent!.ComponentDesignMode)
+            if (!boolFlags[Flag_initializing] && boolFlags[Flag_monitoring] && parent?.ComponentDesignMode != true)
             {
                 StopListening(currentLogName);
             }
@@ -1360,11 +1361,11 @@ namespace System.Diagnostics
 
             for (int i = 0; i < strings.Length; i++)
             {
-                strings[i] ??= string.Empty;
+                string s = strings[i] ??= string.Empty;
 
                 // make sure the strings aren't too long.  MSDN says each string has a limit of 32k (32768) characters, but
                 // experimentation shows that it doesn't like anything larger than 32766
-                if (strings[i]!.Length > 32766)
+                if (s.Length > 32766)
                     throw new ArgumentException(SR.LogEntryTooLong);
             }
             rawData ??= Array.Empty<byte>();
