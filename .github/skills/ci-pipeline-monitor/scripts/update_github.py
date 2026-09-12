@@ -87,15 +87,21 @@ class IssueGenerator:
             gh_issue_command.append("create")
             creating_new_issue = True
 
-        if fail["labels"]:
-            if creating_new_issue:
-                for label in fail["labels"].split(','):
-                    stripped_label = label.strip()
-                    if stripped_label:
-                        gh_issue_command.append('--label')
-                        gh_issue_command.append(stripped_label)
-
         # Title / Labels / Milestone for issue filing
+        if creating_new_issue:
+            if fail["labels"]:
+                # TODO: Find a way to make a case-insensitive set so we can avoid normalizing the labels to lowercase
+                label_set = set([l.strip().lower() for l in fail["labels"].split(',')])
+            else:
+                label_set = set()
+            label_set.add("blocking-clean-ci-optional")
+
+            for label in sorted(label_set):
+                if len(label) == 0:
+                    continue
+                gh_issue_command.append('--label')
+                gh_issue_command.append(label)
+
         test_name = fail["test_name"]
         if creating_new_issue:
             gh_issue_command.append('--title')
@@ -123,10 +129,15 @@ class IssueGenerator:
         ))
 
         # Filter affected list to build IDs that don't have stamp files
-        affected = [ap for ap in affected if not os.path.exists(self.get_stamp_path(ap))]
+        unstamped_affected = [ap for ap in affected if not os.path.exists(self.get_stamp_path(ap))]
 
-        if len(affected) == 0:
-            print("All affected builds have stamps; skipping.")
+        # If the database tells us to add a comment instead of creating a new issue, ensure we don't generate redundant
+        #  comments for builds that we've already generated a comment for before. When creating new issues we can't
+        #  perform this check, the database often wants us to generate multiple issues for a given build ID.
+        # TODO: Investigate why we can't use stamp filtering on new issues more deeply, it seems like it should work.
+        if not creating_new_issue and (len(unstamped_affected) == 0):
+            affected_build_list = ", ".join([str(ap["build_id"]) for ap in affected])
+            print(f"All affected builds ({affected_build_list}) have stamps; skipping.")
             return
 
         out.append(f"**Failed in ({len(affected)}):**")
