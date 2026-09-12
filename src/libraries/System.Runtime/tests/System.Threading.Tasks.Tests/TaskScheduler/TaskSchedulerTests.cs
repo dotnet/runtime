@@ -8,6 +8,7 @@ using System.Security;
 using System.Reflection;
 using System.Collections.Concurrent;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -328,6 +329,72 @@ namespace System.Threading.Tasks.Tests
             Assert.Superset(new HashSet<Task>(queuedTasks), new HashSet<Task>(foundTasks));
 
             GC.KeepAlive(nonExecutingScheduler);
+        }
+
+        // Regression for https://github.com/dotnet/runtime/issues/132492:
+        // ScheduleAndStart may Finish a task that remains queued when worker creation fails after enqueue.
+        // ThreadPool dispatch must not execute / Finish that already-completed task again.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static void AlreadyCompletedQueuedTask_ThreadPoolDispatch_DoesNotDoubleFinish()
+        {
+            if (RemoteExecutor.IsSupported)
+            {
+                // Child process: proves the dispatch path does not tear down the process with InvalidCastException.
+                RemoteExecutor.Invoke(static () => RunAlreadyCompletedQueuedTaskDispatchScenario()).Dispose();
+            }
+            else
+            {
+                RunAlreadyCompletedQueuedTaskDispatchScenario();
+            }
+        }
+
+        private static void RunAlreadyCompletedQueuedTaskDispatchScenario()
+        {
+            int bodyCount = 0;
+            int continuationCount = 0;
+
+            var task = new Task(() => Interlocked.Increment(ref bodyCount));
+            task.ContinueWith(
+                _ => Interlocked.Increment(ref continuationCount),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            try
+            {
+                // Stands in for CreateWorkerThread throwing after Enqueue committed the item:
+                // ScheduleAndStart catches, Finish()es the task (Faulted + continuations), and rethrows.
+                task.Start(new BuggyTaskScheduler());
+                Assert.Fail("Expected TaskSchedulerException from BuggyTaskScheduler.QueueTask");
+            }
+            catch (TaskSchedulerException)
+            {
+            }
+
+            Assert.Equal(TaskStatus.Faulted, task.Status);
+            Assert.True(task.IsCompleted);
+            Assert.Equal(0, Volatile.Read(ref bodyCount));
+            Assert.Equal(1, Volatile.Read(ref continuationCount));
+
+            MethodInfo? enqueue = typeof(ThreadPool).GetMethod(
+                "UnsafeQueueUserWorkItemInternal",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(enqueue);
+
+            // Place the already-completed task on the real ThreadPool queue (same as ThreadPoolTaskScheduler
+            // for non-LongRunning tasks). A genuine worker will DispatchWorkItem -> ExecuteDirectly.
+            enqueue!.Invoke(null, new object[] { task, false });
+
+            // Wait until the pool has processed subsequent work, proving our item was dequeued without crashing.
+            using (var drained = new ManualResetEventSlim(false))
+            {
+                ThreadPool.QueueUserWorkItem(_ => drained.Set());
+                Assert.True(drained.Wait(TimeSpan.FromSeconds(30)), "Timed out waiting for ThreadPool to drain");
+            }
+
+            Assert.Equal(TaskStatus.Faulted, task.Status);
+            Assert.Equal(0, Volatile.Read(ref bodyCount));
+            Assert.Equal(1, Volatile.Read(ref continuationCount));
         }
 
         private static bool DebuggerIsAttached { get { return Debugger.IsAttached; } }
