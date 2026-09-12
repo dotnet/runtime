@@ -277,6 +277,7 @@ LEAF_END RhpAssignRef, _TEXT
 LEAF_ENTRY RhpCheckedLockCmpXchg
 
 LOCAL_LABEL(CmpXchgRetry):
+#ifdef __riscv_atomic
         // Load the current value at the destination address.
         lr.d.aqrl    t0, (a0)       // t0 = *dest (load with acquire-release ordering)
         // Compare the loaded value with the comparand.
@@ -285,6 +286,12 @@ LOCAL_LABEL(CmpXchgRetry):
         // Attempt to store the exchange value at the destination address.
         sc.d.rl    t1, a1, (a0)  // t1 = (store conditional result: 0 if successful, with release ordering)
         bnez    t1, LOCAL_LABEL(CmpXchgRetry) // if store conditional failed, retry
+#else
+        // No A extension: non-atomic compare-and-swap.
+        ld      t0, (a0)
+        bne     t0, a2, LOCAL_LABEL(CmpXchgNoUpdate)
+        sd      a1, (a0)
+#endif
 
         // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
         // barrier is necessary.
@@ -321,7 +328,13 @@ LEAF_END RhpCheckedLockCmpXchg
 //  t1, t6: trashed
 //
 LEAF_ENTRY RhpCheckedXchg
+#ifdef __riscv_atomic
         amoswap.d.aqrl t1, a1, (a0)
+#else
+        // No A extension: non-atomic exchange, old value in t1.
+        ld      t1, (a0)
+        sd      a1, (a0)
+#endif
 
         // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
         // barrier is necessary.
