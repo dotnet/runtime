@@ -444,6 +444,11 @@ public:
                                        // so that the compression routines know the enum's range.
     };
 
+    // Set on NativeVarInfo::callReturnValueILOffset for the companion entry that describes the
+    // Runtime Async continuation return register. The remaining bits contain the original call
+    // IL offset.
+    static const uint32_t CALL_RETURN_ASYNC_CONTINUATION_FLAG = 0x80000000u;
+
     struct ILVarInfo
     {
         uint32_t        startOffset;
