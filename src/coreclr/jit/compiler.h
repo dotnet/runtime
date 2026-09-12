@@ -7590,6 +7590,7 @@ private:
     bool fgForwardSubStatement(Statement* statement);
     bool fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTree* fwdSubNode);
     bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
+    void fgForwardSubUpdateLastUse(GenTreeLclVarCommon* lcl, unsigned newUseLclNum);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
     enum TypeProducerKind
