@@ -5,14 +5,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class HpkeTests
+    public static class HpkeNotSupportedTests
     {
         [Fact]
         public static void KeyFactories_NotSupported()
         {
-            foreach (HpkeKem kem in Enum.GetValues<HpkeKem>())
-            foreach (HpkeKdf kdf in Enum.GetValues<HpkeKdf>())
-            foreach (HpkeAead aead in Enum.GetValues<HpkeAead>())
+            foreach (HpkeKem kem in Enum.GetValues(typeof(HpkeKem)))
+            foreach (HpkeKdf kdf in Enum.GetValues(typeof(HpkeKdf)))
+            foreach (HpkeAead aead in Enum.GetValues(typeof(HpkeAead)))
             {
                 HpkeSuite suite = new(kem, kdf, aead);
 

@@ -22,14 +22,6 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static IEnumerable<object[]> KemAlgorithms()
-        {
-            foreach (HpkeKem kem in Enum.GetValues(typeof(HpkeKem)))
-            {
-                yield return new object[] { kem };
-            }
-        }
-
         [Fact]
         public static void Constructor_NullSuite()
         {
@@ -45,62 +37,6 @@ namespace System.Security.Cryptography.Tests
             using (HpkeContract hpke = new(suite))
             {
                 Assert.Same(suite, hpke.Suite);
-            }
-        }
-
-        [Fact]
-        public static void StaticMethods_NullArguments()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("suite", () => Hpke.IsSupported(null));
-            AssertExtensions.Throws<ArgumentNullException>("suite", () => Hpke.GenerateKey(null));
-            AssertExtensions.Throws<ArgumentNullException>("suite", () => Hpke.DeriveKey(null, Array.Empty<byte>()));
-            AssertExtensions.Throws<ArgumentNullException>("suite",
-                () => Hpke.DeriveKey(null, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentNullException>("ikm", () => Hpke.DeriveKey(s_suite, (byte[])null));
-            AssertExtensions.Throws<ArgumentNullException>("suite",
-                () => Hpke.ImportDecapsulationKey(null, Array.Empty<byte>()));
-            AssertExtensions.Throws<ArgumentNullException>("suite",
-                () => Hpke.ImportDecapsulationKey(null, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentNullException>("source",
-                () => Hpke.ImportDecapsulationKey(s_suite, (byte[])null));
-            AssertExtensions.Throws<ArgumentNullException>("suite",
-                () => Hpke.ImportEncapsulationKey(null, Array.Empty<byte>()));
-            AssertExtensions.Throws<ArgumentNullException>("suite",
-                () => Hpke.ImportEncapsulationKey(null, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentNullException>("source",
-                () => Hpke.ImportEncapsulationKey(s_suite, (byte[])null));
-        }
-
-        [Theory]
-        [MemberData(nameof(KemAlgorithms))]
-        public static void ImportKeys_InvalidSize(HpkeKem kem)
-        {
-            HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
-
-            foreach (int length in new[]
-            {
-                0,
-                suite.DecapsulationKeySizeInBytes - 1,
-                suite.DecapsulationKeySizeInBytes + 1
-            })
-            {
-                byte[] source = new byte[length];
-                AssertExtensions.Throws<ArgumentException>("source", () => Hpke.ImportDecapsulationKey(suite, source));
-                AssertExtensions.Throws<ArgumentException>("source",
-                    () => Hpke.ImportDecapsulationKey(suite, source.AsSpan()));
-            }
-
-            foreach (int length in new[]
-            {
-                0,
-                suite.EncapsulationKeySizeInBytes - 1,
-                suite.EncapsulationKeySizeInBytes + 1
-            })
-            {
-                byte[] source = new byte[length];
-                AssertExtensions.Throws<ArgumentException>("source", () => Hpke.ImportEncapsulationKey(suite, source));
-                AssertExtensions.Throws<ArgumentException>("source",
-                    () => Hpke.ImportEncapsulationKey(suite, source.AsSpan()));
             }
         }
 
@@ -167,7 +103,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(KemAlgorithms))]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
         public static void ExportKeys_Allocated(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
@@ -190,7 +126,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(KemAlgorithms))]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
         public static void ExportKeys_Exact(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
@@ -223,7 +159,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(KemAlgorithms))]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
         public static void ExportKeys_InvalidSizeBeforeDisposal(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
@@ -356,7 +292,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(KemAlgorithms))]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
         public static void Seal_InvalidOutputSizesBeforeDisposal(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
@@ -468,7 +404,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(KemAlgorithms))]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
         public static void Open_InvalidSizesBeforeDisposal(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
@@ -666,7 +602,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(KemAlgorithms))]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
         public static void ContextFactories_InvalidEncapsulationSizeBeforeDisposal(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);

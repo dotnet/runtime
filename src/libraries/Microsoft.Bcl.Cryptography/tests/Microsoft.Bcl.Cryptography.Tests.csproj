@@ -133,6 +133,8 @@
              Link="CommonTest\System\Security\Cryptography\HpkeImplementationTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeKeyTests.cs"
              Link="CommonTest\System\Security\Cryptography\HpkeKeyTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeNotSupportedTests.cs"
+             Link="CommonTest\System\Security\Cryptography\HpkeNotSupportedTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeRecipientContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\HpkeRecipientContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeSenderContractTests.cs"
@@ -149,6 +151,8 @@
              Link="CommonTest\System\Security\Cryptography\HpkeTestData.Rfc9180.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeTestDataTests.cs"
              Link="CommonTest\System\Security\Cryptography\HpkeTestDataTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeTests.cs"
+             Link="CommonTest\System\Security\Cryptography\HpkeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"

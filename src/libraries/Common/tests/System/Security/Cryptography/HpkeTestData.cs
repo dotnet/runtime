@@ -28,6 +28,14 @@ namespace System.Security.Cryptography.Tests
             [HpkeKdf.SHAKE256, 65535],
         ];
 
+        public static IEnumerable<object[]> KemAlgorithms()
+        {
+            foreach (HpkeKem kem in Enum.GetValues(typeof(HpkeKem)))
+            {
+                yield return [kem];
+            }
+        }
+
         public static IEnumerable<object[]> RepresentativeSuites
         {
             get
