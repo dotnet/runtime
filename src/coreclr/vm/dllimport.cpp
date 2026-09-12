@@ -166,6 +166,75 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
     return true;
 }
 
+static bool StubNeedsSecretArgument(DWORD dwStubFlags)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (SF_IsForwardStub(dwStubFlags))
+    {
+        return SF_IsVarArgStub(dwStubFlags);
+    }
+
+    // All native-to-managed stubs currently need the secret argument.
+    return true;
+}
+
+static void AppendSecretStubArgument(SigBuilder* pSigBuilder)
+{
+    STANDARD_VM_CONTRACT;
+
+    TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
+    pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
+    pSigBuilder->AppendByte(1);
+    pSigBuilder->AppendPointer(secretStubArgument.AsPtr());
+    pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+}
+
+static void AppendSecretStubArgumentToMethodDescSignature(MethodDesc* pStubMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigBuilder internalSigBuilder;
+    SigPointer sigPtr = pStubMD->GetSigPointer();
+    sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &internalSigBuilder, /* bSkipCustomModifier */ FALSE);
+
+    DWORD cbInternalSig;
+    PCCOR_SIGNATURE pInternalSig =
+        static_cast<PCCOR_SIGNATURE>(internalSigBuilder.GetSignature(&cbInternalSig));
+    SigParser sigParser(pInternalSig, cbInternalSig);
+
+    uint32_t callConv;
+    IfFailThrow(sigParser.GetCallingConvInfo(&callConv));
+
+    SigBuilder stubSigBuilder;
+    stubSigBuilder.AppendByte(static_cast<BYTE>(callConv));
+
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        uint32_t genericArgCount;
+        IfFailThrow(sigParser.GetData(&genericArgCount));
+        stubSigBuilder.AppendData(genericArgCount);
+    }
+
+    uint32_t numArgs;
+    IfFailThrow(sigParser.GetData(&numArgs));
+    stubSigBuilder.AppendData(numArgs + 1);
+
+    PCCOR_SIGNATURE pRemainingSig = sigParser.GetPtr();
+    stubSigBuilder.AppendBlob(
+        (PVOID)pRemainingSig,
+        cbInternalSig - static_cast<DWORD>(pRemainingSig - pInternalSig));
+    AppendSecretStubArgument(&stubSigBuilder);
+
+    DWORD cbStubSig;
+    PCCOR_SIGNATURE pTemporaryStubSig =
+        static_cast<PCCOR_SIGNATURE>(stubSigBuilder.GetSignature(&cbStubSig));
+    PCCOR_SIGNATURE pStoredStubSig = (PCCOR_SIGNATURE)(void*)
+        pStubMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbStubSig));
+    memcpyNoGCRefs((void*)pStoredStubSig, pTemporaryStubSig, cbStubSig);
+    pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pStoredStubSig, cbStubSig);
+}
+
 class ILStubState
 {
 public:
@@ -447,7 +516,14 @@ public:
             // If we're not in a Reverse stub, the signatures are correct,
             // but we need to convert the signature into a module-independent form
             // if our signature is not backed by metadata.
-            ConvertMethodDescSigToModuleIndependentSig(pStubMD);
+            if (StubNeedsSecretArgument(m_dwStubFlags))
+            {
+                AppendSecretStubArgumentToMethodDescSignature(pStubMD);
+            }
+            else
+            {
+                ConvertMethodDescSigToModuleIndependentSig(pStubMD);
+            }
         }
         else
         {
@@ -616,6 +692,11 @@ public:
         }
 #endif // FEATURE_COMINTEROP
 
+        if (SF_IsReverseStub(m_dwStubFlags) && StubNeedsSecretArgument(m_dwStubFlags))
+        {
+            m_slIL.AppendSecretStubArgumentToTargetSignature();
+        }
+
         // Don't touch target signatures from this point on otherwise it messes up the
         // cache in ILStubState::GetStubTargetMethodSig.
 
@@ -767,45 +848,15 @@ public:
             pcsUnmarshal->EmitRET();
         }
 
-        CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
-
         if (m_slIL.HasInteropExceptionInfo())
         {
-            // This code will not use the secret parameter, so we do not
-            // tell the JIT to bother with it.
             m_slIL.ClearCode();
             m_slIL.GenerateInteropException(pcsMarshal);
         }
         else if (m_slIL.HasInteropParamExceptionInfo())
         {
-            // This code will not use the secret parameter, so we do not
-            // tell the JIT to bother with it.
             m_slIL.ClearCode();
             m_slIL.GenerateInteropParamException(pcsMarshal);
-        }
-        else if (SF_IsFieldGetterStub(m_dwStubFlags) || SF_IsFieldSetterStub(m_dwStubFlags))
-        {
-            // Field access stubs are not shared and do not use the secret parameter.
-        }
-        else if (SF_IsForwardDelegateStub(m_dwStubFlags))
-        {
-            // Forward delegate stubs get all the context they need in 'this' so they
-            // don't use the secret parameter.
-        }
-        else if (SF_IsForwardPInvokeStub(m_dwStubFlags) && !SF_IsVarArgStub(m_dwStubFlags))
-        {
-            // Regular PInvokes and unmanaged CALLI stubs don't use the secret parameter.
-            // Unmanaged CALLI stubs receive the native target as their last argument.
-        }
-        else if (SF_IsForwardCOMStub(m_dwStubFlags))
-        {
-            // Forward CLR->COM stubs bake everything they need to know about the target
-            // into the IL, so they don't use the secret parameter.
-        }
-        else
-        {
-            // All other IL stubs will need to use the secret parameter.
-            jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
         }
 
         FinalizeStubSignatures(pStubMD);
@@ -815,6 +866,7 @@ public:
             EmitExceptionHandler(&nativeReturnType, &managedReturnType);
         }
 
+        CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
         COR_ILMETHOD_DECODER* pILHeader = pResolver->FinalizeILStub(&m_slIL, jitFlags);
 
         pResolver->SetStubTargetMethodSig(
@@ -1899,6 +1951,12 @@ PInvokeStubLinker::PInvokeStubLinker(
     m_pcsExceptionCleanup   = NewCodeStream(ILStubLinker::kExceptionCleanup);   // MAY NOT THROW: goes in a finally and does exception-only cleanup
     m_pcsCleanup            = NewCodeStream(ILStubLinker::kCleanup);            // MAY NOT THROW: goes in a finally and does unconditional cleanup
 
+    if (StubNeedsSecretArgument(dwStubFlags) && SF_IsForwardStub(dwStubFlags))
+    {
+        MetaSig stubSig(signature, pModule, pTypeContext);
+        SetSecretStubArgumentIndex(stubSig.NumFixedArgs());
+    }
+
     //
     // Add locals
     m_dwArgMarshalIndexLocalNum = NewLocal(ELEMENT_TYPE_I4);
@@ -2261,7 +2319,7 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
             //
             // recover delegate object from UMEntryThunk
 
-            EmitLoadStubContext(m_pcsDispatch, dwStubFlags); // load UMEntryThunk*
+            m_pcsDispatch->EmitLoadSecretStubArgument(); // load UMEntryThunk*
 
             m_pcsDispatch->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
             m_pcsDispatch->EmitADD();
@@ -2428,7 +2486,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         }
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
+            pcsEmit->EmitLoadSecretStubArgument();
             pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();
@@ -2464,7 +2522,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         {
             int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
+            pcsEmit->EmitLoadSecretStubArgument();
             pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();                    // Get OBJECTHANDLE
@@ -2476,7 +2534,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             // One of the following:
             // - COM -> CLR call
             // - direct reverse P/Invoke (CoreCLR hosting)
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
+            pcsEmit->EmitLoadSecretStubArgument();
             CONSISTENCY_CHECK(0 == offsetof(UMEntryThunkData, m_pManagedTarget)); // if this changes, just add back the EmitLDC/EmitADD below
             // pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pManagedTarget));
             // pcsEmit->EmitADD();
@@ -2641,20 +2699,14 @@ void PInvokeStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, MethodDesc* 
 }
 #endif // VERIFY_HEAP
 
-// Loads the 'secret argument' passed to the stub.
-void PInvokeStubLinker::EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubFlags)
+void PInvokeStubLinker::AppendSecretStubArgumentToTargetSignature()
 {
     STANDARD_VM_CONTRACT;
 
-    CONSISTENCY_CHECK(!SF_IsForwardDelegateStub(dwStubFlags));
-    CONSISTENCY_CHECK(!SF_IsFieldGetterStub(dwStubFlags) && !SF_IsFieldSetterStub(dwStubFlags));
-    // Forward CLR->COM stubs are compiled as transient IL on the CLR->COM method itself, so the JIT
-    // does not publish a secret argument for them (see ILStubState::FinishEmit). Any data such a stub
-    // needs must be baked into the IL at generation time instead.
-    CONSISTENCY_CHECK(!SF_IsForwardCOMStub(dwStubFlags));
-
-    // get the secret argument via intrinsic
-    pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
+    CONSISTENCY_CHECK(SF_IsReverseStub(m_dwStubFlags));
+    LocalDesc secretStubArgument(ELEMENT_TYPE_I);
+    secretStubArgument.AddModifier(true, CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT));
+    SetSecretStubArgumentIndex(SetStubTargetArgType(&secretStubArgument, false));
 }
 
 namespace
@@ -6257,11 +6309,7 @@ static void BuildCalliILStubSignature(
     pSigBuilder->AppendBlob((PVOID)pArgsStart, (DWORD)(pArgsEnd - pArgsStart));
 
     // The unmanaged target is marked so the JIT passes it in the secret stub register.
-    TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
-    pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
-    pSigBuilder->AppendByte(1);
-    pSigBuilder->AppendPointer(secretStubArgument.AsPtr());
-    pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+    AppendSecretStubArgument(pSigBuilder);
 }
 
 // A failure detected while classifying an unmanaged CALLI call site. It is reported when the stub
