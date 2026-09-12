@@ -848,11 +848,16 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             EX_END_CATCH
             pThread->SetFilterContext(NULL);
 
-            // The debugger may have moved execution via SetIP. If so, drop the bypass
-            // (it was set up for the original IP) and resume at the new context via
-            // ResumeAfterCatchException.
+            // The debugger may have moved execution via SetIP. Preserve a bypass
+            // created for the destination before resuming at the new context.
             if ((GetIP(&ctx) != (PCODE)ip) || (GetSP(&ctx) != (DWORD64)pFrame))
             {
+                if (GetIP(&ctx) == (PCODE)savedBypassAddress)
+                {
+                    pThreadContext->m_bypassAddress = savedBypassAddress;
+                    pThreadContext->m_bypassOpcode = savedBypassOpcode;
+                }
+
                 ThrowResumeAfterCatchException(GetSP(&ctx), GetIP(&ctx));
             }
 
@@ -1505,10 +1510,17 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_BREAKPOINT)
                 {
                     pFrame->ip = ip;
-                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     int32_t bypassOpcode = 0;
+                    if (pThreadContext->HasBypass(ip, &bypassOpcode))
+                    {
+                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Pre-callback bypass at IP %p with opcode 0x%x\n", ip, bypassOpcode));
+                        pThreadContext->ClearBypass();
+                        INTOP_DISPATCH(bypassOpcode);
+                    }
+
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     // After debugger callback, check if bypass was set on the thread context
                     if (pThreadContext->HasBypass(ip, &bypassOpcode))
