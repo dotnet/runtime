@@ -2428,7 +2428,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     // Useful to test GC with the prestub on the call stack
     if (g_pConfig->ShouldPrestubGC(this))
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         GCHeapUtilities::GetGCHeap()->GarbageCollect(-1);
     }
 #endif // _DEBUG
@@ -3238,7 +3238,7 @@ static PCODE getHelperForInitializedStatic(Module * pModule, ReadyToRunFixupKind
         {
             PVOID baseNonGC;
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
                 baseNonGC = pMT->GetNonGCStaticsBasePointer();
             }
             pHelper = DynamicHelpers::CreateReturnConst(pModule->GetLoaderAllocator(), (TADDR)baseNonGC);
@@ -3248,7 +3248,7 @@ static PCODE getHelperForInitializedStatic(Module * pModule, ReadyToRunFixupKind
         {
             PVOID baseGC;
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
                 baseGC = pMT->GetGCStaticsBasePointer();
             }
             pHelper = DynamicHelpers::CreateReturnConst(pModule->GetLoaderAllocator(), (TADDR)baseGC);
@@ -3264,7 +3264,7 @@ static PCODE getHelperForInitializedStatic(Module * pModule, ReadyToRunFixupKind
             PTR_VOID pAddress;
 
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
 
                 PTR_BYTE base = 0;
                 if (!pFD->IsRVA()) // for RVA the base is ignored
@@ -3815,7 +3815,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 MethodTable * pDelegateType = NULL;
 
                 {
-                    GCX_COOP();
+                    GCX_COOP_FROM_PREEMP();
 
                     TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 

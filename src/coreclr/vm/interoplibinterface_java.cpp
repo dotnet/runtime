@@ -119,7 +119,7 @@ void Interop::FinishCrossReferenceProcessing(
     // Mark the GCBridge as inactive.
     // This must be synchronized with the GC so switch to cooperative mode.
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
 
@@ -149,7 +149,7 @@ extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
     // will be used during a GC and we want to ensure a GC isn't occurring
     // while they are being set.
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         if (InterlockedCompareExchangeT((void**)&g_MarkCrossReferences, markCrossReferences, NULL) == NULL)
         {
             success = TRUE;
@@ -174,7 +174,7 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     instHandle = GetAppDomain()->CreateCrossReferenceHandle(obj.Get(), context);
 
     END_QCALL;

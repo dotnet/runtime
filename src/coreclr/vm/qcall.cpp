@@ -55,7 +55,7 @@ void QCall::StringHandleOnStack::Set(const SString& value)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     Set(StringObject::NewString(value));
 }
@@ -64,7 +64,7 @@ void QCall::StringHandleOnStack::Set(LPCWSTR pwzValue)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     Set(StringObject::NewString(pwzValue));
 }
@@ -73,7 +73,7 @@ void QCall::StringHandleOnStack::Set(LPCUTF8 pszValue)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     Set(StringObject::NewString(pszValue));
 }
@@ -86,7 +86,7 @@ void QCall::ObjectHandleOnStack::SetByteArray(const BYTE * p, COUNT_T length)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     BASEARRAYREF arr = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_U1, length);
     memcpyNoGCRefs(arr->GetDataPtr(), p, length * sizeof(BYTE));
@@ -97,7 +97,7 @@ void QCall::ObjectHandleOnStack::SetIntPtrArray(const PVOID * p, COUNT_T length)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     BASEARRAYREF arr = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, length);
     memcpyNoGCRefs(arr->GetDataPtr(), p, length * sizeof(PVOID));
@@ -108,7 +108,7 @@ void QCall::ObjectHandleOnStack::SetGuidArray(const GUID * p, COUNT_T length)
 {
     STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     ::TypeHandle typeHandle = CoreLibBinder::GetClass(CLASS__GUID);
     BASEARRAYREF arr = (BASEARRAYREF) AllocateSzArray(typeHandle.MakeSZArray(), length);

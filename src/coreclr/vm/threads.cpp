@@ -106,7 +106,7 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 
     {
         // We need to ensure that the GC does not run while we are switching the arg buffer.
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         pOldBuffer = m_argBuffer;
         m_argBuffer = pBuffer;

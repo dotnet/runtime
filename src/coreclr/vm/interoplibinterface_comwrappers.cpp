@@ -121,7 +121,7 @@ extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::Obje
     BEGIN_QCALL;
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         handle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
     }
@@ -585,7 +585,7 @@ extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     NativeObjectWrapperCacheHandle = GetAppDomain()->CreateHandle(cache.Get());
     // Fetch the RCWRefCache here so we don't try to allocate it during GC.
     pAppDomainRCWRefCache = GetAppDomain()->GetRCWRefCache();

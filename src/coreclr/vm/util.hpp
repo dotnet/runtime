@@ -139,6 +139,7 @@ void PrintToStdErrW(const WCHAR *pwzString);
 //
 // Usage:
 // GCX_COOP();              Switch to cooperative mode, assume thread is setup
+// GCX_COOP_FROM_PREEMP();  Switch from preemptive to cooperative mode, assume thread is setup
 // GCX_PREEMP();            Switch to preemptive mode, NOP if no thread setup
 // GCX_COOP_THREAD_EXISTS(Thread*);    Fast switch to cooperative mode, must pass non-null Thread
 // GCX_PREEMP_THREAD_EXISTS(Thread*);  Fast switch to preemptive mode, must pass non-null Thread
@@ -186,10 +187,12 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_COOP()                      GCCoop __gcHolder("GCX_COOP", __FUNCTION__, __FILE__, __LINE__)
+#define GCX_COOP_FROM_PREEMP()          GCCoopFromPreemp __gcHolder("GCX_COOP_FROM_PREEMP", __FUNCTION__, __FILE__, __LINE__)
 #define GCX_COOP_NO_DTOR()              GCCoopNoDtor __gcHolder; __gcHolder.Enter(TRUE, "GCX_COOP_NO_DTOR", __FUNCTION__, __FILE__, __LINE__)
 #define GCX_COOP_NO_DTOR_END()          __gcHolder.Leave();
 #else
 #define GCX_COOP()                      GCCoop __gcHolder
+#define GCX_COOP_FROM_PREEMP()          GCCoopFromPreemp __gcHolder
 #define GCX_COOP_NO_DTOR()              GCCoopNoDtor __gcHolder; __gcHolder.Enter(TRUE)
 #define GCX_COOP_NO_DTOR_END()          __gcHolder.Leave();
 #endif
@@ -269,6 +272,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #else // !defined(DACCESS_COMPILE)
 
 #define GCX_COOP()
+#define GCX_COOP_FROM_PREEMP()
 #define GCX_COOP_NO_DTOR()
 #define GCX_COOP_NO_DTOR_END()
 

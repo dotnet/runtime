@@ -483,7 +483,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     CONTRACTL_END;
 #ifdef DEBUG
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         VALIDATEOBJECTREF(*pServer);
     }
 #endif
@@ -517,7 +517,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     {
         TypeHandle implTypeHandle;
         {
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
 
             OBJECTREF obj = *pServer;
 

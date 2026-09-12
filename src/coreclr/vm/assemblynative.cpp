@@ -47,7 +47,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     AssemblyBinder *pBinder = NULL;
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         if (assemblyLoadContext.Get() != NULL)
         {
@@ -104,7 +104,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     if (pAssembly != NULL)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retAssembly.Set(pAssembly->GetExposedObject());
     }
 
@@ -225,7 +225,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
     Assembly *pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
     }
 
@@ -270,7 +270,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     // Pass the stream based assembly as IL in an attempt to bind and load it
     Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
     }
 
@@ -326,7 +326,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativ
     // Pass the in memory module as IL in an attempt to bind and load it
     Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
     }
 
@@ -413,7 +413,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle pAsse
 
     if (!th.IsNull())
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retType.Set(th.GetManagedClassObject());
     }
 
@@ -493,7 +493,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
 
     if (!th.IsNull())
     {
-         GCX_COOP();
+         GCX_COOP_FROM_PREEMP();
          retType.Set(th.GetManagedClassObject());
     }
 
@@ -522,7 +522,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
         typeName.SetTypeToken(pManifestModule, mdtExternalType);
         TypeHandle typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
         {
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             retType.Set(typeHnd.GetManagedClassObject());
         }
     }
@@ -703,7 +703,7 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         if (pFileName)
             retFileName.Set(pFileName);
 
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         if (pReferencedAssembly)
             retAssembly.Set(pReferencedAssembly->GetExposedObject());
@@ -740,7 +740,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     }
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         PTRARRAYREF orModules = NULL;
 
@@ -817,7 +817,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssemb
 
     if (pModule != NULL)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retModule.Set(pModule->GetExposedObject());
     }
 
@@ -916,7 +916,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
     }
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         PTRARRAYREF orTypes = NULL;
 
@@ -984,7 +984,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
 
     // Populate retTypes
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         PTRARRAYREF orTypes = NULL;
 
@@ -1022,7 +1022,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetManifestResourceNames(QCall::Assembl
 
     DWORD dwCount = pImport->EnumGetCount(&phEnum);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     PTRARRAYREF ItemArray = (PTRARRAYREF) AllocateObjectArray(dwCount, g_pStringClass);
 
@@ -1064,7 +1064,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::Assembly
 
     MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct {
         PTRARRAYREF ItemArray;
@@ -1108,7 +1108,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAs
     pMeth = pAssembly->GetEntryPoint();
     if (pMeth != NULL)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retMethod.Set(pMeth->AllocateStubMethodInfo());
     }
 
@@ -1143,7 +1143,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlM
     Assembly* pAssembly = SystemDomain::GetCallersAssembly(stackMark);
     if(pAssembly)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retAssembly.Set(pAssembly->GetExposedObject());
     }
 
@@ -1159,7 +1159,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
     Assembly * pAssembly = GetAppDomain()->GetRootAssembly();
     if (pAssembly)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retAssembly.Set(pAssembly->GetExposedObject());
     }
 
@@ -1217,7 +1217,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
             // Create a new AssemblyLoaderAllocator for an AssemblyLoadContext
             loaderAllocator = new AssemblyLoaderAllocator();
 
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             LOADERALLOCATORREF pManagedLoaderAllocator = NULL;
             GCPROTECT_BEGIN(pManagedLoaderAllocator);
             {
@@ -1270,7 +1270,7 @@ extern "C" void QCALLTYPE AssemblyNative_PrepareForAssemblyLoadContextRelease(IN
     BEGIN_QCALL;
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         reinterpret_cast<CustomAssemblyBinder *>(ptrNativeAssemblyBinder)->PrepareForLoadContextRelease(ptrManagedStrongAssemblyLoadContext);
     }
 
@@ -1779,7 +1779,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 
         // Set the current assembly in the context.
         {
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             context->_currAssembly = currAssembly->GetExposedObject();
         }
         bool hasPrecachedExternal = false;

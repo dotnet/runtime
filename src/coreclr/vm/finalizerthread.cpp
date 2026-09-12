@@ -75,7 +75,7 @@ static void RunFinalizerIterationOnCurrentThread()
 
     INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
     }
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;

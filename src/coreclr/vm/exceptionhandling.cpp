@@ -3538,7 +3538,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
@@ -4062,7 +4062,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     result = SfiInitWorker(pThis, pStackwalkCtx, instructionFault, pfIsExceptionIntercepted);
     END_QCALL;
 

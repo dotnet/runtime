@@ -486,7 +486,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
         }
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         // Validate the arguments.
         _ASSERTE(strMarshalerTypeName && strCookie && !hndManagedType.IsNull());
@@ -1783,7 +1783,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
 
                 FieldDesc* pColorTypeField = CoreLibBinder::GetField(FIELD__COLORMARSHALER__COLOR_TYPE);
                 pColorTypeField->CheckRunClassInitThrowing();
@@ -3631,7 +3631,7 @@ extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdT
                                             hndManagedType);
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         retObject.Set(pCMInfo->GetCustomMarshaler());
     }
 

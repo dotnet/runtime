@@ -44,7 +44,7 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     // will be used during a GC and we want to ensure a GC isn't occurring
     // while they are being set.
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         if (InterlockedCompareExchange((LONG*)&g_ReferenceTrackerInitialized, TRUE, FALSE) == FALSE)
         {
             g_BeginEndCallback = beginEndCallback;
@@ -71,7 +71,7 @@ extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCal
 
     // Switch to Cooperative mode since object references
     // are being manipulated.
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
 
     END_QCALL;

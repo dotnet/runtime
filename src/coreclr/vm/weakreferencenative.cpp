@@ -73,7 +73,7 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
     // If we were able to get an IUnknown identity for the object, then we can find or create an associated RCW for it.
     if (pTargetIdentity != nullptr)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         OBJECTREF rcwRef = NULL;
         GCPROTECT_BEGIN(rcwRef);
 
@@ -99,7 +99,7 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
     IWeakReferenceSource* pWeakReferenceSourceRaw = nullptr;
     {
         // COM helpers assume COOP mode and the arguments are protected refs.
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         OBJECTREF objRef = obj.Get();
         _ASSERTE(objRef != nullptr);
         GCPROTECT_BEGIN(objRef);

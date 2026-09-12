@@ -118,7 +118,7 @@ STRINGREF* ILStubResolver::ConstructStringLiteral(mdToken token)
     DacNotImpl();
     return NULL;
 #else // DACCESS_COMPILE
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     STRINGREF* string = NULL;
     STRINGREF strRef = GetStringLiteral(token);

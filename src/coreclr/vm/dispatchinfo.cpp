@@ -2401,7 +2401,7 @@ BOOL DispatchInfo::SynchWithManagedView()
         pMemberMap = GetMemberInfoMap();
 
         // Make sure we switch to cooperative mode before we start.
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         for (int cPhase = 0; cPhase < 3; cPhase++)
         {

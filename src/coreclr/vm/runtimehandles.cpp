@@ -150,7 +150,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     TypeHandle typeHandle = TypeHandle::FromPtr(typeHandleRaw);
     result.Set(typeHandle.GetManagedClassObject());
@@ -239,7 +239,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetAssemblySlow(QCall::ObjectHandleO
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     if (type.Get() == NULL)
         COMPlusThrow(kArgumentNullException, W("Arg_InvalidHandle"));
@@ -296,7 +296,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnS
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     Module* pModule = ((REFLECTCLASSBASEREF)type.Get())->GetType().GetModule();
     module.Set(pModule->GetExposedObject());
@@ -529,7 +529,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCal
     // Allocate the array
     if (ifaceCount > 0)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         struct
         {
@@ -616,7 +616,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTy
     DWORD dwCount;
     constraints = pGenericVariable->GetConstraints(&dwCount, CLASS_LOADED, WhichConstraintsToLoad::All);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retTypeArray.Set(CopyRuntimeTypeHandles(constraints, dwCount, CLASS__TYPE));
 
     END_QCALL;
@@ -652,7 +652,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -785,7 +785,7 @@ extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTyp
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     TypeHandle th = pTypeHandle.AsTypeHandle();
     _ASSERTE(!th.IsNull());
@@ -804,7 +804,7 @@ extern "C" void QCALLTYPE QCall_FreeGCHandleForTypeHandle(QCall::TypeHandle pTyp
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     TypeHandle th = pTypeHandle.AsTypeHandle();
     th.GetLoaderAllocator()->UnregisterHandleFromCleanup(objHandle);
@@ -898,7 +898,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetDeclaringMethodForGenericParamete
     mdToken defToken = pGenericVariable->GetTypeOrMethodDef();
     if (TypeFromToken(defToken) == mdtMethodDef)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         MethodDesc* pMD = pGenericVariable->LoadOwnerMethod();
         pMD->CheckRestore();
         result.Set(pMD->AllocateStubMethodInfo());
@@ -1027,7 +1027,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle p
 
     TypeHandle typeHandle = pType.AsTypeHandle();
     Instantiation inst = typeHandle.GetInstantiation();
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retTypes.Set(CopyRuntimeTypeHandles(inst.GetRawArgs(), inst.GetNumArgs(), fAsRuntimeTypeArray ? CLASS__CLASS : CLASS__TYPE));
     END_QCALL;
 
@@ -1042,7 +1042,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeArray(QCall::TypeHandle pTypeHan
 
     BEGIN_QCALL;
     arrayHandle = pTypeHandle.AsTypeHandle().MakeArray(rank);
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(arrayHandle.GetManagedClassObject());
     END_QCALL;
 
@@ -1057,7 +1057,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeSZArray(QCall::TypeHandle pTypeH
 
     BEGIN_QCALL;
     arrayHandle = pTypeHandle.AsTypeHandle().MakeSZArray();
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(arrayHandle.GetManagedClassObject());
     END_QCALL;
 
@@ -1072,7 +1072,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakePointer(QCall::TypeHandle pTypeH
 
     BEGIN_QCALL;
     pointerHandle = pTypeHandle.AsTypeHandle().MakePointer();
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(pointerHandle.GetManagedClassObject());
     END_QCALL;
 
@@ -1087,7 +1087,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
 
     BEGIN_QCALL;
     byRefHandle = pTypeHandle.AsTypeHandle().MakeByRef();
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(byRefHandle.GetManagedClassObject());
     END_QCALL;
 
@@ -1103,7 +1103,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRet
     BEGIN_QCALL;
     BYTE callConv = (BYTE)(isUnmanaged ? IMAGE_CEE_CS_CALLCONV_UNMANAGED : IMAGE_CEE_CS_CALLCONV_DEFAULT);
     fnPtrHandle = ClassLoader::LoadFnptrTypeThrowing(callConv, numArgs, pRetAndArgTypes);
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(fnPtrHandle.GetManagedClassObject());
     END_QCALL;
 
@@ -1118,7 +1118,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeH
 
     BEGIN_QCALL;
     type = pTypeHandle.AsTypeHandle().Instantiate(Instantiation(pInstArray, cInstArray));
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(type.GetManagedClassObject());
     END_QCALL;
 
@@ -1140,7 +1140,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::Type
                                                        ClassLoader::ThrowIfNotFound,
                                                        ClassLoader::PermitUninstDefOrRef);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(typeDef.GetManagedClassObject());
 
     END_QCALL;
@@ -1489,7 +1489,7 @@ extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -1614,7 +1614,7 @@ extern "C" void QCALLTYPE Signature_Init(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -1735,7 +1735,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc 
     BEGIN_QCALL;
     Instantiation inst = pMethod->LoadMethodInstantiation();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retTypes.Set(CopyRuntimeTypeHandles(inst.GetRawArgs(), inst.GetNumArgs(), fAsRuntimeTypeArray ? CLASS__CLASS : CLASS__TYPE));
     END_QCALL;
 
@@ -1803,7 +1803,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod, QCal
         ClearPendingThunkResolutionUnderLock(pDynamicMethodDesc);
 #endif
 
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         // Destroy should be called only if the managed part is gone.
         _ASSERTE(OBJECTREFToObject(pDynamicMethodDesc->GetLCGMethodResolver()->GetManagedResolver()) == NULL);
@@ -1839,14 +1839,14 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodD
     BEGIN_QCALL;
 #ifdef _DEBUG
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         _ASSERTE(((ReflectMethodObject *)(*refMethod.m_ppObject))->GetMethod() == pMethod);
     }
 #endif
     MethodDesc *pMethodTypical = pMethod->LoadTypicalMethodDefinition();
     if (pMethodTypical != pMethod)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         refMethod.Set(pMethodTypical->AllocateStubMethodInfo());
     }
     END_QCALL;
@@ -1865,14 +1865,14 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 
 #ifdef _DEBUG
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         _ASSERTE(((ReflectMethodObject *)(*refMethod.m_ppObject))->GetMethod() == pMethod);
     }
 #endif
     MethodDesc *pMethodStripped = pMethod->StripMethodInstantiation();
     if (pMethodStripped != pMethod)
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         refMethod.Set(pMethodStripped->AllocateStubMethodInfo());
     }
     END_QCALL;
@@ -1962,7 +1962,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
     // Construct TypeHandle array for instantiation.
     if (!methodInstantiation.IsNull())
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         ntypars = ((PTRARRAYREF)methodInstantiation.Get())->GetNumComponents();
 
@@ -2041,7 +2041,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -2337,7 +2337,7 @@ extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHand
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     if (assembly.Get() == NULL)
         COMPlusThrow(kArgumentNullException, W("Arg_InvalidHandle"));
@@ -2379,7 +2379,7 @@ extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule
 
         if (!globalTypeHandle.IsNull())
         {
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             retType.Set(globalTypeHandle.GetManagedClassObject());
         }
 
@@ -2408,7 +2408,7 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, 
                                                           ClassLoader::ThrowIfNotFound,
                                                           ClassLoader::PermitUninstDefOrRef);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retType.Set(typeHandle.GetManagedClassObject());
 
     END_QCALL;
@@ -2447,7 +2447,7 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule,
 
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
     pField = MemberLoader::GetFieldDescFromMemberDefOrRef(pModule, tkMemberRef, &typeContext, FALSE);
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     retField.Set(pField->AllocateStubFieldInfo());
 
     END_QCALL;
@@ -2484,7 +2484,7 @@ extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pMod
     pName.SuppressRelease();
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         // create a handle to hold the resolver objectref
         OBJECTHANDLE resolverHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(resolver.Get());
         pNewMD->GetLCGMethodResolver()->SetManagedResolver(resolverHandle);

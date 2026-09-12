@@ -1118,7 +1118,7 @@ HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, UL
 
         {
             // Switch to cooperative GC mode before we manipulate OBJECTREF's.
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
 
             for (cFetched = 0; cFetched < cConnections && m_CurrCookie; cFetched++)
             {

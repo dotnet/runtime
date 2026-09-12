@@ -634,7 +634,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         {
             // Suspend the EE to do some clean up that can only occur
             // while no threads are running.
-            GCX_COOP(); // SuspendEE may require current thread to be in Coop mode
+            GCX_COOP_FROM_PREEMP(); // SuspendEE may require current thread to be in Coop mode
                         // SuspendEE cares about the reason flag only when invoked for a GC
                         // Other values are typically ignored. If using SUSPEND_FOR_APPDOMAIN_SHUTDOWN
                         // is inappropriate, we can introduce a new flag or hijack an unused one.
@@ -1052,7 +1052,7 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     GCInterface::AddMemoryPressure(30000);
     m_fGCPressure = true;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     //
     // Initialize managed loader allocator reference holder
