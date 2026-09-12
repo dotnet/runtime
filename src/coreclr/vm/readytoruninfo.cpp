@@ -2880,6 +2880,95 @@ UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
     return result;
 }
 
+static bool TryDecodeULEB128AsU32(PTR_BYTE* ppData, PTR_BYTE pEnd, UINT32* pValue)
+{
+    UINT32 result = 0;
+
+    for (int shift = 0; shift < 32; shift += 7)
+    {
+        if (*ppData >= pEnd)
+            return false;
+
+        BYTE b = *(*ppData)++;
+        if ((shift == 28) && ((b & 0xF0) != 0))
+            return false;
+
+        result |= (UINT32)(b & 0x7F) << shift;
+        if ((b & 0x80) == 0)
+        {
+            *pValue = result;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void ProcessWasmAsyncResumeInfoFixups(
+    TADDR imageBase,
+    SIZE_T imageSize,
+    IMAGE_DATA_DIRECTORY* pFixupSection,
+    DWORD virtualIPBase,
+    bool applyFixups)
+{
+    SIZE_T sectionRva = pFixupSection->VirtualAddress;
+    SIZE_T sectionSize = pFixupSection->Size;
+    if ((sectionRva > imageSize) || (sectionSize > imageSize - sectionRva))
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    PTR_BYTE pFixupData = dac_cast<PTR_BYTE>(imageBase + sectionRva);
+    PTR_BYTE pFixupEnd = pFixupData + sectionSize;
+    UINT32 chunkCount;
+    if (!TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &chunkCount))
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    SIZE_T currentFixupRva = 0;
+    for (UINT32 chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++)
+    {
+        UINT32 delta;
+        UINT32 fixupCount;
+        UINT32 fixupStride;
+        if (!TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &delta) ||
+            !TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &fixupCount) ||
+            !TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &fixupStride))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        if ((delta > imageSize - currentFixupRva) ||
+            (fixupCount == 0) ||
+            (fixupStride != sizeof(CORINFO_AsyncResumeInfo)))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        currentFixupRva += delta;
+        if ((currentFixupRva > imageSize) ||
+            (sizeof(DWORD) > imageSize - currentFixupRva))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        SIZE_T maximumFixupCount =
+            1 + (imageSize - currentFixupRva - sizeof(DWORD)) / fixupStride;
+        if (fixupCount > maximumFixupCount)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        for (UINT32 fixupIndex = 0; fixupIndex < fixupCount; fixupIndex++)
+        {
+            SIZE_T diagnosticIPRva = currentFixupRva + (SIZE_T)fixupIndex * fixupStride;
+            PTR_DWORD pDiagnosticIP = dac_cast<PTR_DWORD>(imageBase + diagnosticIPRva);
+            if (*pDiagnosticIP > UINT32_MAX - virtualIPBase)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+            if (applyFixups)
+                *pDiagnosticIP += virtualIPBase;
+        }
+
+        currentFixupRva += (SIZE_T)(fixupCount - 1) * fixupStride + sizeof(DWORD);
+    }
+}
+
 void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
 {
     CONTRACTL {
@@ -2912,6 +3001,18 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
             totalVirtualIPs,
             ExecutionManager::GetReadyToRunJitManager(),
             pModule));
+
+        IMAGE_DATA_DIRECTORY* pAsyncResumeInfoFixups =
+            m_pComposite->FindSection(ReadyToRunSectionType::WasmAsyncResumeInfo);
+        if (pAsyncResumeInfoFixups != nullptr)
+        {
+            DWORD virtualIPBase = static_cast<DWORD>(m_pComposite->GetMinVirtualIP());
+            SIZE_T imageSize = m_pComposite->GetLayout()->GetVirtualSize();
+            ProcessWasmAsyncResumeInfoFixups(
+                imageBase, imageSize, pAsyncResumeInfoFixups, virtualIPBase, false);
+            ProcessWasmAsyncResumeInfoFixups(
+                imageBase, imageSize, pAsyncResumeInfoFixups, virtualIPBase, true);
+        }
 
         ExecutionManager::AddFunctionTableIndexRange(
             m_minFunctionTableIndex,

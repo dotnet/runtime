@@ -558,6 +558,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new WasmTypeNode(key);
             });
+
+            _wasmMethodRelativeVirtualIPs = new(method =>
+            {
+                return new WasmMethodRelativeVirtualIPNode(this, method);
+            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -575,6 +580,8 @@ namespace ILCompiler.DependencyAnalysis
         public GlobalHeaderNode Header;
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
+
+        internal WasmAsyncResumeInfoFixupsNode WasmAsyncResumeInfoFixups;
 
         public HotColdMapNode HotColdMap;
 
@@ -1053,6 +1060,12 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable);
 
+            if (Target.IsWasm)
+            {
+                WasmAsyncResumeInfoFixups = new WasmAsyncResumeInfoFixupsNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.WasmAsyncResumeInfo, WasmAsyncResumeInfoFixups);
+            }
+
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
@@ -1457,6 +1470,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
+        private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
         {
@@ -1502,6 +1516,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmFuncType funcType = WasmLowering.GetSignature(method).FuncType;
             return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)
+        {
+            return _wasmMethodRelativeVirtualIPs.GetOrAdd(method);
         }
     }
 }

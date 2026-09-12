@@ -131,6 +131,11 @@ namespace ILCompiler.ObjectWriter
 
                     switch (reloc.Type)
                     {
+                        case RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32:
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, reloc.Addend + addend);
+                            break;
+                        }
                         case RelocType.WASM_TYPE_INDEX_LEB:
                         case RelocType.WASM_GLOBAL_INDEX_LEB:
                         case RelocType.WASM_TABLE_INDEX_I32:
