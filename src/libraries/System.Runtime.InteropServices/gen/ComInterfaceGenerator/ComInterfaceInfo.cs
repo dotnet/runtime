@@ -13,6 +13,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using InterfaceInfo = (Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol);
 using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol)>;
 
+using SourceGenerators;
+
 namespace Microsoft.Interop
 {
     /// <summary>
@@ -25,7 +27,7 @@ namespace Microsoft.Interop
         public string? BaseInterfaceKey { get; init; }
         public InterfaceDeclarationSyntax Declaration { get; init; }
         public ContainingSyntaxContext TypeDefinitionContext { get; init; }
-        public ContainingSyntax ContainingSyntax { get; init; }
+        public DeclarationHeader ContainingSyntax { get; init; }
         public Guid InterfaceId { get; init; }
         public ComInterfaceOptions Options { get; init; }
         public Location DiagnosticLocation { get; init; }
@@ -37,7 +39,7 @@ namespace Microsoft.Interop
             string? baseInterfaceKey,
             InterfaceDeclarationSyntax declaration,
             ContainingSyntaxContext typeDefinitionContext,
-            ContainingSyntax containingSyntax,
+            DeclarationHeader containingSyntax,
             Guid interfaceId,
             ComInterfaceOptions options,
             Location diagnosticLocation)
@@ -104,8 +106,8 @@ namespace Microsoft.Interop
                     symbol.ToDisplayString(),
                     baseSymbol?.ToDisplayString(),
                     syntax,
-                    new ContainingSyntaxContext(syntax),
-                    new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                    syntax.GetContainingSyntaxContext(),
+                    syntax.GetDeclarationTemplate(),
                     guid ?? Guid.Empty,
                     interfaceAttributeData.Options,
                     syntax.Identifier.GetLocation()),

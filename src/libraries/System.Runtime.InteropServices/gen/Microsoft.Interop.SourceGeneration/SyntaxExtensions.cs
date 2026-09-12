@@ -1,120 +1,47 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
     public static class SyntaxExtensions
     {
-        private static FixedStatementSyntax AddStatementWithoutEmptyStatements(this FixedStatementSyntax fixedStatement, StatementSyntax childStatement)
+        public static DeclarationHeader GetDeclarationTemplate(this TypeDeclarationSyntax declaration)
+            => ContainingTypeUtilities.GetDeclarationHeader(declaration);
+
+        public static DeclarationHeader GetDeclarationTemplate(this MethodDeclarationSyntax declaration)
+            => ContainingTypeUtilities.GetDeclarationHeader(declaration);
+
+        public static ContainingSyntaxContext GetContainingSyntaxContext(this MemberDeclarationSyntax memberDeclaration)
         {
-            if (fixedStatement.Statement.IsKind(SyntaxKind.EmptyStatement))
+            var containingTypes = ImmutableArray.CreateBuilder<DeclarationHeader>();
+            foreach (TypeDeclarationSyntax typeDeclaration in ContainingTypeUtilities.EnumerateContainingTypes(memberDeclaration.Parent as TypeDeclarationSyntax))
             {
-                return fixedStatement.WithStatement(childStatement);
+                containingTypes.Add(typeDeclaration.GetDeclarationTemplate());
             }
 
-            BlockSyntax block;
-            if (fixedStatement.Statement.IsKind(SyntaxKind.Block))
+            StringBuilder? containingNamespace = null;
+            for (SyntaxNode? parent = memberDeclaration.FirstAncestorOrSelf<BaseNamespaceDeclarationSyntax>(); parent is BaseNamespaceDeclarationSyntax ns; parent = parent.Parent)
             {
-                block = (BlockSyntax)fixedStatement.Statement;
-                if (block.Statements.Count == 0)
+                string name = string.Concat(ns.Name.DescendantTokens().Select(static token => token.Text));
+                if (containingNamespace is null)
                 {
-                    return fixedStatement.WithStatement(childStatement);
+                    containingNamespace = new StringBuilder(name);
+                }
+                else
+                {
+                    containingNamespace.Insert(0, name + ".");
                 }
             }
-            else
-            {
-                block = SyntaxFactory.Block(fixedStatement.Statement);
-            }
-
-            if (childStatement.IsKind(SyntaxKind.Block))
-            {
-                block = block.WithStatements(block.Statements.AddRange(((BlockSyntax)childStatement).Statements));
-            }
-            else
-            {
-                block = block.AddStatements(childStatement);
-            }
-
-            return fixedStatement.WithStatement(block);
-        }
-
-        public static StatementSyntax NestFixedStatements(this ImmutableArray<FixedStatementSyntax> fixedStatements, StatementSyntax innerStatement)
-        {
-            StatementSyntax nestedStatement = innerStatement;
-            if (!fixedStatements.IsEmpty)
-            {
-                int i = fixedStatements.Length - 1;
-                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(WrapStatementInBlock(nestedStatement));
-                i--;
-                for (; i >= 0; i--)
-                {
-                    nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(nestedStatement);
-                }
-            }
-            return nestedStatement;
-
-            static StatementSyntax WrapStatementInBlock(StatementSyntax statement)
-            {
-                if (statement.IsKind(SyntaxKind.Block))
-                {
-                    return statement;
-                }
-                return SyntaxFactory.Block(statement);
-            }
-        }
-
-        public static SyntaxTokenList StripTriviaFromTokens(this SyntaxTokenList tokenList)
-        {
-            SyntaxToken[] strippedTokens = new SyntaxToken[tokenList.Count];
-            for (int i = 0; i < tokenList.Count; i++)
-            {
-                strippedTokens[i] = tokenList[i].WithoutTrivia();
-            }
-            return new SyntaxTokenList(strippedTokens);
-        }
-
-        public static SyntaxTokenList StripAccessibilityModifiers(this SyntaxTokenList tokenList)
-        {
-            List<SyntaxToken> strippedTokens = new();
-            for (int i = 0; i < tokenList.Count; i++)
-            {
-                if (tokenList[i].Kind() is SyntaxKind.PublicKeyword or SyntaxKind.InternalKeyword or SyntaxKind.ProtectedKeyword or SyntaxKind.PrivateKeyword)
-                {
-                    continue;
-                }
-                strippedTokens.Add(tokenList[i]);
-            }
-            return new SyntaxTokenList(strippedTokens);
-        }
-
-        public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
-        {
-            if (modifiers.IndexOf(modifierToAdd) >= 0)
-            {
-                return modifiers;
-            }
-
-            // https://github.com/dotnet/csharplang/blob/main/meetings/2018/LDM-2018-04-04.md#ordering-of-ref-and-partial-keywords
-            int idxPartial = modifiers.IndexOf(SyntaxKind.PartialKeyword);
-            int idxRef = modifiers.IndexOf(SyntaxKind.RefKeyword);
-
-            int idxInsert = (idxPartial, idxRef) switch
-            {
-                (-1, -1) => modifiers.Count,
-                (-1, _) => idxRef,
-                (_, -1) => idxPartial,
-                (_, _) => Math.Min(idxPartial, idxRef)
-            };
-
-            return modifiers.Insert(idxInsert, SyntaxFactory.Token(modifierToAdd));
+            return new ContainingSyntaxContext(containingTypes.ToImmutable(), containingNamespace?.ToString());
         }
 
         public static bool IsInPartialContext(this TypeDeclarationSyntax syntax, [NotNullWhen(false)] out SyntaxToken? nonPartialIdentifier)

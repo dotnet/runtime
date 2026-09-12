@@ -7,6 +7,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
@@ -43,6 +45,7 @@ namespace LibraryImportGenerator.UnitTests
                     Assert.Collection(step.Outputs,
                         output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
+            AssertGeneratedSourceUnchanged(driver.GetRunResult().Results[0], runResult);
         }
 
         [Fact]
@@ -77,6 +80,7 @@ namespace LibraryImportGenerator.UnitTests
                     Assert.Collection(step.Outputs,
                         output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
+            AssertGeneratedSourceUnchanged(driver.GetRunResult().Results[0], runResult);
         }
 
         [Fact]
@@ -173,6 +177,8 @@ namespace LibraryImportGenerator.UnitTests
                     Assert.Collection(step.Outputs,
                         output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
                 });
+            Assert.NotEqual(GetStubText(driver.GetRunResult().Results[0]), GetStubText(runResult));
+            AssertStringOutputs(runResult);
         }
 
         [Fact]
@@ -212,6 +218,143 @@ namespace LibraryImportGenerator.UnitTests
                     Assert.Collection(step.Outputs,
                         output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
+            AssertGeneratedSourceUnchanged(driver.GetRunResult().Results[0], runResult);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ChangingTrivia_DoesNotRegenerateSource(bool requiresMarshalling)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                namespace NS.Inner
+                {
+                    partial class C
+                    {
+                        [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf16)]
+                        public static partial void Method({{(requiresMarshalling ? "string" : "int")}} value);
+                    }
+                }
+                """;
+            Compilation compilation = TestUtils.CreateCompilation(source);
+            GeneratorDriver driver = TestUtils.CreateDriver(compilation, null, [new Microsoft.Interop.LibraryImportGenerator()], EnableIncrementalTrackingDriverOptions);
+            driver = driver.RunGenerators(compilation);
+
+            string editedSource = source
+                .Replace("namespace NS.Inner", "namespace NS /* namespace */ . Inner")
+                .Replace("public static partial", "public /* modifiers */ static\npartial");
+            SyntaxTree editedTree = CSharpSyntaxTree.ParseText(editedSource, new CSharpParseOptions(LanguageVersion.Preview));
+            Compilation editedCompilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.Single(), editedTree);
+            GeneratorRunResult result = driver.RunGenerators(editedCompilation).GetRunResult().Results[0];
+
+            Assert.Equal(IncrementalStepRunReason.Unchanged, Assert.Single(Assert.Single(result.TrackedSteps[StepNames.GenerateSingleStub]).Outputs).Reason);
+            AssertGeneratedSourceUnchanged(driver.GetRunResult().Results[0], result);
+        }
+
+        [Theory]
+        [InlineData("CallConvCdecl", "CallConvStdcall")]
+        [InlineData("DllImportSearchPath.System32", "DllImportSearchPath.UserDirectories")]
+        public void ChangingForwardedAttributeValues_RegeneratesSource(string originalValue, string newValue)
+        {
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf16)]
+                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+                    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+                    public static partial void Method(string value);
+                }
+                """;
+            Compilation compilation = TestUtils.CreateCompilation(source);
+            GeneratorDriver driver = TestUtils.CreateDriver(compilation, null, [new Microsoft.Interop.LibraryImportGenerator()], EnableIncrementalTrackingDriverOptions);
+            driver = driver.RunGenerators(compilation);
+
+            SyntaxTree editedTree = CSharpSyntaxTree.ParseText(source.Replace(originalValue, newValue), new CSharpParseOptions(LanguageVersion.Preview));
+            Compilation editedCompilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.Single(), editedTree);
+            GeneratorRunResult result = driver.RunGenerators(editedCompilation).GetRunResult().Results[0];
+
+            Assert.Equal(IncrementalStepRunReason.Modified, Assert.Single(Assert.Single(result.TrackedSteps[StepNames.GenerateSingleStub]).Outputs).Reason);
+            Assert.NotEqual(GetStubText(driver.GetRunResult().Results[0]), GetStubText(result));
+            AssertStringOutputs(result);
+        }
+
+        [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        public async Task DownlevelAppendingUnrelatedSource_DoesNotRegenerateSource()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method(ref int value);
+                }
+                """;
+            ImmutableArray<MetadataReference> references = await ReferenceAssemblies.NetStandard.NetStandard20.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
+            Compilation compilation = TestUtils.CreateCompilation(source).WithReferences(references);
+            GeneratorDriver driver = TestUtils.CreateDriver(compilation, null, [new Microsoft.Interop.DownlevelLibraryImportGenerator()], EnableIncrementalTrackingDriverOptions);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outputCompilation, out ImmutableArray<Diagnostic> diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(outputCompilation);
+
+            SyntaxTree editedTree = CSharpSyntaxTree.ParseText(source + "\nstruct Unrelated { }", new CSharpParseOptions(LanguageVersion.Preview));
+            Compilation editedCompilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.Single(), editedTree);
+            GeneratorRunResult result = driver.RunGenerators(editedCompilation).GetRunResult().Results[0];
+
+            Assert.Equal(IncrementalStepRunReason.Unchanged, Assert.Single(Assert.Single(result.TrackedSteps[StepNames.GenerateSingleStub]).Outputs).Reason);
+            AssertGeneratedSourceUnchanged(driver.GetRunResult().Results[0], result);
+        }
+
+        [Fact]
+        public void ForwarderOutputHasDeterministicFormatting()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                namespace @namespace;
+                partial class @class
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int @event(int @return);
+                }
+                """;
+            Compilation compilation = TestUtils.CreateCompilation(source);
+            GeneratorDriver driver = TestUtils.CreateDriver(compilation, null, [new Microsoft.Interop.LibraryImportGenerator()], EnableIncrementalTrackingDriverOptions);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outputCompilation, out ImmutableArray<Diagnostic> diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(outputCompilation);
+
+            string expected = """
+                // <auto-generated/>
+                namespace @namespace
+                {
+                    partial class @class
+                    {
+                        [global::System.Runtime.InteropServices.DllImportAttribute("DoesNotExist", EntryPoint = "event", ExactSpelling = true)]
+                        public static extern partial int @event(int @return);
+                    }
+                }
+                """.ReplaceLineEndings("\r\n") + "\r\n";
+            GeneratorRunResult result = driver.GetRunResult().Results[0];
+            Assert.Equal(expected, GetStubText(result));
+            AssertStringOutputs(result);
+        }
+
+        private static string GetStubText(GeneratorRunResult result)
+            => Assert.Single(result.GeneratedSources.Where(source => source.HintName == "LibraryImports.g.cs")).SourceText.ToString();
+
+        private static void AssertGeneratedSourceUnchanged(GeneratorRunResult previous, GeneratorRunResult current)
+        {
+            Assert.Equal(GetStubText(previous), GetStubText(current));
+            AssertStringOutputs(current);
+        }
+
+        private static void AssertStringOutputs(GeneratorRunResult result)
+        {
+            Assert.All(result.TrackedSteps[StepNames.GenerateSingleStub], step =>
+                Assert.All(step.Outputs, output => Assert.EndsWith("\r\n", Assert.IsType<string>(output.Value), StringComparison.Ordinal)));
         }
 
         public static IEnumerable<object[]> CompilationObjectLivenessSources()

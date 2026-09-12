@@ -24,15 +24,19 @@ namespace ComInterfaceGenerator.Unit.Tests
 {
     public class ComInterfaceGeneratorOutputShape
     {
-        [Fact]
-        public async Task SingleComInterface()
+        [Theory]
+        [InlineData("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+        [InlineData("00000000-0000-0000-0000-000000000000")]
+        [InlineData("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")]
+        [InlineData("090A6364-FF00-0109-0A63-646566FEFF01")]
+        public async Task SingleComInterface(string iid)
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface]
-                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                [Guid("{{iid}}")]
                 partial interface INativeAPI
                 {
                     void Method();
@@ -385,6 +389,72 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
+        [Theory]
+        [InlineData("return")]
+        [InlineData("async")]
+        public async Task EscapedIdentifiersInInheritedMembers(string methodName)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace @namespace
+                {
+                    partial class @class
+                    {
+                        [GeneratedComInterface]
+                        [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                        public partial interface @interface
+                        {
+                            int @{{methodName}}(int @params);
+                            int @event { get; set; }
+                            int this[in int @ref] { get; set; }
+                        }
+
+                        [GeneratedComInterface]
+                        [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F41")]
+                        public partial interface IDerived : @interface
+                        {
+                            void Next();
+                        }
+                    }
+                }
+                """;
+
+            await VerifyGeneratedTypeShapes(source, "namespace.class+interface", "namespace.class+IDerived");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GeneratedTextIsCachedUnlessSignatureChanges(bool changeSignature)
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                partial interface INativeAPI
+                {
+                    int Method(int value);
+                    int Value { get; set; }
+                }
+                """;
+
+            string updatedSource = changeSignature
+                ? source.Replace("int Method(int value)", "long Method(long value)")
+                : "// Input trivia does not affect generated source.\r\n" + source;
+
+            GeneratedSourceVerification.VerifyIncrementalOutput(
+                new Microsoft.Interop.ComInterfaceGenerator(),
+                source,
+                updatedSource,
+                changeSignature,
+                1,
+                "GeneratedComInterface");
+        }
+
         private static async Task VerifyGeneratedTypeShapes(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)
@@ -429,7 +499,21 @@ namespace ComInterfaceGenerator.Unit.Tests
                 Assert.Collection(Assert.IsAssignableFrom<INamedTypeSymbol>(iUnknownDerivedAttribute.AttributeClass).TypeArguments,
                     infoType =>
                     {
-                        Assert.True(Assert.IsAssignableFrom<INamedTypeSymbol>(infoType).IsFileLocal);
+                        INamedTypeSymbol generatedInfo = Assert.IsAssignableFrom<INamedTypeSymbol>(infoType);
+                        Assert.True(generatedInfo.IsFileLocal);
+                        IPropertySymbol iid = Assert.Single(generatedInfo.GetMembers("Iid").OfType<IPropertySymbol>());
+                        PropertyDeclarationSyntax declaration = Assert.IsType<PropertyDeclarationSyntax>(iid.DeclaringSyntaxReferences.Single().GetSyntax());
+                        ImplicitObjectCreationExpressionSyntax initializer = Assert.IsType<ImplicitObjectCreationExpressionSyntax>(declaration.Initializer!.Value);
+                        CollectionExpressionSyntax bytes = Assert.IsType<CollectionExpressionSyntax>(Assert.Single(initializer.ArgumentList.Arguments).Expression);
+                        SemanticModel model = comp.GetSemanticModel(declaration.SyntaxTree);
+                        byte[] actualBytes = bytes.Elements.Select(element =>
+                        {
+                            ExpressionSyntax expression = Assert.IsType<ExpressionElementSyntax>(element).Expression;
+                            return checked((byte)Assert.IsType<int>(model.GetConstantValue(expression).Value));
+                        }).ToArray();
+                        AttributeData guid = Assert.Single(userDefinedInterface.GetAttributes(),
+                            attr => attr.AttributeClass?.ToDisplayString() == typeof(GuidAttribute).FullName);
+                        Assert.Equal(new Guid(Assert.IsType<string>(guid.ConstructorArguments[0].Value)).ToByteArray(), actualBytes);
                     },
                     implementationType =>
                     {

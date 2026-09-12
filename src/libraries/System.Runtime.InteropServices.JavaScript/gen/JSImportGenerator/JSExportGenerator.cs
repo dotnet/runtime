@@ -4,14 +4,11 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using System.Collections.Generic;
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -21,7 +18,6 @@ namespace Microsoft.Interop.JavaScript
         internal sealed record IncrementalStubGenerationContext(
             JSSignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
-            ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSExportData JSExportData);
 
@@ -33,14 +29,11 @@ namespace Microsoft.Interop.JavaScript
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var assemblyName = context.CompilationProvider.Select(static (c, _) => c.AssemblyName);
-
-            // Collect all methods adorned with JSExportAttribute
-            // (diagnostics for invalid methods are reported by the analyzer)
+            var assemblyName = context.CompilationProvider.Select(static (compilation, ct) => compilation.AssemblyName);
             var methodsToGenerate = context.SyntaxProvider
                 .ForAttributeWithMetadataName(Constants.JSExportAttribute,
-                   static (node, ct) => node is MethodDeclarationSyntax,
-                   static (context, ct) => new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = (IMethodSymbol)context.TargetSymbol })
+                    static (node, ct) => node is MethodDeclarationSyntax,
+                    static (context, ct) => new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = (IMethodSymbol)context.TargetSymbol })
                 .Where(static data =>
                     JSInteropDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(
                         data.Syntax, data.Symbol,
@@ -49,91 +42,33 @@ namespace Microsoft.Interop.JavaScript
                         requiresImplementation: true) is null);
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
-
-            IncrementalValuesProvider<(MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(string Source, string Registration, string Attribute)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
-                .Select(static (data, ct) => new
-                {
-                    data.Left.Syntax,
-                    data.Left.Symbol,
-                    Environment = data.Right,
-                })
-                .Select(
-                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct)
-                )
+                .Select(static (data, ct) => CalculateStubInformation(data.Left.Syntax, data.Left.Symbol, data.Right, ct))
                 .WithTrackingName(StepNames.CalculateStubInformation)
-                .Select(
-                    static (data, ct) => GenerateSource(data)
-                )
-                .WithComparer(Comparers.GeneratedSyntax3)
+                .Select(static (data, ct) => GenerateSource(data))
                 .WithTrackingName(StepNames.GenerateSingleStub);
 
-            IncrementalValueProvider<ImmutableArray<(StatementSyntax, AttributeListSyntax)>> regSyntax = generateSingleStub
-                .Select(
-                    static (data, ct) => (data.Item2, data.Item3))
-                .Collect();
-
-            IncrementalValueProvider<string> registration = regSyntax
-                .Combine(assemblyName)
-                .Select(static (data, ct) => GenerateRegSource(data.Left, data.Right))
-                .Select(static (data, ct) => data.NormalizeWhitespace().ToFullString());
-
-            IncrementalValueProvider<ImmutableArray<(string, string)>> generated = generateSingleStub
-                .Combine(registration)
-                .Select(
-                    static (data, ct) => (data.Left.Item1.NormalizeWhitespace().ToFullString(), data.Right))
-                .Collect();
-
-
-            context.RegisterSourceOutput(generated,
-                (context, generatedSources) =>
+            context.RegisterSourceOutput(generateSingleStub.Collect().Combine(assemblyName), static (context, data) =>
+            {
+                if (data.Left.IsEmpty)
                 {
-                    // Don't generate a file if we don't have to, to avoid the extra IDE overhead once we have generated
-                    // files in play.
-                    if (generatedSources.IsEmpty)
-                        return;
+                    return;
+                }
 
-                    StringBuilder source = new();
-                    // Mark in source that the file is auto-generated.
-                    source.Append("// <auto-generated/>\r\n");
-                    // this is the assembly level registration
-                    source.Append(generatedSources[0].Item2);
-                    source.Append("\r\n");
-                    // this is the method wrappers to be called from JS
-                    foreach (var generated in generatedSources)
-                    {
-                        source.Append(generated.Item1);
-                        source.Append("\r\n");
-                    }
-
-                    // Once https://github.com/dotnet/roslyn/issues/61326 is resolved, we can avoid the ToString() here.
-                    context.AddSource("JSExports.g.cs", source.ToString());
-                });
-
-        }
-
-        private static MemberDeclarationSyntax PrintGeneratedSource(
-            ContainingSyntaxContext containingSyntaxContext,
-            BlockSyntax wrapperStatements, string wrapperName)
-        {
-
-            MemberDeclarationSyntax wrappperMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(wrapperName))
-                .WithModifiers(TokenList(new[] { Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.UnsafeKeyword) }))
-                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))))
-                .WithParameterList(ParameterList(SingletonSeparatedList(
-                    Parameter(Identifier(Constants.ArgumentsBuffer)).WithType(PointerType(ParseTypeName(Constants.JSMarshalerArgumentGlobal))))))
-                .WithBody(wrapperStatements);
-
-            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(wrappperMethod);
-
-            return toPrint;
+                var writer = new IndentedTextWriter();
+                writer.WriteLine("// <auto-generated/>");
+                WriteRegistrationSource(writer, data.Left, data.Right);
+                foreach (var generated in data.Left)
+                {
+                    writer.Write(generated.Source);
+                }
+                context.AddSource("JSExports.g.cs", writer.ToString());
+            });
         }
 
         private static JSExportData? ProcessJSExportAttribute(AttributeData attrData)
         {
-            // Found the JSExport, but it has an error so report the error.
-            // This is most likely an issue with targeting an incorrect TFM.
             if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
             {
                 return null;
@@ -149,7 +84,6 @@ namespace Microsoft.Interop.JavaScript
             CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            // Get any attributes of interest on the method
             AttributeData? jsExportAttr = null;
             foreach (AttributeData attr in symbol.GetAttributes())
             {
@@ -164,166 +98,87 @@ namespace Microsoft.Interop.JavaScript
 
             var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
             var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
-
-            // Process the JSExport attribute
-            JSExportData? jsExportData = ProcessJSExportAttribute(jsExportAttr!);
-
-            jsExportData ??= new JSExportData();
-
-            // Create the stub.
+            JSExportData jsExportData = ProcessJSExportAttribute(jsExportAttr!) ?? new JSExportData();
             var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
+            ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
-            var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
-
-            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
-
-            return new IncrementalStubGenerationContext(
-                signatureContext,
-                containingTypeContext,
-                methodSyntaxTemplate,
-                locations,
-                jsExportData);
+            return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, locations, jsExportData);
         }
 
-        private static NamespaceDeclarationSyntax GenerateRegSource(
-            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods, string assemblyName)
+        private static void WriteRegistrationSource(
+            IndentedTextWriter writer,
+            ImmutableArray<(string Source, string Registration, string Attribute)> methods,
+            string assemblyName)
         {
-            const string generatedNamespace = "System.Runtime.InteropServices.JavaScript";
-            const string initializerClass = "__GeneratedInitializer";
-            const string initializerName = "__Register_";
-            const string trimmingPreserveName = "__TrimmingPreserve_";
+            const string GeneratedNamespace = "System.Runtime.InteropServices.JavaScript";
+            const string InitializerClass = "__GeneratedInitializer";
 
-            if (methods.IsEmpty) return NamespaceDeclaration(IdentifierName(generatedNamespace));
-
-            var registerStatements = new List<StatementSyntax>();
-            registerStatements.AddRange(GenerateJSExportArchitectureCheck());
-
-            var attributes = new List<AttributeListSyntax>();
-            foreach (var m in methods)
+            writer.WriteLine($"namespace {GeneratedNamespace}");
+            using (writer.WriteBlock())
             {
-                registerStatements.Add(m.Registration);
-                attributes.Add(m.Attribute);
+                writer.WriteLine($"[{Constants.CompilerGeneratedAttributeGlobal}]");
+                writer.WriteLine($"unsafe class {InitializerClass}");
+                using (writer.WriteBlock())
+                {
+                    writer.WriteLine($"[{Constants.ThreadStaticGlobal}]");
+                    writer.WriteLine("static bool initialized;");
+                    // Preserve the registration entry point even when the application is trimmed.
+                    writer.WriteLine($"[{Constants.ModuleInitializerAttributeGlobal}, {Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicMethods | {Constants.DynamicallyAccessedMemberTypesGlobal}.NonPublicMethods, {CodeWriterHelpers.StringLiteral(GeneratedNamespace + "." + InitializerClass)}, {CodeWriterHelpers.StringLiteral(assemblyName)})]");
+                    writer.WriteLine("static internal void __TrimmingPreserve_()");
+                    using (writer.WriteBlock())
+                    {
+                    }
+                    writer.WriteLine();
+
+                    foreach (var method in methods)
+                    {
+                        writer.WriteLine($"[{method.Attribute}]");
+                    }
+                    writer.WriteLine("static void __Register_()");
+                    using (writer.WriteBlock())
+                    {
+                        writer.WriteLine($"if (initialized || {Constants.OSArchitectureGlobal} != {Constants.ArchitectureWasmGlobal})");
+                        writer.Indent++;
+                        writer.WriteLine("return;");
+                        writer.Indent--;
+                        writer.WriteLine("initialized = true;");
+                        foreach (var method in methods)
+                        {
+                            writer.WriteLine(method.Registration);
+                        }
+                    }
+                }
             }
-
-            FieldDeclarationSyntax field = FieldDeclaration(VariableDeclaration(PredefinedType(Token(SyntaxKind.BoolKeyword)))
-                            .WithVariables(SingletonSeparatedList(
-                                VariableDeclarator(Identifier("initialized")))))
-                            .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)))
-                            .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                                Attribute(IdentifierName(Constants.ThreadStaticGlobal))))));
-
-            MemberDeclarationSyntax method = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(initializerName))
-                            .WithAttributeLists(List(attributes))
-                            .WithModifiers(TokenList(new[] { Token(SyntaxKind.StaticKeyword) }))
-                            .WithBody(Block(registerStatements));
-
-            // HACK: protect the code from trimming with DynamicDependency attached to a ModuleInitializer
-            MemberDeclarationSyntax initializerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(trimmingPreserveName))
-                            .WithAttributeLists(
-                                SingletonList<AttributeListSyntax>(
-                                    AttributeList(
-                                        SeparatedList<AttributeSyntax>(
-                                            new SyntaxNodeOrToken[]{
-                                                Attribute(
-                                                    IdentifierName(Constants.ModuleInitializerAttributeGlobal)),
-                                                Token(SyntaxKind.CommaToken),
-                                                Attribute(
-                                                    IdentifierName(Constants.DynamicDependencyAttributeGlobal))
-                                                .WithArgumentList(
-                                                    AttributeArgumentList(
-                                                        SeparatedList<AttributeArgumentSyntax>(
-                                                            new SyntaxNodeOrToken[]{
-                                                                AttributeArgument(
-                                                                    BinaryExpression(
-                                                                        SyntaxKind.BitwiseOrExpression,
-                                                                        MemberAccessExpression(
-                                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                                            IdentifierName(Constants.DynamicallyAccessedMemberTypesGlobal),
-                                                                            IdentifierName("PublicMethods")),
-                                                                        MemberAccessExpression(
-                                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                                            IdentifierName(Constants.DynamicallyAccessedMemberTypesGlobal),
-                                                                            IdentifierName("NonPublicMethods")))),
-                                                                Token(SyntaxKind.CommaToken),
-                                                                AttributeArgument(
-                                                                    LiteralExpression(SyntaxKind.StringLiteralExpression, Literal($"{generatedNamespace}.{initializerClass}"))
-                                                                ),
-                                                                Token(SyntaxKind.CommaToken),
-                                                                AttributeArgument(
-                                                                    LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(assemblyName))
-                                                                )
-                                                            })))}))))
-                            .WithModifiers(TokenList(new[] {
-                                Token(SyntaxKind.StaticKeyword),
-                                Token(SyntaxKind.InternalKeyword)
-                            }))
-                            .WithBody(Block());
-
-            var ns = NamespaceDeclaration(IdentifierName(generatedNamespace))
-                        .WithMembers(
-                            SingletonList<MemberDeclarationSyntax>(
-                                ClassDeclaration(initializerClass)
-                                .WithModifiers(TokenList(new SyntaxToken[]{
-                                    Token(SyntaxKind.UnsafeKeyword)}))
-                                .WithMembers(List(new[] { field, initializerMethod, method }))
-                                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                                    Attribute(IdentifierName(Constants.CompilerGeneratedAttributeGlobal)))
-                                )))));
-
-            return ns;
         }
 
-        private static StatementSyntax[] GenerateJSExportArchitectureCheck()
-        {
-            return [
-                IfStatement(
-                    BinaryExpression(SyntaxKind.LogicalOrExpression,
-                        IdentifierName("initialized"),
-                        BinaryExpression(SyntaxKind.NotEqualsExpression,
-                            IdentifierName(Constants.OSArchitectureGlobal),
-                            IdentifierName(Constants.ArchitectureWasmGlobal))),
-                    ReturnStatement()),
-                ExpressionStatement(
-                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName("initialized"),
-                    LiteralExpression(SyntaxKind.TrueLiteralExpression))),
-            ];
-        }
-
-        private static (MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax) GenerateSource(
-            IncrementalStubGenerationContext incrementalContext)
+        private static (string Source, string Registration, string Attribute) GenerateSource(IncrementalStubGenerationContext incrementalContext)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
-
-            // Generate stub code
             ImmutableArray<TypePositionInfo> signatureElements = incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation;
-
-            ImmutableArray<TypePositionInfo> allElements = signatureElements
-                .Add(new TypePositionInfo(
-                        new ReferenceTypeInfo(Constants.ExceptionGlobal, Constants.ExceptionGlobal),
-                        new JSMarshallingInfo(NoMarshallingInfo.Instance, new JSSimpleTypeInfo(KnownManagedType.Exception, ParseTypeName(Constants.ExceptionGlobal)))
-                        {
-                            JSType = System.Runtime.InteropServices.JavaScript.JSTypeFlags.Error,
-                        })
+            ImmutableArray<TypePositionInfo> allElements = signatureElements.Add(new TypePositionInfo(
+                new ReferenceTypeInfo(Constants.ExceptionGlobal, Constants.ExceptionGlobal),
+                new JSMarshallingInfo(NoMarshallingInfo.Instance, new JSSimpleTypeInfo(KnownManagedType.Exception, Constants.ExceptionGlobal))
                 {
-                    InstanceIdentifier = Constants.ArgumentException,
-                    ManagedIndex = TypePositionInfo.ExceptionIndex,
-                    NativeIndex = signatureElements.Length, // Insert at the end of the argument list
-                    RefKind = RefKind.Out, // We'll treat it as a separate out parameter.
-                    IsErrorHandlingPosition = true,
-                });
+                    JSType = System.Runtime.InteropServices.JavaScript.JSTypeFlags.Error,
+                })
+            {
+                InstanceIdentifier = Constants.ArgumentException,
+                ManagedIndex = TypePositionInfo.ExceptionIndex,
+                NativeIndex = signatureElements.Length,
+                RefKind = RefKind.Out,
+                IsErrorHandlingPosition = true,
+            });
 
             for (int i = 0; i < allElements.Length; i++)
             {
                 if (allElements[i].IsNativeReturnPosition && allElements[i].ManagedType != SpecialTypeInfo.Void)
                 {
-                    // The runtime may partially initialize the native return value.
-                    // To preserve this information, we must pass the native return value as an out parameter.
+                    // Passing the return slot by reference preserves partial runtime initialization.
                     allElements = allElements.SetItem(i, allElements[i] with
                     {
                         ManagedIndex = TypePositionInfo.ReturnIndex,
-                        NativeIndex = allElements.Length, // Insert at the end of the argument list
-                        RefKind = RefKind.Out, // We'll treat it as a separate out parameter.
+                        NativeIndex = allElements.Length,
+                        RefKind = RefKind.Out,
                     });
                 }
             }
@@ -335,90 +190,60 @@ namespace Microsoft.Interop.JavaScript
                     new NoSpanAndTaskMixingResolver(),
                     new JSGeneratorResolver()));
 
-            var wrapperName = "__Wrapper_" + incrementalContext.StubMethodSyntaxTemplate.Identifier + "_" + incrementalContext.SignatureContext.TypesHash;
+            var writer = new IndentedTextWriter();
+            incrementalContext.ContainingSyntaxContext.WriteToWithUnsafeModifier(
+                writer,
+                (Context: incrementalContext, Generator: stubGenerator),
+                static (writer, state) => WriteWrapper(writer, state.Context, state.Generator));
 
-            const string innerWrapperName = "__Stub";
+            JSSignatureContext signature = incrementalContext.SignatureContext;
+            string signatures = SignatureBindingHelpers.CreateSignaturesArgument(signatureElements, StubCodeContext.DefaultNativeToManagedStub);
+            string registration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures});";
+            string attribute = $"{Constants.DynamicDependencyAttributeGlobal}({CodeWriterHelpers.StringLiteral(signature.WrapperName)}, {CodeWriterHelpers.StringLiteral(signature.StubTypeFullName)}, {CodeWriterHelpers.StringLiteral(signature.AssemblyName)})";
 
-            BlockSyntax wrapperToInnerStubBlock = Block(
-                CreateWrapperToInnerStubCall(signatureElements, innerWrapperName),
-                GenerateInnerLocalFunction(incrementalContext, innerWrapperName, stubGenerator));
-
-            StatementSyntax registration = GenerateJSExportRegistration(incrementalContext.SignatureContext);
-            AttributeListSyntax registrationAttribute = AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.DynamicDependencyAttributeGlobal))
-                    .WithArgumentList(AttributeArgumentList(SeparatedList(new[]{
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(wrapperName))),
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(incrementalContext.SignatureContext.StubTypeFullName))),
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(incrementalContext.SignatureContext.AssemblyName))),
-                    }
-                    )))));
-
-            return (PrintGeneratedSource(incrementalContext.ContainingSyntaxContext, wrapperToInnerStubBlock, wrapperName),
-                registration, registrationAttribute);
+            return (writer.ToString(), registration, attribute);
         }
 
-        private static ExpressionStatementSyntax CreateWrapperToInnerStubCall(ImmutableArray<TypePositionInfo> signatureElements, string innerWrapperName)
+        private static void WriteWrapper(
+            IndentedTextWriter writer,
+            IncrementalStubGenerationContext context,
+            UnmanagedToManagedStubGenerator stubGenerator)
         {
-            List<ArgumentSyntax> arguments = [];
-            bool hasReturn = true;
-            foreach (var nativeArg in signatureElements.Where(e => e.NativeIndex != TypePositionInfo.UnsetIndex).OrderBy(e => e.NativeIndex))
+            const string InnerWrapperName = "__Stub";
+            writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
+            writer.WriteLine($"internal static unsafe void {context.SignatureContext.WrapperName}({Constants.JSMarshalerArgumentGlobal}* {Constants.ArgumentsBuffer})");
+            using (writer.WriteBlock())
             {
-                if (nativeArg.IsNativeReturnPosition)
+                WriteWrapperToInnerStubCall(writer, context.SignatureContext.SignatureContext.ElementTypeInformation, InnerWrapperName);
+                GeneratedMethodSignature signature = stubGenerator.GenerateAbiMethodSignatureData();
+                writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
+                writer.WriteLine($"{signature.ReturnType} {InnerWrapperName}{signature.ParameterList}");
+                writer.Write(stubGenerator.GenerateStubBodyForMethod(context.SignatureContext.MethodName));
+            }
+        }
+
+        private static void WriteWrapperToInnerStubCall(
+            IndentedTextWriter writer,
+            ImmutableArray<TypePositionInfo> signatureElements,
+            string innerWrapperName)
+        {
+            writer.Write($"{innerWrapperName}(");
+            bool hasReturn = true;
+            foreach (TypePositionInfo nativeArgument in signatureElements.Where(static element => element.NativeIndex != TypePositionInfo.UnsetIndex).OrderBy(static element => element.NativeIndex))
+            {
+                if (nativeArgument.IsNativeReturnPosition)
                 {
-                    if (nativeArg.ManagedType == SpecialTypeInfo.Void)
-                    {
-                        hasReturn = false;
-                    }
+                    hasReturn = nativeArgument.ManagedType != SpecialTypeInfo.Void;
                     continue;
                 }
-                arguments.Add(
-                    Argument(
-                        ElementAccessExpression(
-                            IdentifierName(Constants.ArgumentsBuffer),
-                            BracketedArgumentList(SingletonSeparatedList(Argument(
-                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(nativeArg.NativeIndex + 2))))))));
+                writer.Write($"{Constants.ArgumentsBuffer}[{nativeArgument.NativeIndex + 2}], ");
             }
-
-            arguments.Add(Argument(IdentifierName(Constants.ArgumentsBuffer)));
-
+            writer.Write(Constants.ArgumentsBuffer);
             if (hasReturn)
             {
-                arguments.Add(
-                    Argument(
-                        BinaryExpression(
-                            SyntaxKind.AddExpression,
-                            IdentifierName(Constants.ArgumentsBuffer),
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))));
+                writer.Write($", {Constants.ArgumentsBuffer} + 1");
             }
-
-            return ExpressionStatement(
-                InvocationExpression(IdentifierName(innerWrapperName))
-                        .WithArgumentList(ArgumentList(SeparatedList(arguments))));
-        }
-
-        private static LocalFunctionStatementSyntax GenerateInnerLocalFunction(IncrementalStubGenerationContext context, string innerFunctionName, UnmanagedToManagedStubGenerator stubGenerator)
-        {
-            var (parameters, returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
-            return LocalFunctionStatement(
-                returnType,
-                innerFunctionName)
-                .WithBody(stubGenerator.GenerateStubBodyForMethod(IdentifierName(TypeNames.GlobalAlias + context.SignatureContext.MethodName)))
-                .WithParameterList(parameters)
-                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))));
-        }
-
-        private static ExpressionStatementSyntax GenerateJSExportRegistration(JSSignatureContext context)
-        {
-            var signatureArgs = new List<ArgumentSyntax>
-            {
-                Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(context.QualifiedMethodName))),
-                Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(context.TypesHash))),
-                SignatureBindingHelpers.CreateSignaturesArgument(context.SignatureContext.ElementTypeInformation, StubCodeContext.DefaultNativeToManagedStub)
-            };
-
-            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                IdentifierName(Constants.JSFunctionSignatureGlobal), IdentifierName(Constants.BindCSFunctionMethod)))
-                .WithArgumentList(ArgumentList(SeparatedList(signatureArgs))));
+            writer.WriteLine(");");
         }
     }
 }

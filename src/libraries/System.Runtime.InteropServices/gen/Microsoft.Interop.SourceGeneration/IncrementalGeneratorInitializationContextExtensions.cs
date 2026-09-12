@@ -46,13 +46,9 @@ namespace Microsoft.Interop
                     new StubEnvironment(data.Left, data.Right));
         }
 
-        public static void RegisterConcatenatedSyntaxOutputs<TNode>(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<TNode> nodes, string fileName)
-            where TNode : SyntaxNode
+        public static void RegisterConcatenatedOutputs(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<string> sources, string fileName)
         {
-            IncrementalValueProvider<ImmutableArray<string>> generatedMethods = nodes
-                .Select(
-                    static (node, ct) => node.NormalizeWhitespace().ToFullString())
-                .Collect();
+            IncrementalValueProvider<ImmutableArray<string>> generatedMethods = sources.Where(static source => source.Length != 0).Collect();
 
             context.RegisterSourceOutput(generatedMethods,
                 (context, generatedSources) =>
@@ -69,7 +65,6 @@ namespace Microsoft.Interop
                     foreach (string generated in generatedSources)
                     {
                         source.Append(generated);
-                        source.Append("\r\n");
                     }
 
                     // Once https://github.com/dotnet/roslyn/issues/61326 is resolved, we can avoid the ToString() here.

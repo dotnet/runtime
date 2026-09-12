@@ -1,26 +1,19 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices.JavaScript;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Microsoft.Interop.SyntaxFactoryExtensions;
-
 
 namespace Microsoft.Interop.JavaScript
 {
     internal abstract class BaseJSGenerator(TypePositionInfo info, StubCodeContext codeContext) : IBoundMarshallingGenerator
     {
-        private static ValueTypeInfo JSMarshalerArgument = new ValueTypeInfo(Constants.JSMarshalerArgumentGlobal, Constants.JSMarshalerArgument, IsByRefLike: false);
+        private static readonly ValueTypeInfo s_jsMarshalerArgument = new(Constants.JSMarshalerArgumentGlobal, Constants.JSMarshalerArgument, IsByRefLike: false);
 
         public TypePositionInfo TypeInfo => info;
 
         public StubCodeContext CodeContext => codeContext;
 
-        public ManagedTypeInfo NativeType => JSMarshalerArgument;
+        public ManagedTypeInfo NativeType => s_jsMarshalerArgument;
 
         public SignatureBehavior NativeSignatureBehavior => TypeInfo.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
 
@@ -34,7 +27,7 @@ namespace Microsoft.Interop.JavaScript
             return ByValueMarshalKindSupport.NotSupported;
         }
 
-        public virtual IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
+        public virtual void Generate(IndentedTextWriter writer, StubIdentifierContext context)
         {
             MarshalDirection marshalDirection = MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext);
             if (context.CurrentStage == StubIdentifierContext.Stage.Setup
@@ -42,37 +35,36 @@ namespace Microsoft.Interop.JavaScript
                 && !TypeInfo.IsManagedReturnPosition)
             {
                 var (_, js) = context.GetIdentifiers(TypeInfo);
-                return [
-                    ExpressionStatement(
-                        MethodInvocation(TypeSyntaxes.System_Runtime_CompilerServices_Unsafe, IdentifierName("SkipInit"),
-                                    Argument(IdentifierName(js))
-                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))
-                ];
-            }
-
-            return [];
-        }
-
-        protected static IdentifierNameSyntax GetToManagedMethod(MarshalerType marshalerType)
-        {
-            switch (marshalerType)
-            {
-                case MarshalerType.BigInt64:
-                    return IdentifierName(Constants.ToManagedBigMethod);
-                default:
-                    return IdentifierName(Constants.ToManagedMethod);
+                writer.WriteLine($"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_CompilerServices_Unsafe}.SkipInit(out {js});");
             }
         }
 
-        protected static IdentifierNameSyntax GetToJSMethod(MarshalerType marshalerType)
+        protected static string GetToManagedMethod(MarshalerType marshalerType)
         {
-            switch (marshalerType)
-            {
-                case MarshalerType.BigInt64:
-                    return IdentifierName(Constants.ToJSBigMethod);
-                default:
-                    return IdentifierName(Constants.ToJSMethod);
-            }
+            return marshalerType == MarshalerType.BigInt64 ? Constants.ToManagedBigMethod : Constants.ToManagedMethod;
+        }
+
+        protected static string GetToJSMethod(MarshalerType marshalerType)
+        {
+            return marshalerType == MarshalerType.BigInt64 ? Constants.ToJSBigMethod : Constants.ToJSMethod;
+        }
+
+        protected static void WriteMarshallingLambda(
+            IndentedTextWriter writer,
+            string sourceType,
+            string argumentIdentifier,
+            string managedIdentifier,
+            MarshalerType marshalerType,
+            bool toManaged)
+        {
+            string modifier = toManaged ? "out " : "";
+            string method = toManaged ? GetToManagedMethod(marshalerType) : GetToJSMethod(marshalerType);
+            writer.WriteLine($"static (ref {Constants.JSMarshalerArgumentGlobal} {argumentIdentifier}, {modifier}{sourceType} {managedIdentifier}) =>");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine($"{argumentIdentifier}.{method}({modifier}{managedIdentifier});");
+            writer.Indent--;
+            writer.Write('}');
         }
     }
 }
