@@ -10570,13 +10570,14 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
 //    addr       - Destination address
 //    value      - Value to store
 //    indirFlags - Indirection flags
+//    reverseOps - Evaluate value before addr
 //
 // Return Value:
 //    A "STORE_BLK/STORE_IND" node, or "STORE_LCL_VAR" if "addr" points to
 //    a compatible local.
 //
 GenTree* Compiler::gtNewStoreValueNode(
-    var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
+    var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags, bool reverseOps)
 {
     assert((type != TYP_STRUCT) || (layout != nullptr));
 
@@ -10598,6 +10599,11 @@ GenTree* Compiler::gtNewStoreValueNode(
     else
     {
         store = gtNewStoreIndNode(type, addr, value, indirFlags);
+    }
+
+    if (reverseOps)
+    {
+        store->SetReverseOp();
     }
 
     return store;
@@ -23554,7 +23560,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
     if (needsReverseOps)
     {
-        // We expect op1 to have already been spilled if needed
+        // In HIR, preserve the original evaluation order on the resulting binary node.
         std::swap(op1, op2);
     }
 
@@ -23584,7 +23590,12 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             std::swap(op1, op2);
 #endif // TARGET_XARCH
         }
-        return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
+        GenTree* result = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
+        if (needsReverseOps && !isLIR)
+        {
+            result->SetReverseOp();
+        }
+        return result;
     }
 
     switch (op)
@@ -23655,6 +23666,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (op == GT_RSH)
             {
                 GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+                if (!op2->IsCnsIntOrI() && op1->OperIs(GT_COMMA))
+                {
+                    // Evaluate the vector's materialization before the nonconstant count in the mask.
+                    maskAmountOp = gtWrapWithSideEffects(maskAmountOp, op1, GTF_OBS_EFFECT);
+                    op1          = gtCloneExpr(op1Dup);
+                }
+
                 GenTree* signOp =
                     gtNewSimdCmpOpNode(GT_GT, type, gtNewZeroConNode(type), op1Dup, simdBaseType, simdSize);
 
@@ -23941,6 +23960,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 // lower = op1.GetElement(0) * op2.GetElement(0)
                 GenTree* lowerMul = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
+                if (needsReverseOps && !isLIR)
+                {
+                    lowerMul->SetReverseOp();
+                }
 
                 if (op2ToDup == nullptr)
                 {
@@ -25292,6 +25315,7 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
             result           = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseType, simdSize);
             GenTree* start   = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
             result           = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseType, simdSize);
+            result->SetReverseOp();
             return result;
         }
     }
@@ -25457,6 +25481,10 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
     {
         GenTree* start = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
         result         = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseType, simdSize);
+#if !defined(TARGET_WASM)
+        // Evaluate start before step without changing the arithmetic operand order.
+        result->SetReverseOp();
+#endif // !TARGET_WASM
     }
 
     return result;
@@ -25611,7 +25639,10 @@ GenTree* Compiler::gtNewSimdGetElementNode(
 
     if (rangeCheckNeeded)
     {
-        op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+        // Keep index evaluation in the returned tree rather than spilling it ahead of op1.
+        GenTree* index = fgMakeMultiUse(&op2);
+        index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
+        op2            = gtWrapWithSideEffects(index, op2, GTF_OBS_EFFECT);
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
@@ -25842,7 +25873,7 @@ GenTree* Compiler::gtNewSimdIsFiniteNode(var_types type, GenTree* op1, var_types
     }
 
     assert(varTypeIsIntegral(simdBaseType));
-    return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1, GTF_ALL_EFFECT);
+    return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1, GTF_OBS_EFFECT);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -25872,7 +25903,7 @@ GenTree* Compiler::gtNewSimdIsInfinityNode(var_types type, GenTree* op1, var_typ
         op1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
         return gtNewSimdIsPositiveInfinityNode(type, op1, simdBaseType, simdSize);
     }
-    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_OBS_EFFECT);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -25911,7 +25942,7 @@ GenTree* Compiler::gtNewSimdIsIntegerNode(var_types type, GenTree* op1, var_type
     }
 
     assert(varTypeIsIntegral(simdBaseType));
-    return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1, GTF_ALL_EFFECT);
+    return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1, GTF_OBS_EFFECT);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -25941,7 +25972,7 @@ GenTree* Compiler::gtNewSimdIsNaNNode(var_types type, GenTree* op1, var_types si
         GenTree* op1Dup = fgMakeMultiUse(&op1);
         return gtNewSimdCmpOpNode(GT_NE, type, op1, op1Dup, simdBaseType, simdSize);
     }
-    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_OBS_EFFECT);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -25977,7 +26008,7 @@ GenTree* Compiler::gtNewSimdIsNegativeNode(var_types type, GenTree* op1, var_typ
 
     if (varTypeIsUnsigned(simdBaseType))
     {
-        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_OBS_EFFECT);
     }
     return gtNewSimdCmpOpNode(GT_LT, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
 }
@@ -26027,7 +26058,7 @@ GenTree* Compiler::gtNewSimdIsNegativeInfinityNode(var_types type,
 
         return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseType, simdSize);
     }
-    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_OBS_EFFECT);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -26146,7 +26177,7 @@ GenTree* Compiler::gtNewSimdIsPositiveNode(var_types type, GenTree* op1, var_typ
 
     if (varTypeIsUnsigned(simdBaseType))
     {
-        return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1, GTF_ALL_EFFECT);
+        return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1, GTF_OBS_EFFECT);
     }
     return gtNewSimdCmpOpNode(GT_GE, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
 }
@@ -26196,7 +26227,7 @@ GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types type,
 
         return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseType, simdSize);
     }
-    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_OBS_EFFECT);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -26250,7 +26281,7 @@ GenTree* Compiler::gtNewSimdIsSubnormalNode(var_types type, GenTree* op1, var_ty
 
         return gtNewSimdCmpOpNode(GT_LT, type, op1, cnsNode2, simdBaseType, simdSize);
     }
-    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+    return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_OBS_EFFECT);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -26574,7 +26605,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
                 }
                 else
                 {
-                    return cnsNode;
+                    return gtWrapWithSideEffects(cnsNode, otherNode, GTF_OBS_EFFECT);
                 }
             }
 
@@ -28001,13 +28032,18 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
         // Only the even-indexed value contributes to the result, but op2 still needs to be evaluated for side effects.
         GenTree* result = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
 
-        if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+        if (!gtTreeHasSideEffects(op2, GTF_OBS_EFFECT))
         {
             return result;
         }
 
+        if (result->IsInvariant())
+        {
+            return gtWrapWithSideEffects(result, op2, GTF_OBS_EFFECT);
+        }
+
         GenTree* resultLcl = fgInsertCommaFormTemp(&result);
-        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_OBS_EFFECT));
     }
 
     if (op1->OperIsConst() && op2->OperIsConst())
@@ -28282,13 +28318,18 @@ GenTree* Compiler::gtNewSimdZipNode(
     {
         GenTree* result = op1;
 
-        if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+        if (!gtTreeHasSideEffects(op2, GTF_OBS_EFFECT))
         {
             return result;
         }
 
+        if (result->IsInvariant())
+        {
+            return gtWrapWithSideEffects(result, op2, GTF_OBS_EFFECT);
+        }
+
         GenTree* resultLcl = fgInsertCommaFormTemp(&result);
-        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_OBS_EFFECT));
     }
 
 #if defined(TARGET_XARCH)
@@ -28422,19 +28463,24 @@ GenTree* Compiler::gtNewSimdUnzipNode(
     {
         if (odd)
         {
-            GenTree* result = gtWrapWithSideEffects(gtNewZeroConNode(type), op2, GTF_ALL_EFFECT);
-            return gtWrapWithSideEffects(result, op1, GTF_ALL_EFFECT);
+            GenTree* result = gtWrapWithSideEffects(gtNewZeroConNode(type), op2, GTF_OBS_EFFECT);
+            return gtWrapWithSideEffects(result, op1, GTF_OBS_EFFECT);
         }
 
         GenTree* result = op1;
 
-        if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+        if (!gtTreeHasSideEffects(op2, GTF_OBS_EFFECT))
         {
             return result;
         }
 
+        if (result->IsInvariant())
+        {
+            return gtWrapWithSideEffects(result, op2, GTF_OBS_EFFECT);
+        }
+
         GenTree* resultLcl = fgInsertCommaFormTemp(&result);
-        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_OBS_EFFECT));
     }
 
 #if defined(TARGET_ARM64)
@@ -29430,7 +29476,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     {
         // allOutOfRange represents indices that are always "out of range" which means zero should be
         // selected for every element. We can special-case this down to just returning a zero node
-        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_OBS_EFFECT);
     }
 
     if (op2->IsVectorZero())
@@ -30037,11 +30083,13 @@ GenTree* Compiler::gtNewSimdSqrtNode(var_types type, GenTree* op1, var_types sim
 //    op2                 - The SIMD value to be stored at op1
 //    simdBaseType        - The base type of SIMD type of the intrinsic
 //    simdSize            - The size of the SIMD type of the intrinsic
+//    reverseOps          - Evaluate the value (op2) before the address (op1)
 //
 // Returns:
 //    The created Store node
 //
-GenTree* Compiler::gtNewSimdStoreNode(GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+GenTree* Compiler::gtNewSimdStoreNode(
+    GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps)
 {
     assert(op1 != nullptr);
     assert(op2 != nullptr);
@@ -30051,7 +30099,7 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree* op1, GenTree* op2, var_types simd
     assert(varTypeIsSIMD(op2));
     assert(getSIMDTypeForSize(simdSize) == op2->TypeGet());
 
-    return gtNewStoreValueNode(op2->TypeGet(), op1, op2);
+    return gtNewStoreValueNode(op2->TypeGet(), op1, op2, GTF_EMPTY, reverseOps);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -30062,11 +30110,13 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree* op1, GenTree* op2, var_types simd
 //    op2                 - The SIMD value to be stored at op1
 //    simdBaseType        - The base type of SIMD type of the intrinsic
 //    simdSize            - The size of the SIMD type of the intrinsic
+//    reverseOps          - Evaluate the value (op2) before the address (op1)
 //
 // Returns:
 //    The created StoreAligned node
 //
-GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+GenTree* Compiler::gtNewSimdStoreAlignedNode(
+    GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps)
 {
 #if defined(TARGET_XARCH)
     assert(op1 != nullptr);
@@ -30092,14 +30142,20 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree* op1, GenTree* op2, var_typ
         intrinsic = NI_X86Base_StoreAligned;
     }
 
-    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
+    GenTreeHWIntrinsic* store = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
+    if (reverseOps)
+    {
+        store->SetReverseOp();
+    }
+
+    return store;
 #elif defined(TARGET_ARM64) || defined(TARGET_WASM)
     // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
 
     assert(opts.OptimizationEnabled());
-    return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
+    return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize, reverseOps);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -30113,11 +30169,13 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree* op1, GenTree* op2, var_typ
 //    op2                 - The SIMD value to be stored at op1
 //    simdBaseType        - The base type of SIMD type of the intrinsic
 //    simdSize            - The size of the SIMD type of the intrinsic
+//    reverseOps          - Evaluate the value (op2) before the address (op1)
 //
 // Returns:
 //    The created StoreNonTemporal node
 //
-GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+GenTree* Compiler::gtNewSimdStoreNonTemporalNode(
+    GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps)
 {
 #if defined(TARGET_XARCH)
     assert(op1 != nullptr);
@@ -30143,14 +30201,20 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree* op1, GenTree* op2, var
         intrinsic = NI_X86Base_StoreAlignedNonTemporal;
     }
 
-    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
+    GenTreeHWIntrinsic* store = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
+    if (reverseOps)
+    {
+        store->SetReverseOp();
+    }
+
+    return store;
 #elif defined(TARGET_ARM64) || defined(TARGET_WASM)
     // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
 
     assert(opts.OptimizationEnabled());
-    return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
+    return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize, reverseOps);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -31099,7 +31163,9 @@ GenTree* Compiler::gtNewSimdWithElementNode(
         case TYP_DOUBLE:
             if (simdSize == 8)
             {
-                return gtNewSimdHWIntrinsicNode(type, op3, NI_Vector_Create, simdBaseType, simdSize);
+                assert(op2->IsIntegralConst(0));
+                GenTree* result = gtNewSimdHWIntrinsicNode(type, op3, NI_Vector_Create, simdBaseType, simdSize);
+                return gtWrapWithSideEffects(result, op1, GTF_OBS_EFFECT);
             }
             break;
 
@@ -31136,7 +31202,12 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 
     if (rangeCheckNeeded)
     {
-        op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+        // Evaluate op3's side effects before validating the index.
+        GenTree* index = fgMakeMultiUse(&op2);
+        GenTree* value = gtTreeHasSideEffects(op3, GTF_OBS_EFFECT) ? fgMakeMultiUse(&op3) : op3;
+        index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
+        value          = gtWrapWithSideEffects(value, index, GTF_OBS_EFFECT);
+        op3            = gtWrapWithSideEffects(value, op3, GTF_OBS_EFFECT);
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseType, simdSize);
@@ -36902,7 +36973,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (op1->IsVectorAllBitsSet())
                 {
-                    if ((op3->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    if ((op3->gtFlags & GTF_OBS_EFFECT) != 0)
                     {
                         break;
                     }
@@ -36943,7 +37014,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (op1->IsTrueMask(simdBaseType))
                 {
-                    if ((op3->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    if ((op3->gtFlags & GTF_OBS_EFFECT) != 0)
                     {
                         break;
                     }
@@ -37176,7 +37247,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (maskIsAllBitsSet)
                 {
-                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    if ((op1->gtFlags & GTF_OBS_EFFECT) != 0)
                     {
                         break;
                     }
@@ -37185,7 +37256,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (maskIsZero)
                 {
-                    if ((op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    if ((op2->gtFlags & GTF_OBS_EFFECT) != 0)
                     {
                         break;
                     }

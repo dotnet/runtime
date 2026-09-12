@@ -3770,13 +3770,13 @@ public:
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdStoreNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreAlignedNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreNonTemporalNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -3918,18 +3918,23 @@ public:
         return gtNewLoadValueNode(type, nullptr, addr, indirFlags);
     }
 
-    GenTree* gtNewStoreValueNode(
-        var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
+    GenTree* gtNewStoreValueNode(var_types    type,
+                                 ClassLayout* layout,
+                                 GenTree*     addr,
+                                 GenTree*     value,
+                                 GenTreeFlags indirFlags = GTF_EMPTY,
+                                 bool         reverseOps = false);
 
     GenTree* gtNewStoreValueNode(
-        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
+        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY, bool reverseOps = false)
     {
-        return gtNewStoreValueNode(layout->GetType(), layout, addr, value, indirFlags);
+        return gtNewStoreValueNode(layout->GetType(), layout, addr, value, indirFlags, reverseOps);
     }
 
-    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
+    GenTree* gtNewStoreValueNode(
+        var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY, bool reverseOps = false)
     {
-        return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags);
+        return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags, reverseOps);
     }
 
     GenTree* gtNewNullCheck(GenTree* addr);
