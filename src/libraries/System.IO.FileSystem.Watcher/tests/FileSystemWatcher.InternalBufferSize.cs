@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -91,6 +93,59 @@ namespace System.IO.Tests
 
                 ExpectError(watcher, action, cleanup);
                 Assert.True(invoker.BeginInvoke_Called);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [OuterLoop("Creates, mounts, and unmounts a disk image.")]
+        public async Task FileSystemWatcher_OSX_MountInWatchedTree_RaisesInternalBufferOverflowException()
+        {
+            // Mounting a volume inside the watched tree makes FSEvents report a Mount flag, which the OSX
+            // FileSystemWatcher surfaces through the Error event as an InternalBufferOverflowException to
+            // signal that a rescan is required. Unlike an actual buffer overflow, a mount is a
+            // deterministic way to reach that code path.
+            string watchedDir = CreateTestDirectory();
+            string mountPoint = Path.Combine(watchedDir, "mnt");
+            string image = GetTestFilePath() + ".dmg";
+
+            // Create the mount point up front so the attach below is the only event of interest, and
+            // create a small HFS+ disk image to mount. Creating and attaching a user-owned image does not
+            // require elevation on macOS.
+            Directory.CreateDirectory(mountPoint);
+            await RunHdiutil("create", "-size", "10m", "-fs", "HFS+", "-volname", "fswtest", "-ov", "-quiet", image);
+
+            using var watcher = new FileSystemWatcher(watchedDir) { IncludeSubdirectories = true };
+
+            var errorReported = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+            watcher.Error += (o, e) => errorReported.TrySetResult(e.GetException());
+
+            watcher.EnableRaisingEvents = true;
+            try
+            {
+                await RunHdiutil("attach", image, "-mountpoint", mountPoint, "-nobrowse", "-noverify", "-quiet");
+
+                Exception error = await errorReported.Task.WaitAsync(TimeSpan.FromMilliseconds(LongWaitTimeout));
+                Assert.IsType<InternalBufferOverflowException>(error);
+                // The message must be formatted (the directory substituted in), not the raw format string.
+                Assert.DoesNotContain("{0}", error.Message);
+            }
+            finally
+            {
+                watcher.EnableRaisingEvents = false;
+                await RunHdiutil(throwOnError: false, "detach", mountPoint, "-force", "-quiet");
+            }
+        }
+
+        private static Task RunHdiutil(params string[] arguments) => RunHdiutil(throwOnError: true, arguments);
+
+        private static async Task RunHdiutil(bool throwOnError, params string[] arguments)
+        {
+            ProcessTextOutput result = await Process.RunAndCaptureTextAsync("hdiutil", arguments);
+            if (throwOnError && result.ExitStatus.ExitCode != 0)
+            {
+                throw new XunitException(
+                    $"hdiutil {string.Join(' ', arguments)} failed with exit code {result.ExitStatus.ExitCode}: {result.StandardError}");
             }
         }
 
