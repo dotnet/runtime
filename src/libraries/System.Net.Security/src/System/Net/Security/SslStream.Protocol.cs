@@ -1138,12 +1138,26 @@ namespace System.Net.Security
             int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
 
             X509Chain? chain = null;
+            bool certificateValidationSkippedOnResume = false;
 
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
 
-                return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, ref sslPolicyErrors, out chainStatus);
+                return VerifyRemoteCertificateCore(
+                    this,
+                    !_isRenego,
+                    _sslAuthenticationOptions,
+                    _securityContext,
+                    ref _remoteCertificate,
+                    ref _connectionInfo,
+                    certificate,
+                    chain,
+                    trust,
+                    ref alertToken,
+                    ref sslPolicyErrors,
+                    out chainStatus,
+                    out certificateValidationSkippedOnResume);
             }
             finally
             {
@@ -1155,7 +1169,11 @@ namespace System.Net.Security
                     // Only cleanup certificates if no user callback was provided.
                     // When a callback is provided, users might add their own certificates to ExtraStore
                     // or keep references to certificates from ChainElements.
-                    if (_sslAuthenticationOptions.CertValidationDelegate == null)
+                    // On a resumed handshake we skip the callback entirely (see the resumption shortcut
+                    // in VerifyRemoteCertificateCore), so nothing else adopts the peer-sent intermediates
+                    // GetRemoteCertificate appended; dispose them here even when a callback is configured
+                    // to avoid leaking X509Certificate2 handles across repeated resumptions.
+                    if (_sslAuthenticationOptions.CertValidationDelegate == null || certificateValidationSkippedOnResume)
                     {
                         // Dispose only the certificates that were added by GetRemoteCertificate
                         for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
@@ -1185,6 +1203,7 @@ namespace System.Net.Security
         {
             return VerifyRemoteCertificateCore(
                 this,
+                !_isRenego,
                 _sslAuthenticationOptions,
                 _securityContext,
                 ref _remoteCertificate,
@@ -1194,11 +1213,13 @@ namespace System.Net.Security
                 trust,
                 ref alertToken,
                 ref sslPolicyErrors,
-                out chainStatus);
+                out chainStatus,
+                out _);
         }
 
         internal static bool VerifyRemoteCertificateCore(
             object sender,
+            bool isInitialHandshake,
             SslAuthenticationOptions sslAuthenticationOptions,
 #if TARGET_APPLE
             SafeDeleteContext? securityContext,
@@ -1212,9 +1233,11 @@ namespace System.Net.Security
             SslCertificateTrust? trust,
             ref ProtocolToken alertToken,
             ref SslPolicyErrors sslPolicyErrors,
-            out X509ChainStatusFlags chainStatus)
+            out X509ChainStatusFlags chainStatus,
+            out bool certificateValidationSkippedOnResume)
         {
             chainStatus = X509ChainStatusFlags.NoError;
+            certificateValidationSkippedOnResume = false;
 
             bool success = false;
 
@@ -1229,6 +1252,34 @@ namespace System.Net.Security
                 // change in system trust, ...), but we have already established trust on this particular
                 // connection to even get this far.
                 certificate.Dispose();
+                return true;
+            }
+
+            if (certificate != null &&
+                isInitialHandshake &&
+                connectionInfo.TlsResumed &&
+                !LocalAppContextSwitches.RevalidateCertificateOnTlsResume)
+            {
+                // The initial TLS handshake was a resumption via an abbreviated handshake. The
+                // peer did not send its certificate again; its identity was established and
+                // validated during the original full handshake that produced the session ticket
+                // / session id. Common TLS stacks (e.g. OpenSSL, SChannel) do not re-run
+                // certificate verification on resumption, so by default neither do we: adopt the
+                // cached peer certificate for the RemoteCertificate property but skip rebuilding
+                // the chain and invoking the user validation callback. Set the
+                // System.Net.Security.RevalidateCertificateOnTlsResume switch to opt back into
+                // re-validating the peer certificate on every resumption.
+                //
+                // This shortcut is gated on the initial handshake: during renegotiation or
+                // TLS 1.3 post-handshake authentication the peer can present a new certificate,
+                // which must always be validated (the identical-certificate case above is handled
+                // separately).
+                remoteCertificateSlot = certificate;
+                certificateValidationSkippedOnResume = true;
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(sender, "Skipping remote certificate validation on resumed TLS session.");
+                }
                 return true;
             }
 
