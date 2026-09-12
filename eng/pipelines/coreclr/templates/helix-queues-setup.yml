@@ -30,6 +30,9 @@ jobs:
     pool: ${{ parameters.pool }}
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+
+    # IMPORTANT: Select public/internal queue aliases explicitly. Runtime macros expand too late
+    # for helix.yml to strip the .Open suffix at template expansion time for internal runs.
     helixQueues:
 
     # iOS Simulator/Mac Catalyst arm64

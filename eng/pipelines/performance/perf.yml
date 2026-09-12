@@ -8,9 +8,7 @@ trigger:
   branches:
     include:
     - main
-    - release/10.0
-    - release/9.0
-    - release/8.0
+    - release/*.0
   paths:
     include:
     - '*'
@@ -54,13 +52,18 @@ extends:
   parameters:
     stages:
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - group: DotNet-HelixApi-Access
       jobs:
 
-      - template: /eng/common/core-templates/job/helix-job-monitor.yml
-        parameters:
-          helixAccessToken: $(HelixApiAccessToken)
-          timeoutInMinutes: 540
-          allowNoHelixJobs: true
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
 
       - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
         parameters:
