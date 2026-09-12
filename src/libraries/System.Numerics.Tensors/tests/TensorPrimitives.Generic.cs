@@ -1773,74 +1773,84 @@ namespace System.Numerics.Tensors.Tests
         }
         #endregion
 
-        #region Number aggregates ignore NaN
-        [Theory]
-        [InlineData(1)]
-        [InlineData(3)]
-        [InlineData(4)]
-        [InlineData(5)]
-        [InlineData(16)]
-        [InlineData(33)]
-        public void NumberAggregates_IgnoreNaN(int length)
+        #region Number aggregates
+        [Fact]
+        public void NumberAggregates_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengths, length =>
+            {
+                T[] values = new T[length];
+                for (int i = 0; i < length; i++)
+                {
+                    T value = T.CreateChecked(i + 1);
+                    values[i] = (i & 1) == 0 ? value : -value;
+                }
+
+                T expectedMinNumber = values[0];
+                T expectedMaxNumber = values[0];
+                T expectedMinMagnitudeNumber = values[0];
+                T expectedMaxMagnitudeNumber = values[0];
+
+                for (int i = 1; i < values.Length; i++)
+                {
+                    expectedMinNumber = T.MinNumber(expectedMinNumber, values[i]);
+                    expectedMaxNumber = T.MaxNumber(expectedMaxNumber, values[i]);
+                    expectedMinMagnitudeNumber = T.MinMagnitudeNumber(expectedMinMagnitudeNumber, values[i]);
+                    expectedMaxMagnitudeNumber = T.MaxMagnitudeNumber(expectedMaxMagnitudeNumber, values[i]);
+                }
+
+                Assert.Equal(expectedMinNumber, TensorPrimitives.MinNumber<T>(values));
+                Assert.Equal(expectedMaxNumber, TensorPrimitives.MaxNumber<T>(values));
+                Assert.Equal(expectedMinMagnitudeNumber, TensorPrimitives.MinMagnitudeNumber<T>(values));
+                Assert.Equal(expectedMaxMagnitudeNumber, TensorPrimitives.MaxMagnitudeNumber<T>(values));
+            });
+        }
+
+        [Fact]
+        public void NumberAggregates_IgnoreNaN_AllLengths()
         {
             // IEEE 754:2019 minimumNumber/maximumNumber ignore a NaN operand when a numeric one is
-            // available, while minimum/maximum propagate it. The span reductions must match.
+            // available. Exercise every reduction length so scalar, Vector128, Vector256, Vector512,
+            // and scalar-tail paths are covered where supported.
             T nan = T.CreateTruncating(float.NaN);
             T one = T.One;
             T two = one + one;
 
-            if (length == 1)
+            Assert.All(Helpers.TensorLengths, length =>
             {
-                AssertEqualAggregate(nan, TensorPrimitives.MinNumber<T>([nan]));
-                AssertEqualAggregate(nan, TensorPrimitives.MaxNumber<T>([nan]));
-                AssertEqualAggregate(nan, TensorPrimitives.MinMagnitudeNumber<T>([nan]));
-                AssertEqualAggregate(nan, TensorPrimitives.MaxMagnitudeNumber<T>([nan]));
-                AssertEqualAggregate(nan, TensorPrimitives.Min<T>([nan]));
-                AssertEqualAggregate(nan, TensorPrimitives.Max<T>([nan]));
-                return;
-            }
+                T[] allNaNs = new T[length];
+                Array.Fill(allNaNs, nan);
 
-            T[] values = new T[length];
+                Assert.Equal(nan, TensorPrimitives.MinNumber<T>(allNaNs));
+                Assert.Equal(nan, TensorPrimitives.MaxNumber<T>(allNaNs));
+                Assert.Equal(nan, TensorPrimitives.MinMagnitudeNumber<T>(allNaNs));
+                Assert.Equal(nan, TensorPrimitives.MaxMagnitudeNumber<T>(allNaNs));
 
-            // NaN at the start, in the middle, and at the end of the span, so both the vectorized
-            // and the scalar tails of the reduction see it.
-            foreach (int nanIndex in new[] { 0, length / 2, length - 1 })
-            {
-                Array.Fill(values, two);
-                values[nanIndex] = nan;
+                if (length == 1)
+                {
+                    return;
+                }
 
-                // A distinct minimum so the reduction is not trivially the fill value.
-                values[(nanIndex + 1) % length] = one;
+                T[] values = new T[length];
+                T expectedMaximum = length > 2 ? two : one;
 
-                // Number variants ignore the NaN and pick the numeric extreme.
-                AssertEqualAggregate(one, TensorPrimitives.MinNumber<T>(values));
-                AssertEqualAggregate(two, TensorPrimitives.MaxNumber<T>(values));
-                AssertEqualAggregate(one, TensorPrimitives.MinMagnitudeNumber<T>(values));
-                AssertEqualAggregate(two, TensorPrimitives.MaxMagnitudeNumber<T>(values));
+                foreach (int nanIndex in new[] { 0, length / 2, length - 1 })
+                {
+                    Array.Fill(values, two);
+                    values[nanIndex] = nan;
+                    values[(nanIndex + 1) % length] = one;
 
-                // Plain Min/Max still propagate NaN.
-                AssertEqualAggregate(nan, TensorPrimitives.Min<T>(values));
-                AssertEqualAggregate(nan, TensorPrimitives.Max<T>(values));
-                AssertEqualAggregate(nan, TensorPrimitives.MinMagnitude<T>(values));
-                AssertEqualAggregate(nan, TensorPrimitives.MaxMagnitude<T>(values));
-            }
+                    Assert.Equal(one, TensorPrimitives.MinNumber<T>(values));
+                    Assert.Equal(expectedMaximum, TensorPrimitives.MaxNumber<T>(values));
+                    Assert.Equal(one, TensorPrimitives.MinMagnitudeNumber<T>(values));
+                    Assert.Equal(expectedMaximum, TensorPrimitives.MaxMagnitudeNumber<T>(values));
+                }
+            });
 
             // Signed zeros follow minimumNumber/maximumNumber: +0 is greater than -0.
             T[] signedZeros = { -T.Zero, T.Zero };
             Assert.True(T.IsNegative(TensorPrimitives.MinNumber<T>(signedZeros)));
             Assert.False(T.IsNegative(TensorPrimitives.MaxNumber<T>(signedZeros)));
-
-            static void AssertEqualAggregate(T expected, T actual)
-            {
-                if (T.IsNaN(expected))
-                {
-                    Assert.True(T.IsNaN(actual), $"expected NaN, got {actual}");
-                }
-                else
-                {
-                    Assert.Equal(expected, actual);
-                }
-            }
         }
         #endregion
     }
