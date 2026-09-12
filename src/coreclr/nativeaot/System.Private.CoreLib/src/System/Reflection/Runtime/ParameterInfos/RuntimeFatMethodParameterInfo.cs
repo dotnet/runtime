@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Runtime.InteropServices;
 
@@ -19,25 +18,6 @@ namespace System.Reflection.Runtime.ParameterInfos
             : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
         }
-
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in TrueCustomAttributes)
-                    yield return cad;
-
-                ParameterAttributes attributes = Attributes;
-                if (0 != (attributes & ParameterAttributes.In))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(InAttribute), null);
-                if (0 != (attributes & ParameterAttributes.Out))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(OutAttribute), null);
-                if (0 != (attributes & ParameterAttributes.Optional))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(OptionalAttribute), null);
-            }
-        }
-
-        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
 
         public sealed override bool HasDefaultValue => DefaultValueInfo.Item1;
         public sealed override object DefaultValue => DefaultValueInfo.Item2;

@@ -693,8 +693,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
 #ifdef TARGET_WASM
-                // Wasm has no virtual stub dispatch, so all virtual calls (including the array
-                // Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
+                // Wasm virtual calls that cannot use a pregenerated dispatch thunk (including the
+                // array Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
                 // handling below via the `goto DEVIRT`. Add the type-context arg here so the
                 // call_indirect signature matches the callee; omitting it traps at runtime.
                 if (sig->hasTypeArg())
@@ -7401,10 +7401,10 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
 
-            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32) && call->IsUnmanaged() &&
-                varTypeIsSmall(jitSigType))
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm) &&
+                call->IsUnmanaged() && varTypeIsSmall(jitSigType))
             {
-                // Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                // Wasm, Apple arm64 and arm32 ABIs require arguments to be zero/sign
                 // extended up to 32 bit. The managed ABI does not require
                 // this.
                 if (fgCastNeeded(argNode, jitSigType))

@@ -1421,7 +1421,8 @@ CPalThread::ThreadEntry(
             configuredCpuCount = CPU_SETSIZE;
         }
 
-        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
         if (pCpuSet == nullptr)
         {
             ASSERT("CPU_ALLOC failed!\n");
@@ -1429,13 +1430,13 @@ CPalThread::ThreadEntry(
             goto fail;
         }
 
-        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
         CPU_ZERO_S(cpuSetSize, pCpuSet);
 
         st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
         if (st == 0)
         {
-            st = sched_setaffinity(0, CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            st = sched_setaffinity(0, cpuSetSize, pCpuSet);
             if (st != 0)
             {
                 if (errno == EPERM || errno == EACCES)

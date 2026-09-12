@@ -585,35 +585,6 @@ GetTempPathA(
 PALIMPORT
 HANDLE
 PALAPI
-CreateSemaphoreExW(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCWSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenSemaphoreW(
-    IN DWORD dwDesiredAccess,
-    IN BOOL bInheritHandle,
-    IN LPCWSTR lpName);
-
-#define CreateSemaphoreEx CreateSemaphoreExW
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseSemaphore(
-         IN HANDLE hSemaphore,
-         IN LONG lReleaseCount,
-         OUT LPLONG lpPreviousCount);
-
-PALIMPORT
-HANDLE
-PALAPI
 CreateEventW(
          IN LPSECURITY_ATTRIBUTES lpEventAttributes,
          IN BOOL bManualReset,
@@ -2679,9 +2650,6 @@ typedef struct _RUNTIME_FUNCTION {
 #define MUTANT_QUERY_STATE        (0x0001)
 #define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
 #define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
-
-#define SEMAPHORE_MODIFY_STATE    (0x0002)
-#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
 
 PALIMPORT
 VOID

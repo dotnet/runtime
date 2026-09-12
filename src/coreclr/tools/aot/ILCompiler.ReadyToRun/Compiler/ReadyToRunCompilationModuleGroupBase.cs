@@ -102,6 +102,26 @@ namespace ILCompiler
 
         public ModuleTokenResolver Resolver => _tokenResolver;
 
+        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
+        {
+            if (!ContainsMethodBodyCore(method, unboxingStub))
+                return false;
+
+            // Methods that fail validation can be omitted from the R2R image and left for runtime
+            // handling, where the underlying type-system error is reported only if the method is used.
+            try
+            {
+                ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(method);
+                return true;
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+        }
+
+        protected abstract bool ContainsMethodBodyCore(MethodDesc method, bool unboxingStub);
+
         public void AssociateTokenResolver(ModuleTokenResolver tokenResolver)
         {
             Debug.Assert(_tokenResolver == null);

@@ -24,6 +24,10 @@ extends:
     isOfficialBuild: false
     stages:
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - group: DotNet-HelixApi-Access
       jobs:
       - template: /eng/common/core-templates/job/helix-job-monitor.yml
         parameters:

@@ -194,13 +194,13 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     //        NOT AT ALL!!!, but we can assume it's a function
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
+    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
 
     if (pFunc != nullptr && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
     {
         return SWA_CONTINUE;
     }
 
-    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
     if (pData->cElements >= pData->cElementsAllocated)
     {
         DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*pData->cElementsAllocated];
