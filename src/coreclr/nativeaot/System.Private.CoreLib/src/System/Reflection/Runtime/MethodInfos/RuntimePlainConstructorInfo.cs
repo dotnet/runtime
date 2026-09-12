@@ -122,6 +122,11 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.HasSameMetadataDefinitionAs(otherConstructor._common);
         }
 
+        internal bool HasSameMetadataDefinitionAs(TRuntimeMethodCommon other)
+        {
+            return _common.HasSameMetadataDefinitionAs(other);
+        }
+
         public sealed override bool Equals(object obj)
         {
             if (!(obj is RuntimePlainConstructorInfo<TRuntimeMethodCommon> other))
