@@ -1155,7 +1155,9 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS; // For GetXxxException
+        // An attached caller may abort itself and allocate an exception object.
+        // An unattached caller can only abort another thread.
+        if (GetThreadNULLOk() != NULL) GC_TRIGGERS; else GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
