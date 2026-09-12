@@ -8,7 +8,9 @@
  * It's good to keep this file small.
  */
 
-import type { DotnetHostBuilder } from "./types";
+import type { DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI } from "./types";
+
+import { Module, dotnetApi } from "./cross-module";
 
 import { HostBuilder } from "./host-builder";
 import { initPolyfillsEarly } from "./polyfills";
@@ -18,7 +20,16 @@ import { dotnetInitializeModule } from ".";
 dotnetInitializeModule();
 await initPolyfillsEarly();
 
-export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as DotnetHostBuilder;
+export const dotnet: DotnetHostBuilder = new HostBuilder() as DotnetHostBuilder;
 export { exit };
 
 dotnet.withConfig(/*! dotnetBootConfig */{});
+const legacyExport = async (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI> => {
+    let cfg: DotnetModuleConfig = moduleFactory as any;
+    if (typeof moduleFactory === "function") {
+        cfg = moduleFactory(dotnetApi);
+    }
+    Object.assign(Module, cfg);
+    return dotnet.create();
+};
+export default legacyExport;
