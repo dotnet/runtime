@@ -149,12 +149,6 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         ///   <paramref name="suite" /> is not supported on the current platform.
         /// </exception>
-        /// <remarks>
-        ///   The key must use the format returned by <see cref="ExportDecapsulationKey()" />,
-        ///   not the input keying material accepted by <see cref="DeriveKey(HpkeSuite, byte[])" />.
-        ///   The imported key does not retain a reference to <paramref name="source" />.
-        ///   The caller remains responsible for protecting and clearing the source key bytes.
-        /// </remarks>
         public static Hpke ImportDecapsulationKey(HpkeSuite suite, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -185,12 +179,6 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         ///   <paramref name="suite" /> is not supported on the current platform.
         /// </exception>
-        /// <remarks>
-        ///   The key must use the format returned by <see cref="ExportDecapsulationKey()" />,
-        ///   not the input keying material accepted by <see cref="DeriveKey(HpkeSuite, ReadOnlySpan{byte})" />.
-        ///   The imported key does not retain a reference to <paramref name="source" />.
-        ///   The caller remains responsible for protecting and clearing the source key bytes.
-        /// </remarks>
         public static Hpke ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(suite);
@@ -228,12 +216,6 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         ///   <paramref name="suite" /> is not supported on the current platform.
         /// </exception>
-        /// <remarks>
-        ///   The key must use the format returned by <see cref="ExportEncapsulationKey()" />.
-        ///   The imported key can encrypt messages and create sender contexts, but cannot decrypt messages,
-        ///   create recipient contexts, or export a decapsulation key.
-        ///   The imported key does not retain a reference to <paramref name="source" />.
-        /// </remarks>
         public static Hpke ImportEncapsulationKey(HpkeSuite suite, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -264,12 +246,6 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         ///   <paramref name="suite" /> is not supported on the current platform.
         /// </exception>
-        /// <remarks>
-        ///   The key must use the format returned by <see cref="ExportEncapsulationKey()" />.
-        ///   The imported key can encrypt messages and create sender contexts, but cannot decrypt messages,
-        ///   create recipient contexts, or export a decapsulation key.
-        ///   The imported key does not retain a reference to <paramref name="source" />.
-        /// </remarks>
         public static Hpke ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(suite);
@@ -296,19 +272,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   <para>
-        ///     The key is exported in the private-key format defined by the cipher suite's KEM,
-        ///     without a PKCS#8 or other ASN.1 wrapper. For DHKEM with NIST curves, this is the fixed-width,
-        ///     big-endian private scalar. For DHKEM with X25519, this is the raw 32-byte X25519 private key.
-        ///     For ML-KEM and hybrid ML-KEM cipher suites, this is the private seed.
-        ///   </para>
-        ///   <para>
-        ///     The returned key is not the original input keying material supplied to
-        ///     <see cref="DeriveKey(HpkeSuite, ReadOnlySpan{byte})" />.
-        ///     The caller is responsible for protecting the returned secret bytes and clearing them when no longer needed.
-        ///   </para>
-        /// </remarks>
         public byte[] ExportDecapsulationKey()
         {
             ThrowIfDisposed();
@@ -342,11 +305,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   The key format is the same as for <see cref="ExportDecapsulationKey()" />.
-        ///   On success, the entire destination is filled with the serialized key.
-        ///   The caller is responsible for protecting the secret bytes and clearing the buffer when no longer needed.
-        /// </remarks>
         public void ExportDecapsulationKey(Span<byte> destination)
         {
             if (destination.Length != Suite.DecapsulationKeySizeInBytes)
@@ -369,14 +327,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The current instance does not contain a decapsulation key, or an error occurred while exporting the key.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed and that
-        ///   <paramref name="destination" /> is exactly
-        ///   <see cref="HpkeSuite.DecapsulationKeySizeInBytes" /> bytes long.
-        ///   Implementations must fill the entire destination using the key format described by
-        ///   <see cref="ExportDecapsulationKey()" /> and throw <see cref="CryptographicException" />
-        ///   if the decapsulation key cannot be exported.
-        /// </remarks>
         protected abstract void ExportDecapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
@@ -386,7 +336,7 @@ namespace System.Security.Cryptography
         ///   The encapsulation key.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while exporting the key.
+        ///   An error occurred while exporting the key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -410,7 +360,7 @@ namespace System.Security.Cryptography
         ///   <see cref="HpkeSuite.EncapsulationKeySizeInBytes" /> bytes long.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while exporting the key.
+        ///   An error occurred while exporting the key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -435,27 +385,23 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the encapsulation key.
         /// </param>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while exporting the key.
+        ///   An error occurred while exporting the key.
         /// </exception>
-        /// <remarks>
-        ///   <paramref name="destination" /> is exactly
-        ///   <see cref="HpkeSuite.EncapsulationKeySizeInBytes" /> bytes long.
-        /// </remarks>
         protected abstract void ExportEncapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
-        ///   Encrypts and authenticates a single message using Base mode.
+        ///   Encrypts and authenticates a single message using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
         /// </param>
         /// <param name="encapsulatedSecret">
         ///   When this method returns, contains a new byte array containing the encapsulated secret to send
-        ///   to the recipient. This parameter is treated as uninitialized.
+        ///   to the recipient.
         /// </param>
         /// <param name="ciphertext">
         ///   When this method returns, contains a new byte array containing the ciphertext followed by its
-        ///   authentication tag. This parameter is treated as uninitialized.
+        ///   authentication tag.
         /// </param>
         /// <param name="associatedData">
         ///   The additional data to authenticate without encrypting.
@@ -470,7 +416,7 @@ namespace System.Security.Cryptography
         ///   The ciphertext length would exceed <see cref="int.MaxValue" />.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        ///   An error occurred during encryption.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -496,18 +442,18 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Encrypts and authenticates a single message using Base mode.
+        ///   Encrypts and authenticates a single message using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
         /// </param>
         /// <param name="encapsulatedSecret">
         ///   When this method returns, contains a new byte array containing the encapsulated secret to send
-        ///   to the recipient. This parameter is treated as uninitialized.
+        ///   to the recipient.
         /// </param>
         /// <param name="ciphertext">
         ///   When this method returns, contains a new byte array containing the ciphertext followed by its
-        ///   authentication tag. This parameter is treated as uninitialized.
+        ///   authentication tag.
         /// </param>
         /// <param name="associatedData">
         ///   The additional data to authenticate without encrypting,
@@ -527,7 +473,7 @@ namespace System.Security.Cryptography
         ///   The ciphertext length would exceed <see cref="int.MaxValue" />.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        ///   An error occurred during encryption.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -555,7 +501,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Encrypts and authenticates a single message into the provided buffers using Base mode.
+        ///   Encrypts and authenticates a single message into the provided buffers using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
@@ -596,7 +542,7 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
-        ///     The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        ///     An error occurred during encryption.
         ///   </para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">
@@ -643,7 +589,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, encrypts and authenticates a single message using Base mode.
+        ///   When overridden in a derived class, encrypts and authenticates a single message using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
@@ -661,13 +607,8 @@ namespace System.Security.Cryptography
         ///   The application context.
         /// </param>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred during encryption.
+        ///   An error occurred during encryption.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed, the output buffers
-        ///   have the exact required lengths for <see cref="Suite" />, and <paramref name="info" />
-        ///   satisfies the KDF's length limit. Implementations must fill both output buffers on success.
-        /// </remarks>
         protected abstract void SealCore(
             ReadOnlySpan<byte> plaintext,
             Span<byte> encapsulatedSecret,
@@ -676,7 +617,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info);
 
         /// <summary>
-        ///   Decrypts and authenticates a single HPKE ciphertext using Base mode.
+        ///   Decrypts and authenticates a single HPKE ciphertext using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
@@ -740,7 +681,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Decrypts and authenticates a single HPKE ciphertext using Base mode.
+        ///   Decrypts and authenticates a single HPKE ciphertext using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
@@ -802,7 +743,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Decrypts and authenticates a single HPKE ciphertext into the provided buffer using Base mode.
+        ///   Decrypts and authenticates a single HPKE ciphertext into the provided buffer using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
@@ -883,7 +824,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, decrypts and authenticates a single HPKE ciphertext using Base mode.
+        ///   When overridden in a derived class, decrypts and authenticates a single HPKE ciphertext
+        ///   using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
@@ -907,12 +849,6 @@ namespace System.Security.Cryptography
         ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
         ///   or an error occurred during decryption.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed, the input and output lengths
-        ///   are valid for <see cref="Suite" />, and <paramref name="info" /> satisfies the KDF's length limit.
-        ///   Implementations must fill the entire plaintext buffer on success and must not leave
-        ///   unauthenticated plaintext in the buffer when authentication fails.
-        /// </remarks>
         protected abstract void OpenCore(
             ReadOnlySpan<byte> encapsulatedSecret,
             ReadOnlySpan<byte> ciphertext,
@@ -921,11 +857,10 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info);
 
         /// <summary>
-        ///   Creates an HPKE sender context using Base mode.
+        ///   Creates an HPKE sender context using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   When this method returns, contains the encapsulated secret to send to the recipient.
-        ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="info">
         ///   The application context, which must match the value used by the recipient.
@@ -937,7 +872,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="info" /> exceeds the maximum length supported by the cipher suite's KDF.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   An error occurred while creating the sender.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a sender is not supported on the current platform.
@@ -957,7 +892,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Creates an HPKE sender context using Base mode and writes the encapsulated secret into the provided buffer.
+        ///   Creates an HPKE sender context using <c>Base</c> mode and writes the encapsulated secret
+        ///   into the provided buffer.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The buffer to receive the encapsulated secret to send to the recipient.
@@ -984,7 +920,7 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
-        ///     The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///     An error occurred while creating the sender.
         ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
@@ -1014,7 +950,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, creates an HPKE sender context using Base mode.
+        ///   When overridden in a derived class, creates an HPKE sender context using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The buffer to receive the encapsulated secret.
@@ -1026,20 +962,15 @@ namespace System.Security.Cryptography
         ///   A new sender context for this key's cipher suite.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   An error occurred while creating the sender.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a sender is not supported on the current platform.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed, the encapsulated secret buffer
-        ///   has the exact required length, and <paramref name="info" /> satisfies the KDF's length limit.
-        ///   Implementations must fill the entire buffer and return an initialized sender for <see cref="Suite" />.
-        /// </remarks>
         protected abstract HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info);
 
         /// <summary>
-        ///   Creates an HPKE recipient context using Base mode.
+        ///   Creates an HPKE recipient context using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
@@ -1081,7 +1012,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Creates an HPKE recipient context using Base mode.
+        ///   Creates an HPKE recipient context using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
@@ -1123,7 +1054,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, creates an HPKE recipient context using Base mode.
+        ///   When overridden in a derived class, creates an HPKE recipient context using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
@@ -1141,11 +1072,6 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a recipient is not supported on the current platform.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed, the encapsulated secret
-        ///   has the exact required length, and <paramref name="info" /> satisfies the KDF's length limit.
-        ///   Implementations must return an initialized recipient for <see cref="Suite" />.
-        /// </remarks>
         protected abstract HpkeRecipient CreateRecipientCore(
             ReadOnlySpan<byte> encapsulatedSecret,
             ReadOnlySpan<byte> info);
@@ -1161,7 +1087,6 @@ namespace System.Security.Cryptography
         /// </param>
         /// <param name="encapsulatedSecret">
         ///   When this method returns, contains the encapsulated secret to send to the recipient.
-        ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="info">
         ///   The application context, which must match the value used by the recipient.
@@ -1174,7 +1099,7 @@ namespace System.Security.Cryptography
         ///   or an input exceeds the maximum length supported by the cipher suite's KDF.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   An error occurred while creating the sender.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a PSK sender is not supported on the current platform.
@@ -1182,11 +1107,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   The sender and recipient must use the same pre-shared key and identifier.
-        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy;
-        ///   length validation alone does not guarantee this. A low-entropy password is not a suitable pre-shared key.
-        /// </remarks>
         public HpkeSender CreatePskSender(
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
@@ -1214,7 +1134,6 @@ namespace System.Security.Cryptography
         /// </param>
         /// <param name="encapsulatedSecret">
         ///   When this method returns, contains the encapsulated secret to send to the recipient.
-        ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="info">
         ///   The application context, which must match the value used by the recipient,
@@ -1231,7 +1150,7 @@ namespace System.Security.Cryptography
         ///   or an input exceeds the maximum length supported by the cipher suite's KDF.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   An error occurred while creating the sender.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a PSK sender is not supported on the current platform.
@@ -1239,10 +1158,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy.
-        ///   The sender and recipient must use the same pre-shared key and identifier.
-        /// </remarks>
         public HpkeSender CreatePskSender(
             byte[] psk,
             byte[] pskId,
@@ -1284,7 +1199,7 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
-        ///     The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///     An error occurred while creating the sender.
         ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
@@ -1293,10 +1208,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   The caller must ensure that the pre-shared key has at least 32 bytes of entropy.
-        ///   The sender and recipient must use the same pre-shared key and identifier.
-        /// </remarks>
         public HpkeSender CreatePskSender(
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
@@ -1343,17 +1254,11 @@ namespace System.Security.Cryptography
         ///   A new sender context for this key's cipher suite.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   The current instance does not contain an encapsulation key, or an error occurred while creating the sender.
+        ///   An error occurred while creating the sender.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Creating a PSK sender is not supported on the current platform.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed, the encapsulated secret buffer
-        ///   has the exact required length, the pre-shared key is at least 32 bytes long, the identifier is nonempty,
-        ///   and all inputs satisfy the KDF's length limits. Implementations must fill the entire buffer
-        ///   and return an initialized sender for <see cref="Suite" />.
-        /// </remarks>
         protected abstract HpkeSender CreatePskSenderCore(
             Span<byte> encapsulatedSecret,
             ReadOnlySpan<byte> info,
