@@ -22,11 +22,12 @@ struct FakeEEJitManager
 struct FakeHeapList
 {
     FakeHeapList*       hpNext;
-    LPVOID              pHeap;          // changed type from LoaderHeap*
-    DWORD_PTR           startAddress;   // changed from PBYTE
-    DWORD_PTR           endAddress;     // changed from PBYTE
-    DWORD_PTR           mapBase;        // changed from PBYTE
-    DWORD_PTR           pHdrMap;        // changed from DWORD*
+    LPVOID              pHeap;            // changed type from LoaderHeap*
+    DWORD_PTR           startAddress;     // changed from PBYTE
+    DWORD_PTR           bottomEndAddress; // changed from PBYTE
+    DWORD_PTR           topStartAddress;  // changed from PBYTE
+    DWORD_PTR           mapBase;          // changed from PBYTE
+    DWORD_PTR           pHdrMap;          // changed from DWORD*
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
     DWORD_PTR           pLoaderAllocator;
@@ -53,6 +54,7 @@ typedef struct _FakeHpRealCodeHdr
     LPVOID              pCalledMethods;
 #endif
     LPVOID              hdrMDesc;       // changed from MethodDesc*
+    LPVOID              pColdCodeHeader;
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
 } FakeRealCodeHeader;
@@ -80,11 +82,13 @@ class CheckDuplicatedStructLayouts
 
     CHECK_OFFSET(HeapList, hpNext);
     CHECK_OFFSET(HeapList, startAddress);
-    CHECK_OFFSET(HeapList, endAddress);
+    CHECK_OFFSET(HeapList, bottomEndAddress);
+    CHECK_OFFSET(HeapList, topStartAddress);
     CHECK_OFFSET(HeapList, mapBase);
     CHECK_OFFSET(HeapList, pHdrMap);
 
 #if !defined(TARGET_X86)
+    CHECK_OFFSET(RealCodeHeader,    pColdCodeHeader);
     CHECK_OFFSET(RealCodeHeader,    nUnwindInfos);
     CHECK_OFFSET(RealCodeHeader,    unwindInfos);
 #endif  // !TARGET_X86

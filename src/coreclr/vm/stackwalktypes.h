@@ -33,7 +33,7 @@ struct METHODTOKEN
     // Cache of RangeSection containing the code to avoid redundant lookups.
     RangeSection * m_pRangeSection;
 
-    // CodeHeader* for EEJitManager
+    // CodeHeader* or ColdCodeHeader* for EEJitManager
     // InterpreterCodeHeader* for InterpreterJitManager
     // PTR_RUNTIME_FUNCTION for managed native code
     TADDR m_pCodeHeader;
@@ -42,6 +42,8 @@ struct METHODTOKEN
     {
         return m_pCodeHeader == 0;
     }
+
+    BOOL IsCold() const;
 };
 
 //************************************************************************

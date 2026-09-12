@@ -210,6 +210,7 @@ inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 
 typedef DPTR(struct RealCodeHeader) PTR_RealCodeHeader;
 typedef DPTR(struct CodeHeader) PTR_CodeHeader;
+typedef DPTR(struct ColdCodeHeader) PTR_ColdCodeHeader;
 
 struct RealCodeHeader
 {
@@ -227,6 +228,7 @@ public:
 
     PTR_MethodDesc      phdrMDesc;
 
+    PTR_ColdCodeHeader  pColdCodeHeader;
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
 };
@@ -324,6 +326,16 @@ public:
         pRealCodeHeader = (PTR_RealCodeHeader)kind;
     }
 
+    PTR_ColdCodeHeader GetColdCodeHeader()
+    {
+        return pRealCodeHeader->pColdCodeHeader;
+    }
+
+    void SetColdCodeHeader(PTR_ColdCodeHeader pColdCodeHeader)
+    {
+        pRealCodeHeader->pColdCodeHeader = pColdCodeHeader;
+    }
+
     UINT                    GetNumberOfUnwindInfos()
     {
         SUPPORTS_DAC;
@@ -353,6 +365,19 @@ public:
 #endif  // DACCESS_COMPILE
 
 };
+
+struct ColdCodeHeader
+{
+    void* pCodeHeader;
+
+    TADDR GetCodeStartAddress()
+    {
+        SUPPORTS_DAC;
+        return dac_cast<PCODE>(dac_cast<PTR_ColdCodeHeader>(this) + 1);
+    }
+};
+
+static_assert(sizeof(CodeHeader) == sizeof(ColdCodeHeader), "CodeHeader and ColdCodeHeader must be the same size for the nibble map");
 
 typedef DPTR(RealCodeHeader) PTR_RealCodeHeader;
 typedef DPTR(InterpreterRealCodeHeader) PTR_InterpreterRealCodeHeader;
@@ -538,7 +563,7 @@ public:
 
     // Alloc the specified numbers of bytes for code. Returns NULL if the request does not fit
     // Space for header is reserved immediately before. It is not included in size.
-    virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs) = 0;
+    virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs, bool useLowerRegion = true) = 0;
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
@@ -566,12 +591,13 @@ struct HeapList
     PTR_CodeHeap        pHeap;
 
     TADDR               startAddress;
-    TADDR               endAddress;     // the current end of the used portion of the Heap
+    TADDR               bottomEndAddress; // the current end (exclusive) of the bottom used portion of the Heap
+    TADDR               topStartAddress;  // the current start (inclusive) to the top used portion of the Heap
 
     TADDR               mapBase;        // "startAddress" rounded down to minipal_getpagesize(). pHdrMap is relative to this address
     PTR_DWORD           pHdrMap;        // bit array used to find the start of methods
 
-    size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
+    size_t              maxCodeHeapSize;     // Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
     PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
@@ -627,7 +653,7 @@ public:
 public:
     virtual ~LoaderCodeHeap() = default;
 
-    virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs) DAC_EMPTY_RET(NULL);
+    virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs, bool useLowerRegion = true) DAC_EMPTY_RET(NULL);
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
@@ -2058,8 +2084,9 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
-                   size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
+    void AllocCode(MethodDesc* pMD, size_t hotBlockSize, size_t coldBlockSize, size_t reserveForJumpStubs, unsigned alignment,
+                   void** ppCodeHeader, void** ppCodeHeaderRW, void** ppColdCodeHeader, void** ppColdCodeHeaderRW,
+                   size_t* pAllocatedHotSize, size_t* pAllocatedColdSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
                  , UINT nUnwindInfos
                   );
 
@@ -2079,7 +2106,7 @@ private:
 protected:
     virtual void DeleteFunctionTable(PVOID pvTableID) = 0;
 
-    void* AllocCodeWorker(CodeHeapRequestInfo *pInfo, size_t header, size_t blockSize, unsigned align, HeapList ** ppCodeHeap);
+    void* AllocCodeWorker(CodeHeapRequestInfo *pInfo, size_t header, size_t blockSize, size_t coldCodeSize, unsigned align, HeapList ** ppCodeHeap, void** ppColdCode);
     void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize);
     void NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode);
 
@@ -2819,11 +2846,26 @@ struct cdac_data<FunctionTableIndexRangeSection>
 #endif // TARGET_WASM
 #endif
 
+inline BOOL METHODTOKEN::IsCold() const
+{
+    _ASSERTE((m_pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP) != 0);
+    PTR_HeapList pHp = m_pRangeSection->_pHeapList;
+    _ASSERTE(pHp != NULL);
+    return m_pCodeHeader >= pHp->bottomEndAddress;
+}
+
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(!MethodToken.IsNull());
-    return dac_cast<PTR_CodeHeader>(MethodToken.m_pCodeHeader);
+    TADDR codeHeader = MethodToken.m_pCodeHeader;
+
+    if (MethodToken.IsCold())
+    {
+        codeHeader = (TADDR)((ColdCodeHeader*)codeHeader)->pCodeHeader;
+    }
+
+    return dac_cast<PTR_CodeHeader>(codeHeader);
 }
 
 inline CodeHeader * EEJitManager::GetCodeHeaderFromStartAddress(TADDR methodStartAddress)
@@ -2856,10 +2898,33 @@ inline void EEJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodTo
         PRECONDITION(methodRegionInfo != NULL);
     } CONTRACTL_END;
 
-    methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
-    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
-    methodRegionInfo->coldStartAddress = 0;
-    methodRegionInfo->coldSize         = 0;
+    CodeHeader * pCodeHeader          = GetCodeHeader(MethodToken);
+    methodRegionInfo->hotStartAddress = pCodeHeader->GetCodeStartAddress();
+    methodRegionInfo->hotSize         = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
+
+    ColdCodeHeader * pColdCodeHeader = pCodeHeader->GetColdCodeHeader();
+    if (pColdCodeHeader != NULL)
+    {
+        methodRegionInfo->coldStartAddress = pColdCodeHeader->GetCodeStartAddress();
+        RangeSection * pRangeSection = ExecutionManager::FindCodeRange(methodRegionInfo->coldStartAddress, ExecutionManager::GetScanFlags());
+        _ASSERTE(pRangeSection != NULL);
+        TADDR moduleBase = pRangeSection->_range.RangeStart();
+        UINT unwindInfos = pCodeHeader->GetNumberOfUnwindInfos();
+        _ASSERTE(unwindInfos > 1);
+        _ASSERTE(methodRegionInfo->coldStartAddress >= moduleBase);
+        _ASSERTE(FitsInU4(methodRegionInfo->coldStartAddress - moduleBase));
+        DWORD coldStartRva = static_cast<DWORD>(methodRegionInfo->coldStartAddress - moduleBase);
+        TADDR coldEndRva = RUNTIME_FUNCTION__EndAddress(pCodeHeader->GetUnwindInfo(unwindInfos - 1), moduleBase);
+        _ASSERTE(coldStartRva < coldEndRva);
+        methodRegionInfo->coldSize = coldEndRva - coldStartRva;
+        _ASSERTE(methodRegionInfo->coldSize < methodRegionInfo->hotSize);
+        methodRegionInfo->hotSize -= methodRegionInfo->coldSize;
+    }
+    else
+    {
+        methodRegionInfo->coldStartAddress = 0;
+        methodRegionInfo->coldSize         = 0;
+    }
 }
 
 #if defined(FEATURE_READYTORUN)

@@ -2939,9 +2939,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compProcedureSplitting = false;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-#ifdef DEBUG
-    opts.compProcedureSplittingEH = opts.compProcedureSplitting;
-#endif // DEBUG
+    INDEBUG(opts.compProcedureSplittingEH = opts.compProcedureSplitting;)
 
     if (opts.compProcedureSplitting)
     {

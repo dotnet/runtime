@@ -166,13 +166,14 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `Bucket` | `Keys` | `pointer` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | `pointer` | Array of values of `HashMapSlotsPerBucket` length |
 | `CodeHeap` | `HeapType` | `uint8` | `uint8` discriminant identifying the concrete heap type |
+| `CodeHeapListNode` | `BottomEndAddress` | `pointer` | End address of the used lower portion of the code heap containing hot code and stubs |
 | `CodeHeapListNode` | `CLRPersonalityRoutine` | `pointer` | Address of the CLR personality routine; when non-null, this is the module base for a Windows dynamic function table |
-| `CodeHeapListNode` | `EndAddress` | `pointer` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `HeaderMap` | `pointer` | Bit array used to find the start of methods - relative to `MapBase` |
 | `CodeHeapListNode` | `Heap` | `pointer` | Pointer to the `CodeHeap` object managed by this node |
 | `CodeHeapListNode` | `MapBase` | `pointer` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `Next` | `pointer` | Next node |
 | `CodeHeapListNode` | `StartAddress` | `pointer` | Start address of the used portion of the code heap |
+| `CodeHeapListNode` | `TopStartAddress` | `pointer` | Start address of the used upper portion of the code heap containing cold code |
 | `CodeRangeMapRangeList` | `RangeListType` | `int32` | Integer identifying the stub code block kind for this range list |
 | `DynamicFunctionTable` | `Context` | `pointer` | Tagged pointer to the owning `EEJitManager`; low bits are flags |
 | `DynamicFunctionTable` | `MinimumAddress` | `pointer` | Module base address covered by the dynamic function table |
@@ -238,6 +239,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `ReadyToRunSection` | *(type size)* | `uint32` | Size of a ReadyToRun section entry in bytes |
 | `ReadyToRunSection` | `Section` | `ImageDataDirectory` | `IMAGE_DATA_DIRECTORY` for the section data |
 | `ReadyToRunSection` | `Type` | `uint32` | Section type (`ReadyToRunSectionType`) |
+| `RealCodeHeader` | `ColdCodeHeader` | `pointer` | Optional pointer to the cold code header; null when the method has no cold region |
 | `RealCodeHeader` | `DebugInfo` | `pointer` | Pointer to the DebugInfo |
 | `RealCodeHeader` | `EHInfo` | `pointer` | Pointer to the `EE_ILEXCEPTION` containing exception clauses |
 | `RealCodeHeader` | `GCInfo` | `pointer` | Pointer to the GCInfo encoding |
@@ -306,31 +308,36 @@ The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code po
 
 There are three JIT managers: the "EE JitManager" for jitted code, the "Interpreter JitManager" for interpreted code, and the "R2R JitManager" for ReadyToRun code.
 
-The EE JitManager and Interpreter JitManager both use the same nibble map lookup to find method code.
-The only difference is which code header type is read: the EE JitManager reads a `RealCodeHeader` while the Interpreter JitManager reads an `InterpreterRealCodeHeader`.
-Their shared `GetMethodInfo` is summarized below:
+The EE JitManager and Interpreter JitManager both use the nibble map to find the start of the code block containing the requested address. Interpreter code has only one region and reads an `InterpreterRealCodeHeader` through the pointer immediately before the code start.
+
+For EE JitManager code, the nibble map can return either the hot or cold code start. A hot code start is preceded by a pointer to its `RealCodeHeader`. A cold code start is preceded by a `ColdCodeHeader`, whose value points back to the hot code header. The code-heap boundary distinguishes the two header forms. `GetMethodInfo` resolves both forms to the same `RealCodeHeader` and reports the hot code start as the method start. Offsets in the cold region are converted to logical method offsets by placing the cold region immediately after the hot region:
 
 ```csharp
 bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
 {
     info = default;
-    TargetPointer start = // look up jittedCodeAddress in nibble map for rangeSection - see NibbleMap below
-    if (start == TargetPointer.Null)
+    TargetPointer codeStart = // look up jittedCodeAddress in nibble map for rangeSection - see NibbleMap below
+    if (codeStart == TargetPointer.Null)
         return false;
 
-    TargetNUInt relativeOffset = jittedCodeAddress - start;
-    int codeHeaderOffset = Target.PointerSize;
-    TargetPointer codeHeaderIndirect = start - codeHeaderOffset;
+    TargetPointer codeHeaderAddress = codeStart - Target.PointerSize;
+    if (/* codeHeaderAddress is in the upper, cold-code portion of the heap */)
+        codeHeaderAddress = Target.ReadPointer(codeHeaderAddress);
 
-    // Check if address is in a stub code block
-    if (codeHeaderIndirect < Target.ReadGlobal<byte>("StubCodeBlockLast"))
+    TargetPointer realCodeHeaderAddress = Target.ReadPointer(codeHeaderAddress);
+    if (/* realCodeHeaderAddress identifies a stub code block */)
         return false;
 
-    TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
-    // EE JitManager: read RealCodeHeader at codeHeaderAddress
-    // Interpreter JitManager: read InterpreterRealCodeHeader at codeHeaderAddress
-    TargetPointer methodDesc = // read MethodDesc field from the appropriate code header
-    info = new CodeBlock(jittedCodeAddress, methodDesc, relativeOffset);
+    RealCodeHeader realCodeHeader = Target.Read<RealCodeHeader>(realCodeHeaderAddress);
+    TargetPointer hotCodeStart = codeHeaderAddress + Target.PointerSize;
+    TargetNUInt relativeOffset = jittedCodeAddress - codeStart;
+    if (codeStart != hotCodeStart)
+    {
+        GetMethodRegionInfo(rangeSection, jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out _);
+        relativeOffset = hotSize + jittedCodeAddress - coldStart;
+    }
+
+    info = new CodeBlock(hotCodeStart, realCodeHeader.MethodDesc, relativeOffset);
     return true;
 }
 ```
@@ -392,12 +399,11 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
 }
 ```
 
-The EE JitManager `GetMethodRegionInfo` determines the method's hot size by decoding the GC info associated with the code block to retrieve the code length. Cold regions are not supported for JIT-compiled code.
+The EE JitManager `GetMethodRegionInfo` decodes the GC info to retrieve the method's total code length. If the `RealCodeHeader` references a `ColdCodeHeader`, the cold start is immediately after that header. The end of the cold region is the end of the final `RUNTIME_FUNCTION`, since JIT unwind records are sorted by address. The cold size is subtracted from the total code length to obtain the hot size.
 
 ```csharp
 public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
 {
-    // Cold regions are not supported for JITted code
     coldStart = TargetPointer.Null;
     coldSize = 0;
 
@@ -405,6 +411,16 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
     GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
     IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
     hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+
+    RealCodeHeader realCodeHeader = // resolve the hot or cold code header as in GetMethodInfo
+    if (realCodeHeader.ColdCodeHeader != TargetPointer.Null)
+    {
+        coldStart = realCodeHeader.ColdCodeHeader + Target.PointerSize;
+        RuntimeFunction finalFunction = realCodeHeader.UnwindInfos[realCodeHeader.NumUnwindInfos - 1];
+        TargetPointer coldEnd = imageBase + finalFunction.BeginAddress + GetFunctionLength(finalFunction);
+        coldSize = coldEnd - coldStart;
+        hotSize -= coldSize;
+    }
 }
 ```
 
@@ -531,9 +547,11 @@ For R2R images, `hasFlagByte` is always `false`.
 * For interpreted code (`InterpreterJitManager`), a pointer to the `GCInfo` is stored on the `InterpreterRealCodeHeader`, accessed via nibble map lookup as with the EE JitManager. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`. The GC info is decoded using interpreter-specific decoding (`DecodeInterpreterGCInfo`).
 
 
-`IExecutionManager.GetFuncletStartAddress` finds the start of the code blocks funclet. This will be different than the methods start address `GetStartAddress` if the current code block is inside of a funclet. To find the funclet start address, we get the unwind info corresponding to the code block using `IExecutionManager.GetUnwindInfo`. We then parse the unwind info to find the begin address (relative to the unwind info base address) and return the unwind info base address + unwind info begin address.
+`IExecutionManager.GetFuncletStartAddress` finds the start of the code block's funclet. This will differ from the method start address returned by `GetStartAddress` if the current code block is inside a funclet. Normally, the implementation gets the unwind info corresponding to the code block, parses its begin address relative to the unwind info base address, and returns the sum.
 
-`IsFunclet` is implemented in terms of `IExecutionManager.GetStartAddress` and `IExecutionManager.GetFuncletStartAddress`. If the values are the same, the code block handle is not a funclet. If they are different, it is a funclet.
+On ARM64, a root method or funclet can have multiple `RUNTIME_FUNCTION` fragments. Secondary fragments use unpacked unwind data whose first unwind opcode is `end_c` (`0xe5`) and therefore do not own the physical prolog. The EE JitManager walks backward through consecutive `end_c` fragments to the host `RUNTIME_FUNCTION` and returns that function's begin address. This makes all fragments of a root method or funclet resolve to the same start address, including fragments in the cold region.
+
+`IsFunclet` is implemented in terms of `IExecutionManager.GetStartAddress` and `IExecutionManager.GetFuncletStartAddress`. If the values are the same, the code block handle is not a funclet. If they differ, hot code and ARM64 code are funclets. For non-ARM64 cold JIT code, where unwind ownership alone does not distinguish a cold root from a cold funclet, the logical funclet offset is compared with the first exception handler offset.
 
 `IExecutionManager.GetExceptionClauses` enumerates the exception handling clauses for a given code block. The ExecutionManager delegates to the JitManager implementations to obtain the start and end addresses of the clause array, since JIT-compiled and ReadyToRun code store exception clauses in different formats and locations.
 
@@ -545,7 +563,7 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 
 After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` -> `MethodDesc` -> `MethodTable` -> `TypeHandle` -> `Module` via the `RuntimeTypeSystem` contract.
 
-`IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
+`IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it converts the containing fragment's physical address to the funclet's logical method offset. For cold code this logical offset uses the same `hotSize + (address - coldStart)` representation as `GetMethodInfo`. It then checks whether any filter clause's filter offset matches the funclet start offset.
 
 `IExecutionManager.GetStackParameterSize` returns the size (in bytes) of stack-passed parameters at the call to the method described by the code block handle. It mirrors the native `EECodeManager::GetStackParameterSize`: it returns 0 for funclets and for non-x86 targets. On x86, it returns 0 for methods using the varargs calling convention (which are caller-popped), otherwise it returns the argument size encoded in the GC info header.
 

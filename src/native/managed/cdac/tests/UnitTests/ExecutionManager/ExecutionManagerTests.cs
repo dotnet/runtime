@@ -67,6 +67,25 @@ public class ExecutionManagerTests
         RuntimeInfoOperatingSystem operatingSystem,
         RuntimeInfoArchitecture? targetArchitecture,
         (string Name, ulong Value)[] additionalGlobals)
+        => CreateTargetBuilder(emBuilder, operatingSystem, targetArchitecture)
+            .AddGlobals(additionalGlobals)
+            .Build();
+
+    private static Target CreateTarget(
+        MockExecutionManagerBuilder emBuilder,
+        RuntimeInfoOperatingSystem operatingSystem,
+        RuntimeInfoArchitecture targetArchitecture,
+        Mock<IGCInfo> gcInfo,
+        params (string Name, ulong Value)[] additionalGlobals)
+        => CreateTargetBuilder(emBuilder, operatingSystem, targetArchitecture)
+            .AddGlobals(additionalGlobals)
+            .AddMockContract(gcInfo)
+            .Build();
+
+    private static TestPlaceholderTarget.Builder CreateTargetBuilder(
+        MockExecutionManagerBuilder emBuilder,
+        RuntimeInfoOperatingSystem operatingSystem,
+        RuntimeInfoArchitecture? targetArchitecture)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         RuntimeInfoArchitecture architecture = targetArchitecture ?? (arch.Is64Bit
@@ -80,11 +99,9 @@ public class ExecutionManagerTests
             .UseReader(emBuilder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(emBuilder))
             .AddGlobals(emBuilder.Globals)
-            .AddGlobals(additionalGlobals)
             .AddContract<IExecutionManager>(version: emBuilder.Version)
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>())
-            .AddMockContract(runtimeInfo)
-            .Build();
+            .AddMockContract(runtimeInfo);
     }
 
     private static IExecutionManager CreateExecutionManagerContract(
@@ -179,6 +196,101 @@ public class ExecutionManagerTests
         Assert.NotNull(eeInfo);
         actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
         Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
+    }
+
+    [Theory]
+    [MemberData(nameof(Arm64AllVersions))]
+    public void GetJittedMethodInfo_HotColdArm64(string version, MockTarget.Architecture arch)
+    {
+        const ulong CodeRangeStart = 0x0a0a_0000;
+        const uint CodeRangeSize = 0xc000;
+        const uint HotSize = 0x40;
+        const uint ColdSize = 0x40;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        const ulong MethodDescAddress = 0x0101_aaa0;
+        const ulong GCInfoAddress = 0x0101_b000;
+        const uint GCInfoVersion = 4;
+
+        MockExecutionManagerBuilder emBuilder =
+            new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode =
+            emBuilder.AllocateJittedCodeRange(CodeRangeStart, CodeRangeSize);
+        MockExecutionManagerBuilder.HotColdJittedMethod method = emBuilder.AddHotColdJittedMethod(
+            jittedCode, HotSize, ColdSize, MethodDescAddress, CodeRangeStart, GCInfoAddress);
+
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(CodeRangeStart, CodeRangeSize);
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(method.HotCodeAddress), HotSize);
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(method.ColdCodeAddress), ColdSize);
+
+        MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(
+            0,
+            CodeRangeStart,
+            method.HotCodeAddress + HotSize,
+            CodeRangeStart,
+            nibBuilder.NibbleMapFragment.Address);
+        codeHeapListNode.TopStartAddress =
+            method.ColdCodeAddress - (ulong)(arch.Is64Bit ? sizeof(ulong) : sizeof(uint));
+        MockRangeSection rangeSection =
+            emBuilder.AddRangeSection(jittedCode, JitManagerAddress, codeHeapListNode.Address);
+        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+
+        IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
+        Mock<IGCInfo> gcInfo = new();
+        gcInfo.Setup(g => g.DecodePlatformSpecificGCInfo(new TargetPointer(GCInfoAddress), GCInfoVersion))
+            .Returns(gcInfoHandle);
+        gcInfo.Setup(g => g.GetCodeLength(gcInfoHandle)).Returns(HotSize + ColdSize);
+
+        Target target = CreateTarget(
+            emBuilder,
+            RuntimeInfoOperatingSystem.Windows,
+            RuntimeInfoArchitecture.Arm64,
+            gcInfo,
+            (Constants.Globals.GCInfoVersion, GCInfoVersion));
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        CodeBlockHandle hotHandle =
+            Assert.NotNull(em.GetCodeBlockHandle(new TargetCodePointer(method.HotCodeAddress + 4)));
+        CodeBlockHandle coldRootHandle =
+            Assert.NotNull(em.GetCodeBlockHandle(new TargetCodePointer(method.ColdCodeAddress + 4)));
+        CodeBlockHandle coldFuncletHandle =
+            Assert.NotNull(em.GetCodeBlockHandle(new TargetCodePointer(method.ColdFuncletAddress + 4)));
+        CodeBlockHandle coldFuncletFragmentHandle =
+            Assert.NotNull(em.GetCodeBlockHandle(new TargetCodePointer(method.ColdFuncletAddress + 0x14)));
+
+        foreach (CodeBlockHandle handle in new[] { hotHandle, coldRootHandle, coldFuncletHandle, coldFuncletFragmentHandle })
+        {
+            Assert.Equal(new TargetPointer(MethodDescAddress), em.GetMethodDesc(handle));
+            Assert.Equal(new TargetPointer(method.HotCodeAddress), em.GetStartAddress(handle));
+        }
+
+        Assert.Equal(new TargetNUInt(4), em.GetRelativeOffset(hotHandle));
+        Assert.Equal(new TargetNUInt(HotSize + 4), em.GetRelativeOffset(coldRootHandle));
+
+        em.GetMethodRegionInfo(coldRootHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
+        Assert.Equal(HotSize, hotSize);
+        Assert.Equal(new TargetPointer(method.ColdCodeAddress), coldStart);
+        Assert.Equal(ColdSize, coldSize);
+
+        Assert.Equal(new TargetPointer(method.HotCodeAddress), em.GetFuncletStartAddress(coldRootHandle));
+        Assert.False(em.IsFunclet(coldRootHandle));
+        Assert.Equal(new TargetPointer(method.ColdFuncletAddress), em.GetFuncletStartAddress(coldFuncletHandle));
+        Assert.Equal(new TargetPointer(method.ColdFuncletAddress), em.GetFuncletStartAddress(coldFuncletFragmentHandle));
+        Assert.True(em.IsFunclet(coldFuncletHandle));
+        Assert.True(em.IsFunclet(coldFuncletFragmentHandle));
+        Assert.Equal(CodeKind.Jitted, em.GetCodeKind(new TargetCodePointer(method.ColdCodeAddress + 4)));
+
+        Target x64Target = CreateTarget(
+            emBuilder,
+            RuntimeInfoOperatingSystem.Windows,
+            RuntimeInfoArchitecture.X64,
+            gcInfo,
+            (Constants.Globals.GCInfoVersion, GCInfoVersion));
+        IExecutionManager x64Em = x64Target.Contracts.ExecutionManager;
+        CodeBlockHandle x64ColdRootHandle =
+            Assert.NotNull(x64Em.GetCodeBlockHandle(new TargetCodePointer(method.ColdCodeAddress + 4)));
+        Assert.Equal(new TargetPointer(method.HotCodeAddress), x64Em.GetStartAddress(x64ColdRootHandle));
+        Assert.Equal(new TargetNUInt(HotSize + 4), x64Em.GetRelativeOffset(x64ColdRootHandle));
+        Assert.False(x64Em.IsFunclet(x64ColdRootHandle));
     }
 
     [Theory]
@@ -931,6 +1043,16 @@ public class ExecutionManagerTests
         {
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
             yield return new object[] { "c1", arch };
+        }
+    }
+
+    public static IEnumerable<object[]> Arm64AllVersions()
+    {
+        foreach (object[] values in StdArchAllVersions())
+        {
+            MockTarget.Architecture arch = (MockTarget.Architecture)values[1];
+            if (arch.Is64Bit && arch.IsLittleEndian)
+                yield return values;
         }
     }
 

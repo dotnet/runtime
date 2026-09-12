@@ -35,13 +35,24 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return false;
 
             Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
+            TargetPointer hotCodeStart = GetCodeHeaderAddress(rangeSection, codeStart) + (ulong)Target.PointerSize;
             TargetPointer instrPointer = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
             TargetNUInt relativeOffset = new TargetNUInt(instrPointer.Value - codeStart.Value);
 
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return false;
 
-            info = new CodeBlock(codeStart, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            if (codeStart != hotCodeStart)
+            {
+                GetMethodRegionInfo(
+                    rangeSection, jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out _);
+                if (coldStart == TargetPointer.Null)
+                    return false;
+
+                relativeOffset = new TargetNUInt(hotSize + relativeOffset.Value);
+            }
+
+            info = new CodeBlock(hotCodeStart, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
         }
 
@@ -52,7 +63,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             out TargetPointer coldStart,
             out uint coldSize)
         {
-            // cold regions are not supported for JITted code
             coldStart = TargetPointer.Null;
             coldSize = 0;
 
@@ -61,36 +71,98 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
             hotSize = gcInfo.GetCodeLength(gcInfoHandle);
             Debug.Assert(hotSize > 0);
+
+            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
+            if (codeStart == TargetPointer.Null ||
+                !GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader) ||
+                realCodeHeader.ColdCodeHeader is not TargetPointer coldCodeHeader ||
+                coldCodeHeader == TargetPointer.Null)
+            {
+                return;
+            }
+
+            if (realCodeHeader.NumUnwindInfos <= 1)
+                return;
+
+            coldStart = coldCodeHeader + (ulong)Target.PointerSize;
+            TargetPointer imageBase = rangeSection.Data!.RangeBegin;
+            Data.RuntimeFunction finalFunction =
+                _runtimeFunctions.GetRuntimeFunction(realCodeHeader.UnwindInfos, realCodeHeader.NumUnwindInfos - 1);
+            TargetPointer finalFunctionStart = CodePointerUtils.AddressFromCodePointer(
+                new TargetCodePointer(imageBase + finalFunction.BeginAddress), Target);
+            uint finalFunctionStartOffset = checked((uint)(finalFunctionStart - imageBase));
+            uint coldEndOffset = checked(
+                finalFunctionStartOffset + _runtimeFunctions.GetFunctionLength(imageBase, finalFunction));
+            uint coldStartOffset = checked((uint)(coldStart.Value - imageBase.Value));
+            coldSize = checked(coldEndOffset - coldStartOffset);
+            hotSize = checked(hotSize - coldSize);
         }
 
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
-            Debug.Assert(!rangeSection.IsRangeList);
-            if (rangeSection.Data == null)
-                throw new ArgumentException(nameof(rangeSection));
-
-            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
-            if (codeStart == TargetPointer.Null)
-                return TargetPointer.Null;
-            Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
-
-            if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
+            if (!TryGetRuntimeFunction(
+                    rangeSection, jittedCodeAddress, out Data.RealCodeHeader? realCodeHeader, out _, out uint index))
                 return TargetPointer.Null;
 
-            if (realCodeHeader.NumUnwindInfos == 0)
+            return _runtimeFunctions.GetRuntimeFunctionAddress(realCodeHeader.UnwindInfos, index);
+        }
+
+        public override TargetPointer GetFuncletStartAddress(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        {
+            if (Target.Contracts.RuntimeInfo.GetTargetArchitecture() is not RuntimeInfoArchitecture.Arm64)
+                return base.GetFuncletStartAddress(rangeSection, jittedCodeAddress);
+
+            if (!TryGetRuntimeFunction(
+                    rangeSection, jittedCodeAddress, out Data.RealCodeHeader? realCodeHeader, out TargetPointer imageBase, out uint index))
             {
                 return TargetPointer.Null;
             }
 
-            // Find the relative address that we are looking for
-            TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
-            TargetPointer imageBase = rangeSection.Data.RangeBegin;
-            TargetPointer relativeAddr = addr - imageBase;
+            Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(realCodeHeader.UnwindInfos, index);
+            while (index > 0 && IsArm64FunctionFragment(imageBase, function))
+            {
+                function = _runtimeFunctions.GetRuntimeFunction(realCodeHeader.UnwindInfos, --index);
+            }
 
-            if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(realCodeHeader.UnwindInfos, realCodeHeader.NumUnwindInfos, relativeAddr, out uint index))
-                return TargetPointer.Null;
+            return CodePointerUtils.AddressFromCodePointer(
+                new TargetCodePointer(imageBase + function.BeginAddress), Target);
+        }
 
-            return _runtimeFunctions.GetRuntimeFunctionAddress(realCodeHeader.UnwindInfos, index);
+        public override bool IsFunclet(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            TargetPointer methodStartAddress)
+        {
+            TargetPointer funcletStartAddress = GetFuncletStartAddress(rangeSection, jittedCodeAddress);
+            if (funcletStartAddress == TargetPointer.Null)
+                throw new InvalidOperationException("Unable to get runtime function address");
+
+            if (funcletStartAddress == methodStartAddress)
+                return false;
+
+            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
+            if (codeStart == TargetPointer.Null)
+                return false;
+
+            TargetPointer hotCodeStart = GetCodeHeaderAddress(rangeSection, codeStart) + (ulong)Target.PointerSize;
+            if (codeStart == hotCodeStart ||
+                Target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.Arm64)
+            {
+                return true;
+            }
+
+            GetExceptionClauses(
+                rangeSection,
+                new CodeBlockHandle(jittedCodeAddress.AsTargetPointer),
+                out TargetPointer clausesStart,
+                out TargetPointer clausesEnd);
+            if (clausesStart >= clausesEnd)
+                return false;
+
+            GetMethodRegionInfo(rangeSection, jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out _);
+            uint funcletStartOffset = checked(hotSize + (uint)(funcletStartAddress - coldStart));
+            Data.EEExceptionClause firstClause = Target.ProcessedData.GetOrAdd<Data.EEExceptionClause>(clausesStart);
+            return firstClause.HandlerStartPC <= funcletStartOffset;
         }
 
         public override TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte)
@@ -169,7 +241,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             uint runtimeFunctionSize = Target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
             List<TargetPointer> entries = [];
 
-            TargetCodePointer current = new(heapListNode.EndAddress.Value);
+            TargetCodePointer current = new(heapListNode.BottomEndAddress.Value);
             while (true)
             {
                 TargetPointer codeStart = _nibbleMap.FindMethodCode(heapListNode, current);
@@ -205,32 +277,100 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
 
-            // See EEJitManager::GetCodeHeaderFromStartAddress in vm/codeman.h
-            int codeHeaderOffset = Target.PointerSize;
-            TargetPointer codeHeaderIndirect = new TargetPointer(codeStart - (ulong)codeHeaderOffset);
-            return Target.ReadPointer(codeHeaderIndirect);
+            TargetPointer codeHeaderAddress = codeStart - (ulong)Target.PointerSize;
+            Data.CodeHeapListNode heapListNode =
+                Target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(rangeSection.Data.HeapList);
+            if (codeHeaderAddress >= heapListNode.BottomEndAddress)
+            {
+                // A cold-code header points back to the hot CodeHeader.
+                codeHeaderAddress = Target.ReadPointer(codeHeaderAddress);
+            }
+
+            return codeHeaderAddress;
         }
 
         private bool GetRealCodeHeader(RangeSection rangeSection, TargetPointer codeStart, [NotNullWhen(true)] out Data.RealCodeHeader? realCodeHeader)
         {
             realCodeHeader = null;
             TargetPointer codeHeaderAddress = GetCodeHeaderAddress(rangeSection, codeStart);
-            if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
+            TargetPointer realCodeHeaderAddress = Target.ReadPointer(codeHeaderAddress);
+            if (RangeSection.IsStubCodeBlock(Target, realCodeHeaderAddress))
             {
                 return false;
             }
-            realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
+            realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(realCodeHeaderAddress);
             return true;
         }
 
         private CodeKind GetCodeHeaderStubKind(RangeSection rangeSection, TargetPointer codeStart)
         {
             TargetPointer codeHeaderAddress = GetCodeHeaderAddress(rangeSection, codeStart);
-            if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
+            TargetPointer realCodeHeaderAddress = Target.ReadPointer(codeHeaderAddress);
+            if (RangeSection.IsStubCodeBlock(Target, realCodeHeaderAddress))
             {
-                return GetStubKind((StubKind)codeHeaderAddress.Value);
+                return GetStubKind((StubKind)realCodeHeaderAddress.Value);
             }
             return CodeKind.Jitted;
+        }
+
+        private bool TryGetRuntimeFunction(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            [NotNullWhen(true)] out Data.RealCodeHeader? realCodeHeader,
+            out TargetPointer imageBase,
+            out uint index)
+        {
+            realCodeHeader = null;
+            imageBase = TargetPointer.Null;
+            index = 0;
+
+            Debug.Assert(!rangeSection.IsRangeList);
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
+            if (codeStart == TargetPointer.Null)
+                return false;
+            Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
+
+            if (!GetRealCodeHeader(rangeSection, codeStart, out realCodeHeader) ||
+                realCodeHeader.NumUnwindInfos == 0)
+            {
+                return false;
+            }
+
+            TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            imageBase = rangeSection.Data.RangeBegin;
+            TargetPointer relativeAddr = addr - imageBase;
+            return _runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(
+                realCodeHeader.UnwindInfos, realCodeHeader.NumUnwindInfos, relativeAddr, out index);
+        }
+
+        private bool IsArm64FunctionFragment(TargetPointer imageBase, Data.RuntimeFunction function)
+        {
+            if ((function.UnwindData & 3) != 0)
+                return false;
+
+            TargetPointer unwindData = imageBase + function.UnwindData;
+            uint unwindHeader = Target.Read<uint>(unwindData);
+            if (((unwindHeader >> 18) & 3) != 0)
+                return false;
+
+            uint epilogCount = (unwindHeader >> 22) & 0x1f;
+            uint codeWords = unwindHeader >> 27;
+            TargetPointer unwindCodes = unwindData + sizeof(uint);
+            if (codeWords == 0 && epilogCount == 0)
+            {
+                uint extendedHeader = Target.Read<uint>(unwindCodes);
+                epilogCount = extendedHeader & 0xffff;
+                unwindCodes += sizeof(uint);
+            }
+
+            bool hasSingleEpilog = (unwindHeader & (1 << 21)) != 0;
+            if (!hasSingleEpilog)
+                unwindCodes += epilogCount * sizeof(uint);
+
+            return Target.Read<byte>(unwindCodes) == 0xe5;
         }
 
         public override void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr)

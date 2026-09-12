@@ -50,9 +50,7 @@ _None._
 
 | Contract Name |
 | --- |
-| `CodeVersions` |
 | `ExecutionManager` |
-| `PlatformMetadata` |
 | `RuntimeInfo` |
 <!-- END GENERATED: usage contract=DebugInfo version=c1 -->
 

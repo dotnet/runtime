@@ -11227,7 +11227,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 {
     // make certain you only try to put relocs on things that can have them.
     ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
-    if ((idOp == ID_OP_SCNS) && id->idIsLargeCns())
+    if ((idOp == ID_OP_SCNS) && (id->idIsLargeCns() || (emitColdCodeBlock != nullptr)))
     {
         idOp = ID_OP_CNS;
     }

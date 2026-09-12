@@ -10,6 +10,7 @@ internal sealed partial class RealCodeHeader : IData<RealCodeHeader>
     [Field] public partial TargetPointer DebugInfo { get; }
     [Field] public partial TargetPointer EHInfo { get; }
     [Field] public partial TargetPointer GCInfo { get; }
+    [Field] public partial TargetPointer? ColdCodeHeader { get; }
     [Field] public partial uint NumUnwindInfos { get; }
 
     [FieldAddress]

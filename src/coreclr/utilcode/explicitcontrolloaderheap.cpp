@@ -59,9 +59,11 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
     }
     CONTRACTL_END;
 
-    m_pPtrToEndOfCommittedRegion = NULL;
+    m_ptrEndLowerCommittedRegion = NULL;
+    m_pBeginUpperCommittedRegion = NULL;
     m_pEndReservedRegion         = NULL;
     m_pAllocPtr                  = NULL;
+    m_pTopAllocPtr               = NULL;
 
     m_dwCommitBlockSize          = minipal_getpagesize();
 
@@ -117,24 +119,40 @@ void ExplicitControlLoaderHeap::SetReservedRegion(BYTE* dwReservedRegionAddress,
 
 #endif // #ifndef DACCESS_COMPILE
 
-size_t ExplicitControlLoaderHeap::GetBytesAvailCommittedRegion()
+size_t ExplicitControlLoaderHeap::GetBytesAvailCommittedRegion(bool useLowerRegion)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_pAllocPtr < m_pPtrToEndOfCommittedRegion)
-        return (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
+    if (useLowerRegion && (m_pAllocPtr < m_ptrEndLowerCommittedRegion))
+    {
+        return (size_t)(m_ptrEndLowerCommittedRegion - m_pAllocPtr);
+    }
+    else if (!useLowerRegion && (m_pBeginUpperCommittedRegion < m_pTopAllocPtr))
+    {
+        return (size_t)(m_pTopAllocPtr - m_pBeginUpperCommittedRegion);
+    }
     else
+    {
         return 0;
+    }
 }
 
-size_t ExplicitControlLoaderHeap::GetBytesAvailReservedRegion()
+size_t ExplicitControlLoaderHeap::GetBytesAvailReservedRegion(bool useLowerRegion)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_pAllocPtr < m_pEndReservedRegion)
-        return (size_t)(m_pEndReservedRegion- m_pAllocPtr);
+    if (useLowerRegion && (m_pAllocPtr < m_pBeginUpperCommittedRegion))
+    {
+        return (size_t)(m_pBeginUpperCommittedRegion - m_pAllocPtr);
+    }
+    else if (!useLowerRegion && (m_ptrEndLowerCommittedRegion < m_pTopAllocPtr))
+    {
+        return (size_t)(m_pTopAllocPtr - m_ptrEndLowerCommittedRegion);
+    }
     else
+    {
         return 0;
+    }
 }
 
 #ifndef DACCESS_COMPILE
@@ -228,9 +246,11 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     // Add to the linked list
     m_pFirstBlock = pNewBlock;
 
-    m_pPtrToEndOfCommittedRegion = (BYTE *) (pData) + (dwSizeToCommit);         \
-    m_pAllocPtr                  = (BYTE *) (pData);                            \
+    m_ptrEndLowerCommittedRegion = (BYTE *) (pData) + (dwSizeToCommit);
+    m_pAllocPtr                  = (BYTE *) (pData);
     m_pEndReservedRegion         = (BYTE *) (pData) + (dwSizeToReserve);
+    m_pTopAllocPtr               = m_pEndReservedRegion;
+    m_pBeginUpperCommittedRegion = m_pEndReservedRegion;
 
     return TRUE;
 }
@@ -240,7 +260,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
 // Returns: FALSE if we can't get any more memory
 // TRUE: We can/did get some more memory - check to see if it's sufficient for
 //       the caller's needs (see UnlockedAllocMem for example of use)
-BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
+BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize, bool useLowerRegion)
 {
     CONTRACTL
     {
@@ -250,42 +270,74 @@ BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
     CONTRACTL_END;
 
+    PTR_BYTE pBeginFree, pEndFree;
+    size_t reservedSize;
+    if (useLowerRegion)
+    {
+        pBeginFree = m_pAllocPtr;
+        pEndFree   = m_ptrEndLowerCommittedRegion;
+        reservedSize = m_pBeginUpperCommittedRegion - pBeginFree;
+    }
+    else
+    {
+        pBeginFree = m_pBeginUpperCommittedRegion;
+        pEndFree   = m_pTopAllocPtr;
+        reservedSize = pEndFree - m_ptrEndLowerCommittedRegion;
+    }
+
     // If we have memory we can use, what are you doing here!
-    _ASSERTE(dwMinSize > (SIZE_T)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr));
+    _ASSERTE(dwMinSize > (size_t)(pEndFree - pBeginFree));
 
     // Does this fit in the reserved region?
-    if (dwMinSize <= (size_t)(m_pEndReservedRegion - m_pAllocPtr))
+    if (dwMinSize <= reservedSize)
     {
-        SIZE_T dwSizeToCommit;
-
-        dwSizeToCommit = (m_pAllocPtr + dwMinSize) - m_pPtrToEndOfCommittedRegion;
-
-        size_t unusedRemainder = (size_t)((BYTE*)m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
-
-        PTR_BYTE pCommitBaseAddress = m_pPtrToEndOfCommittedRegion;
+        size_t dwSizeToCommit = (pBeginFree + dwMinSize) - pEndFree;
 
         if (dwSizeToCommit < m_dwCommitBlockSize)
-            dwSizeToCommit = min((SIZE_T)(m_pEndReservedRegion - m_pPtrToEndOfCommittedRegion), (SIZE_T)m_dwCommitBlockSize);
+        {
+            size_t uncommittedSize = (size_t)(m_pBeginUpperCommittedRegion - m_ptrEndLowerCommittedRegion);
+            dwSizeToCommit = min(uncommittedSize, (size_t)m_dwCommitBlockSize);
+        }
 
         // Round to page size
         dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
-        size_t dwSizeToCommitPart = dwSizeToCommit;
+        PTR_BYTE pCommitBaseAddress;
+        if (useLowerRegion)
+        {
+            pCommitBaseAddress = pEndFree;
+        }
+        else
+        {
+            pCommitBaseAddress = pBeginFree - dwSizeToCommit;
+        }
 
-        if (!CommitPages(pCommitBaseAddress, dwSizeToCommitPart))
+        if (!CommitPages(pCommitBaseAddress, dwSizeToCommit))
         {
             return FALSE;
         }
 
-        m_pPtrToEndOfCommittedRegion += dwSizeToCommit;
+        if (useLowerRegion)
+        {
+            m_ptrEndLowerCommittedRegion += dwSizeToCommit;
+        }
+        else
+        {
+            m_pBeginUpperCommittedRegion -= dwSizeToCommit;
+        }
+
         m_dwTotalAlloc += dwSizeToCommit;
 
         return TRUE;
     }
+    else if (!useLowerRegion)
+    {
+        return FALSE;
+    }
 
     // Need to allocate a new set of reserved pages that will be located likely at a nonconsecutive virtual address.
     // Waste the unused bytes
-    INDEBUG(m_dwDebugWastedBytes += (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);)
+    INDEBUG(m_dwDebugWastedBytes += (size_t)(pEndFree - pBeginFree);)
 
     // Note, there are unused reserved pages at end of current region -can't do much about that
     // Provide dwMinSize here since UnlockedReservePages will round up the commit size again
@@ -293,7 +345,7 @@ BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     return ReservePages(dwMinSize);
 }
 
-void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs)
+void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs, bool useLowerRegion /* = true */)
 {
     CONTRACTL
     {
@@ -317,17 +369,28 @@ void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, si
         return NULL;
     }
 
-    if (cbAllocSize.Value() > GetBytesAvailCommittedRegion())
+    if (cbAllocSize.Value() > GetBytesAvailCommittedRegion(useLowerRegion))
     {
-        if (GetMoreCommittedPages(cbAllocSize.Value()) == FALSE)
+        if (GetMoreCommittedPages(cbAllocSize.Value(), useLowerRegion) == FALSE)
         {
             return NULL;
         }
     }
 
-    BYTE *pResult = (BYTE *)ALIGN_UP(m_pAllocPtr + dwHeaderSize, dwCodeAlignment);
-    EtwAllocRequest(this, pResult, (pResult + dwCodeSize) - m_pAllocPtr);
-    m_pAllocPtr = pResult + dwCodeSize;
+    BYTE *pResult;
+
+    if (useLowerRegion)
+    {
+        pResult = (BYTE *)ALIGN_UP(m_pAllocPtr + dwHeaderSize, dwCodeAlignment);
+        EtwAllocRequest(this, pResult, (pResult + dwCodeSize) - m_pAllocPtr);
+        m_pAllocPtr = pResult + dwCodeSize;
+    }
+    else
+    {
+        pResult = (BYTE *)ALIGN_DOWN(m_pTopAllocPtr - dwCodeSize, dwCodeAlignment);
+        EtwAllocRequest(this, pResult, m_pTopAllocPtr - pResult - dwHeaderSize);
+        m_pTopAllocPtr = pResult - dwHeaderSize;
+    }
 
     return pResult;
 }

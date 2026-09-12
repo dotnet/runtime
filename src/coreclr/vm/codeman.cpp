@@ -660,7 +660,7 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
             state->MapBase = (void*)current->mapBase;
             state->HdrMap = current->pHdrMap;
             state->MaxCodeHeapSize = current->maxCodeHeapSize;
-            state->EndAddress = current->endAddress;
+            state->EndAddress = current->bottomEndAddress;
         }
 
         current = current->GetNext();
@@ -1364,9 +1364,24 @@ BOOL IJitManager::LazyIsFunclet(EECodeInfo * pCodeInfo)
     CONTRACTL_END;
 
     TADDR funcletStartAddress = GetFuncletStartAddress(pCodeInfo);
-    TADDR methodStartAddress = pCodeInfo->GetStartAddress();
+    if (!pCodeInfo->GetMethodToken().IsCold())
+    {
+        TADDR methodStartAddress = pCodeInfo->GetStartAddress();
+        return (funcletStartAddress != methodStartAddress);
+    }
 
-    return funcletStartAddress != methodStartAddress;
+    EH_CLAUSE_ENUMERATOR pEnumState;
+    unsigned EHCount = InitializeEHEnumeration(pCodeInfo->GetMethodToken(), &pEnumState);
+
+    if (EHCount == 0)
+    {
+        return FALSE;
+    }
+
+    EE_ILEXCEPTION_CLAUSE EHClause;
+    GetNextEHClause(&pEnumState, &EHClause);
+    PCODE handlerRegionStart = GetCodeAddressForRelOffset(pCodeInfo->GetMethodToken(), EHClause.HandlerStartPC);
+    return (handlerRegionStart <= funcletStartAddress);
 }
 
 BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
@@ -2799,8 +2814,9 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     pHp->startAddress = (TADDR)pCodeHeap->m_LoaderHeap.GetAllocPtr();
 
-    pHp->endAddress      = pHp->startAddress;
-    pHp->maxCodeHeapSize = heapSize;
+    pHp->bottomEndAddress = pHp->startAddress;
+    pHp->topStartAddress  = pHp->startAddress + heapSize;
+    pHp->maxCodeHeapSize  = heapSize;
     if (pInfo->IsInterpreted())
     {
         pHp->reserveForJumpStubs = 0;
@@ -2838,22 +2854,22 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     return pHp;
 }
 
-void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs)
+void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs, bool useLowerRegion /* = true */)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (m_cbMinNextPad > (SSIZE_T)header) header = m_cbMinNextPad;
+    if (useLowerRegion && (m_cbMinNextPad > (SSIZE_T)header)) header = m_cbMinNextPad;
 
-    void * p = m_LoaderHeap.AllocMemForCode_NoThrow(header, size, alignment, reserveForJumpStubs);
+    void * p = m_LoaderHeap.AllocMemForCode_NoThrow(header, size, alignment, reserveForJumpStubs, useLowerRegion);
     if (p == NULL)
         return NULL;
 
     // If the next allocation would have started in the same nibble map entry, allocate extra space to prevent it from happening
     // Note that m_cbMinNextPad can be negative
-    m_cbMinNextPad = ALIGN_UP((SIZE_T)p + 1, BYTES_PER_BUCKET) - ((SIZE_T)p + size);
+    if (useLowerRegion) m_cbMinNextPad = ALIGN_UP((SIZE_T)p + 1, BYTES_PER_BUCKET) - ((SIZE_T)p + size);
 
     return p;
 }
@@ -3068,8 +3084,8 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 }
 
 void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
-                                     size_t header, size_t blockSize, unsigned align,
-                                     HeapList ** ppCodeHeap)
+                                     size_t header, size_t blockSize, size_t coldCodeSize, unsigned align,
+                                     HeapList ** ppCodeHeap, void** ppColdCode)
 {
     CONTRACTL {
         THROWS;
@@ -3077,10 +3093,19 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
     } CONTRACTL_END;
 
-    pInfo->SetRequestSize(header+blockSize+(align-1)+pInfo->GetReserveForJumpStubs());
+    constexpr size_t coldHeaderSize = sizeof(ColdCodeHeader);
+    constexpr DWORD coldAlignSize   = BYTES_PER_BUCKET;
+    size_t requestSize = header + blockSize + (align - 1) + pInfo->GetReserveForJumpStubs();
+    if (coldCodeSize > 0)
+    {
+        requestSize += coldCodeSize + coldHeaderSize + (coldAlignSize - 1);
+    }
 
-    void *      mem         = NULL;
-    HeapList * pCodeHeap    = NULL;
+    pInfo->SetRequestSize(requestSize);
+
+    void *     pHotCode       = NULL;
+    void *     pColdCode      = NULL;
+    HeapList * pCodeHeap      = NULL;
     DomainCodeHeapList *pList = NULL;
 
     // Avoid going through the full list in the common case - try to use the most recently used codeheap
@@ -3115,13 +3140,26 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
     }
 
+    auto allocMem = [&](CodeHeap* pHeap) {
+        pHotCode = pHeap->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->GetReserveForJumpStubs());
+        if ((pHotCode != NULL) && (coldCodeSize > 0))
+        {
+            pColdCode = pHeap->AllocMemForCode_NoThrow(coldHeaderSize, coldCodeSize, coldAlignSize, 0, false);
+            if (pColdCode == NULL)
+            {
+                // If only the cold allocation failed for some reason, redo the hot allocation as well
+                pHotCode = NULL;
+            }
+        }
+    };
+
     // If we will use a cached code heap, ensure that the code heap meets the constraints
     if (pCodeHeap && CanUseCodeHeap(pInfo, pCodeHeap))
     {
-        mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->GetReserveForJumpStubs());
+        allocMem(pCodeHeap->pHeap);
     }
 
-    if (mem == NULL)
+    if (pHotCode == NULL)
     {
         pList = GetCodeHeapList(pInfo, pInfo->GetAllocator());
         if (pList != NULL)
@@ -3133,14 +3171,14 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
                 // Validate that the code heap can be used for the current request
                 if (CanUseCodeHeap(pInfo, pCodeHeap))
                 {
-                    mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->GetReserveForJumpStubs());
-                    if (mem != NULL)
+                    allocMem(pCodeHeap->pHeap);
+                    if (pHotCode != NULL)
                         break;
                 }
             }
         }
 
-        if (mem == NULL)
+        if (pHotCode == NULL)
         {
             // Let us create a new heap.
             if (pList == NULL)
@@ -3158,10 +3196,10 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
                 return NULL;
             }
 
-            mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->GetReserveForJumpStubs());
-            if (mem == NULL)
+            allocMem(pCodeHeap->pHeap);
+            if (pHotCode == NULL)
                 ThrowOutOfMemory();
-            _ASSERTE(mem);
+            _ASSERTE(pHotCode);
         }
     }
 
@@ -3195,21 +3233,31 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
     // Record the pCodeHeap value into ppCodeHeap
     *ppCodeHeap = pCodeHeap;
 
-    _ASSERTE((TADDR)mem >= pCodeHeap->startAddress);
+    _ASSERTE((TADDR)pHotCode >= pCodeHeap->startAddress);
 
-    if (((TADDR) mem)+blockSize > (TADDR)pCodeHeap->endAddress)
+    // Update the CodeHeap end addresses
+    if (((TADDR)pHotCode + blockSize) > (TADDR)pCodeHeap->bottomEndAddress)
     {
-        // Update the CodeHeap endAddress
-        pCodeHeap->endAddress = (TADDR)mem+blockSize;
+        pCodeHeap->bottomEndAddress = (TADDR)pHotCode + blockSize;
     }
 
-    return mem;
+    if (coldCodeSize > 0)
+    {
+        *ppColdCode = pColdCode;
+
+        if ((TADDR)pColdCode < (TADDR)pCodeHeap->topStartAddress)
+        {
+            pCodeHeap->topStartAddress = (TADDR)pColdCode - coldHeaderSize;
+        }
+    }
+
+    return pHotCode;
 }
 
 template<typename TCodeHeader>
-void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
-                                 size_t* pAllocatedSize, HeapList** ppCodeHeap
-                               , BYTE** ppRealHeader
+void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t hotBlockSize, size_t coldBlockSize, size_t reserveForJumpStubs, unsigned alignment,
+                                 void** ppCodeHeader, void** ppCodeHeaderRW, void** ppColdCodeHeader, void** ppColdCodeHeaderRW,
+                                 size_t* pAllocatedHotSize, size_t* pAllocatedColdSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
                                , UINT nUnwindInfos
                                 )
 {
@@ -3231,16 +3279,30 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     }
 #endif
 
+    bool isDynamic = false;
+
+#if defined(FEATURE_JIT_PITCHING)
+    isDynamic = pMD->IsPitchable() && (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMethodSizeThreshold) < (hotBlockSize + coldBlockSize));
+#endif
+
+    CodeHeapRequestInfo requestInfo(pMD);
+
+    if (isDynamic)
+    {
+        requestInfo.SetDynamicDomain();
+    }
+
     //
     // Compute header layout
     //
 
-    SIZE_T totalSize = blockSize;
+    SIZE_T hotAllocSize = hotBlockSize;
 
-    TCodeHeader * pCodeHdr = NULL;
-    TCodeHeader * pCodeHdrRW = NULL;
+    TCodeHeader *    pCodeHdr       = NULL;
+    TCodeHeader *    pCodeHdrRW     = NULL;
+    ColdCodeHeader * pColdCodeHdr   = NULL;
+    ColdCodeHeader * pColdCodeHdrRW = NULL;
 
-    CodeHeapRequestInfo requestInfo(pMD);
     SIZE_T realHeaderSize;
 #ifdef FEATURE_INTERPRETER
     if (std::is_same<TCodeHeader, InterpreterCodeHeader>::value)
@@ -3261,9 +3323,9 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     // if this is a LCG method then we will be allocating the RealCodeHeader
     // following the code so that the code block can be removed easily by
     // the LCG code heap.
-    if (requestInfo.IsDynamicDomain())
+    if (isDynamic)
     {
-        totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
+        hotAllocSize = ALIGN_UP(hotAllocSize, sizeof(void*)) + realHeaderSize;
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
@@ -3278,7 +3340,8 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
             : &dummyRecordedCodePtr;
 
         *ppCodeHeap = NULL;
-        TADDR pCode = (TADDR) AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), totalSize, alignment, ppCodeHeap);
+        TADDR pColdCode = 0;
+        TADDR pCode = (TADDR) AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), hotAllocSize, coldBlockSize, alignment, ppCodeHeap, (void**)&pColdCode);
         _ASSERTE(*ppCodeHeap);
         _ASSERTE(IS_ALIGNED(pCode, alignment));
 
@@ -3286,8 +3349,15 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         *recordedCodePtr = (void*)pCode;
 
         pCodeHdr = ((TCodeHeader *)pCode) - 1;
+        *pAllocatedHotSize = sizeof(TCodeHeader) + hotAllocSize;
 
-        *pAllocatedSize = sizeof(TCodeHeader) + totalSize;
+        if (coldBlockSize > 0)
+        {
+            _ASSERTE(pColdCode != 0);
+            // AllocCodeWorker returned a pointer to the start of cold *code* (just past the cold header).
+            pColdCodeHdr        = ((ColdCodeHeader *)pColdCode) - 1;
+            *pAllocatedColdSize = sizeof(ColdCodeHeader) + coldBlockSize;
+        }
 
         if (ExecutableAllocator::IsWXORXEnabled()
 #ifdef FEATURE_INTERPRETER
@@ -3295,17 +3365,23 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
 #endif // FEATURE_INTERPRETER
         )
         {
-            pCodeHdrRW = (TCodeHeader *)new BYTE[*pAllocatedSize];
+            pCodeHdrRW = (TCodeHeader *)new BYTE[*pAllocatedHotSize];
+
+            if (coldBlockSize > 0)
+            {
+                pColdCodeHdrRW = (ColdCodeHeader *)new BYTE[*pAllocatedColdSize];
+            }
         }
         else
         {
-            pCodeHdrRW = pCodeHdr;
+            pCodeHdrRW     = pCodeHdr;
+            pColdCodeHdrRW = pColdCodeHdr;
         }
 
-        if (requestInfo.IsDynamicDomain())
+        if (isDynamic)
         {
             // Set the real code header to the writeable mapping so that we can set its members via the CodeHeader methods below
-            pCodeHdrRW->SetRealCodeHeader((BYTE *)(pCodeHdrRW + 1) + ALIGN_UP(blockSize, sizeof(void*)));
+            ((CodeHeader*)pCodeHdrRW)->SetRealCodeHeader((BYTE *)(pCodeHdrRW + 1) + ALIGN_UP(hotBlockSize, sizeof(void*)));
         }
         else
         {
@@ -3313,7 +3389,7 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
             //
             // allocate the real header in the low frequency heap
             BYTE* pRealHeader = (BYTE*)(void*)pMD->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(realHeaderSize));
-            pCodeHdrRW->SetRealCodeHeader(pRealHeader);
+            ((CodeHeader*)pCodeHdrRW)->SetRealCodeHeader(pRealHeader);
         }
 
         pCodeHdrRW->SetDebugInfo(NULL);
@@ -3338,11 +3414,12 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         if (std::is_same<TCodeHeader, CodeHeader>::value)
         {
             ((CodeHeader*)pCodeHdrRW)->SetNumberOfUnwindInfos(nUnwindInfos);
+            ((CodeHeader*)pCodeHdrRW)->SetColdCodeHeader(pColdCodeHdr);
         }
 
-        if (requestInfo.IsDynamicDomain())
+        if (isDynamic)
         {
-            *ppRealHeader = (BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*));
+            *ppRealHeader = (BYTE*)pCode + ALIGN_UP(hotBlockSize, sizeof(void*));
         }
         else
         {
@@ -3350,19 +3427,28 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         }
     }
 
-    *ppCodeHeader = pCodeHdr;
+    *ppCodeHeader   = pCodeHdr;
     *ppCodeHeaderRW = pCodeHdrRW;
+
+    if (coldBlockSize > 0)
+    {
+        pColdCodeHdrRW->pCodeHeader = pCodeHdr;
+        *ppColdCodeHeader           = pColdCodeHdr;
+        *ppColdCodeHeaderRW         = pColdCodeHdrRW;
+    }
 }
 
-template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
-                                                      size_t* pAllocatedSize, HeapList** ppCodeHeap
+template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t hotBlockSize, size_t coldBlockSize, size_t reserveForJumpStubs, unsigned alignment,
+                                                      void** ppCodeHeader, void** ppCodeHeaderRW, void** ppColdCodeHeader, void** ppColdCodeHeaderRW,
+                                                      size_t* pAllocatedHotSize, size_t* pAllocatedColdSize, HeapList** ppCodeHeap
                                                     , BYTE** ppRealHeader
                                                     , UINT nUnwindInfos
                                                      );
 
 #ifdef FEATURE_INTERPRETER
-template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
-                                                                 size_t* pAllocatedSize, HeapList** ppCodeHeap
+template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t hotBlockSize, size_t coldBlockSize, size_t reserveForJumpStubs, unsigned alignment,
+                                                                 void** ppCodeHeader, void** ppCodeHeaderRW, void** ppColdCodeHeader, void** ppColdCodeHeaderRW,
+                                                                 size_t* pAllocatedHotSize, size_t* pAllocatedColdSize, HeapList** ppCodeHeap
                                                                , BYTE** ppRealHeader
                                                                , UINT nUnwindInfos
                                                                 );
@@ -3427,9 +3513,9 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
         }
         else
         {
-            BYTE * lastAddr = (BYTE *) pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize;
+            BYTE * lastAddr = (BYTE *) pCodeHeap->topStartAddress;
 
-            BYTE * loRequestAddr  = (BYTE *) pCodeHeap->endAddress;
+            BYTE * loRequestAddr  = (BYTE *) pCodeHeap->bottomEndAddress;
             BYTE * hiRequestAddr = loRequestAddr + pInfo->GetRequestSize() + BYTES_PER_BUCKET;
             if (hiRequestAddr <= lastAddr - pCodeHeap->reserveForJumpStubs)
             {
@@ -3445,10 +3531,10 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
         // Calculate the byte range that can ever be returned by
         // an allocation in this HeapList element
         //
-        BYTE * firstAddr      = (BYTE *) pCodeHeap->startAddress;
-        BYTE * lastAddr       = (BYTE *) pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize;
+        BYTE * firstAddr = (BYTE *) pCodeHeap->startAddress;
+        BYTE * lastAddr  = (BYTE *) pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize;
 
-        _ASSERTE(pCodeHeap->startAddress <= pCodeHeap->endAddress);
+        _ASSERTE(pCodeHeap->startAddress <= pCodeHeap->bottomEndAddress);
         _ASSERTE(firstAddr <= lastAddr);
 
         if (pInfo->IsDynamicDomain())
@@ -3477,7 +3563,7 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
             // Calculate the byte range that would be allocated for the
             // next allocation request into [loRequestAddr..hiRequestAddr]
             //
-            BYTE * loRequestAddr  = (BYTE *) pCodeHeap->endAddress;
+            BYTE * loRequestAddr  = (BYTE *) pCodeHeap->bottomEndAddress;
             BYTE * hiRequestAddr  = loRequestAddr + pInfo->GetRequestSize() + BYTES_PER_BUCKET;
             _ASSERTE(loRequestAddr <= hiRequestAddr);
 
@@ -3487,6 +3573,10 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
             if ((pInfo->GetLoAddr() <= loRequestAddr)   &&
                 (hiRequestAddr   <= pInfo->GetHiAddr()))
             {
+                // Adjust lastAddr to the start of the heap's top region
+                // so we don't consider overwriting an existing allocation.
+                lastAddr = (BYTE *) pCodeHeap->topStartAddress;
+
                 // Additionally hiRequestAddr must also be less than or equal to lastAddr.
                 // If throwOnOutOfMemoryWithinRange is not set, conserve reserveForJumpStubs until when it is really needed.
                 if (hiRequestAddr <= lastAddr - (pInfo->GetThrowOnOutOfMemoryWithinRange() ? 0 : pCodeHeap->reserveForJumpStubs))
@@ -3562,7 +3652,7 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
     {
         CrstHolder ch(&m_CodeHeapLock);
 
-        mem = (TADDR) AllocCodeWorker(&requestInfo, sizeof(CodeHeader), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
+        mem = (TADDR) AllocCodeWorker(&requestInfo, sizeof(CodeHeader), blockSize, 0, CODE_SIZE_ALIGN, &pCodeHeap, NULL);
         if (mem == (TADDR)0)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
@@ -3622,7 +3712,7 @@ void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment
     {
         CrstHolder ch(&m_CodeHeapLock);
 
-        mem = (TADDR) AllocCodeWorker(&requestInfo, sizeof(CodeHeader), blockSize, alignment, &pCodeHeap);
+        mem = (TADDR) AllocCodeWorker(&requestInfo, sizeof(CodeHeader), blockSize, 0, alignment, &pCodeHeap, NULL);
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
@@ -4325,7 +4415,7 @@ void EECodeGenManager::DeleteCodeHeap(HeapList *pHeapList)
 
     LOG((LF_JIT, LL_INFO100, "DeleteCodeHeap start %p end %p\n",
                               (const BYTE*)pHeapList->startAddress,
-                              (const BYTE*)pHeapList->endAddress     ));
+                              (const BYTE*)pHeapList->startAddress + pHeapList->maxCodeHeapSize));
 
     CodeHeap* pHeap = pHeapList->pHeap;
     delete pHeap;
@@ -4772,8 +4862,15 @@ PCODE EEJitManager::GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, D
 {
     WRAPPER_NO_CONTRACT;
 
-    CodeHeader * pHeader = GetCodeHeader(MethodToken);
-    return pHeader->GetCodeStartAddress() + relOffset;
+    MethodRegionInfo methodRegionInfo;
+    JitTokenToMethodRegionInfo(MethodToken, &methodRegionInfo);
+
+    if (relOffset < methodRegionInfo.hotSize)
+        return methodRegionInfo.hotStartAddress + relOffset;
+
+    SIZE_T coldOffset = relOffset - methodRegionInfo.hotSize;
+    _ASSERTE(coldOffset < methodRegionInfo.coldSize);
+    return methodRegionInfo.coldStartAddress + coldOffset;
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -4808,7 +4905,24 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
     if (start == (TADDR)0)
         return FALSE;
 
-    TCodeHeader * pCHdr = (DPTR(TCodeHeader))(start - sizeof(TCodeHeader));
+    METHODTOKEN MethodToken(pRangeSection, dac_cast<TADDR>(start - sizeof(TCodeHeader)));
+    TCodeHeader * pCHdr;
+
+    if (std::is_same<TCodeHeader, CodeHeader>::value)
+    {
+        pCHdr = (TCodeHeader*)EEJitManager::GetCodeHeader(MethodToken);
+    }
+#ifdef FEATURE_INTERPRETER
+    else if (std::is_same<TCodeHeader, InterpreterCodeHeader>::value)
+    {
+        pCHdr = (TCodeHeader*)InterpreterJitManager::GetCodeHeader(MethodToken);
+    }
+#endif // FEATURE_INTERPRETER
+    else
+    {
+        return FALSE;
+    }
+
     if (pCHdr->IsStubCodeBlock())
         return FALSE;
 
@@ -4816,12 +4930,18 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
 
     if (pCodeInfo)
     {
-        pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(pCHdr));
+        pCodeInfo->m_methodToken = MethodToken;
 
-        // This can be counted on for Jitted code. For NGEN code in the case
-        // where we have hot/cold splitting this isn't valid and we need to
-        // take into account cold code.
-        pCodeInfo->m_relOffset = (DWORD)(PCODEToPINSTR(currentPC) - start);
+        TADDR relOffset = PCODEToPINSTR(currentPC) - start;
+        if (std::is_same<TCodeHeader, CodeHeader>::value && MethodToken.IsCold())
+        {
+            MethodRegionInfo methodRegionInfo;
+            dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)
+                ->JitTokenToMethodRegionInfo(MethodToken, &methodRegionInfo);
+            relOffset += methodRegionInfo.hotSize;
+        }
+        _ASSERTE(FitsInU4(relOffset));
+        pCodeInfo->m_relOffset = static_cast<DWORD>(relOffset);
 
         // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
         if (pCHdr->MayHaveFunclets())
@@ -5019,7 +5139,7 @@ TADDR EECodeGenManager::FindMethodCode(RangeSection * pRangeSection, PCODE curre
     HeapList *pHp = pRangeSection->_pHeapList;
 
     if ((currentPC < pHp->startAddress) ||
-        (currentPC > pHp->endAddress))
+        (currentPC > (pHp->startAddress + pHp->maxCodeHeapSize)))
     {
         return 0;
     }
@@ -5230,13 +5350,22 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         return NULL;
     }
 
-    CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(GetCodeHeader(pCodeInfo->GetMethodToken()));
-
-    DWORD address = RUNTIME_FUNCTION__BeginAddress(pHeader->GetUnwindInfo(0)) + pCodeInfo->GetRelOffset();
+    const METHODTOKEN& MethodToken = pCodeInfo->GetMethodToken();
+    CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(GetCodeHeader(MethodToken));
 
     // We need the module base address to calculate the end address of a function from the functionEntry.
     // Thus, save it off right now.
     TADDR baseAddress = pCodeInfo->GetModuleBase();
+    DWORD address;
+
+    if (MethodToken.IsCold())
+    {
+        address = (DWORD)(GetCodeAddressForRelOffset(MethodToken, pCodeInfo->GetRelOffset()) - baseAddress);
+    }
+    else
+    {
+        address = RUNTIME_FUNCTION__BeginAddress(pHeader->GetUnwindInfo(0)) + pCodeInfo->GetRelOffset();
+    }
 
     // NOTE: We could binary search here, if it would be helpful (e.g., large number of funclets)
     for (UINT iUnwindInfo = 0; iUnwindInfo < pHeader->GetNumberOfUnwindInfos(); iUnwindInfo++)
@@ -5267,11 +5396,25 @@ DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD
     _ASSERTE(pCH->GetNumberOfUnwindInfos() >= 1);
 
     DWORD parentBeginRva = RUNTIME_FUNCTION__BeginAddress(pCH->GetUnwindInfo(0));
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+    MethodRegionInfo methodRegionInfo;
+    JitTokenToMethodRegionInfo(MethodToken, &methodRegionInfo);
+#endif // TARGET_ARM64 || TARGET_AMD64
 
     DWORD nFunclets = 0;
     for (COUNT_T iUnwindInfo = 1; iUnwindInfo < pCH->GetNumberOfUnwindInfos(); iUnwindInfo++)
     {
         PTR_RUNTIME_FUNCTION pFunctionEntry = pCH->GetUnwindInfo(iUnwindInfo);
+
+#ifdef TARGET_AMD64
+        PTR_UNWIND_INFO pUnwindInfo = dac_cast<PTR_UNWIND_INFO>(
+            moduleBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pFunctionEntry));
+        if ((pUnwindInfo->Flags & UNW_FLAG_CHAININFO) != 0)
+        {
+            // The AMD64 cold root is not a funclet.
+            continue;
+        }
+#endif // TARGET_AMD64
 
 #if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS)
         if (IsFunctionFragment(moduleBase, pFunctionEntry))
@@ -5282,7 +5425,24 @@ DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD
 #endif // EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
 
         DWORD funcletBeginRva = RUNTIME_FUNCTION__BeginAddress(pFunctionEntry);
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+        TADDR funcletStartAddress = moduleBase + funcletBeginRva;
+        DWORD relParentOffsetToFunclet;
+        if ((methodRegionInfo.coldSize != 0) && (funcletStartAddress >= methodRegionInfo.coldStartAddress))
+        {
+            _ASSERTE(funcletStartAddress < methodRegionInfo.coldStartAddress + methodRegionInfo.coldSize);
+            SIZE_T relOffset =
+                methodRegionInfo.hotSize + (funcletStartAddress - methodRegionInfo.coldStartAddress);
+            _ASSERTE(FitsInU4(relOffset));
+            relParentOffsetToFunclet = static_cast<DWORD>(relOffset);
+        }
+        else
+        {
+            relParentOffsetToFunclet = funcletBeginRva - parentBeginRva;
+        }
+#else
         DWORD relParentOffsetToFunclet = funcletBeginRva - parentBeginRva;
+#endif // TARGET_ARM64 || TARGET_AMD64
 
         if (nFunclets < dwLength)
             pStartFuncletOffsets[nFunclets] = relParentOffsetToFunclet;
@@ -5452,7 +5612,13 @@ void EECodeGenManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
 
         DacEnumMemoryRegion(heap->startAddress, (ULONG32)
-                            (heap->endAddress - heap->startAddress));
+                            (heap->bottomEndAddress - heap->startAddress));
+
+        if (heap->topStartAddress != (heap->startAddress + heap->maxCodeHeapSize))
+        {
+            DacEnumMemoryRegion(heap->topStartAddress, (ULONG32)
+                                (heap->startAddress + heap->maxCodeHeapSize - heap->topStartAddress));
+        }
 
         if (heap->pHdrMap.IsValid())
         {
@@ -5719,6 +5885,8 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
         if (start == (TADDR)0)
             return FALSE;
         CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
+        if (start >= pRS->_pHeapList->topStartAddress)
+            pCHdr = (CodeHeader*)(((ColdCodeHeader*)pCHdr)->pCodeHeader);
         if (!pCHdr->IsStubCodeBlock())
             return TRUE;
     }
