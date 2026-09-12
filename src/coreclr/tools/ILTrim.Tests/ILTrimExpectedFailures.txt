@@ -82,6 +82,7 @@ DataFlow.CompilerGeneratedTypes
 DataFlow.CompilerGeneratedTypesNet90
 DataFlow.CompilerGeneratedTypesRelease
 DataFlow.CompilerGeneratedTypesReleaseNet90
+DataFlow.ComplexTypeHandling
 DataFlow.ConstructorDataFlow
 DataFlow.DeconstructFieldTarget
 DataFlow.DeconstructUserDefinedConversion
