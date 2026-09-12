@@ -153,6 +153,50 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             propertyValidation.ValidateActiveContext(result, newPropertyName);
         }
 
+        [Fact]
+        public void GetTrustedPlatformAssemblies()
+        {
+            const string propertyName = "TRUSTED_PLATFORM_ASSEMBLIES";
+            string[] args =
+            {
+                HostContextArg,
+                Scenario.App,
+                CheckProperties.Get,
+                sharedState.HostFxrPath,
+                sharedState.AppPath,
+                propertyName
+            };
+
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should().Pass()
+                .And.GetRuntimePropertyValueContaining(LogPrefix.App, propertyName, sharedState.AppPath);
+        }
+
+        [Fact]
+        public void SetTrustedPlatformAssemblies()
+        {
+            const string propertyName = "TRUSTED_PLATFORM_ASSEMBLIES";
+            string[] args =
+            {
+                HostContextArg,
+                Scenario.App,
+                CheckProperties.Set,
+                sharedState.HostFxrPath,
+                sharedState.AppPath,
+                propertyName
+            };
+
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should().Pass()
+                .And.SetRuntimePropertyValue(LogPrefix.App, propertyName)
+                .And.HavePropertyMock(propertyName, PropertyValueFromHost)
+                .And.HaveStdOutContaining("mock host_runtime_contract[get_assembly_names] = 0");
+        }
+
         [Theory]
         [InlineData(CheckProperties.None)]
         [InlineData(CheckProperties.Get)]

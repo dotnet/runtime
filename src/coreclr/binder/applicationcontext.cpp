@@ -15,6 +15,7 @@
 #include "assemblyhashtraits.hpp"
 #include "stringarraylist.h"
 #include "failurecache.hpp"
+#include "hostinformation.h"
 #include "utils.hpp"
 #include "ex.h"
 #include "clr/fs/path.h"
@@ -91,51 +92,54 @@ namespace BINDER_SPACE
         //
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
 
-        sTrustedPlatformAssemblies.Normalize();
-        for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
+        const char* const* assemblyNames;
+        size_t assemblyCount;
+        if (HostInformation::GetAssemblyNames(&assemblyNames, &assemblyCount))
         {
-            SString fileName;
-            SString simpleName;
-            HRESULT pathResult = S_OK;
-            IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ false, fileName, simpleName));
-            if (pathResult == S_FALSE)
+            for (size_t i = 0; i < assemblyCount; i++)
             {
-                break;
-            }
+                StackSString simpleName(SString::Utf8, assemblyNames[i]);
+                _ASSERT(!simpleName.IsEmpty());
 
-            const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
-            if (pExistingEntry != nullptr)
-            {
-                continue;
-            }
+                if (m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode()) != nullptr)
+                    continue;
 
-            LPWSTR wszSimpleName = nullptr;
-            if (pExistingEntry == nullptr)
-            {
-                wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
-                if (wszSimpleName == nullptr)
-                {
-                    GO_WITH_HRESULT(E_OUTOFMEMORY);
-                }
+                LPWSTR wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
                 wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
+
+                SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, nullptr };
+                m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
             }
-            else
+        }
+        else
+        {
+            sTrustedPlatformAssemblies.Normalize();
+            for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
             {
-                wszSimpleName = pExistingEntry->m_wszSimpleName;
+                SString fileName;
+                SString simpleName;
+                HRESULT pathResult = S_OK;
+                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ false, fileName, simpleName));
+                if (pathResult == S_FALSE)
+                {
+                    break;
+                }
+
+                const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
+                if (pExistingEntry != nullptr)
+                {
+                    continue;
+                }
+
+                LPWSTR wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
+                wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
+
+                LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
+                wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
+
+                SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, wszFileName };
+                m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
             }
-
-            LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
-            if (wszFileName == nullptr)
-            {
-                GO_WITH_HRESULT(E_OUTOFMEMORY);
-            }
-            wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
-
-            SimpleNameToFileNameMapEntry mapEntry;
-            mapEntry.m_wszSimpleName = wszSimpleName;
-            mapEntry.m_wszILFileName = wszFileName;
-
-            m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
         }
 
         //
