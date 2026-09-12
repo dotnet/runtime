@@ -109,6 +109,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
+        /// <remarks>
+        ///   Messages must be supplied in the same order in which the corresponding sender context encrypted them.
+        /// </remarks>
         public byte[] Open(byte[] ciphertext, byte[]? associatedData = null)
         {
             ArgumentNullException.ThrowIfNull(ciphertext);
@@ -152,6 +155,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
+        /// <remarks>
+        ///   Messages must be supplied in the same order in which the corresponding sender context encrypted them.
+        /// </remarks>
         public void Open(
             ReadOnlySpan<byte> ciphertext,
             Span<byte> plaintext,
@@ -193,13 +199,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The recipient's message limit has been reached, or an error occurred during decryption.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed, the ciphertext contains
-        ///   enough bytes for the authentication tag, and the plaintext buffer has the exact required length.
-        ///   Implementations must maintain the recipient's message sequence, reject decryption when the message
-        ///   limit is reached, and fill the entire plaintext buffer on success. Authentication failures must not
-        ///   advance the message sequence or leave unauthenticated plaintext in the buffer.
-        /// </remarks>
         protected abstract void OpenCore(
             ReadOnlySpan<byte> ciphertext,
             Span<byte> plaintext,
@@ -226,11 +225,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   The maximum export length is 255 times the hash output length for HKDF, or 65,535 bytes for SHAKE.
-        ///   Exporting a secret does not advance the recipient's message sequence.
-        ///   The caller is responsible for protecting the returned secret and clearing it when no longer needed.
-        /// </remarks>
         public byte[] Export(ReadOnlySpan<byte> exporterContext, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
@@ -282,10 +276,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   The maximum export length is 255 times the hash output length for HKDF, or 65,535 bytes for SHAKE.
-        ///   The caller is responsible for protecting the returned secret and clearing it when no longer needed.
-        /// </remarks>
         public byte[] Export(byte[] exporterContext, int length)
         {
             ArgumentNullException.ThrowIfNull(exporterContext);
@@ -316,11 +306,6 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
-        /// <remarks>
-        ///   The maximum export length is 255 times the hash output length for HKDF, or 65,535 bytes for SHAKE.
-        ///   Exporting a secret does not advance the recipient's message sequence.
-        ///   The caller is responsible for protecting the secret and clearing the buffer when no longer needed.
-        /// </remarks>
         public void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
         {
             int maximumLength = Suite.KdfMetadata.MaximumExportLength;
@@ -353,11 +338,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while deriving the exported secret.
         /// </exception>
-        /// <remarks>
-        ///   The calling method has verified that this instance is not disposed and the destination length
-        ///   does not exceed the KDF's maximum export length. The destination may be empty.
-        ///   Implementations must fill the entire destination on success without advancing the recipient's message sequence.
-        /// </remarks>
         protected abstract void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination);
 
         /// <summary>
