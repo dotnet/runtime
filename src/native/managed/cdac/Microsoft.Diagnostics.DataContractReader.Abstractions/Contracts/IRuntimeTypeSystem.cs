@@ -183,6 +183,10 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
     bool IsByRefLike(ITypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the MethodTable represents an inline array.
+    bool IsInlineArray(ITypeHandle typeHandle) => throw new NotImplementedException();
+    // Returns the size of a single inline-array element represented by a field type.
+    uint GetInlineArrayElementSize(CorElementType fieldType, ITypeHandle? nestedType) => throw new NotImplementedException();
     // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
     // to 4, 8, or 16. Returns false otherwise (including on targets that don't
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in

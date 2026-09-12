@@ -28,8 +28,10 @@ internal sealed partial class EEClass : IData<EEClass>
     [Field] public partial TargetPointer OptionalFields { get; }
 
     private const uint HasLayoutFlag = 0x00000040;
+    private const uint InlineArrayFlag = 0x00010000;
 
     [Field] public partial uint? VMFlags { get; }
 
     public bool HasLayout => VMFlags.HasValue && (VMFlags.Value & HasLayoutFlag) != 0;
+    public bool IsInlineArray => VMFlags.HasValue && (VMFlags.Value & InlineArrayFlag) != 0;
 }

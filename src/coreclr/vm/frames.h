@@ -77,8 +77,6 @@
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectValueClassFrame
-//    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
 //    |
 //    +-DebuggerExitFrame - marker frame to indicate control flow has left the runtime
@@ -1701,9 +1699,14 @@ struct cdac_data<DynamicHelperFrame>
 // There is a chain of GCFrames on a Thread, separate from the
 // explicit frames derived from the Frame class.
 //------------------------------------------------------------------------
+struct ValueClassInfo;
+typedef DPTR(struct ValueClassInfo) PTR_ValueClassInfo;
+typedef DPTR(PTR_ValueClassInfo) PTR_PTR_ValueClassInfo;
+
 class GCFrame
 {
 public:
+    static const UINT GCFRAME_FLAG_VALUECLASS = 0x80000000;
 
 #ifndef DACCESS_COMPILE
     //--------------------------------------------------------------------
@@ -1716,6 +1719,7 @@ public:
     }
 
     GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags);
+    GCFrame(Thread *pThread, ValueClassInfo **ppValueClasses);
     ~GCFrame();
 
     // Push and pop this frame from the thread's stack.
@@ -1733,7 +1737,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         for (UINT i = 0; i < m_numObjRefs; i++) {
-            if (ppORef == m_pObjRefs + i) {
+            if (ppORef == m_pointers.m_pObjRefs + i) {
                 return TRUE;
             }
         }
@@ -1768,13 +1772,18 @@ public:
 private:
     PTR_GCFrame   m_Next;
     PTR_Thread    m_pCurThread;
-    PTR_OBJECTREF m_pObjRefs;
+    union
+    {
+        PTR_OBJECTREF           m_pObjRefs;
+        PTR_PTR_ValueClassInfo  m_ppValueClasses;
+    } m_pointers;
     UINT          m_numObjRefs;
     UINT          m_gcFlags;
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
 
+    friend class CoreLibBinder;
     friend struct ::cdac_data<GCFrame>;
 };
 
@@ -1782,15 +1791,13 @@ template<>
 struct cdac_data<GCFrame>
 {
     static constexpr size_t Next = offsetof(GCFrame, m_Next);
-    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pObjRefs);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pointers.m_pObjRefs);
     static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
+    static constexpr size_t ValueClassInfoList = offsetof(GCFrame, m_pointers.m_ppValueClasses);
     static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------
-
-struct ValueClassInfo;
-typedef DPTR(struct ValueClassInfo) PTR_ValueClassInfo;
 
 struct ValueClassInfo
 {
@@ -1803,45 +1810,6 @@ struct ValueClassInfo
     {
     }
 };
-
-//-----------------------------------------------------------------------------
-// ProtectValueClassFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectValueClassFrame) PTR_ProtectValueClassFrame;
-
-class ProtectValueClassFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectValueClassFrame()
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push();
-    }
-
-    ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(vcInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
-
-    ValueClassInfo ** GetValueClassInfoList()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pVCInfo;
-    }
-
-private:
-
-    ValueClassInfo *m_pVCInfo;
-};
-
 
 #ifdef _DEBUG
 BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef);

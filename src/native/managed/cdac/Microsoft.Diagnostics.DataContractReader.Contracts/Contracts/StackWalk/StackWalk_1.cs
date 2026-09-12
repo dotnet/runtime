@@ -5,8 +5,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -429,7 +427,7 @@ internal partial class StackWalk_1 : IStackWalk
     // Reports each object reference protected by the thread's GCFrame (GCPROTECT) chain.
     // GCFrame::GcScanRoots reports m_pObjRefs[0..m_numObjRefs), using an interior promotion when
     // m_gcFlags != 0; the GC reports the same set in gcenv.ee.cpp ScanStackRoots.
-    private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
+    protected virtual void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
     {
         ulong pointerSize = (ulong)_target.PointerSize;
         HashSet<TargetPointer> seen = [];

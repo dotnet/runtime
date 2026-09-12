@@ -159,7 +159,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
 | `FuncEvalFrame` | `ReturnAddress` | `CodePointer` | Return address of the frame |
-| `GCFrame` | `GCFlags` | `uint32` | GC_CALL_* promotion flags applied when reporting the protected slots |
+| `GCFrame` | `GCFlags` | `uint32` | GC_CALL_* promotion flags or the value-class discriminator applied when reporting protected data |
 | `GCFrame` | `Next` | `pointer` | Pointer to the next GCFrame toward the top of the chain |
 | `GCFrame` | `NumObjRefs` | `uint32` | Count of protected object reference slots starting at ObjRefs |
 | `GCFrame` | `ObjRefs` | `pointer` | Pointer to the array of protected object reference slots |
@@ -771,7 +771,7 @@ See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GC
 
 After walking the thread's frames, `WalkStackReferences` reports two additional sets of roots that the GC keeps alive but that are not surfaced by per-frame GC info (matching native `gcenv.ee.cpp` `ScanStackRoots`):
 
-- **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame` (obtained via the `Thread` contract's `GetThreadData`), each `GCFrame` is walked via its `Next` pointer until TargetPointer.Null is reached. For each node, the `NumObjRefs` slots starting at `ObjRefs` are reported, applying the node's `GCFlags` (`GC_CALL_INTERIOR` / `GC_CALL_PINNED`) as the promotion flags. This mirrors native `GCFrame::GcScanRoots`.
+- **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame` (obtained via the `Thread` contract's `GetThreadData`), each `GCFrame` is walked via its `Next` pointer until TargetPointer.Null is reached. Each node reports the `NumObjRefs` slots starting at `ObjRefs`, applying `GC_CALL_INTERIOR` / `GC_CALL_PINNED` from `GCFlags`. This mirrors native `GCFrame::GcScanRoots`.
 - **Exception tracker (ExInfo) chain**: starting from the thread's exception tracker, each in-flight exception object (the current one and any superseded/nested ones reached via `PreviousNestedInfo`) is reported through its thrown-object slot.
 
 Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to the GCFrame / ExInfo node address (the node lives on the stack). A `GCFrame` node belongs to a separate chain from the explicit `Frame` chain, and an ExInfo node is likewise not a capital-F `Frame`, so neither is reported with the `Frame` source type. Both use the `Other` source type, which marks a root reported outside the per-frame walk.
@@ -818,3 +818,33 @@ The x86 GCInfo decoder lives under the [GCInfo contract](GCInfo.md) at `src/nati
 The x86 architecture uses a custom unwinding algorithm defined in `gc_unwind_x86.inl`. The cDAC uses a copy of this algorithm ported to managed code in `X86Unwinder.cs`.
 
 Currently there isn't great documentation on the algorithm, beyond inspecting the implementations.
+
+## Version 2
+
+Version 2 uses the Version 1 stack-walking algorithm and adds support for reporting
+off-heap value classes from the thread's GCFrame chain. A GCFrame whose `GCFlags`
+contains `GCFrameValueClassFlag` uses its `ValueClassInfoList` union arm to identify
+the unboxed value classes whose embedded references
+must be reported using each value class's method-table GC descriptor. Byref-like
+inline arrays repeat their element's interior-pointer layout across the full value.
+
+<!-- BEGIN GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Added | `GCFrame` | `ValueClassInfoList` | `pointer` | Pointer to the head pointer of the off-heap value-class list protected by this GCFrame |
+| Added | `ValueClassInfo` | `Data` | `pointer` | Pointer to the unboxed value-class data |
+| Added | `ValueClassInfo` | `MethodTable` | `pointer` | Method table describing the value-class layout |
+| Added | `ValueClassInfo` | `Next` | `pointer` | Pointer to the next protected value class |
+
+### Global variable changes from `c1`
+
+| Change | Global | Type | Meaning |
+| --- | --- | --- | --- |
+| Added | `GCFrameValueClassFlag` | `uint32` | GCFrame flag identifying a value-class payload |
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->

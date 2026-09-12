@@ -77,8 +77,16 @@ CDAC_TYPE_INDETERMINATE(GCFrame)
 CDAC_TYPE_FIELD(GCFrame, T_POINTER, Next, cdac_data<GCFrame>::Next)
 CDAC_TYPE_FIELD(GCFrame, T_POINTER, ObjRefs, cdac_data<GCFrame>::ObjRefs)
 CDAC_TYPE_FIELD(GCFrame, T_UINT32, NumObjRefs, cdac_data<GCFrame>::NumObjRefs)
+CDAC_TYPE_FIELD(GCFrame, T_POINTER, ValueClassInfoList, cdac_data<GCFrame>::ValueClassInfoList)
 CDAC_TYPE_FIELD(GCFrame, T_UINT32, GCFlags, cdac_data<GCFrame>::GCFlags)
 CDAC_TYPE_END(GCFrame)
+
+CDAC_TYPE_BEGIN(ValueClassInfo)
+CDAC_TYPE_SIZE(sizeof(ValueClassInfo))
+CDAC_TYPE_FIELD(ValueClassInfo, T_POINTER, Next, offsetof(ValueClassInfo, pNext))
+CDAC_TYPE_FIELD(ValueClassInfo, T_POINTER, MethodTable, offsetof(ValueClassInfo, pMT))
+CDAC_TYPE_FIELD(ValueClassInfo, T_POINTER, Data, offsetof(ValueClassInfo, pData))
+CDAC_TYPE_END(ValueClassInfo)
 
 CDAC_TYPE_BEGIN(RuntimeThreadLocals)
 CDAC_TYPE_INDETERMINATE(RuntimeThreadLocals)
@@ -1733,6 +1741,7 @@ CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
 
     #include "frames.h"
 #undef FRAME_TYPE_NAME
+CDAC_GLOBAL(GCFrameValueClassFlag, T_UINT32, GCFrame::GCFRAME_FLAG_VALUECLASS)
 
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, T_UINT8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
 
@@ -1902,10 +1911,10 @@ CDAC_GLOBAL_CONTRACT(PrecodeStubs, c1)
 CDAC_GLOBAL_CONTRACT(ReJIT, c1)
 #endif // PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(RuntimeInfo, c1)
-CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, c1)
+CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, c2)
 CDAC_GLOBAL_CONTRACT(SHash, c1)
 CDAC_GLOBAL_CONTRACT(Signature, c1)
-CDAC_GLOBAL_CONTRACT(StackWalk, c1)
+CDAC_GLOBAL_CONTRACT(StackWalk, c2)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
 CDAC_GLOBAL_CONTRACT(SyncBlock, c1)
 CDAC_GLOBAL_CONTRACT(Thread, c1)
