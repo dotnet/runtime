@@ -17,6 +17,13 @@ parameters:
 
 steps:
   - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+    - template: /eng/pipelines/coreclr/templates/setup-roslyn-cache.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup }}
+        archType: ${{ parameters.archType }}
+        nameSuffix: ${{ parameters.nameSuffix }}
+
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
