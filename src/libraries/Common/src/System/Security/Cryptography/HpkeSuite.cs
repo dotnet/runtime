@@ -87,9 +87,6 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the decapsulation key for the cipher suite, in bytes.
         /// </value>
-        /// <remarks>
-        ///   For ML-KEM and hybrid ML-KEM cipher suites, this is the size of the private seed.
-        /// </remarks>
         public int DecapsulationKeySizeInBytes => KemMetadata.Nsk;
 
         /// <summary>
@@ -112,7 +109,7 @@ namespace System.Security.Cryptography
         ///   Gets the name of the cipher suite.
         /// </summary>
         /// <value>
-        ///   A string containing the KEM, KDF, and AEAD names, separated by spaces.
+        ///   The name of the cipher suite.
         /// </value>
         public string Name => field ??= $"{KemMetadata.Name} {KdfMetadata.Name} {AeadMetadata.Name}";
 
@@ -129,9 +126,6 @@ namespace System.Security.Cryptography
         ///   <paramref name="plaintextLength" /> is negative or the resulting ciphertext length cannot be
         ///   represented as a signed 32-bit integer.
         /// </exception>
-        /// <remarks>
-        ///   The returned length includes the authentication tag, but does not include the encapsulated secret.
-        /// </remarks>
         public int GetCiphertextLength(int plaintextLength)
         {
             int tagSize = AeadTagSizeInBytes;
