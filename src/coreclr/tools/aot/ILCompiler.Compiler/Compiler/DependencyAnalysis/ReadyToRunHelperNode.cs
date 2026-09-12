@@ -165,12 +165,6 @@ namespace ILCompiler.DependencyAnalysis
 
             }
 
-            if (factory.Target.IsWasm)
-            {
-                dependencyList ??= new DependencyList();
-                dependencyList.Add(factory.WasmTypeNode(this), "Wasm ReadyToRun helper signature");
-            }
-
             return dependencyList;
         }
 
