@@ -127,6 +127,21 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_DecimalArrayAsRoot()
+    {
+        decimal[] values = new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue };
+        string serialized = Serialize(values, string.Empty, skipStringCompare: true);
+
+        Assert.Contains("<decimal>-1.2</decimal>", serialized);
+        Assert.Contains("<decimal>0</decimal>", serialized);
+        Assert.Contains("<decimal>2.3</decimal>", serialized);
+        Assert.Contains($"<decimal>{decimal.MinValue.ToString(CultureInfo.InvariantCulture)}</decimal>", serialized);
+        Assert.Contains($"<decimal>{decimal.MaxValue.ToString(CultureInfo.InvariantCulture)}</decimal>", serialized);
+
+        Assert.Equal(values, SerializeAndDeserialize(values, string.Empty, skipStringCompare: true));
+    }
+
+    [Fact]
     public static void Xml_DoubleAsRoot()
     {
         Assert.Equal(-1.2, SerializeAndDeserialize<double>(-1.2,

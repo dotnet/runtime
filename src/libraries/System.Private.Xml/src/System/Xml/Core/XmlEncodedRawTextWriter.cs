@@ -703,6 +703,18 @@ namespace System.Xml
             _textPos = _bufPos;
         }
 
+        internal override unsafe void WriteRaw(ReadOnlySpan<char> value)
+        {
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+
+            fixed (char* pSrcBegin = value)
+            {
+                WriteRawWithCharChecking(pSrcBegin, pSrcBegin + value.Length);
+            }
+
+            _textPos = _bufPos;
+        }
+
         // Flush all bytes in the buffer to output and close the output stream or writer.
         public override void Close()
         {
@@ -2123,6 +2135,12 @@ namespace System.Xml
         {
             _mixedContent = true;
             base.WriteRaw(data);
+        }
+
+        internal override void WriteRaw(ReadOnlySpan<char> value)
+        {
+            _mixedContent = true;
+            base.WriteRaw(value);
         }
 
         public override void WriteBase64(byte[] buffer, int index, int count)
