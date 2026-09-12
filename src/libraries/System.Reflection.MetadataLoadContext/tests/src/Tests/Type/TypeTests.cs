@@ -105,6 +105,34 @@ namespace System.Reflection.Tests
             b = dst.IsAssignableFrom(src);
             Assert.True(b);
 
+            // Open Nullable<>
+            dst = typeof(Nullable<>).Project();
+            src = typeof(int).Project();
+            b = dst.IsAssignableFrom(src);
+            Assert.False(b);
+
+            dst = typeof(Nullable<>).Project();
+            src = typeof(int?).Project();
+            b = dst.IsAssignableFrom(src);
+            Assert.False(b);
+
+            dst = typeof(Nullable<>).Project();
+            src = typeof(Nullable<>).Project();
+            b = dst.IsAssignableFrom(src);
+            Assert.True(b);
+
+            // Nullable<T> instantiated over a generic variable
+            dst = typeof(Nullable<>).Project().MakeGenericType(typeof(GenericClass1<>).Project().GetGenericArguments()[0]);
+            src = typeof(int).Project();
+            b = dst.IsAssignableFrom(src);
+            Assert.False(b);
+
+            // The rule that T is assignable to Nullable<T> does not apply when T is a generic parameter.
+            src = typeof(GenericClass1<>).Project().GetGenericArguments()[0];
+            dst = typeof(Nullable<>).Project().MakeGenericType(src);
+            b = dst.IsAssignableFrom(src);
+            Assert.False(b);
+
             return;
         }
 
