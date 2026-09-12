@@ -3794,7 +3794,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         case NI_X86Base_CompareNotGreaterThan:
                         case NI_AVX_CompareNotGreaterThan:
                         {
-                            cndId = NI_AVX512_CompareGreaterThanMask;
+                            cndId = NI_AVX512_CompareNotGreaterThanMask;
                             break;
                         }
 
@@ -5583,7 +5583,11 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+    // CreateScalarUnsafe elision can leave scalar-typed operands here, but Dot still needs a
+    // vector multiply. Avoid the scalar-broadcast semantics of gtNewSimdBinOpNode.
+    NamedIntrinsic multiply = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(m_compiler, GT_MUL, op1, op2, simdBaseType,
+                                                                           simdSize, /* isScalar */ false);
+    tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseType, simdSize);
     BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
 
