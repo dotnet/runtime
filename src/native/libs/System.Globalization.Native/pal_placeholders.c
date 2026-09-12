@@ -248,6 +248,13 @@ int32_t GlobalizationNative_NormalizeString(
 }
 
 // Placeholder for time zone data
+int32_t GlobalizationNative_GetCanonicalLocationTimeZoneIds(
+    UChar* value, int32_t valueLength)
+{
+    assert_msg(false, "Not supported on this platform", 0);
+    return 0;
+}
+
 int32_t GlobalizationNative_WindowsIdToIanaId(
     const UChar* windowsId, const char* region, UChar* ianaId, int32_t ianaIdLength)
 {
