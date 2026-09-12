@@ -734,6 +734,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_RSH:
             case VNF_RSZ:
             case VNF_UMOD:
+            case VNF_MOD:
             case VNF_UDIV:
             {
                 // Get ranges of both operands and perform the same operation on the ranges.
@@ -815,6 +816,9 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                     }
                     case VNF_UMOD:
                         binOpResult = RangeOps::UnsignedMod(r1, r2);
+                        break;
+                    case VNF_MOD:
+                        binOpResult = RangeOps::Mod(r1, r2);
                         break;
                     case VNF_UDIV:
                         binOpResult = RangeOps::UnsignedDivide(r1, r2);
