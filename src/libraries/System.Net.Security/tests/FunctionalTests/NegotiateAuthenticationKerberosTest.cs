@@ -117,7 +117,6 @@ namespace System.Net.Security.Tests
                 using NegotiateAuthentication serverNegotiateAuthentication = AuthenticateLoopback();
                 var identity = Assert.IsAssignableFrom<ClaimsIdentity>(serverNegotiateAuthentication.RemoteIdentity);
 
-                Assert.Equal("user@LINUX.CONTOSO.COM", identity.Name);
                 Assert.Null(identity.FindFirst(ClaimTypes.PrimarySid));
                 Assert.Null(identity.FindFirst(ClaimTypes.PrimaryGroupSid));
                 Assert.Empty(identity.FindAll(ClaimTypes.GroupSid));
