@@ -12208,7 +12208,7 @@ bool Compiler::impFoldAwaitedTopOfStack()
             return false;
         }
 
-        if (!storeLcl->Data()->IsIntegralConst(0))
+        if (!storeLcl->Data()->IsIntegralConst(0) || !storeLcl->Data()->TypeIs(TYP_INT))
         {
             return false;
         }

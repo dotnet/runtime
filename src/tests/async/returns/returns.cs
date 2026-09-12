@@ -14,6 +14,43 @@ public class Async2Returns
         Returns(new C()).Wait();
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void NullTaskReturnMustNotFold(bool generic)
+    {
+        if (generic)
+        {
+            Assert.Throws<NullReferenceException>(() => AwaitGenericTaskWithNullReturn().GetAwaiter().GetResult());
+        }
+        else
+        {
+            Assert.Throws<NullReferenceException>(() => AwaitTaskWithNullReturn().GetAwaiter().GetResult());
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<int> AwaitGenericTaskWithNullReturn() => await StoreAndReturnNullTask(Task.FromResult(42));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task AwaitTaskWithNullReturn() => await StoreAndReturnNullTask(Task.CompletedTask);
+
+    // Keep the parameter store followed by the return in both helpers: their async versions
+    // must not fold this pattern as a zero-initialized ValueTask return.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<int> StoreAndReturnNullTask(Task<int> task)
+    {
+        task = null;
+        return task;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task StoreAndReturnNullTask(Task task)
+    {
+        task = null;
+        return task;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Returns(C c)
     {
