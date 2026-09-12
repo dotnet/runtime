@@ -3031,8 +3031,438 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     bool leftUpper         = false;
     bool rightUpper        = false;
 
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+    auto vectorFirstArgMatchesSimdSize = [this, sig, simdSize]() {
+        // Vector2/3/4 and the fixed-size Vector64/128 helpers share some method names. Make sure this importer
+        // only handles the generic Vector64<T>/Vector128<T> methods whose first argument has the expected SIMD size.
+        if (((simdSize != 8) && (simdSize != 16)) || (sig->sigInst.methInstCount != 1))
+        {
+            return false;
+        }
+
+        CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+        CORINFO_ARG_LIST_HANDLE arg      = sig->args;
+        var_types               argType  = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
+
+        if (argType == TYP_STRUCT)
+        {
+            return info.compCompHnd->getClassSize(argClass) == simdSize;
+        }
+
+        return varTypeIsSIMD(argType) && (genTypeSize(argType) == simdSize);
+    };
+#else
+    auto vectorFirstArgMatchesSimdSize = []() {
+        return false;
+    };
+#endif
+
+    auto vectorValueEqualsMask = [this, simdSize](GenTree* vector, GenTree* value, var_types simdBaseType) -> GenTree* {
+        var_types      simdType     = getSIMDTypeForSize(simdSize);
+        GenTree*       other        = gtNewSimdCreateBroadcastNode(simdType, value, simdBaseType, simdSize);
+        NamedIntrinsic compareEqual = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, GT_EQ, simdType, vector, other,
+                                                                                   simdBaseType, simdSize, false);
+        return gtNewSimdHWIntrinsicNode(simdType, vector, other, compareEqual, simdBaseType, simdSize);
+    };
+
+    auto vectorAllBitsSetMask = [this, simdSize](GenTree* vector, var_types simdBaseType,
+                                                 var_types* maskBaseType) -> GenTree* {
+        var_types simdType        = getSIMDTypeForSize(simdSize);
+        *maskBaseType             = getUnsignedSimdBaseType(simdBaseType);
+        GenTree*       allBitsSet = gtNewAllBitsSetConNode(simdType);
+        NamedIntrinsic compareEqual =
+            GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, GT_EQ, simdType, vector, allBitsSet, *maskBaseType,
+                                                         simdSize, false);
+        return gtNewSimdHWIntrinsicNode(simdType, vector, allBitsSet, compareEqual, *maskBaseType, simdSize);
+    };
+
+    auto vectorExtractMostSignificantBits = [this, simdSize](GenTree* mask, var_types maskBaseType) -> GenTree* {
+#if defined(TARGET_XARCH)
+        NamedIntrinsic extractIntrinsic;
+
+        switch (maskBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                extractIntrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_X86Base_MoveMask;
+                break;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return gtNewSimdHWIntrinsicNode(TYP_INT, mask, NI_Vector_ExtractMostSignificantBits, maskBaseType,
+                                                simdSize);
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                maskBaseType     = TYP_FLOAT;
+                extractIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
+                break;
+
+            default:
+                unreached();
+        }
+
+        return gtNewSimdHWIntrinsicNode(TYP_INT, mask, extractIntrinsic, maskBaseType, simdSize);
+#else
+        return gtNewSimdHWIntrinsicNode(TYP_INT, mask, NI_Vector_ExtractMostSignificantBits, maskBaseType, simdSize);
+#endif
+    };
+
+    auto vectorCountFromMask = [this, &vectorExtractMostSignificantBits](GenTree*  mask,
+                                                                         var_types maskBaseType) -> GenTree* {
+        // Count/IndexOf/LastIndexOf are expressed in terms of a vector compare mask followed by
+        // ExtractMostSignificantBits. Xarch imports this as MoveMask, while the existing Arm64 rationalization
+        // recognizes the full pattern and chooses the best mask-count/index sequence.
+        GenTree* extract = vectorExtractMostSignificantBits(mask, maskBaseType);
+#if defined(TARGET_XARCH)
+        return gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_X86Base_PopCount);
+#else
+        return new (this, GT_INTRINSIC)
+            GenTreeIntrinsic(TYP_INT, extract, NI_PRIMITIVE_PopCount, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+#endif
+    };
+
+    auto vectorIndexOfFromMask = [this, &vectorExtractMostSignificantBits](GenTree*  mask,
+                                                                           var_types maskBaseType) -> GenTree* {
+        GenTree* extract = vectorExtractMostSignificantBits(mask, maskBaseType);
+#if defined(TARGET_XARCH)
+        GenTree* tzcnt = gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_AVX2_TrailingZeroCount);
+#else
+        GenTree* tzcnt = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, extract, NI_PRIMITIVE_TrailingZeroCount,
+                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+#endif
+
+        // TrailingZeroCount returns 32 for a zero mask. The managed helper returns -1 when no element matched.
+        unsigned tzcntTmp = lvaGrabTemp(true DEBUGARG("Vector IndexOf result"));
+        impStoreToTemp(tzcntTmp, tzcnt, CHECK_SPILL_ALL);
+
+        GenTree* cond        = gtNewOperNode(GT_EQ, TYP_INT, gtNewLclvNode(tzcntTmp, TYP_INT), gtNewIconNode(32));
+        GenTree* whenNoMatch = gtNewIconNode(-1);
+        GenTree* whenMatched = gtNewLclvNode(tzcntTmp, TYP_INT);
+        GenTree* result      = gtNewQmarkNode(TYP_INT, cond, gtNewColonNode(TYP_INT, whenNoMatch, whenMatched));
+
+        unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Vector IndexOf qmark"));
+        impStoreToTemp(resultTmp, result, CHECK_SPILL_NONE);
+        return gtNewLclvNode(resultTmp, TYP_INT);
+    };
+
+    auto vectorLastIndexOfFromMask = [this, &vectorExtractMostSignificantBits](GenTree*  mask,
+                                                                               var_types maskBaseType) -> GenTree* {
+        GenTree* extract = vectorExtractMostSignificantBits(mask, maskBaseType);
+#if defined(TARGET_ARM64)
+        GenTree* lzcnt = gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_ArmBase_LeadingZeroCount);
+#elif defined(TARGET_XARCH)
+        GenTree* lzcnt = gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_AVX2_LeadingZeroCount);
+#else
+        GenTree* lzcnt = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, extract, NI_PRIMITIVE_LeadingZeroCount,
+                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+#endif
+        return gtNewOperNode(GT_SUB, TYP_INT, gtNewIconNode(31), lzcnt);
+    };
+
     switch (intrinsic)
     {
+        case NI_Vector_All:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            GenTree* other = gtNewSimdCreateBroadcastNode(getSIMDTypeForSize(simdSize), op2, simdBaseType, simdSize);
+            retNode        = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, other, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector_AllWhereAllBitsSet:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            var_types maskBaseType = getUnsignedSimdBaseType(simdBaseType);
+            op1                    = impSIMDPopStack();
+            retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, gtNewAllBitsSetConNode(getSIMDTypeForSize(simdSize)),
+                                            maskBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector_Any:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1,
+                                            gtNewSimdCreateBroadcastNode(getSIMDTypeForSize(simdSize), op2,
+                                                                         simdBaseType, simdSize),
+                                            simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_Vector_AnyWhereAllBitsSet:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, gtNewAllBitsSetConNode(getSIMDTypeForSize(simdSize)),
+                                            getUnsignedSimdBaseType(simdBaseType), simdSize);
+            break;
+        }
+
+        case NI_Vector_Count:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            // Floating-point equality has different semantics from the integer mask comparisons used below.
+            // Leave those cases on the managed fallback path for now.
+            if (varTypeIsFloating(simdBaseType))
+            {
+                break;
+            }
+
+            // The mask is represented as a 32-bit value, so only import element sizes that fit that encoding.
+            if (genTypeSize(simdBaseType) > 4)
+            {
+                // ExtractMostSignificantBits encodes the mask in a 32-bit integer, so leave larger element
+                // sizes on the managed fallback path.
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            GenTree* mask = vectorValueEqualsMask(op1, op2, simdBaseType);
+            retNode       = vectorCountFromMask(mask, simdBaseType);
+            break;
+        }
+
+        case NI_Vector_CountWhereAllBitsSet:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            if (genTypeSize(getUnsignedSimdBaseType(simdBaseType)) > 4)
+            {
+                // ExtractMostSignificantBits encodes the mask in a 32-bit integer, so leave larger element
+                // sizes on the managed fallback path.
+                break;
+            }
+
+            var_types maskBaseType;
+            op1           = impSIMDPopStack();
+            GenTree* mask = vectorAllBitsSetMask(op1, simdBaseType, &maskBaseType);
+            retNode       = vectorCountFromMask(mask, maskBaseType);
+            break;
+        }
+
+        case NI_Vector_IndexOf:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+#endif
+
+            // Floating-point equality has different semantics from the integer mask comparisons used below.
+            // Leave those cases on the managed fallback path for now.
+            if (varTypeIsFloating(simdBaseType))
+            {
+                break;
+            }
+
+            // The mask is represented as a 32-bit value, so only import element sizes that fit that encoding.
+            if (genTypeSize(simdBaseType) > 4)
+            {
+                // ExtractMostSignificantBits encodes the mask in a 32-bit integer, so leave larger element
+                // sizes on the managed fallback path.
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            GenTree* mask = vectorValueEqualsMask(op1, op2, simdBaseType);
+            retNode       = vectorIndexOfFromMask(mask, simdBaseType);
+            break;
+        }
+
+        case NI_Vector_IndexOfWhereAllBitsSet:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+#endif
+
+            if (genTypeSize(getUnsignedSimdBaseType(simdBaseType)) > 4)
+            {
+                // ExtractMostSignificantBits encodes the mask in a 32-bit integer, so leave larger element
+                // sizes on the managed fallback path.
+                break;
+            }
+
+            var_types maskBaseType;
+            op1           = impSIMDPopStack();
+            GenTree* mask = vectorAllBitsSetMask(op1, simdBaseType, &maskBaseType);
+            retNode       = vectorIndexOfFromMask(mask, maskBaseType);
+            break;
+        }
+
+        case NI_Vector_LastIndexOf:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+#endif
+
+            // Floating-point equality has different semantics from the integer mask comparisons used below.
+            // Leave those cases on the managed fallback path for now.
+            if (varTypeIsFloating(simdBaseType))
+            {
+                break;
+            }
+
+            // The mask is represented as a 32-bit value, so only import element sizes that fit that encoding.
+            if (genTypeSize(simdBaseType) > 4)
+            {
+                // ExtractMostSignificantBits encodes the mask in a 32-bit integer, so leave larger element
+                // sizes on the managed fallback path.
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            GenTree* mask = vectorValueEqualsMask(op1, op2, simdBaseType);
+            retNode       = vectorLastIndexOfFromMask(mask, simdBaseType);
+            break;
+        }
+
+        case NI_Vector_LastIndexOfWhereAllBitsSet:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+#endif
+
+            if (genTypeSize(getUnsignedSimdBaseType(simdBaseType)) > 4)
+            {
+                // ExtractMostSignificantBits encodes the mask in a 32-bit integer, so leave larger element
+                // sizes on the managed fallback path.
+                break;
+            }
+
+            var_types maskBaseType;
+            op1           = impSIMDPopStack();
+            GenTree* mask = vectorAllBitsSetMask(op1, simdBaseType, &maskBaseType);
+            retNode       = vectorLastIndexOfFromMask(mask, maskBaseType);
+            break;
+        }
+
+        case NI_Vector_None:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            // Import None(value) as !Any(value) so it benefits from the same compare-mask lowering as Any.
+            GenTree* any = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1,
+                                                 gtNewSimdCreateBroadcastNode(getSIMDTypeForSize(simdSize), op2,
+                                                                              simdBaseType, simdSize),
+                                                 simdBaseType, simdSize);
+            retNode      = gtNewOperNode(GT_EQ, retType, any, gtNewZeroConNode(retType));
+            break;
+        }
+
+        case NI_Vector_NoneWhereAllBitsSet:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!vectorFirstArgMatchesSimdSize())
+            {
+                break;
+            }
+
+            op1 = impSIMDPopStack();
+
+            // Import NoneWhereAllBitsSet as !AnyWhereAllBitsSet for the same reason.
+            GenTree* any =
+                gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, gtNewAllBitsSetConNode(getSIMDTypeForSize(simdSize)),
+                                      getUnsignedSimdBaseType(simdBaseType), simdSize);
+            retNode = gtNewOperNode(GT_EQ, retType, any, gtNewZeroConNode(retType));
+            break;
+        }
+
         case NI_Vector_Abs:
         {
             assert(sig->numArgs == 1);
