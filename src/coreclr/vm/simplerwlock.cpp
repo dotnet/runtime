@@ -44,6 +44,16 @@ void SimpleRWLock::EnterRead()
     CheckGCNoTrigger();
 #endif //ENABLE_CONTRACTS_IMPL
 
+#ifdef _DEBUG
+    if (m_gcMode == PREEMPTIVE)
+    {
+        _ASSERTE_MSG(t_unsafeAnyModeHeldCount == 0,
+            "Taking a PREEMPTIVE SimpleRWLock while a COOPERATIVE_OR_PREEMPTIVE lock or "
+            "CRST_UNSAFE_ANYMODE lock is held is illegal. "
+            "The PREEMPTIVE lock may trigger a GC, which is not allowed under ANYMODE locks.");
+    }
+#endif
+
     GCX_MAYBE_PREEMP(m_gcMode == PREEMPTIVE);
 
 #ifdef _DEBUG
@@ -134,6 +144,16 @@ void SimpleRWLock::EnterWrite()
 #ifdef ENABLE_CONTRACTS_IMPL
     CheckGCNoTrigger();
 #endif //ENABLE_CONTRACTS_IMPL
+
+#ifdef _DEBUG
+    if (m_gcMode == PREEMPTIVE)
+    {
+        _ASSERTE_MSG(t_unsafeAnyModeHeldCount == 0,
+            "Taking a PREEMPTIVE SimpleRWLock while a COOPERATIVE_OR_PREEMPTIVE lock or "
+            "CRST_UNSAFE_ANYMODE lock is held is illegal. "
+            "The PREEMPTIVE lock may trigger a GC, which is not allowed under ANYMODE locks.");
+    }
+#endif
 
     GCX_MAYBE_PREEMP(m_gcMode == PREEMPTIVE);
 
@@ -267,6 +287,11 @@ void SimpleRWLock::PostEnter()
             INCONTRACT(pThread->BeginNoTriggerGC(__FILE__, __LINE__));
         }
     }
+
+    if (m_gcMode == COOPERATIVE_OR_PREEMPTIVE)
+    {
+        t_unsafeAnyModeHeldCount++;
+    }
 }
 
 //=====================================================================
@@ -275,6 +300,11 @@ void SimpleRWLock::PostEnter()
 void SimpleRWLock::PreLeave()
 {
     WRAPPER_NO_CONTRACT;
+
+    if (m_gcMode == COOPERATIVE_OR_PREEMPTIVE)
+    {
+        t_unsafeAnyModeHeldCount--;
+    }
 
     if (m_countNoTriggerGC > 0)
     {
