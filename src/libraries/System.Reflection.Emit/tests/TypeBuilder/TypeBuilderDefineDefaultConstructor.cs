@@ -34,8 +34,10 @@ namespace System.Reflection.Emit.Tests
 
         public static bool s_ranConstructor = false;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        public void DefineDefaultConstructor_GenericParentCreated_Works()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DefineDefaultConstructor_GenericParentCreated_Works(bool useSignatureType)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             TypeBuilder genericTypeDefinition = module.DefineType("GenericType", TypeAttributes.Public);
@@ -50,7 +52,9 @@ namespace System.Reflection.Emit.Tests
 
             genericTypeDefinition.CreateTypeInfo();
 
-            Type genericParent = genericTypeDefinition.MakeGenericType(typeof(int));
+            Type genericParent = useSignatureType ?
+                Type.MakeGenericSignatureType(genericTypeDefinition, typeof(int)) :
+                genericTypeDefinition.MakeGenericType(typeof(int));
 
             TypeBuilder type = module.DefineType("Type");
             type.SetParent(genericParent);
