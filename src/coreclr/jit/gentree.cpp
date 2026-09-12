@@ -12063,6 +12063,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_SETCC:
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_END_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
         case GT_PHI_ARG:
@@ -14257,6 +14258,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_NOP:
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_END_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
         case GT_CATCH_ARG:

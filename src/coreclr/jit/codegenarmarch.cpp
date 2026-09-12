@@ -160,6 +160,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitDisableGC();
             break;
 
+        case GT_END_NONGC:
+            // The call consumed this marker. Emit a nop if its return address would otherwise
+            // remain in the NoGC instruction group.
+            assert(GetEmitter()->emitNoGCRequestCount == 0);
+            if (GetEmitter()->emitLastCodeIsNoGC())
+            {
+                instGen(INS_nop);
+            }
+            break;
+
         case GT_START_PREEMPTGC:
             // Kill callee saves GC registers, and create a label
             // so that information gets propagated to the emitter.
