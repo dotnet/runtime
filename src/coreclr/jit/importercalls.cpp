@@ -6935,15 +6935,13 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             if (op1->IsIntegralConst())
             {
-                // Pop the value from the stack
-                impPopStack();
-
                 if (varTypeIsLong(baseType))
                 {
                     uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
 
                     if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int64_t>(cns) >= 0))
                     {
+                        impPopStack();
                         result = gtNewLconNode(BitOperations::Log2(cns));
                     }
                 }
@@ -6953,6 +6951,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int32_t>(cns) >= 0))
                     {
+                        impPopStack();
                         result = gtNewIconNode(BitOperations::Log2(cns), baseType);
                     }
                 }
