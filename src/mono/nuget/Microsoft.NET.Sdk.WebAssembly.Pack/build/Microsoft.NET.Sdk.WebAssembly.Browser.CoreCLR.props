@@ -1,0 +1,26 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.props
+
+CoreCLR browser-wasm ReadyToRun wiring, isolated from Mono. Imported (props-time) from
+Microsoft.NET.Sdk.WebAssembly.Browser.props only when an in-build crossgen2 is provided.
+
+The base SDK's ReadyToRun pipeline predates wasm support (dotnet/sdk#55785) and emits composite images
+for wasm, which strip the assembly manifest so the runtime fails coreclr_initialize with 0x80131018.
+Activate the runtime's wasm-aware Crossgen2Tasks shim and the ResolveReadyToRunCompilers override, both
+appended to AfterMicrosoftNETSdkTargets, shim first so the override wins. Mirrors AppleBuild.props.
+
+Inert for Mono and for normal consumers, which resolve crossgen2 through the base SDK.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>
+  <Import Project="$(Crossgen2SdkOverridePropsPath)"
+          Condition="'$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
+
+  <PropertyGroup>
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+</Project>
