@@ -189,7 +189,7 @@ namespace System.DirectoryServices.Protocols
         /// <returns></returns>
         internal static int SaslInteractionProcedure(IntPtr ldapHandle, uint flags, IntPtr defaultsPtr, IntPtr interactPtr)
         {
-            if (ldapHandle == IntPtr.Zero)
+            if (ldapHandle == IntPtr.Zero || defaultsPtr == IntPtr.Zero || interactPtr == IntPtr.Zero) 
             {
                 return -9; // Parameter Error
             }
