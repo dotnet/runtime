@@ -567,6 +567,15 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void LastIndexOfWithStartIndexThrowsOnEmptyList()
+        {
+            ImmutableList<int> list = ImmutableList<int>.Empty;
+
+            // LastIndexOf(item, startIndex, count, eq) with count=1 on empty list throws on count.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.LastIndexOf(5, 0, 1, equalityComparer: null));
+        }
+
+        [Fact]
         public void ReplaceTest()
         {
             // Verify replace at beginning, middle, and end.
@@ -880,6 +889,108 @@ namespace System.Collections.Immutable.Tests
             var list = new[] { 1, 2, 3 }.ToImmutableList();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => list.ItemRef(5));
+        }
+
+        [Fact]
+        public void SortRangeValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.Sort(-1, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.Sort(4, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Sort(0, -1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Sort(0, 4, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Sort(2, 2, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Sort(1, int.MaxValue, null));
+            Assert.Equal(list, list.Sort(3, 0, null));
+            Assert.Equal(list, list.Sort(0, 0, null));
+        }
+
+        [Fact]
+        public void GetRangeValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.GetRange(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.GetRange(4, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.GetRange(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.GetRange(0, 4));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.GetRange(2, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.GetRange(1, int.MaxValue));
+            Assert.True(list.GetRange(3, 0).IsEmpty);
+            Assert.True(list.GetRange(0, 0).IsEmpty);
+        }
+
+        [Fact]
+        public void ReverseRangeValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.Reverse(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.Reverse(4, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Reverse(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Reverse(0, 4));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Reverse(2, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.Reverse(1, int.MaxValue));
+            Assert.Equal(list, list.Reverse(3, 0));
+            Assert.Equal(list, list.Reverse(0, 0));
+        }
+
+        [Fact]
+        public void CopyToRangeValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            var array = new int[5];
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.CopyTo(-1, array, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.CopyTo(4, array, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.CopyTo(0, array, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.CopyTo(0, array, 0, 4));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.CopyTo(2, array, 0, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.CopyTo(0, array, 0, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, -1, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, 3, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, 4, 2));
+        }
+
+        [Fact]
+        public void CopyToOverflowValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            var array = new int[5];
+
+            // Overflow scenarios for CopyTo(T[], arrayIndex)
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(array, -1));
+
+            // Overflow scenarios for CopyTo(int, T[], arrayIndex, count)
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, int.MaxValue, 3));
+
+            // Overflow scenarios for ICollection.CopyTo
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)list).CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)list).CopyTo(array, -1));
+        }
+
+        [Fact]
+        public void BinarySearchRangeValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3, 4, 5);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.BinarySearch(-1, 0, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.BinarySearch(6, 0, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.BinarySearch(0, -1, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.BinarySearch(0, 6, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.BinarySearch(3, 3, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.BinarySearch(1, int.MaxValue, 1, null));
+        }
+
+        [Fact]
+        public void FindIndexRangeValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => list.FindIndex(-1, 0, _ => true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => list.FindIndex(4, 0, _ => true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.FindIndex(0, -1, _ => true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.FindIndex(0, 4, _ => true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.FindIndex(2, 2, _ => true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.FindIndex(1, int.MaxValue, _ => true));
+            Assert.Equal(-1, list.FindIndex(3, 0, _ => true));
+            Assert.Equal(-1, list.FindIndex(0, 0, _ => true));
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
