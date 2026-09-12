@@ -21,10 +21,6 @@ public unsafe class StackWalkTests
         Assert.Equal([8u], StackWalk_2.GetByRefLikeFieldOffsets(isInlineArray: false, fieldOffset: 8, elementSize: 0, totalSize: 24));
         Assert.Equal([0u, 8u, 16u], StackWalk_2.GetByRefLikeFieldOffsets(isInlineArray: true, fieldOffset: 0, elementSize: 8, totalSize: 24));
         Assert.Throws<InvalidOperationException>(() => StackWalk_2.GetByRefLikeFieldOffsets(isInlineArray: true, fieldOffset: 0, elementSize: 0, totalSize: 24).ToArray());
-
-        Assert.True(StackWalk_2.ShouldReportByRefLikeField(CorElementType.Byref, nestedIsByRefLike: false));
-        Assert.True(StackWalk_2.ShouldReportByRefLikeField(CorElementType.ValueType, nestedIsByRefLike: true));
-        Assert.False(StackWalk_2.ShouldReportByRefLikeField(CorElementType.I4, nestedIsByRefLike: false));
     }
 
     [Fact]

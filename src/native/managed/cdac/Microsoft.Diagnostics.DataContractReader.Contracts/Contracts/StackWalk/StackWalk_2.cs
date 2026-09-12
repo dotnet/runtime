@@ -82,7 +82,7 @@ internal sealed class StackWalk_2 : StackWalk_1
         }
     }
 
-    private void ReportByRefLikeValueClassRoots(
+    private static void ReportByRefLikeValueClassRoots(
         IRuntimeTypeSystem rts,
         ITypeHandle typeHandle,
         TargetPointer data,
@@ -96,7 +96,7 @@ internal sealed class StackWalk_2 : StackWalk_1
         if (totalSize > rts.GetBaseSize(typeHandle))
             return;
 
-        bool isInlineArray = IsInlineArray(typeHandle);
+        bool isInlineArray = rts.IsInlineArray(typeHandle);
         foreach (TargetPointer fieldDesc in rts.GetFieldDescList(typeHandle))
         {
             if (rts.IsFieldDescStatic(fieldDesc))
@@ -112,7 +112,7 @@ internal sealed class StackWalk_2 : StackWalk_1
                 continue;
 
             uint elementSize = isInlineArray
-                ? GetInlineArrayElementSize(rts, fieldType, nestedType)
+                ? rts.GetInlineArrayElementSize(fieldType, nestedType)
                 : 0;
             if (isInlineArray && elementSize == 0)
                 continue;
@@ -160,32 +160,4 @@ internal sealed class StackWalk_2 : StackWalk_1
         }
     }
 
-    private uint GetInlineArrayElementSize(
-        IRuntimeTypeSystem rts,
-        CorElementType fieldType,
-        ITypeHandle? nestedType)
-    {
-        if (fieldType == CorElementType.Byref)
-            return (uint)_target.PointerSize;
-
-        if (nestedType is not null)
-            return rts.GetNumInstanceFieldBytes(nestedType);
-
-        return 0;
-    }
-
-    private bool IsInlineArray(ITypeHandle typeHandle)
-    {
-        Data.MethodTable methodTable = _target.ProcessedData.GetOrAdd<Data.MethodTable>(typeHandle.Address);
-        TargetPointer eeClassPointer = methodTable.EEClassOrCanonMT;
-        if (MethodTableFlags_1.GetEEClassOrCanonMTBits(eeClassPointer) == MethodTableFlags_1.EEClassOrCanonMTBits.CanonMT)
-        {
-            TargetPointer canonicalMethodTablePointer = MethodTableFlags_1.UntagEEClassOrCanonMT(eeClassPointer);
-            Data.MethodTable canonicalMethodTable = _target.ProcessedData.GetOrAdd<Data.MethodTable>(canonicalMethodTablePointer);
-            eeClassPointer = canonicalMethodTable.EEClassOrCanonMT;
-        }
-
-        Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPointer);
-        return eeClass.IsInlineArray;
-    }
 }

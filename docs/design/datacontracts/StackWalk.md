@@ -833,9 +833,7 @@ inline arrays repeat their element's interior-pointer layout across the full val
 
 | Change | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- | --- |
-| Added | `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass`; bit `0x10000` (`VMFLAG_INLINE_ARRAY`) indicates repeated inline-array field layout |
 | Added | `GCFrame` | `ValueClassInfoList` | `pointer` | Pointer to the head pointer of the off-heap value-class list protected by this GCFrame |
-| Added | `MethodTable` | `EEClassOrCanonMT` | `pointer` | Path to both EEClass and canonical MethodTable of a MethodTable |
 | Added | `ValueClassInfo` | `Data` | `pointer` | Pointer to the unboxed value-class data |
 | Added | `ValueClassInfo` | `MethodTable` | `pointer` | Method table describing the value-class layout |
 | Added | `ValueClassInfo` | `Next` | `pointer` | Pointer to the next protected value class |

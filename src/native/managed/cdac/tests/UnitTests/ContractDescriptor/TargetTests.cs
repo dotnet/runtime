@@ -412,7 +412,7 @@ public unsafe partial class TargetTests
             ["ReJIT"] = "c1",
             ["RuntimeInfo"] = "c1",
             ["RuntimeMutableTypeSystem"] = "c1",
-            ["RuntimeTypeSystem"] = "c1",
+            ["RuntimeTypeSystem"] = "c2",
             ["SHash"] = "c1",
             ["Signature"] = "c1",
             ["StackWalk"] = "c2",

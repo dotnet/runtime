@@ -60,7 +60,7 @@ public class MethodTableTests
         }
     }
 
-    internal static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, Action<MockRTS> configure)
+    internal static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, Action<MockRTS> configure, string version = "c1")
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
@@ -70,7 +70,7 @@ public class MethodTableTests
         var target = targetBuilder
             .AddTypes(CreateContractTypes(rtsBuilder))
             .AddGlobals(CreateContractGlobals(rtsBuilder))
-            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .AddContract<IRuntimeTypeSystem>(version)
             .Build();
         return target;
     }
@@ -89,6 +89,29 @@ public class MethodTableTests
         Assert.NotEqual(TargetPointer.Null, handle.Address);
         Assert.True(contract.IsFreeObjectMethodTable(handle));
         Assert.False(contract.IsObject(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void InlineArrayQueriesReturnExpectedValues(MockTarget.Architecture arch)
+    {
+        const uint InlineArrayFlag = 0x00010000;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                rtsBuilder.SystemObjectEEClass.VMFlags = InlineArrayFlag;
+            },
+            version: "c2");
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        TargetPointer methodTable = contract.GetWellKnownMethodTable(WellKnownMethodTable.Object);
+        ITypeHandle typeHandle = contract.GetTypeHandle(methodTable);
+
+        Assert.True(contract.IsInlineArray(typeHandle));
+        Assert.Equal(arch.Is64Bit ? 8u : 4u, contract.GetInlineArrayElementSize(CorElementType.Byref, null));
+        Assert.Equal(contract.GetNumInstanceFieldBytes(typeHandle), contract.GetInlineArrayElementSize(CorElementType.ValueType, typeHandle));
+        Assert.Equal(0u, contract.GetInlineArrayElementSize(CorElementType.I4, null));
     }
 
     [Theory]

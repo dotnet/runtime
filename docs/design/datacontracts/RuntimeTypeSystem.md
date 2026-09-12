@@ -2565,3 +2565,37 @@ void GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldN
     fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 }
 ```
+
+## Version 2
+
+Version 2 adds inline-array inspection APIs:
+
+<!-- BEGIN GENERATED: usage contract=RuntimeTypeSystem version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+_No changes._
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=RuntimeTypeSystem version=c2 diff-from=c1 -->
+
+```csharp
+partial interface IRuntimeTypeSystem : IContract
+{
+    // True if the MethodTable represents an inline array.
+    bool IsInlineArray(ITypeHandle typeHandle);
+
+    // Returns the size of a single inline-array element represented by a field type.
+    uint GetInlineArrayElementSize(CorElementType fieldType, ITypeHandle? nestedType);
+}
+```
+
+`IsInlineArray` follows a MethodTable's `EEClassOrCanonMT` link to its canonical `EEClass` and
+returns whether the `EEClass.VMFlags` inline-array bit is set. `GetInlineArrayElementSize`
+returns the target pointer size for a byref field, the nested value type's instance-field size for
+a value-type field, and zero when the element type cannot be determined.

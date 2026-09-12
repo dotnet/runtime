@@ -44,6 +44,7 @@ public static class CoreCLRContracts
         registry.Register<IWindowsErrorReporting>("c1", static t => new WindowsErrorReporting_1(t));
 
         registry.Register<IRuntimeTypeSystem>("c1", static t => new RuntimeTypeSystem_1(t));
+        registry.Register<IRuntimeTypeSystem>("c2", static t => new RuntimeTypeSystem_1(t));
 
         registry.Register<IObject>("c1", static t => new Object_1(t));
 
