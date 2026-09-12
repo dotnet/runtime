@@ -13,8 +13,34 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public partial class ReadyToRunHelperNode
+    public partial class ReadyToRunHelperNode : INodeWithTypeSignature
     {
+        public MethodSignature Signature { get; private set; }
+        public bool IsUnmanagedCallersOnly => false;
+        public bool IsAsyncCall => false;
+        public bool HasGenericContextArg => false;
+
+        private void InitializeWasmSignature(ReadyToRunHelperId id, object target)
+        {
+            TypeSystemContext context = id switch
+            {
+                ReadyToRunHelperId.DelegateCtor => ((DelegateCreationInfo)target).DelegateType.Context,
+                ReadyToRunHelperId.ResolveVirtualFunction => ((MethodDesc)target).Context,
+                _ => ((TypeDesc)target).Context,
+            };
+
+            TypeDesc nativeIntType = context.GetWellKnownType(WellKnownType.IntPtr);
+            TypeDesc[] parameters = id switch
+            {
+                ReadyToRunHelperId.DelegateCtor => [nativeIntType, nativeIntType],
+                ReadyToRunHelperId.ResolveVirtualFunction => [nativeIntType, nativeIntType, nativeIntType],
+                _ => Array.Empty<TypeDesc>(),
+            };
+            TypeDesc returnType = id == ReadyToRunHelperId.DelegateCtor ?
+                context.GetWellKnownType(WellKnownType.Void) : nativeIntType;
+            Signature = new MethodSignature(MethodSignatureFlags.Static, genericParameterCount: 0, returnType, parameters);
+        }
+
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
             Debug.Assert(!encoder.Is64Bit);

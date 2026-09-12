@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         ConstrainedDirectCall,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithTypeSignature
+    public partial class ReadyToRunHelperNode : AssemblyStubNode
     {
         private static readonly Utf8String s_RhpResolveInterfaceMethod = new Utf8String("RhpResolveInterfaceMethod"u8);
 
@@ -82,23 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
             }
 
-            TypeSystemContext context = id switch
-            {
-                ReadyToRunHelperId.DelegateCtor => ((DelegateCreationInfo)target).DelegateType.Context,
-                ReadyToRunHelperId.ResolveVirtualFunction => ((MethodDesc)target).Context,
-                _ => ((TypeDesc)target).Context,
-            };
-
-            TypeDesc nativeIntType = context.GetWellKnownType(WellKnownType.IntPtr);
-            TypeDesc[] parameters = id switch
-            {
-                ReadyToRunHelperId.DelegateCtor => [nativeIntType, nativeIntType],
-                ReadyToRunHelperId.ResolveVirtualFunction => [nativeIntType, nativeIntType, nativeIntType],
-                _ => Array.Empty<TypeDesc>(),
-            };
-            TypeDesc returnType = id == ReadyToRunHelperId.DelegateCtor ?
-                context.GetWellKnownType(WellKnownType.Void) : nativeIntType;
-            Signature = new MethodSignature(MethodSignatureFlags.Static, genericParameterCount: 0, returnType, parameters);
+            InitializeWasmSignature(id, target);
         }
 
         protected override bool IsVisibleFromManagedCode => false;
@@ -107,10 +91,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunHelperId Id => _id;
         public object Target =>  _target;
-        public MethodSignature Signature { get; }
-        public bool IsUnmanagedCallersOnly => false;
-        public bool IsAsyncCall => false;
-        public bool HasGenericContextArg => false;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
