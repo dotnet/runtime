@@ -57,6 +57,8 @@
 
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false' and '$(WasmEnableRelaxedSimd)' == 'true' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.WasmRelaxedSimd.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false' and '$(WasmEnableRelaxedSimd)' != 'true' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.NoWasmRelaxedSimd.xml"</_ExtraTrimmerArgs>
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
@@ -259,6 +261,7 @@
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
       <!--<_WasiClangCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />-->
       <_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />
+      <_WasiClangCommonFlags Include="-mrelaxed-simd"                    Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'" />
 
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
       <_WasmCommonCFlags Condition="'$(_WasmShouldAOT)' == 'true'"         Include="-DENABLE_AOT=1" />
