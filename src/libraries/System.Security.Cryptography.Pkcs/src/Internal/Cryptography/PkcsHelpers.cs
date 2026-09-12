@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
@@ -135,6 +136,17 @@ namespace Internal.Cryptography
                 X509Certificate2 certCopy = new X509Certificate2(originalCert.Handle);
                 CmsRecipient recipientCopy;
 
+#if NET11_0_OR_GREATER
+                if (recipient.IsKeyEncapsulation)
+                {
+                    Debug.Assert(recipient.KeyEncapsulationUserKeyingMaterial.HasValue);
+                    recipientCopy = CmsRecipient.CreateForKeyEncapsulation(
+                        recipient.RecipientIdentifierType,
+                        certCopy,
+                        recipient.KeyEncapsulationUserKeyingMaterial.Value.Span);
+                }
+                else
+#endif
                 if (recipient.RSAEncryptionPadding is null)
                 {
                     recipientCopy = new CmsRecipient(recipient.RecipientIdentifierType, certCopy);
@@ -149,6 +161,60 @@ namespace Internal.Cryptography
             }
             return recipientsCopy;
         }
+
+        internal static RecipientIdentifierAsn MakeRecipientIdentifier(CmsRecipient recipient)
+        {
+            RecipientIdentifierAsn recipientIdentifier = default;
+
+            if (recipient.RecipientIdentifierType == SubjectIdentifierType.SubjectKeyIdentifier)
+            {
+                recipientIdentifier.SubjectKeyIdentifier =
+                    PkcsPal.Instance.GetSubjectKeyIdentifier(recipient.Certificate);
+            }
+            else if (recipient.RecipientIdentifierType == SubjectIdentifierType.IssuerAndSerialNumber)
+            {
+                byte[] serialNumber = recipient.Certificate.GetSerialNumber();
+                Array.Reverse(serialNumber);
+
+                recipientIdentifier.IssuerAndSerialNumber = new IssuerAndSerialNumberAsn
+                {
+                    Issuer = recipient.Certificate.IssuerName.RawData,
+                    SerialNumber = serialNumber,
+                };
+            }
+            else
+            {
+                throw new CryptographicException(
+                    SR.Cryptography_Cms_Invalid_Subject_Identifier_Type,
+                    recipient.RecipientIdentifierType.ToString());
+            }
+
+            return recipientIdentifier;
+        }
+
+#if NET11_0_OR_GREATER
+        internal static bool IsMLKemAlgorithm(string? oid) =>
+            oid is Oids.MlKem512 or
+                Oids.MlKem768 or
+                Oids.MlKem1024;
+
+        internal static bool IsCompositeMLKemAlgorithm(string? oid) =>
+            oid is Oids.MLKem768WithRsaOaep2048Sha3_256 or
+                Oids.MLKem768WithRsaOaep3072Sha3_256 or
+                Oids.MLKem768WithRsaOaep4096Sha3_256 or
+                Oids.MLKem768WithX25519Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanP256Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanP384Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 or
+                Oids.MLKem1024WithRsaOaep3072Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 or
+                Oids.MLKem1024WithX448Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanP521Sha3_256;
+
+        internal static bool IsKeyEncapsulationAlgorithm(string? oid) =>
+            IsMLKemAlgorithm(oid) || IsCompositeMLKemAlgorithm(oid);
+#endif
 
         public static X509Certificate2Collection GetStoreCertificates(StoreName storeName, StoreLocation storeLocation, bool openExistingOnly)
         {

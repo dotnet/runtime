@@ -68,6 +68,22 @@ namespace Internal.Cryptography.Pal.AnyOS
                             new KeyAgreeRecipientInfo(new ManagedKeyAgreePal(recipientInfo.Kari.Value, i)));
                     }
                 }
+                else if (recipientInfo.Ori.HasValue)
+                {
+#if NET11_0_OR_GREATER
+                    if (recipientInfo.Ori.Value.OriType == Oids.IdSmimeOriKem)
+                    {
+                        KemRecipientInfoAsn kemRecipientInfo = KemRecipientInfoAsn.Decode(
+                            recipientInfo.Ori.Value.OriValue,
+                            AsnEncodingRules.BER);
+
+                        recipientInfos.Add(new KemRecipientInfo(new ManagedKemRecipientInfoPal(kemRecipientInfo)));
+                        continue;
+                    }
+#endif
+
+                    throw new CryptographicException();
+                }
                 else
                 {
                     Debug.Fail($"{nameof(RecipientInfoAsn)} deserialized with an unknown recipient type");
