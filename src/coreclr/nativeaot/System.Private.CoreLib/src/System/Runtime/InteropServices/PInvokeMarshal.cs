@@ -180,7 +180,7 @@ namespace System.Runtime.InteropServices
                 // TODO: Free s_thunkPoolHeap if the thread lose the race
                 Interlocked.CompareExchange(
                     ref s_thunkPoolHeap,
-                    RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress()),
+                    RuntimeAugments.CreateThunksHeap(),
                     null
                 );
                 Debug.Assert(s_thunkPoolHeap != null);
@@ -244,14 +244,8 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Retrieves the function pointer for the current open static delegate that is being called
         /// </summary>
-        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
+        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer(IntPtr pContext)
         {
-            //
-            // RH keeps track of the current thunk that is being called through a secret argument / thread
-            // statics. No matter how that's implemented, we get the current thunk which we can use for
-            // look up later
-            //
-            IntPtr pContext = RuntimeImports.GetCurrentInteropThunkContext();
             Debug.Assert(pContext != IntPtr.Zero);
 
             IntPtr fnPtr;
@@ -268,15 +262,8 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Retrieves the current delegate that is being called
         /// </summary>
-        public static T GetCurrentCalleeDelegate<T>() where T : Delegate
+        public static T GetCurrentCalleeDelegate<T>(IntPtr pContext) where T : Delegate
         {
-            //
-            // RH keeps track of the current thunk that is being called through a secret argument / thread
-            // statics. No matter how that's implemented, we get the current thunk which we can use for
-            // look up later
-            //
-            IntPtr pContext = RuntimeImports.GetCurrentInteropThunkContext();
-
             Debug.Assert(pContext != IntPtr.Zero);
 
             WeakGCHandle<Delegate> handle;

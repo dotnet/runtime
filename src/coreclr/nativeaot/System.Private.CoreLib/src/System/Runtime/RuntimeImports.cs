@@ -580,14 +580,6 @@ namespace System.Runtime
         internal static extern bool RhCheckAndClearPendingInterrupt();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport("*", "RhGetCurrentThunkContext")]
-        internal static extern IntPtr GetCurrentInteropThunkContext();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport("*", "RhGetCommonStubAddress")]
-        internal static extern IntPtr GetInteropCommonStubAddress();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]
         public static extern IntPtr RhGetCodeTarget(IntPtr pCode);
 

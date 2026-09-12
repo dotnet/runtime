@@ -27,20 +27,14 @@ RO$name % 8
     MEND
 
     MACRO
-        LOAD_DATA_ADDRESS $groupIndex, $index, $pageIndex
-
-        ;; Set xip0 to the address of the current thunk's data block. This is done using labels.
-        adr      xip0, label_$groupIndex_$index_P$pageIndex
+        LOAD_TARGET $groupIndex, $index, $pageIndex
+        ldr      x10, label_$groupIndex_$index_P$pageIndex + POINTER_SIZE
     MEND
 
     MACRO
-        JUMP_TO_COMMON $groupIndex, $index
-        ;; start                                        : xip0 points to the current thunks first data cell in the data page
-        ;; set xip0 to beginning of data page            : xip0 <- xip0 - (THUNK_DATASIZE * current thunk's index)
-        ;; fix offset to point to last QWROD in page    : xip1 <- [xip0 + PAGE_SIZE - POINTER_SIZE]
-        ;; tailcall to the location pointed at by the last qword in the data page
-        ldr      xip1, [xip0, #(PAGE_SIZE - POINTER_SIZE - ($groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * $index))]
-        br       xip1
+        LOAD_CONTEXT_AND_JUMP $groupIndex, $index, $pageIndex
+        ldr      x12, label_$groupIndex_$index_P$pageIndex
+        br       x10
 
         brk     0xf000      ;; Stubs need to be 16-byte aligned for CFG table. Filling padding with a
                             ;; deterministic brk instruction, instead of having it just filled with zeros.
@@ -59,43 +53,39 @@ label_$groupIndex_$index_P$pageIndex
     MACRO
         TenThunks $groupIndex, $pageIndex
 
-        ;; Each thunk will load the address of its corresponding data (from the page that immediately follows)
-        ;; and call a common stub. The address of the common stub is setup by the caller (last qword
-        ;; in the thunks data section) depending on the 'kind' of thunks needed (interop, fat function pointers, etc...)
-
         ;; Each data block used by a thunk consists of two qword values:
-        ;;      - Context: some value given to the thunk as context. Example for fat-fptrs: context = generic dictionary
+        ;;      - Context: some value given to the thunk as context (passed in x12). Example for fat-fptrs: context = generic dictionary
         ;;      - Target : target code that the thunk eventually jumps to.
 
-        LOAD_DATA_ADDRESS $groupIndex,0,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,0
+        LOAD_TARGET           $groupIndex,0,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,0,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,1,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,1
+        LOAD_TARGET           $groupIndex,1,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,1,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,2,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,2
+        LOAD_TARGET           $groupIndex,2,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,2,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,3,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,3
+        LOAD_TARGET           $groupIndex,3,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,3,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,4,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,4
+        LOAD_TARGET           $groupIndex,4,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,4,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,5,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,5
+        LOAD_TARGET           $groupIndex,5,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,5,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,6,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,6
+        LOAD_TARGET           $groupIndex,6,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,6,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,7,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,7
+        LOAD_TARGET           $groupIndex,7,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,7,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,8,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,8
+        LOAD_TARGET           $groupIndex,8,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,8,$pageIndex
 
-        LOAD_DATA_ADDRESS $groupIndex,9,$pageIndex
-        JUMP_TO_COMMON    $groupIndex,9
+        LOAD_TARGET           $groupIndex,9,$pageIndex
+        LOAD_CONTEXT_AND_JUMP $groupIndex,9,$pageIndex
     MEND
 
     MACRO
