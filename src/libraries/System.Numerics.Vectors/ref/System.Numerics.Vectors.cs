@@ -259,6 +259,7 @@ namespace System.Numerics
         public unsafe static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector2 value) { throw null; }
         public unsafe static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector<byte> AsVectorByte<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<char> AsVectorChar<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<double> AsVectorDouble<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<short> AsVectorInt16<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<int> AsVectorInt32<T>(System.Numerics.Vector<T> value) { throw null; }
@@ -464,6 +465,7 @@ namespace System.Numerics
         public static System.Numerics.Vector<double> Round(System.Numerics.Vector<double> vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector<float> Round(System.Numerics.Vector<float> vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeft(System.Numerics.Vector<byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<char> ShiftLeft(System.Numerics.Vector<char> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeft(System.Numerics.Vector<short> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<int> ShiftLeft(System.Numerics.Vector<int> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<long> ShiftLeft(System.Numerics.Vector<long> value, int shiftCount) { throw null; }
@@ -485,6 +487,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<char> ShiftRightLogical(System.Numerics.Vector<char> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<short> ShiftRightLogical(System.Numerics.Vector<short> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<int> ShiftRightLogical(System.Numerics.Vector<int> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<long> ShiftRightLogical(System.Numerics.Vector<long> value, int shiftCount) { throw null; }
@@ -1141,6 +1144,7 @@ namespace System.Numerics
         public static bool operator ==(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator ^(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static explicit operator System.Numerics.Vector<byte> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<char>(System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<double> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<short> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<int> (System.Numerics.Vector<T> value) { throw null; }

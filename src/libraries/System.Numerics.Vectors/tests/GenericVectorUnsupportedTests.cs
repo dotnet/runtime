@@ -364,9 +364,6 @@ namespace System.Numerics.Tests
         public void IsNotSupportedBoolean() => TestIsNotSupported<bool>();
 
         [Fact]
-        public void IsNotSupportedChar() => TestIsNotSupported<char>();
-
-        [Fact]
         public void IsNotSupportedHalf() => TestIsNotSupported<Half>();
 
         [Fact]

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -264,6 +263,14 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<byte> AsByte<T>(this Vector256<T> vector) => vector.As<T, byte>();
+
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see langword="Vector256&lt;Char&gt;" />.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector256&lt;Char&gt;" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector256<char> AsChar<T>(this Vector256<T> vector) => vector.As<T, char>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see langword="Vector256&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -931,6 +938,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<byte> Create(byte value) => Create<byte>(value);
 
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi16</remarks>
+        [Intrinsic]
+        public static Vector256<char> Create(char value) => Create<char>(value);
+
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see langword="Vector256&lt;Double&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
@@ -1112,6 +1126,35 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector128.Create(e0,  e1,  e2,  e3,  e4,  e5,  e6,  e7,  e8,  e9,  e10, e11, e12, e13, e14, e15),
                 Vector128.Create(e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31)
+            );
+        }
+
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <param name="e0">The value that element 0 will be initialized to.</param>
+        /// <param name="e1">The value that element 1 will be initialized to.</param>
+        /// <param name="e2">The value that element 2 will be initialized to.</param>
+        /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <param name="e4">The value that element 4 will be initialized to.</param>
+        /// <param name="e5">The value that element 5 will be initialized to.</param>
+        /// <param name="e6">The value that element 6 will be initialized to.</param>
+        /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <param name="e8">The value that element 8 will be initialized to.</param>
+        /// <param name="e9">The value that element 9 will be initialized to.</param>
+        /// <param name="e10">The value that element 10 will be initialized to.</param>
+        /// <param name="e11">The value that element 11 will be initialized to.</param>
+        /// <param name="e12">The value that element 12 will be initialized to.</param>
+        /// <param name="e13">The value that element 13 will be initialized to.</param>
+        /// <param name="e14">The value that element 14 will be initialized to.</param>
+        /// <param name="e15">The value that element 15 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> with each element initialized to corresponding specified value.</returns>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi16</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<char> Create(char e0, char e1, char e2, char e3, char e4, char e5, char e6, char e7, char e8, char e9, char e10, char e11, char e12, char e13, char e14, char e15)
+        {
+            return Create(
+                Vector128.Create(e0, e1, e2, e3, e4, e5, e6, e7),
+                Vector128.Create(e8, e9, e10, e11, e12, e13, e14, e15)
             );
         }
 
@@ -1385,6 +1428,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see langword="Vector256&lt;Byte&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static Vector256<byte> Create(Vector128<byte> lower, Vector128<byte> upper) => Create<byte>(lower, upper);
 
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance from two <see langword="Vector128&lt;Char&gt;" /> instances.</summary>
+        /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
+        /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        public static Vector256<char> Create(Vector128<char> lower, Vector128<char> upper) => Create<char>(lower, upper);
+
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance from two <see langword="Vector128&lt;Double&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
@@ -1473,6 +1522,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see langword="Vector256&lt;Byte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector256<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
+
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
+        public static Vector256<char> CreateScalar(char value) => CreateScalar<char>(value);
 
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -1569,6 +1624,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see langword="Vector256&lt;Byte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector256<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
+
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        public static Vector256<char> CreateScalarUnsafe(char value) => CreateScalarUnsafe<char>(value);
 
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -3249,6 +3310,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
+        public static Vector256<char> ShiftLeft(Vector256<char> vector, int shiftCount) => vector << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
         public static Vector256<short> ShiftLeft(Vector256<short> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -3392,6 +3460,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
+        public static Vector256<char> ShiftRightLogical(Vector256<char> vector, int shiftCount) => vector >>> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
         public static Vector256<short> ShiftRightLogical(Vector256<short> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -3492,6 +3567,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices) => ShuffleFallback(vector, indices);
 
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<char> Shuffle(Vector256<char> vector, Vector256<ushort> indices) => ShuffleFallback(vector, indices);
+
         /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
         [Intrinsic]
         public static Vector256<double> Shuffle(Vector256<double> vector, Vector256<long> indices) => ShuffleFallback(vector, indices);
@@ -3549,6 +3632,16 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<byte> ShuffleNative(Vector256<byte> vector, Vector256<byte> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector256<char> ShuffleNative(Vector256<char> vector, Vector256<ushort> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
         [Intrinsic]

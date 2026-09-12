@@ -3388,6 +3388,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     switch (simdBaseJitType)
                     {
+                        case CORINFO_TYPE_CHAR:
                         case CORINFO_TYPE_BYTE:
                         case CORINFO_TYPE_UBYTE:
                         case CORINFO_TYPE_SHORT:
@@ -3396,10 +3397,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case CORINFO_TYPE_UINT:
                         case CORINFO_TYPE_LONG:
                         case CORINFO_TYPE_ULONG:
-                        case CORINFO_TYPE_FLOAT:
-                        case CORINFO_TYPE_DOUBLE:
                         case CORINFO_TYPE_NATIVEINT:
                         case CORINFO_TYPE_NATIVEUINT:
+                        case CORINFO_TYPE_FLOAT:
+                        case CORINFO_TYPE_DOUBLE:
                         {
                             return gtNewIconNode(true);
                         }
@@ -3427,6 +3428,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     switch (simdBaseJitType)
                     {
+                        case CORINFO_TYPE_CHAR:
                         case CORINFO_TYPE_BYTE:
                         case CORINFO_TYPE_UBYTE:
                         case CORINFO_TYPE_SHORT:
@@ -3435,10 +3437,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case CORINFO_TYPE_UINT:
                         case CORINFO_TYPE_LONG:
                         case CORINFO_TYPE_ULONG:
-                        case CORINFO_TYPE_FLOAT:
-                        case CORINFO_TYPE_DOUBLE:
                         case CORINFO_TYPE_NATIVEINT:
                         case CORINFO_TYPE_NATIVEUINT:
+                        case CORINFO_TYPE_FLOAT:
+                        case CORINFO_TYPE_DOUBLE:
                         {
                             return evalVectorCount(clsHnd, JitType2PreciseVarType(simdBaseJitType));
                         }

@@ -243,6 +243,14 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector<byte> AsVectorByte<T>(Vector<T> value) => value.As<T, byte>();
 
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Char&gt;" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Char&gt;" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector<char> AsVectorChar<T>(Vector<T> value) => value.As<T, char>();
+
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
@@ -2920,6 +2928,13 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
+        public static Vector<char> ShiftLeft(Vector<char> value, int shiftCount) => value << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
         public static Vector<short> ShiftLeft(Vector<short> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -3061,6 +3076,13 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         public static Vector<byte> ShiftRightLogical(Vector<byte> value, int shiftCount) => value >>> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        public static Vector<char> ShiftRightLogical(Vector<char> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>

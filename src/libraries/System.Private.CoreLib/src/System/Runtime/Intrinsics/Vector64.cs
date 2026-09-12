@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -264,6 +263,14 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector64<byte> AsByte<T>(this Vector64<T> vector) => vector.As<T, byte>();
+
+        /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see langword="Vector64&lt;Char&gt;" />.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector64&lt;Char&gt;" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector64<char> AsChar<T>(this Vector64<T> vector) => vector.As<T, char>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see langword="Vector64&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -909,6 +916,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector64<byte> Create(byte value) => Create<byte>(value);
 
+        /// <summary>Creates a new <see langword="Vector64&lt;Char&gt;" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi16</remarks>
+        /// <returns>A new <see langword="Vector64&lt;Char&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        public static Vector64<char> Create(char value) => Create<char>(value);
+
         /// <summary>Creates a new <see langword="Vector64&lt;Double&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see langword="Vector64&lt;Double&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
@@ -1070,6 +1084,25 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Creates a new <see langword="Vector64&lt;Char&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <param name="e0">The value that element 0 will be initialized to.</param>
+        /// <param name="e1">The value that element 1 will be initialized to.</param>
+        /// <param name="e2">The value that element 2 will be initialized to.</param>
+        /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_setr_pi16</remarks>
+        /// <returns>A new <see langword="Vector64&lt;Char&gt;" /> with each element initialized to corresponding specified value.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<char> Create(char e0, char e1, char e2, char e3)
+        {
+            Unsafe.SkipInit(out Vector64<char> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            return result;
+        }
+
         /// <summary>Creates a new <see langword="Vector64&lt;Int16&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
@@ -1202,6 +1235,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector64<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
 
+        /// <summary>Creates a new <see langword="Vector64&lt;Char&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector64&lt;Char&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
+        public static Vector64<char> CreateScalar(char value) => CreateScalar<char>(value);
+
         /// <summary>Creates a new <see langword="Vector64&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see langword="Vector64&lt;Double&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
@@ -1297,6 +1336,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see langword="Vector64&lt;Byte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector64<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
+
+        /// <summary>Creates a new <see langword="Vector64&lt;Char&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector64&lt;Char&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        public static Vector64<char> CreateScalarUnsafe(char value) => CreateScalarUnsafe<char>(value);
 
         /// <summary>Creates a new <see langword="Vector64&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -3380,6 +3425,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
+        public static Vector64<char> ShiftLeft(Vector64<char> vector, int shiftCount) => vector << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
         public static Vector64<short> ShiftLeft(Vector64<short> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -3533,6 +3585,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
+        public static Vector64<char> ShiftRightLogical(Vector64<char> vector, int shiftCount) => vector >>> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
         public static Vector64<short> ShiftRightLogical(Vector64<short> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -3633,6 +3692,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector64<byte> Shuffle(Vector64<byte> vector, Vector64<byte> indices) => ShuffleFallback(vector, indices);
 
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector64<char> Shuffle(Vector64<char> vector, Vector64<ushort> indices) => ShuffleFallback(vector, indices);
+
         /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
         [Intrinsic]
         public static Vector64<short> Shuffle(Vector64<short> vector, Vector64<short> indices) => ShuffleFallback(vector, indices);
@@ -3677,6 +3744,16 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<byte> ShuffleNative(Vector64<byte> vector, Vector64<byte> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector64<char> ShuffleNative(Vector64<char> vector, Vector64<ushort> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
         [Intrinsic]
