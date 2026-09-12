@@ -17,6 +17,13 @@ public static class WasmWebcilModule
         return left + right;
     }
 
+    [MethodImpl(MethodImplOptions.NoOptimization)]
+    public static double AddDoubles(double left, double right)
+    {
+        double result = left + right;
+        return result;
+    }
+
     // Reads static data, which forces the JIT to materialize the imageBase address via a
     // 'global.get' of the wasm imageBase well-known global.
     public static int SumStaticData(int index)
