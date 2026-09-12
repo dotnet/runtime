@@ -23,7 +23,7 @@ namespace System
         // 1. Multicast delegates - Wrapper[]
         // 2. Method cache - MethodInfo
         // 3. Collectible delegates - LoaderAllocator and such
-        private object? _helperObject;
+        internal object? _helperObject;
 
         // _target is the object we will invoke on
         // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
