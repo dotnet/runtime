@@ -12,23 +12,25 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Dump-based integration tests for the ComWrappers contract's
 /// <see cref="IComWrappers.GetComWrappersRCWForObject"/> and
 /// <see cref="IComWrappers.GetMOWs"/> APIs.
-/// Uses the ComWrappers debuggee which creates exactly one MOW and
-/// exactly one RCW for a single managed object before crashing.
+/// Exercises table-backed and field-backed RCWs, an unregistered base-class instance,
+/// and an object with both RCW and CCW state.
 /// </summary>
 public class ComWrappersDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ComWrappers";
+    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "ComWrappers cDAC support not available in .NET 10")]
-    public void GetComWrappersRCWForObject_FindsExactlyOneRCW(TestConfiguration config)
+    public void GetComWrappersRCWForObject_FindsAllRegisteredRCWs(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
         IComWrappers comWrappersContract = Target.Contracts.ComWrappers;
 
         int rcwCount = 0;
+        var identities = new HashSet<TargetPointer>();
         foreach (HandleData handleData in gcContract.GetHandles([HandleType.Strong]))
         {
             TargetPointer objectAddress = Target.ReadPointer(handleData.Handle);
@@ -37,16 +39,22 @@ public class ComWrappersDumpTests : DumpTestBase
 
             TargetPointer rcw = comWrappersContract.GetComWrappersRCWForObject(objectAddress);
             if (rcw != TargetPointer.Null)
+            {
                 rcwCount++;
+                TargetPointer identity = comWrappersContract.GetComWrappersIdentity(rcw);
+                Assert.NotEqual(TargetPointer.Null, identity);
+                identities.Add(identity);
+            }
         }
 
-        Assert.Equal(1, rcwCount);
+        Assert.Equal(3, rcwCount);
+        Assert.Single(identities);
     }
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "ComWrappers cDAC support not available in .NET 10")]
-    public void GetMOWs_FindsExactlyOneMOW(TestConfiguration config)
+    public void GetMOWs_FindsTableAndFieldCachedMOWs(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
@@ -77,7 +85,7 @@ public class ComWrappersDumpTests : DumpTestBase
             }
         }
 
-        Assert.Equal(1, objectsWithMows);
-        Assert.Equal(1, totalMowCount);
+        Assert.Equal(2, objectsWithMows);
+        Assert.Equal(2, totalMowCount);
     }
 }

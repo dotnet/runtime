@@ -353,7 +353,7 @@ namespace System.Runtime.InteropServices.Marshalling
         ManagedObjectWrapper = 0x1,
         ComObjectWrapper = 0x2,
     }
-    public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
+    public sealed partial class ComObject : System.Runtime.InteropServices.ComWrappersObject, System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
     {
         internal ComObject() { }
         public void FinalRelease() { }
@@ -782,6 +782,14 @@ namespace System.Runtime.InteropServices
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(System.Runtime.InteropServices.ComWrappers instance) { }
         public static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    public abstract partial class ComWrappersObject
+    {
+        protected ComWrappersObject() { }
     }
     [System.FlagsAttribute]
     public enum CreateComInterfaceFlags
