@@ -2,16 +2,88 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using ILCompiler.Reflection.ReadyToRun;
+using Internal.Runtime;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static bool HasExpectedAsyncResumeInfoFixups(ReadyToRunReader reader, out string diagnostic)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(
+                ReadyToRunSectionType.WasmAsyncResumeInfo, out ReadyToRunSection section))
+        {
+            diagnostic = "The Wasm async resume info fixup section was not found.";
+            return false;
+        }
+
+        ReadOnlySpan<byte> image = reader.CompositeReader.GetEntireImage().AsSpan();
+        int offset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        int end = checked(offset + section.Size);
+        uint chunkCount = ReadWasmUleb32(image, ref offset, end);
+        if (chunkCount != 2)
+        {
+            diagnostic = $"Found {chunkCount} async resume info fixup chunks; expected 2.";
+            return false;
+        }
+
+        const uint ExpectedFixupsPerChunk = 3;
+        const uint ExpectedStride = 8;
+        uint currentFixupRva = 0;
+        uint previousMethodVirtualIP = 0;
+
+        for (uint chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++)
+        {
+            currentFixupRva += ReadWasmUleb32(image, ref offset, end);
+            uint fixupCount = ReadWasmUleb32(image, ref offset, end);
+            uint fixupStride = ReadWasmUleb32(image, ref offset, end);
+            if (fixupCount != ExpectedFixupsPerChunk || fixupStride != ExpectedStride)
+            {
+                diagnostic =
+                    $"Chunk {chunkIndex} encoded count {fixupCount}, stride {fixupStride}; " +
+                    $"expected count {ExpectedFixupsPerChunk}, stride {ExpectedStride}.";
+                return false;
+            }
+
+            int firstFixupOffset = reader.CompositeReader.GetOffset(checked((int)currentFixupRva));
+            uint methodVirtualIP = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(firstFixupOffset, sizeof(uint)));
+            if ((methodVirtualIP & 1) != 0 || (chunkIndex != 0 && methodVirtualIP <= previousMethodVirtualIP))
+            {
+                diagnostic =
+                    $"Chunk {chunkIndex} contains invalid method-relative virtual IP {methodVirtualIP}; " +
+                    $"previous value was {previousMethodVirtualIP}.";
+                return false;
+            }
+
+            for (uint fixupIndex = 1; fixupIndex < fixupCount; fixupIndex++)
+            {
+                int fixupOffset = reader.CompositeReader.GetOffset(
+                    checked((int)(currentFixupRva + fixupIndex * fixupStride)));
+                uint actualVirtualIP =
+                    BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(fixupOffset, sizeof(uint)));
+                if (actualVirtualIP != methodVirtualIP)
+                {
+                    diagnostic =
+                        $"Chunk {chunkIndex}, fixup {fixupIndex} contains virtual IP {actualVirtualIP}; " +
+                        $"expected {methodVirtualIP}.";
+                    return false;
+                }
+            }
+
+            previousMethodVirtualIP = methodVirtualIP;
+            currentFixupRva += (fixupCount - 1) * fixupStride + sizeof(uint);
+        }
+
+        diagnostic = "The Wasm async resume info fixup table has the expected chunks and method-relative virtual IP values.";
+        return true;
+    }
+
     /// <summary>
     /// Returns true if any WASM function body in the image contains a <c>global.get</c> of the
     /// given ABI well-known-global index (the <c>global.get</c> opcode <c>0x23</c> followed

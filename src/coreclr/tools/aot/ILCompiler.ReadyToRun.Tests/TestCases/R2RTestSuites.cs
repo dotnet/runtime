@@ -959,6 +959,39 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void RuntimeAsyncWasmDiagnosticIPFixups()
+    {
+        var asm = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeAsyncWasmDiagnosticIPFixups),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/AsyncMultipleSuspensionPoints.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeAsyncWasmDiagnosticIPFixups),
+            [
+                new(nameof(RuntimeAsyncWasmDiagnosticIPFixups), [new CrossgenAssembly(asm)])
+                {
+                    AdditionalArgs = { "--determinism-stress=2" },
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(
+                WasmR2RAssert.HasExpectedAsyncResumeInfoFixups(reader, out string diagnostic),
+                diagnostic);
+        }
+    }
+
     /// <summary>
     /// PR #121679: MutableModule async references + cross-module inlining
     /// of runtime-async methods with cross-module dependency.

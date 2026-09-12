@@ -304,14 +304,128 @@ namespace ILCompiler.ObjectWriter
                 using Stream originalStream = section.ContentReadStream;
                 MemoryStream resolvedStream = new((int)originalStream.Length);
                 originalStream.Position = 0;
-                ResolveRelocations(
-                    section.SectionIndex,
-                    originalStream,
-                    resolvedStream,
-                    relocations,
-                    sectionStart: 0,
-                    shrink: false);
+                if (relocations.Exists(static relocation => relocation.Type == RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB))
+                {
+                    ResolveAsyncResumeInfoRelocations(section.SectionIndex, originalStream, resolvedStream, relocations);
+                }
+                else
+                {
+                    ResolveRelocations(
+                        section.SectionIndex,
+                        originalStream,
+                        resolvedStream,
+                        relocations,
+                        sectionStart: 0,
+                        shrink: false);
+                }
                 section.ContentReadStream = resolvedStream;
+            }
+        }
+
+        private void ResolveAsyncResumeInfoRelocations(
+            int sectionIndex,
+            Stream sourceStream,
+            MemoryStream destinationStream,
+            List<SymbolicRelocation> relocations)
+        {
+            long sourcePosition = 0;
+            uint previousFixupEndRva = 0;
+
+            foreach (SymbolicRelocation relocation in relocations)
+            {
+                if (relocation.Type != RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB)
+                {
+                    throw new InvalidDataException(
+                        $"Unexpected relocation type {relocation.Type} in the Wasm async resume info fixup section.");
+                }
+
+                CopyBytes(sourceStream, destinationStream, sourcePosition, relocation.Offset - sourcePosition);
+
+                SymbolDefinition definedSymbol = _definedSymbols[relocation.SymbolName];
+                if (_sections[definedSymbol.SectionIndex] is not WebcilSection targetSection)
+                {
+                    throw new InvalidDataException(
+                        $"Wasm async resume info target '{relocation.SymbolName}' is not in a WebCIL section.");
+                }
+
+                sourceStream.Position = relocation.Offset;
+                uint locationOffset = ReadULEB128(sourceStream);
+                uint fixupRva = checked(targetSection.Header.VirtualAddress +
+                    (uint)definedSymbol.Value +
+                    (uint)relocation.Addend +
+                    locationOffset);
+                if (fixupRva < previousFixupEndRva)
+                {
+                    throw new InvalidDataException("Wasm async resume info fixups are not ordered by location.");
+                }
+
+                WriteULEB128(destinationStream, fixupRva - previousFixupEndRva);
+
+                sourcePosition = relocation.Offset + Relocation.GetSize(relocation.Type);
+                sourceStream.Position = sourcePosition;
+                uint count = ReadULEB128(sourceStream);
+                uint stride = ReadULEB128(sourceStream);
+                if (count == 0)
+                {
+                    throw new InvalidDataException("Wasm async resume info fixup chunks must not be empty.");
+                }
+                previousFixupEndRva = checked(fixupRva + (count - 1) * stride + sizeof(uint));
+            }
+
+            CopyBytes(sourceStream, destinationStream, sourcePosition, sourceStream.Length - sourcePosition);
+            while (destinationStream.Length < sourceStream.Length)
+            {
+                destinationStream.WriteByte(0);
+            }
+
+            destinationStream.Position = sourceStream.Length;
+
+            static void CopyBytes(Stream source, Stream destination, long sourceOffset, long count)
+            {
+                source.Position = sourceOffset;
+                Span<byte> buffer = stackalloc byte[256];
+                while (count > 0)
+                {
+                    int bytesToRead = (int)Math.Min(count, buffer.Length);
+                    source.ReadExactly(buffer.Slice(0, bytesToRead));
+                    destination.Write(buffer.Slice(0, bytesToRead));
+                    count -= bytesToRead;
+                }
+            }
+
+            static uint ReadULEB128(Stream stream)
+            {
+                uint value = 0;
+                int shift = 0;
+                byte current;
+                do
+                {
+                    int nextByte = stream.ReadByte();
+                    if (nextByte < 0)
+                    {
+                        throw new EndOfStreamException();
+                    }
+
+                    current = (byte)nextByte;
+                    value |= (uint)(current & 0x7F) << shift;
+                    shift += 7;
+                } while ((current & 0x80) != 0);
+
+                return value;
+            }
+
+            static void WriteULEB128(Stream stream, uint value)
+            {
+                do
+                {
+                    byte current = (byte)(value & 0x7F);
+                    value >>= 7;
+                    if (value != 0)
+                    {
+                        current |= 0x80;
+                    }
+                    stream.WriteByte(current);
+                } while (value != 0);
             }
         }
 
@@ -710,6 +824,10 @@ namespace ILCompiler.ObjectWriter
 
                 switch (reloc.Type)
                 {
+                    case RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32:
+                        Relocation.WriteValue(reloc.Type, pData, reloc.Addend + addend);
+                        break;
+
                     case RelocType.WASM_TYPE_INDEX_LEB:
                     case RelocType.WASM_GLOBAL_INDEX_LEB:
                     case RelocType.WASM_TABLE_INDEX_I32:

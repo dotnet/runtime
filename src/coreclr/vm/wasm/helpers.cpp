@@ -1805,7 +1805,9 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
     // frame pointer is found by unwinding to either its containing function, or to a CallFunclet location.
 
     TADDR internalFunctionFramePointer = GetWasmFramePointerFromStackPointer_Internal(sp);
-    _ASSERTE(internalFunctionFramePointer != 0);
+    if (internalFunctionFramePointer == 0)
+        return 0;
+
     uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(internalFunctionFramePointer + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
     _ASSERTE(GetWasmVirtualIPFromStackPointer(sp) == controlPC);
 
