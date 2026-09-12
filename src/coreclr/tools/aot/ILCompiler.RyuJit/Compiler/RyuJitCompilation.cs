@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
@@ -22,13 +21,20 @@ namespace ILCompiler
 {
     public sealed class RyuJitCompilation : Compilation
     {
-        private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ProfileDataManager _profileDataManager;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
+
+        private struct WorkerState
+        {
+            public CorInfoImpl CorInfoImpl;
+            public int MethodsCompiled;
+        }
+
+        private WorkerState _singleThreadedWorkerState;
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
@@ -100,6 +106,10 @@ namespace ILCompiler
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _dependencyGraph.ComputeMarkedNodes();
+
+            // Release single-threaded JIT state before object emission to reduce peak memory usage.
+            _singleThreadedWorkerState = default;
+
             var nodes = _dependencyGraph.MarkedNodeList;
 
             nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
@@ -163,17 +173,18 @@ namespace ILCompiler
                 Logger.LogMessage($"Compiling {methodsToCompile.Count} methods...");
             }
 
-            Parallel.ForEach(
-                methodsToCompile,
+            Parallel.ForEach<MethodCodeNode, WorkerState>(
+                // Method compilation costs vary widely, so avoid buffering work into imbalanced partitions.
+                Partitioner.Create(methodsToCompile, EnumerablePartitionerOptions.NoBuffering),
                 new ParallelOptions { MaxDegreeOfParallelism = _parallelism },
-                CompileSingleMethod);
+                static () => default,
+                CompileSingleMethodInParallel,
+                static _ => { });
         }
 
 
         private void CompileSingleThreaded(List<MethodCodeNode> methodsToCompile)
         {
-            CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
-
             foreach (MethodCodeNode methodCodeNodeNeedingCode in methodsToCompile)
             {
                 if (Logger.IsVerbose)
@@ -181,14 +192,31 @@ namespace ILCompiler
                     Logger.LogMessage($"Compiling {methodCodeNodeNeedingCode.Method}...");
                 }
 
-                CompileSingleMethod(corInfo, methodCodeNodeNeedingCode);
+                CompileSingleMethod(methodCodeNodeNeedingCode, ref _singleThreadedWorkerState);
             }
         }
 
-        private void CompileSingleMethod(MethodCodeNode methodCodeNodeNeedingCode)
+        private WorkerState CompileSingleMethodInParallel(
+            MethodCodeNode methodCodeNodeNeedingCode,
+            ParallelLoopState _,
+            WorkerState workerState)
         {
-            CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
-            CompileSingleMethod(corInfo, methodCodeNodeNeedingCode);
+            CompileSingleMethod(methodCodeNodeNeedingCode, ref workerState);
+            return workerState;
+        }
+
+        private void CompileSingleMethod(MethodCodeNode methodCodeNodeNeedingCode, ref WorkerState workerState)
+        {
+            workerState.MethodsCompiled++;
+            if (workerState.CorInfoImpl is null ||
+                (_parallelism != 1 && (workerState.MethodsCompiled % 3000) == 0))
+            {
+                // Periodically create a new CorInfoImpl to clear out stale caches. For single-threaded
+                // compilation, reuse one instance across dependency computation waves.
+                workerState.CorInfoImpl = new CorInfoImpl(this);
+            }
+
+            CompileSingleMethod(workerState.CorInfoImpl, methodCodeNodeNeedingCode);
         }
 
         private void CompileSingleMethod(CorInfoImpl corInfo, MethodCodeNode methodCodeNodeNeedingCode)
