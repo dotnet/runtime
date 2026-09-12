@@ -12,6 +12,24 @@
       <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'osx' or '$(TargetsMobile)' == 'true'">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <_MibcConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</_MibcConfiguration>
+    <_MibcConfiguration Condition="'$(CoreCLRConfiguration)' != ''">$(CoreCLRConfiguration)</_MibcConfiguration>
+    <UseMibcProjectReference Condition="'$(UseMibcProjectReference)' == '' and
+                                        '$(PublishReadyToRun)' == 'true' and
+                                        '$(DotNetBuildSourceOnly)' != 'true'">true</UseMibcProjectReference>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseMibcProjectReference)' == 'true'">
+    <ProjectReference Include="$(CoreClrProjectRoot)merge-mibc.proj"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="MergedMibcFile"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(_MibcConfiguration)"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build;GetMibcFile" />
+  </ItemGroup>
+
   <Target Name="SetApplyNgenOptimization"
           Condition="'$(IsEligibleForNgenOptimization)' == 'true'"
           BeforeTargets="CoreCompile">
@@ -27,7 +45,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="AddReadyToRunPgoOptions" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == 'true'">
+  <Target Name="AddReadyToRunPgoOptions" DependsOnTargets="ResolveProjectReferences;ResolveRuntimeFilesFromLocalBuild" BeforeTargets="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == 'true'">
     <PropertyGroup>
       <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
       <IncludeMibcFilesInReadyToRun Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">true</IncludeMibcFilesInReadyToRun>
@@ -36,7 +54,7 @@
       <IncludeMibcFilesInReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'"></IncludeMibcFilesInReadyToRun>
     </PropertyGroup>
     <ItemGroup>
-      <PublishReadyToRunPgoFiles Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'" Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"/>
+      <PublishReadyToRunPgoFiles Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'" Include="@(MergedMibcFile)"/>
     </ItemGroup>
 
     <PropertyGroup Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'">

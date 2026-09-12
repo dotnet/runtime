@@ -7,7 +7,7 @@
   -->
   <!-- Get all the *.dll files that has IsNative != "true"-->
   <Target Name="GetRequiredNativeAOTAssemblies" 
-      DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"
+      DependsOnTargets="ResolveLibrariesManagedRuntimeFilesFromLocalBuild"
       BeforeTargets="ComputeIlcCompileInputs"
       Condition="'$(TestBuildMode)' == 'nativeaot'">
     <ItemGroup>
