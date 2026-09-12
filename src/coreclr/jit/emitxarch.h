@@ -721,7 +721,7 @@ bool        IsThreeOperandAVXInstruction(instruction ins) const;
 bool        IsAvxCommutative(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
-static bool DoesWriteZeroFlag(instruction ins);
+static bool DoesSetZeroFlagOnResult(instruction ins);
 static bool DoesWriteParityFlag(instruction ins);
 static bool DoesWriteSignFlag(instruction ins);
 static bool DoesResetOverflowAndCarryFlags(instruction ins);
