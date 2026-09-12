@@ -123,13 +123,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyList dependencyList = null;
-
             if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
                 var targetMethod = (MethodDesc)_target;
 
-                dependencyList = new DependencyList();
+                DependencyList dependencyList = new DependencyList();
 
 #if !SUPPORT_JIT
                 factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
@@ -141,9 +139,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
 #endif
 
+                return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
+                DependencyList dependencyList = null;
+
                 var info = (DelegateCreationInfo)_target;
                 if (info.NeedsVirtualMethodUseTracking)
                 {
@@ -163,9 +164,10 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.DelegateType,
                     info.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
+                return dependencyList;
             }
 
-            return dependencyList;
+            return null;
         }
 
         public override bool HasConditionalStaticDependencies => _id == ReadyToRunHelperId.DelegateCtor;
