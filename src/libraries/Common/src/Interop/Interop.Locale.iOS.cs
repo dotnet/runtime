@@ -11,16 +11,29 @@ internal static partial class Interop
         internal static partial string GetDefaultLocaleNameNative();
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoStringNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial string GetLocaleInfoStringNative(string localeName, uint localeStringData, string? uiLocaleName = null);
+        internal static partial string GetLocaleInfoStringNative(
+            string localeName,
+            uint localeStringData,
+            string? uiLocaleName = null,
+            [MarshalAs(UnmanagedType.Bool)] bool useUserOverride = false);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoIntNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial int GetLocaleInfoIntNative(string localeName, uint localeNumberData);
+        internal static partial int GetLocaleInfoIntNative(
+            string localeName,
+            uint localeNumberData,
+            [MarshalAs(UnmanagedType.Bool)] bool useUserOverride = false);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial int GetLocaleInfoPrimaryGroupingSizeNative(string localeName, uint localeGroupingData);
+        internal static partial int GetLocaleInfoPrimaryGroupingSizeNative(
+            string localeName,
+            uint localeGroupingData,
+            [MarshalAs(UnmanagedType.Bool)] bool useUserOverride = false);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial int GetLocaleInfoSecondaryGroupingSizeNative(string localeName, uint localeGroupingData);
+        internal static partial int GetLocaleInfoSecondaryGroupingSizeNative(
+            string localeName,
+            uint localeGroupingData,
+            [MarshalAs(UnmanagedType.Bool)] bool useUserOverride = false);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleNameNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial string GetLocaleNameNative(string localeName);

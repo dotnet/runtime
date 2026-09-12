@@ -2311,7 +2311,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return 0;
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type, useUserOverride: _bUseOverrides) : IcuGetLocaleInfo(type);
 #else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
 #endif
@@ -2324,7 +2324,7 @@ namespace System.Globalization
                 return null!;
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type, useUserOverride: _bUseOverrides) : IcuGetLocaleInfo(type);
 #else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
 #endif
@@ -2363,7 +2363,7 @@ namespace System.Globalization
                 return null!;
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type, useUserOverride: _bUseOverrides) : IcuGetLocaleInfo(type);
 #else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
 #endif
