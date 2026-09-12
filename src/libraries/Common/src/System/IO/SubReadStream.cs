@@ -24,7 +24,7 @@ namespace System.IO
         private readonly Stream _superStream;
         private bool _isDisposed;
 
-        public SubReadStream(Stream superStream, long startPosition, long maxLength)
+        public SubReadStream(Stream superStream, long startPosition, long maxLength, bool validateAvailableLength = false)
         {
             ArgumentNullException.ThrowIfNull(superStream);
             if (!superStream.CanRead)
@@ -39,6 +39,11 @@ namespace System.IO
             _positionInSuperStream = startPosition;
             _endInSuperStream = startPosition + maxLength;
             _superStream = superStream;
+
+            if (validateAvailableLength && superStream.CanSeek && !IsLengthAvailableInSuperStream())
+            {
+                throw new EndOfStreamException();
+            }
         }
 
         public override long Length
@@ -48,6 +53,15 @@ namespace System.IO
                 ThrowIfDisposed();
                 return _endInSuperStream - _startInSuperStream;
             }
+        }
+
+        private bool IsLengthAvailableInSuperStream()
+        {
+            Debug.Assert(_superStream.CanSeek);
+
+            long superStreamLength = _superStream.Length;
+            long availableLength = superStreamLength <= _startInSuperStream ? 0 : superStreamLength - _startInSuperStream;
+            return availableLength >= Length;
         }
 
         public override long Position
