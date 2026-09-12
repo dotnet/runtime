@@ -2019,6 +2019,9 @@ struct NaturalLoopIterInfo
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
 
+    // The local that the limit depends on, or BAD_VAR_NUM for a constant limit.
+    unsigned LimitVar = BAD_VAR_NUM;
+
 #ifdef DEBUG
     // Tree that initializes induction variable outside the loop.
     // Only valid if HasConstInit is true.
