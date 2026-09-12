@@ -104,36 +104,47 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
-        public static void ExportKeys_Allocated(HpkeKem kem)
+        public static void ExportDecapsulationKey_Allocated(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
 
             using (HpkeContract hpke = new(suite)
             {
                 OnExportDecapsulationKeyCore = destination => destination.Fill(0x42),
-                OnExportEncapsulationKeyCore = destination => destination.Fill(0xE7),
             })
             {
                 byte[] privateKey = hpke.ExportDecapsulationKey();
-                byte[] publicKey = hpke.ExportEncapsulationKey();
                 Assert.Equal(suite.DecapsulationKeySizeInBytes, privateKey.Length);
-                Assert.Equal(suite.EncapsulationKeySizeInBytes, publicKey.Length);
                 AssertExtensions.FilledWith<byte>(0x42, privateKey);
-                AssertExtensions.FilledWith<byte>(0xE7, publicKey);
                 Assert.Equal(1, hpke.ExportDecapsulationKeyCoreCount);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
+        public static void ExportEncapsulationKey_Allocated(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
+
+            using (HpkeContract hpke = new(suite)
+            {
+                OnExportEncapsulationKeyCore = destination => destination.Fill(0xE7),
+            })
+            {
+                byte[] publicKey = hpke.ExportEncapsulationKey();
+                Assert.Equal(suite.EncapsulationKeySizeInBytes, publicKey.Length);
+                AssertExtensions.FilledWith<byte>(0xE7, publicKey);
                 Assert.Equal(1, hpke.ExportEncapsulationKeyCoreCount);
             }
         }
 
         [Theory]
         [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
-        public static void ExportKeys_Exact(HpkeKem kem)
+        public static void ExportDecapsulationKey_Exact(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
             byte[] privateBuffer = Filled(suite.DecapsulationKeySizeInBytes + 2, 0xA5);
-            byte[] publicBuffer = Filled(suite.EncapsulationKeySizeInBytes + 2, 0xA5);
             Memory<byte> privateKey = privateBuffer.AsMemory(1, suite.DecapsulationKeySizeInBytes);
-            Memory<byte> publicKey = publicBuffer.AsMemory(1, suite.EncapsulationKeySizeInBytes);
 
             using (HpkeContract hpke = new(suite)
             {
@@ -142,6 +153,24 @@ namespace System.Security.Cryptography.Tests
                     AssertExtensions.Same(privateKey.Span, destination);
                     destination.Fill(0x42);
                 },
+            })
+            {
+                hpke.ExportDecapsulationKey(privateKey.Span);
+                AssertGuardedOutput(privateBuffer, 0x42);
+                Assert.Equal(1, hpke.ExportDecapsulationKeyCoreCount);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
+        public static void ExportEncapsulationKey_Exact(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
+            byte[] publicBuffer = Filled(suite.EncapsulationKeySizeInBytes + 2, 0xA5);
+            Memory<byte> publicKey = publicBuffer.AsMemory(1, suite.EncapsulationKeySizeInBytes);
+
+            using (HpkeContract hpke = new(suite)
+            {
                 OnExportEncapsulationKeyCore = destination =>
                 {
                     AssertExtensions.Same(publicKey.Span, destination);
@@ -149,11 +178,8 @@ namespace System.Security.Cryptography.Tests
                 },
             })
             {
-                hpke.ExportDecapsulationKey(privateKey.Span);
                 hpke.ExportEncapsulationKey(publicKey.Span);
-                AssertGuardedOutput(privateBuffer, 0x42);
                 AssertGuardedOutput(publicBuffer, 0xE7);
-                Assert.Equal(1, hpke.ExportDecapsulationKeyCoreCount);
                 Assert.Equal(1, hpke.ExportEncapsulationKeyCoreCount);
             }
         }
@@ -173,27 +199,19 @@ namespace System.Security.Cryptography.Tests
                         hpke.Dispose();
                     }
 
-                    foreach (int length in new[]
-                    {
-                        0,
-                        suite.DecapsulationKeySizeInBytes - 1,
-                        suite.DecapsulationKeySizeInBytes + 1
-                    })
-                    {
-                        AssertExtensions.Throws<ArgumentException>("destination",
-                            () => hpke.ExportDecapsulationKey(new byte[length]));
-                    }
+                    AssertExtensions.Throws<ArgumentException>("destination",
+                        () => hpke.ExportDecapsulationKey(Span<byte>.Empty));
+                    AssertExtensions.Throws<ArgumentException>("destination",
+                        () => hpke.ExportDecapsulationKey(new byte[suite.DecapsulationKeySizeInBytes - 1]));
+                    AssertExtensions.Throws<ArgumentException>("destination",
+                        () => hpke.ExportDecapsulationKey(new byte[suite.DecapsulationKeySizeInBytes + 1]));
 
-                    foreach (int length in new[]
-                    {
-                        0,
-                        suite.EncapsulationKeySizeInBytes - 1,
-                        suite.EncapsulationKeySizeInBytes + 1
-                    })
-                    {
-                        AssertExtensions.Throws<ArgumentException>("destination",
-                            () => hpke.ExportEncapsulationKey(new byte[length]));
-                    }
+                    AssertExtensions.Throws<ArgumentException>("destination",
+                        () => hpke.ExportEncapsulationKey(Span<byte>.Empty));
+                    AssertExtensions.Throws<ArgumentException>("destination",
+                        () => hpke.ExportEncapsulationKey(new byte[suite.EncapsulationKeySizeInBytes - 1]));
+                    AssertExtensions.Throws<ArgumentException>("destination",
+                        () => hpke.ExportEncapsulationKey(new byte[suite.EncapsulationKeySizeInBytes + 1]));
                 }
             }
         }
@@ -228,8 +246,7 @@ namespace System.Security.Cryptography.Tests
 
                     if (useSpan)
                     {
-                        hpke.Seal(
-                            plaintext.AsSpan(),
+                        hpke.Seal(plaintext.AsSpan(),
                             out encapsulatedSecret,
                             out ciphertext,
                             associatedData.AsSpan(),

@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // //TODO:HPKE Call is reachable on "unsupported platform" - deal with this messy daignostic later.
-
 namespace System.Security.Cryptography
 {
+#pragma warning disable CA1416
     internal sealed class HpkeManagedChaCha20Poly1305AeadAdapter : HpkeManagedAeadAdapter
     {
         private readonly ChaCha20Poly1305 _chacha;
@@ -36,4 +35,5 @@ namespace System.Security.Cryptography
 
         public override void Dispose() => _chacha.Dispose();
     }
+#pragma warning restore CA1416
 }

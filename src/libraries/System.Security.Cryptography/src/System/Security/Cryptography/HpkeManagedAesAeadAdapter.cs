@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // //TODO:HPKE Call is reachable on "unsupported platform" - deal with this messy daignostic later.
-
 namespace System.Security.Cryptography
 {
     internal sealed class HpkeManagedAesAeadAdapter : HpkeManagedAeadAdapter
@@ -11,7 +9,9 @@ namespace System.Security.Cryptography
 
         internal HpkeManagedAesAeadAdapter(HpkeSuite suite, ReadOnlySpan<byte> key)
         {
+#pragma warning disable CA1416
             _aes = new AesGcm(key, suite.AeadMetadata.Nt);
+#pragma warning restore CA1416
         }
 
         internal override void Encrypt(
@@ -21,7 +21,9 @@ namespace System.Security.Cryptography
             Span<byte> ciphertext,
             Span<byte> tag)
         {
+#pragma warning disable CA1416
             _aes.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
+#pragma warning restore CA1416
         }
 
         internal override void Decrypt(
@@ -31,10 +33,14 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> tag,
             Span<byte> plaintext)
         {
+#pragma warning disable CA1416
             _aes.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
+#pragma warning restore CA1416
         }
 
 
+#pragma warning disable CA1416
         public override void Dispose() => _aes.Dispose();
+#pragma warning restore CA1416
     }
 }

@@ -78,13 +78,11 @@ namespace System.Security.Cryptography
 
             using (PinAndClear.Track(privateKey))
             {
-#pragma warning disable CA1416 // Not supported on browser
                 _ecdh = ECDiffieHellman.Create(new ECParameters
                 {
                     Curve = _curve,
                     D = privateKey,
                 });
-#pragma warning restore CA1416 // Not supported on browser
             }
         }
 
@@ -107,10 +105,8 @@ namespace System.Security.Cryptography
                 hasPrivateKey: false,
                 out ECParameters parameters);
 
-#pragma warning disable CA1416 // Not supported on browser
             parameters.Curve = _curve;
             return ECDiffieHellman.Create(parameters);
-#pragma warning restore CA1416 // Not supported on browser
         }
 
         internal override void DeriveKeyPair(ReadOnlySpan<byte> ikm)
@@ -139,13 +135,11 @@ namespace System.Security.Cryptography
 
                         if (IsValidScalar(privateKey, order))
                         {
-#pragma warning disable CA1416 // Not supported on browser
                             _ecdh = ECDiffieHellman.Create(new ECParameters
                             {
                                 Curve = _curve,
                                 D = privateKey,
                             });
-#pragma warning restore CA1416 // Not supported on browser
                             return;
                         }
                     }
