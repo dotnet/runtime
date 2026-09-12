@@ -352,18 +352,6 @@ public class R2RTestSuites
             static string Format(IReadOnlyList<byte> valTypes) =>
                 $"[{string.Join(",", valTypes.Select(b => $"0x{b:X2}"))}]";
         }
-
-        static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
-            ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
-        {
-            uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
-            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
-            Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
-
-            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
-            Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
-            return body.Value;
-        }
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
@@ -409,6 +397,18 @@ public class R2RTestSuites
             int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
             Assert.Equal(0, payloadOffset & 0xF);
         }
+    }
+
+    private static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+        ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
+    {
+        uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
+        int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+        Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+
+        WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+        Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+        return body.Value;
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]

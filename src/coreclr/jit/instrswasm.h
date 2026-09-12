@@ -527,6 +527,28 @@ INST2(i32x4_trunc_sat_u_f64x2_zero,   "i32x4.trunc_sat_u_f64x2_zero",   0, IF_OP
 INST2(f64x2_convert_low_s_i32x4,      "f64x2.convert_low_s_i32x4",      0, IF_OPCODE, 0xFD, 254)
 INST2(f64x2_convert_low_u_i32x4,      "f64x2.convert_low_u_i32x4",      0, IF_OPCODE, 0xFD, 255)
 
+// Relaxed SIMD operations
+INST2(i8x16_relaxed_swizzle,                   "i8x16.relaxed_swizzle",                   0, IF_OPCODE, 0xFD, 0x100)
+INST2(i32x4_relaxed_trunc_f32x4_s,             "i32x4.relaxed_trunc_f32x4_s",             0, IF_OPCODE, 0xFD, 0x101)
+INST2(i32x4_relaxed_trunc_f32x4_u,             "i32x4.relaxed_trunc_f32x4_u",             0, IF_OPCODE, 0xFD, 0x102)
+INST2(i32x4_relaxed_trunc_f64x2_s_zero,        "i32x4.relaxed_trunc_f64x2_s_zero",        0, IF_OPCODE, 0xFD, 0x103)
+INST2(i32x4_relaxed_trunc_f64x2_u_zero,        "i32x4.relaxed_trunc_f64x2_u_zero",        0, IF_OPCODE, 0xFD, 0x104)
+INST2(f32x4_relaxed_madd,                      "f32x4.relaxed_madd",                      0, IF_OPCODE, 0xFD, 0x105)
+INST2(f32x4_relaxed_nmadd,                     "f32x4.relaxed_nmadd",                     0, IF_OPCODE, 0xFD, 0x106)
+INST2(f64x2_relaxed_madd,                      "f64x2.relaxed_madd",                      0, IF_OPCODE, 0xFD, 0x107)
+INST2(f64x2_relaxed_nmadd,                     "f64x2.relaxed_nmadd",                     0, IF_OPCODE, 0xFD, 0x108)
+INST2(i8x16_relaxed_laneselect,                "i8x16.relaxed_laneselect",                0, IF_OPCODE, 0xFD, 0x109)
+INST2(i16x8_relaxed_laneselect,                "i16x8.relaxed_laneselect",                0, IF_OPCODE, 0xFD, 0x10A)
+INST2(i32x4_relaxed_laneselect,                "i32x4.relaxed_laneselect",                0, IF_OPCODE, 0xFD, 0x10B)
+INST2(i64x2_relaxed_laneselect,                "i64x2.relaxed_laneselect",                0, IF_OPCODE, 0xFD, 0x10C)
+INST2(f32x4_relaxed_min,                       "f32x4.relaxed_min",                       0, IF_OPCODE, 0xFD, 0x10D)
+INST2(f32x4_relaxed_max,                       "f32x4.relaxed_max",                       0, IF_OPCODE, 0xFD, 0x10E)
+INST2(f64x2_relaxed_min,                       "f64x2.relaxed_min",                       0, IF_OPCODE, 0xFD, 0x10F)
+INST2(f64x2_relaxed_max,                       "f64x2.relaxed_max",                       0, IF_OPCODE, 0xFD, 0x110)
+INST2(i16x8_relaxed_q15mulr_s,                 "i16x8.relaxed_q15mulr_s",                 0, IF_OPCODE, 0xFD, 0x111)
+INST2(i16x8_relaxed_dot_i8x16_i7x16_s,         "i16x8.relaxed_dot_i8x16_i7x16_s",         0, IF_OPCODE, 0xFD, 0x112)
+INST2(i32x4_relaxed_dot_i8x16_i7x16_add_s,     "i32x4.relaxed_dot_i8x16_i7x16_add_s",     0, IF_OPCODE, 0xFD, 0x113)
+
 // clang-format on
 
 #undef INST

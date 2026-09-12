@@ -275,6 +275,7 @@ export function is_nullish<T> (value: T | null | undefined): value is null | und
 // these are values from the last re-link with emcc/workload
 export type EmscriptenBuildOptions = {
     wasmEnableSIMD: boolean,
+    wasmEnableRelaxedSimd: boolean,
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
     enableDevToolsProfiler: boolean,

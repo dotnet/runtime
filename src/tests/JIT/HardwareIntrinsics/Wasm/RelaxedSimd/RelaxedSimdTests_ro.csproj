@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <WasmEnableRelaxedSimd>true</WasmEnableRelaxedSimd>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RelaxedSimdTests.cs" />
+  </ItemGroup>
+</Project>

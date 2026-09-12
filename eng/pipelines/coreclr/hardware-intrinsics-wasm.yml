@@ -28,4 +28,4 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          testBuildArgs: '/p:EnableWasmHWIntrinsicsTests=true -tree:JIT/HardwareIntrinsics/Wasm'
+          testBuildArgs: '/p:EnableWasmHWIntrinsicsTests=true /p:WasmEnableRelaxedSimd=true -tree:JIT/HardwareIntrinsics/Wasm'
