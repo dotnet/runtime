@@ -1198,15 +1198,12 @@ static NamedIntrinsic binarySearchId(CORINFO_InstructionSet isa, CORINFO_SIG_INF
 }
 
 //------------------------------------------------------------------------
-// lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
+// resolveId: Resolve a hardware intrinsic against the compilation's ISA support
 //
 // Arguments:
 //    comp                    -- The compiler
-//    sig                     -- The signature of the intrinsic
-//    className               -- The name of the class associated with the HWIntrinsic to lookup
-//    methodName              -- The name of the method associated with the HWIntrinsic to lookup
-//    innerEnclosingClassName -- The name of the inner enclosing class of nested 64-bit classes
-//    outerEnclosingClassName -- The name of the outer enclosing class of nested 64-bit classes
+//    id                      -- The identity returned by lookup, independent of support
+//    isa                     -- The declaring ISA, before aliasing
 //    isXplatIntrinsic        -- True if the intrinsic lives directly under the cross-platform
 //                               System.Runtime.Intrinsics (or System.Numerics) namespace and
 //                               therefore has a managed fallback when the underlying ISA isn't
@@ -1215,55 +1212,24 @@ static NamedIntrinsic binarySearchId(CORINFO_InstructionSet isa, CORINFO_SIG_INF
 //                               PlatformNotSupportedException when the ISA isn't available.
 //
 // Return Value:
-//    The NamedIntrinsic associated with methodName and isa
-NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
-                                         CORINFO_SIG_INFO* sig,
-                                         const char*       className,
-                                         const char*       methodName,
-                                         const char*       innerEnclosingClassName,
-                                         const char*       outerEnclosingClassName,
-                                         bool              isXplatIntrinsic)
+//    The operation ID, a support-query result, NI_Illegal for a managed fallback,
+//    or NI_Throw_PlatformNotSupportedException for an unavailable platform API.
+//
+// Notes:
+//    Reports dependencies on the declaring ISA, not the operation's aliased ISA
+//    (for example, AVX10v1 operations use AVX512 IDs).
+NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
+                                          NamedIntrinsic         id,
+                                          CORINFO_InstructionSet isa,
+                                          bool                   isXplatIntrinsic)
 {
-#if defined(DEBUG)
-    static bool validationCompleted = false;
-
-    if (!validationCompleted)
-    {
-        ValidateHWIntrinsicIsaRangeArray();
-        validationCompleted = true;
-    }
-#endif // DEBUG
-
-    // Signatures that have a 'this' parameter are illegal intrinsics.
-    if (sig->hasThis())
-    {
-        return NI_Illegal;
-    }
-
-    CORINFO_InstructionSet isa = comp->lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
-
-    if (isa == InstructionSet_ILLEGAL)
-    {
-        return NI_Illegal;
-    }
+    assert(isa != InstructionSet_ILLEGAL);
 
     bool     isHWIntrinsicEnabled      = (JitConfig.EnableHWIntrinsic() != 0);
     bool     isIsaSupported            = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa);
-    bool     isHardwareAcceleratedProp = false;
-    bool     isSupportedProp           = false;
+    bool     isHardwareAcceleratedProp = (id == NI_IsHardwareAccelerated);
+    bool     isSupportedProp           = (id == NI_IsSupported);
     uint32_t vectorByteLength          = 0;
-
-    if (strncmp(methodName, "get_Is", 6) == 0)
-    {
-        if (strcmp(methodName + 6, "HardwareAccelerated") == 0)
-        {
-            isHardwareAcceleratedProp = true;
-        }
-        else if (strcmp(methodName + 6, "Supported") == 0)
-        {
-            isSupportedProp = true;
-        }
-    }
 
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
@@ -1288,19 +1254,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             isa              = InstructionSet_AVX512;
             vectorByteLength = 64;
         }
-        else
-        {
-            assert((strcmp(className, "Vector128") != 0) && (strcmp(className, "Vector256") != 0) &&
-                   (strcmp(className, "Vector512") != 0));
-        }
     }
 #endif
-
-    if (isSupportedProp && (strncmp(className, "Vector", 6) == 0))
-    {
-        // The Vector*<T>.IsSupported props report if T is supported & is specially handled in lookupNamedIntrinsic
-        return NI_Illegal;
-    }
 
     if (isSupportedProp || isHardwareAcceleratedProp)
     {
@@ -1397,14 +1352,48 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_VectorT)
     {
-        // This instruction set should only be set when SVE is enabled.
-        // Baseline Vector<T> will use InstructionSet_VectorT128.
-        if (!comp->compOpportunisticallyDependsOn(InstructionSet_Sve))
-        {
-            return NI_Illegal;
-        }
+        // Scalable Vector<T> has no intrinsic table implementation yet.
+        return NI_Illegal;
     }
 #endif
+
+    return id;
+}
+
+//------------------------------------------------------------------------
+// lookupId: identify an operation within an ISA without querying target support
+//
+// Arguments:
+//    sig -- method signature
+//    isa -- declaring ISA, before mapping aliases such as AVX10v1
+//    methodName -- name of the operation
+//
+// Returns:
+//    The operation's intrinsic ID, or NI_Illegal if it is not recognized.
+//
+NamedIntrinsic HWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, const char* methodName)
+{
+#if defined(DEBUG)
+    static bool validationCompleted = false;
+
+    if (!validationCompleted)
+    {
+        ValidateHWIntrinsicIsaRangeArray();
+        validationCompleted = true;
+    }
+#endif // DEBUG
+
+    if (sig->hasThis())
+    {
+        return NI_Illegal;
+    }
+
+    if (isa == InstructionSet_Vector)
+    {
+        // Portable vector widths share operation IDs. Vector<T> recognition need
+        // not select a width or report the associated ISA dependency.
+        return binarySearchId(InstructionSet_Vector128, sig, methodName);
+    }
 
 #if defined(TARGET_XARCH)
     // AVX10v1 is a strict superset of all AVX512 ISAs
@@ -1437,6 +1426,29 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 #endif // TARGET_XARCH
 
     return binarySearchId(isa, sig, methodName);
+}
+
+//------------------------------------------------------------------------
+// lookupVectorIsa: identify the portable vector ISA for a Vector<T> width
+//
+CORINFO_InstructionSet HWIntrinsicInfo::lookupVectorIsa(uint32_t size)
+{
+    switch (size)
+    {
+        case 16:
+            return InstructionSet_Vector128;
+#ifdef TARGET_XARCH
+        case 32:
+            return InstructionSet_Vector256;
+        case 64:
+            return InstructionSet_Vector512;
+#elif defined(TARGET_ARM64)
+        case SIZE_UNKNOWN:
+            return InstructionSet_VectorT;
+#endif
+        default:
+            unreached();
+    }
 }
 
 //------------------------------------------------------------------------
