@@ -5840,11 +5840,6 @@ namespace
         }
         CONTRACTL_END;
 
-        if (pMD->IsClassConstructorTriggeredAtLinkTime())
-        {
-            pMD->GetMethodTable()->CheckRunClassInitThrowing();
-        }
-
         if (pMD->IsQCall())
         {
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
@@ -5880,6 +5875,11 @@ namespace
         CONTRACTL_END;
 
         _ASSERTE(!pMD->IsEarlyBound());
+
+        if (pMD->IsClassConstructorTriggeredAtLinkTime())
+        {
+            pMD->GetMethodTable()->CheckRunClassInitThrowing();
+        }
 
         if (TryResolvePInvokeTargetFromOverride(pMD))
             return;

@@ -10,6 +10,7 @@ using Xunit;
 public static class UnresolvedPInvokeTests
 {
     private static bool s_enteredMissingPInvokeMethod;
+    private static bool s_initializedUnreachedPInvokeType;
 
     [Fact]
     public static void MissingPInvokeThrowsWhenCalled()
@@ -18,6 +19,23 @@ public static class UnresolvedPInvokeTests
 
         Assert.Throws<DllNotFoundException>(CallMissingPInvoke);
         Assert.True(s_enteredMissingPInvokeMethod);
+    }
+
+    [Fact]
+    public static void UnreachedMissingPInvokeDoesNotRunStaticConstructor()
+    {
+        CallMissingPInvokeIf(false);
+
+        Assert.False(s_initializedUnreachedPInvokeType);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CallMissingPInvokeIf(bool shouldCall)
+    {
+        if (shouldCall)
+        {
+            MissingPInvokeWithStaticConstructor.Invoke();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -29,4 +47,15 @@ public static class UnresolvedPInvokeTests
 
     [DllImport("UnresolvedPInvokeTests_MissingNativeLibrary")]
     private static extern void MissingPInvoke();
+
+    private static class MissingPInvokeWithStaticConstructor
+    {
+        static MissingPInvokeWithStaticConstructor()
+        {
+            s_initializedUnreachedPInvokeType = true;
+        }
+
+        [DllImport("UnresolvedPInvokeTests_MissingNativeLibrary")]
+        internal static extern void Invoke();
+    }
 }
