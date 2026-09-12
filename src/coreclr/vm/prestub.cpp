@@ -2068,7 +2068,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 
     void* retVal;
     {
-        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
+        GCX_MAYBE_COOP_REGION_BEGIN(pInterpreterCode->Method->unmanagedCallersOnly);
 
 #ifdef DEBUGGING_SUPPORTED
         if (pInterpreterCode->Method->unmanagedCallersOnly && g_TrapReturningThreads && CORDebuggerTraceCall())
@@ -2127,6 +2127,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         frames.interpreterFrame.Pop();
 
         retVal = frames.interpMethodContextFrame.pRetVal;
+        GCX_MAYBE_COOP_REGION_END();
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -2199,9 +2200,10 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             {
-                GCX_PREEMP();
+                GCX_PREEMP_REGION_BEGIN();
                 (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
                 targetIp = pMethod->GetInterpreterCode();
+                GCX_PREEMP_REGION_END();
             }
 
             finishedPrestubPortion = true;

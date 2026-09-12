@@ -6695,7 +6695,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    GCX_COOP();
+    GCX_COOP_REGION_BEGIN();
 
     LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE caught and will rethrow\n"));
 
@@ -6730,6 +6730,10 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     {
         RaiseTheExceptionInternalOnly(orThrowable);
     }
+
+    GCX_COOP_REGION_END();
+
+    UNREACHABLE();
 }
 
 #ifdef FEATURE_INTERPRETER

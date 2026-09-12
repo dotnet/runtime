@@ -97,6 +97,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly List<HeaderItem> _items = new List<HeaderItem>();
         private readonly ReadyToRunFlags _flags;
+
+        public ReadyToRunFlags Flags => _flags;
         private readonly Task<(bool canSkipValidation, string[] reasons)> _shouldAddSkipTypeValidationFlag;
 
         public ReadyToRunHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
