@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using TestLibrary;
 using Xunit;
 
 public static class UnresolvedPInvokeTests
@@ -31,6 +32,7 @@ public static class UnresolvedPInvokeTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public static void ResolvedPInvokeRunsStaticConstructor()
     {
         ResolvedPInvokeWithStaticConstructor.Invoke();

@@ -4,5 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="UnresolvedPInvokeTests.cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
