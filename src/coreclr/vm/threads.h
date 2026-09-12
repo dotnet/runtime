@@ -2081,7 +2081,9 @@ public:
     DWORD          DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode);
     DWORD          DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode);
 private:
+#ifdef TARGET_WINDOWS
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
+#endif
 public:
 
     //************************************************************************
@@ -2580,9 +2582,20 @@ public:
         return m_ThreadHandle;
     }
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+    void SetThreadExited()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_ThreadExitedEvent.Set();
+    }
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 private:
     // For suspends:
     CLREvent        m_DebugSuspendEvent;
+#ifdef TARGET_UNIX
+    CLREvent        m_ThreadExitedEvent;
+#endif // TARGET_UNIX
 
     void        SetThreadHandle(HANDLE h)
     {
@@ -4027,7 +4040,7 @@ public:
             CAN_TAKE_LOCK;
         }
         CONTRACTL_END;
-        s_pWaitForStackCrawlEvent->Wait(INFINITE,FALSE);
+        s_pWaitForStackCrawlEvent->Wait(INFINITE, FALSE, false);
     }
     static void SetStackCrawlEvent()
     {

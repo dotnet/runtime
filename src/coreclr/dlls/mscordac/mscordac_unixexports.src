@@ -60,8 +60,6 @@ nativeStringResourceTable_mscorrc
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
-#CreateEventW
-#CreateEventExW
 #CreateThread
 #CloseHandle
 #DebugBreak
@@ -92,20 +90,15 @@ nativeStringResourceTable_mscorrc
 #MapViewOfFileEx
 #MultiByteToWideChar
 #OutputDebugStringW
-#OpenEventW
 #OutputDebugStringA
 #RaiseException
 #RaiseFailFastException
 #ReadFile
-#ResetEvent
 #ResumeThread
 #SearchPathW
-#SetEvent
 #SetFilePointer
 #SetLastError
 #SetThreadDescription
-#Sleep
-#SleepEx
 #SwitchToThread
 #TerminateProcess
 #VirtualAlloc
@@ -113,9 +106,6 @@ nativeStringResourceTable_mscorrc
 #VirtualProtect
 #VirtualQuery
 #UnmapViewOfFile
-#WaitForMultipleObjectsEx
-#WaitForSingleObject
-#WaitForSingleObjectEx
 #WideCharToMultiByte
 #WriteFile
 

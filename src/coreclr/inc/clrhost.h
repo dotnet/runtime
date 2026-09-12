@@ -80,8 +80,6 @@ void ClrDeleteCriticalSection(CRITSEC_COOKIE cookie);
 void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
 void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
 
-DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable);
-
 // Rather than use the above APIs directly, it is recommended that holder classes
 // be used.  This guarantees that the locks will be vacated when the scope is popped,
 // either on exception or on return.

@@ -58,6 +58,8 @@ uint64_t minipal_get_system_time()
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <sched.h>
+#include <unistd.h>
 
 inline static void YieldProcessor(void);
 
@@ -151,12 +153,45 @@ uint64_t minipal_get_system_time(void)
 
 #endif // HOST_WINDOWS
 
+void minipal_sleep(uint32_t milliseconds)
+{
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    (void)milliseconds;
+#elif HOST_WINDOWS
+    Sleep(milliseconds);
+#else
+    if (milliseconds == 0)
+    {
+        sched_yield();
+        return;
+    }
+
+    if (milliseconds == UINT32_MAX)
+    {
+        while (1)
+        {
+            usleep(999000);
+        }
+    }
+
+    struct timespec requested;
+    requested.tv_sec = milliseconds / 1000;
+    requested.tv_nsec = (milliseconds % 1000) * 1000000;
+
+    struct timespec remaining;
+    while (nanosleep(&requested, &remaining) != 0 && errno == EINTR)
+    {
+        requested = remaining;
+    }
+#endif
+}
+
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
 #if HOST_WINDOWS
     if (usecs > 1000)
     {
-        SleepEx(usecs / 1000, FALSE);
+        Sleep(usecs / 1000);
         if (usecsSinceYield)
         {
             *usecsSinceYield = 0;

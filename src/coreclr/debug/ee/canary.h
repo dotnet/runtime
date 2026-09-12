@@ -68,12 +68,12 @@ protected:
     // sufficient to deal with memory barrier issues.
     Volatile<DWORD> m_RequestCounter;
     Volatile<DWORD> m_AnswerCounter;
-    HandleHolder m_hPingEvent;
+    CLREvent m_hPingEvent;
+    CLREvent m_hCanaryThreadExitedEvent;
 
     // We use a Manual wait event to replace Sleep.
-    HandleHolder m_hWaitEvent;
+    CLREvent m_hWaitEvent;
 };
 
 
 #endif // CANARY_H
-

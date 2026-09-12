@@ -15,6 +15,7 @@
 
 #include <utilcode.h>
 #include <minipal/mutex.h>
+#include "CLREventBase.h"
 #include "debugwait.h"
 
 #include <functional>
@@ -3279,7 +3280,7 @@ public:
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
 #if defined(FEATURE_INTEROP_DEBUGGING)
-    void DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, RemoteHANDLE * pRemoteHandle);
+    void DuplicateHandleToLocalProcess(CLREventBase * pLocalEvent, RemoteHANDLE * pRemoteHandle);
 #endif // FEATURE_INTEROP_DEBUGGING
 
     bool IsThreadSuspendedOrHijacked(ICorDebugThread * pICorDebugThread);
@@ -3875,9 +3876,9 @@ public:
 
     DebuggerIPCRuntimeOffsets m_runtimeOffsets;
     WaitEvent                *m_leftSideEventAvailable;
-    HANDLE                    m_leftSideEventRead;
+    CLREventBase              m_leftSideEventRead;
 #if defined(FEATURE_INTEROP_DEBUGGING)
-    HANDLE                    m_leftSideUnmanagedWaitEvent;
+    CLREventBase              m_leftSideUnmanagedWaitEvent;
 #endif // FEATURE_INTEROP_DEBUGGING
 
 
@@ -3900,7 +3901,7 @@ public:
 #endif
 
     bool                  m_stopRequested;
-    HANDLE                m_stopWaitEvent;
+    CLREventBase          m_stopWaitEvent;
     RSLock                m_processMutex;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -4119,7 +4120,7 @@ public:
     void TryDetach(); // Sets detach state to TryDetach, starting the detach evacuation counter.
     bool IsOutOfProcessStepping() { return m_dwOutOfProcessStepping != 0; }
 private:
-    HANDLE m_detachSetThreadContextNeededEvent;
+    CLREventBase m_detachSetThreadContextNeededEvent;
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 };
@@ -10128,7 +10129,8 @@ private:
     HANDLE               m_thread;
     DWORD                m_threadId;
     WaitEvent           *m_threadControlEvent;
-    HANDLE               m_actionTakenEvent;
+    WaitLatch           *m_threadExitedEvent;
+    CLREventBase         m_actionTakenEvent;
     BOOL                 m_run;
 
     // The process that we're 1:1 with.
@@ -10302,6 +10304,7 @@ private:
     DWORD                m_threadId;
     BOOL                 m_run;
     WaitEvent           *m_threadControlEvent;
+    WaitLatch           *m_threadExitedEvent;
     BOOL                 m_processStateChanged;
 };
 
