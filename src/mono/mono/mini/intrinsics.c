@@ -2078,6 +2078,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				mini_set_inline_failure (cfg, "MethodBase:GetCurrentMethod ()");
 			return ins;
 		}
+
+		/* The stack-walk implementation also needs its caller to survive LLVM inlining. */
+		cfg->no_inline |= COMPILE_LLVM (cfg) && !strcmp (cmethod->name, "GetCurrentMethod");
 	} else if (cmethod->klass == mono_class_try_get_math_class ()) {
 		/*
 		 * There is general branchless code for Min/Max, but it does not work for
