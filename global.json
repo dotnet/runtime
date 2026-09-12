@@ -13,11 +13,11 @@
     "dotnet": "11.0.100-rc.1.26420.103"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "12.0.0-beta.26460.107",
-    "Microsoft.DotNet.Helix.Sdk": "12.0.0-beta.26460.107",
-    "Microsoft.DotNet.SharedFramework.Sdk": "12.0.0-beta.26460.107",
+    "Microsoft.DotNet.Arcade.Sdk": "12.0.0-beta.26461.108",
+    "Microsoft.DotNet.Helix.Sdk": "12.0.0-beta.26461.108",
+    "Microsoft.DotNet.SharedFramework.Sdk": "12.0.0-beta.26461.108",
     "Microsoft.Build.NoTargets": "3.7.0",
     "Microsoft.Build.Traversal": "3.4.0",
-    "Microsoft.NET.Sdk.IL": "12.0.0-alpha.1.26460.107"
+    "Microsoft.NET.Sdk.IL": "12.0.0-alpha.1.26461.108"
   }
 }
