@@ -13935,6 +13935,79 @@ static void LogJitMethodEnd(MethodDesc* ftn)
 #endif // LOGGING
 }
 
+#ifdef FEATURE_INTERPRETER
+//------------------------------------------------------------------------
+// PublishInterpreterMethodCode: Wire up freshly produced interpreter bytecode as
+// a method's entry point and record the shared bookkeeping.
+//
+// Both interpreter backends return the same thing - a pointer to interpreter
+// bytecode - so their post-compilation handling is identical: install a portable
+// entry point (or an interpreter precode) that dispatches to the bytecode, then
+// report the IL size and the tiering / interpreter-code flags.
+//
+// Arguments:
+//   ftn               - the method that was compiled
+//   byteCodeAddr      - address of the produced interpreter bytecode
+//   pJitInfo          - the code-gen info used for the compile (for IL size / flags)
+//   pSizeOfILCode     [OUT] - IL size of the compiled method
+//   isInterpreterCode [OUT] - set to true
+//   isTier0           [OUT] - whether the method was compiled as tier 0
+//
+// Returns:
+//   The PCODE to publish as the method's entry point.
+//
+static PCODE PublishInterpreterMethodCode(MethodDesc*     ftn,
+                                          TADDR           byteCodeAddr,
+                                          CEECodeGenInfo* pJitInfo,
+                                          _Out_ ULONG*    pSizeOfILCode,
+                                          _Out_ bool*     isInterpreterCode,
+                                          _Out_ bool*     isTier0)
+{
+    STANDARD_VM_CONTRACT;
+
+    PCODE ret = (PCODE)byteCodeAddr;
+
+    *pSizeOfILCode = pJitInfo->getMethodInfoInternal()->ILCodeSize;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
+    _ASSERTE(portableEntryPoint != NULL);
+    PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
+    ret = portableEntryPoint;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    InterpreterPrecode* pPrecode = NULL;
+    AllocMemTracker amt;
+    if (ftn->IsDynamicMethod())
+    {
+        // For LCG methods, the precode is stashed in the DynamicMethodDesc, and is shared across all future uses of the DynamicMethodDesc
+        DynamicMethodDesc* pDMD = ftn->AsDynamicMethodDesc();
+        if (pDMD->m_interpreterPrecode != NULL)
+        {
+            pPrecode = pDMD->m_interpreterPrecode;
+            pPrecode->GetData()->ByteCodeAddr = ret;
+            FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
+        }
+        else
+        {
+            pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            pDMD->m_interpreterPrecode = pPrecode;
+        }
+    }
+    else
+    {
+        pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+    }
+    amt.SuppressRelease();
+    ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    *isInterpreterCode = true;
+    *isTier0           = pJitInfo->getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+
+    return ret;
+}
+#endif // FEATURE_INTERPRETER
+
 // ********************************************************************
 //                  README!!
 // ********************************************************************
@@ -13984,8 +14057,63 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         }
     }
 
-    // If the interpreter was loaded, use it.
-    if (interpreterMgr->IsInterpreterLoaded())
+    // First, try to have the JIT translate this method to interpreter IR. If the JIT
+    // bails out (CORJIT_SKIPPED) we fall back below, to the normal interpreter if it
+    // is loaded, and then to native codegen.
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    bool isInterpOptMethod = false;
+#ifdef _DEBUG
+    isInterpOptMethod = g_pConfig->IsInterpOptMethod(ftn);
+#endif
+
+    if (isInterpOptMethod)
+    {
+        EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
+        if (jitMgr->LoadJIT())
+        {
+            // Call the JIT compiler directly, bypassing UnsafeJitFunctionWorker /
+            // invokeCompileMethod: WriteCode publishes the interpreter code through the
+            // nibble map, which requires GC info that this backend does not emit yet.
+            //
+            // The compiler itself lives in the native EE JIT manager (jitMgr->GetCompiler()),
+            // but the code we produce is interpreter bytecode, so we drive it through a
+            // CInterpreterJitInfo backed by the interpreter code manager.
+            CInterpreterJitInfo jitInfo{ config, ftn, ILHeader, interpreterMgr };
+
+            jitInfo.getJitFlagsInternal()->Set(CORJIT_FLAGS::CORJIT_FLAG_INTERP);
+
+            // Interpreter IR is not profile-guided: clear BBOPT so the JIT never queries
+            // PGO data (CInterpreterJitInfo does not implement getPgoInstrumentationResults).
+            jitInfo.getJitFlagsInternal()->Clear(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+
+            PBYTE nativeEntry = NULL;
+            uint32_t sizeOfCode = 0;
+
+            ICorJitCompiler* jitCompiler = jitMgr->GetCompiler();
+            CorJitResult res = jitCompiler->compileMethod(
+                &jitInfo,
+                jitInfo.getMethodInfoInternal(),
+                CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
+                &nativeEntry,
+                &sizeOfCode);
+
+            if (SUCCEEDED(res) && nativeEntry != NULL)
+            {
+                ret = PublishInterpreterMethodCode(ftn, (TADDR)nativeEntry, &jitInfo,
+                                                   &sizeOfILCode, isInterpreterCode, isTier0);
+            }
+            else if (res != CORJIT_SKIPPED)
+            {
+                // A genuine compilation failure (not a bailout) is a hard error.
+                COMPlusThrow(kInvalidProgramException);
+            }
+            // else: the JIT bailed out; ret stays NULL and we fall back below.
+        }
+    }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
+
+    // Next, fall back to the normal interpreter if it is loaded.
+    if (!ret && interpreterMgr->IsInterpreterLoaded())
     {
         CInterpreterJitInfo interpreterJitInfo{ config, ftn, ILHeader, interpreterMgr };
         ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, nativeCodeVersion, pSizeOfCode);
@@ -13993,44 +14121,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         // If successful, record data.
         if (ret)
         {
-            sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
-            _ASSERTE(portableEntryPoint != NULL);
-            PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
-            ret = portableEntryPoint;
-
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
-            InterpreterPrecode* pPrecode = NULL;
-            AllocMemTracker amt;
-            if (ftn->IsDynamicMethod())
-            {
-                // For LCG methods, the precode is stashed in the DynamicMethodDesc, and is shared across all future uses of the DynamicMethodDesc
-                DynamicMethodDesc* pDMD = ftn->AsDynamicMethodDesc();
-                if (pDMD->m_interpreterPrecode != NULL)
-                {
-                    pPrecode = pDMD->m_interpreterPrecode;
-                    pPrecode->GetData()->ByteCodeAddr = ret;
-                    FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
-                }
-                else
-                {
-                    pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
-                    pDMD->m_interpreterPrecode = pPrecode;
-                }
-            }
-            else
-            {
-                pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
-            }
-            amt.SuppressRelease();
-            ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
-
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-
-            *isInterpreterCode = true;
-            *isTier0 = interpreterJitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+            ret = PublishInterpreterMethodCode(ftn, (TADDR)ret, &interpreterJitInfo,
+                                               &sizeOfILCode, isInterpreterCode, isTier0);
         }
     }
 #endif // FEATURE_INTERPRETER

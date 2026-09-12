@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
 #include "fgprofilesynthesis.h"
+#include "interpbackend.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
 #include "minipal/utf8.h"
@@ -4954,6 +4955,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // GS security checks for unsafe buffers
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
+
+#ifdef FEATURE_INTERPRETER
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_INTERP))
+    {
+        InterpBackend interpBackend(this);
+        interpBackend.CompileMethod(methodCodePtr, methodCodeSize);
+        return;
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef TARGET_WASM
     // Make EH continuation flow explicit
