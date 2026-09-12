@@ -402,7 +402,8 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     // up to 16 bytes lower than offset + size. But offsets large enough to hit this case are likely
     // to be extremely rare for this to ever be a CQ issue.
     // On x86 this shouldn't be needed but then again, offsets large enough to hit this are rare.
-    if (addrMode->Offset() > (INT32_MAX - static_cast<int>(size)))
+    // Keep offset + size strictly below INT32_MAX, as required by unrolled block codegen.
+    if (addrMode->Offset() >= (INT32_MAX - static_cast<int>(size)))
     {
         return;
     }
