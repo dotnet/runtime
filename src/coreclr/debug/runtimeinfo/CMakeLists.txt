@@ -30,9 +30,36 @@ function(generate_module_index Target ModuleIndexFile)
     target_sources(runtimeinfo PRIVATE ${ModuleIndexFile})
 endfunction(generate_module_index)
 
+function(generate_module_index_from_file ModuleFile ModuleIndexFile ModuleName)
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        set(scriptExt ".cmd")
+    else()
+        set(scriptExt ".sh")
+    endif()
+
+    add_custom_command(
+        OUTPUT ${ModuleIndexFile}
+        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} "${ModuleFile}" ${ModuleIndexFile} ${CMAKE_READELF}
+        DEPENDS "${ModuleFile}"
+        COMMENT "Generating ${ModuleName} module index file -> ${ModuleIndexFile}"
+    )
+
+    set_source_files_properties(
+        ${ModuleIndexFile}
+        PROPERTIES GENERATED TRUE
+    )
+
+    target_sources(runtimeinfo PRIVATE ${ModuleIndexFile})
+endfunction(generate_module_index_from_file)
+
 if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
     generate_module_index(coreclr ${CMAKE_CURRENT_BINARY_DIR}/runtimemoduleindex.h)
-    generate_module_index(mscordaccore ${CMAKE_CURRENT_BINARY_DIR}/dacmoduleindex.h)
+    if(CLR_DUMP_COLLECT_PROVIDER_PATH)
+        generate_module_index_from_file("${CLR_DUMP_COLLECT_PROVIDER_PATH}" ${CMAKE_CURRENT_BINARY_DIR}/dacmoduleindex.h mscordaccore)
+    else()
+        generate_module_index(mscordaccore ${CMAKE_CURRENT_BINARY_DIR}/dacmoduleindex.h)
+    endif()
     generate_module_index(mscordbi ${CMAKE_CURRENT_BINARY_DIR}/dbimoduleindex.h)
 endif()
 

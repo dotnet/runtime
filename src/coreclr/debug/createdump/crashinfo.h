@@ -62,6 +62,7 @@ private:
     siginfo_t m_siginfo;                            // signal info (if any)
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
     uint64_t m_runtimeBaseAddress;                  // base address of the runtime module
+    uint64_t m_contractDescriptorAddress;           // address of the runtime contract descriptor
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
@@ -123,6 +124,7 @@ public:
     inline const std::string& Name() const { return m_name; }
     inline const ModuleInfo* MainModule() const { return m_mainModule; }
     inline const uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
+    inline const uint64_t ContractDescriptorAddress() const { return m_contractDescriptorAddress; }
 
     inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
     inline const std::set<ModuleRegion>& ModuleMappings() const { return m_moduleMappings; }

@@ -1,0 +1,88 @@
+<Project>
+  <PropertyGroup>
+    <NeedsAotPublish>true</NeedsAotPublish>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <AssemblyName>$(LibPrefix)mscordaccore</AssemblyName>
+    <UseNativeLibPrefix>false</UseNativeLibPrefix>
+    <TargetFramework>$(CDacTfm)</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader.EnumMemory</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsShippingPackage>false</IsShippingPackage>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <StackTraceSupport>false</StackTraceSupport>
+    <TargetHostPlatformOnly>true</TargetHostPlatformOnly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetHostPlatformOnly)' == 'true'">
+    <_TargetHostArchitecture Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier.Substring($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_TargetHostArchitecture>
+    <_TargetHostArchitecture Condition="'$(_TargetHostArchitecture)' == ''">$(TargetArchitecture)</_TargetHostArchitecture>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetHostPlatformOnly)' == 'true' and '$(_TargetHostArchitecture)' != ''">
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.Arm"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'arm'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.Arm64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'arm64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.LoongArch64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'loongarch64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.RiscV64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'riscv64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.Wasm"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'wasm'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.X64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'x64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.X86"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'x86'" />
+  </ItemGroup>
+
+  <!-- Custom Windows Version Resource is required. -->
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Win32Resource>$(IntermediateOutputPath)mscordaccore.version.res</Win32Resource>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InstallRuntimeComponentDestination Include="." />
+    <InstallRuntimeComponentDestination Include="sharedFramework" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\ICLRData.cs" Link="ICLRData.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\Marshalling\ClrDataAddress.cs" Link="Marshalling\ClrDataAddress.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\SigFormat.cs" Link="SigFormat.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\TypeNameBuilder.cs" Link="TypeNameBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+  </ItemGroup>
+
+  <Target Name="GenerateWindowsVersionResource"
+          BeforeTargets="CoreCompile"
+          DependsOnTargets="GetAssemblyVersion"
+          Condition="'$(TargetsWindows)' == 'true'">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)GenerateWindowsVersionResource.ps1&quot; -outputPath &quot;$(Win32Resource)&quot; -fileVersion &quot;$(FileVersion)&quot; -productVersion &quot;$(Version)&quot; -companyName &quot;$(Company)&quot; -productName &quot;$(Product)&quot; -legalCopyright &quot;$(Copyright)&quot;" />
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

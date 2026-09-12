@@ -49,12 +49,7 @@ internal static class Emitter
         }
 
         sb.AppendLine(BuildClassDoc(model));
-        // A partial class may add interfaces from any declaration. Lazily-read
-        // types implement IReadableData so callers can force a full read.
-        if (hasInstanceMembers)
-            sb.AppendLine($"partial class {model.ClassName} : global::Microsoft.Diagnostics.DataContractReader.Data.IReadableData");
-        else
-            sb.AppendLine($"partial class {model.ClassName}");
+        sb.AppendLine($"partial class {model.ClassName}");
         sb.AppendLine("{");
 
         // Emit a static _typeNames array for LayoutSet.Resolve and ITypeHandle resolution.
@@ -114,7 +109,7 @@ internal static class Emitter
             EmitMemberProperty(sb, member);
 
         if (hasInstanceMembers)
-            EmitEnsureAllFieldsRead(sb, model);
+            EmitTryReadAllFields(sb, model);
 
         foreach (MemberModel member in model.Members)
         {
@@ -364,19 +359,20 @@ internal static class Emitter
     }
 
     /// <summary>
-    /// Emits the <see cref="Data.IReadableData.EnsureAllFieldsRead"/> implementation,
-    /// which touches every lazily-read member so a caller can eagerly force a full
-    /// read of the structure (used to validate that the whole struct is readable).
+    /// Emits <c>TryReadAllFields</c>, which touches every lazily-read member and
+    /// reports whether the entire structure was readable.
     /// </summary>
-    private static void EmitEnsureAllFieldsRead(StringBuilder sb, CdacTypeModel model)
+    private static void EmitTryReadAllFields(StringBuilder sb, CdacTypeModel model)
     {
         // Descriptor attributes short-circuit body analysis in CdacUsageGraph.
         // A custom initializer can also read globals, call helpers, and access
         // other Data properties, so let the analyzer walk this method's body.
         if (!model.Members.Any(member => member.Kind == MemberKind.CustomInit))
-            EmitEnsureAllFieldsReadDependencyAttributes(sb, model);
-        sb.AppendLine("    void global::Microsoft.Diagnostics.DataContractReader.Data.IReadableData.EnsureAllFieldsRead()");
+            EmitTryReadAllFieldsDependencyAttributes(sb, model);
+        sb.AppendLine("    internal bool TryReadAllFields()");
         sb.AppendLine("    {");
+        sb.AppendLine("        try");
+        sb.AppendLine("        {");
         foreach (MemberModel member in model.Members)
         {
             if (member.Kind == MemberKind.Field
@@ -384,14 +380,20 @@ internal static class Emitter
                 || member.Kind == MemberKind.InstanceDataStart
                 || member.Kind == MemberKind.CustomInit)
             {
-                sb.AppendLine($"        _ = {member.Name};");
+                sb.AppendLine($"            _ = {member.Name};");
             }
         }
+        sb.AppendLine("            return true;");
+        sb.AppendLine("        }");
+        sb.AppendLine("        catch (VirtualReadException)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            return false;");
+        sb.AppendLine("        }");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
 
-    private static void EmitEnsureAllFieldsReadDependencyAttributes(StringBuilder sb, CdacTypeModel model)
+    private static void EmitTryReadAllFieldsDependencyAttributes(StringBuilder sb, CdacTypeModel model)
     {
         (string FieldName, string NativeType)[] fields = model.Members
             .Where(member =>
