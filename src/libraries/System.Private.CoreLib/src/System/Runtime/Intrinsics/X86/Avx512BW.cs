@@ -1202,7 +1202,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> ShiftLeftLogicalVariable(Vector512<ushort> value, Vector512<ushort> count) => ShiftLeftLogicalVariable(value, count);
 
         /// <summary>
-        ///   <para>_mm512_sra_epi16 (__m512i a, __m128i count)</para>
+        ///   <para>__m512i _mm512_sra_epi16 (__m512i a, __m128i count)</para>
         ///   <para>  VPSRAW zmm1 {k1}{z}, zmm2, xmm3/m128</para>
         /// </summary>
         public static Vector512<short> ShiftRightArithmetic(Vector512<short> value, Vector128<short> count) => ShiftRightArithmetic(value, count);
