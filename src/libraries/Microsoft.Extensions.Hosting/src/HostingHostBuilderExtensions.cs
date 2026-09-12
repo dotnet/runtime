@@ -16,6 +16,7 @@ using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.EventLog;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -341,6 +342,26 @@ namespace Microsoft.Extensions.Hosting
             };
         }
 
+        // Factory helper for registering ConsoleLifetime. Uses the internal ctor so the diagnostic
+        // log message in WaitForStartAsync can inspect the application's IConfiguration to detect
+        // a likely-misconfigured content root. Going through a factory (rather than typed
+        // registration) lets us pass IConfiguration without adding a new public ctor to the
+        // pubternal ConsoleLifetime type.
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        internal static void AddConsoleLifetime(IServiceCollection collection)
+        {
+            collection.AddSingleton<IHostLifetime>(static sp => new ConsoleLifetime(
+                sp.GetRequiredService<IOptions<ConsoleLifetimeOptions>>(),
+                sp.GetRequiredService<IHostEnvironment>(),
+                sp.GetRequiredService<IHostApplicationLifetime>(),
+                sp.GetRequiredService<IOptions<HostOptions>>(),
+                sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetService<IConfiguration>()));
+        }
+
         /// <summary>
         /// Listens for Ctrl+C or SIGTERM and calls <see cref="IHostApplicationLifetime.StopApplication"/> to start the shutdown process.
         /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
@@ -353,7 +374,7 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder)
         {
-            return hostBuilder.ConfigureServices(collection => collection.AddSingleton<IHostLifetime, ConsoleLifetime>());
+            return hostBuilder.ConfigureServices(AddConsoleLifetime);
         }
 
         /// <summary>
@@ -371,7 +392,7 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureServices(collection =>
             {
-                collection.AddSingleton<IHostLifetime, ConsoleLifetime>();
+                AddConsoleLifetime(collection);
                 collection.Configure(configureOptions);
             });
         }
