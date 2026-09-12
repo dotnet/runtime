@@ -591,7 +591,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         if ((pCurGCFrame->m_gcFlags & GCFrameRegistration::GCFRAME_FLAG_VALUECLASS) != 0)
         {
             for (ValueClassInfo* pValueClass = *pCurGCFrame->m_ppValueClasses;
-                pValueClass != NULL;
+                pValueClass != nullptr;
                 pValueClass = pValueClass->m_pNext)
             {
                 MethodTable* pMethodTable = pValueClass->m_pMethodTable;
@@ -612,9 +612,11 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                 do
                 {
                     size_t offset = pSeries->GetSeriesOffset() - sizeof(void*);
-                    PTR_OBJECTREF pObjectRef = dac_cast<PTR_OBJECTREF>((uint8_t*)pValueClass->m_pData + offset);
+                    PTR_OBJECTREF pObjectRef =
+                        dac_cast<PTR_OBJECTREF>(dac_cast<PTR_uint8_t>(pValueClass->m_pData) + offset);
                     PTR_OBJECTREF pObjectRefStop =
-                        dac_cast<PTR_OBJECTREF>((uint8_t*)pObjectRef + pSeries->GetSeriesSize() + baseSize);
+                        dac_cast<PTR_OBJECTREF>(
+                            dac_cast<PTR_uint8_t>(pObjectRef) + pSeries->GetSeriesSize() + baseSize);
 
                     while (pObjectRef < pObjectRefStop)
                     {
