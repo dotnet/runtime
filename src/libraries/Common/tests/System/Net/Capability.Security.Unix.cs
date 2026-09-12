@@ -34,5 +34,10 @@ namespace System.Net.Test.Common
                 return false;
             }
         }
+
+        public static bool IsGssGetNameAttributeSupported() =>
+            !OperatingSystem.IsBrowser() &&
+            !OperatingSystem.IsWasi() &&
+            Interop.NetSecurityNative.IsGetNameAttributeSupported();
     }
 }
