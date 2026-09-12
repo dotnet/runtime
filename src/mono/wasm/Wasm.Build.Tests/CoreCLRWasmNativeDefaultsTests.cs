@@ -151,6 +151,72 @@ namespace Wasm.Build.Tests
             Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NativeRelinkResolvesCrossgen2WithoutReadyToRun(bool publish)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_sdk_crossgen2",
+                extraProperties: """
+                    <PublishReadyToRun>false</PublishReadyToRun>
+                    <WasmBuildNative>true</WasmBuildNative>
+                    """,
+                insertAtEnd: $$"""
+                    <Target Name="CheckCrossgen2PackRequest" BeforeTargets="ProcessFrameworkReferences">
+                        <Error Condition="'$(RequiresCrossgen2Pack)' != 'true'"
+                               Text="Expected RequiresCrossgen2Pack=true before restore." />
+                    </Target>
+                    <Target Name="CheckSdkCrossgen2" AfterTargets="_CoreCLRGenerateManagedToNative">
+                        <Error Condition="'{{publish}}' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+                               Text="Expected helper generation during nested publish." />
+                        <Error Condition="'$(PublishReadyToRun)' == 'true'"
+                               Text="Expected PublishReadyToRun=false." />
+                        <Error Condition="'$(Crossgen2InBuildDir)' != '' or '$(Crossgen2ToolPath)' != ''"
+                               Text="Expected SDK resolution without crossgen2 path overrides." />
+                        <Error Condition="'@(Crossgen2Tool)' == '' or '$(Crossgen2Path)' != '@(Crossgen2Tool)'"
+                               Text="Expected the generator path to match the SDK Crossgen2Tool item." />
+                        <Error Condition="!Exists('$(_WasmPInvokeTablePath)') or !Exists('$(_WasmReversePInvokeTablePath)') or !Exists('$(_WasmInterpToNativeTablePath)')"
+                               Text="A generated call-helper table is missing." />
+                        <Error Text="Stopping after validating SDK crossgen2" />
+                    </Target>
+                    """);
+
+            // Run the generator, then stop before native compilation.
+            string output = publish
+                ? PublishProject(info, Configuration.Debug, new PublishOptions(ExpectSuccess: false)).buildOutput
+                : BuildProject(info, Configuration.Debug, new BuildOptions(ExpectSuccess: false)).buildOutput;
+
+            Assert.Contains("Stopping after validating SDK crossgen2", output);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NativeRelinkWithoutCrossgen2PackReportsMissingGenerator(bool publish)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_missing_crossgen2",
+                extraProperties: """
+                    <PublishReadyToRun>false</PublishReadyToRun>
+                    <RequiresCrossgen2Pack>false</RequiresCrossgen2Pack>
+                    <WasmBuildNative>true</WasmBuildNative>
+                    """);
+
+            string output = publish
+                ? PublishProject(info, Configuration.Debug, new PublishOptions(ExpectSuccess: false)).buildOutput
+                : BuildProject(info, Configuration.Debug, new BuildOptions(ExpectSuccess: false)).buildOutput;
+
+            Assert.Contains("Could not resolve crossgen2. Update the .NET SDK and restore the project, or set $(Crossgen2Path) to a crossgen2 executable.", output);
+            Assert.DoesNotContain("NETSDK1094", output);
+        }
+
         private string? BuildAndGetWasmBuildNativeLine(string projectPrefix, string extraProperties, bool expectSuccess)
             => BuildAndGetOutput(projectPrefix, extraProperties, extraItems: "", expectSuccess).line;
 

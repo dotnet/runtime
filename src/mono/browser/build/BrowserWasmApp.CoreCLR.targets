@@ -25,6 +25,10 @@
          native.wasm.targets uses RuntimeFlavor to gate the CoreCLR-only relink registry. -->
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
 
+    <!-- Request crossgen2 here: WebAssembly.Pack is not imported before the first restore.
+         Only skip an explicit opt-out; otherwise native relinking may be inferred later. -->
+    <RequiresCrossgen2Pack Condition="'$(RequiresCrossgen2Pack)' == '' and '$(WasmBuildNative)' != 'false'">true</RequiresCrossgen2Pack>
+
     <!-- EH and SIMD are always enabled for CoreCLR — detect user overrides before forcing true -->
     <_CoreCLRInvalidEH Condition="'$(WasmEnableExceptionHandling)' != '' and '$(WasmEnableExceptionHandling)' != 'true'">true</_CoreCLRInvalidEH>
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
@@ -640,6 +644,15 @@
 
   <!-- ======================== Generate Managed-to-Native ======================== -->
 
+  <!-- Check overrides after all imports; the SDK resolver cannot use the in-repo crossgen2 layout.
+       Keep CallTarget separate so its output items reach the generator. -->
+  <Target Name="_CoreCLRResolvePortableCallHelpersGenerator"
+          BeforeTargets="_CoreCLRGenerateManagedToNative"
+          DependsOnTargets="ResolveFrameworkReferences">
+    <CallTarget Targets="ResolveReadyToRunCompilers"
+                Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' == '' and '$(Crossgen2ToolPath)' == '' and '@(ResolvedCrossgen2Pack)' != ''" />
+  </Target>
+
   <Target Name="_CoreCLRGenerateManagedToNative">
     <PropertyGroup>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-pinvoke.cpp</_WasmPInvokeTablePath>
@@ -694,21 +707,20 @@
       <_WasmManagedAssemblies Include="$(_CoreLibPath)" />
     </ItemGroup>
 
-    <!-- crossgen2 has the type system that knows the wasm ABI, so it generates the helpers itself.
-         In the repo it comes from the build output; outside it, from the crossgen2 pack
-         the wasm-tools workload acquires, which sets $(Crossgen2ToolPath) from its Sdk.props. -->
+    <!-- crossgen2 provides the wasm type layout needed to generate call helpers. -->
     <PropertyGroup>
       <_Crossgen2ExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_Crossgen2ExeSuffix>
       <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_Crossgen2ExeSuffix)'))</Crossgen2Path>
       <Crossgen2Path Condition="'$(Crossgen2Path)' == ''">$(Crossgen2ToolPath)</Crossgen2Path>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == ''">@(Crossgen2Tool)</Crossgen2Path>
     </PropertyGroup>
 
     <Error Condition="'$(Crossgen2Path)' == ''"
-           Text="crossgen2 was not found, so the portable call helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(Crossgen2Path) to a crossgen2 executable." />
+           Text="Could not resolve crossgen2. Update the .NET SDK and restore the project, or set %24(Crossgen2Path) to a crossgen2 executable." />
     <Error Condition="'$([System.IO.Path]::GetExtension(`$(Crossgen2Path)`))' == '.dll'"
-           Text="%24(Crossgen2Path) is '$(Crossgen2Path)'. It has to name a crossgen2 executable; an IL assembly cannot be launched directly." />
+           Text="Set %24(Crossgen2Path) to a crossgen2 executable, not the DLL '$(Crossgen2Path)'." />
     <Error Condition="!Exists('$(Crossgen2Path)')"
-           Text="%24(Crossgen2Path) is '$(Crossgen2Path)', which does not exist. In the repo, build crossgen2 first; outside it, install the 'wasm-tools' workload." />
+           Text="crossgen2 executable not found: '$(Crossgen2Path)'. Build or restore crossgen2, or correct %24(Crossgen2Path)." />
 
     <PropertyGroup>
       <_Crossgen2GeneratorRsp>$(_WasmIntermediateOutputPath)callhelpers-generator.rsp</_Crossgen2GeneratorRsp>
