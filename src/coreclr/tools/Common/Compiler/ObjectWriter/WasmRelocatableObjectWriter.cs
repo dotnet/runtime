@@ -58,8 +58,9 @@ namespace ILCompiler.ObjectWriter
         {
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
-            FinalizeSectionEntryCounts();
             ResolveSectionRelocations();
+            Debug.Assert(!HasBranchHints, "Branch hints require final function indices and are not supported in relocatable output.");
+            FinalizeSectionEntryCounts();
 
             EmitWasmHeader(outputFileStream);
 

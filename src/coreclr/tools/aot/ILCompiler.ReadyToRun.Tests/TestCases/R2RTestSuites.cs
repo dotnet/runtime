@@ -113,7 +113,19 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    [
+                        "--codegenopt",
+                        "JitSynthesizeCounts=1",
+                        "--codegenopt",
+                        "JitWasmBranchHintStress=1",
+                    ],
                     Validate = Validate,
+                },
+                new($"{nameof(WasmWebcilModule)}NoHints", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = ValidateNoHints,
                 },
             ]));
 
@@ -154,6 +166,14 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+            Assert.True(WasmR2RAssert.WasmBranchHintsAreValid(webcilReader, out string branchHintDiagnostic),
+                branchHintDiagnostic);
+        }
+
+        static void ValidateNoHints(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(WasmR2RAssert.WasmBranchHintsAreAbsent(webcilReader, out string diagnostic), diagnostic);
         }
     }
 

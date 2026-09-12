@@ -920,6 +920,8 @@ RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported",
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
 // Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
 RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
+// Emit branch hints from any available profile weights, including synthesized weights.
+RELEASE_CONFIG_INTEGER(JitWasmBranchHintStress, "JitWasmBranchHintStress", 0)
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

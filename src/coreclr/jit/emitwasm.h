@@ -22,7 +22,11 @@ void emitIns_BlockTy(instruction ins, WasmValueType valType = WasmValueType::Inv
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
 void emitIns_Ty_I(instruction ins, WasmValueType ty, unsigned int imm);
 void emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs);
-void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);
+void emitIns_J(instruction    ins,
+               emitAttr       attr,
+               cnsval_ssize_t imm,
+               BasicBlock*    tgtBlock,
+               WasmBranchHint branchHint = WasmBranchHint::None);
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
@@ -80,6 +84,7 @@ size_t emitOutputOpcode(BYTE* dst, instruction ins);
 size_t emitOutputPaddedReloc(uint8_t* destination);
 size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);
 size_t emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType);
+void   emitReportBranchHint(insGroup* ig, const instrDesc* id, const BYTE* instructionAddress);
 
 size_t emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype);
 

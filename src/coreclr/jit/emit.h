@@ -1027,6 +1027,21 @@ protected:
 #define SMALL_IDSC_SIZE 8
 
     public:
+#ifdef TARGET_WASM
+        WasmBranchHint idWasmBranchHint() const
+        {
+            return static_cast<WasmBranchHint>((_idCustom3 << 1) | _idCustom2);
+        }
+
+        void idSetWasmBranchHint(WasmBranchHint hint)
+        {
+            unsigned const value = static_cast<unsigned>(hint);
+            assert(value <= static_cast<unsigned>(WasmBranchHint::LikelyTrue));
+            _idCustom2 = value & 1;
+            _idCustom3 = (value >> 1) & 1;
+        }
+#endif
+
         instrDescDebugInfo* idDebugOnlyInfo() const
         {
             const char* addr = reinterpret_cast<const char*>(this);

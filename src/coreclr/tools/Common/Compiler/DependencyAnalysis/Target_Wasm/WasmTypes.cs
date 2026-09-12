@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 
 using ILCompiler.ObjectWriter;
@@ -10,6 +11,25 @@ using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.Wasm
 {
+    public readonly struct WasmBranchHint
+    {
+        public WasmBranchHint(uint functionOrdinal, uint codeOffset, bool isLikelyTaken)
+        {
+            FunctionOrdinal = functionOrdinal;
+            CodeOffset = codeOffset;
+            IsLikelyTaken = isLikelyTaken;
+        }
+
+        public uint FunctionOrdinal { get; }
+        public uint CodeOffset { get; }
+        public bool IsLikelyTaken { get; }
+    }
+
+    public interface INodeWithWasmBranchHints
+    {
+        IReadOnlyList<WasmBranchHint> WasmBranchHints { get; }
+    }
+
     // For now, we only encode Wasm numeric value types.
     // These are encoded as a single byte. However,
     // not all value types can be encoded this way.

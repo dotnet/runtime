@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Buffers.Binary;
 using System.Linq;
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -14,7 +15,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, INodeWithWasmBranchHints
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -32,6 +33,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
+        private List<WasmBranchHint> _wasmBranchHints;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -98,6 +100,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int Size => _methodCode.Data.Length;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
+
+        public IReadOnlyList<WasmBranchHint> WasmBranchHints =>
+            _wasmBranchHints is null ? Array.Empty<WasmBranchHint>() : _wasmBranchHints;
+
+        public void AddWasmBranchHint(WasmBranchHint branchHint)
+        {
+            _wasmBranchHints ??= new List<WasmBranchHint>();
+            _wasmBranchHints.Add(branchHint);
+        }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
