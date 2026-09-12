@@ -96,19 +96,8 @@ schedules:
     - main
   always: true
 
-pr:
-  branches:
-    include:
-    - '*'
-    exclude:
-    - release/*
-    - internal/release/*
-  paths:
-    include:
-    - eng/pipelines/**
-    - src/native/managed/cdac/**
-    - src/coreclr/debug/runtimeinfo/**
-    - src/coreclr/vm/cdacstress.cpp
+# Disabled for the Android API-level validation PR.
+pr: none
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
