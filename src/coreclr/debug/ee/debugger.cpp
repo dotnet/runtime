@@ -4850,6 +4850,14 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
     // We shouldn't have been asked to map an already bound patch
     _ASSERTE( !dcp->IsBound() );
 
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    if (ExecutionManager::IsReadyToRunCode(dac_cast<PCODE>(djiTo->m_addrOfCode)))
+    {
+        // Leave deferred patches unbound because this configuration cannot patch R2R code.
+        return S_OK;
+    }
+#endif
+
     // If the patch has no DJI then we're doing a UnbindFunctionPatches/RebindFunctionPatches.  Either
     // way, we simply want the most recent version.  In the absence of EnC we should have djiCur == djiTo.
     DebuggerJitInfo *djiCur = dcp->HasDJI() ? dcp->GetDJI() : djiTo;
@@ -4891,7 +4899,12 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
             LOG((LF_CORDB, LL_EVERYTHING, "D::MPTDJI trying to bind patch... could be problem\n"));
             if (DebuggerController::BindPatch(dcp, djiTo->m_nativeCodeVersion.GetMethodDesc(), NULL))
             {
-                DebuggerController::ActivatePatch(dcp);
+                if (!DebuggerController::ActivatePatch(dcp))
+                {
+                    DebuggerController::GetPatchTable()->UnbindPatch(dcp);
+                    return CORDBG_E_CODE_NOT_AVAILABLE;
+                }
+
                 LOG((LF_CORDB, LL_INFO1000, "D::MPTDJI Binding went fine!\n" ));
                 return S_OK;
             }
@@ -8934,6 +8947,10 @@ void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
 
     if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
         return;
+
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    DebuggerController::CancelOutstandingThreadStarter(pRuntimeThread);
+#endif
 
     {
         GCX_PREEMP();
