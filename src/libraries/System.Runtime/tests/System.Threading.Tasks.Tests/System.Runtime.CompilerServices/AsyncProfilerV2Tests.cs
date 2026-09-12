@@ -251,6 +251,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_SuspendResumeCompleteEvents()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendResumeCompleteEvents_Marker);
@@ -282,6 +283,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ContextEventIdLifecycle()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_ContextEventIdLifecycle_Marker);
@@ -328,6 +330,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_EventSequenceOrder()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_EventSequenceOrder_Marker);
@@ -377,6 +380,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker);
@@ -404,6 +408,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CreateCallstackDepthMatchesChain()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateCallstackDepthMatchesChain_Marker);
@@ -432,6 +437,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker);
@@ -459,6 +465,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_SuspendCallstackDepthMatchesChain()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker);
@@ -487,6 +494,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_SuspendCallstackPrecedesComplete()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendCallstackPrecedesComplete_Marker);
@@ -522,6 +530,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_SuspendCallstackDeeperThanInitialResume()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker);
@@ -551,6 +560,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CreateCallstackPrecedesResumeCallstack()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker);
@@ -588,6 +598,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CreateAndFirstResumeCallstacksMatch()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker);
@@ -629,6 +640,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CallstackEmittedOnResume()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackEmittedOnResume_Marker);
@@ -656,6 +668,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CallstackDepthMatchesChain()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackDepthMatchesChain_Marker);
@@ -683,6 +696,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_MethodEventCountMatchesChainDepth()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords | RuntimeAsyncMethodKeywords, RuntimeAsync_MethodEventCountMatchesChainDepth_Marker);
@@ -717,6 +731,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CallstackFramesHaveDistinctMethodIds()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker);
@@ -766,6 +781,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_YieldAtEachLevel_CallstackShrinks()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker);
@@ -793,6 +809,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CallstackSimulation_NormalCompletion()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackSimulation_NormalCompletion_Marker);
@@ -811,6 +828,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CallstackSimulation_HandledException()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackSimulation_HandledException_Marker);
@@ -842,6 +860,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CallstackSimulation_UnhandledException()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackSimulation_UnhandledException_Catcher_Marker);
@@ -873,6 +892,8 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132311", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_UnhandledExceptionUnwind()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_UnhandledExceptionUnwind_Catcher_Marker);
@@ -907,6 +928,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_HandledExceptionUnwind()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_HandledExceptionUnwind_Marker);
@@ -1274,6 +1296,7 @@ namespace System.Threading.Tasks.Tests
         // Test parallelization is already disabled via XunitAssemblyAttributes.cs.
         [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         [MemberData(nameof(KeywordGatekeepingData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132311", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_KeywordGatekeeping(long keywordValue, AsyncEventID[] allowedEventIds)
         {
             EventKeywords kw = (EventKeywords)keywordValue;
@@ -1364,6 +1387,8 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132311", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CallstackNativeIPDeltaRoundtrip()
         {
             // Verify that delta-encoded NativeIPs in callstacks roundtrip correctly,
@@ -1733,6 +1758,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_WhenAll_TracksAllBranches()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_WhenAll_TracksAllBranches_Marker);
@@ -1807,6 +1833,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133627", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_WhenAny_TracksAllBranches()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_WhenAny_TracksAllBranches_Marker);
@@ -1913,6 +1940,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_TaskCancellation()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_TaskCancellation_Marker);
@@ -1963,6 +1991,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack()
         {
             s_runtimeAsyncSyncContextCtx = new InlinePostSynchronizationContext();
@@ -2004,6 +2033,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack()
         {
             var scheduler = new InlineRunTaskScheduler();
@@ -2052,6 +2082,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ValueTask_EventSequenceOrder()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, async () => await RuntimeAsync_ValueTask_EventSequenceOrder_Marker());
@@ -2113,6 +2144,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth()
         {
             var events = await CollectValueTaskEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker);
@@ -2136,6 +2168,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, async () => await RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker());
@@ -2180,6 +2213,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132311", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords | UnwindRuntimeAsyncExceptionKeyword, async () => await RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker());
@@ -2230,6 +2264,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords | UnwindRuntimeAsyncExceptionKeyword, async () =>
@@ -2290,6 +2325,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ResetContext_ReplaysPendingV2Chain()
         {
             var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, RuntimeAsync_ResetContext_ReplaysPendingV2Chain_Outer_Marker);
@@ -2486,6 +2522,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133626", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_ResetContext_ReplayResumeCompleteBalance()
         {
             var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Outer_Marker);

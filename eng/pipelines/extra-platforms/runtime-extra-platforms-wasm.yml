@@ -80,6 +80,22 @@ jobs:
       scenarios:
         - WasmTestOnChrome
 
+  # CoreCLR ReadyToRun library tests, complementary to the default pipeline's lane.
+  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+      nameSuffix: _R2R
+      readyToRun: true
+      timeoutInMinutes: 480
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
+      scenarios:
+        - WasmTestOnChrome
+
   # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
