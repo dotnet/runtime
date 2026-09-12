@@ -691,7 +691,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         {
             RootDir_IsAbsolutePath_WithInMemory(rootDir, separator);
         }
-        
+
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData("C:\\src\\project", '\\')]
@@ -814,6 +814,98 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
+        [Fact]
+        public void DerivedDirectoryInfoWrapperUsesVirtualEnumeration()
+        {
+            var directory = new TrackingDirectoryInfoWrapper(_context.DirectoryInfo!);
+            var matcher = new Matcher(StringComparison.Ordinal);
+            matcher.AddInclude("**/*.cs");
+
+            PatternMatchingResult result = matcher.Execute(directory);
+
+            Assert.True(directory.EnumerateCalled);
+            Assert.True(result.HasMatches);
+        }
+
+        [Fact]
+        public void DirectDirectoryExclusionsPreservePruningSemantics()
+        {
+            using var fileSystem = new DisposableFileSystem()
+                .CreateFiles(
+                    "bin/root.cs",
+                    "bin/Debug/debug.cs",
+                    "src/bin/nested.cs",
+                    "cache.user/hidden.cs",
+                    "src/keep.cs");
+            var matcher = new Matcher(StringComparison.OrdinalIgnoreCase);
+            matcher.AddInclude("**/*.CS");
+            matcher.AddExclude("bin/Debug/**");
+            matcher.AddExclude("BIN/**");
+            matcher.AddExclude("**/*.USER");
+
+            PatternMatchingResult result = matcher.Execute(fileSystem.GetDirectoryInfoBase());
+
+            Assert.Equal(
+                ["src/bin/nested.cs", "src/keep.cs"],
+                result.Files.Select(match => match.Path).OrderBy(path => path));
+        }
+
+        [Theory]
+        [InlineData("bin/**", true)]
+        [InlineData("**/*.user", true)]
+        [InlineData("bin/Debug/**", true)]
+        [InlineData("**/bin/**", false)]
+#if NET
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "ReflectionAnalysis",
+            "IL2075",
+            Justification = "The test intentionally inspects a private implementation plan.")]
+#endif
+        public void DirectDirectoryExclusionsUseOnlyEquivalentShapes(
+            string exclude,
+            bool expected)
+        {
+            using var fileSystem = new DisposableFileSystem().CreateFiles("src/keep.cs");
+            var matcher = new Matcher(StringComparison.Ordinal);
+            matcher.AddInclude("**/*.cs");
+            matcher.AddExclude(exclude);
+
+            matcher.Execute(fileSystem.GetDirectoryInfoBase());
+
+            _ = expected;
+#if NET
+            System.Reflection.FieldInfo? field = typeof(Matcher).GetField(
+                "_toukiPlan",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (field is null)
+            {
+                return;
+            }
+
+            object? value = field.GetValue(matcher);
+            Assert.NotNull(value);
+            object plan = value;
+            object? directExclusions = plan.GetType()
+                .GetProperty("DirectDirectoryExclusions")!
+                .GetValue(plan);
+            Assert.Equal(expected, directExclusions is not null);
+#endif
+        }
+
+        [Fact]
+        public void DeepDirectDirectoryExclusionPreservesResults()
+        {
+            using var fileSystem = new DisposableFileSystem()
+                .CreateFiles("a/b/excluded.cs", "a/keep.cs");
+            var matcher = new Matcher(StringComparison.Ordinal);
+            matcher.AddInclude("**/*.cs");
+            matcher.AddExclude("a/b/**");
+
+            PatternMatchingResult result = matcher.Execute(fileSystem.GetDirectoryInfoBase());
+
+            Assert.Equal(["a/keep.cs"], result.Files.Select(match => match.Path));
+        }
+
         [Fact] // https://github.com/dotnet/runtime/issues/44767
         public void VerifyAbsolutePaths_HasMatches()
         {
@@ -826,7 +918,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 string fakeWindowsPath = "C:\\This\\is\\a\\nested\\windows-like\\path\\somefile.cs";
                 Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeWindowsPath), fakeWindowsPath).HasMatches);
             }
-            
+
             // Unix-like absolute paths are treated as relative paths on Windows.
             string fakeUnixPath = "/This/is/a/nested/unix-like/path/somefile.cs";
             Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeUnixPath), fakeUnixPath).HasMatches);
@@ -1021,6 +1113,22 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             Assert.True(result.HasMatches);
             Assert.Single(result.Files);
             Assert.Equal("../Folder2/File2.txt", result.Files.First().Path);
+        }
+
+        private sealed class TrackingDirectoryInfoWrapper : DirectoryInfoWrapper
+        {
+            public TrackingDirectoryInfoWrapper(DirectoryInfo directoryInfo)
+                : base(directoryInfo)
+            {
+            }
+
+            public bool EnumerateCalled { get; private set; }
+
+            public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
+            {
+                EnumerateCalled = true;
+                return base.EnumerateFileSystemInfos();
+            }
         }
     }
 }

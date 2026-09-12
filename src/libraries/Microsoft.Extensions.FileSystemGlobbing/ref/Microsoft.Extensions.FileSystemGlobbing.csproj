@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <_Net8TargetFramework Condition="'$(NetCoreAppCurrent)' != 'net8.0' and '$(NetCoreAppPrevious)' != 'net8.0' and '$(NetCoreAppMinimum)' != 'net8.0'">net8.0;</_Net8TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);$(_Net8TargetFramework)netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
