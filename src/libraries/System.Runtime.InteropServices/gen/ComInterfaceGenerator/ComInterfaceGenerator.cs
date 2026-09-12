@@ -506,12 +506,15 @@ namespace Microsoft.Interop
         private static void WriteImplementationVTableStruct(IndentedTextWriter writer, ComInterfaceAndMethodsContext interfaceMethods)
         {
             writer.WriteLine("[global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]");
-            writer.WriteLine("file unsafe struct InterfaceImplementationVtable");
+            // The 'unsafe' modifier goes on each field rather than on the type: a field-level modifier makes the
+            // pointer legal to name under the legacy rules and has a meaning under the updated ones, whereas a
+            // type-level modifier is meaningless under the updated rules and warns (CS9377).
+            writer.WriteLine("file struct InterfaceImplementationVtable");
             writer.WriteLine('{');
             writer.Indent++;
-            writer.WriteLine("public delegate* unmanaged[MemberFunction]<void*, global::System.Guid*, void**, int> QueryInterface_0;");
-            writer.WriteLine("public delegate* unmanaged[MemberFunction]<void*, uint> AddRef_1;");
-            writer.WriteLine("public delegate* unmanaged[MemberFunction]<void*, uint> Release_2;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, global::System.Guid*, void**, int> QueryInterface_0;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, uint> AddRef_1;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, uint> Release_2;");
             if (interfaceMethods.Interface.Base is not null)
             {
                 foreach (ComMethodContext inheritedMethod in interfaceMethods.InheritedMethods)
@@ -520,7 +523,7 @@ namespace Microsoft.Interop
                         inheritedMethod.GenerationContext,
                         ComInterfaceGeneratorHelpers.GetGeneratorResolver);
 
-                    writer.WriteLine($"public {functionPointerType.NormalizeWhitespace()} {inheritedMethod.MethodInfo.MethodName}_{inheritedMethod.GenerationContext.VtableIndexData.Index};");
+                    writer.WriteLine($"public unsafe {functionPointerType.NormalizeWhitespace()} {inheritedMethod.MethodInfo.MethodName}_{inheritedMethod.GenerationContext.VtableIndexData.Index};");
                 }
             }
 
@@ -532,7 +535,7 @@ namespace Microsoft.Interop
                     declaredMethod.GenerationContext,
                     ComInterfaceGeneratorHelpers.GetGeneratorResolver);
 
-                writer.WriteLine($"public {functionPointerType.NormalizeWhitespace()} {declaredMethod.MethodInfo.MethodName}_{declaredMethod.GenerationContext.VtableIndexData.Index};");
+                writer.WriteLine($"public unsafe {functionPointerType.NormalizeWhitespace()} {declaredMethod.MethodInfo.MethodName}_{declaredMethod.GenerationContext.VtableIndexData.Index};");
             }
 
             writer.Indent--;
@@ -541,11 +544,28 @@ namespace Microsoft.Interop
 
         private static void WriteInterfaceInformation(IndentedTextWriter writer, ComInterfaceInfo interfaceInfo)
         {
-            writer.WriteLine("file unsafe sealed class InterfaceInformation : global::System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType");
+            writer.WriteLine("file sealed class InterfaceInformation : global::System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType");
             writer.WriteLine('{');
             writer.Indent++;
             writer.WriteLine($"public static global::System.Guid Iid {{ get; }} = new([{string.Join(", ", interfaceInfo.InterfaceId.ToByteArray())}]);");
-            writer.WriteLine($"public static void** ManagedVirtualMethodTable => {(interfaceInfo.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper) ? "(void**)global::System.Runtime.CompilerServices.Unsafe.AsPointer(in InterfaceImplementation.Vtable)" : "null")};");
+            // The modifier makes the pointer type legal to name; the accessor still needs an unsafe context of
+            // its own, since under the updated rules a member modifier opens none for the body.
+            writer.WriteLine("public static unsafe void** ManagedVirtualMethodTable");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine("get");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine("unsafe");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine($"return {(interfaceInfo.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper) ? "(void**)global::System.Runtime.CompilerServices.Unsafe.AsPointer(in InterfaceImplementation.Vtable)" : "null")};");
+            writer.Indent--;
+            writer.WriteLine('}');
+            writer.Indent--;
+            writer.WriteLine('}');
+            writer.Indent--;
+            writer.WriteLine('}');
             writer.Indent--;
             writer.WriteLine('}');
         }
@@ -553,7 +573,12 @@ namespace Microsoft.Interop
         private static void WriteInterfaceImplementation(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)
         {
             writer.WriteLine("[global::System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute]");
-            writer.WriteLine($"file unsafe interface InterfaceImplementation : {data.Interface.Info.Type.FullTypeName}");
+            // This type holds the stubs that explicitly implement the user's interface members. Those stubs copy
+            // their modifiers from the user's declaration and cannot be marked 'unsafe' on their own without
+            // failing to implement a safe member (CS9366), so under the legacy rules the type modifier is what
+            // makes their pointer parameters legal to name.
+            string unsafeModifier = data.Interface.Info.UseUpdatedMemorySafetyRules ? "" : "unsafe ";
+            writer.WriteLine($"file {unsafeModifier}interface InterfaceImplementation : {data.Interface.Info.Type.FullTypeName}");
             writer.WriteLine('{');
             writer.Indent++;
 
@@ -563,6 +588,11 @@ namespace Microsoft.Interop
                 writer.WriteLine("public static readonly InterfaceImplementationVtable Vtable;");
                 writer.InnerWriter.WriteLine();
                 writer.WriteLine("static InterfaceImplementation()");
+                writer.WriteLine('{');
+                writer.Indent++;
+                // The initialization takes addresses and writes through pointers, so it opens its own unsafe
+                // context rather than relying on one from the containing type.
+                writer.WriteLine("unsafe");
                 writer.WriteLine('{');
                 writer.Indent++;
 
@@ -593,6 +623,9 @@ namespace Microsoft.Interop
                 {
                     writer.WriteLine($"Vtable.{declaredMethodContext.MethodInfo.MethodName}_{declaredMethodContext.GenerationContext.VtableIndexData.Index} = &ABI_{((SourceAvailableIncrementalMethodStubGenerationContext)declaredMethodContext.GenerationContext).StubMethodSyntaxTemplate.Identifier};");
                 }
+
+                writer.Indent--;
+                writer.WriteLine('}');
 
                 writer.Indent--;
                 writer.WriteLine('}');
@@ -857,12 +890,15 @@ namespace Microsoft.Interop
 
         private static void WriteIUnknownDerivedOriginalInterfacePart(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)
         {
-            data.Interface.Info.TypeDefinitionContext.WriteToWithUnsafeModifier(writer, (data.Interface.Info.ContainingSyntax, data.ShadowingMethods), static (writer, data) =>
+            data.Interface.Info.TypeDefinitionContext.WriteToWithUnsafeModifier(data.Interface.Info.UseUpdatedMemorySafetyRules, writer, (data.Interface.Info.ContainingSyntax, data.ShadowingMethods, data.Interface.Info.UseUpdatedMemorySafetyRules), static (writer, data) =>
             {
-                (ContainingSyntax syntax, IEnumerable<ComMethodContext>? shadowingMethods) = data;
+                (ContainingSyntax syntax, IEnumerable<ComMethodContext>? shadowingMethods, bool useUpdatedMemorySafetyRules) = data;
 
                 writer.WriteLine("[global::System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute<InterfaceInformation, InterfaceImplementation>]");
-                writer.WriteLine($"{string.Join(" ", syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
+                SyntaxTokenList typeModifiers = useUpdatedMemorySafetyRules
+                    ? syntax.Modifiers
+                    : syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword);
+                writer.WriteLine($"{string.Join(" ", typeModifiers)} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
                 writer.WriteLine('{');
                 writer.Indent++;
 
@@ -873,12 +909,19 @@ namespace Microsoft.Interop
                 // so that overloaded indexers do not accidentally cross-pair.
                 (string? PropName, string? DeclaringType, string? PropType,
                     SequenceEqualImmutableArray<AttributeInfo> PropAttrs,
-                    string? IndexParamList, string? IndexArgList) pendingGetter = default;
+                    string? IndexParamList, string? IndexArgList, bool IsUnsafe) pendingGetter = default;
 
                 foreach (ComMethodContext shadow in shadowingMethods)
                 {
                     IncrementalMethodStubGenerationContext generationContext = shadow.GenerationContext;
                     SignatureContext sigContext = generationContext.SignatureContext;
+
+                    // A shadow forwards to a member of the base interface. When that member declares itself
+                    // caller-unsafe the shadow has to say the same thing, or it would silently widen the
+                    // contract and its implementation could no longer implement it, and the forwarding call
+                    // needs an unsafe context of its own.
+                    bool isUnsafe = shadow.MethodInfo.Syntax is { } shadowedSyntax
+                        && shadowedSyntax.Modifiers.Any(SyntaxKind.UnsafeKeyword);
 
                     if (generationContext.MemberKind.IsPropertyOrIndexerAccessor())
                     {
@@ -918,7 +961,7 @@ namespace Microsoft.Interop
                         if (!isSetter)
                         {
                             FlushPendingGetter(writer, ref pendingGetter);
-                            pendingGetter = (propName, declaringType, propType, propAttrs, indexParamList, indexArgList);
+                            pendingGetter = (propName, declaringType, propType, propAttrs, indexParamList, indexArgList, isUnsafe);
                             continue;
                         }
 
@@ -929,11 +972,11 @@ namespace Microsoft.Interop
                             && pendingGetter.IndexParamList == indexParamList)
                         {
                             EmitPropertyAttributes(writer, pendingGetter.PropAttrs);
-                            EmitDeclarationHead(writer, pendingGetter.PropType!, pendingGetter.PropName!, pendingGetter.IndexParamList);
+                            EmitDeclarationHead(writer, pendingGetter.PropType!, pendingGetter.PropName!, pendingGetter.IndexParamList, pendingGetter.IsUnsafe || isUnsafe);
                             writer.WriteLine('{');
                             writer.Indent++;
-                            EmitAccessor(writer, isSetter: false, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList);
-                            EmitAccessor(writer, isSetter: true, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList);
+                            EmitAccessor(writer, isSetter: false, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList, pendingGetter.IsUnsafe);
+                            EmitAccessor(writer, isSetter: true, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList, isUnsafe);
                             writer.Indent--;
                             writer.WriteLine('}');
                             pendingGetter = default;
@@ -942,10 +985,10 @@ namespace Microsoft.Interop
 
                         FlushPendingGetter(writer, ref pendingGetter);
                         EmitPropertyAttributes(writer, propAttrs);
-                        EmitDeclarationHead(writer, propType, propName, indexParamList);
+                        EmitDeclarationHead(writer, propType, propName, indexParamList, isUnsafe);
                         writer.WriteLine('{');
                         writer.Indent++;
-                        EmitAccessor(writer, isSetter: true, declaringType, propName, indexArgList);
+                        EmitAccessor(writer, isSetter: true, declaringType, propName, indexArgList, isUnsafe);
                         writer.Indent--;
                         writer.WriteLine('}');
                         continue;
@@ -968,10 +1011,32 @@ namespace Microsoft.Interop
                         writer.WriteLine($"[{attrInfo.Type}({string.Join(", ", attrInfo.Arguments)})]");
                     }
 
-                    writer.Write($"new {sigContext.StubReturnType} {shadow.MethodInfo.MethodName}");
+                    writer.Write($"new {(isUnsafe ? "unsafe " : "")}{sigContext.StubReturnType} {shadow.MethodInfo.MethodName}");
                     writer.Write($"({string.Join(", ", sigContext.StubParameters.Select(p => p.NormalizeWhitespace().ToString()))})");
-                    writer.Write($" => (({shadow.OriginalDeclaringInterface.Info.Type.FullTypeName})this).{shadow.MethodInfo.MethodName}");
-                    writer.WriteLine($"({string.Join(", ", sigContext.ManagedParameters.Select(mp => $"{(mp.IsByRef ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(mp)} " : "")}{mp.InstanceIdentifier}"))});");
+                    string forwardingCall = $"(({shadow.OriginalDeclaringInterface.Info.Type.FullTypeName})this).{shadow.MethodInfo.MethodName}"
+                        + $"({string.Join(", ", sigContext.ManagedParameters.Select(mp => $"{(mp.IsByRef ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(mp)} " : "")}{mp.InstanceIdentifier}"))})";
+
+                    if (isUnsafe)
+                    {
+                        // An expression body cannot host the required unsafe context: the 'unsafe(...)'
+                        // expression form is not one of the forms a statement may consist of.
+                        bool returnsVoid = sigContext.StubReturnType is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword };
+                        writer.WriteLine();
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        writer.WriteLine("unsafe");
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        writer.WriteLine($"{(returnsVoid ? "" : "return ")}{forwardingCall};");
+                        writer.Indent--;
+                        writer.WriteLine('}');
+                        writer.Indent--;
+                        writer.WriteLine('}');
+                    }
+                    else
+                    {
+                        writer.WriteLine($" => {forwardingCall};");
+                    }
                 }
 
                 FlushPendingGetter(writer, ref pendingGetter);
@@ -979,32 +1044,33 @@ namespace Microsoft.Interop
                 writer.Indent--;
                 writer.WriteLine('}');
 
-                static void FlushPendingGetter(IndentedTextWriter writer, ref (string? PropName, string? DeclaringType, string? PropType, SequenceEqualImmutableArray<AttributeInfo> PropAttrs, string? IndexParamList, string? IndexArgList) pending)
+                static void FlushPendingGetter(IndentedTextWriter writer, ref (string? PropName, string? DeclaringType, string? PropType, SequenceEqualImmutableArray<AttributeInfo> PropAttrs, string? IndexParamList, string? IndexArgList, bool IsUnsafe) pending)
                 {
                     if (pending.PropName is null)
                     {
                         return;
                     }
                     EmitPropertyAttributes(writer, pending.PropAttrs);
-                    EmitDeclarationHead(writer, pending.PropType!, pending.PropName!, pending.IndexParamList);
+                    EmitDeclarationHead(writer, pending.PropType!, pending.PropName!, pending.IndexParamList, pending.IsUnsafe);
                     writer.WriteLine('{');
                     writer.Indent++;
-                    EmitAccessor(writer, isSetter: false, pending.DeclaringType!, pending.PropName!, pending.IndexArgList);
+                    EmitAccessor(writer, isSetter: false, pending.DeclaringType!, pending.PropName!, pending.IndexArgList, pending.IsUnsafe);
                     writer.Indent--;
                     writer.WriteLine('}');
                     pending = default;
                 }
 
                 // Writes either `new T Name` (property) or `new T this[<paramList>]` (indexer) on its own line.
-                static void EmitDeclarationHead(IndentedTextWriter writer, string propType, string propName, string? indexParamList)
+                static void EmitDeclarationHead(IndentedTextWriter writer, string propType, string propName, string? indexParamList, bool isUnsafe)
                 {
+                    string modifiers = isUnsafe ? "new unsafe" : "new";
                     if (indexParamList is null)
                     {
-                        writer.WriteLine($"new {propType} {propName}");
+                        writer.WriteLine($"{modifiers} {propType} {propName}");
                     }
                     else
                     {
-                        writer.WriteLine($"new {propType} this[{indexParamList}]");
+                        writer.WriteLine($"{modifiers} {propType} this[{indexParamList}]");
                     }
                 }
 
@@ -1012,14 +1078,33 @@ namespace Microsoft.Interop
                 // or `get => ((Base)this)[<argList>];` / `set => ((Base)this)[<argList>] = value;` for indexers.
                 // For indexers the propName isn't part of the access expression (the IL-level naming comes
                 // from `[IndexerName]` propagated via AssociatedAttributes).
-                static void EmitAccessor(IndentedTextWriter writer, bool isSetter, string declaringType, string propName, string? indexArgList)
+                static void EmitAccessor(IndentedTextWriter writer, bool isSetter, string declaringType, string propName, string? indexArgList, bool isUnsafe)
                 {
                     string access = indexArgList is null
                         ? $"(({declaringType})this).{propName}"
                         : $"(({declaringType})this)[{indexArgList}]";
-                    writer.WriteLine(isSetter
-                        ? $"set => {access} = value;"
-                        : $"get => {access};");
+
+                    if (!isUnsafe)
+                    {
+                        writer.WriteLine(isSetter
+                            ? $"set => {access} = value;"
+                            : $"get => {access};");
+                        return;
+                    }
+
+                    // Forwarding to a caller-unsafe member needs an unsafe context, which an expression-bodied
+                    // accessor has nowhere to put.
+                    writer.WriteLine(isSetter ? "set" : "get");
+                    writer.WriteLine('{');
+                    writer.Indent++;
+                    writer.WriteLine("unsafe");
+                    writer.WriteLine('{');
+                    writer.Indent++;
+                    writer.WriteLine(isSetter ? $"{access} = value;" : $"return {access};");
+                    writer.Indent--;
+                    writer.WriteLine('}');
+                    writer.Indent--;
+                    writer.WriteLine('}');
                 }
 
                 static void EmitPropertyAttributes(IndentedTextWriter writer, SequenceEqualImmutableArray<AttributeInfo> attrs)

@@ -165,7 +165,7 @@ namespace Microsoft.Interop
                 .AddAttributeLists(stub.AdditionalAttributes.ToArray())
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
-                .WithBody(Block(UnsafeStatement(stubCode)));
+                .WithBody(stubCode.WrapInUnsafeBlock());
         }
 
         private static LibraryImportCompilationData? ProcessLibraryImportAttribute(AttributeData attrData)
