@@ -14588,12 +14588,12 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 _ASSERTE(pMethod->IsPInvoke());
                 PInvokeMethodDesc* pPInvokeMethod = (PInvokeMethodDesc*)pMethod;
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
                 if (!PInvoke::TryResolvePInvokeTargetForR2R(pPInvokeMethod))
                     return FALSE;
 #else
                 PInvoke::ResolvePInvokeTarget(pPInvokeMethod);
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
                 result = (size_t)(LPVOID)pPInvokeMethod->GetPInvokeTarget();
             }
             else

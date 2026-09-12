@@ -5980,7 +5980,7 @@ void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
     }
 }
 
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
 BOOL PInvoke::TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD)
 {
     CONTRACTL
@@ -5993,14 +5993,14 @@ BOOL PInvoke::TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD)
     }
     CONTRACTL_END;
 
-    PopulatePInvokeMethodDesc(pNMD);
-
     if (!pNMD->PInvokeTargetIsImportThunk())
         return TRUE;
 
+    PopulatePInvokeMethodDesc(pNMD);
+
     return TryResolvePInvokeTargetFromOverride(pNMD);
 }
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 PCODE JitILStub(MethodDesc* pStubMD)
 {
