@@ -14,8 +14,6 @@ trigger:
   branches:
     include:
     - main
-    - release/9.0
-    - release/8.0
   paths:
     include:
     - '*'

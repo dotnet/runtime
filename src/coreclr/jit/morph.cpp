@@ -9650,7 +9650,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (op1Oper == GT_NOT)
                 {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (!varTypeIsIntegral(simdBaseType))
                     {
                         break;
                     }
@@ -9678,14 +9678,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     node = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseType, simdSize)->AsHWIntrinsic();
 
 #if defined(TARGET_XARCH)
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        node->AsHWIntrinsic()->Op(2)->SetMorphed(this);
-                    }
-                    else
-                    {
-                        node->AsHWIntrinsic()->Op(1)->SetMorphed(this);
-                    }
+                    node->Op(1)->SetMorphed(this);
 #endif // TARGET_XARCH
 
                     return fgMorphHWIntrinsicRequired(node);
