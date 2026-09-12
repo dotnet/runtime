@@ -90,7 +90,7 @@ struct JitInterfaceCallbacks
     CorInfoType (* getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getTypeForPrimitiveNumericClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
-    TypeCompareState (* compareTypesForCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
+    TypeCompareState (* compareTypesForCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, bool fromClassIsExact);
     TypeCompareState (* compareTypesForEquality)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     bool (* isMoreSpecificType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     bool (* isExactType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -980,10 +980,11 @@ public:
 
     virtual TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
-          CORINFO_CLASS_HANDLE toClass)
+          CORINFO_CLASS_HANDLE toClass,
+          bool fromClassIsExact)
 {
     CorInfoExceptionClass* pException = nullptr;
-    TypeCompareState temp = _callbacks->compareTypesForCast(_thisHandle, &pException, fromClass, toClass);
+    TypeCompareState temp = _callbacks->compareTypesForCast(_thisHandle, &pException, fromClass, toClass, fromClassIsExact);
     if (pException != nullptr) throw pException;
     return temp;
 }

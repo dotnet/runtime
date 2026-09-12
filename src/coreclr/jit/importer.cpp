@@ -5527,7 +5527,8 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                 eeGetClassName(toClass));
 
         // Perhaps we know if the cast will succeed or fail.
-        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
+        // Only isinst folds failed casts, so castclass does not need a proof covering all subtypes.
+        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass, isExact || isCastClass);
 
         if (castResult == TypeCompareState::Must)
         {
@@ -5537,16 +5538,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         }
         else if (castResult == TypeCompareState::MustNot)
         {
-            // See if we can sharpen exactness by looking for final classes
-            if (!isExact)
-            {
-                isExact = info.compCompHnd->isExactType(fromClass);
-            }
-
-            // Cast to exact type will fail. Handle case where we have
-            // an exact type (that is, fromClass is not a subtype)
-            // and we're not going to throw on failure.
-            if (isExact && !isCastClass)
+            if (!isCastClass)
             {
                 JITDUMP("Cast will fail, optimizing to return null\n");
 
@@ -5563,13 +5555,9 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                 }
                 return gtNewNull();
             }
-            else if (isExact)
-            {
-                JITDUMP("Not optimizing failing castclass (yet)\n");
-            }
             else
             {
-                JITDUMP("Can't optimize since fromClass is inexact\n");
+                JITDUMP("Not optimizing potentially failing castclass (yet)\n");
             }
         }
         else

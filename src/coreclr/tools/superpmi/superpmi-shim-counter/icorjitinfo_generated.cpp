@@ -642,10 +642,11 @@ bool interceptor_ICJI::canCast(
 
 TypeCompareState interceptor_ICJI::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
-          CORINFO_CLASS_HANDLE toClass)
+          CORINFO_CLASS_HANDLE toClass,
+          bool fromClassIsExact)
 {
     mcs->AddCall("compareTypesForCast");
-    return original_ICorJitInfo->compareTypesForCast(fromClass, toClass);
+    return original_ICorJitInfo->compareTypesForCast(fromClass, toClass, fromClassIsExact);
 }
 
 TypeCompareState interceptor_ICJI::compareTypesForEquality(

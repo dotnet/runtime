@@ -6248,32 +6248,41 @@ CORINFO_FIELD_HANDLE MethodContext::repEmbedFieldHandle(CORINFO_FIELD_HANDLE han
 
 void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
                                            CORINFO_CLASS_HANDLE toClass,
+                                           bool                 fromClassIsExact,
                                            TypeCompareState     result)
 {
     if (CompareTypesForCast == nullptr)
-        CompareTypesForCast = new LightWeightMap<DLDL, DWORD>();
+        CompareTypesForCast = new LightWeightMap<Agnostic_CompareTypesForCast, DWORD>();
 
-    DLDL key;
+    Agnostic_CompareTypesForCast key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(fromClass);
-    key.B = CastHandle(toClass);
+    key.fromClass        = CastHandle(fromClass);
+    key.toClass          = CastHandle(toClass);
+    key.fromClassIsExact = fromClassIsExact;
 
     DWORD value = (DWORD)result;
     CompareTypesForCast->Add(key, value);
     DEBUG_REC(dmpCompareTypesForCast(key, value));
 }
-void MethodContext::dmpCompareTypesForCast(DLDL key, DWORD value)
+void MethodContext::dmpCompareTypesForCast(Agnostic_CompareTypesForCast key, DWORD value)
 {
-    printf("CompareTypesForCast key fromClass=%016" PRIX64 ", toClass=%016" PRIx64 ", result=%d", key.A, key.B, value);
+    printf("CompareTypesForCast key fromClass=%016" PRIX64 ", toClass=%016" PRIx64
+           ", fromClassIsExact=%u, result=%d",
+           key.fromClass, key.toClass, key.fromClassIsExact, value);
 }
-TypeCompareState MethodContext::repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+TypeCompareState MethodContext::repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
+                                                       CORINFO_CLASS_HANDLE toClass,
+                                                       bool                 fromClassIsExact)
 {
-    DLDL key;
+    Agnostic_CompareTypesForCast key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(fromClass);
-    key.B = CastHandle(toClass);
+    key.fromClass        = CastHandle(fromClass);
+    key.toClass          = CastHandle(toClass);
+    key.fromClassIsExact = fromClassIsExact;
 
-    DWORD value = LookupByKeyOrMiss(CompareTypesForCast, key, ": key %016" PRIX64 " %016" PRIX64 "", key.A, key.B);
+    DWORD value =
+        LookupByKeyOrMiss(CompareTypesForCast, key, ": key %016" PRIX64 " %016" PRIX64 " %u", key.fromClass,
+                          key.toClass, key.fromClassIsExact);
 
     DEBUG_REP(dmpCompareTypesForCast(key, value));
     TypeCompareState result = (TypeCompareState)value;

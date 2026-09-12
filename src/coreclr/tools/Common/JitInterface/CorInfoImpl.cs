@@ -3069,7 +3069,8 @@ namespace Internal.JitInterface
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
         { throw new NotImplementedException("canCast"); }
 
-        private TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
+        private TypeCompareState compareTypesForCast(
+            CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass, bool fromClassIsExact)
         {
             TypeDesc fromType = HandleToObject(fromClass);
             TypeDesc toType = HandleToObject(toClass);
@@ -3146,6 +3147,12 @@ namespace Internal.JitInterface
             {
                 result = TypeCompareState.May;
             }
+#else
+            if (result == TypeCompareState.MustNot && !fromClassIsExact && !isExactType(fromClass) &&
+                !IsReverseClassCastImpossible(fromType, toType))
+            {
+                result = TypeCompareState.May;
+            }
 #endif
 
             return result;
@@ -3181,6 +3188,35 @@ namespace Internal.JitInterface
 
             // If the common parent is type1, then type2 is more specific.
             return merged == type1;
+        }
+
+        private static bool IsOrdinaryClass(TypeDesc type)
+        {
+            return !type.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                type.IsDefType &&
+                !type.IsInterface &&
+                !type.IsDelegate &&
+                !type.IsValueType &&
+                !IsArrayInterfaceDispatchType(type);
+        }
+
+        // The caller has already established that the forward cast cannot succeed.
+        private static bool IsReverseClassCastImpossible(TypeDesc fromType, TypeDesc toType)
+        {
+            return IsOrdinaryClass(fromType) && IsOrdinaryClass(toType) && !toType.CanCastTo(fromType);
+        }
+
+        private static bool IsArrayInterfaceDispatchType(TypeDesc type)
+        {
+            if (type.IsIntrinsic && type is MetadataType mdType)
+            {
+                Utf8Span name = mdType.Name;
+                // Array`1 is NativeAOT's intrinsic Array<T> dispatch type.
+                return (name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
+                    mdType.Namespace == "System"u8;
+            }
+
+            return false;
         }
 
         private bool isExactType(CORINFO_CLASS_STRUCT_* cls)
@@ -3219,14 +3255,9 @@ namespace Internal.JitInterface
             // to embed their MT as a constant and mis-read fields off it. Both types
             // are marked [Intrinsic] so that the cheap flag check filters out
             // non-candidates before we compare names.
-            if (type.IsIntrinsic && type is MetadataType mdType)
+            if (IsArrayInterfaceDispatchType(type))
             {
-                Utf8Span name = mdType.Name;
-                if ((name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
-                    mdType.Namespace == "System"u8)
-                {
-                    return false;
-                }
+                return false;
             }
 
             // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
