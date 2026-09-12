@@ -251,6 +251,14 @@
     <KnownFrameworkReference Update="Microsoft.NETCore.App">
       <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
     </KnownFrameworkReference>
+    <!-- CoreCLR browser-wasm has no workload-labelled KnownRuntimePack, so the SDK resolves its
+         runtime pack straight from KnownFrameworkReference. LatestRuntimeFrameworkVersion has to be
+         overridden as well, otherwise the version bundled with the SDK wins over the one the
+         workload just installed. -->
+    <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                             Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(UseMonoRuntime)' == 'false'">
+      <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
+    </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetVersion}.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
     </KnownWebAssemblySdkPack>

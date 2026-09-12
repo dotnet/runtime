@@ -13,19 +13,25 @@
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <!-- CoreCLR ships browser-wasm via Microsoft.NETCore.App.Runtime.{rid}, Mono via Microsoft.NETCore.App.Runtime.Mono.{rid}. -->
+      <_WasmOverrideRuntimePackName Condition="'$(UseMonoRuntime)' == 'false'">Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)</_WasmOverrideRuntimePackName>
+      <_WasmOverrideRuntimePackName Condition="'$(_WasmOverrideRuntimePackName)' == ''">Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)</_WasmOverrideRuntimePackName>
+    </PropertyGroup>
+
     <ItemGroup>
       <ResolvedRuntimePack
           FrameworkName="Microsoft.NETCore.App"
-          NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
+          NuGetPackageId="$(_WasmOverrideRuntimePackName)"
           NuGetPackageVersion="$(_RuntimePackInWorkloadVersionCurrent)"
           PackageDirectory="$(NetCoreTargetingPackRoot)\%(Identity)\$(_RuntimePackInWorkloadVersionCurrent)"
           RuntimeIdentifier="$(RuntimeIdentifier)" />
 
       <ResolvedFrameworkReference
           Condition="'%(Identity)' == 'Microsoft.NETCore.App'"
-          RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
+          RuntimePackName="$(_WasmOverrideRuntimePackName)"
           RuntimePackVersion="$(_RuntimePackInWorkloadVersionCurrent)"
-          RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
+          RuntimePackPath="$(NetCoreTargetingPackRoot)\$(_WasmOverrideRuntimePackName)\$(_RuntimePackInWorkloadVersionCurrent)"
           RuntimeIdentifier="$(RuntimeIdentifier)" />
     </ItemGroup>
   </Target>
