@@ -357,6 +357,7 @@ namespace System.Formats.Cbor
             if (concatenatedBufferSize > destination.Length)
             {
                 bytesWritten = 0;
+                ReturnIndefiniteLengthStringRangeList(ranges);
                 return false;
             }
 
@@ -426,6 +427,7 @@ namespace System.Formats.Cbor
             if (concatenatedStringSize > destination.Length)
             {
                 charsWritten = 0;
+                ReturnIndefiniteLengthStringRangeList(ranges);
                 return false;
             }
 
