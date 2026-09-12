@@ -13,9 +13,7 @@ namespace System.Runtime
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct GCFrameRegistration
     {
-#if CORECLR || NATIVEAOT
         private const uint GCFrameValueClassFlag = 0x80000000;
-#endif
 
         private nuint _reserved1;
         private nuint _reserved2;
@@ -38,7 +36,6 @@ namespace System.Runtime
 #endif
         }
 
-#if CORECLR || NATIVEAOT
         public GCFrameRegistration(ValueClassInfo** valueClassInfo)
         {
             _reserved1 = 0;
@@ -50,7 +47,6 @@ namespace System.Runtime
             _osStackLocation = 0;
 #endif
         }
-#endif
 
 #if CORECLR
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -61,7 +57,6 @@ namespace System.Runtime
 #endif
     }
 
-#if CORECLR || NATIVEAOT
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct ValueClassInfo
     {
@@ -76,5 +71,4 @@ namespace System.Runtime
             _data = data;
         }
     }
-#endif
 }
