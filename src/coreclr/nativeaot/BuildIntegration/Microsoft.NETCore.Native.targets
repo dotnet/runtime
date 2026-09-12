@@ -162,8 +162,16 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
-    <ItemGroup>
-      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="@(IntermediateAssembly)" />
+    <PropertyGroup Condition="$(BuildingFrameworkLibrary) != 'true'">
+      <_IlcIntermediateAssemblyNames>@(IntermediateAssembly->'%(Filename)%(Extension)', ';')</_IlcIntermediateAssemblyNames>
+      <_WrappedIlcIntermediateAssemblyNames>;$(_IlcIntermediateAssemblyNames);</_WrappedIlcIntermediateAssemblyNames>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$(BuildingFrameworkLibrary) != 'true'">
+      <_ResolvedManagedBinary Include="@(ResolvedFileToPublish)"
+                              Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true' and $(_WrappedIlcIntermediateAssemblyNames.Contains(';%(ResolvedFileToPublish.Filename)%(ResolvedFileToPublish.Extension);'))" />
+      <ManagedBinary Condition="'@(_ResolvedManagedBinary)' != ''" Include="@(_ResolvedManagedBinary)" />
+      <ManagedBinary Condition="'@(_ResolvedManagedBinary)' == ''" Include="@(IntermediateAssembly)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
       <!-- _ComputeIlcCompileInputs in Publish.targets normally populates IlcReference from
            ResolvedFileToPublish. It doesn't run when NativeCompilationDuringPublish is false
