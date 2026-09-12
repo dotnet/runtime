@@ -584,23 +584,31 @@ License notice for Printing Floating-Point Numbers (Dragon4)
      distribution.
 ******************************************************************************/
 
-License notice for Printing Floating-point Numbers (Grisu3)
------------------------------------------------------------
+License notice for The Go Programming Language
+----------------------------------------------
 
-Copyright 2012 the V8 project authors. All rights reserved.
+https://github.com/golang/go/blob/71300e80113c6ca56105aac524e9c1b0db43910f/LICENSE
+
+The floating-point formatting routines in System.Private.CoreLib
+(Number.UnroundedScaling.cs and Number.Pow10Table.cs) are derived from the
+Go programming language's internal/strconv package (uscale.go and
+pow10tab.go) at commit 71300e80113c6ca56105aac524e9c1b0db43910f.
+
+Copyright 2009 The Go Authors.
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
 
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      disclaimer in the documentation and/or other materials provided
-      with the distribution.
-    * Neither the name of Google Inc. nor the names of its
-      contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google LLC nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
