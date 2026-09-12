@@ -44,8 +44,8 @@ namespace System.Drawing
                 }
 
                 TypeConverter converter = TypeDescriptor.GetConverterTrimUnsafe(typeof(float));
-                float width = (float)converter.ConvertFromString(context, culture, strValue[ranges[0]])!;
-                float height = (float)converter.ConvertFromString(context, culture, strValue[ranges[1]])!;
+                float width = (float)converter.ConvertFromString(context, culture, text[ranges[0]].ToString())!;
+                float height = (float)converter.ConvertFromString(context, culture, text[ranges[1]].ToString())!;
 
                 return new SizeF(width, height);
             }
