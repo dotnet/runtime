@@ -638,4 +638,201 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
     }
+
+    public class ServiceCollectionValidatorTests
+    {
+        [Fact]
+        public void BuildServiceProvider_WithNoValidators_Succeeds()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IFoo, FooImpl>();
+
+            var provider = services.BuildServiceProvider();
+
+            Assert.NotNull(provider);
+            provider.Dispose();
+        }
+
+        [Fact]
+        public void BuildServiceProvider_WithValidatorReturningSuccess_Succeeds()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IFoo, FooImpl>();
+            services.AddValidator(new AlwaysSuccessValidator());
+
+            var provider = services.BuildServiceProvider();
+
+            Assert.NotNull(provider);
+            provider.Dispose();
+        }
+
+        [Fact]
+        public void BuildServiceProvider_WithValidatorReturningError_Throws()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IFoo, FooImpl>();
+            services.AddValidator(new AlwaysFailValidator("test error"));
+
+            var ex = Assert.Throws<InvalidOperationException>(() => services.BuildServiceProvider());
+
+            Assert.Contains("test error", ex.Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_AggregatesErrorsFromMultipleValidators()
+        {
+            var services = new ServiceCollection();
+            services.AddValidator(new AlwaysFailValidator("error1"));
+            services.AddValidator(new AlwaysFailValidator("error2"));
+
+            var ex = Assert.Throws<InvalidOperationException>(() => services.BuildServiceProvider());
+
+            Assert.Contains("error1", ex.Message);
+            Assert.Contains("error2", ex.Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidatorCanInjectServicesFromContainer()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IFoo, FooImpl>();
+            services.AddValidator<InjectingValidator>();
+
+            var provider = services.BuildServiceProvider();
+
+            Assert.NotNull(provider);
+            provider.Dispose();
+        }
+
+        [Fact]
+        public void BuildServiceProvider_DelegateValidator_Succeeds_WhenDelegateReturnsSuccess()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IFoo, FooImpl>();
+            services.AddValidator((sp, descriptors) => ValidationResult.Success);
+
+            var provider = services.BuildServiceProvider();
+
+            Assert.NotNull(provider);
+            provider.Dispose();
+        }
+
+        [Fact]
+        public void BuildServiceProvider_DelegateValidator_ReceivesServiceProvider()
+        {
+            IServiceProvider? capturedProvider = null;
+            var services = new ServiceCollection();
+            services.AddSingleton<IFoo, FooImpl>();
+            services.AddValidator((sp, descriptors) =>
+            {
+                capturedProvider = sp;
+                return ValidationResult.Success;
+            });
+
+            using var provider = services.BuildServiceProvider();
+
+            Assert.NotNull(capturedProvider);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_DelegateValidator_ReceivesDescriptors()
+        {
+            IReadOnlyList<ServiceDescriptor>? capturedDescriptors = null;
+            var services = new ServiceCollection();
+            services.AddSingleton<IFoo, FooImpl>();
+            services.AddValidator((sp, descriptors) =>
+            {
+                capturedDescriptors = descriptors;
+                return ValidationResult.Success;
+            });
+
+            using var provider = services.BuildServiceProvider();
+
+            Assert.NotNull(capturedDescriptors);
+            Assert.True(capturedDescriptors!.Count > 0);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_DelegateValidator_Throws_WhenDelegateReturnsFail()
+        {
+            var services = new ServiceCollection();
+            services.AddValidator((sp, descriptors) => ValidationResult.Fail("delegate error"));
+
+            var ex = Assert.Throws<InvalidOperationException>(() => services.BuildServiceProvider());
+
+            Assert.Contains("delegate error", ex.Message);
+        }
+
+        [Fact]
+        public void AddValidator_GenericOverload_RegistersValidator()
+        {
+            var services = new ServiceCollection();
+            services.AddValidator<TrackingValidator>();
+
+            using var provider = services.BuildServiceProvider();
+
+            Assert.NotNull(provider);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidatorCanReturnMultipleErrors()
+        {
+            var services = new ServiceCollection();
+            services.AddValidator(new AlwaysFailValidator("err1", "err2", "err3"));
+
+            var ex = Assert.Throws<InvalidOperationException>(() => services.BuildServiceProvider());
+
+            Assert.Contains("err1", ex.Message);
+            Assert.Contains("err2", ex.Message);
+            Assert.Contains("err3", ex.Message);
+        }
+
+        private interface IFoo { }
+        private class FooImpl : IFoo { }
+
+        private class AlwaysSuccessValidator : IServiceCollectionValidator
+        {
+            public ValidationResult Validate(IReadOnlyList<ServiceDescriptor> services)
+                => ValidationResult.Success;
+        }
+
+        private class AlwaysFailValidator : IServiceCollectionValidator
+        {
+            private readonly string[] _errors;
+
+            public AlwaysFailValidator(params string[] errors)
+            {
+                _errors = errors;
+            }
+
+            public ValidationResult Validate(IReadOnlyList<ServiceDescriptor> services)
+                => ValidationResult.Fail((IReadOnlyList<string>)_errors);
+        }
+
+        private class InjectingValidator : IServiceCollectionValidator
+        {
+            private readonly IFoo _foo;
+
+            public InjectingValidator(IFoo foo)
+            {
+                _foo = foo;
+            }
+
+            public ValidationResult Validate(IReadOnlyList<ServiceDescriptor> services)
+            {
+                if (_foo is not null)
+                {
+                    return ValidationResult.Success;
+                }
+
+                return ValidationResult.Fail("IFoo was not injected");
+            }
+        }
+
+        private class TrackingValidator : IServiceCollectionValidator
+        {
+            public ValidationResult Validate(IReadOnlyList<ServiceDescriptor> services)
+                => ValidationResult.Success;
+        }
+    }
 }
