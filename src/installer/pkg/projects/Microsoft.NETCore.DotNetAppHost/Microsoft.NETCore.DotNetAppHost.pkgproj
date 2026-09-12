@@ -8,6 +8,7 @@
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
+    <NativeBinary Include="$(DotNetHostBinDir)/fatal_error_handling.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/host_error_codes.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
