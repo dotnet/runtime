@@ -1487,8 +1487,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             //
             // We want to similarly handle (~op1 | op2) and (op1 | ~op2)
 
-            // TODO-SVE: Add scalable length support
-            assert(node->gtType == TYP_SIMD16 || node->gtType == TYP_SIMD8);
+            assert(node->TypeIs(TYP_SIMD8, TYP_SIMD16, TYP_SIMD));
+
+            // SVE doesn't have an OR-NOT instruction. We can support AND-NOT
+            // with BitwiseClear though.
+            if (node->TypeIs(TYP_SIMD) && (oper == GT_OR))
+            {
+                break;
+            }
 
             bool transform = false;
 
@@ -1535,11 +1541,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (oper == GT_AND)
                 {
-                    intrinsicId = NI_AdvSimd_BitwiseClear;
+                    intrinsicId = node->TypeIs(TYP_SIMD) ? NI_Sve_BitwiseClear : NI_AdvSimd_BitwiseClear;
                 }
                 else
                 {
                     assert(oper == GT_OR);
+                    assert(!node->TypeIs(TYP_SIMD));
                     intrinsicId = NI_AdvSimd_OrNot;
                 }
 
@@ -2077,6 +2084,57 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     assert(node->TypeIs(TYP_INT));
     assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
 
+    if (simdSize == SIZE_UNKNOWN)
+    {
+        // For inequality tests, we want to add the following intrinsic expression tree:
+        //
+        // /* bool */ Sve.TestAnyTrue(
+        //      Sve.CreateTrueMask(),
+        //      Sve.CompareNotEqualTo(vec1, vec2))
+        //
+        // In Arm64 assembly:
+        //
+        //     ptrue p1.t
+        //     cmpne p0, p1/z, z0.t, z1.t
+        //     ptest p1, p0.b
+        //     cset x0, ne
+        //
+        // The Z flag is set to 1 by `ptest` when none of the lane pairs satisfy the condition.
+        // Then the 'ne' (Z==0) condition code will cause a true result in `x0`, when there exists
+        // a pair of lanes that are not equal.
+        //
+        // For equality, we test whether this sequence returned zero.
+        LIR::Use originalUse;
+        BlockRange().TryGetUse(node, &originalUse);
+        originalUse.AssertIsValid();
+
+        node->ResetHWIntrinsicId(NI_Sve_CompareNotEqualTo, m_compiler, node->Op(1), node->Op(2));
+        node->gtType = TYP_MASK;
+
+        GenTree* allTrue = m_compiler->gtNewSimdTrueMaskNode(simdBaseType);
+        BlockRange().InsertAfter(node, allTrue);
+
+        GenTree* test =
+            m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, allTrue, node, NI_Sve_TestAnyTrue, simdBaseType, simdSize);
+        assert(test->gtType == TYP_INT);
+        BlockRange().InsertAfter(allTrue, test);
+
+        GenTree* result = test;
+        if (cmpOp == GT_EQ)
+        {
+            GenTree* zero = m_compiler->gtNewIconNode(0);
+            BlockRange().InsertAfter(test, zero);
+
+            result = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, test, zero);
+            BlockRange().InsertAfter(zero, result);
+        }
+
+        originalUse.ReplaceWith(result);
+
+        // We've added a few nodes here starting with this mask node, so continue from there.
+        return node;
+    }
+
     // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
     //          /--*  op2  simd
     //          /--*  op1  simd
@@ -2260,6 +2318,16 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         //               manually fix it up so the simdType checks below are correct.
         simdType = TYP_SIMD8;
     }
+
+#ifdef TARGET_ARM64
+    if (simdSize == SIZE_UNKNOWN)
+    {
+        assert(intrinsicId == NI_Vector_Create);
+        assert(node->GetOperandCount() == 1);
+
+        return node->gtNext;
+    }
+#endif
 
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));

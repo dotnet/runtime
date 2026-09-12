@@ -5271,8 +5271,13 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 #ifdef FEATURE_SIMD
 insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 {
-    assert((size == EA_16BYTE) || (size == EA_8BYTE));
+    assert((size == EA_16BYTE) || (size == EA_8BYTE) || (size == EA_SCALABLE));
     insOpts result = INS_OPTS_NONE;
+
+    if (size == EA_SCALABLE)
+    {
+        return emitter::optGetSveInsOpt(emitActualTypeSize(elementType));
+    }
 
     switch (elementType)
     {
