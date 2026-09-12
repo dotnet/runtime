@@ -466,6 +466,13 @@ namespace System.Text.RegularExpressions.Symbolic
                 return CreateEffect(builder, CreateConcat(builder, left._left, right), left._right);
             }
 
+            // Maintain Concat in right associative normal form: left must never itself be a Concat.
+            if (left._kind == SymbolicRegexNodeKind.Concat)
+            {
+                Debug.Assert(left._left is not null && left._right is not null);
+                return CreateConcat(builder, left._left, CreateConcat(builder, left._right, right));
+            }
+
             return Create(builder, SymbolicRegexNodeKind.Concat, left, right, -1, -1, default, SymbolicRegexInfo.Concat(left._info, right._info));
         }
 
@@ -2305,9 +2312,17 @@ namespace System.Text.RegularExpressions.Symbolic
                     return 1;
 
                 case SymbolicRegexNodeKind.Concat:
+                    Debug.Assert(_left is not null && _right is not null);
+                    // #(this) = #(_left) + #(_right)
+                    return Sum(_left.CountSingletons(), _right.CountSingletons());
+
                 case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     // #(this) = #(_left) + #(_right)
+                    if (ContainsHighPriorityNullableUnboundedLoop(_left) || ContainsHighPriorityNullableUnboundedLoop(_right))
+                    {
+                        return Times(2, Sum(_left.CountSingletons(), _right.CountSingletons()));
+                    }
                     return Sum(_left.CountSingletons(), _right.CountSingletons());
 
                 case SymbolicRegexNodeKind.Loop:
@@ -2372,7 +2387,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Used by CountSingletons to detect nested unbounded loops even when captures or other
         /// structural nodes are interposed between the loops.
         /// </summary>
-        private static bool ContainsNestedUnboundedLoop(SymbolicRegexNode<TSet> node)
+        private static bool ContainsNestedUnboundedLoop(SymbolicRegexNode<TSet> node) =>
+            ContainsLoop(node, static current => current._upper == int.MaxValue);
+
+        private static bool ContainsHighPriorityNullableUnboundedLoop(SymbolicRegexNode<TSet> node) =>
+            ContainsLoop(node, static current => current._upper == int.MaxValue && current._lower == 0 && current._info.IsLazyLoop);
+
+        private static bool ContainsLoop(SymbolicRegexNode<TSet> node, Func<SymbolicRegexNode<TSet>, bool> isMatch)
         {
             Stack<SymbolicRegexNode<TSet>> stack = new();
             stack.Push(node);
@@ -2384,7 +2405,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 switch (current._kind)
                 {
                     case SymbolicRegexNodeKind.Loop:
-                        if (current._upper == int.MaxValue)
+                        if (isMatch(current))
                         {
                             return true;
                         }
