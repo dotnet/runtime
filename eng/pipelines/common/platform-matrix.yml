@@ -557,7 +557,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# FreeBSD
+# FreeBSD x64
 - ${{ if containsValue(parameters.platforms, 'freebsd_x64') }}:
   - template: xplat-setup.yml
     parameters:
@@ -577,7 +577,27 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# OpenBSD
+# FreeBSD arm64
+- ${{ if containsValue(parameters.platforms, 'freebsd_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: freebsd
+      archType: arm64
+      targetRid: freebsd-arm64
+      platform: freebsd_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: freebsd_arm64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# OpenBSD x64
 - ${{ if containsValue(parameters.platforms, 'openbsd_x64') }}:
   - template: xplat-setup.yml
     parameters:
