@@ -736,6 +736,34 @@ namespace System.Net.Tests
             }
         }
 
+        // http.sys rejects this request with a 400 before a context is ever handed out, so there is
+        // no request stream to read from; this asserts the behavior of the managed implementation.
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
+        public async Task Read_ChunkSizeWithBareCR_ThrowsHttpListenerException()
+        {
+            using (Socket client = _factory.GetConnectedSocket())
+            {
+                Uri listeningUri = new Uri(_factory.ListeningUrl);
+
+                // The CR in "1\r0" isn't followed by a LF, so this must not be read as a 0x10 byte chunk.
+                string request =
+                    $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                    $"Host: {listeningUri.Host}\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    "1\r0\n" +
+                    "0123456789ABCDEF\r\n" +
+                    "0\r\n" +
+                    "\r\n";
+
+                await client.SendAsync(Encoding.ASCII.GetBytes(request));
+                HttpListenerContext context = await _listener.GetContextAsync();
+
+                byte[] buffer = new byte[16];
+                await Assert.ThrowsAsync<HttpListenerException>(() => ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
+            }
+        }
+
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
         [InlineData("80000000")]
         [InlineData("FFFFFFFF")]
