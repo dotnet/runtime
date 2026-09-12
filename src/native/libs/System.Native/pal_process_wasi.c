@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include <minipal/getexepath.h>
+#include <minipal/getcmdline.h>
 
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
@@ -126,4 +127,14 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
+}
+
+char** SystemNative_GetCommandLine(int* argc)
+{
+    return minipal_getcmdline(argc);
+}
+
+void SystemNative_FreeCommandLine(char** buffer)
+{
+    free(buffer);
 }
