@@ -14587,8 +14587,14 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
                 _ASSERTE(pMethod->IsPInvoke());
-                PInvoke::ResolvePInvokeTarget((PInvokeMethodDesc*)pMethod);
-                result = (size_t)(LPVOID)((PInvokeMethodDesc*)pMethod)->GetPInvokeTarget();
+                PInvokeMethodDesc* pPInvokeMethod = (PInvokeMethodDesc*)pMethod;
+#ifdef TARGET_WASM
+                if (!PInvoke::TryResolvePInvokeTargetForR2R(pPInvokeMethod))
+                    return FALSE;
+#else
+                PInvoke::ResolvePInvokeTarget(pPInvokeMethod);
+#endif // TARGET_WASM
+                result = (size_t)(LPVOID)pPInvokeMethod->GetPInvokeTarget();
             }
             else
             {

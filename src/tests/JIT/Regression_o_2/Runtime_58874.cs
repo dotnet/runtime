@@ -12,7 +12,8 @@ using Xunit;
 
 public unsafe class Runtime_58874
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133259", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    private static bool s_enteredMissingPInvokeMethod;
+
     [Fact]
     public static void TestEntryPoint()
     {
@@ -22,6 +23,25 @@ public unsafe class Runtime_58874
             Foo(endOfPage.Pointer);
         }
     }
+
+    [Fact]
+    public static void MissingPInvokeThrowsWhenCalled()
+    {
+        s_enteredMissingPInvokeMethod = false;
+
+        Assert.Throws<DllNotFoundException>(CallMissingPInvoke);
+        Assert.True(s_enteredMissingPInvokeMethod);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CallMissingPInvoke()
+    {
+        s_enteredMissingPInvokeMethod = true;
+        MissingPInvoke();
+    }
+
+    [DllImport("Runtime_58874_MissingNativeLibrary")]
+    private static extern void MissingPInvoke();
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Test Foo(Test* t)

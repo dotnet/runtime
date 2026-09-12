@@ -5829,9 +5829,9 @@ namespace
     }
 
     //---------------------------------------------------------
-    // Loads the DLL and finds the procaddress for an PInvoke call.
+    // Resolves P/Invokes handled by runtime-provided static lookup tables.
     //---------------------------------------------------------
-    VOID PInvokeLink(PInvokeMethodDesc *pMD)
+    BOOL TryResolvePInvokeTargetFromOverride(PInvokeMethodDesc* pMD)
     {
         CONTRACTL
         {
@@ -5854,21 +5854,35 @@ namespace
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetPInvokeTarget(pvTarget);
-            return;
+            return TRUE;
         }
 
-        // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
         pMD->EnsureActive();
 
-        {
-            LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
-            if (pvTarget != NULL)
-            {
-                pMD->SetPInvokeTarget(pvTarget);
-                return;
-            }
-        }
+        LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
+        if (pvTarget == NULL)
+            return FALSE;
 
+        pMD->SetPInvokeTarget(pvTarget);
+        return TRUE;
+    }
+
+    //---------------------------------------------------------
+    // Loads the DLL and finds the procaddress for an PInvoke call.
+    //---------------------------------------------------------
+    VOID PInvokeLink(PInvokeMethodDesc* pMD)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pMD));
+        }
+        CONTRACTL_END;
+
+        if (TryResolvePInvokeTargetFromOverride(pMD))
+            return;
+
+        // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
         NATIVE_LIBRARY_HANDLE hmod = NativeLibrary::LoadLibraryFromMethodDesc(pMD);
         _ASSERTE(hmod != NULL);
 
@@ -5963,6 +5977,34 @@ void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
         PInvokeLink(pNMD);
     }
 }
+
+#ifdef TARGET_WASM
+BOOL PInvoke::TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+
+        PRECONDITION(CheckPointer(pNMD));
+    }
+    CONTRACTL_END;
+
+    PopulatePInvokeMethodDesc(pNMD);
+
+    if (!pNMD->PInvokeTargetIsImportThunk())
+        return TRUE;
+
+    if (pNMD->IsEarlyBound())
+    {
+        pNMD->InitEarlyBoundPInvokeTarget();
+        return TRUE;
+    }
+
+    return TryResolvePInvokeTargetFromOverride(pNMD);
+}
+#endif // TARGET_WASM
 
 PCODE JitILStub(MethodDesc* pStubMD)
 {

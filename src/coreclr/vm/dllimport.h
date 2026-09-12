@@ -167,6 +167,9 @@ public:
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
 
     static void ResolvePInvokeTarget(PInvokeMethodDesc* pNMD);
+#ifdef TARGET_WASM
+    static BOOL TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD);
+#endif // TARGET_WASM
 
 private:
     PInvoke() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
