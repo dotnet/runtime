@@ -58,6 +58,7 @@ test_provider_callback_data_queue (void)
 			EP_EVENT_LEVEL_LOGALWAYS,
 			true,
 			0,
+			0,
 			NULL);
 		ep_provider_callback_data_queue_enqueue (provider_callback_data_queue, provider_enqueue_callback_data);
 		ep_provider_callback_data_fini (provider_enqueue_callback_data);

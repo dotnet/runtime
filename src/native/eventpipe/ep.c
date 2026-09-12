@@ -235,6 +235,7 @@ ep_provider_callback_data_alloc (
 	EventPipeEventLevel provider_level,
 	bool enabled,
 	EventPipeSessionID session_id,
+	uint64_t configuration_generation,
 	EventPipeProvider *provider)
 {
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
@@ -249,6 +250,7 @@ ep_provider_callback_data_alloc (
 		provider_level,
 		enabled,
 		session_id,
+		configuration_generation,
 		provider) != NULL);
 
 ep_on_exit:
@@ -310,6 +312,7 @@ ep_provider_callback_data_init (
 	EventPipeEventLevel provider_level,
 	bool enabled,
 	EventPipeSessionID session_id,
+	uint64_t configuration_generation,
 	EventPipeProvider *provider)
 {
 	EP_ASSERT (provider_callback_data != NULL);
@@ -321,6 +324,7 @@ ep_provider_callback_data_init (
 	provider_callback_data->provider_level = provider_level;
 	provider_callback_data->enabled = enabled;
 	provider_callback_data->session_id = session_id;
+	provider_callback_data->configuration_generation = configuration_generation;
 	provider_callback_data->provider = provider;
 
 	return provider_callback_data;
@@ -1484,6 +1488,16 @@ ep_create_provider (
 	EventPipeCallback callback_func,
 	void *callback_data)
 {
+	return ep_create_provider_2 (provider_name, callback_func, callback_data, false);
+}
+
+EventPipeProvider *
+ep_create_provider_2 (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	void *callback_data,
+	bool callback_data_includes_generation)
+{
 	ep_return_null_if_nok (provider_name != NULL);
 
 	ep_requires_lock_not_held ();
@@ -1494,7 +1508,7 @@ ep_create_provider (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&data_queue);
 
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, callback_data_includes_generation, provider_callback_data_queue);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -1882,6 +1896,8 @@ ep_provider_callback_data_queue_enqueue (
 	EventPipeProviderCallbackData *provider_callback_data_move = ep_provider_callback_data_alloc_move (provider_callback_data);
 	ep_raise_error_if_nok (provider_callback_data_move != NULL);
 	ep_raise_error_if_nok (dn_queue_push (ep_provider_callback_data_queue_get_queue (provider_callback_data_queue), provider_callback_data_move));
+	if (provider_callback_data_move->provider != NULL)
+		provider_callback_data_queued (provider_callback_data_move);
 
 	return true;
 

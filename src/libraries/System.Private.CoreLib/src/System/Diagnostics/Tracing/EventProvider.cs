@@ -184,6 +184,16 @@ namespace System.Diagnostics.Tracing
 
         internal virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments, int sessionId) { }
 
+        internal virtual void OnControllerCommand(
+            ControllerCommand command,
+            IDictionary<string, string?>? arguments,
+            int sessionId,
+            ulong configurationGeneration,
+            bool enabled,
+            EventLevel level,
+            EventKeywords matchAnyKeyword) =>
+            OnControllerCommand(command, arguments, sessionId);
+
         protected EventLevel Level
         {
             get => _eventProvider.Level;

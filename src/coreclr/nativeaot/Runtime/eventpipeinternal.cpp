@@ -118,7 +118,7 @@ EXTERN_C intptr_t QCALLTYPE EventPipeInternal_CreateProvider(
     void* pCallbackContext)
 {
     ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-    EventPipeProvider * pProvider = ep_create_provider (providerNameUTF8, pCallbackFunc, pCallbackContext);
+    EventPipeProvider * pProvider = ep_create_provider_2 (providerNameUTF8, pCallbackFunc, pCallbackContext, true);
     ep_rt_utf8_string_free (providerNameUTF8);
     return reinterpret_cast<intptr_t>(pProvider);
 }

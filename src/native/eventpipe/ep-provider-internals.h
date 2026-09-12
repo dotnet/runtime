@@ -39,6 +39,9 @@ provider_unset_config (
 
 // _Requires_lock_not_held (ep)
 void
+provider_callback_data_queued (EventPipeProviderCallbackData *provider_callback_data);
+
+void
 provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data);
 
 // Create and register provider.
