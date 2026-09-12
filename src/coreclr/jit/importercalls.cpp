@@ -13560,6 +13560,12 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicName == NI_Array_Set)
     {
+        // The array checks in the store's address must happen after the value is evaluated.
+        if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for MD Array store"));
+        }
+
         val = impPopStack().val;
         assert((genActualType(elemType) == genActualType(val->gtType)) ||
                (elemType == TYP_FLOAT && val->TypeIs(TYP_DOUBLE)) || (elemType == TYP_INT && val->TypeIs(TYP_BYREF)) ||
