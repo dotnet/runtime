@@ -1311,7 +1311,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
                 rootName: rootName,
-                intermediateNames: [intermediateName, new X500DistinguishedName(BuildSubject("Some other CA", callerName, pkiOptions, true))],
+                intermediateNames: [intermediateName, intermediateName],
                 endEntityName: endEntityName,
                 callerName,
                 registerAuthorities: false);
@@ -1357,7 +1357,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 // Register the root, which covers itself and the original issuing CA.
                 // Do not register intermediates[0], thus leaving intermediates[1] (the re-key cert) as revocation unknown.
-                // Register intermediates[1] to cover the end-entity cer.
+                // Register intermediates[1] to cover the end-entity cert.
                 responder.AddCertificateAuthority(root);
                 responder.AddCertificateAuthority(intermediates[1]);
 
