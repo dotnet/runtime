@@ -2724,7 +2724,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into REG_T4 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {

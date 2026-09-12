@@ -1313,7 +1313,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // data goes in REG_ARG_1
         inst_Mov(data->TypeGet(), REG_ARG_1, data->GetRegNum(), /* canSkip */ true);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
