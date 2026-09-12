@@ -1027,6 +1027,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task UnionWithDefaultTokenClassification_ObjectCaseWithNullPropertyAsPropertyWithSmallBuffer()
+        {
+            JsonSerializerOptions options = CreateSmallBufferOptions();
+
+            string json = """{"Union":{"Name":null,"Values":[6,7,8]},"After":42}""";
+            UnionContainer? result = await Serializer.DeserializeWrapper<UnionContainer>(json, options);
+
+            Assert.NotNull(result);
+            Assert.Equal(42, result!.After);
+            Assert.NotNull(result.Union);
+            PayloadCase payload = Assert.IsType<PayloadCase>(GetUnionValue(result.Union!));
+            Assert.Null(payload.Name);
+            Assert.Equal(new[] { 6, 7, 8 }, payload.Values);
+        }
+
+        [Fact]
         public async Task UnionWithDefaultTokenClassification_RoundTripsNullableScalarCaseAsPropertyWithSmallBuffer()
         {
             JsonSerializerOptions options = CreateSmallBufferOptions();
