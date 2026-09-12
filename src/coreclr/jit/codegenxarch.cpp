@@ -5357,7 +5357,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // data goes in REG_WRITE_BARRIER_SRC
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else
     {
@@ -5766,8 +5766,6 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
         tgtAnywhere = 1;
     }
 
-    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
-    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
     genEmitHelperCall(regToHelper[tgtAnywhere][reg],
                       0,           // argSize
                       EA_PTRSIZE); // retSize
