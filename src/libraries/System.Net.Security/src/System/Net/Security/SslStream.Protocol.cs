@@ -286,7 +286,9 @@ namespace System.Net.Security
             return issuers;
         }
 
-        internal X509Certificate2? SelectClientCertificate()
+        internal X509Certificate2? SelectClientCertificate() => SelectClientCertificate(acceptableIssuers: null);
+
+        private X509Certificate2? SelectClientCertificate(string[]? acceptableIssuers)
         {
             X509Certificate? clientCertificate = null;        // candidate certificate that can come from the user callback or be guessed when targeting a session restart.
             X509Certificate2? selectedCert = null;            // final selected cert (ensured that it does have private key with it).
@@ -315,7 +317,7 @@ namespace System.Net.Security
                 X509Certificate2? remoteCert = null;
                 try
                 {
-                    issuers = GetRequestCertificateAuthorities();
+                    issuers = acceptableIssuers ?? GetRequestCertificateAuthorities();
                     remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext);
                     _sslAuthenticationOptions.ClientCertificates ??= new X509CertificateCollection();
                     clientCertificate = _sslAuthenticationOptions.CertSelectionDelegate(this, _sslAuthenticationOptions.TargetHost, _sslAuthenticationOptions.ClientCertificates, remoteCert, issuers);
@@ -363,7 +365,7 @@ namespace System.Net.Security
                 //
                 // This should be a server request for the client cert sent over currently anonymous sessions.
                 //
-                issuers = GetRequestCertificateAuthorities();
+                issuers = acceptableIssuers ?? GetRequestCertificateAuthorities();
 
                 if (NetEventSource.Log.IsEnabled())
                 {

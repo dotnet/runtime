@@ -18,6 +18,7 @@ set(NATIVECRYPTO_SOURCES
     pal_hmac.c
     pal_jni.c
     pal_jni_onload.c
+    pal_key_manager.c
     pal_lifetime.c
     pal_memory.c
     pal_misc.c
