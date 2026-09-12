@@ -4554,11 +4554,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_ARM64)
             if (varTypeIsFloating(simdBaseType))
             {

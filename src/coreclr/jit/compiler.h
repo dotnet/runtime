@@ -5415,8 +5415,7 @@ protected:
     GenTree* impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
-                                  NamedIntrinsic        intrinsicName,
-                                  bool                  mustExpand);
+                                  NamedIntrinsic        intrinsicName);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig
                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),

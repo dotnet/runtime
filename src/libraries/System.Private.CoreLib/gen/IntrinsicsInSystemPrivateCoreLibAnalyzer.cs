@@ -119,15 +119,18 @@ namespace IntrinsicsInSystemPrivateCoreLib
         {
             public IntrinsicsAnalyzerOnLoadData(HashSet<INamedTypeSymbol> namedTypesToBeProtected,
                                                 INamedTypeSymbol? bypassReadyToRunAttribute,
-                                                INamedTypeSymbol? compExactlyDependsOn)
+                                                INamedTypeSymbol? compExactlyDependsOn,
+                                                INamedTypeSymbol? compHasFallback)
             {
                 NamedTypesToBeProtected = namedTypesToBeProtected;
                 BypassReadyToRunAttribute = bypassReadyToRunAttribute;
                 CompExactlyDependsOn = compExactlyDependsOn;
+                CompHasFallback = compHasFallback;
             }
             public readonly HashSet<INamedTypeSymbol> NamedTypesToBeProtected;
             public readonly INamedTypeSymbol? BypassReadyToRunAttribute;
             public readonly INamedTypeSymbol? CompExactlyDependsOn;
+            public readonly INamedTypeSymbol? CompHasFallback;
         }
 
         public override void Initialize(AnalysisContext context)
@@ -140,8 +143,9 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 INamespaceSymbol systemRuntimeIntrinsicsNamespace = GetNamespace(context.Compilation.Assembly, "System", "Runtime", "Intrinsics");
                 INamedTypeSymbol? bypassReadyToRunAttribute = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.BypassReadyToRunAttribute");
                 INamedTypeSymbol? compExactlyDependsOn = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.CompilerServices.CompExactlyDependsOnAttribute");
+                INamedTypeSymbol? compHasFallback = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.CompilerServices.CompHasFallbackAttribute");
 
-                IntrinsicsAnalyzerOnLoadData onLoadData = new IntrinsicsAnalyzerOnLoadData(namedTypesToBeProtected, bypassReadyToRunAttribute, compExactlyDependsOn);
+                IntrinsicsAnalyzerOnLoadData onLoadData = new IntrinsicsAnalyzerOnLoadData(namedTypesToBeProtected, bypassReadyToRunAttribute, compExactlyDependsOn, compHasFallback);
 
                 // Find all types in the System.Runtime.Intrinsics namespace that have an IsSupported property that are NOT
                 // directly in the System.Runtime.Intrinsics namespace
@@ -475,7 +479,10 @@ namespace IntrinsicsInSystemPrivateCoreLib
 
             if (!methodNeedsProtectionWithIsSupported)
             {
-                if (GetCompExactlyDependsOnUseList(symbol, onLoadData).Any())
+                // Helpers with a functional fallback don't impose an ISA requirement on their callers.
+                if (GetCompExactlyDependsOnUseList(symbol, onLoadData).Any() &&
+                    (onLoadData.CompHasFallback is null ||
+                     !symbol.GetAttributes().Any(attributeData => SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, onLoadData.CompHasFallback))))
                     methodNeedsProtectionWithIsSupported = true;
             }
 

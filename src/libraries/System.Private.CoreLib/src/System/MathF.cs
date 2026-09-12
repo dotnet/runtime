@@ -312,6 +312,9 @@ namespace System
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / x</c>.</para>
         /// </remarks>
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompHasFallback]
         public static float ReciprocalEstimate(float x)
         {
 #if MONO
@@ -330,6 +333,9 @@ namespace System
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(x)</c>.</para>
         /// </remarks>
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompHasFallback]
         public static float ReciprocalSqrtEstimate(float x)
         {
 #if MONO || TARGET_LOONGARCH64

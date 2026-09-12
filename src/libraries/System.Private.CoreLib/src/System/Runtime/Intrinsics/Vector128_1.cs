@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
@@ -793,6 +795,9 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         static Vector128<T> ISimdVector<Vector128<T>, T>.MultiplyAddEstimate(Vector128<T> left, Vector128<T> right, Vector128<T> addend) => Vector128.MultiplyAddEstimate(left, right, addend);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />

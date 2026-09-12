@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -844,10 +846,16 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompHasFallback]
         public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompHasFallback]
         public static float ReciprocalSqrtEstimate(float x) => MathF.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
@@ -1231,6 +1239,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static float MultiplyAddEstimate(float left, float right, float addend)
         {
 #if MONO
