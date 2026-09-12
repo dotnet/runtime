@@ -117,8 +117,14 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Error_DestinationArrayTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
+  </data>
   <data name="Error_NoSources" xml:space="preserve">
     <value>A configuration source is not registered. Please register one before setting a value.</value>
+  </data>
+  <data name="Error_ReadOnlyChildKeys" xml:space="preserve">
+    <value>The child keys returned by a configuration provider are read-only.</value>
   </data>
   <data name="InvalidNullArgument" xml:space="preserve">
     <value>Null is not a valid value for '{0}'.</value>
