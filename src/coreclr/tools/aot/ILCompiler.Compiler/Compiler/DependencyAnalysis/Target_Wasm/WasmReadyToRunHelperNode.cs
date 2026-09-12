@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
                             expressions.Add(I32.Const(NonGCStaticsNode.GetClassConstructorContextSize(factory.Target)));
                             expressions.Add(I32.Sub);
                             expressions.Add(I32.ConstRVA(staticBase));
-                            EmitManagedTailCall(expressions, helper);
+                            expressions.Add(ControlFlow.ReturnCall(helper));
                         }
                     }
                     break;
@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
                             helper = factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase);
                         }
 
-                        EmitManagedTailCall(expressions, helper);
+                        expressions.Add(ControlFlow.ReturnCall(helper));
                     }
                     break;
 
@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
                             expressions.Add(I32.Sub);
                             expressions.Add(I32.ConstRVA(gcStaticBase));
                             expressions.Add(I32.Load(0));
-                            EmitManagedTailCall(expressions, helper);
+                            expressions.Add(ControlFlow.ReturnCall(helper));
                         }
                     }
                     break;
@@ -141,7 +141,7 @@ namespace ILCompiler.DependencyAnalysis
                             Debug.Assert(target.Constructor.Method.Signature.Length == 2);
                         }
 
-                        EmitManagedTailCall(expressions, target.Constructor);
+                        expressions.Add(ControlFlow.ReturnCall(target.Constructor));
                     }
                     break;
 
@@ -154,7 +154,7 @@ namespace ILCompiler.DependencyAnalysis
                             expressions.Add(Local.Get(0));
                             expressions.Add(Local.Get(1));
                             expressions.Add(I32.ConstRVA(factory.DispatchCell(targetMethod)));
-                            EmitManagedTailCall(expressions, helper);
+                            expressions.Add(ControlFlow.ReturnCall(helper));
                         }
                         else if (!relocsOnly)
                         {
@@ -174,11 +174,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             encoder.FunctionBody = new WasmFunctionBody(WasmLowering.GetSignature(this).FuncType, expressions.ToArray());
-        }
-
-        private static void EmitManagedTailCall(List<WasmExpr> expressions, ISymbolNode target)
-        {
-            expressions.Add(ControlFlow.ReturnCall(target));
         }
     }
 }
