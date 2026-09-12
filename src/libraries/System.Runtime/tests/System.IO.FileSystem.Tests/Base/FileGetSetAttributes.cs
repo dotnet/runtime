@@ -106,9 +106,9 @@ namespace System.IO.Tests
             Assert.Equal(FileAttributes.Normal, GetAttributes(path));
         }
 
-        [Theory,
-            InlineData(":bar"),
-            InlineData(":bar:$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData(":bar")]
+        [InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GettingAndSettingAttributes_AlternateDataStream_Windows(string streamName)
         {
