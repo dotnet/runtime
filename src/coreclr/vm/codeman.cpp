@@ -270,6 +270,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -308,6 +309,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(m_flushInProgress != 0);
     }
     CONTRACTL_END;
@@ -447,6 +449,7 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -7106,10 +7109,13 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
 TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                               CrawlFrame* pCf)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(NULL != pCf);
     _ASSERTE(NULL != pEHClause);

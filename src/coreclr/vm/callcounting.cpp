@@ -739,13 +739,7 @@ COUNT_T CallCountingManager::GetCountOfCodeVersionsPendingCompletion()
 
 void CallCountingManager::CompleteCallCounting()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 
@@ -851,13 +845,7 @@ void CallCountingManager::CompleteCallCounting()
 
 void CallCountingManager::StopAndDeleteAllCallCountingStubs()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 

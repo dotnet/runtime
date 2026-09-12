@@ -43,12 +43,6 @@ public:
 
     virtual HRESULT StartupPhase2(Thread * pThread) = 0;
 
-    // Some callers into the debugger (e.g., ETW rundown) know they will need the lazy
-    // data initialized but cannot afford to have it initialized unpredictably or inside a
-    // lock.  They can use this function to force the data to be initialized at a
-    // controlled point in time
-    virtual void InitializeLazyDataIfNecessary() = 0;
-
     virtual void SetEEInterface(EEDebugInterface* i) = 0;
 
     virtual void StopDebugger(void) = 0;
