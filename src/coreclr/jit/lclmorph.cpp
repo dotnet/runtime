@@ -1211,26 +1211,29 @@ public:
             case GT_STOREIND:
             case GT_STORE_BLK:
             {
+                Value& addr = TopValue(node->IsReverseOp() ? 0 : 1);
+                Value& data = TopValue(node->IsReverseOp() ? 1 : 0);
+
                 assert(TopValue(2).Node() == node);
-                assert(TopValue(1).Node() == node->AsIndir()->Addr());
-                assert(TopValue(0).Node() == node->AsIndir()->Data());
+                assert(addr.Node() == node->AsIndir()->Addr());
+                assert(data.Node() == node->AsIndir()->Data());
 
                 // Data value always escapes.
-                EscapeValue(TopValue(0), node);
+                EscapeValue(data, node);
 
-                if (node->AsIndir()->IsVolatile() || !TopValue(1).IsAddress())
+                if (node->AsIndir()->IsVolatile() || !addr.IsAddress())
                 {
                     // Volatile indirections must not be removed so the address, if any, must be escaped.
-                    EscapeValue(TopValue(1), node);
+                    EscapeValue(addr, node);
                 }
                 else
                 {
                     // This consumes the address.
-                    ProcessIndirection(use, TopValue(1), user);
+                    ProcessIndirection(use, addr, user);
 
                     if ((m_lclAddrAssertions != nullptr) && (*use)->OperIsLocalStore())
                     {
-                        HandleLocalStoreAssertions((*use)->AsLclVarCommon(), TopValue(0));
+                        HandleLocalStoreAssertions((*use)->AsLclVarCommon(), data);
                     }
                 }
 
@@ -2098,6 +2101,7 @@ private:
             {
                 GenTree* value = node->Data();
                 node->ChangeOper(GT_STORE_LCL_VAR);
+                node->ClearReverseOp();
                 node->AsLclVar()->Data() = value;
                 node->gtFlags |= GTF_VAR_DEF;
             }
