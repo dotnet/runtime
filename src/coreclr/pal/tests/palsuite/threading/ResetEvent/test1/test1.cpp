@@ -57,7 +57,7 @@ BOOL ResetEventTest()
 
                 if (dwRet != WAIT_TIMEOUT)
                 {
-                    Fail("ResetEventTest:WaitForSingleObject %s failed (%x)\n", GetLastError());
+                    Fail("ResetEventTest:WaitForSingleObject failed (%x)\n", GetLastError());
                 }
                 else
                 {

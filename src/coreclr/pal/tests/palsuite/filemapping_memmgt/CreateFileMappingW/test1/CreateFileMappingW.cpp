@@ -135,7 +135,7 @@ CleanUpThree:
         */
     if ( UnmapViewOfFile(lpMapViewAddress) == FALSE )
     {
-        Trace("ERROR:%u: Failed to UnmapViewOfFile of \"%0x%lx\".\n",
+        Trace("ERROR:%u: Failed to UnmapViewOfFile of \"0x%lx\".\n",
                 GetLastError(),
                 lpMapViewAddress);
         RetVal = FAIL;
@@ -170,4 +170,3 @@ CleanUpOne:
     PAL_TerminateEx(RetVal);
     return RetVal;
 }
-

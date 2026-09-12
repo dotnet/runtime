@@ -141,7 +141,7 @@ CleanUpFour:
         */
     if ( UnmapViewOfFile(lpMapViewRO) == FALSE )
     {
-        Trace("ERROR:%u: Failed to UnmapViewOfFile of \"%0x%lx\".\n",
+        Trace("ERROR:%u: Failed to UnmapViewOfFile of \"0x%lx\".\n",
                 GetLastError(),
                 lpMapViewRO);
         RetVal = FAIL;
@@ -165,7 +165,7 @@ CleanUpTwo:
      */
     if ( UnmapViewOfFile(lpMapViewRW) == FALSE )
     {
-        Trace("ERROR:%u: Failed to UnmapViewOfFile of \"%0x%lx\".\n",
+        Trace("ERROR:%u: Failed to UnmapViewOfFile of \"0x%lx\".\n",
                 GetLastError(),
                 lpMapViewRW);
         RetVal = FAIL;
@@ -190,4 +190,3 @@ CleanUpOne:
     PAL_TerminateEx(RetVal);
     return RetVal;
 }
-

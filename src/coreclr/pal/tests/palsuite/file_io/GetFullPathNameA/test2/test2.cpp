@@ -90,7 +90,8 @@ PALTEST(file_io_GetFullPathNameA_test2_paltest_getfullpathnamea_test2, "file_io/
     if (CloseHandle(hFile) != TRUE)
     {
         Trace("ERROR :%ld: CloseHandle failed close hFile=0x%lx.\n",
-             GetLastError());
+             GetLastError(),
+             hFile);
         goto terminate;
     }
 
@@ -138,5 +139,4 @@ terminate:
     PAL_Terminate();
     return PASS;
 }
-
 

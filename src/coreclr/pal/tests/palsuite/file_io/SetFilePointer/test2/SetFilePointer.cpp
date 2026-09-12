@@ -164,6 +164,7 @@ PALTEST(file_io_SetFilePointer_test2_paltest_setfilepointer_test2, "file_io/SetF
             PAL_TerminateEx(FAIL);
             return FAIL;
         }
+        szBuffer[dwByteCount] = '\0';
         szPtr = szText + 20;
         if (strcmp(szPtr, szBuffer) != 0)
         {
