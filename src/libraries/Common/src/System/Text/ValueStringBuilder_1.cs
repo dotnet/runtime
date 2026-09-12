@@ -244,11 +244,7 @@ namespace System.Text
                 Grow(count);
             }
 
-            Span<TChar> dst = _chars.Slice(_pos, count);
-            for (int i = 0; i < dst.Length; i++)
-            {
-                dst[i] = c;
-            }
+            _chars.Slice(_pos, count).Fill(c);
             _pos += count;
         }
 
