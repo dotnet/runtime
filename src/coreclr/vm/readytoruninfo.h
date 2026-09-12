@@ -199,6 +199,9 @@ class ReadyToRunInfo
     NativeFormat::NativeHashtable   m_typeMapAssemblyTargets;
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
+    // Next entry when this info is attached to a Module as a supplemental (lazily downloaded) R2R
+    // image. An info can be on at most one Module's supplemental list.
+    PTR_ReadyToRunInfo              m_pNextSupplemental;
     TADDR                           m_pLoadedImageBase;
 
 public:
@@ -208,6 +211,10 @@ public:
     static PTR_ReadyToRunInfo GetUnrelatedR2RModules();
     PTR_ReadyToRunInfo GetNextUnrelatedR2RModule() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(m_pNextR2RForUnrelatedCode) & ~0x1); }
     void RegisterUnrelatedR2RModule();
+
+    PTR_Module GetModule() const { LIMITED_METHOD_DAC_CONTRACT; return m_pModule; }
+    PTR_ReadyToRunInfo GetNextSupplemental() const { LIMITED_METHOD_DAC_CONTRACT; return m_pNextSupplemental; }
+    void SetNextSupplemental(PTR_ReadyToRunInfo pNext) { LIMITED_METHOD_CONTRACT; m_pNextSupplemental = pNext; }
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
@@ -246,7 +253,15 @@ public:
         _ASSERTE(r2rFunctionIndex < m_nRuntimeFunctions);
         return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
     }
-    void RegisterVirtualIPRange(Module* pModule);
+    void RegisterVirtualIPRange();
+
+    // Attach a lazily-downloaded R2R code supplement (a webcil composite-of-one whose single component
+    // is pModule's assembly) as a supplemental ReadyToRunInfo on pModule. Runs at a quiesce point.
+    static ReadyToRunInfo *AttachSupplemental(Module *pModule, NativeImage *pLazyImage, AllocMemTracker *pamTracker);
+
+    // Re-point already-loaded, interpreter-resolved instances of the methods this (supplemental) image
+    // provides so their next call re-runs the prestub and picks up the newly attached native code.
+    void RebindLoadedInterpretedMethods();
 #endif // TARGET_WASM
 
     void RegisterResumptionStub(PCODE stubEntryPoint);

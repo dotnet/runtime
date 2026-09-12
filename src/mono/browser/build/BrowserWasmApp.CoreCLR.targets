@@ -147,6 +147,7 @@
       <EmccExportedFunction Include="___stack_pointer" />
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
       <EmccExportedFunction Include="___async_continuation" />
+      <EmccExportedFunction Include="_CoreCLR_AttachLazyR2RImage" />
     </ItemGroup>
   </Target>
 

@@ -863,11 +863,27 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    ReadyToRunLoadedImage *pNativeImage = pZapModule->GetReadyToRunImage();
+    // The import cell may live in a lazily-attached supplemental R2R image rather than the module's
+    // primary image; resolve the owning image by address so the RVA and GC ref map come from it.
+    PTR_ReadyToRunInfo pInfo = pZapModule->GetReadyToRunInfo();
+    for (PTR_ReadyToRunInfo pSupplemental = pZapModule->GetSupplementalReadyToRunInfos();
+         pSupplemental != NULL;
+         pSupplemental = pSupplemental->GetNextSupplemental())
+    {
+        ReadyToRunLoadedImage *pImage = pSupplemental->GetImage();
+        TADDR base = pImage->GetBase();
+        if (ptr >= base && ptr < base + pImage->GetVirtualSize())
+        {
+            pInfo = pSupplemental;
+            break;
+        }
+    }
+
+    ReadyToRunLoadedImage *pNativeImage = pInfo->GetImage();
 
     RVA rva = pNativeImage->GetDataRva(ptr);
 
-    PTR_READYTORUN_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection = pInfo->GetImportSectionForRVA(rva);
     if (pImportSection == NULL)
         return NULL;
 

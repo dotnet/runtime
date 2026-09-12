@@ -200,6 +200,43 @@ public class WebcilInWasmSizesTests
         Assert.True(r2rWebcil.SequenceEqual(File.ReadAllBytes(Path.Combine(outputDirectory, "R2RAssembly.wasm"))));
     }
 
+    [Fact]
+    public void ConvertDllsToWebcil_FallsBackToIL_WhenPrebuiltMvidMismatches()
+    {
+        // A prebuilt R2R image whose MVID differs from the candidate must never be staged: it would fail-fast
+        // at load against the current version bubble. Use two real assemblies with distinct MVIDs.
+        string candidatePath = typeof(System.Console).Assembly.Location;
+        string mismatchedAssembly = typeof(object).Assembly.Location;
+        Assert.True(File.Exists(candidatePath), $"Candidate assembly not found: '{candidatePath}'.");
+        Assert.True(File.Exists(mismatchedAssembly), $"Mismatched assembly not found: '{mismatchedAssembly}'.");
+
+        using var directory = new TempDirectory();
+        string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
+        string outputDirectory = Path.Combine(directory.Path, "output");
+        Directory.CreateDirectory(prebuiltDirectory);
+        File.Copy(mismatchedAssembly, Path.Combine(prebuiltDirectory, "System.Console.wasm"));
+
+        var candidate = new TaskItem(candidatePath);
+        candidate.SetMetadata("RelativePath", "System.Console.dll");
+
+        var task = new ConvertDllsToWebcil
+        {
+            BuildEngine = new TestBuildEngine(),
+            Candidates = [candidate],
+            IntermediateOutputPath = Path.Combine(directory.Path, "intermediate"),
+            IsEnabled = true,
+            OutputPath = outputDirectory,
+            PrebuiltR2RDirectory = prebuiltDirectory,
+        };
+
+        Assert.True(task.Execute());
+
+        // The output must be a freshly converted IL webcil (no R2R table), not the mismatched prebuilt.
+        using FileStream output = File.OpenRead(Path.Combine(outputDirectory, "System.Console.wasm"));
+        Assert.True(WebcilReader.TryReadWebcilInWasmSizes(output, out _, out int tableSize, out string? failureReason), failureReason);
+        Assert.Equal(0, tableSize);
+    }
+
     private const byte SectionCustom = 0x00;
     private const byte SectionData = 0x0b;
 

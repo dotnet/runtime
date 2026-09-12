@@ -134,6 +134,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             AddDictionary(sb, resources.icu);
             AddDictionary(sb, resources.runtime);
             AddDictionary(sb, resources.lazyAssembly);
+            AddDictionary(sb, resources.lazyR2R);
 
             if (resources.satelliteResources != null)
             {
@@ -256,6 +257,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.corePdb = MapGeneralAssets(resources.corePdb);
             assets.pdb = MapGeneralAssets(resources.pdb);
             assets.lazyAssembly = MapWebcilAssets(resources.lazyAssembly);
+            assets.lazyR2R = MapLazyR2RAssets(resources.lazyR2R);
 
             if (resources.satelliteResources != null)
             {
@@ -342,6 +344,50 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
                 return asset;
             }).ToList();
+
+            List<WebcilAsset>? MapLazyR2RAssets(Dictionary<string, string>? assets) => assets?.Select(a =>
+            {
+                // The loader derives the owning assembly by stripping the file extension from virtualPath,
+                // so virtualPath must name the owner ("System.Console.wasm"), not the supplement route
+                // ("System.Console.r2r.wasm") that name carries. Derive the owner from the DE-fingerprinted
+                // route so a hashed name (e.g. "System.Console.r2r.<hash>.wasm") still yields "System.Console.wasm".
+                string baseRoute = resources.fingerprinting?[a.Key] ?? a.Key;
+                var asset = new WebcilAsset()
+                {
+                    virtualPath = DeriveLazyR2ROwner(baseRoute),
+                    name = a.Key,
+                    hash = a.Value,
+                    cache = GetCacheControl(a.Key, resources)
+                };
+
+                if (webcilSizes != null && webcilSizes.TryGetValue(a.Key, out var sizes))
+                {
+                    asset.payloadSize = sizes.payloadSize;
+                    if (sizes.tableSize > 0)
+                        asset.tableSize = sizes.tableSize;
+                }
+
+                if (bundlerFriendly)
+                {
+                    string escaped = EscapeName(a.Key);
+                    imports.Add($"import {escaped} from \"./{a.Key}\";");
+                    asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
+                }
+
+                return asset;
+            }).ToList();
+
+            static string DeriveLazyR2ROwner(string route)
+            {
+                // route is "<assembly>.r2r<ext>"; the owner file is "<assembly><ext>".
+                const string infix = ".r2r";
+                string ext = Path.GetExtension(route);
+                string withoutExt = route.Substring(0, route.Length - ext.Length);
+                if (withoutExt.EndsWith(infix, StringComparison.OrdinalIgnoreCase))
+                    withoutExt = withoutExt.Substring(0, withoutExt.Length - infix.Length);
+
+                return withoutExt + ext;
+            }
 
             List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null, string? subFolder = null) => assets?.Select(a =>
             {

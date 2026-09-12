@@ -70,6 +70,9 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
+#ifdef TARGET_WASM
+#include "pregeneratedstringthunks.h"
+#endif
 
 #include "interpexec.h"
 
@@ -459,6 +462,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
+    m_pSupplementalReadyToRunInfos = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
         if (m_pReadyToRunInfo->SkipTypeValidation())
@@ -3401,7 +3405,7 @@ void Module::FixupVTables()
 }
 #endif // FEATURE_IJW
 
-ModuleBase *Module::GetModuleFromIndex(DWORD ix)
+ModuleBase *Module::GetModuleFromIndex(DWORD ix, ReadyToRunInfo *pInfo)
 {
     CONTRACTL
     {
@@ -3412,9 +3416,9 @@ ModuleBase *Module::GetModuleFromIndex(DWORD ix)
     }
     CONTRACTL_END;
 
-    if (IsReadyToRun())
+    if (IsReadyToRun() || pInfo != NULL)
     {
-        return ZapSig::DecodeModuleFromIndex(this, ix);
+        return ZapSig::DecodeModuleFromIndex(this, ix, pInfo);
     }
     else
     {
@@ -3434,7 +3438,7 @@ ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 
 #endif // !DACCESS_COMPILE
 
-ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix)
+ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix, ReadyToRunInfo *pInfo)
 {
     CONTRACTL
     {
@@ -3447,7 +3451,7 @@ ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix)
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    return ZapSig::DecodeModuleFromIndexIfLoaded(this, ix);
+    return ZapSig::DecodeModuleFromIndexIfLoaded(this, ix, pInfo);
 #else // DACCESS_COMPILE
     DacNotImpl();
     return NULL;
@@ -3534,7 +3538,7 @@ void Module::RunEagerFixups()
         // from multiple threads so we need to lock their resolution.
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
 #ifdef TARGET_WASM
-        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        GetReadyToRunInfo()->RegisterVirtualIPRange();
         if (nSections == 0)
             return;
 #endif // TARGET_WASM
@@ -3554,7 +3558,7 @@ void Module::RunEagerFixups()
     {
         // Per-module eager fixups don't need locking
 #ifdef TARGET_WASM
-        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        GetReadyToRunInfo()->RegisterVirtualIPRange();
         if (nSections == 0)
             return;
 #endif // TARGET_WASM
@@ -3618,9 +3622,85 @@ void Module::RunEagerFixupsUnlocked()
 
 #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_READYTORUN
+// Attach a lazily-downloaded supplemental R2R image to this module. Lock-free push onto the list
+// head; attach runs at a quiesce point so contention is not expected but the CAS keeps it safe.
+void Module::AttachSupplementalReadyToRunInfo(ReadyToRunInfo *pInfo)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pInfo != NULL);
+    _ASSERTE(pInfo->GetNextSupplemental() == NULL);
+
+    PTR_ReadyToRunInfo pOld;
+    do
+    {
+        pOld = VolatileLoadWithoutBarrier(&m_pSupplementalReadyToRunInfos);
+        pInfo->SetNextSupplemental(pOld);
+    } while (InterlockedCompareExchangeT(&m_pSupplementalReadyToRunInfos, PTR_ReadyToRunInfo(pInfo), pOld) != pOld);
+}
+
+#ifdef TARGET_WASM
+void Module::RunSupplementalEagerFixups(ReadyToRunInfo *pInfo)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pInfo != NULL);
+
+    COUNT_T nSections;
+    PTR_READYTORUN_IMPORT_SECTION pSections = pInfo->GetImportSections(&nSections);
+    ReadyToRunLoadedImage *pImage = pInfo->GetImage();
+
+    for (COUNT_T iSection = 0; iSection < nSections; iSection++)
+    {
+        PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
+        if ((pSection->Flags & ReadyToRunImportSectionFlags::Eager) != ReadyToRunImportSectionFlags::Eager)
+            continue;
+
+        COUNT_T tableSize;
+        TADDR tableBase = pImage->GetDirectoryData(&pSection->Section, &tableSize);
+        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pImage->GetRvaData(pSection->Signatures));
+
+        for (SIZE_T *fixupCell = (SIZE_T *)tableBase; fixupCell < (SIZE_T *)(tableBase + tableSize); fixupCell++)
+        {
+            SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
+            PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)pImage->GetRvaData(pSignatures[fixupIndex]);
+            BYTE kind = *pBlob++;
+            if (kind & READYTORUN_FIXUP_ModuleOverride)
+            {
+                CorSigUncompressData(pBlob);
+                kind &= ~READYTORUN_FIXUP_ModuleOverride;
+            }
+
+            // The string-thunk fixup is image-specific: it must register the supplemental image's thunks
+            // against the supplemental info rather than resolve a value into the cell, so handle it here.
+            if (kind == READYTORUN_FIXUP_InjectStringThunks)
+            {
+                ProcessInjectStringThunksFixup(pInfo, pBlob);
+                VolatileStore(fixupCell, (SIZE_T)1);
+                continue;
+            }
+
+            // Every other eager fixup (helpers, instruction-set checks, eager type/method handles, ...)
+            // must be resolved now, exactly as Module::RunEagerFixupsUnlocked does for the primary image;
+            // an unresolved eager helper cell is a null indirection that faults when the attached R2R
+            // code first calls through it. Route the signature blob through the supplemental image.
+            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, TRUE /* mayUsePrecompiledPInvokeMethods */, pInfo))
+            {
+                // A failed eager check (e.g. an unsupported instruction set) means this image's native
+                // code cannot be used; disable it and keep running on the interpreter. Best-effort:
+                // the eager image already provided a working (partial or IL-only) module.
+                pInfo->DisableAllR2RCode();
+                return;
+            }
+            _ASSERTE(*fixupCell != 0);
+        }
+    }
+}
+#endif // TARGET_WASM
+#endif // FEATURE_READYTORUN
+
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods, ReadyToRunInfo * pInfo)
 {
     CONTRACTL
     {
@@ -3634,9 +3714,11 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 
     if (fixup == 0)
     {
-        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
+        // A supplemental (lazily-attached) image stores its signatures in its own image; resolve against it.
+        ReadyToRunLoadedImage * pNativeImage = (pInfo != NULL) ? pInfo->GetImage() : GetReadyToRunImage();
+        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods, pInfo))
             return FALSE;
 
         _ASSERTE(*fixupCell != 0);

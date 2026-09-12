@@ -5979,14 +5979,14 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
 #ifdef TARGET_WASM
 TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
                                           IJitManager* pJit,
-                                          PTR_Module pModule)
+                                          PTR_ReadyToRunInfo pR2RInfo)
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(numVirtualIPs > 0);
         PRECONDITION(CheckPointer(pJit));
-        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(pR2RInfo));
     } CONTRACTL_END;
 
     // Check for odd number of virtual IPs. We require an even number of virtual IPs to ensure that the encoded virtual IP
@@ -6019,7 +6019,8 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
         Range(startVIP, endVIP),
         pJit,
         RangeSection::RANGE_SECTION_VIRTUALIP,
-        pModule);
+        pR2RInfo->GetModule(),
+        pR2RInfo);
 
     VirtualIPRangeSection* pOldRangeSection = nullptr;
     do
@@ -6049,17 +6050,17 @@ VirtualIPRangeSection* ExecutionManager::FindVirtualIPRangeSection(TADDR virtual
 
 void ExecutionManager::AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
                                                    DWORD numRuntimeFunctions,
-                                                   PTR_Module pModule)
+                                                   PTR_ReadyToRunInfo pR2RInfo)
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(numRuntimeFunctions > 0);
-        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(pR2RInfo));
     } CONTRACTL_END;
 
     FunctionTableIndexRangeSection* pNewRange = new FunctionTableIndexRangeSection(
-        minFunctionTableIndex, numRuntimeFunctions, pModule);
+        minFunctionTableIndex, numRuntimeFunctions, pR2RInfo);
 
     FunctionTableIndexRangeSection* pOldRangeSection = nullptr;
     do
@@ -6096,8 +6097,7 @@ BOOL ExecutionManager::IsFuncletFunctionIndex(DWORD functionIndex)
         return FALSE;
     }
 
-    Module* pModule = pSection->pR2RModule;
-    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+    ReadyToRunInfo* pR2RInfo = pSection->pR2RInfo;
 
     DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
     PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
@@ -6114,8 +6114,7 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         return 0;
     }
 
-    Module* pModule = pSection->pR2RModule;
-    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+    ReadyToRunInfo* pR2RInfo = pSection->pR2RInfo;
 
     DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
     do
@@ -6155,8 +6154,7 @@ TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
         return 0;
     }
 
-    Module* pModule = pSection->rangeSection._pR2RModule;
-    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+    ReadyToRunInfo* pR2RInfo = pSection->rangeSection._pR2RInfo;
     DWORD runtimeFunctionCount = pR2RInfo->GetRuntimeFunctionCount();
     if (runtimeFunctionCount == 0)
     {
@@ -6939,7 +6937,7 @@ PTR_ReadyToRunInfo ReadyToRunJitManager::JitTokenToReadyToRunInfo(const METHODTO
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return MethodToken.m_pRangeSection->_pR2RModule->GetReadyToRunInfo();
+    return MethodToken.m_pRangeSection->_pR2RInfo;
 }
 
 UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodToken)

@@ -853,6 +853,10 @@ public:
 private:
     PTR_ReadyToRunInfo      m_pReadyToRunInfo;
     PTR_NativeImage         m_pNativeImage;
+    // Head of a singly-linked list of supplemental R2R images attached to this module after load
+    // (lazily downloaded native code for methods whose metadata/IL live in this module's primary
+    // image). Linked through ReadyToRunInfo::m_pNextSupplemental. Empty for all modules today.
+    PTR_ReadyToRunInfo      m_pSupplementalReadyToRunInfos;
 #endif
 
 #if PROFILING_SUPPORTED_DATA
@@ -1493,22 +1497,32 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledPInvokeMethods = TRUE, ReadyToRunInfo * pInfo = NULL);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
-    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+    // pInfo, when non-NULL, resolves the fixups against that (supplemental) R2R image instead of the
+    // module's primary image.
+    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods = TRUE, ReadyToRunInfo * pInfo = NULL);
 
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE,
+                           ReadyToRunInfo * pInfo = NULL);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
+#ifdef TARGET_WASM
+    // Run the eager fixups of a lazily-attached supplemental R2R image (as opposed to this module's
+    // primary image), resolving them against that image rather than the module's primary one.
+    void RunSupplementalEagerFixups(ReadyToRunInfo *pInfo);
+#endif
 
-    ModuleBase *GetModuleFromIndex(DWORD ix);
-    ModuleBase *GetModuleFromIndexIfLoaded(DWORD ix);
+    // pInfo, when non-NULL, resolves the index against that supplemental R2R image's manifest rather than
+    // this module's primary R2R info (for lazily-attached supplemental images).
+    ModuleBase *GetModuleFromIndex(DWORD ix, ReadyToRunInfo *pInfo = NULL);
+    ModuleBase *GetModuleFromIndexIfLoaded(DWORD ix, ReadyToRunInfo *pInfo = NULL);
 
     BOOL IsReadyToRun() const
     {
@@ -1539,6 +1553,18 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pNativeImage;
     }
+
+    PTR_ReadyToRunInfo GetSupplementalReadyToRunInfos() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pSupplementalReadyToRunInfos;
+    }
+
+#ifndef DACCESS_COMPILE
+    // Attach a lazily-downloaded supplemental R2R image to this module. Callable only at a quiesce
+    // point (no managed frames of this module on the stack). Lock-free push onto the list head.
+    void AttachSupplementalReadyToRunInfo(ReadyToRunInfo *pInfo);
+#endif
 #endif
 
 #ifdef _DEBUG
