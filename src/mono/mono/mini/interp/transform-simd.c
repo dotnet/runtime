@@ -1499,6 +1499,9 @@ emit_sri_relaxedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 
 #if defined(HOST_BROWSER) || defined(HOST_WASI)
 	if (!mono_interp_relaxed_simd_supported) {
+		// Keep the original call so normal call transformation consumes its arguments.
+		// The emitted helper throws before the recursive managed intrinsic body is reached.
+		interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
 		return FALSE;
 	}
 
