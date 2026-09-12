@@ -10,6 +10,7 @@ using Xunit;
 public static class UnresolvedPInvokeTests
 {
     private static bool s_enteredMissingPInvokeMethod;
+    private static bool s_initializedResolvedPInvokeType;
     private static bool s_initializedUnreachedPInvokeType;
 
     [Fact]
@@ -27,6 +28,14 @@ public static class UnresolvedPInvokeTests
         CallMissingPInvokeIf(false);
 
         Assert.False(s_initializedUnreachedPInvokeType);
+    }
+
+    [Fact]
+    public static void ResolvedPInvokeRunsStaticConstructor()
+    {
+        ResolvedPInvokeWithStaticConstructor.Invoke();
+
+        Assert.True(s_initializedResolvedPInvokeType);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -57,5 +66,16 @@ public static class UnresolvedPInvokeTests
 
         [DllImport("UnresolvedPInvokeTests_MissingNativeLibrary")]
         internal static extern void Invoke();
+    }
+
+    private static class ResolvedPInvokeWithStaticConstructor
+    {
+        static ResolvedPInvokeWithStaticConstructor()
+        {
+            s_initializedResolvedPInvokeType = true;
+        }
+
+        [DllImport("libSystem.Native", EntryPoint = "SystemNative_GetLowResolutionTimestamp")]
+        internal static extern long Invoke();
     }
 }

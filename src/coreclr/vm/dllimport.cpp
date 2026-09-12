@@ -5814,6 +5814,16 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
 
 namespace
 {
+    void RunPInvokeClassConstructor(PInvokeMethodDesc* pMD)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pMD->IsClassConstructorTriggeredAtLinkTime())
+        {
+            pMD->GetMethodTable()->CheckRunClassInitThrowing();
+        }
+    }
+
     LPVOID PInvokeGetEntryPoint(PInvokeMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
     {
         // GetProcAddress cannot be called while preemptive GC is disabled.
@@ -5876,10 +5886,7 @@ namespace
 
         _ASSERTE(!pMD->IsEarlyBound());
 
-        if (pMD->IsClassConstructorTriggeredAtLinkTime())
-        {
-            pMD->GetMethodTable()->CheckRunClassInitThrowing();
-        }
+        RunPInvokeClassConstructor(pMD);
 
         if (TryResolvePInvokeTargetFromOverride(pMD))
             return;
@@ -5994,11 +6001,18 @@ BOOL PInvoke::TryResolvePInvokeTargetForR2R(PInvokeMethodDesc* pNMD)
     CONTRACTL_END;
 
     if (!pNMD->PInvokeTargetIsImportThunk())
+    {
+        RunPInvokeClassConstructor(pNMD);
         return TRUE;
+    }
 
     PopulatePInvokeMethodDesc(pNMD);
 
-    return TryResolvePInvokeTargetFromOverride(pNMD);
+    if (!TryResolvePInvokeTargetFromOverride(pNMD))
+        return FALSE;
+
+    RunPInvokeClassConstructor(pNMD);
+    return TRUE;
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
