@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -42,6 +43,251 @@ namespace System.Text.Json.Serialization.Tests
 
         [JsonConstructor]
         private PrivateParameterizedCtor_WithAttribute_And_RequiredProperty(int x) => X = x;
+    }
+
+    public class PrivateParameterizedCtor_WithAttribute<T>
+    {
+        public T Value { get; }
+
+        [JsonConstructor]
+        private PrivateParameterizedCtor_WithAttribute(T value) => Value = value;
+    }
+
+    public struct PrivateParameterizedStructCtor_WithAttribute<T>
+    {
+        public T Value { get; }
+
+        [JsonConstructor]
+        private PrivateParameterizedStructCtor_WithAttribute(T value) => Value = value;
+    }
+
+    public class PrivateParameterlessCtor_WithAttribute<T>
+    {
+        public int X { get; }
+        public T Value { get; set; }
+
+        [JsonConstructor]
+        private PrivateParameterlessCtor_WithAttribute() => X = 42;
+    }
+
+    public class PrivateParameterizedCtor_WithAttribute_FixedParameter<T>
+    {
+        public int X { get; }
+        public T Value { get; set; }
+
+        [JsonConstructor]
+        private PrivateParameterizedCtor_WithAttribute_FixedParameter(int x) => X = x;
+    }
+
+    public class PrivateParameterizedCtor_WithAttribute_And_RequiredProperty<T>
+    {
+        public T Value { get; }
+        public required string Name { get; set; }
+        public string Tag { get; init; } = "default";
+
+        [JsonConstructor]
+        private PrivateParameterizedCtor_WithAttribute_And_RequiredProperty(T value) => Value = value;
+    }
+
+    public class PrivateCtorWithMixedParameterTypes<T>
+    {
+        public T Value { get; }
+        public int Count { get; }
+
+        [JsonConstructor]
+        private PrivateCtorWithMixedParameterTypes(T value, int count)
+        {
+            Value = value;
+            Count = count;
+        }
+    }
+
+    public class PrivateCtorWithInParameters
+    {
+        public int Value { get; }
+        public string Label { get; }
+
+        [JsonConstructor]
+        private PrivateCtorWithInParameters(in int value, ref readonly string label)
+        {
+            Value = value;
+            Label = label;
+        }
+
+        private PrivateCtorWithInParameters(int value, string label) =>
+            throw new InvalidOperationException("Incorrect constructor.");
+    }
+
+    public class PrivateCtorWithByRefParameters<T>
+    {
+        public T Value { get; }
+        public T InValue { get; }
+        public T ReadOnlyValue { get; }
+        public int Count { get; }
+        public T Output { get; }
+
+        [JsonConstructor]
+        private PrivateCtorWithByRefParameters(out T output, ref T value, in T inValue, ref readonly T readOnlyValue, int count)
+        {
+            Output = output = value;
+            Value = value;
+            value = default!;
+            InValue = inValue;
+            ReadOnlyValue = readOnlyValue;
+            Count = count;
+        }
+
+        private PrivateCtorWithByRefParameters(T output, T value, T inValue, T readOnlyValue, int count) =>
+            throw new InvalidOperationException("Incorrect constructor.");
+    }
+
+    public struct PrivateStructCtorWithByRefParameters
+    {
+        public int Value { get; }
+        public string Label { get; }
+        public int Number { get; }
+        public int Count { get; }
+        public int Output { get; }
+
+        [JsonConstructor]
+        private PrivateStructCtorWithByRefParameters(out int output, ref int value, in string label, ref readonly int number, int count)
+        {
+            Output = output = value + 1;
+            Value = value;
+            value = -1;
+            Label = label;
+            Number = number;
+            Count = count;
+        }
+    }
+
+    public struct PrivateGenericStructCtorWithByRefParameters<T>
+    {
+        public T Value { get; }
+        public T InValue { get; }
+        public T ReadOnlyValue { get; }
+        public int Count { get; }
+        public T Output { get; }
+
+        [JsonConstructor]
+        private PrivateGenericStructCtorWithByRefParameters(out T output, ref T value, in T inValue, ref readonly T readOnlyValue, int count)
+        {
+            Output = output = value;
+            Value = value;
+            value = default!;
+            InValue = inValue;
+            ReadOnlyValue = readOnlyValue;
+            Count = count;
+        }
+    }
+
+    public class PrivateCtorWithOutParameters
+    {
+        public int Value { get; }
+        public string Label { get; }
+
+        [JsonConstructor]
+        private PrivateCtorWithOutParameters(out int value, out string label)
+        {
+            Value = value = 42;
+            Label = label = "output";
+        }
+    }
+
+    public class PrivateCtorWithGenericMembers<T> where T : class
+    {
+        public T Value { get; }
+
+        [JsonInclude]
+        private T? Extra { get; set; }
+
+        [JsonConstructor]
+        private PrivateCtorWithGenericMembers(T value) => Value = value;
+    }
+
+    public class PrivateCtorWithCompositeGenericMembers<T>
+    {
+        public List<T[]> Value { get; }
+
+        [JsonInclude]
+        private List<T[]> Extra { get; set; } = new();
+
+        [JsonConstructor]
+        private PrivateCtorWithCompositeGenericMembers(List<T[]> value) => Value = value;
+    }
+
+    public class GenericConstructorBase<T>
+    {
+        [JsonInclude]
+        public T Value { get; protected set; }
+    }
+
+    public class PrivateCtorWithInheritedGenericMembers<T> : GenericConstructorBase<T>
+    {
+        [JsonConstructor]
+        private PrivateCtorWithInheritedGenericMembers(T value) => Value = value;
+    }
+
+    public class ThrowingNonPublicConstructor
+    {
+        public int Value => 0;
+
+        [JsonConstructor]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ThrowingNonPublicConstructor(int value) => throw new InvalidOperationException("Constructor failure.");
+    }
+
+    public class ThrowingNonPublicConstructor<T>
+    {
+        public int Value => 0;
+
+        [JsonConstructor]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ThrowingNonPublicConstructor(int value) => throw new InvalidOperationException("Constructor failure.");
+    }
+
+    public class GenericConstructorOuter<T>
+    {
+        public class Middle
+        {
+            public class Inner<TItem>
+            {
+                public T Value { get; }
+                public TItem Item { get; }
+
+                [JsonInclude]
+                private T Extra { get; set; }
+
+                [JsonConstructor]
+                private Inner(T value, TItem item)
+                {
+                    Value = value;
+                    Item = item;
+                    Extra = default!;
+                }
+            }
+        }
+
+        public class Nested
+        {
+            public T Value { get; }
+
+            [JsonConstructor]
+            private Nested(T value) => Value = value;
+        }
+
+        public class Nested<TItem>
+        {
+            public T Value { get; }
+            public TItem Item { get; }
+
+            [JsonConstructor]
+            private Nested(T value, TItem item)
+            {
+                Value = value;
+                Item = item;
+            }
+        }
     }
 
     public class InternalParameterlessCtor

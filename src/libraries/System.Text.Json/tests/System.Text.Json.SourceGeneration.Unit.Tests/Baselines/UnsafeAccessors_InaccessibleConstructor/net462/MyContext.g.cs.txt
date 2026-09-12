@@ -18,6 +18,19 @@ namespace TestApp
             global::System.Reflection.BindingFlags.Public |
             global::System.Reflection.BindingFlags.NonPublic;
         
+        private static object InvokeUnwrapped(global::System.Reflection.ConstructorInfo constructor, object?[]? parameters)
+        {
+            try
+            {
+                return constructor.Invoke(parameters);
+            }
+            catch (global::System.Reflection.TargetInvocationException exception) when (exception.InnerException is { } innerException)
+            {
+                global::System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
+                throw;
+            }
+        }
+
         /// <summary>
         /// The default <see cref="global::System.Text.Json.Serialization.JsonSerializerContext"/> associated with a default <see cref="global::System.Text.Json.JsonSerializerOptions"/> instance.
         /// </summary>

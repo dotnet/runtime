@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SourceGenerators;
+using GenericTypeMetadata = (string? OpenDeclaringTypeFQN, SourceGenerators.ImmutableEquatableArray<string>? DeclaringTypeParameterNames, string? DeclaringTypeParameterConstraintClauses);
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -57,6 +58,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Queue<TypeToGenerate> _typesToGenerate = new();
 #pragma warning disable RS1024 // Compare symbols correctly https://github.com/dotnet/roslyn-analyzers/issues/5804
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
+            private readonly Dictionary<INamedTypeSymbol, GenericTypeMetadata> _genericTypeDefinitions = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
             public List<Diagnostic> Diagnostics { get; } = new();
@@ -99,6 +101,7 @@ namespace System.Text.Json.SourceGeneration
                 // Ensure context-scoped metadata caches are empty.
                 Debug.Assert(_typesToGenerate.Count == 0);
                 Debug.Assert(_generatedTypes.Count == 0);
+                Debug.Assert(_genericTypeDefinitions.Count == 0);
                 Debug.Assert(_contextClassLocation is null);
 
                 INamedTypeSymbol? contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
@@ -178,10 +181,13 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
+                    SupportsDoNotWrapExceptions = _knownSymbols.SupportsDoNotWrapExceptions,
+                    UseUpdatedMemorySafetyRules = semanticModel.UsesUpdatedMemorySafetyRules(),
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.
                 _generatedTypes.Clear();
+                _genericTypeDefinitions.Clear();
                 _typesToGenerate.Clear();
                 _contextClassLocation = null;
                 return contextGenSpec;
@@ -909,9 +915,18 @@ namespace System.Text.Json.SourceGeneration
                     classType = ClassType.TypeUnsupportedBySourceGen;
                 }
 
+                bool canUseGenericUnsafeAccessors = type is INamedTypeSymbol { IsGenericType: true } namedConstructorType
+                    && _knownSymbols.SupportsGenericUnsafeAccessors
+                    && !contextType.IsGenericType
+                    && namedConstructorType.ContainingType is not { IsGenericType: true };
+                GenericTypeMetadata genericTypeDefinition = GetGenericTypeDefinition(type);
+
                 return new TypeGenerationSpec
                 {
                     TypeRef = typeRef,
+                    OpenDeclaringTypeFQN = genericTypeDefinition.OpenDeclaringTypeFQN,
+                    DeclaringTypeParameterNames = genericTypeDefinition.DeclaringTypeParameterNames,
+                    DeclaringTypeParameterConstraintClauses = genericTypeDefinition.DeclaringTypeParameterConstraintClauses,
                     TypeInfoPropertyName = typeInfoPropertyName,
                     GenerationMode = typeToGenerate.Mode ?? options?.GenerationMode ?? JsonSourceGenerationMode.Default,
                     ClassType = classType,
@@ -939,8 +954,7 @@ namespace System.Text.Json.SourceGeneration
                     ConstructorIsInaccessible = constructorIsInaccessible,
                     CanUseUnsafeAccessorForConstructor = constructorIsInaccessible
                         && _knownSymbols.UnsafeAccessorAttributeType is not null
-                        && (type is not INamedTypeSymbol { IsGenericType: true }
-                            || _knownSymbols.SupportsGenericUnsafeAccessors),
+                        && (type is not INamedTypeSymbol { IsGenericType: true } || canUseGenericUnsafeAccessors),
                     NullableUnderlyingType = nullableUnderlyingType,
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
@@ -2203,10 +2217,12 @@ namespace System.Text.Json.SourceGeneration
                 List<PropertyGenerationSpec> properties = new();
                 PropertyHierarchyResolutionState state = new(options);
                 hasExtensionDataProperty = false;
+                int declaringTypeIndex = -1;
 
                 // Walk the type hierarchy starting from the current type up to the base type(s)
                 foreach (INamedTypeSymbol currentType in typeToGenerate.Type.GetSortedTypeHierarchy())
                 {
+                    declaringTypeIndex++;
                     var declaringTypeRef = new TypeRef(currentType);
                     ImmutableArray<ISymbol> members = currentType.GetMembers();
 
@@ -2277,6 +2293,7 @@ namespace System.Text.Json.SourceGeneration
                     PropertyGenerationSpec? propertySpec = ParsePropertyGenerationSpec(
                         contextType,
                         declaringTypeRef,
+                        declaringTypeIndex,
                         typeLocation,
                         memberType,
                         memberInfo,
@@ -2420,6 +2437,7 @@ namespace System.Text.Json.SourceGeneration
             private PropertyGenerationSpec? ParsePropertyGenerationSpec(
                 INamedTypeSymbol contextType,
                 TypeRef declaringType,
+                int declaringTypeIndex,
                 Location? typeLocation,
                 ITypeSymbol memberType,
                 ISymbol memberInfo,
@@ -2548,6 +2566,12 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                bool canUseGenericUnsafeAccessors = memberInfo.ContainingType.IsGenericType
+                    && _knownSymbols.SupportsGenericUnsafeAccessors
+                    && !contextType.IsGenericType
+                    && memberInfo.ContainingType.ContainingType is not { IsGenericType: true };
+                GenericTypeMetadata genericTypeDefinition = GetGenericTypeDefinition(memberInfo.ContainingType);
+
                 return new PropertyGenerationSpec
                 {
                     NameSpecifiedInSourceCode = memberInfo.MemberNameNeedsAtSign() ? "@" + memberInfo.Name : memberInfo.Name,
@@ -2571,18 +2595,17 @@ namespace System.Text.Json.SourceGeneration
                     HasJsonInclude = hasJsonInclude,
                     CanUseUnsafeAccessors = _knownSymbols.UnsafeAccessorAttributeType is not null
                         && (memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true }
-                            || _knownSymbols.SupportsGenericUnsafeAccessors),
-                    OpenDeclaringTypeFQN = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
-                        ? memberInfo.ContainingType.OriginalDefinition.GetFullyQualifiedName() : null,
-                    OpenPropertyTypeFQN = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
+                            || canUseGenericUnsafeAccessors),
+                    OpenDeclaringTypeFQN = genericTypeDefinition.OpenDeclaringTypeFQN,
+                    OpenPropertyTypeFQN = canUseGenericUnsafeAccessors
+                        && !SymbolEqualityComparer.Default.Equals(memberType, memberInfo.OriginalDefinition.GetMemberType())
                         ? memberInfo.OriginalDefinition.GetMemberType().GetFullyQualifiedName() : null,
-                    DeclaringTypeParameterNames = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
-                        ? namedType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
-                    DeclaringTypeParameterConstraintClauses = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType2 && _knownSymbols.SupportsGenericUnsafeAccessors
-                        ? GetTypeParameterConstraintClauses(namedType2.OriginalDefinition) : null,
+                    DeclaringTypeParameterNames = genericTypeDefinition.DeclaringTypeParameterNames,
+                    DeclaringTypeParameterConstraintClauses = genericTypeDefinition.DeclaringTypeParameterConstraintClauses,
                     IsExtensionData = isExtensionData,
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
+                    DeclaringTypeIndex = declaringTypeIndex,
                     ConverterType = converterType,
                     IsGetterNonNullableAnnotation = isGetterNonNullable,
                     IsSetterNonNullableAnnotation = isSetterNonNullable,
@@ -2870,6 +2893,8 @@ namespace System.Text.Json.SourceGeneration
                         constructorParameters[i] = new ParameterGenerationSpec
                         {
                             ParameterType = parameterTypeRef,
+                            OpenParameterTypeFQN = !SymbolEqualityComparer.Default.Equals(parameterInfo.Type, parameterInfo.OriginalDefinition.Type)
+                                ? parameterInfo.OriginalDefinition.Type.GetFullyQualifiedName() : null,
                             Name = parameterInfo.Name,
                             HasDefaultValue = parameterInfo.HasExplicitDefaultValue,
                             DefaultValue = parameterInfo.HasExplicitDefaultValue ? parameterInfo.ExplicitDefaultValue : null,
@@ -3403,6 +3428,26 @@ namespace System.Text.Json.SourceGeneration
                         builtInSupportTypes.Add(type);
                     }
                 }
+            }
+
+            private GenericTypeMetadata GetGenericTypeDefinition(ITypeSymbol type)
+            {
+                if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
+                {
+                    return default;
+                }
+
+                namedType = namedType.OriginalDefinition;
+                if (!_genericTypeDefinitions.TryGetValue(namedType, out GenericTypeMetadata result))
+                {
+                    result = (
+                        namedType.GetFullyQualifiedName(),
+                        namedType.TypeParameters.Select(tp => tp.MemberNameNeedsAtSign() ? "@" + tp.Name : tp.Name).ToImmutableEquatableArray(),
+                        GetTypeParameterConstraintClauses(namedType));
+                    _genericTypeDefinitions.Add(namedType, result);
+                }
+
+                return result;
             }
 
             /// <summary>

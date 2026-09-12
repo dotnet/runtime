@@ -279,6 +279,9 @@ namespace System.Text.Json.SourceGeneration
             && GetOrResolveType("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute", ref _OverloadResolutionPriorityAttributeType) is not null;
         private Option<INamedTypeSymbol?> _OverloadResolutionPriorityAttributeType;
 
+        public bool SupportsDoNotWrapExceptions => GetOrResolveType(typeof(BindingFlags), ref _BindingFlagsType)?.GetMembers("DoNotWrapExceptions").Length > 0;
+        private Option<INamedTypeSymbol?> _BindingFlagsType;
+
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
 

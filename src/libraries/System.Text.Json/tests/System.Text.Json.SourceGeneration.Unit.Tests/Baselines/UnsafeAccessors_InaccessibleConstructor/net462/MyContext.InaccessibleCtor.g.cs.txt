@@ -135,6 +135,6 @@ namespace TestApp
         };
 
         private static global::System.Reflection.ConstructorInfo? s_ctor_InaccessibleCtor;
-        private static global::TestApp.InaccessibleCtor __ctor_InaccessibleCtor(string p0, int p1) => (global::TestApp.InaccessibleCtor)(s_ctor_InaccessibleCtor ??= typeof(global::TestApp.InaccessibleCtor).GetConstructor(InstanceMemberBindingFlags, binder: null, new global::System.Type[] {typeof(string), typeof(int)}, modifiers: null)!).Invoke(new object?[] {p0, p1});
+        private static global::TestApp.InaccessibleCtor __ctor_InaccessibleCtor(string p0, int p1) => (global::TestApp.InaccessibleCtor)InvokeUnwrapped(s_ctor_InaccessibleCtor ??= typeof(global::TestApp.InaccessibleCtor).GetConstructor(InstanceMemberBindingFlags, binder: null, new global::System.Type[] {typeof(string), typeof(int)}, modifiers: null)!, new object?[] {p0, p1});
     }
 }

@@ -27,5 +27,21 @@ namespace System.Text.Json.SourceGeneration.Tests.NETStandard
             MyPoco actual = JsonSerializer.Deserialize(json, NETStandardSerializerContext.Default.MyPoco);
             Assert.Equal(expected.Value, actual.Value);
         }
+
+        [Fact]
+        public void NETStandardReflectionAccessors_PreserveExceptions()
+        {
+            ClassWithPrivateConstructor result = JsonSerializer.Deserialize(
+                """{"Value":42}""", NETStandardSerializerContext.Default.ClassWithPrivateConstructor);
+            Assert.Equal(42, result.Value);
+
+            ArgumentOutOfRangeException constructorException = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                JsonSerializer.Deserialize("""{"Value":-1}""", NETStandardSerializerContext.Default.ClassWithPrivateConstructor));
+            Assert.Equal("value", constructorException.ParamName);
+
+            InvalidOperationException getterException = Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Serialize(default(StructWithThrowingPrivateGetter), NETStandardSerializerContext.Default.StructWithThrowingPrivateGetter));
+            Assert.Equal("Getter failure.", getterException.Message);
+        }
     }
 }
