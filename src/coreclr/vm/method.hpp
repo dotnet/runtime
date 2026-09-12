@@ -75,6 +75,10 @@ enum class AsyncMethodFlags
     Thunk                      = 16,
     // A special thunk to drop return value in covariant return scenario
     ReturnDroppingThunk        = 32,
+    // A special thunk for an override that covariantly returns a type derived from Task/Task<T>.
+    // Such a method does not formally return Task/Task<T>, so its IL cannot be compiled as an
+    // async version. The thunk calls the ordinary variant and awaits the returned Task instead.
+    CovariantForwardingThunk   = 64,
     // Note: If adding more flags make sure to modify RequiresAsyncContextSaveAndRestore
 
     // The rest of the methods that are not in any of the above groups.
@@ -2117,10 +2121,20 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
     }
 
+    inline bool IsCovariantForwardingThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::CovariantForwardingThunk);
+    }
+
     inline bool SupportsAsyncVersionCodegen() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk();
+        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk() && !IsCovariantForwardingThunk();
     }
 
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
@@ -2376,8 +2390,10 @@ private:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
+    void EmitCovariantForwardingThunk(MethodDesc* pOrdinaryVariant, MetaSig& msig, ILStubLinker* pSL);
     int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
+    int GetTokenForGenericMethodCall(ILCodeStream* pCode, MethodDesc* md, SigPointer typeArgSig);
 public:
     SigPointer GetAsyncThunkResultTypeSig();
     static void CreateDerivedTargetSig(MetaSig& msig, SigBuilder* stubSigBuilder);
