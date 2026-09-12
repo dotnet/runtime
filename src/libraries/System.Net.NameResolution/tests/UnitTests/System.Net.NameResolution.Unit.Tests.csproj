@@ -21,8 +21,12 @@
              Link="ProductionCode\System\Net\DnsMessageWriter.cs" />
     <Compile Include="..\..\src\System\Net\DnsRecordParsing.cs"
              Link="ProductionCode\System\Net\DnsRecordParsing.cs" />
+    <Compile Include="..\..\src\System\Net\DnsRecords.cs"
+             Link="ProductionCode\System\Net\DnsRecords.cs" />
     <Compile Include="..\..\src\System\Net\DnsResponseCode.cs"
              Link="ProductionCode\System\Net\DnsResponseCode.cs" />
+    <Compile Include="..\..\src\System\Net\DnsSdRecordParsing.cs"
+             Link="ProductionCode\System\Net\DnsSdRecordParsing.cs" />
     <Compile Include="..\..\src\System\Net\DnsWireEnums.cs"
              Link="ProductionCode\System\Net\DnsWireEnums.cs" />
   </ItemGroup>
@@ -32,5 +36,6 @@
     <Compile Include="DnsMessageReaderTests.cs" />
     <Compile Include="DnsMessageWriterTests.cs" />
     <Compile Include="DnsRecordTypeTests.cs" />
+    <Compile Include="DnsSdRecordParsingTests.cs" />
   </ItemGroup>
 </Project>
