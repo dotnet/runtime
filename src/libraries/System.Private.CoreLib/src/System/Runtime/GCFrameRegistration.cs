@@ -4,13 +4,16 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NATIVEAOT
+using MethodTable = Internal.Runtime.MethodTable;
+#endif
 
 namespace System.Runtime
 {
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct GCFrameRegistration
     {
-#if CORECLR
+#if CORECLR || NATIVEAOT
         private const uint GCFrameValueClassFlag = 0x80000000;
 #endif
 
@@ -35,7 +38,7 @@ namespace System.Runtime
 #endif
         }
 
-#if CORECLR
+#if CORECLR || NATIVEAOT
         public GCFrameRegistration(ValueClassInfo** valueClassInfo)
         {
             _reserved1 = 0;
@@ -58,7 +61,7 @@ namespace System.Runtime
 #endif
     }
 
-#if CORECLR
+#if CORECLR || NATIVEAOT
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct ValueClassInfo
     {

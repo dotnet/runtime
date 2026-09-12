@@ -5,6 +5,7 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
+#include "gcdesc.h"
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -587,10 +588,51 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
     {
         ASSERT(pCurGCFrame->m_pThread == this);
 
-        for (uint32_t i = 0; i < pCurGCFrame->m_numObjRefs; i++)
+        if ((pCurGCFrame->m_gcFlags & GCFrameRegistration::GCFRAME_FLAG_VALUECLASS) != 0)
         {
-            EnumGcRef(dac_cast<PTR_OBJECTREF>(pCurGCFrame->m_pObjRefs + i),
-                pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
+            for (ValueClassInfo* pValueClass = *pCurGCFrame->m_ppValueClasses;
+                pValueClass != NULL;
+                pValueClass = pValueClass->m_pNext)
+            {
+                MethodTable* pMethodTable = pValueClass->m_pMethodTable;
+
+                ASSERT(pMethodTable->IsValueType());
+                ASSERT(!pMethodTable->IsByRefLike());
+
+                if (!pMethodTable->ContainsGCPointers())
+                    continue;
+
+                CGCDesc* pGCDesc = CGCDesc::GetCGCDescFromMT(pMethodTable);
+                CGCDescSeries* pSeries = pGCDesc->GetHighestSeries();
+                CGCDescSeries* pLastSeries = pGCDesc->GetLowestSeries();
+                uint32_t baseSize = pMethodTable->GetBaseSize();
+
+                ASSERT(pSeries >= pLastSeries);
+
+                do
+                {
+                    size_t offset = pSeries->GetSeriesOffset() - sizeof(void*);
+                    PTR_OBJECTREF pObjectRef = dac_cast<PTR_OBJECTREF>((uint8_t*)pValueClass->m_pData + offset);
+                    PTR_OBJECTREF pObjectRefStop =
+                        dac_cast<PTR_OBJECTREF>((uint8_t*)pObjectRef + pSeries->GetSeriesSize() + baseSize);
+
+                    while (pObjectRef < pObjectRefStop)
+                    {
+                        EnumGcRef(pObjectRef, GCRK_Object, pfnEnumCallback, pvCallbackData);
+                        pObjectRef++;
+                    }
+
+                    pSeries--;
+                } while (pSeries >= pLastSeries);
+            }
+        }
+        else
+        {
+            for (uint32_t i = 0; i < pCurGCFrame->m_numObjRefs; i++)
+            {
+                EnumGcRef(dac_cast<PTR_OBJECTREF>(pCurGCFrame->m_pObjRefs + i),
+                    pCurGCFrame->m_gcFlags ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
+            }
         }
     }
 }
