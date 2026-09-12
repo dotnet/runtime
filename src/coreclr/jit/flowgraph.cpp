@@ -5808,7 +5808,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
     info->LimitOffset            = 0;
-    info->LimitLcl               = BAD_VAR_NUM;
+    info->LimitVar               = BAD_VAR_NUM;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5921,7 +5921,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasInvariantLocalLimit = true;
-        info->LimitLcl               = limitOp->AsLclVarCommon()->GetLclNum();
+        info->LimitVar               = limitOp->AsLclVarCommon()->GetLclNum();
     }
     else if (limitOp->OperIs(GT_ARR_LENGTH))
     {
@@ -5950,7 +5950,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasArrayLengthLimit = true;
-        info->LimitLcl            = array->AsLclVarCommon()->GetLclNum();
+        info->LimitVar            = array->AsLclVarCommon()->GetLclNum();
     }
     else
     {
@@ -6134,7 +6134,7 @@ bool FlowGraphNaturalLoop::HasZeroTripTest(BasicBlock* preheader, NaturalLoopIte
         {
             GenTree* tree = stmt->GetRootNode();
             if (comp->gtTreeHasLocalStore(tree, info->IterVar) ||
-                ((info->LimitLcl != BAD_VAR_NUM) && comp->gtTreeHasLocalStore(tree, info->LimitLcl)))
+                ((info->LimitVar != BAD_VAR_NUM) && comp->gtTreeHasLocalStore(tree, info->LimitVar)))
             {
                 JITDUMP("  Iterator or limit modified by [%06u] in " FMT_BB "\n", Compiler::dspTreeID(tree),
                         curBlock->bbNum);
