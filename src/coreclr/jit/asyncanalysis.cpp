@@ -260,7 +260,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
 //   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
 //   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
 //
-//   At entry, only parameters and OSR locals are considered mutated.
+//   At entry, parameters, parameter register targets, and OSR locals are considered mutated.
 //
 void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 {
@@ -271,13 +271,13 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
         VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
     }
 
-    // Parameters and OSR locals are considered mutated at method entry.
+    // Parameters, parameter register targets, and OSR locals are non-default at method entry.
     for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
     {
         unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
+        if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget || varDsc->lvIsOSRLocal)
         {
             VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
         }

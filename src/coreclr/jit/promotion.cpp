@@ -3088,7 +3088,7 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
 
     for (const ABIPassingSegment& seg : abiInfo.Segments())
     {
-        // This code corresponds to code in Lower::FindInducedParameterRegisterLocals
+        // This code corresponds to code in Rationalizer::RewriteParameterField.
         if ((offset < seg.Offset) || (offset + genTypeSize(accessType) > seg.Offset + seg.Size))
         {
             continue;
