@@ -116,6 +116,37 @@ export function commandSampleProfiler(options: DiagnosticCommandOptions) {
     });
 }
 
+export function commandPgoTrace(options: DiagnosticCommandOptions) {
+    return commandCollectTracing2({
+        circularBufferMB: options.circularBufferMB ?? 256,
+        format: 1,
+        requestRundown: true,
+        providers: [
+            {
+                // Microsoft-Windows-DotNETRuntime keyword 0x1F000080018, level 5 (Verbose) - matches the
+                // desktop dotnet-optimization IBC collection so dotnet-pgo sees the same event set:
+                //   0x8            Loader                  (ModuleLoadUnload - module identity)
+                //   0x10           Jit                     (MethodJittingStarted/MethodLoadVerbose - the method list)
+                //   0x80000        Type                    (GCBulkType - type identity for generics)
+                //   0x1000000000   Compilation             (JIT compilation events; not emitted by the interpreter)
+                //   0x2000000000   CompilationDiagnostic
+                //   0x4000000000   MethodDiagnostic        (MethodDetails - generic instantiation resolution)
+                //   0x8000000000   TypeDiagnostic          (type identity for generics)
+                //   0x10000000000  JitInstrumentationData  (JitInstrumentationDataVerbose - block counts)
+                // keyword is serialized as [hi, lo]: 0x1F000080018 -> hi 0x000001F0, lo 0x00080018
+                keywords: [
+                    0x0000_01F0,
+                    0x0008_0018,
+                ],
+                logLevel: 5,
+                providerName: "Microsoft-Windows-DotNETRuntime",
+                arguments: null
+            },
+            ...options.extraProviders || [],
+        ]
+    });
+}
+
 function commandCollectTracing2(payload2: PayloadV2) {
     const payloadLength = computeCollectTracing2PayloadByteLength(payload2);
     const messageLength = computeMessageByteLength(payloadLength);
