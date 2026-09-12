@@ -451,6 +451,8 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
+            // Unlike Seal we do not have a concurrency block here. Seal needs one to prevent nonce repetition. In
+            // Open a repeated nonce does not result in loss of confidentiality.
             if (_sequenceNumber == ulong.MaxValue)
             {
                 throw new CryptographicException(SR.Cryptography_HpkeMessageLimitReached);
