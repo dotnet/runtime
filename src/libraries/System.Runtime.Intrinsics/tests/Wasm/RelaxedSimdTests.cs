@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Wasm;
@@ -15,8 +14,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         public static bool IsNotSupported => !RelaxedSimd.IsSupported;
 
         [Fact]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(RelaxedSimd))]
-        public unsafe void RelaxedSimdIsSupportedReflects()
+        public void RelaxedSimdIsSupportedReflects()
         {
             MethodInfo methodInfo = typeof(RelaxedSimd).GetMethod("get_IsSupported");
             Assert.NotNull(methodInfo);
@@ -31,7 +29,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void ConvertToIntegerNativeInRangeMatchesExpected()
+        public void ConvertToIntegerNativeInRangeMatchesExpected()
         {
             Assert.Equal(
                 Vector128.Create(1, -2, 3, -4),
@@ -48,7 +46,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void DotProductNativeByteSByteMatchesScalar()
+        public void DotProductNativeByteSByteMatchesScalar()
         {
             // Per the finished spec, `a` is signed and `b` is unsigned-7-bit. When every lane
             // of `b` is in [0, 127] every implementation must match a straightforward
@@ -66,7 +64,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void DotProductAddNativeByteSByteMatchesScalar()
+        public void DotProductAddNativeByteSByteMatchesScalar()
         {
             var s = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
             var u = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
@@ -84,7 +82,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void MultiplyAddFloatMatchesScalarApproximately()
+        public void MultiplyAddFloatMatchesScalarApproximately()
         {
             // Relaxed FMA may or may not round the intermediate product; verify the result is
             // within a small relative tolerance of the unfused result. float.Epsilon is a
@@ -107,7 +105,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void LaneSelectNativeAllOnesAllZerosBehavesLikeConditionalSelect()
+        public void LaneSelectNativeAllOnesAllZerosBehavesLikeConditionalSelect()
         {
             // For mask lanes that are all-ones or all-zeros the relaxed lane select must match
             // the deterministic semantics.
@@ -123,7 +121,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void SwizzleNativeInRangeMatchesVector128Shuffle()
+        public void SwizzleNativeInRangeMatchesVector128Shuffle()
         {
             // For index lanes in [0, 16) the relaxed swizzle must agree with Vector128.Shuffle.
             var v = Vector128.Create((byte)10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160);

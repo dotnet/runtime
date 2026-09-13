@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Wasm;
@@ -13,10 +12,9 @@ public sealed class RelaxedSimdTests
     public static bool IsNotSupported => !RelaxedSimd.IsSupported;
 
     [Fact]
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(RelaxedSimd))]
     public static void RelaxedSimdIsSupportedReflects()
     {
-        MethodInfo? methodInfo = typeof(RelaxedSimd).GetProperty(nameof(RelaxedSimd.IsSupported))?.GetGetMethod();
+        MethodInfo? methodInfo = typeof(RelaxedSimd).GetMethod("get_IsSupported");
         Assert.NotNull(methodInfo);
         Assert.Equal(RelaxedSimd.IsSupported, methodInfo.Invoke(null, null));
     }
