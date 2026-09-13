@@ -1206,6 +1206,10 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
                 case INS_movsxd:
                     return PEEPHOLE_ABORT;
 
+                case INS_movsx32:
+                    result = (size == EA_4BYTE);
+                    return PEEPHOLE_ABORT;
+
                 case INS_movzx:
                     if ((size == EA_1BYTE) || (size == EA_2BYTE))
                     {
@@ -3900,7 +3904,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         }
 
         emitAttr attr = id->idOpSize();
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !IsSimdInstruction(ins) &&
+        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && (ins != INS_movsx32) && !IsSimdInstruction(ins) &&
             !TakesEvexPrefix(id))
         {
             // Most 16-bit operand instructions will need a 0x66 prefix.
@@ -3920,7 +3924,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 
         emitAttr attr = id->idOpSize();
 
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !IsSimdInstruction(ins))
+        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && (ins != INS_movsx32) && !IsSimdInstruction(ins))
         {
             // Most 16-bit operand instructions will need a 0x66 prefix.
             adjustedSize++;
@@ -5104,8 +5108,8 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
         return true;
     }
 
-    if ((ins != INS_movsx) && // These three instructions support high register
-        (ins != INS_movzx)    // encodings for reg1
+    // These instructions support high register encodings for reg1.
+    if ((ins != INS_movsx) && (ins != INS_movsx32) && (ins != INS_movzx)
 #ifdef FEATURE_HW_INTRINSICS
         && (ins != INS_crc32)
 #endif
@@ -5531,7 +5535,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)                               // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_vmovsh) ||
+               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_movsx32) || (ins == INS_vmovsh) ||
                (ins == INS_cmpxchg)
                // kmov instructions reach this path with EA_8BYTE size, even on x86
                || IsKMOVInstruction(ins)
@@ -7535,6 +7539,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movsd_simd:
         case INS_movss:
         case INS_vmovsh:
+        case INS_movsx32:
         case INS_movsx:
         case INS_movupd:
         case INS_movups:
@@ -7702,6 +7707,7 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
+        case INS_movsx32:
         case INS_movsx:
         case INS_movzx:
         {
@@ -7930,7 +7936,7 @@ bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, reg
         }
 #endif
         // "movsx eax, ax".
-        if ((ins == INS_movsx) && (size == EA_2BYTE))
+        if (((ins == INS_movsx) || (ins == INS_movsx32)) && (size == EA_2BYTE))
         {
             // "cwde".
             emitIns(INS_cwde, EA_4BYTE);
@@ -7961,6 +7967,7 @@ bool emitter::emitIns_Mov(
     switch (ins)
     {
         case INS_mov:
+        case INS_movsx32:
         case INS_movsx:
         case INS_movzx:
         {
@@ -12593,9 +12600,9 @@ void emitter::emitDispIns(
             }
             else
 #endif
-                if (ins == INS_movsx || ins == INS_movzx)
+                if (ins == INS_movsx || ins == INS_movsx32 || ins == INS_movzx)
             {
-                attr = EA_PTRSIZE;
+                attr = ins == INS_movsx ? EA_PTRSIZE : EA_4BYTE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
@@ -12861,9 +12868,9 @@ void emitter::emitDispIns(
             }
             else
 #endif
-                if (ins == INS_movsx || ins == INS_movzx)
+                if (ins == INS_movsx || ins == INS_movsx32 || ins == INS_movzx)
             {
-                attr = EA_PTRSIZE;
+                attr = ins == INS_movsx ? EA_PTRSIZE : EA_4BYTE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
@@ -13033,9 +13040,10 @@ void emitter::emitDispIns(
 #endif // TARGET_AMD64
 
                     case INS_movsx:
+                    case INS_movsx32:
                     case INS_movzx:
                     {
-                        tgtAttr = EA_PTRSIZE;
+                        tgtAttr = ins == INS_movsx ? EA_PTRSIZE : EA_4BYTE;
                         break;
                     }
 
@@ -13427,9 +13435,9 @@ void emitter::emitDispIns(
         case IF_RWR_MRD:
         case IF_RRW_MRD:
         {
-            if (ins == INS_movsx || ins == INS_movzx)
+            if (ins == INS_movsx || ins == INS_movsx32 || ins == INS_movzx)
             {
-                attr = EA_PTRSIZE;
+                attr = ins == INS_movsx ? EA_PTRSIZE : EA_4BYTE;
             }
 #ifdef TARGET_AMD64
             else if (ins == INS_movsxd)
@@ -16437,7 +16445,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
             code = AddRexWPrefix(id, code);
         }
     }
-    else if ((ins == INS_movsx) || (ins == INS_movzx) || (insIsCMOV(ins)))
+    else if ((ins == INS_movsx) || (ins == INS_movsx32) || (ins == INS_movzx) || (insIsCMOV(ins)))
     {
         assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);

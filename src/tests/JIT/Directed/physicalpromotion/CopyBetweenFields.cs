@@ -45,6 +45,8 @@ public class CopyBetweenFields
             Assert.Equal(3 * (int)(sbyte)wide, NarrowByte(wide));
             Assert.Equal(3 * (int)(ushort)value, NarrowIntToUShort(value));
             ModifiedAfterCopy(wide);
+            CopyArgumentIsolation(wide);
+            CopyArgumentAcrossException(wide);
         }
         foreach (long value in new[] { long.MinValue, long.MaxValue, -1L, 0x1234567887654321L })
         {
@@ -125,16 +127,18 @@ public class CopyBetweenFields
         // The first call defines the non-GC return buffer; no prolog zeroing is needed.
         // X64-WINDOWS-NOT: xor
         // X64-WINDOWS: call {{.*}}CopyBetweenFields:Create
-        // Once Consume has synchronized the struct, no further write-back is needed.
+        // Build the outgoing argument from the replacement, without synchronizing
+        // source storage and immediately loading across that narrow store.
+        // X64-WINDOWS: mov [[VALUE:r[a-z0-9]+]], qword ptr [rsp+[[SOURCE:0x[0-9A-Fa-f]+]]]
+        // X64-WINDOWS-NOT: mov qword ptr [rsp+[[SOURCE]]], [[VALUE]]
         // X64-WINDOWS: call {{.*}}CopyBetweenFields:Consume
-        // X64-WINDOWS-NOT: mov qword ptr [rsp{{[^]]*}}], {{r[a-z0-9]+}}
         // X64-WINDOWS-NOT: mov {{e[a-z0-9]+}}, dword ptr [rsp
         S src = Create(value);
         src.Wide++;
         Observe(src.Wide);
         Observe(src.Wide);
         Observe(src.Wide);
-        Consume(src); // The struct and promoted field now hold the same value.
+        Consume(src); // The outgoing copy can take Wide directly from its replacement.
         S dst = src;
         Observe(dst.Narrow);
         Observe(dst.Narrow);
@@ -311,6 +315,55 @@ public class CopyBetweenFields
         Outer value = default;
         value.Value = Create(123);
         CheckOuter(value);
+    }
+
+    private static long s_consumed;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ConsumeAndModify(S value)
+    {
+        s_consumed = value.Wide;
+        value.Wide = ~value.Wide;
+        value.Other = -7;
+        CheckFields(value, ~s_consumed, -7, s_consumed + 1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CopyArgumentIsolation(long value)
+    {
+        S src = Create(value);
+        src.Wide++;
+        Observe(src.Wide);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        ConsumeAndModify(src);
+        Assert.Equal(value + 1, s_consumed);
+        CheckFields(src, value + 1, value + 1, value + 2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ConsumeThenThrow(S value)
+    {
+        ConsumeAndModify(value);
+        throw new System.InvalidOperationException();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CopyArgumentAcrossException(long value)
+    {
+        S src = Create(value);
+        try
+        {
+            src.Wide++;
+            Observe(src.Wide);
+            Observe(src.Wide);
+            Observe(src.Wide);
+            ConsumeThenThrow(src);
+        }
+        catch (System.InvalidOperationException)
+        {
+            CheckFields(src, value + 1, value + 1, value + 2);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
