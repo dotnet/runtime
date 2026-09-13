@@ -46,6 +46,89 @@
 
       <Type Name="System.Reflection.Tests.MemberInfoTests+GenericTestClass`1[[System.Double, System.Private.CoreLib]]" Dynamic="Required All" />
 
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Boolean, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Byte, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.SByte, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Char, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Int16, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.UInt16, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Int32, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.UInt32, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Int64, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.UInt64, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Single, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.Double, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.IntPtr, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveReturnTarget`1[[System.UIntPtr, System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Boolean, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Byte, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.SByte, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Char, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Int16, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.UInt16, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Int32, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.UInt32, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Int64, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.UInt64, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Single, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Double, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.IntPtr, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.UIntPtr, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeByteEnum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeSByteEnum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeInt16Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeUInt16Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeInt32Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeUInt32Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeInt64Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokePrimitiveArgumentTarget`1[[System.Reflection.Tests.IntrinsicInvokeUInt64Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeByteEnum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeSByteEnum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeInt16Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeUInt16Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeInt32Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeUInt32Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeInt64Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeEnumConstructorTarget`1[[System.Reflection.Tests.IntrinsicInvokeUInt64Enum, System.Reflection.Tests]]" Dynamic="Required All" />
+
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeStaticIntReturnTarget">
+        <Method Name="ReturnGeneric" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeGenericVirtualDispatch">
+        <Method Name="Dispatch" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeGenericVirtualA">
+        <Method Name="Dispatch" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeGenericVirtualB">
+        <Method Name="Dispatch" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Reflection.Tests.IIntrinsicInvokeGenericInterfaceDispatch">
+        <Method Name="Dispatch" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeGenericInterfaceA">
+        <Method Name="Dispatch" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Reflection.Tests.IntrinsicInvokeGenericInterfaceB">
+        <Method Name="Dispatch" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
     </Assembly>
 
     <Assembly Name="System.Private.CoreLib">
