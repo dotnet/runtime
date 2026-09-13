@@ -1335,9 +1335,14 @@ extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(
     {
         GCX_PREEMP();
         pMethod->EnsureActive();
-        result = reinterpret_cast<void*>(pMethod->IsVtableMethod()
+        PCODE callTarget = pMethod->IsVtableMethod()
             ? pMethod->GetSingleCallableAddrOfVirtualizedCode(&receiver, pReceiverMT, declaringType.AsTypeHandle())
-            : pMethod->GetSingleCallableAddrOfCode());
+            : pMethod->GetSingleCallableAddrOfCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Virtual dispatch can return an entrypoint whose R2R-to-interpreter thunk is not prepared yet.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(callTarget);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        result = reinterpret_cast<void*>(callTarget);
     }
     GCPROTECT_END();
 
