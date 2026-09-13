@@ -4677,6 +4677,18 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
     return regBits;
 }
 
+//------------------------------------------------------------------------
+// GetDestinationOperandSize: Get the destination width when the instruction's
+// descriptor records the source width. Other instructions retain their size.
+inline emitAttr emitter::GetDestinationOperandSize(instruction ins, emitAttr size)
+{
+    if (ins == INS_movsx)
+    {
+        return EA_PTRSIZE;
+    }
+    return ((ins == INS_movsx32) || (ins == INS_movzx)) ? EA_4BYTE : size;
+}
+
 /*****************************************************************************
  *
  *  Returns an encoding for the specified register to be used in the bit3-5
@@ -4688,6 +4700,7 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
     assert(reg < REG_STK);
 
     instruction ins = id->idIns();
+    size            = GetDestinationOperandSize(ins, size);
 
 #ifdef TARGET_AMD64
     // Either code is not NULL or reg is not an extended reg.
@@ -5165,7 +5178,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code)
 
     bool includeRexPrefixSize = true;
     // REX prefix
-    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attr) || IsExtendedReg(id->idReg2(), attr) ||
+    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), GetDestinationOperandSize(ins, attr)) ||
+        IsExtendedReg(id->idReg2(), attr) ||
         (!id->idIsSmallDsc() && (IsExtendedReg(id->idReg3(), attr) || IsExtendedReg(id->idReg4(), attr))))
     {
         sz += emitGetRexPrefixSize(id, ins);
@@ -5263,7 +5277,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         emitAttr  attr = id->idOpSize();
         emitAttr  size = EA_SIZE(attr);
 
-        if ((TakesRexWPrefix(id) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
+        if ((TakesRexWPrefix(id) && ((ins != INS_xor) || (reg1 != reg2))) ||
+            IsExtendedReg(reg1, GetDestinationOperandSize(ins, attr)) ||
             IsExtendedReg(reg2, attr))
         {
             sz += emitGetRexPrefixSize(id, ins);
@@ -5389,7 +5404,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     size += emitGetAdjustedSize(id, code);
 
     // REX prefix
-    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
+    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), GetDestinationOperandSize(ins, attrSize)) ||
+        IsExtendedReg(id->idReg2(), attrSize))
     {
         size += emitGetRexPrefixSize(id, ins);
     }
@@ -5564,7 +5580,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         size += emitGetRexPrefixSize(id, ins);
     }
     else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) ||
-             ((ins != INS_call) && (IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))))
+             ((ins != INS_call) && (IsExtendedReg(id->idReg1(), GetDestinationOperandSize(ins, attrSize)) ||
+                                   IsExtendedReg(id->idReg2(), attrSize))))
     {
         // Should have a REX byte
         size += emitGetRexPrefixSize(id, ins);
@@ -5772,7 +5789,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
     bool includeRexPrefixSize = true;
 
     // 64-bit operand instructions will need a REX.W prefix
-    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
+    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), GetDestinationOperandSize(ins, attrSize)) ||
+        IsExtendedReg(id->idReg2(), attrSize))
     {
         size += emitGetRexPrefixSize(id, ins);
         includeRexPrefixSize = false;

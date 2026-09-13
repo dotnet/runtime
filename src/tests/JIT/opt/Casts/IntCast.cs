@@ -40,6 +40,12 @@ namespace CodeGenTests
                 Assert.Equal((long)(uint)(short)value, NarrowShortToUIntThenLong(value));
                 Assert.Equal((int)(sbyte)value, NarrowByteFromMemory(new[] { value }));
                 Assert.Equal((int)(short)value, NarrowShortFromMemory(new[] { value }));
+                Assert.Equal(unchecked(value + (sbyte)value), ExtendByteWithLiveSource(value));
+                Assert.Equal(unchecked(value + (byte)value), ExtendUnsignedByteWithLiveSource(value));
+                Assert.Equal(unchecked(value + (byte)value), ExtendByteArray(new[] { (byte)value }, value));
+                s_byte = (byte)value;
+                Assert.Equal(unchecked(value + (byte)value), ExtendStaticByte(value));
+                Assert.Equal(unchecked(value + (sbyte)(value + 1)), ExtendPreservedByte(value, value + 1));
             }
             if (Cast_Short_To_Long(Int16.MaxValue) != 32767)
                 return 0;
@@ -89,5 +95,57 @@ namespace CodeGenTests
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int NarrowShortFromMemory(int[] value) => (short)value[0];
+
+        private static int s_observed;
+        private static byte s_byte;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Observe(int value) => s_observed = value;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ExtendByteWithLiveSource(int value)
+        {
+            // The body has one 3-byte extension, a move, a call and a lea.
+            // Checking its size detects a redundant prefix invisible in the mnemonic.
+            // X64-WINDOWS: movsx {{e[a-z0-9]+}}, {{[a-z0-9]+}}
+            // X64-WINDOWS: ;; size=14
+            int narrowed = (sbyte)value;
+            Observe(narrowed);
+            return value + narrowed;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ExtendUnsignedByteWithLiveSource(int value)
+        {
+            // X64-WINDOWS: movzx {{e[a-z0-9]+}}, {{[a-z0-9]+}}
+            // X64-WINDOWS: ;; size=14
+            int narrowed = (byte)value;
+            Observe(narrowed);
+            return value + narrowed;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ExtendByteArray(byte[] values, int value)
+        {
+            int narrowed = values[0];
+            Observe(narrowed);
+            return value + narrowed;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ExtendStaticByte(int value)
+        {
+            int narrowed = s_byte;
+            Observe(narrowed);
+            return value + narrowed;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ExtendPreservedByte(int first, int second)
+        {
+            Observe(first);
+            Observe(second);
+            return first + (sbyte)second;
+        }
     }
 }
