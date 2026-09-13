@@ -20,9 +20,10 @@
 
 extern MethodDesc* g_pThreadStartCallbackMethodDesc;
 extern MethodDesc* g_pGCRunFinalizersMethodDesc;
-#ifdef DEBUGGING_SUPPORTED
+// The debugger func-eval implementation is not linked on WebAssembly.
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -4176,9 +4177,9 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                     (pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc ||
                      pMethodDesc == g_pThreadStartCallbackMethodDesc ||
                      pMethodDesc == g_pGCRunFinalizersMethodDesc
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
                      || pMethodDesc == VolatileLoad(&g_pDebuggerInvokeFunctionMethodDesc)
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
                      ))
                 {
                     // Runtime-invoked UCO entrypoint calls should behave like the
