@@ -2475,7 +2475,8 @@ bool ReplaceVisitor::CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* 
     }
 
     AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
-    if (!std::any_of(agg->Replacements.begin(), agg->Replacements.end(), [](const Replacement& rep) {
+    if (!std::any_of(agg->Replacements.data(), agg->Replacements.data() + agg->Replacements.size(),
+                     [](const Replacement& rep) {
         return rep.NeedsWriteBack;
     }))
     {
