@@ -248,6 +248,9 @@
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-nontrapping-float-to-int;--enable-sign-ext" />
     </ItemGroup>
+    <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
+      <WasmOptConfigurationFlags Include="--enable-relaxed-simd" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <_EmccLinkFlags Include="--profiling-funcs" />
