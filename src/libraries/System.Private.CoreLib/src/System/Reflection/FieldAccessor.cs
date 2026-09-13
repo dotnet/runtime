@@ -93,12 +93,12 @@ namespace System.Reflection
                     if (fieldType.IsEnum)
                     {
                         _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
-                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType());
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType(), _addressOrOffset);
                     }
                     else if (fieldType.IsValueType)
                     {
                         _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
-                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType);
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType, _addressOrOffset);
                     }
                     else if (fieldType.IsPointer)
                     {
@@ -107,7 +107,7 @@ namespace System.Reflection
                     else if (fieldType.IsFunctionPointer)
                     {
                         _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
-                        _fieldAccessType = GetIntPtrAccessorTypeForInstance();
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(typeof(IntPtr), _addressOrOffset);
                     }
                     else
                     {
@@ -391,10 +391,10 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Currently we only optimize for primitive types and not all value types. Primitive types support atomic write operations, are
-        /// not boxed by the runtime when stored as a static field, and don't need special nullable, GC or alignment checks.
+        /// Currently we only optimize for primitive types and not all value types. Primitive types support atomic write operations when
+        /// naturally aligned, are not boxed by the runtime when stored as a static field, and don't need special nullable or GC checks.
         /// </summary>
-        private static FieldAccessorType GetPrimitiveAccessorTypeForInstance(Type fieldType)
+        private static FieldAccessorType GetPrimitiveAccessorTypeForInstance(Type fieldType, IntPtr fieldOffset)
         {
             FieldAccessorType accessorType = FieldAccessorType.InstanceValueType;
 
@@ -417,6 +417,21 @@ namespace System.Reflection
             else if (fieldType == typeof(IntPtr) ||
                 fieldType == typeof(UIntPtr))
                 accessorType = GetIntPtrAccessorTypeForInstance();
+
+            int alignment = accessorType switch
+            {
+                FieldAccessorType.InstanceValueTypeSize2 => sizeof(short),
+                FieldAccessorType.InstanceValueTypeSize4 => sizeof(int),
+                FieldAccessorType.InstanceValueTypeSize8 => sizeof(long),
+                _ => 1,
+            };
+
+            // Object data is pointer-aligned, so a larger alignment cannot be
+            // established from the field offset alone.
+            if (alignment > IntPtr.Size || (fieldOffset.ToInt64() & (alignment - 1)) != 0)
+            {
+                accessorType = FieldAccessorType.SlowPath;
+            }
 
             return accessorType;
         }

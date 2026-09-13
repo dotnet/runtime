@@ -318,6 +318,16 @@ void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
     TADDR pFieldAddress = (TADDR)GetInstanceAddress(o);
     UINT cbSize = GetSize();
 
+#ifndef DACCESS_COMPILE
+    // Volatile loads require natural alignment on some architectures. Packed fields
+    // can be under-aligned, so copy them without the atomic volatile guarantee.
+    if (!IS_ALIGNED(pFieldAddress, cbSize))
+    {
+        memcpyNoGCRefs(pOutVal, reinterpret_cast<void*>(pFieldAddress), cbSize);
+        return;
+    }
+#endif // DACCESS_COMPILE
+
     switch (cbSize)
     {
     case 1:
@@ -393,6 +403,14 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     else
     {
         UINT cbSize = LoadSize();
+
+        // Volatile stores require natural alignment on some architectures. Packed fields
+        // can be under-aligned, so copy them without the atomic volatile guarantee.
+        if (!IS_ALIGNED(pFieldAddress, cbSize))
+        {
+            memcpyNoGCRefs(pFieldAddress, pInVal, cbSize);
+            return;
+        }
 
         switch (cbSize)
         {
