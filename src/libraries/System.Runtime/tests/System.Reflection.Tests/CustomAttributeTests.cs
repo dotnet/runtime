@@ -65,12 +65,18 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void ConstructorExceptionsAreNotWrapped()
+        public void ConstructorExceptionsArePropagated()
         {
             for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
             {
-                InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                // NativeAOT materializes attributes through ConstructorInfo.Invoke.
+                Exception exception = Assert.Throws(
+                    PlatformDetection.IsNativeAot ? typeof(TargetInvocationException) : typeof(InvalidOperationException),
                     () => typeof(ThrowingConstructorTarget).GetCustomAttribute<ThrowingConstructorAttribute>());
+                if (PlatformDetection.IsNativeAot)
+                {
+                    exception = Assert.IsType<InvalidOperationException>(exception.InnerException);
+                }
                 Assert.Equal("Attribute constructor failure", exception.Message);
             }
         }
@@ -146,6 +152,42 @@ namespace System.Reflection.Tests
 
         [ThrowingConstructor("Attribute constructor failure")]
         private sealed class ThrowingConstructorTarget { }
+
+        public static IEnumerable<object[]> GenericConstructorArguments_TestData()
+        {
+            yield return new object[] { typeof(GenericConstructorAttribute<string>), "value" };
+            yield return new object[] { typeof(GenericConstructorAttribute<Type>), typeof(string) };
+            yield return new object[] { typeof(GenericConstructorAttribute<object>), 42 };
+            yield return new object[] { typeof(GenericConstructorAttribute<string[]>), new[] { "first", "second" } };
+            yield return new object[] { typeof(GenericConstructorAttribute<int>), int.MinValue };
+            yield return new object[] { typeof(GenericConstructorAttribute<ConstructorEnum>), ConstructorEnum.Negative };
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericConstructorArguments_TestData))]
+        public void GenericConstructorsUseExactDeclaringType(Type attributeType, object expected)
+        {
+            Attribute attribute = typeof(GenericConstructorArguments).GetCustomAttribute(attributeType);
+
+            Assert.IsType(attributeType, attribute);
+            Assert.Equal(expected, attributeType.GetProperty(nameof(GenericConstructorAttribute<object>.Value)).GetValue(attribute));
+        }
+
+        [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+        public sealed class GenericConstructorAttribute<T> : Attribute
+        {
+            public T Value { get; }
+
+            public GenericConstructorAttribute(T value) => Value = value;
+        }
+
+        [GenericConstructor<string>("value")]
+        [GenericConstructor<Type>(typeof(string))]
+        [GenericConstructor<object>(42)]
+        [GenericConstructor<string[]>(new[] { "first", "second" })]
+        [GenericConstructor<int>(int.MinValue)]
+        [GenericConstructor<ConstructorEnum>(ConstructorEnum.Negative)]
+        private sealed class GenericConstructorArguments { }
 
         private class SameTypesAttribute : Attribute
         {
@@ -566,12 +608,13 @@ namespace System.Reflection.Tests
         {
             s_sideEffectLog.Clear();
 
-            CustomAttributeFormatException exception = Assert.Throws<CustomAttributeFormatException>(
+            Exception exception = Assert.Throws(
+                PlatformDetection.IsNativeAot ? typeof(TargetInvocationException) : typeof(CustomAttributeFormatException),
                 () => typeof(SideEffectTarget).GetCustomAttribute<SideEffectAttribute>());
 
-            // Property setter invocation wraps the original exception in a TargetInvocationException before
-            // AddCustomAttributes wraps that again as a CustomAttributeFormatException.
-            TargetInvocationException invocationException = Assert.IsType<TargetInvocationException>(exception.InnerException);
+            // CoreCLR adds a format-exception wrapper; NativeAOT propagates the reflection invocation exception.
+            TargetInvocationException invocationException = Assert.IsType<TargetInvocationException>(
+                PlatformDetection.IsNativeAot ? exception : exception.InnerException);
             Assert.IsType<InvalidOperationException>(invocationException.InnerException);
             Assert.Equal(new[] { "ctor", "first:1", "second:2" }, s_sideEffectLog);
         }
