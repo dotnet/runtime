@@ -26,6 +26,33 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
+//------------------------------------------------------------------------
+// AreUpper32BitsZero: Check whether the last instruction zeroed the upper
+// 32 bits of a register, without crossing control-flow or GC boundaries.
+//
+bool emitter::AreUpper32BitsZero(regNumber reg) const
+{
+    if (!m_compiler->opts.OptimizationEnabled() || !emitCanPeepholeLastIns() || (emitLastIns->idReg1() != reg))
+    {
+        return false;
+    }
+
+    switch (emitLastIns->idIns())
+    {
+        case INS_lbu:
+        case INS_lhu:
+        case INS_lwu:
+        case INS_slt:
+        case INS_sltu:
+        case INS_slti:
+        case INS_sltiu:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 const instruction emitJumpKindInstructions[] = {
     INS_nop,
 
