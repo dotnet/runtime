@@ -25,6 +25,11 @@ public class EnumIntrinsics
         TestGenericEnums();
         TestDifferentUnderlyingTypes();
         TestCornerCases();
+
+        TestNullableArgument(SimpleEnum.A, null, false);
+        TestNullableArgument(SimpleEnum.B, null, false);
+        TestNullableArgument(SimpleEnum.A, SimpleEnum.A, true);
+        TestNullableArgument(SimpleEnum.A, SimpleEnum.B, false);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -103,13 +108,8 @@ public class EnumIntrinsics
         Assert.True(SimpleEnum.A.Equals(boxedB));
     }
 
-    [Theory]
-    [InlineData(SimpleEnum.A, null, false)]
-    [InlineData(SimpleEnum.B, null, false)]
-    [InlineData(SimpleEnum.A, SimpleEnum.A, true)]
-    [InlineData(SimpleEnum.A, SimpleEnum.B, false)]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TestNullableArgument(SimpleEnum left, SimpleEnum? right, bool expected)
+    private static void TestNullableArgument(SimpleEnum left, SimpleEnum? right, bool expected)
     {
         object boxedLeft = left;
         object boxedRight = right;
