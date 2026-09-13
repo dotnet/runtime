@@ -359,27 +359,20 @@ namespace System.Collections
 
             int count = IEnumerableCount(values);
 
-            byte[] array;
-            if (count != -1)
-            {
-                if (count > int.MaxValue / BitsPerInt32)
-                {
-                    throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
-                }
+            if (count == -1)
+                return CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
 
-                bitLength = count * BitsPerInt32;
-                array = AllocateByteArray(bitLength);
-                Span<int> intSpan = MemoryMarshal.Cast<byte, int>(array);
+            if (count > int.MaxValue / BitsPerInt32)
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
 
-                int index = 0;
-                foreach (int value in values)
-                {
-                    intSpan[index++] = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
-                }
-            }
-            else
+            bitLength = count * BitsPerInt32;
+            byte[] array = AllocateByteArray(bitLength);
+            Span<int> intSpan = MemoryMarshal.Cast<byte, int>(array);
+
+            int index = 0;
+            foreach (int value in values)
             {
-                array = CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+                intSpan[index++] = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
             }
             return array;
         }
@@ -416,27 +409,21 @@ namespace System.Collections
 
             int count = IEnumerableCount(values);
 
-            byte[] array;
-            if (count != -1)
-            {
-                if (count > int.MaxValue / BitsPerByte)
-                {
-                    throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(values));
-                }
+            if (count == -1)
+                return CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
 
-                bitLength = count * BitsPerByte;
-                array = AllocateByteArray(bitLength);
+            if (count > int.MaxValue / BitsPerByte)
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(values));
 
-                int index = 0;
-                foreach (byte value in values)
-                {
-                    array[index++] = value;
-                }
-            }
-            else
+            bitLength = count * BitsPerByte;
+            byte[] array = AllocateByteArray(bitLength);
+
+            int index = 0;
+            foreach (byte value in values)
             {
-                array = CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+                array[index++] = value;
             }
+
             return array;
         }
 
@@ -466,30 +453,27 @@ namespace System.Collections
 
             int count = IEnumerableCount(values);
 
-            byte[] array;
-            if (count != -1)
+            if (count == -1)
+                return CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+
+            bitLength = count;
+            byte[] array = AllocateByteArray(bitLength);
+
+            using IEnumerator<bool> enumerator = values.GetEnumerator();
+
+            int index = 0;
+            while (enumerator.MoveNext())
             {
-                bitLength = count;
-                array = AllocateByteArray(bitLength);
-
-                IEnumerator<bool> enumerator = values.GetEnumerator();
-
-                int index = 0;
-                while (enumerator.MoveNext())
+                byte value = 0;
+                for (byte i = 0; i < BitsPerByte; i++)
                 {
-                    byte value = 0;
-                    for (byte i = 0; i < BitsPerByte; i++)
-                    {
-                        value |= (byte)(Convert.ToByte(enumerator.Current) << i);
-                        if (!enumerator.MoveNext())
-                            break;
-                    }
-                    array[index++] = value;
+                    if (enumerator.Current)
+                        value |= (byte)(1 << i);
+
+                    if (!enumerator.MoveNext())
+                        break;
                 }
-            }
-            else
-            {
-                array = CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+                array[index++] = value;
             }
             return array;
         }
@@ -499,9 +483,7 @@ namespace System.Collections
         {
             using ValueListBuilder<T> valueList = new ValueListBuilder<T>(stackalloc T[256 / sizeof(T)]);
             foreach (T value in values)
-            {
                 valueList.Append(value);
-            }
 
             ReadOnlySpan<T> span = valueList.AsSpan();
 
@@ -523,11 +505,12 @@ namespace System.Collections
 
         private static int IEnumerableCount<T>(IEnumerable<T> values)
         {
-            int result = (values as ICollection<T>)?.Count
+            return (values as ICollection<T>)?.Count
                 ?? (values as IReadOnlyCollection<T>)?.Count
+                ?? (values as ICollection)?.Count
                 ?? -1;
-            return result;
         }
+
         private static byte[] CreateArray(ReadOnlySpan<int> values, out int bitLength)
         {
             if (values.Length > int.MaxValue / BitsPerInt32)
