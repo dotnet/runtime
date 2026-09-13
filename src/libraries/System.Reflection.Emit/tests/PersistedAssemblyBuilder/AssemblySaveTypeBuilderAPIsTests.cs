@@ -1011,6 +1011,29 @@ namespace System.Reflection.Emit.Tests
             Assert.False(TypeBuilder.GetMethod(instantiatedTypeBuilder2, methodBuilder).ContainsGenericParameters);
         }
 
+        [Fact]
+        public void IsByRefLike_TypeBuilderAndConstructedTypes_ReturnsFalse()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
+
+            Type[] types =
+            [
+                type,
+                typeParams[0],
+                type.MakeGenericType(typeof(int)),
+                type.MakeArrayType(),
+                type.MakeArrayType(2),
+                type.MakePointerType(),
+                type.MakeByRefType(),
+                typeParams[0].MakeArrayType(),
+                typeParams[0].MakePointerType(),
+                typeParams[0].MakeByRefType(),
+            ];
+
+            Assert.All(types, t => Assert.False(t.IsByRefLike));
+        }
+
         [Theory]
         [InlineData(typeof(Span<>), true)]
         [InlineData(typeof(ReadOnlySpan<>), true)]
