@@ -498,6 +498,27 @@ namespace System.Reflection.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void Invoke_EmittedVirtualMethod_SharedThunk()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(nameof(Invoke_EmittedVirtualMethod_SharedThunk)), AssemblyBuilderAccess.RunAndCollect);
+            TypeBuilder typeBuilder = assembly.DefineDynamicModule("Module").DefineType("Target", TypeAttributes.Public);
+            const string MethodName = "GetValue";
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+                MethodName, MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.NewSlot,
+                typeof(int), Type.EmptyTypes);
+            ILGenerator il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4, 42);
+            il.Emit(OpCodes.Ret);
+            Type targetType = typeBuilder.CreateType()!;
+            object target = Activator.CreateInstance(targetType)!;
+            MethodInfo method = targetType.GetMethod(MethodName)!;
+
+            Assert.Equal(42, method.Invoke(target, null));
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
