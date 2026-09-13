@@ -55,6 +55,7 @@ The following MSBuild properties will trigger a relinking during the WASI build 
 - **`EnableDiagnostics`** - `/p:EnableDiagnostics=true` - Enables or disables diagnostic features in the native runtime.
 - **`WasmProfilers`** - `/p:WasmProfilers=...` - Changes profiler configuration in the native runtime.
 - **`WasmEnableSIMD`** - `/p:WasmEnableSIMD=true` - Enables or disables SIMD instruction support.
+- **`WasmEnableRelaxedSimd`** - `/p:WasmEnableRelaxedSimd=true` - Enables relaxed SIMD instruction support and requires `WasmEnableSIMD=true`.
 - **`WasiBuildArgs`** - Any change to `/p:WasiBuildArgs=...` (custom build flags or feature toggles) can trigger a relink.
 - **Configuration/Target Architecture** - Changing `/p:Configuration=Debug|Release` or `/p:RuntimeIdentifier=wasi-wasm`, etc., may require relinking.
 
