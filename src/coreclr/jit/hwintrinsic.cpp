@@ -1383,7 +1383,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig, CORINFO_Instruct
     }
 #endif // DEBUG
 
-    if (sig->hasThis())
+    // Unmapped nested ISAs have no table entries, independently of target support.
+    if ((isa == InstructionSet_NONE) || sig->hasThis())
     {
         return NI_Illegal;
     }
