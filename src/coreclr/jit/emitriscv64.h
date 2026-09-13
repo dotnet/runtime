@@ -413,7 +413,7 @@ inline static bool isFloatReg(regNumber reg)
 /************************************************************************/
 
 public:
-bool AreUpper32BitsZero(regNumber reg) const;
+bool AreUpper32BitsZero(regNumber reg);
 
 void emitIns(instruction ins);
 
