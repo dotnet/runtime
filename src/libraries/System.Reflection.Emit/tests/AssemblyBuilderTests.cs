@@ -291,12 +291,16 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { 0xAB }, CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
             // An enum tag must resolve to an enum, not just a loadable type.
             yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagEnum }, CustomAttributeBlob.PackedString("System.String"), CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
-            // Type tag with an empty (zero-length) packed type name.
-            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString(""), CustomAttributeBlob.U2(0)), typeof(CustomAttributeFormatException) };
+            // Type tag with an empty (zero-length) packed type name. CoreCLR rejects the empty name as a
+            // malformed blob field; Mono resolves whatever the name decodes to and reports the failure to
+            // find it, so an empty name surfaces as a type load failure there.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString(""), CustomAttributeBlob.U2(0)), PlatformDetection.IsMonoRuntime ? typeof(TypeLoadException) : typeof(CustomAttributeFormatException) };
             // Type tag whose packed name starts with an embedded NUL, truncating it to empty.
             yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString("\0System.Int32"), CustomAttributeBlob.U2(0)), typeof(TypeLoadException) };
-            // Type tag, assembly-qualified name pointing at a nonexistent assembly.
-            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString("Ca.Managed.Test.NoSuchType, Ca_Managed_Test_NoSuchAssembly_12345"), CustomAttributeBlob.U2(0)), typeof(FileNotFoundException) };
+            // Type tag, assembly-qualified name pointing at a nonexistent assembly. CoreCLR reports the
+            // unresolvable assembly reference; Mono's custom attribute decoder has no assembly load
+            // failure to report and surfaces every unresolved name as a type load failure.
+            yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString("Ca.Managed.Test.NoSuchType, Ca_Managed_Test_NoSuchAssembly_12345"), CustomAttributeBlob.U2(0)), PlatformDetection.IsMonoRuntime ? typeof(TypeLoadException) : typeof(FileNotFoundException) };
             // Type tag, unqualified name that does not resolve against the requesting assembly or corelib.
             yield return new object[] { CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new byte[] { CustomAttributeBlob.TagType }, CustomAttributeBlob.PackedString("Ca_Managed_Test_NoSuchNamespace.Ca_Managed_Test_NoSuchType_12345"), CustomAttributeBlob.U2(0)), typeof(TypeLoadException) };
             // Array tag with a negative-but-not-(-1) length.
@@ -345,14 +349,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SetCustomAttribute_ConstructorInfo_ByteArray_NamedFieldTypeMismatch_WrapsArgumentException()
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_NamedFieldTypeMismatch_ThrowsCustomAttributeFormatException()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
 
-            // "_i" is declared int, but the named entry tags its value as a string. FieldInfo.SetValue
-            // throws a plain ArgumentException here - unlike a property setter, there is no
-            // TargetInvocationException wrapping layer first.
+            // "_i" is declared int, but the named entry tags its value as a string. On CoreCLR the value is
+            // decoded as the tagged type and FieldInfo.SetValue then throws a plain ArgumentException -
+            // unlike a property setter, there is no TargetInvocationException wrapping layer first.
             byte[] blob = CustomAttributeBlob.Concat(
                 CustomAttributeBlob.Prolog,
                 CustomAttributeBlob.I4(1),
@@ -361,7 +365,16 @@ namespace System.Reflection.Emit.Tests
             assembly.SetCustomAttribute(constructor, blob);
 
             CustomAttributeFormatException exception = Assert.Throws<CustomAttributeFormatException>(() => assembly.GetCustomAttributes().ToArray());
-            Assert.IsType<ArgumentException>(exception.InnerException);
+            if (PlatformDetection.IsMonoRuntime)
+            {
+                // Mono decodes a named argument with the type of the member it is assigned to, so it
+                // rejects the mismatched tag while parsing rather than while assigning the value.
+                Assert.Null(exception.InnerException);
+            }
+            else
+            {
+                Assert.IsType<ArgumentException>(exception.InnerException);
+            }
         }
 
         public static IEnumerable<object[]> MalformedParameterlessBlob_TestData()
