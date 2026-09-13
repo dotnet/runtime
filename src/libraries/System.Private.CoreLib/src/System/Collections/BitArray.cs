@@ -346,7 +346,42 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            _array = CreateArray(values, CreateArray, out _bitLength);
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(IEnumerable<int> values, out int bitLength)
+        {
+            if (values is int[] valuesArray)
+                return CreateArray(valuesArray, out bitLength);
+
+            if (values is List<int> valuesList)
+                return CreateArray(CollectionsMarshal.AsSpan(valuesList), out bitLength);
+
+            int count = IEnumerableCount(values);
+
+            byte[] array;
+            if (count != -1)
+            {
+                if (count > int.MaxValue / BitsPerInt32)
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
+                }
+
+                bitLength = count * BitsPerInt32;
+                array = AllocateByteArray(bitLength);
+                Span<int> intSpan = MemoryMarshal.Cast<byte, int>(array);
+
+                int index = 0;
+                foreach (int value in values)
+                {
+                    intSpan[index++] = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
+                }
+            }
+            else
+            {
+                array = CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+            }
+            return array;
         }
 
         /// <summary>
@@ -368,7 +403,41 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            _array = CreateArray(values, CreateArray, out _bitLength);
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(IEnumerable<byte> values, out int bitLength)
+        {
+            if (values is byte[] valuesArray)
+                return CreateArray(valuesArray, out bitLength);
+
+            if (values is List<byte> valuesList)
+                return CreateArray(CollectionsMarshal.AsSpan(valuesList), out bitLength);
+
+            int count = IEnumerableCount(values);
+
+            byte[] array;
+            if (count != -1)
+            {
+                if (count > int.MaxValue / BitsPerByte)
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(values));
+                }
+
+                bitLength = count * BitsPerByte;
+                array = AllocateByteArray(bitLength);
+
+                int index = 0;
+                foreach (byte value in values)
+                {
+                    array[index++] = value;
+                }
+            }
+            else
+            {
+                array = CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+            }
+            return array;
         }
 
         /// <summary>
@@ -377,7 +446,6 @@ namespace System.Collections
         /// </summary>
         /// <param name="values">An enumerable collection of Boolean values to copy, where each value represents a single bit.</param>
         /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
-        /// <exception cref="ArgumentException">The length of <paramref name="values"/> is greater than <see cref="int.MaxValue"/>.</exception>
         /// <remarks>
         /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
         /// </remarks>
@@ -385,48 +453,81 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            _array = CreateArray(values, CreateArray, out _bitLength);
+            _array = CreateArray(values, out _bitLength);
         }
 
-        private static byte[] CreateArray<T>(IEnumerable<T> values, CreateArrayDelegate<T> createArrayDelegate, out int bitLength)
-            where T : unmanaged
+        private static byte[] CreateArray(IEnumerable<bool> values, out int bitLength)
         {
-            const int MaxBytesOnStack = 4096;
-            int maxItems = MaxBytesOnStack / sizeof(T);
-            int count = TryGetCount(values, out int valuesCount) ? Math.Min(valuesCount, maxItems) : maxItems;
+            if (values is bool[] valuesArray)
+                return CreateArray(valuesArray, out bitLength);
 
-            Span<T> buffer = stackalloc T[count];
-            ValueListBuilder<T> builder = new(buffer);
+            if (values is List<bool> valuesList)
+                return CreateArray(CollectionsMarshal.AsSpan(valuesList), out bitLength);
 
-            foreach (T value in values)
+            int count = IEnumerableCount(values);
+
+            byte[] array;
+            if (count != -1)
             {
-                builder.Append(value);
-            }
+                bitLength = count;
+                array = AllocateByteArray(bitLength);
 
-            byte[] array = createArrayDelegate(builder.AsSpan(), out bitLength);
+                IEnumerator<bool> enumerator = values.GetEnumerator();
+
+                int index = 0;
+                while (enumerator.MoveNext())
+                {
+                    byte value = 0;
+                    for (byte i = 0; i < BitsPerByte; i++)
+                    {
+                        value |= (byte)(Convert.ToByte(enumerator.Current) << i);
+                        if (!enumerator.MoveNext())
+                            break;
+                    }
+                    array[index++] = value;
+                }
+            }
+            else
+            {
+                array = CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+            }
             return array;
         }
 
-        private static bool TryGetCount<T>(IEnumerable<T> values, out int count)
+        private static byte[] CreateArrayFromUnknownSizeIEnumerable<T>(IEnumerable<T> values, out int bitLength)
+            where T : unmanaged
         {
-            count = -1;
-            if (values is ICollection<T> collection)
+            using ValueListBuilder<T> valueList = new ValueListBuilder<T>(stackalloc T[256 / sizeof(T)]);
+            foreach (T value in values)
             {
-                count = collection.Count;
-                return true;
+                valueList.Append(value);
             }
 
-            if (values is IReadOnlyCollection<T> readonlyCollection)
+            ReadOnlySpan<T> span = valueList.AsSpan();
+
+            if (typeof(T) == typeof(int))
             {
-                count = readonlyCollection.Count;
-                return true;
+                return CreateArray(MemoryMarshal.Cast<T, int>(span), out bitLength);
+            }
+            if (typeof(T) == typeof(byte))
+            {
+                return CreateArray(MemoryMarshal.Cast<T, byte>(span), out bitLength);
+            }
+            if (typeof(T) == typeof(bool))
+            {
+                return CreateArray(MemoryMarshal.Cast<T, bool>(span), out bitLength);
             }
 
-            return false;
+            throw new InvalidOperationException();
         }
 
-        private delegate byte[] CreateArrayDelegate<T>(ReadOnlySpan<T> values, out int bitLength);
-
+        private static int IEnumerableCount<T>(IEnumerable<T> values)
+        {
+            int result = (values as ICollection<T>)?.Count
+                ?? (values as IReadOnlyCollection<T>)?.Count
+                ?? -1;
+            return result;
+        }
         private static byte[] CreateArray(ReadOnlySpan<int> values, out int bitLength)
         {
             if (values.Length > int.MaxValue / BitsPerInt32)
