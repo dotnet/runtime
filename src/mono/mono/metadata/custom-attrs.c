@@ -62,6 +62,9 @@ bcheck_blob (const char *ptr, int bump, const char *endp, MonoError *error);
 static gboolean
 decode_blob_value_checked (const char *ptr, const char *endp, guint32 *size_out, const char **retp, MonoError *error);
 
+static void
+set_custom_attr_fmt_error (MonoError *error);
+
 static guint32
 custom_attrs_idx_from_class (MonoClass *klass);
 
@@ -228,6 +231,39 @@ find_event_index (MonoClass *klass, MonoEvent *event)
 }
 
 /*
+ * Replace every byte of @n that is not part of a valid UTF-8 sequence with U+FFFD.  Custom
+ * attribute blobs are untrusted input, so a type name in one is not necessarily valid UTF-8, and
+ * raw bytes cannot be turned into a managed string: they would fail the UTF-16 conversion while
+ * building the exception (reported as an ExecutionEngineException) instead of the TypeLoadException
+ * the caller expects.  CoreCLR decodes the name with the same replacement before resolving it.
+ *
+ * Returns a newly allocated string.
+ */
+static char*
+cattr_sanitize_type_name (const char *n)
+{
+	GString *res = g_string_new ("");
+	const char *p = n;
+	size_t remaining = strlen (n);
+
+	while (remaining > 0) {
+		const char *invalid = NULL;
+		if (g_utf8_validate (p, (gssize)remaining, &invalid)) {
+			g_string_append_len (res, p, (gssize)remaining);
+			break;
+		}
+		/* Keep the valid prefix, then skip the single offending byte. */
+		size_t valid_len = (size_t)(invalid - p);
+		g_string_append_len (res, p, (gssize)valid_len);
+		g_string_append (res, "\xEF\xBF\xBD");
+		remaining -= valid_len + 1;
+		p = invalid + 1;
+	}
+
+	return g_string_free (res, FALSE);
+}
+
+/*
  * Load the type with name @n on behalf of image @image.  On failure sets @error and returns NULL.
  * The @is_enum flag only affects the error message that's displayed on failure.
  */
@@ -236,7 +272,16 @@ cattr_type_from_name (char *n, MonoImage *image, gboolean is_enum, MonoError *er
 {
 	ERROR_DECL (inner_error);
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
-	MonoType *t = mono_reflection_type_from_name_checked (n, alc, image, inner_error);
+	char *sanitized = NULL;
+	size_t len = strlen (n);
+	MonoType *t;
+
+	if (len > 0 && !g_utf8_validate (n, (gssize)len, NULL)) {
+		sanitized = cattr_sanitize_type_name (n);
+		n = sanitized;
+	}
+
+	t = mono_reflection_type_from_name_checked (n, alc, image, inner_error);
 	if (!t) {
 		mono_error_set_type_load_name (error, g_strdup(n), NULL,
 					       "Could not load %s %s while decoding custom attribute: %s",
@@ -244,8 +289,8 @@ cattr_type_from_name (char *n, MonoImage *image, gboolean is_enum, MonoError *er
 					       n,
 					       mono_error_get_message (inner_error));
 		mono_error_cleanup (inner_error);
-		return NULL;
 	}
+	g_free (sanitized);
 	return t;
 }
 
@@ -399,7 +444,9 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (klass_of_t)->type;
 			goto handle_enum;
 		} else {
-			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (klass_of_t));
+			/* Only enums can be encoded; any other value type is malformed here. */
+			set_custom_attr_fmt_error (error);
+			return NULL;
 		}
 		break;
 	}
@@ -472,6 +519,11 @@ MONO_RESTORE_WARNING
 				if (etype == CATTR_BOXED_VALUETYPE_PREFIX)
 					/* See Partition II, Appendix B3 */
 					etype = MONO_TYPE_OBJECT;
+				else if (etype < MONO_TYPE_BOOLEAN || etype > MONO_TYPE_STRING) {
+					/* Not an element type that can appear in a custom attribute array. */
+					set_custom_attr_fmt_error (error);
+					return NULL;
+				}
 				simple_type.type = (MonoTypeEnum)etype;
 				tklass = mono_class_from_mono_type_internal (&simple_type);
 			}
@@ -490,12 +542,20 @@ MONO_RESTORE_WARNING
 			return_val_if_nok (error, NULL);
 			p += slen;
 			subc = mono_class_from_mono_type_internal (enum_type);
+			if (!m_class_is_enumtype (subc)) {
+				/* The blob claims an enum but the name resolved to something else.  Decoding the
+				 * value as that type below would write through a NULL out_obj for a reference
+				 * type, and boxing it as an unboxed value would be unsound for any other class. */
+				set_custom_attr_fmt_error (error);
+				return NULL;
+			}
 		} else if (subt >= MONO_TYPE_BOOLEAN && subt <= MONO_TYPE_R8) {
 			MonoType simple_type = {{0}};
 			simple_type.type = (MonoTypeEnum)subt;
 			subc = mono_class_from_mono_type_internal (&simple_type);
 		} else {
-			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
+			set_custom_attr_fmt_error (error);
+			return NULL;
 		}
 		val = load_cattr_value (image, m_class_get_byval_arg (subc), NULL, p, boundp, end, error);
 		if (is_ok (error)) {
@@ -522,6 +582,17 @@ MONO_RESTORE_WARNING
 			*end = p;
 			return NULL;
 		}
+
+		/* The length is encoded as a signed int32; anything else cannot be an array length. */
+		if (alen > (guint32)MONO_ARRAY_MAX_INDEX) {
+			mono_error_set_overflow (error);
+			return NULL;
+		}
+
+		/* Every element consumes at least one byte, so reject lengths that cannot possibly fit in
+		 * what is left of the blob before allocating an array for them. */
+		if (alen > 0 && !bcheck_blob (p, GUINT32_TO_INT (alen - 1), boundp, error))
+			return NULL;
 
 		arr = mono_array_new_checked (tklass, alen, error);
 		return_val_if_nok (error, NULL);
@@ -604,14 +675,17 @@ MONO_RESTORE_WARNING
 				MonoObject *item = NULL;
 				load_cattr_value (image, m_class_get_byval_arg (tklass), &item, p, boundp, &p, error);
 				if (!is_ok (error))
-					return NULL;
+					break;
 				mono_array_setref_internal (arr, i, item);
 			}
 			HANDLE_FUNCTION_RETURN ();
+			return_val_if_nok (error, NULL);
 			break;
 		}
 		default:
-			g_error ("Type 0x%02x not handled in custom attr array decoding", basetype);
+			/* A blob can name an element type that cannot appear in an array. */
+			set_custom_attr_fmt_error (error);
+			return NULL;
 		}
 		*end = p;
 		g_assert (out_obj);
@@ -620,7 +694,9 @@ MONO_RESTORE_WARNING
 		return NULL;
 	}
 	default:
-		g_error ("Type 0x%02x not handled in custom attr value decoding", type);
+		/* The argument type is not one that can be encoded in a custom attribute blob. */
+		set_custom_attr_fmt_error (error);
+		return NULL;
 	}
 	return NULL;
 }
@@ -732,7 +808,10 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (klass_of_t)->type;
 			goto handle_enum;
 		} else {
-			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (klass_of_t));
+			/* Only enums can be encoded; any other value type is malformed here. */
+			set_custom_attr_fmt_error (error);
+			g_free (result);
+			return NULL;
 		}
 		break;
 	}
@@ -790,6 +869,12 @@ MONO_RESTORE_WARNING
 				if (etype == CATTR_BOXED_VALUETYPE_PREFIX)
 					/* See Partition II, Appendix B3 */
 					etype = MONO_TYPE_OBJECT;
+				else if (etype < MONO_TYPE_BOOLEAN || etype > MONO_TYPE_STRING) {
+					/* Not an element type that can appear in a custom attribute array. */
+					set_custom_attr_fmt_error (error);
+					g_free (result);
+					return NULL;
+				}
 				simple_type.type = (MonoTypeEnum)etype;
 				tklass = mono_class_from_mono_type_internal (&simple_type);
 			}
@@ -808,12 +893,20 @@ MONO_RESTORE_WARNING
 			return_val_if_nok (error, NULL);
 			p += slen;
 			subc = mono_class_from_mono_type_internal (enum_type);
+			if (!m_class_is_enumtype (subc)) {
+				/* The blob claims an enum, but the name resolved to something else. */
+				set_custom_attr_fmt_error (error);
+				g_free (result);
+				return NULL;
+			}
 		} else if (subt >= MONO_TYPE_BOOLEAN && subt <= MONO_TYPE_R8) {
 			MonoType simple_type = {{0}};
 			simple_type.type = (MonoTypeEnum)subt;
 			subc = mono_class_from_mono_type_internal (&simple_type);
 		} else {
-			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
+			set_custom_attr_fmt_error (error);
+			g_free (result);
+			return NULL;
 		}
 		result->value.primitive = load_cattr_value_noalloc (image, m_class_get_byval_arg (subc), p, boundp, end, error);
 		return result;
@@ -830,6 +923,19 @@ MONO_RESTORE_WARNING
 			return NULL;
 		}
 
+		/* The length is encoded as a signed int32, and every element consumes at least one byte,
+		 * so reject lengths that cannot describe what is left of the blob before allocating. */
+		if (alen > (guint32)MONO_ARRAY_MAX_INDEX ||
+		    alen > (SIZE_MAX - sizeof (MonoCustomAttrValueArray)) / sizeof (MonoCustomAttrValue)) {
+			mono_error_set_overflow (error);
+			g_free (result);
+			return NULL;
+		}
+		if (alen > 0 && !bcheck_blob (p, GUINT32_TO_INT (alen - 1), boundp, error)) {
+			g_free (result);
+			return NULL;
+		}
+
 		result->value.array = g_malloc (sizeof (MonoCustomAttrValueArray) + alen * sizeof (MonoCustomAttrValue));
 		result->value.array->len = alen;
 
@@ -843,7 +949,10 @@ MONO_RESTORE_WARNING
 		return result;
 	}
 	default:
-		g_error ("Type 0x%02x not handled in custom attr value decoding", type);
+		/* The argument type is not one that can be encoded in a custom attribute blob. */
+		set_custom_attr_fmt_error (error);
+		g_free (result);
+		return NULL;
 	}
 	return NULL;
 }
@@ -1121,6 +1230,82 @@ leave:
 	return is_ok (error);
 }
 
+/*
+ * cattr_encoded_tag_for_type:
+ *
+ * Returns the FieldOrPropType tag (ECMA-335 II.23.3) a named custom attribute argument of type @t
+ * has to be encoded with, or 0 for types this decoder makes no assumption about.
+ */
+static int
+cattr_encoded_tag_for_type (MonoType *t)
+{
+	if (m_type_is_byref (t))
+		return 0;
+
+	switch (t->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_STRING:
+		return t->type;
+	case MONO_TYPE_OBJECT:
+		return CATTR_BOXED_VALUETYPE_PREFIX;
+	case MONO_TYPE_CLASS:
+		return mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), mono_defaults.systemtype_class) ? CATTR_TYPE_SYSTEM_TYPE : 0;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_GENERICINST:
+		return m_class_is_enumtype (mono_class_from_mono_type_internal (t)) ? MONO_TYPE_ENUM : 0;
+	default:
+		return 0;
+	}
+}
+
+/*
+ * cattr_named_arg_type_matches:
+ *
+ * Check the FieldOrPropType tag @tag of a named argument against the type @t of the field or
+ * property it is assigned to.  @is_array is TRUE when the tag was preceded by ELEMENT_TYPE_SZARRAY,
+ * in which case @tag describes the element type.  The value is decoded using @t, so a tag that
+ * describes a different type would silently produce a value of the wrong type instead of the
+ * CustomAttributeFormatException the assignment is expected to fail with.  Returns FALSE only for
+ * encodings that definitely do not describe @t.
+ */
+static gboolean
+cattr_named_arg_type_matches (MonoType *t, int tag, gboolean is_array)
+{
+	int expected;
+
+	if (is_array) {
+		if (m_type_is_byref (t) || t->type != MONO_TYPE_SZARRAY)
+			return FALSE;
+		/* For SZARRAY the type data holds the element class. */
+		t = m_class_get_byval_arg (m_type_data_get_klass (t));
+	} else if (!m_type_is_byref (t) && t->type == MONO_TYPE_SZARRAY) {
+		return FALSE;
+	}
+
+	expected = cattr_encoded_tag_for_type (t);
+	if (expected == 0 || tag == expected)
+		return TRUE;
+
+	if (expected == MONO_TYPE_ENUM) {
+		/* An enum may also be encoded with its underlying primitive type. */
+		MonoType *basetype = mono_class_enum_basetype_internal (mono_class_from_mono_type_internal (t));
+		return basetype != NULL && tag == basetype->type;
+	}
+
+	return FALSE;
+}
+
 static MonoObjectHandle
 create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoError *error)
 {
@@ -1145,6 +1330,13 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	mono_class_init_internal (method->klass);
 
 	if (len == 0) {
+		/* An empty blob is shorthand for "no arguments at all", which only a parameterless
+		 * constructor can be called with. */
+		if (mono_method_signature_internal (method)->param_count != 0) {
+			set_custom_attr_fmt_error (error);
+			goto fail;
+		}
+
 		attr = mono_object_new_handle (method->klass, error);
 		goto_if_nok (error, fail);
 
@@ -1154,8 +1346,10 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		goto exit;
 	}
 
-	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
+	if (len < 2 || read16 (p) != 0x0001) { /* Prolog */
+		set_custom_attr_fmt_error (error);
 		goto fail;
+	}
 
 	/*g_print ("got attr %s\n", method->klass->name);*/
 
@@ -1188,25 +1382,30 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	if (named + 1 < data_end) {
 		num_named = read16 (named);
 		named += 2;
+	} else if (named == data_end && mono_method_signature_internal (method)->param_count > 0) {
+		/* CoreCLR allows a blob with fixed arguments to end right after them, without the
+		 * named argument count. */
+		num_named = 0;
 	} else {
-		/* CoreCLR allows p == data + len */
-		if (named == data_end)
-			num_named = 0;
-		else {
-			set_custom_attr_fmt_error (error);
-			goto fail;
-		}
+		set_custom_attr_fmt_error (error);
+		goto fail;
 	}
 	for (j = 0; j < num_named; j++) {
 		guint32 name_len;
 		char named_type, data_type;
+		gboolean data_is_array = FALSE;
 		if (!bcheck_blob (named, 1, data_end, error))
 			goto fail;
 		named_type = *named++;
+		if (named_type != CATTR_TYPE_FIELD && named_type != CATTR_TYPE_PROPERTY) {
+			set_custom_attr_fmt_error (error);
+			goto fail;
+		}
 		data_type = *named++; /* type of data */
 		if (data_type == MONO_TYPE_SZARRAY) {
 			if (!bcheck_blob (named, 0, data_end, error))
 				goto fail;
+			data_is_array = TRUE;
 			data_type = *named++;
 		}
 		if (data_type == MONO_TYPE_ENUM) {
@@ -1233,11 +1432,20 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		named += name_len;
 		if (named_type == CATTR_TYPE_FIELD) {
 			/* how this fail is a blackbox */
-			field = mono_class_get_field_from_name_full (mono_handle_class (attr), name, NULL);
-			if (!field) {
+			MonoClassField *named_field = mono_class_get_field_from_name_full (mono_handle_class (attr), name, NULL);
+			if (!named_field) {
 				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find a field with name %s", name);
 				goto fail;
 			}
+
+			if (!cattr_named_arg_type_matches (named_field->type, data_type, data_is_array)) {
+				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "The value encoded for field %s does not match its type", name);
+				goto fail;
+			}
+
+			/* Only publish the field once its value is about to be loaded: the cleanup path frees
+			 * VAL according to the type of FIELD. */
+			field = named_field;
 
 			MonoObject *param_obj;
 			val = load_cattr_value (image, field->type, &param_obj, named, data_end, &named, error);
@@ -1260,8 +1468,17 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			}
 
 			/* can we have more that 1 arg in a custom attr named property? */
-			prop_type = prop->get? mono_method_signature_internal (prop->get)->ret :
+			MonoType *named_prop_type = prop->get? mono_method_signature_internal (prop->get)->ret :
 			     mono_method_signature_internal (prop->set)->params [mono_method_signature_internal (prop->set)->param_count - 1];
+
+			if (!cattr_named_arg_type_matches (named_prop_type, data_type, data_is_array)) {
+				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "The value encoded for property %s does not match its type", name);
+				goto fail;
+			}
+
+			/* Only publish the type once its value is about to be loaded: the cleanup path frees
+			 * PPARAMS [0] according to PROP_TYPE. */
+			prop_type = named_prop_type;
 
 			MonoObject *param_obj;
 			pparams [0] = load_cattr_value (image, prop_type, &param_obj, named, data_end, &named, error);
@@ -1275,6 +1492,12 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 		g_free (name);
 		name = NULL;
+	}
+
+	if (named != data_end) {
+		/* Every byte of the blob has to be accounted for by the arguments it encodes. */
+		set_custom_attr_fmt_error (error);
+		goto fail;
 	}
 
 	goto exit;
