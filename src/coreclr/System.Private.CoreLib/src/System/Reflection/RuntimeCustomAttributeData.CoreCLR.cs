@@ -675,7 +675,8 @@ namespace System.Reflection
 
         private static object CreateCustomAttributeInstance(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
-            if (RuntimeType.GetMethodBase(ctor) is not RuntimeConstructorInfo constructor)
+            // A shared generic constructor handle does not preserve its declaring type's instantiation.
+            if (RuntimeType.GetMethodBase(type, ctor) is not RuntimeConstructorInfo constructor)
             {
                 throw new CustomAttributeFormatException();
             }
