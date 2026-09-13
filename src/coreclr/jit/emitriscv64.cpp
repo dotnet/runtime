@@ -41,7 +41,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg) const
     {
         case INS_lbu:
         case INS_lhu:
-        case INS_lwu:
         case INS_slt:
         case INS_sltu:
         case INS_slti:

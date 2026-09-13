@@ -7,33 +7,33 @@ using Xunit;
 
 public class Runtime_133829
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong LoadByte(ref byte value) => value;
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong LoadUShort(ref ushort value) => value;
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong LoadUInt(ref uint value) => value;
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong Carry(ulong left, ulong right)
     {
         uint carry = unchecked(left + right) < left ? 1u : 0u;
         return carry;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong CompareSigned(long left, long right)
     {
         uint result = left < right ? 1u : 0u;
         return result;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong Increment(uint value) => unchecked(value + 1);
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong Select(bool takeLoad, ref byte value, uint other)
     {
         uint result;
@@ -48,10 +48,10 @@ public class Runtime_133829
         return result;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static long LoadSigned(ref int value) => value;
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static ulong CheckedWiden(int value) => checked((ulong)value);
 
     [Fact]
