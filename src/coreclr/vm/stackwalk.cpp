@@ -2039,6 +2039,13 @@ ProcessFuncletsForGCReporting:
             case SFITER_SKIPPED_FRAME_FUNCTION:
                 if (!fSkippingFunclet)
                 {
+#ifdef TARGET_WASM
+                    if ((m_flags & FUNCTIONSONLY) &&
+                        (m_crawl.pFrame->GetFrameAttribs() & Frame::FRAME_ATTR_NO_MANAGED_ACTIVATION))
+                    {
+                        break;
+                    }
+#endif // TARGET_WASM
                     if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                     {
                         // If we are enumerating frames for GC reporting and we determined that

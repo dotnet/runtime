@@ -589,7 +589,7 @@ namespace Internal.JitInterface
         public static LoweringFlags GetLoweringFlags(MethodDesc method)
         {
             LoweringFlags flags = 0;
-            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg() || method.IsArrayAddressMethod())
             {
                 flags |= LoweringFlags.HasGenericContextArg;
             }
@@ -810,11 +810,13 @@ namespace Internal.JitInterface
                 }
             }
 
+#if READYTORUN
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly))
             {
                 result.Add(pointerType); // PE entrypoint parameter (encoded via 'p' suffix)
                 sigBuilder.Append('p');
             }
+#endif
 
             WasmResultType ps = new(result.ToArray());
             WasmResultType ret = returnIsVoid ? new(Array.Empty<WasmValueType>())
