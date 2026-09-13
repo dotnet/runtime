@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -105,7 +106,9 @@ public unsafe class Program
             });
     }
 
-    private static void VerifyReflectionAccess<TStruct, TField>(
+    private static void VerifyReflectionAccess<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TStruct,
+        TField>(
         TStruct value,
         string fieldName,
         int expectedOffset,
@@ -119,7 +122,7 @@ public unsafe class Program
 
         Assert.Equal(expectedOffset, fieldOffset);
 
-        RunWithPinnedBoxCrossingAtomicGranule(value, fieldOffset, Unsafe.SizeOf<TField>(), boxed =>
+        RunWithPinnedBoxAtReflectionSensitiveAddress(value, fieldOffset, Unsafe.SizeOf<TField>(), boxed =>
         {
             Assert.Equal(initialValue, (TField)field.GetValue(boxed)!);
             Assert.Equal(initialValue, (TField)field.GetValue(boxed)!);
@@ -137,7 +140,7 @@ public unsafe class Program
             throw new InvalidOperationException($"Field {nameof(PackedInt16.Value)} was not found.");
         int fieldOffset = Marshal.OffsetOf<PackedInt16>(nameof(PackedInt16.Value)).ToInt32();
 
-        RunWithPinnedBoxCrossingAtomicGranule(
+        RunWithPinnedBoxAtReflectionSensitiveAddress(
             new PackedInt16 { Value = InitialValue },
             fieldOffset,
             sizeof(short),
@@ -163,7 +166,7 @@ public unsafe class Program
 
         Assert.Equal(1, fieldOffset);
 
-        RunWithPinnedBoxCrossingAtomicGranule(
+        RunWithPinnedBoxAtReflectionSensitiveAddress(
             new PackedPointer { Value = (int*)InitialValue },
             fieldOffset,
             IntPtr.Size,
@@ -185,7 +188,7 @@ public unsafe class Program
             throw new InvalidOperationException($"Field {nameof(PackedPointer.Value)} was not found.");
         int fieldOffset = Marshal.OffsetOf<PackedPointer>(nameof(PackedPointer.Value)).ToInt32();
 
-        RunWithPinnedBoxCrossingAtomicGranule(
+        RunWithPinnedBoxAtReflectionSensitiveAddress(
             new PackedPointer { Value = (int*)InitialValue },
             fieldOffset,
             IntPtr.Size,
@@ -209,7 +212,7 @@ public unsafe class Program
             throw new InvalidOperationException($"Field {nameof(PackedFunctionPointer.Value)} was not found.");
         int fieldOffset = Marshal.OffsetOf<PackedFunctionPointer>(nameof(PackedFunctionPointer.Value)).ToInt32();
 
-        RunWithPinnedBoxCrossingAtomicGranule(
+        RunWithPinnedBoxAtReflectionSensitiveAddress(
             new PackedFunctionPointer { Value = (delegate*<void>)InitialValue },
             fieldOffset,
             IntPtr.Size,
@@ -230,13 +233,13 @@ public unsafe class Program
         PackedDouble value = new PackedDouble { Value = 1.25 };
         int fieldOffset = Marshal.OffsetOf<PackedDouble>(nameof(PackedDouble.Value)).ToInt32();
 
-        RunWithPinnedBoxCrossingAtomicGranule(value, fieldOffset, sizeof(double), boxed =>
+        RunWithPinnedBoxAtReflectionSensitiveAddress(value, fieldOffset, sizeof(double), boxed =>
         {
             Assert.True(boxed.Equals((object)value));
         });
     }
 
-    private static void RunWithPinnedBoxCrossingAtomicGranule<TStruct>(
+    private static void RunWithPinnedBoxAtReflectionSensitiveAddress<TStruct>(
         TStruct value,
         int fieldOffset,
         int fieldSize,
@@ -246,7 +249,9 @@ public unsafe class Program
         RunWithPinnedBox(
             value,
             fieldOffset,
-            fieldAddress => (fieldAddress & (Arm64AtomicGranuleSize - 1)) + fieldSize > Arm64AtomicGranuleSize,
+            fieldAddress => RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ?
+                (fieldAddress & (Arm64AtomicGranuleSize - 1)) + fieldSize > Arm64AtomicGranuleSize :
+                (fieldAddress & (fieldSize - 1)) != 0,
             action);
     }
 

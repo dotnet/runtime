@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Reflection
@@ -442,8 +441,7 @@ namespace System.Reflection
             // Object data is pointer-aligned. On 32-bit platforms, 8-byte
             // alignment cannot be established from the field offset alone.
             return alignment <= IntPtr.Size &&
-                (RuntimeInformation.ProcessArchitecture == Architecture.X86 ||
-                    (fieldOffset.ToInt64() & (alignment - 1)) == 0);
+                (fieldOffset.ToInt64() & (alignment - 1)) == 0;
         }
 
         private static FieldAccessorType GetPrimitiveAccessorTypeForStatic(Type fieldType)
