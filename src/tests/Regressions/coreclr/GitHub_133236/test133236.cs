@@ -73,6 +73,9 @@ public unsafe class Program
             initialValue: (nint)0x12345678,
             replacementValue: (nint)(-0x12345678));
 
+        VerifyDirectReflectionAccess();
+        VerifyFunctionPointerDirectReflectionAccess();
+        VerifyPointerDirectReflectionAccess();
         VerifyPointerReflectionAccess();
         VerifyValueTypeEquals();
     }
@@ -125,6 +128,30 @@ public unsafe class Program
         });
     }
 
+    private static void VerifyDirectReflectionAccess()
+    {
+        const short InitialValue = 0x1234;
+        const short ReplacementValue = -1234;
+
+        FieldInfo field = typeof(PackedInt16).GetField(nameof(PackedInt16.Value)) ??
+            throw new InvalidOperationException($"Field {nameof(PackedInt16.Value)} was not found.");
+        int fieldOffset = Marshal.OffsetOf<PackedInt16>(nameof(PackedInt16.Value)).ToInt32();
+
+        RunWithPinnedBoxCrossingAtomicGranule(
+            new PackedInt16 { Value = InitialValue },
+            fieldOffset,
+            sizeof(short),
+            boxed =>
+            {
+                ref PackedInt16 value = ref Unsafe.Unbox<PackedInt16>(boxed);
+                TypedReference reference = __makeref(value);
+
+                Assert.Equal(InitialValue, (short)field.GetValueDirect(reference));
+                field.SetValueDirect(reference, ReplacementValue);
+                Assert.Equal(ReplacementValue, value.Value);
+            });
+    }
+
     private static void VerifyPointerReflectionAccess()
     {
         const nint InitialValue = (nint)0x12345678;
@@ -146,6 +173,55 @@ public unsafe class Program
                 Assert.Equal(InitialValue, (nint)Pointer.Unbox(field.GetValue(boxed)!));
                 field.SetValue(boxed, Pointer.Box((void*)ReplacementValue, typeof(int*)));
                 Assert.Equal(ReplacementValue, (nint)Pointer.Unbox(field.GetValue(boxed)!));
+            });
+    }
+
+    private static void VerifyPointerDirectReflectionAccess()
+    {
+        const nint InitialValue = (nint)0x12345678;
+        const nint ReplacementValue = (nint)(-0x12345678);
+
+        FieldInfo field = typeof(PackedPointer).GetField(nameof(PackedPointer.Value)) ??
+            throw new InvalidOperationException($"Field {nameof(PackedPointer.Value)} was not found.");
+        int fieldOffset = Marshal.OffsetOf<PackedPointer>(nameof(PackedPointer.Value)).ToInt32();
+
+        RunWithPinnedBoxCrossingAtomicGranule(
+            new PackedPointer { Value = (int*)InitialValue },
+            fieldOffset,
+            IntPtr.Size,
+            boxed =>
+            {
+                ref PackedPointer value = ref Unsafe.Unbox<PackedPointer>(boxed);
+                TypedReference reference = __makeref(value);
+
+                Assert.Equal(InitialValue, (nint)Pointer.Unbox(field.GetValueDirect(reference)));
+                field.SetValueDirect(reference, Pointer.Box((void*)ReplacementValue, typeof(int*)));
+                Assert.Equal(ReplacementValue, (nint)value.Value);
+            });
+    }
+
+    private static void VerifyFunctionPointerDirectReflectionAccess()
+    {
+        const nint InitialValue = (nint)0x12345678;
+        const nint ReplacementValue = (nint)(-0x12345678);
+
+        FieldInfo field = typeof(PackedFunctionPointer).GetField(nameof(PackedFunctionPointer.Value)) ??
+            throw new InvalidOperationException($"Field {nameof(PackedFunctionPointer.Value)} was not found.");
+        int fieldOffset = Marshal.OffsetOf<PackedFunctionPointer>(nameof(PackedFunctionPointer.Value)).ToInt32();
+
+        RunWithPinnedBoxCrossingAtomicGranule(
+            new PackedFunctionPointer { Value = (delegate*<void>)InitialValue },
+            fieldOffset,
+            IntPtr.Size,
+            boxed =>
+            {
+                ref PackedFunctionPointer value = ref Unsafe.Unbox<PackedFunctionPointer>(boxed);
+                TypedReference reference = __makeref(value);
+
+                Assert.Equal(InitialValue, (nint)field.GetValueDirect(reference));
+                field.SetValueDirect(reference, ReplacementValue);
+                Assert.Equal(ReplacementValue, (nint)value.Value);
+                Assert.Equal(ReplacementValue, (nint)field.GetValueDirect(reference));
             });
     }
 
