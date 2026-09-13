@@ -724,6 +724,14 @@ private:
                     m_replacer->CheckForwardSubForLastUse(entry.FromReplacement->LclNum);
                 }
 
+                // The entry's copy offset identifies the subrange within the source.
+                unsigned sourceOffset = entry.FromReplacement->Offset - m_src->AsLclVarCommon()->GetLclOffs();
+                if (entry.Offset != sourceOffset)
+                {
+                    assert(narrowsSource && (entry.Offset > sourceOffset));
+                    src = m_compiler->gtNewOperNode(GT_RSZ, genActualType(src), src,
+                                                   m_compiler->gtNewIconNode((entry.Offset - sourceOffset) * 8));
+                }
                 // Global morph handles small-int normalization. Cast here only
                 // when narrowing changes the source's machine type.
                 if (narrowsSource && (genActualType(src) != genActualType(entry.Type)))
@@ -1744,12 +1752,15 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                                      (genTypeSize(dstRep->AccessType) == genTypeSize(srcRep->AccessType));
             bool nativeIntByref = ((dstRep->AccessType == TYP_BYREF) && (srcRep->AccessType == TYP_I_IMPL)) ||
                                   ((dstRep->AccessType == TYP_I_IMPL) && (srcRep->AccessType == TYP_BYREF));
-            // All supported targets are little endian: an equal-offset integer
-            // destination can take the low bits of a wider source replacement.
+            // All supported targets are little endian: a contained integer
+            // destination can extract its bits from a wider source replacement.
             bool narrowsSource = varTypeIsIntegral(dstRep->AccessType) && varTypeIsIntegral(srcRep->AccessType) &&
-                                 (genTypeSize(dstRep->AccessType) < genTypeSize(srcRep->AccessType));
-            if (((dstRep->Offset - dstBaseOffs) == (srcRep->Offset - srcBaseOffs)) &&
-                ((dstRep->AccessType == srcRep->AccessType) || sameSizeSmallInts || nativeIntByref || narrowsSource))
+                                 (genTypeSize(dstRep->AccessType) < genTypeSize(srcRep->AccessType)) &&
+                                 (dstRep->Offset - dstBaseOffs >= srcRep->Offset - srcBaseOffs) &&
+                                 (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) <=
+                                  srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType));
+            if (narrowsSource || (((dstRep->Offset - dstBaseOffs) == (srcRep->Offset - srcBaseOffs)) &&
+                                  ((dstRep->AccessType == srcRep->AccessType) || sameSizeSmallInts || nativeIntByref)))
             {
                 plan->CopyBetweenReplacements(dstRep, srcRep, dstRep->Offset - dstBaseOffs);
                 JITDUMP("  V%02u (%s)%s <- V%02u (%s)%s\n", dstRep->LclNum, dstRep->Description,

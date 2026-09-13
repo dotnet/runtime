@@ -20,6 +20,9 @@ public class CopyBetweenFields
         [FieldOffset(8)] public long Other;
         [FieldOffset(8)] public short OffsetSignedShort;
         [FieldOffset(8)] public ushort OffsetUnsignedShort;
+        [FieldOffset(9)] public sbyte InteriorSignedByte;
+        [FieldOffset(10)] public ushort InteriorUnsignedShort;
+        [FieldOffset(7)] public ushort CrossingUnsignedShort;
         [FieldOffset(16)] public long Last;
     }
 
@@ -42,6 +45,8 @@ public class CopyBetweenFields
             Assert.Equal(wide, NarrowWithLiveRemainder(wide));
             Assert.Equal(wide, NarrowSplitSource(wide));
             Assert.Equal(3 * (long)(short)wide, NarrowShortAtOffset(wide));
+            Assert.Equal(3 * (int)(sbyte)(wide >> 8), ExtractInteriorSignedByte(wide));
+            Assert.Equal(3 * (int)(ushort)(wide >> 16), ExtractInteriorUnsignedShort(wide));
             Assert.Equal(3 * (int)(sbyte)wide, NarrowByte(wide));
             Assert.Equal(3 * (int)(ushort)value, NarrowIntToUShort(value));
             ModifiedAfterCopy(wide);
@@ -54,6 +59,10 @@ public class CopyBetweenFields
             Assert.Equal(value, NarrowSplitSource(value));
             Assert.Equal(3 * (long)(short)value, NarrowShortAtOffset(value));
             Assert.Equal(3 * (int)(sbyte)value, NarrowByte(value));
+            Assert.Equal(3 * (int)(sbyte)(value >> 8), ExtractInteriorSignedByte(value));
+            Assert.Equal(3 * (int)(ushort)(value >> 16), ExtractInteriorUnsignedShort(value));
+            int crossing = (int)(((ulong)value >> 56) | (((ulong)(value + 1) & 0xFF) << 8));
+            Assert.Equal(3 * crossing, ExtractCrossingUnsignedShort(value));
         }
         ReturnBufferExceptions();
         ReturnBufferAfterRead();
@@ -219,6 +228,8 @@ public class CopyBetweenFields
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long NarrowSplitSource(long value)
     {
+        // X64-NOT: mov {{e[a-z0-9]+}}, dword ptr [rsp
+        // X64: shr {{r[a-z0-9]+}}, 32
         S src = Create(value);
         src.Wide = value;
         Observe(src.Wide);
@@ -232,6 +243,46 @@ public class CopyBetweenFields
         Observe(dst.High);
         Observe(dst.High);
         return ((long)dst.High << 32) | (uint)dst.Narrow;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ExtractInteriorSignedByte(long value)
+    {
+        // X64-NOT: movsx {{[a-z0-9]+}}, byte ptr [rsp
+        // X64: shr {{r[a-z0-9]+}}, 8
+        S src = Create(value);
+        src.Other = value;
+        Observe(src.Other);
+        Observe(src.Other);
+        Observe(src.Other);
+        S dst = src;
+        return Observe(dst.InteriorSignedByte) + Observe(dst.InteriorSignedByte) + Observe(dst.InteriorSignedByte);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ExtractInteriorUnsignedShort(long value)
+    {
+        // X64-NOT: movzx {{[a-z0-9]+}}, word ptr [rsp
+        // X64: shr {{r[a-z0-9]+}}, 16
+        S src = Create(value);
+        src.Other = value;
+        Observe(src.Other);
+        Observe(src.Other);
+        Observe(src.Other);
+        S dst = src;
+        return Observe(dst.InteriorUnsignedShort) + Observe(dst.InteriorUnsignedShort) + Observe(dst.InteriorUnsignedShort);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ExtractCrossingUnsignedShort(long value)
+    {
+        S src = Create(value);
+        src.Wide = value;
+        Observe(src.Wide);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        S dst = src;
+        return Observe(dst.CrossingUnsignedShort) + Observe(dst.CrossingUnsignedShort) + Observe(dst.CrossingUnsignedShort);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
