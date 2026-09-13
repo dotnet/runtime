@@ -6279,13 +6279,9 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 #endif
 
 #if defined(TARGET_WASM)
-        CORINFO_CLASS_HANDLE clsHnd = layout->GetClassHandle();
-        if (clsHnd != NO_CLASS_HANDLE)
-        {
-            CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(clsHnd);
-            assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
-            regType = WasmClassifier::ToJitType(wasmAbiType);
-        }
+        CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd);
+        assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
+        regType = WasmClassifier::ToJitType(wasmAbiType);
 #endif // TARGET_WASM
 
         store->ChangeType(regType);

@@ -698,36 +698,36 @@
          In the repo it comes from the build output; outside it, from the crossgen2 pack
          the wasm-tools workload acquires, which sets $(Crossgen2ToolPath) from its Sdk.props. -->
     <PropertyGroup>
-      <_PortableCallHelpersGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_PortableCallHelpersGeneratorExeSuffix>
-      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_PortableCallHelpersGeneratorExeSuffix)'))</PortableCallHelpersGeneratorPath>
-      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == ''">$(Crossgen2ToolPath)</PortableCallHelpersGeneratorPath>
+      <_Crossgen2ExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_Crossgen2ExeSuffix>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_Crossgen2ExeSuffix)'))</Crossgen2Path>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == ''">$(Crossgen2ToolPath)</Crossgen2Path>
     </PropertyGroup>
 
-    <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
-           Text="crossgen2 was not found, so the portable call helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
-    <Error Condition="'$([System.IO.Path]::GetExtension(`$(PortableCallHelpersGeneratorPath)`))' == '.dll'"
-           Text="%24(PortableCallHelpersGeneratorPath) is '$(PortableCallHelpersGeneratorPath)'. It has to name a crossgen2 executable; an IL assembly cannot be launched directly." />
-    <Error Condition="!Exists('$(PortableCallHelpersGeneratorPath)')"
-           Text="%24(PortableCallHelpersGeneratorPath) is '$(PortableCallHelpersGeneratorPath)', which does not exist. In the repo, build crossgen2 first; outside it, install the 'wasm-tools' workload." />
+    <Error Condition="'$(Crossgen2Path)' == ''"
+           Text="crossgen2 was not found, so the portable call helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(Crossgen2Path) to a crossgen2 executable." />
+    <Error Condition="'$([System.IO.Path]::GetExtension(`$(Crossgen2Path)`))' == '.dll'"
+           Text="%24(Crossgen2Path) is '$(Crossgen2Path)'. It has to name a crossgen2 executable; an IL assembly cannot be launched directly." />
+    <Error Condition="!Exists('$(Crossgen2Path)')"
+           Text="%24(Crossgen2Path) is '$(Crossgen2Path)', which does not exist. In the repo, build crossgen2 first; outside it, install the 'wasm-tools' workload." />
 
     <PropertyGroup>
-      <_PortableCallHelpersGeneratorRsp>$(_WasmIntermediateOutputPath)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>
+      <_Crossgen2GeneratorRsp>$(_WasmIntermediateOutputPath)callhelpers-generator.rsp</_Crossgen2GeneratorRsp>
     </PropertyGroup>
 
     <ItemGroup>
-      <_PortableCallHelpersGeneratorArg Include="--targetos:browser" />
-      <_PortableCallHelpersGeneratorArg Include="--targetarch:wasm" />
-      <_PortableCallHelpersGeneratorArg Include="--generate-portable-callhelpers:$(_WasmIntermediateOutputPath)" />
-      <_PortableCallHelpersGeneratorArg Include="@(_WasmPInvokeModules->'--directpinvoke:%(Identity)')" />
-      <_PortableCallHelpersGeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
+      <_Crossgen2GeneratorArg Include="--targetos:browser" />
+      <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
+      <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmIntermediateOutputPath)" />
+      <_Crossgen2GeneratorArg Include="@(_WasmPInvokeModules->'--directpinvoke:%(Identity)')" />
+      <_Crossgen2GeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 
-    <WriteLinesToFile File="$(_PortableCallHelpersGeneratorRsp)" Lines="@(_PortableCallHelpersGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_Crossgen2GeneratorRsp)" Lines="@(_Crossgen2GeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Exec Command="&quot;$(PortableCallHelpersGeneratorPath)&quot; &quot;@$(_PortableCallHelpersGeneratorRsp)&quot;" />
+    <Exec Command="&quot;$(Crossgen2Path)&quot; &quot;@$(_Crossgen2GeneratorRsp)&quot;" />
 
     <ItemGroup>
-      <FileWrites Include="$(_PortableCallHelpersGeneratorRsp);$(_WasmPInvokeTablePath);$(_WasmReversePInvokeTablePath);$(_WasmInterpToNativeTablePath)" />
+      <FileWrites Include="$(_Crossgen2GeneratorRsp);$(_WasmPInvokeTablePath);$(_WasmReversePInvokeTablePath);$(_WasmInterpToNativeTablePath)" />
     </ItemGroup>
 
     <ItemGroup>
