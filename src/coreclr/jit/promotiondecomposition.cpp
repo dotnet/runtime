@@ -716,13 +716,20 @@ private:
                 assert((entry.FromReplacement >= firstRep) &&
                        (entry.FromReplacement < (firstRep + srcAgg->Replacements.size())));
                 size_t replacementIndex = entry.FromReplacement - firstRep;
-                if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
+                // A narrowing entry leaves the source available for the rest of the copy.
+                bool narrowsSource = genTypeSize(entry.Type) < genTypeSize(entry.FromReplacement->AccessType);
+                if (!narrowsSource && srcDeaths.IsReplacementDying((unsigned)replacementIndex))
                 {
                     src->gtFlags |= GTF_VAR_DEATH;
                     m_replacer->CheckForwardSubForLastUse(entry.FromReplacement->LclNum);
                 }
 
-                // Global morph normalizes stores between small integer replacements.
+                // Global morph handles small-int normalization. Cast here only
+                // when narrowing changes the source's machine type.
+                if (narrowsSource && (genActualType(src) != genActualType(entry.Type)))
+                {
+                    src = m_compiler->gtNewCastNode(genActualType(entry.Type), src, false, entry.Type);
+                }
                 // Native-int/byref copies need no cast. Keep the source's type on the
                 // read and the destination's type on the store so their GC tracking
                 // changes at the assignment, just as for an ordinary local copy.
@@ -1737,8 +1744,12 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                                      (genTypeSize(dstRep->AccessType) == genTypeSize(srcRep->AccessType));
             bool nativeIntByref = ((dstRep->AccessType == TYP_BYREF) && (srcRep->AccessType == TYP_I_IMPL)) ||
                                   ((dstRep->AccessType == TYP_I_IMPL) && (srcRep->AccessType == TYP_BYREF));
+            // All supported targets are little endian: an equal-offset integer
+            // destination can take the low bits of a wider source replacement.
+            bool narrowsSource = varTypeIsIntegral(dstRep->AccessType) && varTypeIsIntegral(srcRep->AccessType) &&
+                                 (genTypeSize(dstRep->AccessType) < genTypeSize(srcRep->AccessType));
             if (((dstRep->Offset - dstBaseOffs) == (srcRep->Offset - srcBaseOffs)) &&
-                ((dstRep->AccessType == srcRep->AccessType) || sameSizeSmallInts || nativeIntByref))
+                ((dstRep->AccessType == srcRep->AccessType) || sameSizeSmallInts || nativeIntByref || narrowsSource))
             {
                 plan->CopyBetweenReplacements(dstRep, srcRep, dstRep->Offset - dstBaseOffs);
                 JITDUMP("  V%02u (%s)%s <- V%02u (%s)%s\n", dstRep->LclNum, dstRep->Description,
@@ -1746,7 +1757,12 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                         LastUseString(srcLcl, srcRep));
 
                 dstRep++;
-                srcRep++;
+                // The remaining source bytes may feed another replacement or
+                // the destination remainder. Let the next iteration handle them.
+                if (!narrowsSource)
+                {
+                    srcRep++;
+                }
                 continue;
             }
 

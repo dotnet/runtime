@@ -12,6 +12,7 @@ public class CopyBetweenFields
     {
         [FieldOffset(0)] public long Wide;
         [FieldOffset(0)] public int Narrow;
+        [FieldOffset(4)] public int High;
         [FieldOffset(0)] public sbyte SignedByte;
         [FieldOffset(0)] public byte UnsignedByte;
         [FieldOffset(0)] public short SignedShort;
@@ -38,8 +39,23 @@ public class CopyBetweenFields
             Assert.Equal(wide + 1 + (int)(wide + 1), CleanSource(wide));
             Assert.Equal(wide + 1 + (int)(wide + 1), DirtySource(wide));
             Assert.Equal(wide + (int)wide, ReadBackSource(wide));
+            Assert.Equal(wide, NarrowWithLiveRemainder(wide));
+            Assert.Equal(wide, NarrowSplitSource(wide));
+            Assert.Equal(3 * (long)(short)wide, NarrowShortAtOffset(wide));
+            Assert.Equal(3 * (int)(sbyte)wide, NarrowByte(wide));
+            Assert.Equal(3 * (int)(ushort)value, NarrowIntToUShort(value));
             ModifiedAfterCopy(wide);
         }
+        foreach (long value in new[] { long.MinValue, long.MaxValue, -1L, 0x1234567887654321L })
+        {
+            Assert.Equal(value, NarrowWithLiveRemainder(value));
+            Assert.Equal(value, NarrowSplitSource(value));
+            Assert.Equal(3 * (long)(short)value, NarrowShortAtOffset(value));
+            Assert.Equal(3 * (int)(sbyte)value, NarrowByte(value));
+        }
+        ReturnBufferExceptions();
+        ReturnBufferAfterRead();
+        PartialReturnBuffer();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -106,9 +122,13 @@ public class CopyBetweenFields
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long CleanSource(long value)
     {
+        // The first call defines the non-GC return buffer; no prolog zeroing is needed.
+        // X64-WINDOWS-NOT: xor
+        // X64-WINDOWS: call {{.*}}CopyBetweenFields:Create
         // Once Consume has synchronized the struct, no further write-back is needed.
         // X64-WINDOWS: call {{.*}}CopyBetweenFields:Consume
         // X64-WINDOWS-NOT: mov qword ptr [rsp{{[^]]*}}], {{r[a-z0-9]+}}
+        // X64-WINDOWS-NOT: mov {{e[a-z0-9]+}}, dword ptr [rsp
         S src = Create(value);
         src.Wide++;
         Observe(src.Wide);
@@ -126,10 +146,13 @@ public class CopyBetweenFields
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long DirtySource(long value)
     {
+        // X64-WINDOWS-NOT: xor
+        // X64-WINDOWS: call {{.*}}CopyBetweenFields:Create
         // Allow the first write-back, but reject another store to the same slot.
         // X64-WINDOWS: mov [[VALUE:r[a-z0-9]+]], qword ptr [rsp+[[OFFSET:0x[0-9A-Fa-f]+]]]
         // X64-WINDOWS: mov qword ptr [rsp+[[OFFSET]]], [[VALUE]]
         // X64-WINDOWS-NOT: mov qword ptr [rsp+[[OFFSET]]], [[VALUE]]
+        // X64-WINDOWS-NOT: mov {{e[a-z0-9]+}}, dword ptr [rsp
         S src = Create(value);
         src.Wide++;
         Observe(src.Wide);
@@ -148,6 +171,7 @@ public class CopyBetweenFields
     {
         // This method only reads the return buffer; there should be no scalar stack store.
         // X64-WINDOWS-NOT: mov qword ptr [rsp{{[^]]*}}], {{r[a-z0-9]+}}
+        // X64-WINDOWS-NOT: mov {{e[a-z0-9]+}}, dword ptr [rsp
         S src = Create(value);
         Observe(src.Wide);
         Observe(src.Wide);
@@ -169,6 +193,124 @@ public class CopyBetweenFields
         int sum = Observe(src.OffsetSignedShort) + Observe(src.OffsetSignedShort) + Observe(src.OffsetSignedShort);
         S dst = src;
         return sum + Observe(dst.OffsetUnsignedShort) + Observe(dst.OffsetUnsignedShort) + Observe(dst.OffsetUnsignedShort);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long NarrowWithLiveRemainder(long value)
+    {
+        S src = Create(value);
+        src.Wide = value;
+        Observe(src.Wide);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        S dst = src;
+        Observe(dst.Narrow);
+        Observe(dst.Narrow);
+        Observe(dst.Narrow);
+        // The source's upper bytes must also reach the destination storage.
+        CheckFields(dst, value, value + 1, value + 2);
+        return dst.Wide;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long NarrowSplitSource(long value)
+    {
+        S src = Create(value);
+        src.Wide = value;
+        Observe(src.Wide);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        S dst = src;
+        Observe(dst.Narrow);
+        Observe(dst.Narrow);
+        Observe(dst.Narrow);
+        Observe(dst.High);
+        Observe(dst.High);
+        Observe(dst.High);
+        return ((long)dst.High << 32) | (uint)dst.Narrow;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long NarrowShortAtOffset(long value)
+    {
+        S src = Create(value);
+        src.Other = value;
+        Observe(src.Other);
+        Observe(src.Other);
+        Observe(src.Other);
+        S dst = src;
+        return Observe(dst.OffsetSignedShort) + (long)Observe(dst.OffsetSignedShort) + Observe(dst.OffsetSignedShort);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NarrowByte(long value)
+    {
+        S src = Create(value);
+        src.Wide = value;
+        Observe(src.Wide);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        S dst = src;
+        return Observe(dst.SignedByte) + Observe(dst.SignedByte) + Observe(dst.SignedByte);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NarrowIntToUShort(int value)
+    {
+        S src = Create(value);
+        src.Narrow = value;
+        Observe(src.Narrow);
+        Observe(src.Narrow);
+        Observe(src.Narrow);
+        S dst = src;
+        return Observe(dst.UnsignedShort) + Observe(dst.UnsignedShort) + Observe(dst.UnsignedShort);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S ThrowBeforeReturning() => throw new System.InvalidOperationException();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ReturnBufferExceptions()
+    {
+        S value = default;
+        try
+        {
+            value = ThrowBeforeReturning();
+        }
+        catch (System.InvalidOperationException)
+        {
+            CheckFields(value, 0, 0, 0);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ReturnBufferAfterRead()
+    {
+        S value = default;
+        CheckFields(value, 0, 0, 0);
+        value = Create(123);
+        CheckFields(value, 123, 124, 125);
+    }
+
+    private struct Outer
+    {
+        public S Value;
+        public long Other;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CheckOuter(Outer value)
+    {
+        CheckFields(value.Value, 123, 124, 125);
+        Assert.Equal(0, value.Other);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void PartialReturnBuffer()
+    {
+        Outer value = default;
+        value.Value = Create(123);
+        CheckOuter(value);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
