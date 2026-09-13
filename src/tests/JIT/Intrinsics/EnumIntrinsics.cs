@@ -103,6 +103,19 @@ public class EnumIntrinsics
         Assert.True(SimpleEnum.A.Equals(boxedB));
     }
 
+    [Theory]
+    [InlineData(SimpleEnum.A, null, false)]
+    [InlineData(SimpleEnum.B, null, false)]
+    [InlineData(SimpleEnum.A, SimpleEnum.A, true)]
+    [InlineData(SimpleEnum.A, SimpleEnum.B, false)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TestNullableArgument(SimpleEnum left, SimpleEnum? right, bool expected)
+    {
+        object boxedLeft = left;
+        object boxedRight = right;
+        Assert.Equal(expected, boxedLeft.Equals(boxedRight));
+    }
+
     public class GenericEnumClass<T> where T : Enum { public T field; }
     public enum SimpleEnum { A, B, C }
 }
