@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -977,7 +977,7 @@ namespace System.Reflection
             char[]? rented = null;
             Span<char> name = utf8Name.Length <= StackNameLength
                 ? stackalloc char[StackNameLength]
-                : (rented = ArrayPool<char>.Shared.Rent(utf8Name.Length));
+                : (rented = System.Buffers.ArrayPool<char>.Shared.Rent(utf8Name.Length));
             try
             {
                 int written = Encoding.UTF8.GetChars(utf8Name, name);
@@ -988,7 +988,7 @@ namespace System.Reflection
             {
                 if (rented is not null)
                 {
-                    ArrayPool<char>.Shared.Return(rented);
+                    System.Buffers.ArrayPool<char>.Shared.Return(rented);
                 }
             }
         }
