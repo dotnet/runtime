@@ -11,6 +11,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Serialization;
+using System.Collections.Generic;
 
 namespace System.Collections
 {
@@ -324,6 +325,108 @@ namespace System.Collections
         public BitArray(ReadOnlySpan<int> values)
         {
             _array = CreateArray(values, out _bitLength);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public BitArray(IEnumerable<int> values)
+        {
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public BitArray(IEnumerable<byte> values)
+        {
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public BitArray(IEnumerable<bool> values)
+        {
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(IEnumerable<int> values, out int bitLength)
+        {
+            int count = TryGetCount(values, out int valuesCount) ? valuesCount : 256;
+            if (count > int.MaxValue / BitsPerInt32)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
+            }
+
+            Span<int> buffer = stackalloc int[Math.Min(count, 256)];
+            ValueListBuilder<int> builder = new(buffer);
+
+            foreach (int value in values)
+            {
+                builder.Append(value);
+            }
+
+            byte[] array = CreateArray(builder.AsSpan(), out bitLength);
+            return array;
+        }
+
+        private static byte[] CreateArray(IEnumerable<byte> values, out int bitLength)
+        {
+            int count = TryGetCount(values, out int valuesCount) ? valuesCount : 256;
+            if (count > int.MaxValue / BitsPerByte)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(values));
+            }
+
+            Span<byte> buffer = stackalloc byte[Math.Min(count, 256)];
+            ValueListBuilder<byte> builder = new(buffer);
+
+            foreach (byte value in values)
+            {
+                builder.Append(value);
+            }
+
+            byte[] array = CreateArray(builder.AsSpan(), out bitLength);
+            return array;
+        }
+
+        private static byte[] CreateArray(IEnumerable<bool> values, out int bitLength)
+        {
+            int count = TryGetCount(values, out int valuesCount) ? valuesCount : 256;
+            if (count > int.MaxValue)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(values));
+            }
+
+            Span<bool> buffer = stackalloc bool[Math.Min(count, 256)];
+            ValueListBuilder<bool> builder = new(buffer);
+
+            foreach (bool value in values)
+            {
+                builder.Append(value);
+            }
+
+            byte[] array = CreateArray(builder.AsSpan(), out bitLength);
+            return array;
+        }
+
+        private static bool TryGetCount<T>(IEnumerable<T> values, out int count)
+        {
+            count = -1;
+            if (values is ICollection<T> collection)
+            {
+                count = collection.Count;
+                return true;
+            }
+
+            if (values is IReadOnlyCollection<T> readonlyCollection)
+            {
+                count = readonlyCollection.Count;
+                return true;
+            }
+
+            return false;
         }
 
         private static byte[] CreateArray(ReadOnlySpan<int> values, out int bitLength)
