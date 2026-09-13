@@ -2959,10 +2959,9 @@ void Compiler::fgDumpWasmControlFlowDot()
 //        R: rethrow;
 //    K:
 //
-//    In the example above, if neither catch was supposed to handle the exception, the runtime
-//    will set cv to -1 (during the first pass, once it determines no try in the method will
-//    catch the exception) so that all try_table dispatches in the method will go to the rethrow
-//    block, which will then rethrow the exception to the next enclosing try.
+//    Before any catch funclet stores a continuation index, codegen initializes cv to zero.
+//    Continuation indices start at one, so all try_table dispatches in the method will go to
+//    the rethrow block, which will then rethrow the exception to the next enclosing try.
 //
 //    Note this setup does not handle the case where the continuation is within the dispatching try,
 //    because a try_table cannot branch within itself, and must cover the entire try body. Those cases
@@ -3297,6 +3296,10 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
             // repaired by fgWasmRepairTryEntries when it enters a try region.
             resumePad->copyEHRegion(switchBlock);
             resumePad->inheritWeightPercentage(switchBlock, 0);
+            if (bbInTryRegions(regionIndex, continuation))
+            {
+                resumePad->SetFlags(BBF_CATCH_RESUMPTION);
+            }
 
             FlowEdge* const padEdge = fgAddRefPred(continuation, resumePad);
             padEdge->setLikelihood(1.0);

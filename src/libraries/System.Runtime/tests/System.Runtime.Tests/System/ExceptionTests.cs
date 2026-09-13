@@ -178,13 +178,33 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void FirstCatch_ThrowFromCatch_HandledByOuterCatch()
+        {
+            // Seed the frame slot with a valid resume ID from a previous invocation.
+            ThrowFromCatch(catchCount: 1, throwFromCatch: null);
+
+            bool caught = false;
+
+            try
+            {
+                ThrowFromCatch(catchCount: 1, throwFromCatch: 0);
+            }
+            catch (InvalidOperationException)
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+        }
+
+        [Fact]
         public static void RepeatedCatch_ThrowFromSecondCatch_HandledByOuterCatch()
         {
             bool caught = false;
 
             try
             {
-                ThrowFromSecondCatch();
+                ThrowFromCatch(catchCount: 2, throwFromCatch: 1);
             }
             catch (InvalidOperationException)
             {
@@ -195,9 +215,9 @@ namespace System.Tests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowFromSecondCatch()
+        private static void ThrowFromCatch(int catchCount, int? throwFromCatch)
         {
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < catchCount; i++)
             {
                 try
                 {
@@ -205,7 +225,7 @@ namespace System.Tests
                 }
                 catch
                 {
-                    if (i != 0)
+                    if (i == throwFromCatch)
                     {
                         throw new InvalidOperationException();
                     }
