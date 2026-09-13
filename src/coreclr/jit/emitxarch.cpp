@@ -3904,8 +3904,8 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         }
 
         emitAttr attr = id->idOpSize();
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && (ins != INS_movsx32) && !IsSimdInstruction(ins) &&
-            !TakesEvexPrefix(id))
+        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && (ins != INS_movsx32) &&
+            !IsSimdInstruction(ins) && !TakesEvexPrefix(id))
         {
             // Most 16-bit operand instructions will need a 0x66 prefix.
             prefixAdjustedSize++;
@@ -3924,7 +3924,8 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 
         emitAttr attr = id->idOpSize();
 
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && (ins != INS_movsx32) && !IsSimdInstruction(ins))
+        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && (ins != INS_movsx32) &&
+            !IsSimdInstruction(ins))
         {
             // Most 16-bit operand instructions will need a 0x66 prefix.
             adjustedSize++;
@@ -5278,8 +5279,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         emitAttr  size = EA_SIZE(attr);
 
         if ((TakesRexWPrefix(id) && ((ins != INS_xor) || (reg1 != reg2))) ||
-            IsExtendedReg(reg1, GetDestinationOperandSize(ins, attr)) ||
-            IsExtendedReg(reg2, attr))
+            IsExtendedReg(reg1, GetDestinationOperandSize(ins, attr)) || IsExtendedReg(reg2, attr))
         {
             sz += emitGetRexPrefixSize(id, ins);
             includeRexPrefixSize = false;
@@ -5581,7 +5581,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     }
     else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) ||
              ((ins != INS_call) && (IsExtendedReg(id->idReg1(), GetDestinationOperandSize(ins, attrSize)) ||
-                                   IsExtendedReg(id->idReg2(), attrSize))))
+                                    IsExtendedReg(id->idReg2(), attrSize))))
     {
         // Should have a REX byte
         size += emitGetRexPrefixSize(id, ins);

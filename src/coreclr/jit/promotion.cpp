@@ -2439,7 +2439,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
             value->gtFlags |= GTF_VAR_DEATH;
             Statement* copyStmt = m_compiler->fgNewStmtFromTree(copy);
             m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, copyStmt);
-            *use = value;
+            *use          = value;
             m_madeChanges = true;
             return true;
         }
@@ -2467,23 +2467,24 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
 bool ReplaceVisitor::CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl)
 {
     if (!lcl->OperIs(GT_LCL_VAR) || !callArg->AbiInfo.IsPassedByReference() || (call->gtArgs.CountArgs() != 1) ||
-        (call->gtCallType != CT_USER_FUNC) || (call != m_currentStmt->GetRootNode()) ||
-        (callArg->GetNode() != lcl) || call->IsTailCall() || lcl->GetLayout(m_compiler)->HasGCPtr() ||
+        (call->gtCallType != CT_USER_FUNC) || (call != m_currentStmt->GetRootNode()) || (callArg->GetNode() != lcl) ||
+        call->IsTailCall() || lcl->GetLayout(m_compiler)->HasGCPtr() ||
         m_currentBlock->HasPotentialEHSuccs(m_compiler) || IsPromotedStructLocalDying(lcl))
     {
         return false;
     }
 
     AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
-    if (!std::any_of(agg->Replacements.begin(), agg->Replacements.end(),
-                    [](const Replacement& rep) { return rep.NeedsWriteBack; }))
+    if (!std::any_of(agg->Replacements.begin(), agg->Replacements.end(), [](const Replacement& rep) {
+        return rep.NeedsWriteBack;
+    }))
     {
         return false;
     }
 
     // Whole-local arguments can reuse the remainder computed during promotion.
-    unsigned remainderSize    = agg->UnpromotedMax - agg->UnpromotedMin;
-    bool     canCopyRemainder = (remainderSize == 0) || (isPow2(remainderSize) && (remainderSize <= TARGET_POINTER_SIZE));
+    unsigned remainderSize = agg->UnpromotedMax - agg->UnpromotedMin;
+    bool canCopyRemainder  = (remainderSize == 0) || (isPow2(remainderSize) && (remainderSize <= TARGET_POINTER_SIZE));
 #ifdef FEATURE_SIMD
     canCopyRemainder |= (remainderSize == 16) && (m_compiler->getPreferredVectorByteLength() >= 16);
 #endif

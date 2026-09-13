@@ -6882,7 +6882,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         // signed upper bits; the emitter can then elide that widening move.
         GenTree* next         = cast->gtNext;
         bool     widensToLong = (next != nullptr) && next->OperIs(GT_CAST) && next->TypeIs(TYP_LONG) &&
-                               !next->AsCast()->IsUnsigned() && (next->AsCast()->CastOp() == cast);
+                            !next->AsCast()->IsUnsigned() && (next->AsCast()->CastOp() == cast);
         if (!widensToLong)
         {
             ins = INS_movsx32;

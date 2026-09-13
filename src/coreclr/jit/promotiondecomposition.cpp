@@ -730,7 +730,7 @@ private:
                 {
                     assert(narrowsSource && (entry.Offset > sourceOffset));
                     src = m_compiler->gtNewOperNode(GT_RSZ, genActualType(src), src,
-                                                   m_compiler->gtNewIconNode((entry.Offset - sourceOffset) * 8));
+                                                    m_compiler->gtNewIconNode((entry.Offset - sourceOffset) * 8));
                 }
                 // Global morph handles small-int normalization. Cast here only
                 // when narrowing changes the source's machine type.
