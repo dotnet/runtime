@@ -1010,5 +1010,15 @@ namespace System.Reflection.Emit.Tests
             Assert.False(TypeBuilder.GetConstructor(instantiatedTypeBuilder2, constructorBuilder).ContainsGenericParameters);
             Assert.False(TypeBuilder.GetMethod(instantiatedTypeBuilder2, methodBuilder).ContainsGenericParameters);
         }
+
+        [Theory]
+        [InlineData(typeof(Span<>), true)]
+        [InlineData(typeof(ReadOnlySpan<>), true)]
+        [InlineData(typeof(List<>), false)]
+        public void IsByRefLike_RuntimeGenericTypeInstantiatedOverTypeBuilder_MatchesGenericTypeDefinition(Type genericTypeDefinition, bool expected)
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            Assert.Equal(expected, genericTypeDefinition.MakeGenericType(type).IsByRefLike);
+        }
     }
 }
