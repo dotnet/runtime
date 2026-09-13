@@ -462,19 +462,23 @@ namespace System.Collections
             using IEnumerator<bool> enumerator = values.GetEnumerator();
 
             int index = 0;
+            byte bit = 0;
+            byte value = 0;
             while (enumerator.MoveNext())
             {
-                byte value = 0;
-                for (byte i = 0; i < BitsPerByte; i++)
-                {
-                    if (enumerator.Current)
-                        value |= (byte)(1 << i);
+                if (enumerator.Current)
+                    value |= (byte)(1 << bit);
 
-                    if (!enumerator.MoveNext())
-                        break;
-                }
+                if (++bit != BitsPerByte)
+                    continue;
+
                 array[index++] = value;
+                value = 0;
+                bit = 0;
             }
+            if (bit != 0)
+                array[index] = value;
+
             return array;
         }
 

@@ -403,5 +403,47 @@ namespace System.Collections.Tests
             Assert.Equal(expected.Length, collection.Count);
             Assert.False(collection.IsSynchronized);
         }
+
+        public static IEnumerable<object[]> Ctor_BoolEnumerable_TestData()
+        {
+            yield return new object[] { Array.Empty<bool>() };
+            yield return new object[] { new[] { true } };
+            yield return new object[] { new[] { false } };
+            yield return new object[] { Enumerable.Repeat(true, BitsPerByte).ToArray() };
+            yield return new object[] { Enumerable.Repeat(false, BitsPerByte).ToArray() } ;
+            yield return new object[] { Enumerable.Range(0, 17).Select(i => i % 2 == 0).ToArray() };
+            yield return new object[] { Enumerable.Range(0, 65).Select(i => i % 3 == 0).ToArray() };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_BoolEnumerable_TestData))]
+        public static void Ctor_BoolEnumerable(bool[] data)
+        {
+            IEnumerable<bool> values = data;
+            AssertBitArray(new BitArray(values), data);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_BoolEnumerable_TestData))]
+        public static void Ctor_BoolEnumerable_As_List(bool[] data)
+        {
+            List<bool> list = new List<bool>(data);
+            AssertBitArray(new BitArray(list), data);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_BoolEnumerable_TestData))]
+        public static void Ctor_BoolEnumerable_As_Collection(bool[] data)
+        {
+            Queue<bool> queue = new Queue<bool>(data);
+            AssertBitArray(new BitArray(queue), data);
+        }
+
+        [Fact]
+        public static void Ctor_NullBoolEnumerable_ThrowsArgumentNullException()
+        {
+            IEnumerable<bool>? values = null;
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new BitArray(values));
+        }
     }
 }
