@@ -11,6 +11,16 @@ public static class WasmWebcilModule
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 
+    private sealed class GcMarker
+    {
+        public readonly int Value;
+
+        public GcMarker(int value)
+        {
+            Value = value;
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int AddIntegers(int left, int right)
     {
@@ -53,6 +63,29 @@ public static class WasmWebcilModule
             s_counter++;
         }
         return total + s_counter;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int GcLocalAcrossFinally(int value)
+    {
+        GcMarker marker = new(value);
+        try
+        {
+            return marker.Value;
+        }
+        finally
+        {
+            // Keep the newly allocated object live in the parent frame across an actual GC
+            // reached through the finally funclet.
+            CollectAtGcSafepoint();
+            GC.KeepAlive(marker);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void CollectAtGcSafepoint()
+    {
+        GC.Collect();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
