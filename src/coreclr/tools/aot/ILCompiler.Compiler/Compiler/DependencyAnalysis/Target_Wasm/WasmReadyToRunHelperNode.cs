@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc[] parameters = id switch
             {
                 ReadyToRunHelperId.DelegateCtor => [nativeIntType, nativeIntType],
-                ReadyToRunHelperId.ResolveVirtualFunction => [nativeIntType, nativeIntType, nativeIntType],
+                ReadyToRunHelperId.ResolveVirtualFunction => [nativeIntType],
                 _ => Array.Empty<TypeDesc>(),
             };
             TypeDesc returnType = id == ReadyToRunHelperId.DelegateCtor ?
