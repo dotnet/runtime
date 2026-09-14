@@ -14171,6 +14171,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
+    for (unsigned i = 0; i <= MAX_INL_ARGS; i++)
+    {
+        inlArgInfo[i].argTmpNum = BAD_VAR_NUM;
+    }
 
     pInlineInfo->argCnt = pInlineInfo->inlineCandidateInfo->methInfo.args.totalILArgs();
     unsigned ilArgCnt   = 0;
