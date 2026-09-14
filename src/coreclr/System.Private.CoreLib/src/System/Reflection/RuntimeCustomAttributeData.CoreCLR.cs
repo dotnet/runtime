@@ -336,7 +336,7 @@ namespace System.Reflection
         }
     }
 
-    internal static unsafe partial class CustomAttribute
+    internal static unsafe partial class RuntimeCustomAttribute
     {
         internal static bool IsAttributeDefined(RuntimeModule decoratedModule, int decoratedMetadataToken, int attributeCtorToken)
         {
@@ -729,7 +729,7 @@ namespace System.Reflection
             // If any of these are invariants are no longer true will have to
             // re-architect the PCA product logic and test cases.
             Debug.Assert(pca.BaseType == typeof(Attribute), "Pseudo CA Error - Incorrect base type");
-            AttributeUsageAttribute usage = CustomAttribute.GetAttributeUsage(pca);
+            AttributeUsageAttribute usage = RuntimeCustomAttribute.GetAttributeUsage(pca);
             Debug.Assert(!usage.Inherited, "Pseudo CA Error - Unexpected Inherited value");
             if (pca == typeof(TypeForwardedToAttribute))
             {
