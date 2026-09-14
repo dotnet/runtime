@@ -61,12 +61,12 @@ public static class CoreCLRContracts
             RuntimeInfoArchitecture arch = t.Contracts.RuntimeInfo.GetTargetArchitecture();
             return arch switch
             {
-                RuntimeInfoArchitecture.X64 => new GCInfo_1<AMD64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.X86 => new GCInfoX86_1(t),
-                RuntimeInfoArchitecture.Arm64 => new GCInfo_1<ARM64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.Arm => new GCInfo_1<ARMGCInfoTraits>(t),
-                RuntimeInfoArchitecture.LoongArch64 => new GCInfo_1<LoongArch64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.RiscV64 => new GCInfo_1<RISCV64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.X64 when TargetArchitectureSupport.IsX64Supported => new GCInfo_1<AMD64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.X86 when TargetArchitectureSupport.IsX86Supported => new GCInfoX86_1(t),
+                RuntimeInfoArchitecture.Arm64 when TargetArchitectureSupport.IsArm64Supported => new GCInfo_1<ARM64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.Arm when TargetArchitectureSupport.IsArmSupported => new GCInfo_1<ARMGCInfoTraits>(t),
+                RuntimeInfoArchitecture.LoongArch64 when TargetArchitectureSupport.IsLoongArch64Supported => new GCInfo_1<LoongArch64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.RiscV64 when TargetArchitectureSupport.IsRiscV64Supported => new GCInfo_1<RISCV64GCInfoTraits>(t),
                 _ => default(GCInfo),
             };
         });

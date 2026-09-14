@@ -12,7 +12,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using System.Collections.Frozen;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -51,9 +50,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     // queried for whether it has been published yet (IsSubDescriptorResolved).
     private readonly List<(string Name, TargetPointer Slot)> _pendingSubDescriptors = [];
 
-    private IReadOnlyDictionary<string, string> _contracts = new Dictionary<string, string>();
-    private IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
-    private IReadOnlyDictionary<string, TypeInfo> _types = new Dictionary<string, TypeInfo>();
+    private Dictionary<string, string> _contracts = [];
+    private Dictionary<string, GlobalValue> _globals = [];
+    private Dictionary<string, TypeInfo> _types = [];
 
     public override ContractRegistry Contracts { get; }
     public override DataCache ProcessedData { get; }
@@ -301,9 +300,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
             }
         }
 
-        _contracts = contracts.ToFrozenDictionary();
-        _globals = globals.ToFrozenDictionary();
-        _types = types.ToFrozenDictionary();
+        _contracts = contracts;
+        _globals = globals;
+        _types = types;
     }
 
     private struct GlobalValue
