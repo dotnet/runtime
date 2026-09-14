@@ -973,6 +973,12 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInf
 CDAC_TYPE_END(ReadyToRunInfo)
 
 #ifdef TARGET_WASM
+CDAC_TYPE_BEGIN(VirtualIPRangeSection)
+CDAC_TYPE_INDETERMINATE(VirtualIPRangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, TYPE(RangeSection), RangeSection, cdac_data<VirtualIPRangeSection>::RangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, T_POINTER, Next, cdac_data<VirtualIPRangeSection>::Next)
+CDAC_TYPE_END(VirtualIPRangeSection)
+
 CDAC_TYPE_BEGIN(FunctionTableIndexRangeSection)
 CDAC_TYPE_INDETERMINATE(FunctionTableIndexRangeSection)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, MinFunctionTableIndex, cdac_data<FunctionTableIndexRangeSection>::MinFunctionTableIndex)
@@ -1828,6 +1834,7 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
 #ifdef TARGET_WASM
+CDAC_GLOBAL_POINTER(VirtualIPRangeList, cdac_data<ExecutionManager>::VirtualIPRangeListAddress)
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)

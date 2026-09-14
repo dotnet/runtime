@@ -157,6 +157,28 @@ internal sealed class MockRangeSection : TypedView
     }
 }
 
+internal sealed class MockVirtualIPRangeSection : TypedView
+{
+    private const string RangeSectionFieldName = "RangeSection";
+    private const string NextFieldName = "Next";
+
+    public static Layout<MockVirtualIPRangeSection> CreateLayout(
+        MockTarget.Architecture architecture,
+        int rangeSectionSize)
+        => new SequentialLayoutBuilder("VirtualIPRangeSection", architecture)
+            .AddField(RangeSectionFieldName, rangeSectionSize)
+            .AddPointerField(NextFieldName)
+            .Build<MockVirtualIPRangeSection>();
+
+    public ulong RangeSectionAddress => GetFieldAddress(RangeSectionFieldName);
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+}
+
 internal sealed class MockCodeRangeMapRangeList : TypedView
 {
     private const string RangeListTypeFieldName = "RangeListType";
@@ -445,6 +467,12 @@ internal sealed class MockReadyToRunInfo : TypedView
         set => WritePointerField(CompositeInfoFieldName, value);
     }
 
+    public ulong ReadyToRunHeader
+    {
+        get => ReadPointerField(ReadyToRunHeaderFieldName);
+        set => WritePointerField(ReadyToRunHeaderFieldName, value);
+    }
+
     public uint NumRuntimeFunctions
     {
         get => ReadUInt32Field(NumRuntimeFunctionsFieldName);
@@ -493,6 +521,30 @@ internal sealed class MockReadyToRunInfo : TypedView
     {
         get => ReadPointerField(MinVirtualIPFieldName);
         set => WritePointerField(MinVirtualIPFieldName, value);
+    }
+}
+
+internal sealed class MockReadyToRunHeader : TypedView
+{
+    private const string MajorVersionFieldName = "MajorVersion";
+    private const string MinorVersionFieldName = "MinorVersion";
+
+    public static Layout<MockReadyToRunHeader> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("ReadyToRunHeader", architecture)
+            .AddUInt16Field(MajorVersionFieldName)
+            .AddUInt16Field(MinorVersionFieldName)
+            .Build<MockReadyToRunHeader>();
+
+    public ushort MajorVersion
+    {
+        get => ReadUInt16Field(MajorVersionFieldName);
+        set => WriteUInt16Field(MajorVersionFieldName, value);
+    }
+
+    public ushort MinorVersion
+    {
+        get => ReadUInt16Field(MinorVersionFieldName);
+        set => WriteUInt16Field(MinorVersionFieldName, value);
     }
 }
 
@@ -602,6 +654,7 @@ internal sealed class MockExecutionManagerBuilder
     private const uint CodeHeapRangeSectionFlag = 0x02;
     private const uint RangeListRangeSectionFlag = 0x04;
     private const uint InterpreterRangeSectionFlag = 0x0A; // CodeHeap | Interpreter
+    private const uint VirtualIPRangeSectionFlag = 0x10;
     private const string EEJitManagerGlobalName = "EEJitManagerGlobalPointer";
     private const int RangeSectionMapBitsPerLevel = 8;
 
@@ -622,7 +675,7 @@ internal sealed class MockExecutionManagerBuilder
         NibbleMapStart = 0x00ee_0000,
         NibbleMapEnd = 0x00ef_0000,
         ExecutionManagerStart = 0x0033_4000,
-        ExecutionManagerEnd = 0x0033_5000,
+        ExecutionManagerEnd = 0x0037_4000,
     };
 
     private readonly struct RangeSectionMapCursor
@@ -653,6 +706,7 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockRangeSectionMap> RangeSectionMapLayout { get; }
     internal Layout<MockRangeSectionFragment> RangeSectionFragmentLayout { get; }
     internal Layout<MockRangeSection> RangeSectionLayout { get; }
+    internal Layout<MockVirtualIPRangeSection> VirtualIPRangeSectionLayout { get; }
     internal Layout<MockCodeHeapListNode> CodeHeapListNodeLayout { get; }
     internal Layout<MockCodeHeap> CodeHeapLayout { get; }
     internal Layout<MockLoaderCodeHeap> LoaderCodeHeapLayout { get; }
@@ -660,6 +714,7 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockRealCodeHeader> RealCodeHeaderLayout { get; }
     internal Layout<MockInterpreterRealCodeHeader> InterpreterRealCodeHeaderLayout { get; }
     internal Layout<MockReadyToRunInfo> ReadyToRunInfoLayout { get; }
+    internal Layout<MockReadyToRunHeader> ReadyToRunHeaderLayout { get; }
     internal Layout<MockEEJitManager> EEJitManagerLayout { get; }
     internal Layout<MockDynamicFunctionTable> DynamicFunctionTableLayout { get; }
     internal Layout<MockLoaderModule> ModuleLayout { get; }
@@ -667,7 +722,7 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockImageDataDirectory> ImageDataDirectoryLayout { get; }
     internal Layout<MockRuntimeFunction> RuntimeFunctionLayout => _runtimeFunctions.RuntimeFunctionLayout;
     internal Layout<MockUnwindInfo> UnwindInfoLayout => _runtimeFunctions.UnwindInfoLayout;
-    internal (string Name, ulong Value)[] Globals { get; }
+    internal (string Name, ulong Value)[] Globals { get; private set; }
     internal ulong EEJitManagerAddress { get; }
     internal ulong RangeSectionMapTopLevelAddress => _rangeSectionMapTopLevelAddress;
 
@@ -681,6 +736,7 @@ internal sealed class MockExecutionManagerBuilder
     private readonly ulong _rangeSectionMapTopLevelAddress;
     private readonly int _rangeSectionMapLevelsCount;
     private readonly int _rangeSectionMapMaxSetBit;
+    private ulong _virtualIPRangeListGlobalAddress;
 
     internal MockExecutionManagerBuilder(string version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0)
         : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
@@ -711,6 +767,7 @@ internal sealed class MockExecutionManagerBuilder
         RangeSectionMapLayout = MockRangeSectionMap.CreateLayout(architecture);
         RangeSectionFragmentLayout = MockRangeSectionFragment.CreateLayout(architecture);
         RangeSectionLayout = MockRangeSection.CreateLayout(architecture);
+        VirtualIPRangeSectionLayout = MockVirtualIPRangeSection.CreateLayout(architecture, RangeSectionLayout.Size);
         CodeHeapListNodeLayout = MockCodeHeapListNode.CreateLayout(architecture);
         CodeHeapLayout = MockCodeHeap.CreateLayout(architecture);
         LoaderCodeHeapLayout = MockLoaderCodeHeap.CreateLayout(architecture);
@@ -718,6 +775,7 @@ internal sealed class MockExecutionManagerBuilder
         RealCodeHeaderLayout = MockRealCodeHeader.CreateLayout(architecture);
         InterpreterRealCodeHeaderLayout = MockInterpreterRealCodeHeader.CreateLayout(architecture);
         ReadyToRunInfoLayout = MockReadyToRunInfo.CreateLayout(architecture, hashMapStride);
+        ReadyToRunHeaderLayout = MockReadyToRunHeader.CreateLayout(architecture);
         EEJitManagerLayout = MockEEJitManager.CreateLayout(architecture);
         DynamicFunctionTableLayout = MockDynamicFunctionTable.CreateLayout(architecture);
         ModuleLayout = MockLoaderModule.CreateLayout(architecture);
@@ -780,6 +838,54 @@ internal sealed class MockExecutionManagerBuilder
         rangeSection.JitManager = jitManagerAddress;
         return rangeSection;
     }
+
+    public MockVirtualIPRangeSection AddVirtualIPRangeSection(
+        JittedCodeRange virtualIPRange,
+        ulong jitManagerAddress,
+        ulong r2rModuleAddress,
+        ulong next = 0,
+        bool registerAsHead = true)
+    {
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)VirtualIPRangeSectionLayout.Size, "VirtualIPRangeSection");
+        MockVirtualIPRangeSection node = VirtualIPRangeSectionLayout.Create(fragment);
+        MockRangeSection rangeSection = RangeSectionLayout.Create(
+            fragment.Data.AsMemory(0, RangeSectionLayout.Size),
+            node.RangeSectionAddress);
+        rangeSection.RangeBegin = virtualIPRange.RangeStart;
+        rangeSection.RangeEndOpen = virtualIPRange.RangeEnd;
+        rangeSection.Flags = VirtualIPRangeSectionFlag;
+        rangeSection.R2RModule = r2rModuleAddress;
+        rangeSection.JitManager = jitManagerAddress;
+        node.Next = next;
+
+        if (registerAsHead)
+            SetVirtualIPRangeListHead(node.Address);
+
+        return node;
+    }
+
+    public void SetVirtualIPRangeListHead(ulong head)
+    {
+        if (_virtualIPRangeListGlobalAddress == 0)
+        {
+            _virtualIPRangeListGlobalAddress = AddPointerGlobal(head, "VirtualIPRangeListGlobalPointer");
+            Globals =
+            [
+                .. Globals,
+                (nameof(Constants.Globals.VirtualIPRangeList), _virtualIPRangeListGlobalAddress),
+            ];
+            return;
+        }
+
+        Builder.TargetTestHelpers.WritePointer(
+            Builder.BorrowAddressRange(_virtualIPRangeListGlobalAddress, Builder.TargetTestHelpers.PointerSize),
+            head);
+    }
+
+    public MockRangeSection GetRangeSection(MockVirtualIPRangeSection node)
+        => RangeSectionLayout.Create(
+            node.Memory.Slice(0, RangeSectionLayout.Size),
+            node.RangeSectionAddress);
 
     public MockRangeSection AddRangeListRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, int rangeListType)
     {
@@ -984,6 +1090,24 @@ internal sealed class MockExecutionManagerBuilder
         readyToRunInfo.NumHotColdMap = checked((uint)hotColdMap.Length);
         readyToRunInfo.HotColdMap = hotColdMapAddress;
         return readyToRunInfo;
+    }
+
+    public MockReadyToRunHeader AddReadyToRunHeader(ushort majorVersion, ushort minorVersion = 0)
+    {
+        MockReadyToRunHeader header = AllocateAndCreate(ReadyToRunHeaderLayout, "ReadyToRunHeader");
+        header.MajorVersion = majorVersion;
+        header.MinorVersion = minorVersion;
+        return header;
+    }
+
+    public void SetRuntimeFunctionUnwindData(MockReadyToRunInfo readyToRunInfo, uint index, uint unwindData)
+    {
+        ulong address = readyToRunInfo.RuntimeFunctions + (index * (uint)RuntimeFunctionLayout.Size);
+        Span<byte> runtimeFunction = Builder.BorrowAddressRange(address, RuntimeFunctionLayout.Size);
+        LayoutField unwindDataField = RuntimeFunctionLayout.GetField("UnwindData");
+        Builder.TargetTestHelpers.Write(
+            runtimeFunction.Slice(unwindDataField.Offset, sizeof(uint)),
+            unwindData);
     }
 
     public void SetDelayLoadMethodCallThunks(MockReadyToRunInfo readyToRunInfo, uint thunkRva, uint thunkSize)
