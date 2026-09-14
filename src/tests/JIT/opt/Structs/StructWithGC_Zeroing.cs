@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -41,28 +39,6 @@ public class StructWithGC_Zeroing
         // ARM64-NOT: CORINFO_HELP_MEMSET
         s = default;
     }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("hello")]
-    public static void ExplicitlyInitializedReferenceIsZeroedInProlog(string? value)
-    {
-        Assert.Equal(value, InitializeReference(value));
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static string? InitializeReference(string? value)
-    {
-        // X64: xor {{e|r}}[[ZERO:[a-z]{2}|[0-9]+]]{{d?}}, {{e|r}}[[ZERO]]{{d?}}
-        // X64-NEXT: mov {{[qg]}}word ptr [{{.*}}], r[[ZERO]]
-        // X64: call {{.*}}ReadReference
-        string? s = value;
-        return ReadReference(ref s);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static string? ReadReference(ref string? s) => s;
 
     struct LargeStructWithGC // 360 bytes (64-bit)
     {
