@@ -418,8 +418,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(Ctor_BoolArray_TestData))]
         public static void Ctor_BoolEnumerable_As_Enumerable(bool[] data)
         {
-            IEnumerable<bool> enumerable = data.AsEnumerable();
-            AssertBitArray(new BitArray(enumerable), data);
+            AssertBitArray(new BitArray(Enumerate(data)), data);
         }
 
         [Theory]
@@ -450,8 +449,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(Ctor_ByteArray_TestData))]
         public static void Ctor_ByteEnumerable_As_Enumerable(byte[] bytes, bool[] expected)
         {
-            IEnumerable<byte> enumerable = bytes.AsEnumerable();
-            AssertBitArray(new BitArray(enumerable), expected);
+            AssertBitArray(new BitArray(Enumerate(bytes)), expected);
         }
 
         [Theory]
@@ -482,8 +480,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(Ctor_IntArray_TestData))]
         public static void Ctor_IntEnumerable_As_Enumerable(int[] array, bool[] expected)
         {
-            IEnumerable<int> enumerable = array.AsEnumerable();
-            AssertBitArray(new BitArray(enumerable), expected);
+            AssertBitArray(new BitArray(Enumerate(array)), expected);
         }
 
         [Fact]
@@ -505,6 +502,12 @@ namespace System.Collections.Tests
             Assert.Empty(new BitArray(Enumerable.Empty<bool>()));
             Assert.Empty(new BitArray(Enumerable.Empty<byte>()));
             Assert.Empty(new BitArray(Enumerable.Empty<int>()));
+        }
+
+        private static IEnumerable<T> Enumerate<T>(IEnumerable<T> values)
+        {
+            foreach (T value in values)
+                yield return value;
         }
 
         private static void AssertBitArray(BitArray bitArray, ReadOnlySpan<bool> expected)
