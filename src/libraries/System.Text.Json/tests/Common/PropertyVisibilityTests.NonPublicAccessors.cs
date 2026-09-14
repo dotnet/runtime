@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -847,33 +846,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             object result = await Serializer.DeserializeWrapper(json, type);
             JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(result, type));
-        }
-
-        public struct GenericStructWithThrowingAccessors<T>
-        {
-            [JsonInclude]
-            private T Value
-            {
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                get => throw new InvalidOperationException("Getter failure.");
-
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                set => throw new InvalidOperationException("Setter failure.");
-            }
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task JsonInclude_GenericStruct_ThrowingAccessors_PropagateOriginalException(bool serialize)
-        {
-            Func<Task> action = serialize
-                ? () => Serializer.SerializeWrapper(default(GenericStructWithThrowingAccessors<int>))
-                : () => Serializer.DeserializeWrapper<GenericStructWithThrowingAccessors<int>>("""{"Value":42}""");
-
-            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(action);
-            Assert.Equal(serialize ? "Getter failure." : "Setter failure.", exception.Message);
-            Assert.Contains(nameof(GenericStructWithThrowingAccessors<int>), exception.StackTrace);
         }
 
         public class GenericClassWithReadOnlyJsonIncludeMembers<T>

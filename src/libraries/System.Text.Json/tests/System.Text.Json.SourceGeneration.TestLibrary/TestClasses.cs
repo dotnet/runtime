@@ -10,28 +10,6 @@ namespace System.Text.Json.SourceGeneration.Tests.NETStandard
         public string Value { get; set; }
     }
 
-    public class ClassWithPrivateConstructor
-    {
-        public int Value { get; }
-
-        [JsonConstructor]
-        private ClassWithPrivateConstructor(int value)
-        {
-            if (value < 0)
-            {
-                throw new System.ArgumentOutOfRangeException(nameof(value));
-            }
-
-            Value = value;
-        }
-    }
-
-    public struct StructWithThrowingPrivateGetter
-    {
-        [JsonInclude]
-        private int Value => throw new System.InvalidOperationException("Getter failure.");
-    }
-
     public class ClassFromOtherAssemblyWithNonPublicMembers
     {
         public int PublicValue { get; set; } = 1;
@@ -71,8 +49,6 @@ namespace System.Text.Json.SourceGeneration.Tests.NETStandard
     }
 
     [JsonSerializable(typeof(MyPoco))]
-    [JsonSerializable(typeof(ClassWithPrivateConstructor))]
-    [JsonSerializable(typeof(StructWithThrowingPrivateGetter))]
     public partial class NETStandardSerializerContext : JsonSerializerContext
     {
     }

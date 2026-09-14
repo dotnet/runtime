@@ -92,9 +92,6 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private bool _emitByteArrayValueHelper;
 
-            private bool _emitConstructorInvokeUnwrapped;
-            private bool _emitMethodInvokeUnwrapped;
-
             /// <summary>
             /// The SourceText emit implementation filled by the individual Roslyn versions.
             /// </summary>
@@ -123,7 +120,7 @@ namespace System.Text.Json.SourceGeneration
                 string contextName = contextGenerationSpec.ContextType.Name;
 
                 // Add root context implementation.
-                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod, _emitValueTypeSetterDelegate, _emitByteArrayValueHelper, _emitConstructorInvokeUnwrapped, _emitMethodInvokeUnwrapped));
+                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod, _emitValueTypeSetterDelegate, _emitByteArrayValueHelper));
 
                 // Add GetJsonTypeInfo override implementation.
                 AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
@@ -134,8 +131,6 @@ namespace System.Text.Json.SourceGeneration
                 _emitGetConverterForNullablePropertyMethod = false;
                 _emitValueTypeSetterDelegate = false;
                 _emitByteArrayValueHelper = false;
-                _emitConstructorInvokeUnwrapped = false;
-                _emitMethodInvokeUnwrapped = false;
                 _propertyNames.Clear();
                 _typeIndex.Clear();
             }
@@ -664,12 +659,10 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Generate UnsafeAccessor methods or reflection cache fields for property accessors.
-                _emitValueTypeSetterDelegate |= GeneratePropertyAccessors(writer, contextSpec, typeMetadata, out bool needsMethodInvokeUnwrapped);
-                _emitMethodInvokeUnwrapped |= needsMethodInvokeUnwrapped;
+                _emitValueTypeSetterDelegate |= GeneratePropertyAccessors(writer, contextSpec, typeMetadata);
 
                 // Generate constructor accessor for inaccessible [JsonConstructor] constructors.
-                GenerateConstructorAccessor(writer, contextSpec, typeMetadata, out bool needsConstructorInvokeUnwrapped);
-                _emitConstructorInvokeUnwrapped |= needsConstructorInvokeUnwrapped;
+                GenerateConstructorAccessor(writer, contextSpec, typeMetadata);
 
                 writer.Indentation--;
                 writer.WriteLine('}');
@@ -1110,9 +1103,8 @@ namespace System.Text.Json.SourceGeneration
                 return $"static (obj, value) => {setterName}({setterCastExpr}, value!)";
             }
 
-            private static bool GeneratePropertyAccessors(SourceWriter writer, ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec, out bool needsInvokeUnwrapped)
+            private static bool GeneratePropertyAccessors(SourceWriter writer, ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
             {
-                needsInvokeUnwrapped = false;
                 string safetyModifier = contextSpec.UseUpdatedMemorySafetyRules ? "safe " : "";
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 HashSet<string> duplicateMemberNames = GetDuplicateMemberNames(properties);
@@ -1203,10 +1195,9 @@ namespace System.Text.Json.SourceGeneration
                                 // For value types, Delegate.CreateDelegate doesn't work with struct instance getters
                                 // on .NET Framework (the this parameter is passed by-ref internally).
                                 // Cache the MethodInfo and use Invoke instead.
-                                needsInvokeUnwrapped = true;
                                 string methodCacheType = "global::System.Reflection.MethodInfo";
                                 writer.WriteLine($"private static {methodCacheType}? {cacheName};");
-                                writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}({declaringTypeFQN} obj) => ({propertyTypeFQN})InvokeUnwrapped({cacheName} ??= {propertyExpr}.GetGetMethod(true)!, obj)!;");
+                                writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}({declaringTypeFQN} obj) => ({propertyTypeFQN})({cacheName} ??= {propertyExpr}.GetGetMethod(true)!).Invoke(obj, null)!;");
                             }
                             else
                             {
@@ -1401,9 +1392,8 @@ namespace System.Text.Json.SourceGeneration
             /// For UnsafeAccessor: emits a [UnsafeAccessor(Constructor)] extern method.
             /// For reflection fallback: emits a cached ConstructorInfo and a wrapper method.
             /// </summary>
-            private static void GenerateConstructorAccessor(SourceWriter writer, ContextGenerationSpec contextSpec, TypeGenerationSpec typeSpec, out bool needsInvokeUnwrapped)
+            private static void GenerateConstructorAccessor(SourceWriter writer, ContextGenerationSpec contextSpec, TypeGenerationSpec typeSpec)
             {
-                needsInvokeUnwrapped = false;
                 if (!typeSpec.ConstructorIsInaccessible)
                 {
                     return;
@@ -1461,7 +1451,6 @@ namespace System.Text.Json.SourceGeneration
                 {
                     // Reflection fallback: cached ConstructorInfo + Invoke.
                     // Note: ConstructorInfo cannot be wrapped in a delegate, so we cache the ConstructorInfo directly.
-                    needsInvokeUnwrapped = true;
                     string cacheName = GetConstructorReflectionCacheName(typeSpec);
 
                     string argTypes = parameters.Count == 0
@@ -1481,7 +1470,7 @@ namespace System.Text.Json.SourceGeneration
                             private static {{typeFQN}} {{wrapperName}}({{wrapperParams}})
                             {
                                 object?[] args = {{invokeArgs}};
-                                {{typeFQN}} result = ({{typeFQN}})InvokeUnwrapped({{constructorInfo}}, args);
+                                {{typeFQN}} result = ({{typeFQN}})({{constructorInfo}}).Invoke(args);
                             """);
                         writer.Indentation++;
 
@@ -1499,7 +1488,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else
                     {
-                        writer.WriteLine($"private static {typeFQN} {wrapperName}({wrapperParams}) => ({typeFQN})InvokeUnwrapped({constructorInfo}, {invokeArgs});");
+                        writer.WriteLine($"private static {typeFQN} {wrapperName}({wrapperParams}) => ({typeFQN})({constructorInfo}).Invoke({invokeArgs});");
                     }
                 }
 
@@ -2046,7 +2035,7 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate, bool emitByteArrayValueHelper, bool emitConstructorInvokeUnwrapped, bool emitMethodInvokeUnwrapped)
+            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate, bool emitByteArrayValueHelper)
             {
                 string contextTypeRef = contextSpec.ContextType.FullyQualifiedName;
                 string contextTypeName = contextSpec.ContextType.Name;
@@ -2073,18 +2062,6 @@ namespace System.Text.Json.SourceGeneration
                 if (emitValueTypeSetterDelegate)
                 {
                     writer.WriteLine("private delegate void ValueTypeSetter<TDeclaringType, TValue>(ref TDeclaringType obj, TValue value);");
-                    writer.WriteLine();
-                }
-
-                if (emitConstructorInvokeUnwrapped)
-                {
-                    GenerateConstructorInvokeUnwrapped(writer, contextSpec.SupportsDoNotWrapExceptions);
-                    writer.WriteLine();
-                }
-
-                if (emitMethodInvokeUnwrapped)
-                {
-                    GenerateMethodInvokeUnwrapped(writer, contextSpec.SupportsDoNotWrapExceptions);
                     writer.WriteLine();
                 }
 
@@ -2133,50 +2110,6 @@ namespace System.Text.Json.SourceGeneration
                 GenerateConverterHelpers(writer, emitGetConverterForNullablePropertyMethod);
 
                 return CompleteSourceFileAndReturnText(writer);
-            }
-
-            private static void GenerateConstructorInvokeUnwrapped(SourceWriter writer, bool supportsDoNotWrapExceptions)
-            {
-                writer.WriteLine(supportsDoNotWrapExceptions
-                    ? """
-                        private static object InvokeUnwrapped(global::System.Reflection.ConstructorInfo constructor, object?[]? parameters) => constructor.Invoke(global::System.Reflection.BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
-                        """
-                    : """
-                        private static object InvokeUnwrapped(global::System.Reflection.ConstructorInfo constructor, object?[]? parameters)
-                        {
-                            try
-                            {
-                                return constructor.Invoke(parameters);
-                            }
-                            catch (global::System.Reflection.TargetInvocationException exception) when (exception.InnerException is { } innerException)
-                            {
-                                global::System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
-                                throw;
-                            }
-                        }
-                        """);
-            }
-
-            private static void GenerateMethodInvokeUnwrapped(SourceWriter writer, bool supportsDoNotWrapExceptions)
-            {
-                writer.WriteLine(supportsDoNotWrapExceptions
-                    ? """
-                        private static object? InvokeUnwrapped(global::System.Reflection.MethodInfo method, object obj) => method.Invoke(obj, global::System.Reflection.BindingFlags.DoNotWrapExceptions, binder: null, parameters: null, culture: null);
-                        """
-                    : """
-                        private static object? InvokeUnwrapped(global::System.Reflection.MethodInfo method, object obj)
-                        {
-                            try
-                            {
-                                return method.Invoke(obj, null);
-                            }
-                            catch (global::System.Reflection.TargetInvocationException exception) when (exception.InnerException is { } innerException)
-                            {
-                                global::System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
-                                throw;
-                            }
-                        }
-                        """);
             }
 
             private static void GetLogicForDefaultSerializerOptionsInit(SourceGenerationOptionsSpec? optionsSpec, SourceWriter writer)

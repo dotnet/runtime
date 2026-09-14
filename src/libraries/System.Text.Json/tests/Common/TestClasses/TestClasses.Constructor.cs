@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -226,24 +225,6 @@ namespace System.Text.Json.Serialization.Tests
     {
         [JsonConstructor]
         private PrivateCtorWithInheritedGenericMembers(T value) => Value = value;
-    }
-
-    public class ThrowingNonPublicConstructor
-    {
-        public int Value => 0;
-
-        [JsonConstructor]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private ThrowingNonPublicConstructor(int value) => throw new InvalidOperationException("Constructor failure.");
-    }
-
-    public class ThrowingNonPublicConstructor<T>
-    {
-        public int Value => 0;
-
-        [JsonConstructor]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private ThrowingNonPublicConstructor(int value) => throw new InvalidOperationException("Constructor failure.");
     }
 
     public class GenericConstructorOuter<T>

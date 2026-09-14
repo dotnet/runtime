@@ -181,7 +181,6 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
-                    SupportsDoNotWrapExceptions = _knownSymbols.SupportsDoNotWrapExceptions,
                     UseUpdatedMemorySafetyRules = semanticModel.UsesUpdatedMemorySafetyRules(),
                 };
 

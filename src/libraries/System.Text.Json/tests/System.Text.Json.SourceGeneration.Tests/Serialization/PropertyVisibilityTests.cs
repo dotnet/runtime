@@ -121,31 +121,22 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("test", result.GetLabel());
             JsonTestHelper.AssertJsonEqual(Json, JsonSerializer.Serialize(
                 result, typeof(GenericClassWithPrivateJsonIncludeProperties<int>), context));
-
-            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(
-                default(GenericStructWithThrowingAccessors<int>), typeof(GenericStructWithThrowingAccessors<int>), context));
-            Assert.Equal("Getter failure.", exception.Message);
-            Assert.Contains(nameof(GenericStructWithThrowingAccessors<int>), exception.StackTrace);
         }
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
-        [JsonSerializable(typeof(GenericStructWithThrowingAccessors<int>))]
         private partial class GenericAccessorContext_Metadata<TContext> : JsonSerializerContext { }
 
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
-        [JsonSerializable(typeof(GenericStructWithThrowingAccessors<int>))]
         private partial class GenericAccessorContext_Default<TContext> : JsonSerializerContext { }
 
         private partial class GenericAccessorContextContainer<TContext>
         {
             [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
             [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
-            [JsonSerializable(typeof(GenericStructWithThrowingAccessors<int>))]
             public partial class NestedGenericAccessorContext_Metadata : JsonSerializerContext { }
 
             [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
-            [JsonSerializable(typeof(GenericStructWithThrowingAccessors<int>))]
             public partial class NestedGenericAccessorContext_Default : JsonSerializerContext { }
         }
 
@@ -315,7 +306,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
         [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<int>))]
         [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<string>))]
-        [JsonSerializable(typeof(GenericStructWithThrowingAccessors<int>))]
         [JsonSerializable(typeof(GenericClassWithReadOnlyJsonIncludeMembers<int>))]
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<int>))]
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<string>))]
@@ -635,7 +625,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
         [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<int>))]
         [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<string>))]
-        [JsonSerializable(typeof(GenericStructWithThrowingAccessors<int>))]
         [JsonSerializable(typeof(GenericClassWithReadOnlyJsonIncludeMembers<int>))]
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<int>))]
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<string>))]
