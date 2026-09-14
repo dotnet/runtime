@@ -237,16 +237,29 @@ if(CLR_CMAKE_TARGET_WIN32)
         set(CLRDEBUGINFO_RESOURCE_NAME CLRDEBUGINFOWINDOWSARM64)
     endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
+    if(NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
+        set(CLRDEBUGINFO_DAC_PATH $<TARGET_FILE:mscordaccore>)
+        set(MINIDUMP_AUXILIARY_PROVIDER_PATH $<TARGET_FILE:mscordaccore>)
+        set(MINIDUMP_AUXILIARY_PROVIDER_NAME "mscordaccore.dll")
+    else()
+        set(CLRDEBUGINFO_DAC_PATH "${CLR_DUMP_COLLECT_PROVIDER_PATH}")
+        file(TO_CMAKE_PATH "${CLR_DUMP_COLLECT_PROVIDER_PATH}" MINIDUMP_AUXILIARY_PROVIDER_PATH)
+        get_filename_component(MINIDUMP_AUXILIARY_PROVIDER_NAME "${CLR_DUMP_COLLECT_PROVIDER_PATH}" NAME)
+    endif()
+
     add_custom_target(
         clr_debug_resources
-        DEPENDS mscordaccore mscordbi
+        DEPENDS mscordbi
         # make CLRDEBUGINFO resource
-        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" -dac $<TARGET_FILE:mscordaccore> -dbi $<TARGET_FILE:mscordbi> -out ${CLRDEBUGINFO_RESOURCE_PATH}
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" -dac "${CLRDEBUGINFO_DAC_PATH}" -dbi $<TARGET_FILE:mscordbi> -out ${CLRDEBUGINFO_RESOURCE_PATH}
     )
+    if(NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
+        add_dependencies(clr_debug_resources mscordaccore)
+    endif()
 
     configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
 
-    set(EMBEDDED_MINIDUMP_AUXILIARY_PROVIDER $<TARGET_FILE:mscordaccore>)
+    set(EMBEDDED_MINIDUMP_AUXILIARY_PROVIDER "${MINIDUMP_AUXILIARY_PROVIDER_PATH}")
     configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc.gen)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dump_helper_resource_embedded_minidump_provider.rc INPUT ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc.gen)
 
@@ -254,7 +267,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     target_sources(coreclr_static PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dump_helper_resource_embedded_minidump_provider.rc)
 
     add_dependencies(coreclr clr_debug_resources)
-    add_dependencies(coreclr_static clr_debug_resources mscordaccore)
+    add_dependencies(coreclr_static clr_debug_resources)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
