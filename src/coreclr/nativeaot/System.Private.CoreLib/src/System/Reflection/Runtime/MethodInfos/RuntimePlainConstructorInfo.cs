@@ -10,6 +10,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -59,13 +60,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return _common.TrueCustomAttributes;
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => _common.GetMetadataReader();
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _common.GetCustomAttributeHandles();
 
         public sealed override Type DeclaringType
         {
