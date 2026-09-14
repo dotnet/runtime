@@ -52,6 +52,16 @@ public class AddressThroughFields
         Assert.Equal(21, ReturnBuffer());
         Assert.Equal(21, Handler());
         Assert.Throws<NullReferenceException>(() => Clear());
+        Assert.Throws<IndexOutOfRangeException>(() => ReadShort(2));
+        Assert.Throws<IndexOutOfRangeException>(() => ReadShort(0x80000000));
+        Assert.Throws<IndexOutOfRangeException>(() => ReadShort(uint.MaxValue));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static short ReadShort(uint index)
+    {
+        Color color = default;
+        return color.SRaw[index];
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

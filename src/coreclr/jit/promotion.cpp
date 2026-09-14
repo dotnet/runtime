@@ -2475,21 +2475,23 @@ bool ReplaceVisitor::CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* 
     }
 
     AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
-    if (!std::any_of(agg->Replacements.data(), agg->Replacements.data() + agg->Replacements.size(),
-                     [](const Replacement& rep) {
-        return rep.NeedsWriteBack;
-    }))
-    {
-        return false;
-    }
-
     // Whole-local arguments can reuse the remainder computed during promotion.
     unsigned remainderSize = agg->UnpromotedMax - agg->UnpromotedMin;
     bool canCopyRemainder  = (remainderSize == 0) || (isPow2(remainderSize) && (remainderSize <= TARGET_POINTER_SIZE));
 #ifdef FEATURE_SIMD
     canCopyRemainder |= (remainderSize == 16) && (m_compiler->getPreferredVectorByteLength() >= 16);
 #endif
-    return canCopyRemainder;
+    if (canCopyRemainder)
+    {
+        for (const Replacement& rep : agg->Replacements)
+        {
+            if (rep.NeedsWriteBack)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------

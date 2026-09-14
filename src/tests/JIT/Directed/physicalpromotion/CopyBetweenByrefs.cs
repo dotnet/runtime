@@ -25,6 +25,8 @@ public unsafe class CopyBetweenByrefs
     [Fact]
     public static void TestEntryPoint()
     {
+        Assert.Equal(Unsafe.SizeOf<Raw>(), Unsafe.SizeOf<Managed>());
+
         int local = 123;
         Assert.Equal(local, ToManaged((nint)(&local)));
         Assert.Equal(local, ToRaw(ref local));

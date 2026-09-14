@@ -1706,6 +1706,14 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
     Replacement* dstRep = dstFirstRep;
     Replacement* srcRep = srcFirstRep;
 
+    StructDeaths srcDeaths;
+    Replacement* srcAggregateFirstRep = nullptr;
+    if (srcFirstRep != nullptr)
+    {
+        srcDeaths            = m_liveness->GetDeathsForStructLocal(srcLcl);
+        srcAggregateFirstRep = m_aggregates.Lookup(srcLcl->GetLclNum())->Replacements.data();
+    }
+
     while ((dstRep < dstEndRep) || (srcRep < srcEndRep))
     {
         if ((srcRep < srcEndRep) && srcRep->NeedsReadBack)
@@ -1759,6 +1767,13 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                                  (dstRep->Offset - dstBaseOffs >= srcRep->Offset - srcBaseOffs) &&
                                  (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) <=
                                   srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType));
+            if (narrowsSource && !srcRep->NeedsWriteBack &&
+                (dstRep->Offset - dstBaseOffs != srcRep->Offset - srcBaseOffs))
+            {
+                // Prefer one load over copying and shifting a live, current source.
+                // A dying source can be shifted in place; a dirty source would need a write-back.
+                narrowsSource = srcDeaths.IsReplacementDying((unsigned)(srcRep - srcAggregateFirstRep));
+            }
             if (narrowsSource || (((dstRep->Offset - dstBaseOffs) == (srcRep->Offset - srcBaseOffs)) &&
                                   ((dstRep->AccessType == srcRep->AccessType) || sameSizeSmallInts || nativeIntByref)))
             {

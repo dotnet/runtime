@@ -44,6 +44,8 @@ public class CopyBetweenFields
             Assert.Equal(wide + (int)wide, ReadBackSource(wide));
             Assert.Equal(wide, NarrowWithLiveRemainder(wide));
             Assert.Equal(wide, NarrowSplitSource(wide));
+            Assert.Equal(wide + 3 * (int)(wide >> 32), ExtractCleanHigh(wide));
+            Assert.Equal(3 * (int)(wide >> 32), ExtractCleanHighDying(wide));
             Assert.Equal(3 * (long)(short)wide, NarrowShortAtOffset(wide));
             Assert.Equal(3 * (int)(sbyte)(wide >> 8), ExtractInteriorSignedByte(wide));
             Assert.Equal(3 * (int)(ushort)(wide >> 16), ExtractInteriorUnsignedShort(wide));
@@ -57,6 +59,8 @@ public class CopyBetweenFields
         {
             Assert.Equal(value, NarrowWithLiveRemainder(value));
             Assert.Equal(value, NarrowSplitSource(value));
+            Assert.Equal(value + 3 * (int)(value >> 32), ExtractCleanHigh(value));
+            Assert.Equal(3 * (int)(value >> 32), ExtractCleanHighDying(value));
             Assert.Equal(3 * (long)(short)value, NarrowShortAtOffset(value));
             Assert.Equal(3 * (int)(sbyte)value, NarrowByte(value));
             Assert.Equal(3 * (int)(sbyte)(value >> 8), ExtractInteriorSignedByte(value));
@@ -243,6 +247,38 @@ public class CopyBetweenFields
         Observe(dst.High);
         Observe(dst.High);
         return ((long)dst.High << 32) | (uint)dst.Narrow;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long ExtractCleanHigh(long value)
+    {
+        // Current backing storage permits a single load instead of a move and shift.
+        // X64-WINDOWS-NOT: shr
+        // X64-WINDOWS: mov {{e[a-z0-9]+}}, dword ptr [rsp
+        // X64-WINDOWS-NOT: shr
+        S src = Create(value);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        S dst = src;
+        return src.Wide + (Observe(dst.High) + Observe(dst.High) + Observe(dst.High));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ExtractCleanHighDying(long value)
+    {
+        // The source dies at the copy, permitting an in-place shift.
+        // X64-WINDOWS: mov [[SOURCE:r[a-z0-9]+]], qword ptr [rsp
+        // X64-WINDOWS: call [CopyBetweenFields:Observe(long)]
+        // X64-WINDOWS: call [CopyBetweenFields:Observe(long)]
+        // X64-WINDOWS: call [CopyBetweenFields:Observe(long)]
+        // X64-WINDOWS-NEXT: shr [[SOURCE]], 32
+        S src = Create(value);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        Observe(src.Wide);
+        S dst = src;
+        return Observe(dst.High) + Observe(dst.High) + Observe(dst.High);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
