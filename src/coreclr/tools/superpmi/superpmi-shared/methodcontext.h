@@ -614,6 +614,10 @@ public:
     void dmpGetThreadTLSIndex(DWORD key, DLD value);
     DWORD repGetThreadTLSIndex(void** ppIndirection);
 
+    void recGetGCHeapBounds(uintptr_t heapStart, uintptr_t heapEnd, bool result);
+    void dmpGetGCHeapBounds(DWORD key, const Agnostic_GetGCHeapBounds& value);
+    bool repGetGCHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd);
+
     void recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int32_t* result);
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
     int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
@@ -1240,6 +1244,7 @@ enum mcPackets
     Packet_GetWasmWellKnownGlobals = 240,
     Packet_CanValueClassInstancePointerEscape = 241,
     Packet_GetAwaitAwaiterInContinuationCall = 242,
+    Packet_GetGCHeapBounds = 243,
 };
 
 void SetDebugDumpVariables();

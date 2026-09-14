@@ -1339,6 +1339,12 @@ int32_t* MyICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
     return jitInstance->mc->repGetAddrOfCaptureThreadGlobal(ppIndirection);
 }
 
+bool MyICJI::getGCHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd)
+{
+    jitInstance->mc->cr->AddCall("getGCHeapBounds");
+    return jitInstance->mc->repGetGCHeapBounds(heapStart, heapEnd);
+}
+
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
 void MyICJI::getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_HANDLE *methodHandle)
 {

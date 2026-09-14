@@ -146,6 +146,7 @@ struct JitInterfaceCallbacks
     void (* getWasmWellKnownGlobals)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
+    bool (* getGCHeapBounds)(void * thisHandle, CorInfoExceptionClass** ppException, uintptr_t* heapStart, uintptr_t* heapEnd);
     void (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethod);
     void (* getFunctionEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
@@ -1508,6 +1509,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     int32_t* temp = _callbacks->getAddrOfCaptureThreadGlobal(_thisHandle, &pException, ppIndirection);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool getGCHeapBounds(
+          uintptr_t* heapStart,
+          uintptr_t* heapEnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getGCHeapBounds(_thisHandle, &pException, heapStart, heapEnd);
     if (pException != nullptr) throw pException;
     return temp;
 }

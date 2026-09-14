@@ -1327,6 +1327,16 @@ int32_t* WrapICorJitInfo::getAddrOfCaptureThreadGlobal(
     return temp;
 }
 
+bool WrapICorJitInfo::getGCHeapBounds(
+          uintptr_t* heapStart,
+          uintptr_t* heapEnd)
+{
+    API_ENTER(getGCHeapBounds);
+    bool temp = wrapHnd->getGCHeapBounds(heapStart, heapEnd);
+    API_LEAVE(getGCHeapBounds);
+    return temp;
+}
+
 void WrapICorJitInfo::getHelperFtn(
           CorInfoHelpFunc ftnNum,
           CORINFO_CONST_LOOKUP* pNativeEntrypoint,

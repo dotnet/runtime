@@ -85,6 +85,26 @@ PTR_VOID GCHeapUtilities::GetGCModuleBase()
     return g_gc_module_base;
 }
 
+bool GCHeapUtilities::GetGCHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    assert(heapStart != nullptr);
+    assert(heapEnd != nullptr);
+
+    // GetImmutableHeapBounds was added in GC interface version 5.10.
+    if (IsGCHeapInitialized() &&
+        ((g_gc_version_info.MajorVersion > 5) ||
+         ((g_gc_version_info.MajorVersion == 5) && (g_gc_version_info.MinorVersion >= 10))))
+    {
+        return GetGCHeap()->GetImmutableHeapBounds(heapStart, heapEnd);
+    }
+
+    *heapStart = 0;
+    *heapEnd = 0;
+    return false;
+}
+
 namespace
 {
 // This block of code contains all of the state necessary to handle incoming

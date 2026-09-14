@@ -1516,6 +1516,19 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
     return temp;
 }
 
+bool interceptor_ICJI::getGCHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd)
+{
+    mc->cr->AddCall("getGCHeapBounds");
+    bool result = original_ICorJitInfo->getGCHeapBounds(heapStart, heapEnd);
+    if (!result)
+    {
+        *heapStart = 0;
+        *heapEnd = 0;
+    }
+    mc->recGetGCHeapBounds(*heapStart, *heapEnd, result);
+    return result;
+}
+
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
 void interceptor_ICJI::getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_HANDLE *methodHandle)
 {

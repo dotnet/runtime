@@ -4793,6 +4793,51 @@ DWORD MethodContext::repGetThreadTLSIndex(void** ppIndirection)
     return (DWORD)value.B;
 }
 
+void MethodContext::recGetGCHeapBounds(uintptr_t heapStart, uintptr_t heapEnd, bool result)
+{
+    if (GetGCHeapBounds == nullptr)
+        GetGCHeapBounds = new LightWeightMap<DWORD, Agnostic_GetGCHeapBounds>();
+
+    Agnostic_GetGCHeapBounds value = {};
+    value.heapStart = static_cast<DWORDLONG>(heapStart);
+    value.heapEnd = static_cast<DWORDLONG>(heapEnd);
+    value.result = static_cast<DWORD>(result);
+
+    GetGCHeapBounds->Add(0, value);
+    DEBUG_REC(dmpGetGCHeapBounds(0, value));
+}
+
+void MethodContext::dmpGetGCHeapBounds(DWORD key, const Agnostic_GetGCHeapBounds& value)
+{
+    printf("GetGCHeapBounds key %u, value heapStart-%016" PRIX64 " heapEnd-%016" PRIX64 " result-%u",
+           key, value.heapStart, value.heapEnd, value.result);
+}
+
+bool MethodContext::repGetGCHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd)
+{
+    // Older collections do not record this optional optimization query.
+    if ((GetGCHeapBounds == nullptr) || (GetGCHeapBounds->GetIndex(0) == -1))
+    {
+        *heapStart = 0;
+        *heapEnd = 0;
+        return false;
+    }
+
+    Agnostic_GetGCHeapBounds value = GetGCHeapBounds->Get(0);
+    DEBUG_REP(dmpGetGCHeapBounds(0, value));
+
+    if (value.result == 0)
+    {
+        *heapStart = 0;
+        *heapEnd = 0;
+        return false;
+    }
+
+    *heapStart = static_cast<uintptr_t>(value.heapStart);
+    *heapEnd = static_cast<uintptr_t>(value.heapEnd);
+    return true;
+}
+
 void MethodContext::recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int32_t* result)
 {
     if (GetAddrOfCaptureThreadGlobal == nullptr)

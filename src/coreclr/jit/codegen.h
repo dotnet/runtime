@@ -250,6 +250,10 @@ protected:
 
     void genGCWriteBarrier(GCInfo::WriteBarrierForm wbf);
 
+#ifdef TARGET_ARM64
+    bool genInlineCheckedWriteBarrier(GenTreeStoreInd* store);
+#endif
+
     BasicBlock* genCreateTempLabel();
 
     void genRecordAsyncResume(GenTreeVal* asyncResume);

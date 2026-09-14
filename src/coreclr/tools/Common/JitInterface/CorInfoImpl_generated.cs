@@ -155,6 +155,7 @@ namespace Internal.JitInterface
                 s_callbacks.getWasmWellKnownGlobals = &_getWasmWellKnownGlobals;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
+                s_callbacks.getGCHeapBounds = &_getGCHeapBounds;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
                 s_callbacks.getFunctionEntryPoint = &_getFunctionEntryPoint;
                 s_callbacks.getFunctionFixedEntryPoint = &_getFunctionFixedEntryPoint;
@@ -340,6 +341,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_WELLKNOWN_GLOBALS*, void> getWasmWellKnownGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
+            public delegate* unmanaged<IntPtr, IntPtr*, nuint*, nuint*, byte> getGCHeapBounds;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, CORINFO_ACCESS_FLAGS, void> getFunctionEntryPoint;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte, CORINFO_CONST_LOOKUP*, void> getFunctionFixedEntryPoint;
@@ -2379,6 +2381,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getAddrOfCaptureThreadGlobal(ref *ppIndirection);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _getGCHeapBounds(IntPtr thisHandle, IntPtr* ppException, nuint* heapStart, nuint* heapEnd)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getGCHeapBounds(heapStart, heapEnd) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {

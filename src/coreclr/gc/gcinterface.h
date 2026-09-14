@@ -11,7 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 9
+#define GC_INTERFACE_MINOR_VERSION 10
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -1074,6 +1074,13 @@ public:
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
+
+    // Returns true if the checked write barrier's heap bounds can be embedded as
+    // process-specific constants. The half-open range [heapStart, heapEnd) must
+    // remain unchanged for the lifetime of the process. Outside this range, a
+    // reference store needs no GC write barrier. This method must not trigger GC.
+    // Returns false and zeroes the bounds when this guarantee cannot be made.
+    virtual bool GetImmutableHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

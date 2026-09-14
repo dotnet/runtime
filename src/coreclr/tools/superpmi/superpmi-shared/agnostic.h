@@ -97,6 +97,13 @@ struct DLDL
     DWORDLONG B;
 };
 
+struct Agnostic_GetGCHeapBounds
+{
+    DWORDLONG heapStart;
+    DWORDLONG heapEnd;
+    DWORD     result;
+};
+
 struct Agnostic_CanInline
 {
     DWORD result;

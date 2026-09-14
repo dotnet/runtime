@@ -2702,6 +2702,23 @@ size_t GCHeap::GetLOHThreshold()
     return loh_size_threshold;
 }
 
+bool GCHeap::GetImmutableHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd)
+{
+#ifdef USE_REGIONS
+    // The region allocator reserves this entire range once during initialization.
+    *heapStart = reinterpret_cast<uintptr_t>(g_gc_lowest_address);
+    *heapEnd = reinterpret_cast<uintptr_t>(g_gc_highest_address);
+    if ((*heapStart != 0) && (*heapStart < *heapEnd))
+    {
+        return true;
+    }
+#endif // USE_REGIONS
+
+    *heapStart = 0;
+    *heapEnd = 0;
+    return false;
+}
+
 void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
 {
 #ifdef FEATURE_EVENT_TRACE

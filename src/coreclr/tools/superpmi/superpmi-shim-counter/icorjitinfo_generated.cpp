@@ -1090,6 +1090,14 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(
     return original_ICorJitInfo->getAddrOfCaptureThreadGlobal(ppIndirection);
 }
 
+bool interceptor_ICJI::getGCHeapBounds(
+          uintptr_t* heapStart,
+          uintptr_t* heapEnd)
+{
+    mcs->AddCall("getGCHeapBounds");
+    return original_ICorJitInfo->getGCHeapBounds(heapStart, heapEnd);
+}
+
 void interceptor_ICJI::getHelperFtn(
           CorInfoHelpFunc ftnNum,
           CORINFO_CONST_LOOKUP* pNativeEntrypoint,

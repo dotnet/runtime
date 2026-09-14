@@ -334,6 +334,8 @@ public:
     virtual int RefreshMemoryLimit();
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles);
+
+    virtual bool GetImmutableHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd);
 };
 
 #endif  // GCIMPL_H_

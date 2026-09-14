@@ -3313,6 +3313,14 @@ public:
             void                  **ppIndirection = NULL
             ) = 0;
 
+    // Return the immutable, half-open address range reserved for the GC heap.
+    // These process-specific constants must not be embedded in ahead-of-time code.
+    // Returns false and zeroes the bounds when no such range is available.
+    virtual bool getGCHeapBounds(
+            uintptr_t*             heapStart,
+            uintptr_t*             heapEnd
+            ) = 0;
+
     // return the native entry point and/or managed method of an EE helper (see CorInfoHelpFunc)
     virtual void getHelperFtn (
             CorInfoHelpFunc         ftnNum,

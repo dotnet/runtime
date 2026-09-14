@@ -4232,6 +4232,101 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genInlineCheckedWriteBarrier: Inline the heap test when the runtime guarantees
+// that the heap bounds are constant for the lifetime of the generated code.
+//
+// Arguments:
+//    store - the store, with its operands already in the write-barrier registers
+//
+// Returns:
+//    Whether the store and its write barrier were emitted.
+//
+bool CodeGen::genInlineCheckedWriteBarrier(GenTreeStoreInd* store)
+{
+    if (m_compiler->IsAot() || m_compiler->opts.OptimizationDisabled() || m_compiler->compCurBB->isRunRarely() ||
+        m_compiler->compCurBB->HasFlag(BBF_COLD))
+    {
+        return false;
+    }
+
+    uintptr_t heapStart;
+    uintptr_t heapEnd;
+    if (!m_compiler->info.compCompHnd->getGCHeapBounds(&heapStart, &heapEnd))
+    {
+        return false;
+    }
+
+    assert(heapStart < heapEnd);
+    const size_t heapSize = heapEnd - heapStart;
+
+    // Both scratch registers are already killed by the write-barrier ABI.
+    const regNumber scratchReg = REG_R12;
+    const regNumber sizeReg    = REG_R17;
+    BasicBlock*     notInHeap  = genCreateTempLabel();
+    BasicBlock*     done       = genCreateTempLabel();
+    emitter*        emit       = GetEmitter();
+
+    if (isPow2(heapSize) && ((heapStart & (heapSize - 1)) == 0))
+    {
+        // An aligned power-of-two range only needs a comparison of the high bits.
+        unsigned shift = genLog2(heapSize);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, scratchReg, static_cast<ssize_t>(heapStart >> shift));
+        emit->emitIns_R_R_I(INS_cmp, EA_PTRSIZE, scratchReg, REG_WRITE_BARRIER_DST, shift, INS_OPTS_LSR);
+        inst_JMP(EJ_ne, notInHeap);
+    }
+    else
+    {
+        emit->emitIns_R_R_Imm(INS_sub, EA_PTRSIZE, scratchReg, REG_WRITE_BARRIER_DST, static_cast<ssize_t>(heapStart));
+
+        if (isPow2(heapSize))
+        {
+            emit->emitIns_R_R_I(INS_lsr, EA_PTRSIZE, scratchReg, scratchReg, genLog2(heapSize));
+            emit->emitIns_J_R(INS_cbnz, EA_PTRSIZE, notInHeap, scratchReg);
+        }
+        else
+        {
+            if (emitter::emitIns_valid_imm_for_cmp(static_cast<ssize_t>(heapSize), EA_PTRSIZE))
+            {
+                emit->emitIns_R_I(INS_cmp, EA_PTRSIZE, scratchReg, static_cast<ssize_t>(heapSize));
+            }
+            else
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, static_cast<ssize_t>(heapSize));
+                emit->emitIns_R_R(INS_cmp, EA_PTRSIZE, scratchReg, sizeReg);
+            }
+            inst_JMP(EJ_hs, notInHeap);
+        }
+    }
+
+    genGCWriteBarrier(GCInfo::WBF_BarrierUnchecked);
+    inst_JMP(EJ_jmp, done);
+
+    // The non-heap path bypasses the helper, so its arguments are still live.
+    regMaskTP gcRefRegs = gcInfo.gcRegGCrefSetCur;
+    regMaskTP byRefRegs = gcInfo.gcRegByrefSetCur;
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST, store->Addr()->TypeGet());
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC, TYP_REF);
+    genDefineTempLabel(notInHeap);
+
+    instruction storeIns = INS_str;
+    if (store->IsVolatile())
+    {
+        bool needsBarrier;
+        storeIns = genGetVolatileLdStIns(storeIns, REG_WRITE_BARRIER_SRC, store, &needsBarrier);
+        if (needsBarrier)
+        {
+            instGen_MemoryBarrier();
+        }
+    }
+    emit->emitIns_R_R(storeIns, EA_GCREF, REG_WRITE_BARRIER_SRC, REG_WRITE_BARRIER_DST);
+
+    gcInfo.gcRegGCrefSetCur = gcRefRegs;
+    gcInfo.gcRegByrefSetCur = byRefRegs;
+    genDefineTempLabel(done);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // genCodeForStoreInd: Produce code for a GT_STOREIND node.
 //
 // Arguments:
@@ -4270,7 +4365,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into x15 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(writeBarrierForm);
+        if ((writeBarrierForm != GCInfo::WBF_BarrierChecked) || !genInlineCheckedWriteBarrier(tree))
+        {
+            genGCWriteBarrier(writeBarrierForm);
+        }
     }
     else // A normal store, not a WriteBarrier store
     {

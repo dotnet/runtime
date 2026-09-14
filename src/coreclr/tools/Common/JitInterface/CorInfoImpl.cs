@@ -4093,6 +4093,15 @@ namespace Internal.JitInterface
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
+#pragma warning disable CA1822 // Mark members as static
+        private bool getGCHeapBounds(nuint* heapStart, nuint* heapEnd)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            *heapStart = 0;
+            *heapEnd = 0;
+            return false;
+        }
+
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {

@@ -559,6 +559,10 @@ uint32_t getThreadTLSIndex(
 int32_t* getAddrOfCaptureThreadGlobal(
           void** ppIndirection) override;
 
+bool getGCHeapBounds(
+          uintptr_t* heapStart,
+          uintptr_t* heapEnd) override;
+
 void getHelperFtn(
           CorInfoHelpFunc ftnNum,
           CORINFO_CONST_LOOKUP* pNativeEntrypoint,

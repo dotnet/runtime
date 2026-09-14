@@ -10797,6 +10797,17 @@ int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
     return result;
 }
 
+bool CEEInfo::getGCHeapBounds(uintptr_t* heapStart, uintptr_t* heapEnd)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeapBounds(heapStart, heapEnd);
+}
+
 // This code is called if FilterException chose to handle the exception.
 void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 {
