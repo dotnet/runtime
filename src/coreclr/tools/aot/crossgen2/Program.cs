@@ -160,6 +160,7 @@ namespace ILCompiler
                 targetAllowsRuntimeCodeGeneration,
                 instructionSetSupport,
                 oldTypeSystemContext: null);
+            _typeSystemContext.SetDirectPInvokeModules(Get(_command.DirectPInvoke));
 
             string compositeRootPath = Get(_command.CompositeRootPath);
 

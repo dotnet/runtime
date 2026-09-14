@@ -173,6 +173,43 @@
 
   <!-- ======================== Entry Points ======================== -->
 
+  <Target Name="_WasmConfigureReadyToRunPInvokes"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_WasmReadyToRunPInvokeModule Remove="@(_WasmReadyToRunPInvokeModule)" />
+      <_WasmReadyToRunNativeLibrary Remove="@(_WasmReadyToRunNativeLibrary)" />
+      <_WasmReadyToRunNativeLibrary Include="@(NativeLibrary->Exists())" />
+      <_WasmReadyToRunPInvokeModule Include="%(NativeFileReference.FileName)"
+                                     Condition="'%(NativeFileReference.ScanForPInvokes)' != 'false' and
+                                                ('%(NativeFileReference.Extension)' == '.a' or
+                                                 '%(NativeFileReference.Extension)' == '.o' or
+                                                 '%(NativeFileReference.Extension)' == '.c' or
+                                                 '%(NativeFileReference.Extension)' == '.cpp')" />
+      <_WasmReadyToRunPInvokeModule Include="%(_WasmReadyToRunNativeLibrary.FileName)"
+                                     Condition="'%(_WasmReadyToRunNativeLibrary.ScanForPInvokes)' != 'false'" />
+      <_WasmReadyToRunPInvokeModule Include="libSystem.Native" />
+      <_WasmReadyToRunPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <_WasmReadyToRunPInvokeModule Include="libSystem.Globalization.Native"
+                                     Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasmReadyToRunPInvokeModule Include="libSystem.Native.Browser" />
+      <_WasmReadyToRunPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_WasmReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasmReadyToRunPInvokeManifest>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunPInvokeManifest)'))" />
+    <WriteLinesToFile File="$(_WasmReadyToRunPInvokeManifest)"
+                      Lines="@(_WasmReadyToRunPInvokeModule)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunPInvokeManifest)" />
+      <FileWrites Include="$(_WasmReadyToRunPInvokeManifest)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Auto-enable native relink based on project configuration. Mirrors the semantics of
        the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets): a property whose
        value differs from what was baked into the runtime pack forces a relink, and an

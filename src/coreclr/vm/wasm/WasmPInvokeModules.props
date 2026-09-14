@@ -1,0 +1,23 @@
+<!--
+  The framework P/Invoke modules that CoreCLR resolves without dynamic loading on WebAssembly.
+
+  The portable call-helpers generator and ReadyToRun compiler must use the same list. A module
+  missing from the generator fails at runtime, while a module missing from ReadyToRun loses direct
+  P/Invoke code generation.
+
+  Editing this list requires regenerating and committing the checked-in call tables under this
+  directory. Keep this file under src so VMR builds can consume it from the runtime subtree.
+-->
+<Project>
+  <PropertyGroup>
+    <WasmCoreClrFrameworkPInvokeModuleListFile>$(MSBuildThisFileFullPath)</WasmCoreClrFrameworkPInvokeModuleListFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Globalization.Native" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.IO.Compression.Native" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native.Browser" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+  </ItemGroup>
+</Project>

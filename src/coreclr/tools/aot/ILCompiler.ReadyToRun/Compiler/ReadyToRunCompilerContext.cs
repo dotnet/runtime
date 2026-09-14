@@ -54,6 +54,7 @@ namespace ILCompiler
         private DecimalFieldLayoutAlgorithm _decimalFieldLayoutAlgorithm;
         private TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
         private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private readonly HashSet<string> _directPInvokeModules = new(StringComparer.Ordinal);
 
         public ReadyToRunCompilerContext(
             TargetDetails details,
@@ -96,6 +97,10 @@ namespace ILCompiler
             if (oldTypeSystemContext != null)
             {
                 InheritOpenModules(oldTypeSystemContext);
+                if (oldTypeSystemContext is ReadyToRunCompilerContext oldReadyToRunContext)
+                {
+                    _directPInvokeModules.UnionWith(oldReadyToRunContext._directPInvokeModules);
+                }
             }
         }
 
@@ -104,6 +109,33 @@ namespace ILCompiler
         public InstructionSetSupport InstructionSetSupport { get; }
 
         public bool TargetAllowsRuntimeCodeGeneration { get; }
+
+        public void SetDirectPInvokeModules(IEnumerable<string> modules)
+        {
+            foreach (string module in modules)
+            {
+                _directPInvokeModules.Add(module);
+            }
+        }
+
+        public bool IsDirectPInvoke(MethodDesc method)
+        {
+            Debug.Assert(method.IsPInvoke);
+
+            if (method.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute"))
+            {
+                return true;
+            }
+
+            string module = method.GetPInvokeMethodMetadata().Module;
+            if (module is "*" or "QCall" || _directPInvokeModules.Contains(module))
+            {
+                return true;
+            }
+
+            const string LibPrefix = "lib";
+            return _directPInvokeModules.Contains(LibPrefix + module);
+        }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {

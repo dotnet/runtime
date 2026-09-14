@@ -714,6 +714,80 @@ public class WasmArgumentLayoutTests
         }
     }
 
+    [Theory]
+    [InlineData("Missing", "", false)]
+    [InlineData("System.Native", "libSystem.Native", true)]
+    [InlineData("libSystem.Native", "libSystem.Native", true)]
+    [InlineData("libSystem.Native", "System.Native", false)]
+    [InlineData("QCall", "", true)]
+    [InlineData("*", "", true)]
+    public void PInvokeIsDirectOnlyForConfiguredModules(string module, string configuredModule, bool expected)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public static class Imports
+            {
+                [DllImport("{{module}}")]
+                public static extern void Invoke();
+            }
+            """;
+
+        WithCompiledPInvoke(source, (context, method) =>
+        {
+            if (configuredModule.Length != 0)
+            {
+                context.SetDirectPInvokeModules(new[] { configuredModule });
+            }
+
+            Assert.Equal(expected, context.IsDirectPInvoke(method));
+        });
+    }
+
+    [Fact]
+    public void WasmImportLinkagePInvokeIsDirectWithoutConfiguredModule()
+    {
+        const string Source = """
+            using System.Runtime.InteropServices;
+
+            public static class Imports
+            {
+                [DllImport("host", EntryPoint = "invoke")]
+                [WasmImportLinkage]
+                public static extern void Invoke();
+            }
+            """;
+
+        WithCompiledPInvoke(Source, (context, method) => Assert.True(context.IsDirectPInvoke(method)));
+    }
+
+    private void WithCompiledPInvoke(string source, Action<ReadyToRunCompilerContext, EcmaMethod> action)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            const string AssemblyName = "PInvokePolicy";
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, AssemblyName + ".dll"));
+            ReadyToRunCompilerContext context = CreateWasmContext(inputAssembly);
+            EcmaModule module = context.GetModuleForSimpleName(AssemblyName);
+            EcmaMethod method = (EcmaMethod)module.GetType(ReadOnlySpan<byte>.Empty, "Imports"u8).GetMethod("Invoke"u8, null);
+
+            action(context, method);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
     /// <summary>
     /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
     /// reads, so the attributes it applies are the ones the type system will resolve.

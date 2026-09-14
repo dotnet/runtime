@@ -6,6 +6,8 @@
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="$(CoreClrProjectRoot)vm\wasm\WasmPInvokeModules.props"
+          Condition="'$(TargetOS)' == 'browser'" />
 
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
@@ -90,6 +92,7 @@
       <_WasmCoreLibIL Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)System.Private.CoreLib.dll</_WasmCoreLibIL>
       <_WasmCoreLibIL Condition="'$(_WasmCoreLibIL)' == '' and Exists('$(CoreCLRArtifactsPath)IL\System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)IL\System.Private.CoreLib.dll</_WasmCoreLibIL>
       <_WasmCrossgen2Exe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmCrossgen2Exe>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(WasmCoreClrFrameworkPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
     <Error Condition="'$(_WasmCoreLibIL)' == ''"
            Text="PublishReadyToRun is true but System.Private.CoreLib IL was not found under '$(CoreCLRArtifactsPath)'. Build CoreCLR first or set PublishReadyToRun=false." />
