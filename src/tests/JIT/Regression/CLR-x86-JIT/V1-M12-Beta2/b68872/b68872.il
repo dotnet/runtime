@@ -9,11 +9,19 @@
 }
 .assembly 'b68872' { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+
 .namespace JitTest
 {
   .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/133468')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsWasmReadyToRun')
+    }
     .method public hidebysig static int32
             Main() cil managed
     {

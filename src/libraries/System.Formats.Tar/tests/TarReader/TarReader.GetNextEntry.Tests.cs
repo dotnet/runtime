@@ -640,6 +640,44 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader2.GetNextEntry());
         }
 
+        [Fact]
+        public void Read_UstarEntry_PrefixWithTrailingSlash_DoesNotDuplicateSeparator()
+        {
+            // Some archives may write the ustar prefix field with a trailing slash already
+            // included. TarReader must not synthesize a double slash when combining prefix and name.
+            string prefix = "./sdk/";
+            string nameField = "file.txt";
+            string expectedName = "./sdk/file.txt";
+
+            using MemoryStream archiveStream = new MemoryStream();
+
+            byte[] entryHeader = new byte[512];
+            Encoding.UTF8.GetBytes(nameField).CopyTo(entryHeader.AsSpan(0));
+            Encoding.UTF8.GetBytes("0000644\0").CopyTo(entryHeader.AsSpan(100, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(entryHeader.AsSpan(108, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(entryHeader.AsSpan(116, 8));
+            Encoding.UTF8.GetBytes("00000000000\0").CopyTo(entryHeader.AsSpan(124, 12));
+            Encoding.UTF8.GetBytes("00000000000\0").CopyTo(entryHeader.AsSpan(136, 12));
+            entryHeader[156] = (byte)'0'; // RegularFile
+            Encoding.UTF8.GetBytes("ustar\0").CopyTo(entryHeader.AsSpan(257, 6));
+            Encoding.UTF8.GetBytes("00").CopyTo(entryHeader.AsSpan(263, 2));
+            Encoding.UTF8.GetBytes(prefix).CopyTo(entryHeader.AsSpan(345));
+
+            WriteHeaderChecksum(entryHeader);
+            archiveStream.Write(entryHeader);
+
+            // End-of-archive markers.
+            archiveStream.Write(new byte[1024]);
+            archiveStream.Seek(0, SeekOrigin.Begin);
+
+            using TarReader reader = new TarReader(archiveStream);
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(expectedName, entry.Name);
+            Assert.DoesNotContain("//", entry.Name);
+            Assert.Null(reader.GetNextEntry());
+        }
+
         [Theory]
         [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
         [InlineData("GnuLongPath", MaxMetadataBlockSize)]
