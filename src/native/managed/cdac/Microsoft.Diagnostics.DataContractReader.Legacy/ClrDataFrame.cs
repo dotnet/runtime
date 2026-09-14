@@ -540,6 +540,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                     AddressOrValue = locations[0].AddressOrValue,
                     Size = (ulong)typeSize,
                     IsRegisterValue = locations[0].IsRegisterValue,
+                    HasReadFailure = locations[0].HasReadFailure,
                 },
             ];
         }
@@ -1050,7 +1051,22 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         ulong size = varInfo.Kind == DebugVarLocKind.DoubleStack ? 2 * (ulong)pointerSize : (ulong)pointerSize;
 
         if (varInfo.IsByRef)
-            address = DereferenceOrZero(target, address);
+        {
+            if (!target.TryReadPointer(address, out TargetPointer byRefAddress) ||
+                byRefAddress == TargetPointer.Null)
+            {
+                return
+                [
+                    new NativeVarLocation
+                    {
+                        AddressOrValue = 0,
+                        Size = (ulong)pointerSize,
+                        HasReadFailure = true,
+                    },
+                ];
+            }
+            address = byRefAddress.Value;
+        }
 
         return [new NativeVarLocation { AddressOrValue = address, Size = size, IsRegisterValue = false }];
     }
