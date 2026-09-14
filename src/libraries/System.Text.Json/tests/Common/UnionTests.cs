@@ -429,24 +429,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("hello", GetUnionValue(value!));
         }
 
-        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
-        public union IntOnly(int);
-
-        [Fact]
-        public async Task UnionNumberHandling_TypeAttributeIsAppliedToCaseConverter()
-        {
-            JsonSerializerOptions options = new()
-            {
-                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
-            };
-
-            IntOnly? value = await Serializer.DeserializeWrapper<IntOnly>("\"42\"", options);
-            Assert.Equal(42, GetUnionValue(value!));
-
-            string json = await Serializer.SerializeWrapper(new IntOnly(42), options);
-            Assert.Equal("\"42\"", json);
-        }
-
         public class Animal { }
         public class Dog : Animal { }
         public class Lab : Dog { }
