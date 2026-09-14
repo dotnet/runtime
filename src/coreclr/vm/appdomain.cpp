@@ -3786,6 +3786,21 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     }
 }
 
+void AppDomain::GCScanExternalMemoryHandles(promote_func *fn, ScanContext *sc)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    for (SListElem<ExternalMemoryHandle>* item = m_externalMemoryHandles.GetHead(); item != NULL; item = SListTail<SListElem<ExternalMemoryHandle>>::GetNext(item))
+    {
+        item->GetValue().GCScanRoot(fn, sc);
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 //------------------------------------------------------------------------

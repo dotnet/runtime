@@ -334,6 +334,11 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
             SystemDomain::EnumAllStaticGCRefs(fn, sc);
         }
     }
+
+    if (::GetAppDomain())
+    {
+        ::GetAppDomain()->GCScanExternalMemoryHandles(fn, sc);
+    }
 }
 
 void GCToEEInterface::GcStartWork (int condemned, int max_gen)

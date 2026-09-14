@@ -35,6 +35,8 @@
 
 #include "codeversion.h"
 
+#include "externalmemoryhandle.h"
+
 class SystemDomain;
 class AppDomain;
 class GlobalStringLiteralMap;
@@ -1534,6 +1536,12 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
     friend struct cdac_data<AppDomain>;
+
+public:
+    void GCScanExternalMemoryHandles(promote_func *fn, ScanContext *sc);
+
+private:
+    SListTail<SListElem<ExternalMemoryHandle>> m_externalMemoryHandles;
 };  // class AppDomain
 
 template<>
