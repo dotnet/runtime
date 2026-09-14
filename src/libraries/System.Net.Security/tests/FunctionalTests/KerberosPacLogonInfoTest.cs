@@ -76,7 +76,11 @@ namespace System.Net.Security.Tests
         public void Decode_ZeroUserId_UsesFirstExtraSid()
         {
             byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
-            logonInfo.AsSpan(116, sizeof(uint)).Clear();
+            byte[] userAndGroupIds = Convert.FromHexString("500400000102000003000000");
+            int userIdOffset = logonInfo.AsSpan().IndexOf(userAndGroupIds);
+            Assert.True(userIdOffset >= 0);
+
+            logonInfo.AsSpan(userIdOffset, sizeof(uint)).Clear();
 
             KerberosPacLogonInfo? result = KerberosPacLogonInfo.Decode(logonInfo);
 
