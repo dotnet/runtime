@@ -132,28 +132,22 @@ struct DispatchStubShort
 
     static BOOL isShortStub(LPCBYTE pCode);
 
-    inline BOOL isJmpAbsEncoding() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return IsJmpAbsAvailable();
-    }
-
     inline PCODE implTarget() const
     {
         LIMITED_METHOD_CONTRACT;
-        return isJmpAbsEncoding() ? (PCODE)_apx._implTarget : (PCODE)_legacy._implTarget;
+        return IsJmpAbsAvailable() ? (PCODE)_apx._implTarget : (PCODE)_legacy._implTarget;
     }
 
     inline TADDR implTargetSlot() const
     {
         LIMITED_METHOD_CONTRACT;
-        return isJmpAbsEncoding() ? (TADDR)&_apx._implTarget : (TADDR)&_legacy._implTarget;
+        return IsJmpAbsAvailable() ? (TADDR)&_apx._implTarget : (TADDR)&_legacy._implTarget;
     }
 
     inline PCODE failTarget() const
     {
         LIMITED_METHOD_CONTRACT;
-        if (isJmpAbsEncoding())
+        if (IsJmpAbsAvailable())
         {
             // APX: displacement is relative to the next instruction, the jmpabs
             return (PCODE)&_apx.jmpabsPrefix + _apx._failDispl;
@@ -171,7 +165,6 @@ private:
     // (target at 24, since jmpabs has a 3-byte opcode). Enforced by InitializeStatic()'s asserts.
     union
     {
-        // Legacy encoding (19 bytes): nop; mov rax, imm64; jne near; jmp rax
         struct
         {
             BYTE    nop;              // 90                       nop      ; aligns _implTarget
@@ -182,7 +175,6 @@ private:
             BYTE    part3[2];         // FF E0                    jmp    rax
         } _legacy;
 
-        // APX encoding (19 bytes): nop; jne near; jmpabs
         struct
         {
             BYTE    nop[2];           // 66 90                    nop      ; aligns _implTarget
@@ -192,8 +184,6 @@ private:
             size_t  _implTarget;      // xx xx xx xx xx xx xx xx              64-bit address at +11
         } _apx;
 
-        // Pins the union size so the stub size cannot depend on the encoding in use.
-        BYTE _bytes[19];
     };
 };
 
@@ -224,29 +214,22 @@ struct DispatchStubLong
     friend struct DispatchStub;
 
     static inline BOOL isLongStub(LPCBYTE pCode);
-
-    inline BOOL isJmpAbsEncoding() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return IsJmpAbsAvailable();
-    }
-
     inline PCODE implTarget() const
     {
         LIMITED_METHOD_CONTRACT;
-        return isJmpAbsEncoding() ? (PCODE)_apx._implTarget : (PCODE)_legacy._implTarget;
+        return IsJmpAbsAvailable() ? (PCODE)_apx._implTarget : (PCODE)_legacy._implTarget;
     }
 
     inline TADDR implTargetSlot() const
     {
         LIMITED_METHOD_CONTRACT;
-        return isJmpAbsEncoding() ? (TADDR)&_apx._implTarget : (TADDR)&_legacy._implTarget;
+        return IsJmpAbsAvailable() ? (TADDR)&_apx._implTarget : (TADDR)&_legacy._implTarget;
     }
 
     inline PCODE failTarget() const
     {
         LIMITED_METHOD_CONTRACT;
-        return isJmpAbsEncoding() ? (PCODE)_apx._failTarget : (PCODE)_legacy._failTarget;
+        return IsJmpAbsAvailable() ? (PCODE)_apx._failTarget : (PCODE)_legacy._failTarget;
     }
 
 private:
@@ -255,8 +238,6 @@ private:
     // which is free because these are allocated with CODE_SIZE_ALIGN (16) and 40 already took 48.
     union
     {
-        // Legacy encoding (35 bytes): nop; mov rax, imm64; jne short failLabel; jmp rax;
-        //                             failLabel: mov rax, imm64; jmp rax
         struct
         {
             BYTE    nop;              // 90                       nop      ; aligns _implTarget
@@ -272,7 +253,6 @@ private:
             BYTE    pad[8];           // CC ...                   unreachable padding
         } _legacy;
 
-        // APX encoding (35 bytes): jne near failLabel; nop; jmpabs; failLabel: jmpabs
         struct
         {
             BYTE    part1[2];            // 0F 85                 jne near
@@ -286,8 +266,6 @@ private:
             BYTE    pad[5];              // CC ...                unreachable padding
         } _apx;
 
-        // Pins the size of the union; see the note in DispatchStubShort.
-        BYTE _bytes[35];
     };
 };
 
@@ -397,9 +375,6 @@ private:
     size_t  _expectedMT;          // xx xx xx xx xx xx xx xx              64-bit address
     BYTE    part1 [3];            // 48 39 XX                 cmp    [THIS_REG], rax
 
-    // No alignment byte here: the nop that aligns _implTarget is at the start of each body, since
-    // its width differs per encoding (1 byte legacy, 2 APX) and this struct is shared by both.
-
     // Followed by either DispatchStubShort or DispatchStubLong, depending
     // on whether we were able to make a rel32 or had to make an abs64 jump
     // to the resolve stub on failure.
@@ -441,7 +416,7 @@ struct DispatchHolder
 
         if (IsJmpAbsAvailable())
         {
-            // APX: nop at bytes 0-1, jne near at 2-7, so the base is the jmpabs at byte 8.
+            // APX
             LPCBYTE pFrom = stubMemory + sizeof(DispatchStub) + offsetof(DispatchStubShort, _apx.jmpabsPrefix);
             size_t cbRelJump = failTarget - (PCODE)pFrom;
             return FitsInI4(cbRelJump);
