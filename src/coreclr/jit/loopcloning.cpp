@@ -1348,10 +1348,20 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         {
             const int constInit  = iterInfo->ConstInitValue;
             const int constLimit = iterInfo->ConstLimit();
-            if ((constInit >= 0) && (constLimit >= 0) && (constInit >= constLimit) &&
-                (((unsigned)constInit - (unsigned)constLimit) % (unsigned)stride == 0))
+            if ((constInit >= 0) && (constLimit >= 0) && (constInit >= constLimit))
             {
-                provenSafe = true;
+                // The last value for which the loop test is still true is
+                // "constLimit + r", where "r" is "(constInit - constLimit) %
+                // stride". That is safe (won't step past 0 on the next
+                // decrement) as long as it is >= stride, unless the test is
+                // the exclusive "GT_GT" and "r" is 0: then the loop never
+                // actually visits "constLimit" (the smallest in-range value
+                // is "constLimit + stride"), so it's safe regardless.
+                const unsigned r = ((unsigned)constInit - (unsigned)constLimit) % (unsigned)stride;
+                if (((r == 0) && (iterInfo->TestOper() == GT_GT)) || ((unsigned)constLimit + r >= (unsigned)stride))
+                {
+                    provenSafe = true;
+                }
             }
         }
 

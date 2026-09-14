@@ -111,6 +111,47 @@ public class DownCounted
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGTConstSafe(int[] a)
+    {
+        // init=7, limit=1, stride=3: remainder r=0, so a GT test never
+        // visits "limit" itself -- always safe to clone.
+        int sum = 0;
+        for (uint i = 7; i > 1; i -= 3)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGEConstSafe(int[] a)
+    {
+        // init=9, limit=3, stride=3: remainder r=0 and limit >= stride, so
+        // the last visited value (limit + r == limit) can't underflow on
+        // the next decrement.
+        int sum = 0;
+        for (uint i = 9; i >= 3; i -= 3)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGEConstUnsafe(int[] a)
+    {
+        // init=7, limit=1, stride=3: remainder r=0 but limit < stride, so
+        // the loop visits "limit" (1) via GE and then underflows on the
+        // next decrement -- must not be proven safe.
+        int sum = 0;
+        for (uint i = 7; i >= 1; i -= 3)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
     [Fact]
     public static void UnsignedUnderflowTest()
     {
@@ -125,5 +166,15 @@ public class DownCounted
         Assert.Equal(11, UnsignedArrayGE(a, 7, 2));
         Assert.Equal(11, UnsignedSpanGT(a, 7, 1));
         Assert.Equal(11, UnsignedSpanGE(a, 7, 2));
+    }
+
+    [Fact]
+    public static void UnsignedConstBoundsTest()
+    {
+        int[] a = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        Assert.Equal(11, UnsignedArrayGTConstSafe(a));
+        Assert.Equal(18, UnsignedArrayGEConstSafe(a));
+        Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGEConstUnsafe(a));
     }
 }
