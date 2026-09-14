@@ -9,13 +9,13 @@
     <MergedWrapperProjectReference Include="aliasing_retbuf\aliasing_retbuf.csproj" />
     <MergedWrapperProjectReference Include="Convert\out_of_range_fp_to_int_conversions.csproj" />
     <MergedWrapperProjectReference Include="LoopAlignment\LoopsToProcess.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\ReturnBufferInitialization.csproj" />
     <MergedWrapperProjectReference Include="physicalpromotion\addressinterference.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn1.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn2.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\mixedpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\physicalpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\readbackbeforeqmark.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\ReturnBufferInitialization.csproj" />
     <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
     <MergedWrapperProjectReference Include="tailcall\mutual_recursion.fsproj" />
     <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_do.csproj" />
