@@ -62,7 +62,6 @@ nativeStringResourceTable_mscorrc
 #CreateFileW
 #CreateEventW
 #CreateEventExW
-#CreateSemaphoreExW
 #CreateThread
 #CloseHandle
 #DebugBreak
@@ -98,7 +97,6 @@ nativeStringResourceTable_mscorrc
 #RaiseException
 #RaiseFailFastException
 #ReadFile
-#ReleaseSemaphore
 #ResetEvent
 #ResumeThread
 #SearchPathW

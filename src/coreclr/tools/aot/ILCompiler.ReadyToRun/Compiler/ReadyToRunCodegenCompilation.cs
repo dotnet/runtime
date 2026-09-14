@@ -244,15 +244,15 @@ namespace ILCompiler
                 _rootAdder(_deferredPhaseNode, "Deferred nodes");
             }
 
-            private void AddCompilationRootHelper(IMethodNode methodEntryPoint, bool rootMinimalDependencies, string reason)
+            private void AddCompilationRootHelper(DependencyNodeCore<NodeFactory> node, bool rootMinimalDependencies, string reason)
             {
                 if (rootMinimalDependencies)
                 {
-                    _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
+                    _deferredPhaseNode.AddDependency(node);
                 }
                 else
                 {
-                    _rootAdder(methodEntryPoint, reason);
+                    _rootAdder(node, reason);
                 }
             }
 
@@ -261,7 +261,7 @@ namespace ILCompiler
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
-                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    MethodWithGCInfo methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
                     AddCompilationRootHelper(methodEntryPoint, rootMinimalDependencies, reason);
 
                     // Process unbox stubs inclusion for methods that have all type args Canon. InheritedVirtualMethodsNode
@@ -269,7 +269,7 @@ namespace ILCompiler
                     // with valuetypes.
                     if (_factory.NeedsUnboxingStub(canonMethod))
                     {
-                        IMethodNode unboxingStub = _factory.UnboxingStub(canonMethod);
+                        DependencyNodeCore<NodeFactory> unboxingStub = _factory.UnboxingStub(canonMethod);
                         AddCompilationRootHelper(unboxingStub, rootMinimalDependencies, reason);
                     }
                 }

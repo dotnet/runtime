@@ -2959,10 +2959,9 @@ void Compiler::fgDumpWasmControlFlowDot()
 //        R: rethrow;
 //    K:
 //
-//    In the example above, if neither catch was supposed to handle the exception, the runtime
-//    will set cv to -1 (during the first pass, once it determines no try in the method will
-//    catch the exception) so that all try_table dispatches in the method will go to the rethrow
-//    block, which will then rethrow the exception to the next enclosing try.
+//    Before any catch funclet stores a continuation index, codegen initializes cv to zero.
+//    Continuation indices start at one, so all try_table dispatches in the method will go to
+//    the rethrow block, which will then rethrow the exception to the next enclosing try.
 //
 //    Note this setup does not handle the case where the continuation is within the dispatching try,
 //    because a try_table cannot branch within itself, and must cover the entire try body. Those cases
@@ -3254,14 +3253,14 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         cases[i] = nullptr;
     }
 
-    // Track the unique edge per continuation block. When many cases share the
+    // Track the unique reset pad and edge per continuation block. When many cases share the
     // same continuation (e.g. a large mutual-protect catch set whose handlers
     // all `leave` to the same target) this avoids an O(N^2) cost in
     // fgAddRefPred (which must do an O(preds) scan of the destination's
     // pred list per call) -- we just bump dup counts directly for duplicates.
     //
-    BlockToFlowEdgeMap* const continuationEdges =
-        new (this, CMK_FlowEdge) BlockToFlowEdgeMap(getAllocator(CMK_FlowEdge));
+    BlockToBlockMap    resumePads(getAllocator(CMK_FlowEdge));
+    BlockToFlowEdgeMap continuationEdges(getAllocator(CMK_FlowEdge));
 
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
@@ -3274,23 +3273,52 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
 
         JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
 
-        FlowEdge* caseEdge;
-        if (continuationEdges->Lookup(continuation, &caseEdge))
+        BasicBlock* resumePad;
+        FlowEdge*   caseEdge;
+        if (resumePads.Lookup(continuation, &resumePad))
         {
             // Edge from switchBlock to this continuation already exists; just
             // bump the dup count (and the destination's ref count) instead of
             // doing another linear pred-list scan via fgAddRefPred.
             //
+            bool const found = continuationEdges.Lookup(continuation, &caseEdge);
+            assert(found);
             caseEdge->incrementDupCount();
-            continuation->bbRefs++;
+            resumePad->bbRefs++;
         }
         else
         {
-            caseEdge = fgAddRefPred(continuation, switchBlock);
-            continuationEdges->Set(continuation, caseEdge);
+            // Clear the resume IP only after this try has accepted the resumption.
+            // A nonmatching inner try must preserve the value for an enclosing try.
+            //
+            resumePad = fgNewBBafter(BBJ_ALWAYS, switchBlock, /* extendRegion */ false);
+            // Keep the pad in the switch's region; the edge into the continuation is
+            // repaired by fgWasmRepairTryEntries when it enters a try region.
+            resumePad->copyEHRegion(switchBlock);
+            resumePad->inheritWeightPercentage(switchBlock, 0);
+            if (bbInTryRegions(regionIndex, continuation))
+            {
+                resumePad->SetFlags(BBF_CATCH_RESUMPTION);
+            }
+
+            FlowEdge* const padEdge = fgAddRefPred(continuation, resumePad);
+            padEdge->setLikelihood(1.0);
+            resumePad->SetTargetEdge(padEdge);
+
+            GenTree* const zero  = gtNewIconNode(0, TYP_INT);
+            GenTree* const store = gtNewStoreLclVarNode(resumeIPLocalNum, zero);
+            LIR::Range     range = LIR::SeqTree(this, store);
+            LIR::AsRange(resumePad).InsertAtEnd(std::move(range));
+
+            resumePads.Set(continuation, resumePad);
+
+            caseEdge = fgAddRefPred(resumePad, switchBlock);
+            continuationEdges.Set(continuation, caseEdge);
 
             // We only get here on exception
             caseEdge->setLikelihood(0);
+
+            JITDUMP("Resume pad " FMT_BB " for " FMT_BB "\n", resumePad->bbNum, continuation->bbNum);
         }
 
         assert(cases[biasedCaseIndex] == nullptr);
@@ -3319,7 +3347,10 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
         BasicBlock* const continuation = catchRetBlock->GetTarget();
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
+        BasicBlock*       resumePad;
+        bool const        found = resumePads.Lookup(continuation, &resumePad);
+        assert(found);
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, resumePad->bbNum))
         {
             succCount++;
         }
@@ -3340,10 +3371,13 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
         BasicBlock* const continuation = catchRetBlock->GetTarget();
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
+        BasicBlock*       resumePad;
+        bool const        foundPad = resumePads.Lookup(continuation, &resumePad);
+        assert(foundPad);
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, resumePad->bbNum))
         {
             FlowEdge*  edge  = nullptr;
-            bool const found = continuationEdges->Lookup(continuation, &edge);
+            bool const found = continuationEdges.Lookup(continuation, &edge);
             assert(found);
             succs[succNumber] = edge;
             succNumber++;
