@@ -416,17 +416,20 @@ namespace System.Text.Json.Serialization.Tests
         [JsonNumberHandling(JsonNumberHandling.Strict)]
         public union IntOrString(int, string);
 
-        [Fact]
-        public async Task UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults()
+        [Theory]
+        [InlineData("42", 42)]
+        [InlineData("\"hello\"", "hello")]
+        [InlineData("\"42\"", "42")]
+        public async Task UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults(string json, object expectedValue)
         {
             JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
             {
                 TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
             };
 
-            IntOrString? value = await Serializer.DeserializeWrapper<IntOrString>("\"hello\"", options);
+            IntOrString? value = await Serializer.DeserializeWrapper<IntOrString>(json, options);
 
-            Assert.Equal("hello", GetUnionValue(value!));
+            Assert.Equal(expectedValue, GetUnionValue(value!));
         }
 
         public class Animal { }
