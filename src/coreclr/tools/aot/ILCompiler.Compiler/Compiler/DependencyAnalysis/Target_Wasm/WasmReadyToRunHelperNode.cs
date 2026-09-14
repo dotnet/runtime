@@ -17,23 +17,12 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodSignature _signature;
 
-        public MethodSignature Signature
-        {
-            get
-            {
-                if (_signature is null)
-                {
-                    InitializeWasmSignature(Id, Target);
-                }
-
-                return _signature;
-            }
-        }
+        public MethodSignature Signature => _signature ??= InitializeWasmSignature(Id, Target);
         public bool IsUnmanagedCallersOnly => false;
         public bool IsAsyncCall => false;
         public bool HasGenericContextArg => false;
 
-        private void InitializeWasmSignature(ReadyToRunHelperId id, object target)
+        private static MethodSignature InitializeWasmSignature(ReadyToRunHelperId id, object target)
         {
             TypeSystemContext context = id switch
             {
@@ -51,7 +40,8 @@ namespace ILCompiler.DependencyAnalysis
             };
             TypeDesc returnType = id == ReadyToRunHelperId.DelegateCtor ?
                 context.GetWellKnownType(WellKnownType.Void) : nativeIntType;
-            _signature = new MethodSignature(MethodSignatureFlags.Static, genericParameterCount: 0, returnType, parameters);
+
+            return new MethodSignature(MethodSignatureFlags.Static, genericParameterCount: 0, returnType, parameters);
         }
 
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
