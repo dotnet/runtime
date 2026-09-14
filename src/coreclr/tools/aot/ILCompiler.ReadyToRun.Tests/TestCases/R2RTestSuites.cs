@@ -130,6 +130,7 @@ public class R2RTestSuites
                 method.SignatureString.Contains("AddDoubles", StringComparison.Ordinal));
             const int WasmRegTypeShift = 29;
             const uint F64WasmValueType = 4;
+            const int WasmEncodedFrameBase = 2;
             List<NativeVarInfo> doubleVariables = addDoubles.RuntimeFunctions
                 .Where(runtimeFunction => runtimeFunction.DebugInfo is not null)
                 .SelectMany(runtimeFunction => runtimeFunction.DebugInfo!.VariablesList)
@@ -158,7 +159,7 @@ public class R2RTestSuites
                     startOffset: 0x22,
                     endOffset: 0x34,
                     locationType: VarLocType.VLT_STK2,
-                    data1: 2,
+                    data1: WasmEncodedFrameBase,
                     data2: 0x18,
                     data3: 0));
             Assert.Single(doubleVariables, variable =>
@@ -182,7 +183,7 @@ public class R2RTestSuites
                     startOffset: 0x22,
                     endOffset: 0x34,
                     locationType: VarLocType.VLT_STK2,
-                    data1: 2,
+                    data1: WasmEncodedFrameBase,
                     data2: 0x10,
                     data3: 0));
             Assert.All(
@@ -240,7 +241,7 @@ public class R2RTestSuites
                     startOffset: 0x3B,
                     endOffset: 0x1F2,
                     locationType: VarLocType.VLT_STK,
-                    data1: 2,
+                    data1: WasmEncodedFrameBase,
                     data2: 0x2C,
                     data3: 0));
             Assert.Single(sumWithFinallyRoot.DebugInfo.VariablesList, variable =>
@@ -252,11 +253,92 @@ public class R2RTestSuites
                     startOffset: 0x3B,
                     endOffset: 0x1F2,
                     locationType: VarLocType.VLT_STK,
-                    data1: 2,
+                    data1: WasmEncodedFrameBase,
                     data2: 0x24,
                     data3: 0));
             Assert.Single(sumWithFinally.RuntimeFunctions, runtimeFunction =>
                 runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
+            ReadyToRunMethod gcLocalAcrossFinally = Assert.Single(methods, method =>
+                method.SignatureString.Contains("GcLocalAcrossFinally", StringComparison.Ordinal));
+            Assert.Equal(
+                new[] { "Webcil.WasmWebcilModule+GcMarker", "int" },
+                gcLocalAcrossFinally.LocalSignature);
+            RuntimeFunction gcLocalRoot = Assert.Single(
+                gcLocalAcrossFinally.RuntimeFunctions,
+                runtimeFunction => runtimeFunction.DebugInfo is not null);
+            Assert.Equal(4, gcLocalRoot.DebugInfo!.VariablesList.Count);
+            Assert.Single(gcLocalRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0x3B,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000001,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(gcLocalRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x3B,
+                    endOffset: 0x1B6,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x2C,
+                    data3: 0));
+            NativeVarInfo gcMarker = Assert.Single(gcLocalRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x3B,
+                    endOffset: 0x1B6,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x24,
+                    data3: 0));
+            Assert.Single(gcLocalRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 2,
+                    variableType: VariableType.Local,
+                    variableIndex: 1,
+                    startOffset: 0x3B,
+                    endOffset: 0x1B6,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x20,
+                    data3: 0));
+            ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
+                Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(gcLocalAcrossFinally.GcInfo);
+            Assert.Equal(2u, gcInfo.SlotTable.NumSlots);
+            Assert.Equal(0u, gcInfo.SlotTable.NumRegisters);
+            Assert.Equal(0u, gcInfo.SlotTable.NumStackSlots);
+            Assert.Equal(2u, gcInfo.SlotTable.NumUntracked);
+            ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot markerGcSlot = Assert.Single(
+                gcInfo.SlotTable.GcSlots,
+                slot => slot.StackSlot?.SpOffset == gcMarker.VariableLocation.Data2);
+            Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, markerGcSlot.StackSlot.Base);
+            Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, markerGcSlot.Flags);
+            Assert.Single(gcLocalAcrossFinally.RuntimeFunctions, runtimeFunction =>
+                runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
+
+            // Wasm frame homes are addressed through the producer's logical frame pointer. The
+            // current wire encoding collapses REG_FPBASE, REG_SPBASE, and REGNUM_AMBIENT_SP to 2,
+            // so the consumer must distinguish FP from SP using the live frame context.
+            DebugInfoBoundsEntry collectCall = Assert.Single(
+                gcLocalRoot.DebugInfo.BoundsList,
+                bound => bound.ILOffset == 0x10);
+            Assert.Equal(0x161u, collectCall.NativeOffset);
+            Assert.Equal(SourceTypes.StackEmpty, collectCall.SourceTypes);
+            Assert.True(gcMarker.StartOffset <= collectCall.NativeOffset);
+            Assert.True(collectCall.NativeOffset < gcMarker.EndOffset);
             // Has a catch clause, so the JIT emits a try_table catch_ref that references the
             // imported restore-context exception tag.
             Assert.True(methods.Exists(method =>
