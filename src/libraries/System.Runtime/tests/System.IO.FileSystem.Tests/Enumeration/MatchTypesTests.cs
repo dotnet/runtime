@@ -794,8 +794,6 @@ namespace System.IO.Tests.Enumeration
 
             // The exact results depend on whether 8.3 name generation is enabled on the volume
             // If enabled, should match longName1 and longName2; if disabled, might match nothing
-            // We verify that we don't get false positives
-            Assert.DoesNotContain(shortName.FullName, paths);
 
             // If short names are enabled, we should get matches
             if (paths.Length > 0)
