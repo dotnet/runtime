@@ -61,6 +61,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             };
         }
 
+        /// <summary>
+        /// Whether an <c>Initialize</c> method is generated for <paramref name="type"/> to construct it. This is the
+        /// case for a parameterized-constructor type (whose parameters are bound and passed to the constructor) and for
+        /// a parameterless-constructor type whose required members force construction through an accessor that bypasses
+        /// the required-member check. Init-only and required members are then set post-construction in <c>BindCore</c>
+        /// (only when their config key is present), not in an object initializer, so their defaults are preserved.
+        /// </summary>
+        public static bool HasInitializeMethod(ObjectSpec type)
+        {
+            if (type.InitExceptionMessage is not null)
+            {
+                return false;
+            }
+
+            return type.InstantiationStrategy switch
+            {
+                ObjectInstantiationStrategy.ParameterizedConstructor => true,
+                ObjectInstantiationStrategy.ParameterlessConstructor => type.ConstructionRequiresAccessor,
+                _ => false,
+            };
+        }
+
         public bool ShouldBindTo(PropertySpec property)
         {
             if (property.IsIgnored || !IsAccessible())

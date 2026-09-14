@@ -222,11 +222,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
             {
-                if (type is INamedTypeSymbol { IsGenericType: true } genericType &&
-                    genericType.ConstructUnboundGenericType() is INamedTypeSymbol { } unboundGeneric &&
-                    unboundGeneric.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
-                    underlyingType = genericType.TypeArguments[0];
+                    underlyingType = ((INamedTypeSymbol)type).TypeArguments[0];
                     return true;
                 }
 
@@ -564,9 +562,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return true;
                 }
 
-                if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                if (IsNullable(type, out ITypeSymbol? underlyingType))
                 {
-                    type = ((INamedTypeSymbol)type).TypeArguments[0]; // extract the T from a Nullable<T>
+                    type = underlyingType;
                 }
 
                 if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IntPtr, type)  ||
@@ -659,6 +657,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string? initExceptionMessage = null;
 
                 IMethodSymbol? ctor = null;
+                bool hasExplicitParameterlessCtor = false;
 
                 if (!(typeSymbol.IsAbstract || typeSymbol.TypeKind is TypeKind.Interface))
                 {
@@ -691,6 +690,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
 
                     bool hasPublicParameterlessCtor = typeSymbol.IsValueType || parameterlessCtor is not null;
+
+                    // A struct's synthesized parameterless constructor is implicitly declared; an author-written one is
+                    // not. This matters for value-type construction that must bypass the required-member check: default(T)
+                    // is only correct for the synthesized constructor (which does nothing), while an explicit constructor
+                    // must actually run (like Activator.CreateInstance does for the reflection binder).
+                    hasExplicitParameterlessCtor = parameterlessCtor is { IsImplicitlyDeclared: false };
+
                     if (!hasPublicParameterlessCtor && hasMultipleParameterizedCtors)
                     {
                         initDiagDescriptor = DiagnosticDescriptors.MultipleParameterizedConstructors;
@@ -713,6 +719,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     initializationStrategy = ctor.Parameters.Length is 0 ? ObjectInstantiationStrategy.ParameterlessConstructor : ObjectInstantiationStrategy.ParameterizedConstructor;
                 }
 
+                // A constructor marked [SetsRequiredMembers] satisfies all required members, so the compiler does not
+                // require them to be set in an object initializer even when the generator omits them.
+                bool ctorSetsRequiredMembers = ctor is not null && _typeSymbols.SetsRequiredMembersAttribute is not null &&
+                    ctor.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.SetsRequiredMembersAttribute));
+
                 if (initDiagDescriptor is not null)
                 {
                     Debug.Assert(initExceptionMessage is not null);
@@ -721,6 +732,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 Dictionary<string, PropertySpec>? properties = null;
                 HashSet<string>? reportedUnsupportedProperties = null;
+                bool hasRequiredMember = false;
 
                 INamedTypeSymbol? current = typeSymbol;
                 while (current is not null)
@@ -760,10 +772,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
                             bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
 
+                            hasRequiredMember |= property.IsRequired;
+
+                            (TypeRef? accessorDeclaringTypeRef, bool setterCanUseUnsafeAccessor, GenericAccessorInfo genericInfo) =
+                                GetSetterAccessorInfo(property, typeSymbol);
+
                             PropertySpec spec = new(property, new TypeRef(property.Type))
                             {
                                 ConfigurationKeyName = configKeyName,
                                 IsIgnored = isIgnored,
+                                AccessorDeclaringTypeRef = accessorDeclaringTypeRef,
+                                SetterCanUseUnsafeAccessor = setterCanUseUnsafeAccessor,
+                                DeclaringTypeParameterNames = genericInfo.TypeParameterNames,
+                                OpenDeclaringTypeFQN = genericInfo.OpenDeclaringTypeFQN,
+                                OpenPropertyTypeFQN = genericInfo.OpenMemberTypeFQN,
+                                DeclaringTypeParameterConstraintClauses = genericInfo.ConstraintClauses,
                             };
 
                             if (!spec.IsIgnored && (spec.CanGet || spec.CanSet || BacksConstructorParameter(ctor, propertyName)))
@@ -828,12 +851,111 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     static string FormatParams(List<string> names) => string.Join(",", names);
                 }
 
+                // A type with required members not satisfied by a [SetsRequiredMembers] constructor cannot be created
+                // with a plain new T(...). It is instead created in a way that bypasses the required-member check, then
+                // the required members are set post-construction (only when their config key is present), matching the
+                // reflection binder and preserving their defaults for absent keys. Reference types, value types with a
+                // parameterized constructor, and value types with an explicit parameterless constructor go through a
+                // constructor accessor (so constructor arguments are passed and any author-written constructor runs). A
+                // value type whose only parameterless constructor is the synthesized one uses default(T), which also
+                // bypasses the check and is equivalent to running that do-nothing constructor.
+                bool needsRequiredMemberBypass = hasRequiredMember && !ctorSetsRequiredMembers;
+                bool constructValueTypeWithDefault = needsRequiredMemberBypass && typeSymbol.IsValueType &&
+                    initializationStrategy is ObjectInstantiationStrategy.ParameterlessConstructor && !hasExplicitParameterlessCtor;
+                bool constructionRequiresAccessor = needsRequiredMemberBypass && !constructValueTypeWithDefault;
+
+                // [UnsafeAccessor] is available on .NET 8+. It is used for init-only setters (via a generic wrapper class
+                // for generic types on .NET 9+) and, for non-generic types, the constructor accessor. Downlevel
+                // frameworks (and generic types for the constructor accessor) fall back to reflection.
+                bool constructorCanUseUnsafeAccessor = _typeSymbols.UnsafeAccessorAttribute is not null && !typeSymbol.IsGenericType;
+
                 return new ObjectSpec(
                     typeSymbol,
                     initializationStrategy,
                     properties: properties?.Values.ToImmutableEquatableArray(),
                     constructorParameters: ctorParams?.ToImmutableEquatableArray(),
-                    initExceptionMessage);
+                    initExceptionMessage)
+                {
+                    ConstructorCanUseUnsafeAccessor = constructorCanUseUnsafeAccessor,
+                    ConstructionRequiresAccessor = constructionRequiresAccessor,
+                    ConstructValueTypeWithDefault = constructValueTypeWithDefault,
+                };
+            }
+
+            private static readonly SymbolDisplayFormat s_fullyQualifiedWithConstraints =
+                SymbolDisplayFormat.FullyQualifiedFormat.AddGenericsOptions(SymbolDisplayGenericsOptions.IncludeTypeConstraints);
+
+            private readonly record struct GenericAccessorInfo(
+                ImmutableEquatableArray<string>? TypeParameterNames,
+                string? OpenDeclaringTypeFQN,
+                string? OpenMemberTypeFQN,
+                string? ConstraintClauses);
+
+            /// <summary>
+            /// Computes how an init-only setter accessor for <paramref name="property"/> targets its declaring type: the
+            /// base declaring type for an inherited property (when it can be named), whether <c>[UnsafeAccessor]</c> can be
+            /// used, and the open-generic wrapper info for a generic declaring type. Returns defaults for properties that
+            /// are not set through an accessor (non-public or non-init-only setters).
+            /// </summary>
+            private (TypeRef? AccessorDeclaringTypeRef, bool SetterCanUseUnsafeAccessor, GenericAccessorInfo GenericInfo) GetSetterAccessorInfo(
+                IPropertySymbol property, INamedTypeSymbol boundType)
+            {
+                if (property.SetMethod is not { DeclaredAccessibility: Accessibility.Public, IsInitOnly: true })
+                {
+                    return (null, false, default);
+                }
+
+                INamedTypeSymbol declaringType = property.ContainingType;
+                bool isInherited = !SymbolEqualityComparer.Default.Equals(declaringType, boundType);
+
+                // [UnsafeAccessor] resolves a setter against the exact type named. An inherited setter is declared on the
+                // base type, so the extern must name that type (and the derived instance is passed via an implicit
+                // upcast). When the base type cannot be named (inaccessible), the reflection fallback, which searches base
+                // types, is used instead.
+                TypeRef? accessorDeclaringTypeRef = null;
+                bool declaringTypeCanBeNamed = true;
+                if (isInherited)
+                {
+                    if (_typeSymbols.Compilation.IsSymbolAccessibleWithin(declaringType, _typeSymbols.Compilation.Assembly))
+                    {
+                        accessorDeclaringTypeRef = new TypeRef(declaringType);
+                    }
+                    else
+                    {
+                        declaringTypeCanBeNamed = false;
+                    }
+                }
+
+                bool declaringTypeIsGeneric = declaringType.IsGenericType;
+                bool setterCanUseUnsafeAccessor =
+                    _typeSymbols.UnsafeAccessorAttribute is not null &&
+                    declaringTypeCanBeNamed &&
+                    (!declaringTypeIsGeneric || _typeSymbols.SupportsGenericUnsafeAccessors);
+
+                GenericAccessorInfo genericInfo = default;
+                if (setterCanUseUnsafeAccessor && declaringTypeIsGeneric)
+                {
+                    INamedTypeSymbol definition = declaringType.OriginalDefinition;
+                    genericInfo = new GenericAccessorInfo(
+                        definition.TypeParameters.Select(static tp => tp.Name).ToImmutableEquatableArray(),
+                        definition.GetFullyQualifiedName(),
+                        property.OriginalDefinition.Type.GetFullyQualifiedName(),
+                        GetTypeParameterConstraintClauses(definition));
+                }
+
+                return (accessorDeclaringTypeRef, setterCanUseUnsafeAccessor, genericInfo);
+            }
+
+            private static string? GetTypeParameterConstraintClauses(INamedTypeSymbol type)
+            {
+                Debug.Assert(type.IsGenericType);
+
+                // The display string has the form "global::NS.Type<T, U> where T : C1 where U : C2".
+                // Return the constraint clauses (everything from the first " where ").
+                string display = type.ToDisplayString(s_fullyQualifiedWithConstraints);
+                const string whereMarker = " where ";
+                int whereIndex = display.IndexOf(whereMarker, StringComparison.Ordinal);
+                return whereIndex < 0 ? null : display.Substring(whereIndex + 1);
             }
 
             private static UnsupportedTypeSpec CreateUnsupportedCollectionSpec(TypeParseInfo typeParseInfo)

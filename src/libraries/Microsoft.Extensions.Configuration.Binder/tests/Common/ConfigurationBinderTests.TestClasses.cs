@@ -339,6 +339,60 @@ namespace Microsoft.Extensions
             public string Value { get; set; }
         }
 
+        public sealed class ClassWithInitOnlyCollectionParameterlessCtor
+        {
+            public List<string> Items { get; init; } = new();
+            public string Name { get; init; }
+        }
+
+        public sealed class InitOnlyPropertiesWithNonNullDefaults
+        {
+            public string Name { get; init; } = "defaultName";
+            public List<string> Items { get; init; } = new() { "preset" };
+        }
+
+        public class BaseWithInitOnlyProperty
+        {
+            public string BaseName { get; init; } = "baseDefault";
+        }
+
+        public sealed class DerivedWithInitOnlyProperty : BaseWithInitOnlyProperty
+        {
+            public string DerivedName { get; init; } = "derivedDefault";
+        }
+
+#if NET
+        public sealed class RequiredPropertiesParameterlessCtor
+        {
+            public required string Name { get; set; }
+            public required NestedForInitOnly Child { get; set; }
+        }
+
+        public sealed class RequiredInitPropertiesParameterlessCtor
+        {
+            public required string Name { get; init; }
+            public required NestedForInitOnly Child { get; init; }
+        }
+
+        public sealed class RequiredPropertiesWithNonNullDefaults
+        {
+            public required string Name { get; set; } = "defaultName";
+            public required List<string> Items { get; init; } = new() { "preset" };
+        }
+
+        public record struct StructWithCtorParamAndRequiredMember(int A)
+        {
+            public required int B { get; set; }
+        }
+
+        public struct StructWithExplicitParameterlessCtorAndRequiredMember
+        {
+            public int FromCtor;
+            public StructWithExplicitParameterlessCtorAndRequiredMember() { FromCtor = 42; }
+            public required int Req { get; set; }
+        }
+#endif
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject
