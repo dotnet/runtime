@@ -500,6 +500,20 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> Invoke_StaticReferenceVoid_SharedThunk_TestData()
         {
+            var tracker2 = new IntrinsicInvokeActionTracker();
+            var reference2 = new IntrinsicInvokeReference(2);
+            Action<IIntrinsicInvokeReference> callback2 = reference =>
+            {
+                Assert.Same(reference2, reference);
+                tracker2.Callback();
+            };
+            yield return new object[]
+            {
+                nameof(IntrinsicInvokeStaticReferenceTarget.Void2),
+                new object?[] { callback2, reference2 },
+                tracker2
+            };
+
             var tracker3 = new IntrinsicInvokeActionTracker();
             yield return new object[]
             {
@@ -2076,6 +2090,12 @@ namespace System.Reflection.Tests
             GC.KeepAlive(reference);
             GC.KeepAlive(task);
             return callback;
+        }
+
+        public static void Void2(Action<IIntrinsicInvokeReference> callback, IIntrinsicInvokeReference reference)
+        {
+            GC.Collect();
+            callback(reference);
         }
 
         public static void Void3(Task<string> task, Action callback, IIntrinsicInvokeReference reference)
