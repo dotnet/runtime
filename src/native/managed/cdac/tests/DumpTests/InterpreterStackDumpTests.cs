@@ -109,7 +109,10 @@ public class InterpreterStackDumpTests : DumpTestBase
 
         // Find the first interpreter method (MethodA/B/C) on the stack.
         ResolvedFrame interpFrame = walker.Frames
-            .First(f => f.Name is "MethodA" or "MethodB" or "MethodC" or "MethodD");
+            .First(f => f.Name?.Contains("MethodA", StringComparison.Ordinal) == true
+                     || f.Name?.Contains("MethodB", StringComparison.Ordinal) == true
+                     || f.Name?.Contains("MethodC", StringComparison.Ordinal) == true
+                     || f.Name?.Contains("MethodD", StringComparison.Ordinal) == true);
 
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(interpFrame.MethodDescPtr);
         TargetCodePointer nativeCode = rts.GetNativeCode(mdHandle);
@@ -160,7 +163,7 @@ public class InterpreterStackDumpTests : DumpTestBase
         string[] expectedMethods = ["MethodA", "MethodB", "MethodC", "MethodD"];
         foreach (string method in expectedMethods)
         {
-            int count = walker.Frames.Count(f => string.Equals(f.Name, method, StringComparison.Ordinal));
+            int count = walker.Frames.Count(f => f.Name?.Contains(method, StringComparison.Ordinal) == true);
             Assert.True(count == 1,
                 $"Expected '{method}' to appear exactly once but found {count} occurrence(s). " +
                 $"Full stack: [{string.Join(", ", walker.Frames.Select(f => $"{f.Name ?? "<null>"}({f.FrameName ?? "frameless"})"))}]");

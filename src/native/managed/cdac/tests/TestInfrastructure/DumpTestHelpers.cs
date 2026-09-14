@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
+using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -15,32 +14,28 @@ namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 public static class DumpTestHelpers
 {
     /// <summary>
-    /// Resolves the method name for a <see cref="MethodDescHandle"/> using the
-    /// RuntimeTypeSystem, Loader, and EcmaMetadata contracts. Returns <c>null</c>
-    /// if the name cannot be resolved (e.g., missing metadata).
+    /// Resolves the fully formatted method name for a <see cref="MethodDescHandle"/> using
+    /// <see cref="ISOSDacInterface.GetMethodDescName"/>.
     /// </summary>
-    public static string? GetMethodName(ContractDescriptorTarget target, MethodDescHandle mdHandle)
+    public static unsafe string? GetMethodName(ContractDescriptorTarget target, MethodDescHandle mdHandle)
     {
-        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-
-        if (rts.IsNoMetadataMethod(mdHandle, out string dynamicName))
-            return dynamicName;
-
-        uint token = rts.GetMethodToken(mdHandle);
-        TargetPointer mt = rts.GetMethodTable(mdHandle);
-        TargetPointer modulePtr = rts.GetModule(rts.GetTypeHandle(mt));
-
-        ILoader loader = target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-
-        IEcmaMetadata ecmaMetadata = target.Contracts.EcmaMetadata;
-        MetadataReader? reader = ecmaMetadata.GetMetadata(moduleHandle);
-        if (reader is null)
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
+        ClrDataAddress methodDesc = new((ulong)mdHandle.Address);
+        uint requiredLength;
+        int hr = sosDac.GetMethodDescName(methodDesc, 0, null, &requiredLength);
+        if (hr < 0 || requiredLength <= 1)
             return null;
 
-        MethodDefinitionHandle methodDef = MetadataTokens.MethodDefinitionHandle((int)(token & 0x00FFFFFF));
+        char[] nameBuffer = new char[requiredLength];
+        fixed (char* name = nameBuffer)
+        {
+            hr = sosDac.GetMethodDescName(methodDesc, requiredLength, name, &requiredLength);
+        }
 
-        return reader.GetString(reader.GetMethodDefinition(methodDef).Name);
+        if (hr < 0 || requiredLength <= 1)
+            return null;
+
+        return new string(nameBuffer, 0, checked((int)requiredLength - 1));
     }
 
     /// <summary>
@@ -76,7 +71,7 @@ public static class DumpTestHelpers
             {
                 TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
                 string? name = GetMethodName(target, methodDescPtr);
-                if (name is not null && name.Contains(methodNameSubstring))
+                if (name is not null && name.Contains(methodNameSubstring, StringComparison.Ordinal))
                     return threadData;
             }
 
