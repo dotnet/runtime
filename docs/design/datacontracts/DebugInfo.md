@@ -344,6 +344,11 @@ The managed cDAC reader reports engine-private WASM register locals with no nati
 Existing `ClrDataValue` behavior then reports those values unavailable (`GetNumLocations == 0`,
 `GetBytes`/`GetAddress` fail) instead of fabricating a register value of zero.
 
+An unreadable or null WASM `VLT_STK_BYREF` indirection preserves one logical location, matching
+the native DAC's location count, but its address/value/object accessors fail with
+`CORDBG_E_READVIRTUAL_FAILURE`. This distinguishes a failed indirection from a direct
+stack-homed null reference, which remains one readable location containing zero.
+
 There is no native DAC build on WASM, so live `_legacyImpl` comparison assertions cannot validate
 this representation. DacDbi coverage is structural managed unit coverage.
 

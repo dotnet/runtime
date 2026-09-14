@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -479,6 +480,243 @@ public unsafe class WasmDebugInfoTests
         Assert.False(location.IsRegisterValue);
         Assert.Equal(WasmMockTarget.EstablishingFramePointer + StackOffset, location.AddressOrValue);
         Assert.NotEqual(FuncletFrame + StackOffset, location.AddressOrValue);
+    }
+
+    /// <summary>
+    /// Characterizes the pre-existing <see cref="ClrDataValue"/> behavior that the WASM consumer
+    /// relies on: a symbolic engine local resolves to no native locations, and reads from that
+    /// empty value fail rather than returning a plausible zero.
+    /// </summary>
+    [Fact]
+    public unsafe void ClrDataValue_NoLocations_FailsInsteadOfReturningZero()
+    {
+        Target target = CreateTarget(RuntimeInfoArchitecture.Wasm, is64Bit: false);
+
+        ClrDataValue value = new(
+            target,
+            TargetPointer.Null,
+            flags: (uint)ClrDataValueFlag.IS_PRIMITIVE,
+            typeHandle: null,
+            baseAddress: TargetPointer.Null,
+            locations: [],
+            legacyImpl: null,
+            apiLock: new Lock());
+
+        IXCLRDataValue dataValue = value;
+
+        uint numLocs;
+        Assert.Equal(HResults.S_OK, dataValue.GetNumLocations(&numLocs));
+        Assert.Equal(0u, numLocs);
+
+        // GetBytes must not succeed with a zero-filled buffer.
+        byte[] buffer = new byte[8];
+        uint dataSize;
+        int hr;
+        fixed (byte* pBuffer = buffer)
+        {
+            hr = dataValue.GetBytes((uint)buffer.Length, &dataSize, pBuffer);
+        }
+        Assert.True(hr < 0, $"GetBytes should fail for a value with no locations, got 0x{hr:X8}");
+
+        // GetAddress must not report address 0 as though it were a real address.
+        ClrDataAddress address;
+        Assert.True(dataValue.GetAddress(&address) < 0, "GetAddress should fail for a value with no locations");
+    }
+
+    [Fact]
+    public void ResolveVarLocation_WasmStackByRefUnreadable_PreservesFailedLocation()
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        Target target = CreateWasmTargetWithZeroPage();
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.FramePointer = new TargetPointer(FrameAddress);
+
+        DebugVarInfo varInfo = new()
+        {
+            Kind = DebugVarLocKind.Stack,
+            IsByRef = true,
+            BaseRegister = JitEmittedWasmStackBaseRegister,
+            StackOffset = 0x24,
+        };
+
+        NativeVarLocation location = Assert.Single(ClrDataFrame.ResolveVarLocation(varInfo, context, target));
+
+        Assert.True(location.HasReadFailure);
+        Assert.False(location.IsRegisterValue);
+        Assert.Equal(0u, location.AddressOrValue);
+        Assert.Equal(4u, location.Size);
+    }
+
+    [Fact]
+    public unsafe void ClrDataValue_WasmStackByRefUnreadable_FailsWithoutBecomingZero()
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        Target target = CreateWasmTargetWithZeroPage();
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.FramePointer = new TargetPointer(FrameAddress);
+        DebugVarInfo varInfo = new()
+        {
+            Kind = DebugVarLocKind.Stack,
+            IsByRef = true,
+            BaseRegister = JitEmittedWasmStackBaseRegister,
+            StackOffset = 0x24,
+        };
+        NativeVarLocation[] locations = ClrDataFrame.ResolveVarLocation(varInfo, context, target);
+
+        IXCLRDataValue dataValue = new ClrDataValue(
+            target,
+            TargetPointer.Null,
+            flags: (uint)ClrDataValueFlag.IS_REFERENCE,
+            typeHandle: new TargetTypeHandle(new TargetPointer(0x0030_0000)),
+            baseAddress: TargetPointer.Null,
+            locations,
+            legacyImpl: null,
+            apiLock: new Lock());
+
+        uint numLocs;
+        Assert.Equal(HResults.S_OK, dataValue.GetNumLocations(&numLocs));
+        Assert.Equal(1u, numLocs);
+
+        byte[] buffer = [0xCC, 0xCC, 0xCC, 0xCC];
+        uint dataSize = 0;
+        int hr;
+        fixed (byte* pBuffer = buffer)
+        {
+            hr = dataValue.GetBytes((uint)buffer.Length, &dataSize, pBuffer);
+        }
+        Assert.Equal(CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE, hr);
+        Assert.Equal(new byte[] { 0xCC, 0xCC, 0xCC, 0xCC }, buffer);
+
+        ClrDataAddress address;
+        Assert.Equal(CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE, dataValue.GetAddress(&address));
+
+        uint flags;
+        ClrDataAddress location;
+        Assert.Equal(
+            CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE,
+            dataValue.GetLocationByIndex(0, &flags, &location));
+
+        DacComNullableByRef<IXCLRDataValue> associatedValue = new(isNullRef: false);
+        Assert.Equal(
+            CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE,
+            dataValue.GetAssociatedValue(associatedValue));
+    }
+
+    [Fact]
+    public unsafe void ClrDataValue_WasmStackNullReference_RemainsReadable()
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        const int StackOffset = 0x24;
+        const ulong SlotAddress = 0x0020_0024;
+        Target target = CreateWasmTargetWithZeroPage(
+            new MockMemorySpace.HeapFragment
+            {
+                Address = SlotAddress,
+                Data = new byte[4],
+                Name = "null reference slot",
+            });
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.FramePointer = new TargetPointer(FrameAddress);
+        DebugVarInfo varInfo = new()
+        {
+            Kind = DebugVarLocKind.Stack,
+            BaseRegister = JitEmittedWasmStackBaseRegister,
+            StackOffset = StackOffset,
+        };
+        NativeVarLocation[] locations = ClrDataFrame.ResolveVarLocation(varInfo, context, target);
+
+        IXCLRDataValue dataValue = new ClrDataValue(
+            target,
+            TargetPointer.Null,
+            flags: (uint)ClrDataValueFlag.IS_REFERENCE,
+            typeHandle: null,
+            baseAddress: new TargetPointer(SlotAddress),
+            locations,
+            legacyImpl: null,
+            apiLock: new Lock());
+
+        uint numLocs;
+        Assert.Equal(HResults.S_OK, dataValue.GetNumLocations(&numLocs));
+        Assert.Equal(1u, numLocs);
+
+        byte[] buffer = [0xCC, 0xCC, 0xCC, 0xCC];
+        uint dataSize;
+        fixed (byte* pBuffer = buffer)
+        {
+            Assert.Equal(HResults.S_OK, dataValue.GetBytes((uint)buffer.Length, &dataSize, pBuffer));
+        }
+        Assert.Equal(4u, dataSize);
+        Assert.Equal(new byte[4], buffer);
+
+        ClrDataAddress address;
+        Assert.Equal(HResults.S_OK, dataValue.GetAddress(&address));
+        Assert.Equal(SlotAddress, (ulong)address);
+    }
+
+    [Fact]
+    public unsafe void ClrDataValue_WasmStackByRefNullPointer_FailsWithoutReadingZeroPage()
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        const int StackOffset = 0x24;
+        Target target = CreateWasmTargetWithZeroPage(
+            new MockMemorySpace.HeapFragment
+            {
+                Address = FrameAddress + StackOffset,
+                Data = new byte[4],
+                Name = "null byref pointer slot",
+            });
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.FramePointer = new TargetPointer(FrameAddress);
+        DebugVarInfo varInfo = new()
+        {
+            Kind = DebugVarLocKind.Stack,
+            IsByRef = true,
+            BaseRegister = JitEmittedWasmStackBaseRegister,
+            StackOffset = StackOffset,
+        };
+        NativeVarLocation[] locations = ClrDataFrame.ResolveVarLocation(varInfo, context, target);
+        Assert.True(Assert.Single(locations).HasReadFailure);
+
+        IXCLRDataValue dataValue = new ClrDataValue(
+            target,
+            TargetPointer.Null,
+            flags: (uint)ClrDataValueFlag.IS_REFERENCE,
+            typeHandle: null,
+            baseAddress: TargetPointer.Null,
+            locations,
+            legacyImpl: null,
+            apiLock: new Lock());
+
+        byte[] buffer = [0xCC, 0xCC, 0xCC, 0xCC];
+        uint dataSize;
+        fixed (byte* pBuffer = buffer)
+        {
+            Assert.Equal(
+                CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE,
+                dataValue.GetBytes((uint)buffer.Length, &dataSize, pBuffer));
+        }
+        Assert.Equal(new byte[] { 0xCC, 0xCC, 0xCC, 0xCC }, buffer);
+    }
+
+    private static Target CreateWasmTargetWithZeroPage(params MockMemorySpace.HeapFragment[] fragments)
+    {
+        TestPlaceholderTarget.Builder builder = new(
+            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
+        builder
+            .AddGlobalStrings((Constants.Globals.Architecture, "wasm"))
+            .AddGlobals(
+                (Constants.Globals.WasmDebugRegisterTypeShift, WasmRegTypeShift),
+                (Constants.Globals.WasmDebugValueTypeCount, WasmDebugValueTypeCount))
+            .AddContract<IRuntimeInfo>(version: "c1");
+        builder.MemoryBuilder.AddHeapFragment(
+            new MockMemorySpace.HeapFragment
+            {
+                Address = 0,
+                Data = new byte[64],
+                Name = "readable wasm zero page",
+            });
+        builder.MemoryBuilder.AddHeapFragments(fragments);
+        return builder.Build();
     }
 
     /// <summary>
