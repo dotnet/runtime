@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert, Module } from "./globals";
-import { setI32, localHeapViewU8, forceThreadMemoryViewRefresh } from "./memory";
+import { setI32, localHeapViewU8, forceThreadMemoryViewRefresh, fixupPointer } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
@@ -72,7 +72,7 @@ export function ws_wasm_create (uri: string, sub_protocols: string[] | null, rec
     ws[wasm_ws_pending_open_promise] = open_promise_control;
     ws[wasm_ws_pending_send_promises] = [];
     ws[wasm_ws_pending_close_promises] = [];
-    ws[wasm_ws_receive_status_ptr] = receive_status_ptr;
+    ws[wasm_ws_receive_status_ptr] = fixupPointer(receive_status_ptr, 0);
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         try {
@@ -185,7 +185,7 @@ export function ws_wasm_send (ws: WebSocketExtension, buffer_ptr: VoidPtr, buffe
         return resolvedPromise();
     }
 
-    const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
+    const buffer_view = new Uint8Array(localHeapViewU8().buffer, fixupPointer(buffer_ptr, 0), buffer_length);
     const whole_buffer = web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
@@ -232,7 +232,7 @@ export function ws_wasm_receive (ws: WebSocketExtension, buffer_ptr: VoidPtr, bu
 
     const { promise, promise_control } = createPromiseController<void>();
     const receive_promise_control = promise_control as ReceivePromiseControl;
-    receive_promise_control.buffer_ptr = buffer_ptr;
+    receive_promise_control.buffer_ptr = fixupPointer(buffer_ptr, 0);
     receive_promise_control.buffer_length = buffer_length;
     receive_promise_queue.enqueue(receive_promise_control);
 
@@ -402,7 +402,7 @@ function web_socket_receive_buffering (ws: WebSocketExtension, event_queue: Queu
     const count = Math.min(buffer_length, event.data.length - event.offset);
     if (count > 0) {
         const sourceView = event.data.subarray(event.offset, event.offset + count);
-        const bufferView = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
+        const bufferView = new Uint8Array(localHeapViewU8().buffer, fixupPointer(buffer_ptr, 0), buffer_length);
         bufferView.set(sourceView, 0);
         event.offset += count;
     }
