@@ -55,6 +55,36 @@ namespace System.Net.Security.Tests
             Assert.DoesNotContain($"{DomainSid}-512", result.GroupSids);
         }
 
+        [Fact]
+        public void Decode_PrimaryGroupAbsentFromGroups_ReturnsPrimaryGroupSid()
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            byte[] primaryGroup = Convert.FromHexString("0102000004000000");
+            int primaryGroupOffset = logonInfo.AsSpan().IndexOf(primaryGroup);
+            Assert.True(primaryGroupOffset >= 0);
+
+            logonInfo[primaryGroupOffset] = 2;
+
+            KerberosPacLogonInfo? result = KerberosPacLogonInfo.Decode(logonInfo);
+
+            Assert.NotNull(result);
+            Assert.Equal($"{DomainSid}-513", result.PrimaryGroupSid);
+            Assert.DoesNotContain($"{DomainSid}-513", result.GroupSids);
+        }
+
+        [Fact]
+        public void Decode_ZeroUserId_UsesFirstExtraSid()
+        {
+            byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
+            logonInfo.AsSpan(116, sizeof(uint)).Clear();
+
+            KerberosPacLogonInfo? result = KerberosPacLogonInfo.Decode(logonInfo);
+
+            Assert.NotNull(result);
+            Assert.Equal("S-1-5-21-111-222-333-1201", result.UserSid);
+            Assert.DoesNotContain("S-1-5-21-111-222-333-1201", result.GroupSids);
+        }
+
         [Theory]
         [InlineData(124, 128)] // GroupCount, GroupIds
         [InlineData(212, 216)] // SidCount, ExtraSids

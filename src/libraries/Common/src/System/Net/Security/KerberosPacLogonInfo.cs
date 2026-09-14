@@ -156,7 +156,7 @@ namespace System.Net.Security
                 !TryReadUnicodeStringData(ref reader, logonServerReferent, out _) ||
                 !TryReadUnicodeStringData(ref reader, logonDomainNameReferent, out string? logonDomainName) ||
                 !TryReadSid(ref reader, logonDomainIdReferent, MaxSidSubAuthorityCount - 1, out string? logonDomainSid) ||
-                !TryReadExtraSids(ref reader, extraSidsReferent, sidCount, out List<string>? extraSids) ||
+                !TryReadExtraSids(ref reader, extraSidsReferent, sidCount, out SidAndAttributes[]? extraSids) ||
                 !TryReadSid(ref reader, resourceDomainIdReferent, MaxSidSubAuthorityCount - 1, out string? resourceDomainSid) ||
                 !TryReadGroupMemberships(ref reader, resourceGroupIdsReferent, resourceGroupCount, out GroupMembership[]? resourceGroups))
             {
@@ -171,7 +171,12 @@ namespace System.Net.Security
             // report, but the PAC is still well formed.
             if (logonDomainSid is not null)
             {
-                UserSid = FormatRid(logonDomainSid, userId);
+                PrimaryGroupSid = FormatRid(logonDomainSid, primaryGroupId);
+
+                if (userId != 0)
+                {
+                    UserSid = FormatRid(logonDomainSid, userId);
+                }
 
                 if (groups is not null)
                 {
@@ -181,11 +186,6 @@ namespace System.Net.Security
                         {
                             string groupSid = FormatRid(logonDomainSid, group.RelativeId);
                             GroupSids.Add(groupSid);
-
-                            if (group.RelativeId == primaryGroupId)
-                            {
-                                PrimaryGroupSid = groupSid;
-                            }
                         }
                     }
                 }
@@ -193,7 +193,29 @@ namespace System.Net.Security
 
             if (extraSids is not null)
             {
-                GroupSids.AddRange(extraSids);
+                int firstGroupIndex = 0;
+                if (userId == 0)
+                {
+                    if (extraSids.Length == 0 || extraSids[0].Sid is null)
+                    {
+                        return false;
+                    }
+
+                    UserSid = extraSids[0].Sid;
+                    firstGroupIndex = 1;
+                }
+
+                for (int i = firstGroupIndex; i < extraSids.Length; i++)
+                {
+                    if (extraSids[i].Sid is string sid && IsEnabledGroup(extraSids[i].Attributes))
+                    {
+                        GroupSids.Add(sid);
+                    }
+                }
+            }
+            else if (userId == 0)
+            {
+                return false;
             }
 
             if (resourceDomainSid is not null && resourceGroups is not null)
@@ -288,7 +310,7 @@ namespace System.Net.Security
             return true;
         }
 
-        private static bool TryReadExtraSids(ref NdrReader reader, uint referent, uint count, out List<string>? sids)
+        private static bool TryReadExtraSids(ref NdrReader reader, uint referent, uint count, out SidAndAttributes[]? sids)
         {
             sids = null;
             if (referent == 0)
@@ -314,7 +336,7 @@ namespace System.Net.Security
                 }
             }
 
-            List<string> result = new List<string>();
+            SidAndAttributes[] result = new SidAndAttributes[count];
             for (int i = 0; i < referents.Length; i++)
             {
                 if (!TryReadSid(ref reader, referents[i], MaxSidSubAuthorityCount, out string? sid))
@@ -322,10 +344,7 @@ namespace System.Net.Security
                     return false;
                 }
 
-                if (sid is not null && IsEnabledGroup(attributes[i]))
-                {
-                    result.Add(sid);
-                }
+                result[i] = new SidAndAttributes(sid, attributes[i]);
             }
 
             sids = result;
@@ -375,6 +394,18 @@ namespace System.Net.Security
 
             sid = builder.ToString();
             return true;
+        }
+
+        private readonly struct SidAndAttributes
+        {
+            public SidAndAttributes(string? sid, uint attributes)
+            {
+                Sid = sid;
+                Attributes = attributes;
+            }
+
+            public string? Sid { get; }
+            public uint Attributes { get; }
         }
 
         private readonly struct GroupMembership
