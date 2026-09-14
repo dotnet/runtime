@@ -638,7 +638,7 @@ namespace System.IO
                             if (previousEventName.Equals(child.Name, StringComparison.Ordinal))
                             {
                                 RemoveWatchedDirectory(child);
-                                return false;
+                                break;
                             }
                         }
                     }
