@@ -155,7 +155,7 @@ public class StackWalkDumpTests : DumpTestBase
                 continue;
 
             MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescPtr);
-            if (DumpTestHelpers.GetMethodName(Target, methodDesc) is not "MethodC")
+            if (DumpTestHelpers.GetMethodName(Target, methodDesc)?.Contains("MethodC", StringComparison.Ordinal) != true)
                 continue;
 
             IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(
@@ -577,7 +577,7 @@ public class StackWalkDumpTests : DumpTestBase
                 continue;
 
             MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescPtr);
-            if (DumpTestHelpers.GetMethodName(Target, methodDesc) == methodName)
+            if (DumpTestHelpers.GetMethodName(Target, methodDesc)?.Contains(methodName, StringComparison.Ordinal) == true)
                 return new ClrDataMethodInstance(Target, methodDesc, TargetPointer.Null, legacyImpl: null, new());
         }
 

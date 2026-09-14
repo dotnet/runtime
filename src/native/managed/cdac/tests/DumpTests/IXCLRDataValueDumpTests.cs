@@ -898,7 +898,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name == methodName)
+            if (name?.Contains(methodName, StringComparison.Ordinal) == true)
             {
                 ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null, new());
 
