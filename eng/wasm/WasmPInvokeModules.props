@@ -1,5 +1,0 @@
-<Project>
-  <!-- Standalone-repo compatibility wrapper. Product projects import the source-local file
-       directly so the same path works when runtime is built from the VMR subtree. -->
-  <Import Project="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'src', 'coreclr', 'vm', 'wasm', 'WasmPInvokeModules.props'))" />
-</Project>
