@@ -338,5 +338,13 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal("This is a hidden file", content);
             }
         }
+
+        [Fact]
+        public void GetUserNameFromPasswd_NonExistentUid_ReturnsEmptyString()
+        {
+            // When a UID does not exist (or the user database does not exist),
+            // GetUserNameFromPasswd should return string.Empty rather than throwing an IOException.
+            Assert.Equal(string.Empty, Interop.Sys.GetUserNameFromPasswd(uint.MaxValue));
+        }
     }
 }

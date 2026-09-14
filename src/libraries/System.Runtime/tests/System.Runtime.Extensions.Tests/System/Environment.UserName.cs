@@ -45,5 +45,14 @@ namespace System.Tests
             Assert.False(string.IsNullOrWhiteSpace(name));
             Assert.Equal("Browser", name);
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
+        public void UserName_Unix_DoesNotThrow()
+        {
+            // Verify Environment.UserName completes without throwing an exception (e.g. IOException if user info is unavailable).
+            string name = Environment.UserName;
+            Assert.NotNull(name);
+        }
     }
 }

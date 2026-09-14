@@ -90,6 +90,14 @@ internal static partial class Interop
                 return false;
             }
 
+            // If the current user's entry could not be found, or the user database (such as /etc/passwd)
+            // does not exist, treat as not found so GetUserNameFromPasswd returns an empty string.
+            if (errorInfo.Error == Interop.Error.ENOENT || errorInfo.Error == Interop.Error.ESRCH)
+            {
+                username = null;
+                return true;
+            }
+
             // Otherwise, fail.
             throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
         }
