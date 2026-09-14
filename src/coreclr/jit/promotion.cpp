@@ -2466,6 +2466,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
 //
 bool ReplaceVisitor::CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl)
 {
+#if FEATURE_IMPLICIT_BYREFS && !defined(UNIX_AMD64_ABI)
     if (!lcl->OperIs(GT_LCL_VAR) || !callArg->AbiInfo.IsPassedByReference() || (call->gtArgs.CountArgs() != 1) ||
         (call->gtCallType != CT_USER_FUNC) || (call != m_currentStmt->GetRootNode()) || (callArg->GetNode() != lcl) ||
         call->IsTailCall() || lcl->GetLayout(m_compiler)->HasGCPtr() ||
@@ -2492,6 +2493,10 @@ bool ReplaceVisitor::CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* 
         }
     }
     return false;
+#else
+    // The temporary requires fgMarkImplicitByRefCopyOmissionCandidates to avoid another outgoing copy.
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
