@@ -123,17 +123,7 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
             throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
         TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
 
-        // Compute code offset from the method's native code entry point, not from the code block start.
-        // GetStartAddress returns the start of the current code block (which may be a funclet for exception
-        // handlers). Variable location offsets are always relative to the method entry point, so we must use
-        // GetNativeCode from the NativeCodeVersion, matching the native DAC's GetMethodVarInfo which uses
-        // NativeCodeVersion::GetNativeCode() for this purpose
-        ICodeVersions cv = _target.Contracts.CodeVersions;
-        NativeCodeVersionHandle ncvh = cv.GetNativeCodeVersionForIP(pCode);
-        if (!ncvh.Valid)
-            throw new InvalidOperationException($"No NativeCodeVersion found for native code {pCode}.");
-        TargetCodePointer nativeCodeStart = cv.GetNativeCode(ncvh);
-        codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+        codeOffset = GetMethodCodeOffset(pCode, cbh);
 
         if (debugInfo == TargetPointer.Null)
             return [];
@@ -142,12 +132,40 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
 
         if (chunks.VarsSize > 0)
         {
-            bool isX86 = _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86;
+            RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+            bool isX86 = arch == RuntimeInfoArchitecture.X86;
+            DebugInfoHelpers.WasmDebugInfoEncoding? wasmEncoding = null;
+            if (arch == RuntimeInfoArchitecture.Wasm)
+                wasmEncoding = DebugInfoHelpers.GetWasmDebugInfoEncoding(_target);
+
             NativeReader varsNativeReader = new(new TargetStream(_target, chunks.VarsStart, chunks.VarsSize), _target.IsLittleEndian);
-            return DebugInfoHelpers.DoVars(varsNativeReader, isX86);
+            return DebugInfoHelpers.DoVars(varsNativeReader, isX86, wasmEncoding);
         }
 
         return [];
+    }
+
+    internal uint GetMethodCodeOffset(TargetCodePointer pCode, CodeBlockHandle cbh)
+    {
+        // WASM ReadyToRun CodeBlocks carry a controlling-method-relative offset, including when
+        // pCode is inside a funclet. Use that existing ExecutionManager result directly; the
+        // generic CodeVersions path validates a MethodDesc shape that portable entrypoints do not
+        // expose.
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
+            return checked((uint)_eman.GetRelativeOffset(cbh).Value);
+
+        // Compute code offset from the method's native code entry point, not from the code block
+        // start. On other architectures GetStartAddress may be the current funclet, while variable
+        // locations are relative to the method entry point. Match the native DAC's use of
+        // NativeCodeVersion::GetNativeCode().
+        ICodeVersions cv = _target.Contracts.CodeVersions;
+        NativeCodeVersionHandle ncvh = cv.GetNativeCodeVersionForIP(pCode);
+        if (!ncvh.Valid)
+            throw new InvalidOperationException($"No NativeCodeVersion found for native code {pCode}.");
+        TargetCodePointer nativeCodeStart = cv.GetNativeCode(ncvh);
+        return (uint)(
+            CodePointerUtils.AddressFromCodePointer(pCode, _target) -
+            CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
     }
 
     IReadOnlyList<AsyncSuspensionInfo> IDebugInfo.GetAsyncSuspensionPoints(TargetCodePointer pCode)
