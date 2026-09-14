@@ -63,7 +63,7 @@ namespace bundle
             m_type = fixed_data->type;
         }
 
-        const pal::string_t relative_path() const { return m_relative_path; }
+        const pal::string_t& relative_path() const { return m_relative_path; }
         int64_t offset() const { return m_offset; }
         int64_t size() const { return m_size; }
         int64_t compressedSize() const { return m_compressedSize; }

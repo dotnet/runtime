@@ -572,19 +572,6 @@ namespace System.Numerics.Tests
 
             foreach ((float original, BFloat16 expected) in data)
             {
-                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
-                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
-                // permits NaN-payload canonicalization on these ops but doesn't require it --
-                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
-                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
-                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
-                // trip through the software conversion path in that environment. Gated on
-                // Mono specifically since other WASM runtimes don't share this lowering.
-                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
-                // be removed once the conversion path either avoids the canonicalizing ops
-                // or the host engines start preserving NaN payloads.
-                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
-                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -594,6 +581,21 @@ namespace System.Numerics.Tests
         public static void ExplicitConversion_FromSingle(float f, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)f;
+
+            // The software `float`->`BFloat16` conversion routes the value through `f32.abs`/`f32.min`/
+            // `f32.max`/`f32.add`, and the WebAssembly spec permits (but doesn't require) host engines
+            // to canonicalize NaN payloads on those ops -- the V8 engine used on CI does. The sign is
+            // still carried through the integer ALU, so a canonicalized result is `sign | 0x7FC0`.
+            // Accept that as the expected value on WASM. See https://github.com/dotnet/runtime/issues/103347.
+            if (PlatformDetection.IsWasm && BFloat16.IsNaN(expected))
+            {
+                ushort canonical = (ushort)((BitConverter.BFloat16ToUInt16Bits(expected) & 0x8000) | 0x7FC0);
+                if (BitConverter.BFloat16ToUInt16Bits(b16) == canonical)
+                {
+                    expected = b16;
+                }
+            }
+
             AssertEqual(expected, b16);
         }
 
@@ -670,19 +672,6 @@ namespace System.Numerics.Tests
 
             foreach ((double original, BFloat16 expected) in data)
             {
-                // WASM on Mono lowers `double.Min` / `double.Max` through `f64.min` / `f64.max`
-                // (and `double.IsNaN(...)` branches through `f64.add`). The WebAssembly spec
-                // permits NaN-payload canonicalization on these ops but doesn't require it --
-                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
-                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
-                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
-                // trip through the software conversion path in that environment. Gated on
-                // Mono specifically since other WASM runtimes don't share this lowering.
-                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
-                // be removed once the conversion path either avoids the canonicalizing ops
-                // or the host engines start preserving NaN payloads.
-                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && double.IsNaN(original))
-                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -692,6 +681,21 @@ namespace System.Numerics.Tests
         public static void ExplicitConversion_FromDouble(double d, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)d;
+
+            // The software `double`->`BFloat16` conversion routes the value through `f64.abs`/`f64.min`/
+            // `f64.max`/`f64.add`, and the WebAssembly spec permits (but doesn't require) host engines
+            // to canonicalize NaN payloads on those ops -- the V8 engine used on CI does. The sign is
+            // still carried through the integer ALU, so a canonicalized result is `sign | 0x7FC0`.
+            // Accept that as the expected value on WASM. See https://github.com/dotnet/runtime/issues/103347.
+            if (PlatformDetection.IsWasm && BFloat16.IsNaN(expected))
+            {
+                ushort canonical = (ushort)((BitConverter.BFloat16ToUInt16Bits(expected) & 0x8000) | 0x7FC0);
+                if (BitConverter.BFloat16ToUInt16Bits(b16) == canonical)
+                {
+                    expected = b16;
+                }
+            }
+
             AssertEqual(expected, b16);
         }
 
@@ -2588,6 +2592,33 @@ namespace System.Numerics.Tests
         {
             AssertEqual(-expectedResult, BFloat16.RadiansToDegrees(-value), allowedVariance);
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones the bulk data cannot reach: zero, the subnormal range
+        // on either side of the conversion, and an overflow.
+        [Theory]
+        [InlineData(0x0000, 0x0000, 0x0000)] // 0
+        [InlineData(0x0001, 0x0000, 0x0039)] // Epsilon
+        [InlineData(0x0040, 0x0001, 0x02E5)] // 0x1p-133
+        [InlineData(0x0080, 0x0002, 0x0365)] // MinNormal
+        [InlineData(0x3F80, 0x3C8F, 0x4265)] // One
+        [InlineData(0x7F7F, 0x7C8E, 0x7F80)] // MaxValue, overflows for RadiansToDegrees
+        [InlineData(0x7F80, 0x7F80, 0x7F80)] // PositiveInfinity
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ushort valueBits, ushort degreesToRadiansBits, ushort radiansToDegreesBits)
+        {
+            const ushort SignMask = 0x8000;
+
+            BFloat16 value = BitConverter.UInt16BitsToBFloat16(valueBits);
+
+            AssertEqual(BitConverter.UInt16BitsToBFloat16(degreesToRadiansBits), BFloat16.DegreesToRadians(value));
+            AssertEqual(BitConverter.UInt16BitsToBFloat16(radiansToDegreesBits), BFloat16.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            BFloat16 negativeValue = BitConverter.UInt16BitsToBFloat16((ushort)(valueBits ^ SignMask));
+
+            AssertEqual(BitConverter.UInt16BitsToBFloat16((ushort)(degreesToRadiansBits ^ SignMask)), BFloat16.DegreesToRadians(negativeValue));
+            AssertEqual(BitConverter.UInt16BitsToBFloat16((ushort)(radiansToDegreesBits ^ SignMask)), BFloat16.RadiansToDegrees(negativeValue));
         }
 
         [Theory]

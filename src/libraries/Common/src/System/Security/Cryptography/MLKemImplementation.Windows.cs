@@ -24,6 +24,8 @@ namespace System.Security.Cryptography
         [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static new bool IsSupported => s_algHandle is not null;
 
+        internal static bool IsAlgorithmSupported(MLKemAlgorithm _) => IsSupported;
+
         private MLKemImplementation(MLKemAlgorithm algorithm, SafeBCryptKeyHandle key, bool hasSeed, bool hasDecapsulationKey)
             : base(algorithm)
         {

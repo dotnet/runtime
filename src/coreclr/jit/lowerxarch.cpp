@@ -1313,6 +1313,12 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
             continue;
         }
 
+        if (isScalar && (i == 1))
+        {
+            // Scalar FMA copies the upper elements of its first operand, including any vector negation.
+            continue;
+        }
+
         if (!arg->OperIsHWIntrinsic())
         {
             continue;
@@ -1424,21 +1430,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         size_t   numArgs = node->GetOperandCount();
         GenTree* lastOp  = node->Op(numArgs);
-        uint8_t  mode    = 0xFF;
 
         if (lastOp->IsCnsIntOrI())
         {
             // Mark the constant as contained since it's specially encoded
             MakeSrcContained(node, lastOp);
-
-            mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
         }
 
-        if ((mode & 0x03) != 0x00)
-        {
-            // Embedded rounding only works for register-to-register operations, so skip containment
-            return node->gtNext;
-        }
+        // Codegen consumes the rounding operand. The remaining lowering and containment
+        // expect the ordinary operand count, even when the rounding mode is implicit.
+        return node->gtNext;
     }
 
     bool       isScalar = false;
@@ -3063,36 +3064,12 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                     if (!TryInvertMask(maskNode, simdSize, maskBaseType))
                     {
-                        // We weren't able to invert the mask, so we need to do it here, keeping the upper
-                        // n-bits clear. If we have 1 element, then the upper 7-bits need to be cleared. If we have
-                        // 2, then the upper 6-bits, and if we have 4, then the upper 4-bits.
-                        //
-                        // There isn't necessarily a trivial way to do this outside not, shift-left by n,
-                        // shift-right by n. This preserves count bits, while clearing the upper n-bits
-
-                        GenTree* cnsNode;
+                        // We weren't able to invert the mask, so we need to do it here.
+                        // The upper 8 - N bits are zeroed during codegen
 
                         maskNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, NI_AVX512_NotMask,
                                                                         maskBaseType, simdSize);
                         BlockRange().InsertBefore(node, maskNode);
-
-                        cnsNode = m_compiler->gtNewIconNode(8 - count);
-                        BlockRange().InsertAfter(maskNode, cnsNode);
-
-                        maskNode =
-                            m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftLeftMask,
-                                                                 maskBaseType, simdSize);
-                        BlockRange().InsertAfter(cnsNode, maskNode);
-                        LowerNode(maskNode);
-
-                        cnsNode = m_compiler->gtNewIconNode(8 - count);
-                        BlockRange().InsertAfter(maskNode, cnsNode);
-
-                        maskNode =
-                            m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftRightMask,
-                                                                 maskBaseType, simdSize);
-                        BlockRange().InsertAfter(cnsNode, maskNode);
-                        LowerNode(maskNode);
                     }
                 }
                 else if (cmpOp == GT_EQ)
@@ -3817,7 +3794,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         case NI_X86Base_CompareNotGreaterThan:
                         case NI_AVX_CompareNotGreaterThan:
                         {
-                            cndId = NI_AVX512_CompareGreaterThanMask;
+                            cndId = NI_AVX512_CompareNotGreaterThanMask;
                             break;
                         }
 
@@ -5606,7 +5583,11 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+    // CreateScalarUnsafe elision can leave scalar-typed operands here, but Dot still needs a
+    // vector multiply. Avoid the scalar-broadcast semantics of gtNewSimdBinOpNode.
+    NamedIntrinsic multiply = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(m_compiler, GT_MUL, op1, op2, simdBaseType,
+                                                                           simdSize, /* isScalar */ false);
+    tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseType, simdSize);
     BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
 
@@ -6346,6 +6327,52 @@ bool Lowering::TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBas
     if (node->OperIsHWIntrinsic())
     {
         GenTreeHWIntrinsic* mskIntrin = node->AsHWIntrinsic();
+
+        if (mskIntrin->GetHWIntrinsicId() == NI_AVX512_OrMask)
+        {
+            // Transform ~(a | ~b) into ~a & b, to enable AndNotMask.
+            // Also has the nice effect of not having to fixup knotb during emit.
+
+            unsigned simdBaseTypeSize = genTypeSize(mskIntrin->GetSimdBaseType());
+
+            GenTree* op1 = mskIntrin->Op(1);
+            GenTree* op2 = mskIntrin->Op(2);
+
+            bool transform = false;
+
+            if (op2->OperIsHWIntrinsic(NI_AVX512_NotMask))
+            {
+                GenTreeHWIntrinsic* opIntrin = op2->AsHWIntrinsic();
+
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+
+                    op2 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+                }
+            }
+            else if (op1->OperIsHWIntrinsic(NI_AVX512_NotMask))
+            {
+                GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
+
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+
+                    std::swap(op1, op2);
+                }
+            }
+
+            if (transform)
+            {
+                mskIntrin->ChangeHWIntrinsicId(NI_AVX512_AndNotMask, op1, op2);
+                return true;
+            }
+        }
 
         bool       mskIsScalar = false;
         genTreeOps mskOper     = mskIntrin->GetOperForHWIntrinsicId(&mskIsScalar, /* getEffectiveOp */ true);
@@ -7536,7 +7563,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         GenTreeIntConCommon* icon = addr->AsIntConCommon();
 
 #if defined(FEATURE_SIMD)
-        if ((!addr->TypeIs(TYP_SIMD12) || !icon->ImmedValNeedsReloc(m_compiler)) && icon->FitsInAddrBase(m_compiler))
+        if ((!node->TypeIs(TYP_SIMD12) || !icon->ImmedValNeedsReloc(m_compiler)) && icon->FitsInAddrBase(m_compiler))
 #else
         if (icon->FitsInAddrBase(m_compiler))
 #endif

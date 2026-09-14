@@ -59,5 +59,5 @@ set_target_properties(mdcompiler-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdcompiler-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_ppdb ${MDCOMPILER_SOURCES})
-target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB SELF_NO_HOST)
 target_precompile_headers(mdcompiler_ppdb PRIVATE stdafx.h)

@@ -889,6 +889,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_INTRINSIC_TYPE,
                                    (info.compClassAttr & CORINFO_FLG_INTRINSIC_TYPE) != 0);
+        compInlineResult->NoteBool(InlineObservation::CALLEE_IS_ASYNC, compIsAsync());
         compInlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
         // Determine if call site is within a try.
@@ -1106,7 +1107,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 if (isIntrinsic)
                 {
-                    ni = lookupNamedIntrinsic(methodHnd);
+                    ni = resolveNamedIntrinsic(methodHnd, lookupNamedIntrinsic(methodHnd));
+
+                    if (((ni == NI_System_Numerics_Intrinsic) || (ni == NI_System_Runtime_Intrinsics_Intrinsic)) &&
+                        gtIsRecursiveCall(methodHnd, false))
+                    {
+                        ni = NI_Throw_PlatformNotSupportedException;
+                    }
 
                     bool foldableIntrinsic = false;
 
@@ -1497,7 +1504,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         }
                     }
 
-                    if (foldableIntrinsic)
+                    if (ni == NI_Throw_PlatformNotSupportedException)
+                    {
+                        compInlineResult->Note(InlineObservation::CALLEE_THROW_BLOCK);
+                    }
+                    else if (foldableIntrinsic)
                     {
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_INTRINSIC);
                         handled = true;
@@ -1513,7 +1524,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 }
 
-                if ((codeAddr < codeEndp - sz) && (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
+                if ((ni != NI_Throw_PlatformNotSupportedException) && (codeAddr < codeEndp - sz) &&
+                    (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
                     // If the method has a call followed by a ret, assume that
                     // it is a wrapper method.

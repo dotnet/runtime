@@ -86,7 +86,7 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
         args.app_root = app->base_path();
 
         // Check for the main app within the bundle.
-        // locate() sets args.managed_application to the full path of the app extracted to disk.
+        // If extracted, locate() sets args.managed_application to the full path of the app extracted to disk.
         pal::string_t managed_application_name = get_filename(managed_application_path);
         if (app->locate(managed_application_name, args.managed_application))
         {
@@ -94,10 +94,6 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
         }
 
         trace::info(_X("Managed application [%s] not found in single-file bundle"), managed_application_name.c_str());
-
-        // The locate call above will clear the string when it returns false so reinitialize to the specified
-        // path before continuing.
-        args.managed_application = managed_application_path;
 
         // If the main assembly is not found in the bundle, continue checking on disk
         // for very unlikely case where the main app.dll was itself excluded from the app bundle.

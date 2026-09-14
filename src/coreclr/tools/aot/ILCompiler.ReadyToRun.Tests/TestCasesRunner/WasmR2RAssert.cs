@@ -117,9 +117,10 @@ internal static class WasmR2RAssert
         // webcilVersion is the first global defined in the module (not imported), so it's index should be the count of imported globals
         CheckWasmExport(exports, "webcilVersion", WasmImportKind.Global, importedGlobalCount, failures);
         CheckFunctionExports(exports, importedFunctionCount, definedFunctionCount, failures);
+        CheckFunctionNames(reader, importedFunctionCount, definedFunctionCount, failures);
 
         diagnostic = failures.Count == 0
-            ? "WASM imports, definitions, exports, and instruction references use the expected per-kind indices."
+            ? "WASM imports, definitions, exports, names, and instruction references use the expected per-kind indices."
             : string.Join(Environment.NewLine, failures);
         return failures.Count == 0;
     }
@@ -183,30 +184,151 @@ internal static class WasmR2RAssert
         uint definedFunctionCount,
         List<string> failures)
     {
-        List<uint> functionIndices = exports.Values
-            .Where(export => export.Kind == WasmImportKind.Function)
-            .Select(export => export.Index)
-            .Order()
+        // Only the host-called stubs are exported. Exporting every compiled function counts towards
+        // the engine's effective-type-size limit and makes a framework-sized composite unloadable;
+        // function names live in the name section instead, which CheckFunctionNames verifies.
+        // A self-installing image needs two stubs; a host-installed component stub needs three.
+        List<string> exportedFunctions = exports
+            .Where(export => export.Value.Kind == WasmImportKind.Function)
+            .Select(export => export.Key)
+            .Order(StringComparer.Ordinal)
             .ToList();
 
-        if (functionIndices.Count != definedFunctionCount)
+        string[] selfInstalling = ["getWebcilSize", "patchWebcilHeader"];
+        string[] hostInstalled = ["fillWebcilTable", "getWebcilPayload", "getWebcilSize"];
+        if (!exportedFunctions.SequenceEqual(selfInstalling, StringComparer.Ordinal) &&
+            !exportedFunctions.SequenceEqual(hostInstalled, StringComparer.Ordinal))
         {
             failures.Add(
-                $"Found {functionIndices.Count} function exports for {definedFunctionCount} " +
-                "function-section entries.");
+                $"Expected exactly the stub function exports [{string.Join(", ", selfInstalling)}] " +
+                $"or [{string.Join(", ", hostInstalled)}]; found [{string.Join(", ", exportedFunctions)}].");
             return;
         }
 
-        for (int i = 0; i < functionIndices.Count; i++)
+        foreach (string name in exportedFunctions)
         {
-            uint expectedIndex = importedFunctionCount + (uint)i;
-            if (functionIndices[i] != expectedIndex)
+            uint index = exports[name].Index;
+            if (index < importedFunctionCount || index >= importedFunctionCount + definedFunctionCount)
             {
                 failures.Add(
-                    $"Function export index {functionIndices[i]} at sorted position {i}; " +
-                    $"expected {expectedIndex} after {importedFunctionCount} function imports.");
+                    $"Function export '{name}' has index {index}, outside the defined-function range " +
+                    $"[{importedFunctionCount}, {importedFunctionCount + definedFunctionCount}).");
             }
         }
+    }
+
+    /// <summary>
+    /// Verifies the <c>name</c> custom section names every defined function, since it is the only
+    /// record of function names once they are no longer carried by the export table.
+    /// </summary>
+    private static void CheckFunctionNames(
+        WebcilImageReader reader,
+        uint importedFunctionCount,
+        uint definedFunctionCount,
+        List<string> failures)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (!TryGetWasmFunctionNameSubsection(image, out int offset, out int subsectionEnd))
+        {
+            failures.Add("WASM image does not contain a 'name' custom section with a function-name subsection.");
+            return;
+        }
+
+        uint count = ReadWasmUleb32(image, ref offset, subsectionEnd);
+        if (count != definedFunctionCount)
+        {
+            failures.Add($"Name section names {count} functions for {definedFunctionCount} function-section entries.");
+            return;
+        }
+
+        long previousIndex = -1;
+        for (uint i = 0; i < count; i++)
+        {
+            uint index = ReadWasmUleb32(image, ref offset, subsectionEnd);
+            string name = ReadWasmName(image, ref offset, subsectionEnd);
+
+            // Names must cover the defined-function range exactly. Checking only the ordering and
+            // the lower bound would accept a uniformly shifted map, which is precisely the
+            // off-by-one this section has to be trusted not to have.
+            uint expectedIndex = importedFunctionCount + i;
+            if (index != expectedIndex)
+            {
+                failures.Add(
+                    $"Name section entry {i} names function index {index}; expected {expectedIndex} " +
+                    $"after {importedFunctionCount} function imports.");
+                return;
+            }
+
+            if (index <= previousIndex)
+            {
+                failures.Add($"Name section entries are not sorted and unique by index ({index} follows {previousIndex}).");
+                return;
+            }
+
+            if (name.Length == 0)
+            {
+                failures.Add($"Name section entry for function index {index} has an empty name.");
+                return;
+            }
+
+            previousIndex = index;
+        }
+
+        if (offset != subsectionEnd)
+        {
+            failures.Add("WASM name section function subsection contains trailing data.");
+        }
+    }
+
+    private static bool TryGetWasmFunctionNameSubsection(
+        ReadOnlySpan<byte> image,
+        out int subsectionOffset,
+        out int subsectionEnd)
+    {
+        subsectionOffset = 0;
+        subsectionEnd = 0;
+
+        if (image.Length < 8)
+            throw new BadImageFormatException("WASM image is shorter than its magic and version header.");
+
+        int offset = 8;
+        while (offset < image.Length)
+        {
+            byte sectionId = ReadWasmByte(image, ref offset, image.Length);
+            uint sectionSize = ReadWasmUleb32(image, ref offset, image.Length);
+            if (sectionSize > int.MaxValue || sectionSize > image.Length - offset)
+                throw new BadImageFormatException($"WASM section {sectionId} extends beyond the image boundary.");
+
+            int sectionEnd = offset + (int)sectionSize;
+            if (sectionId == 0) // custom
+            {
+                int cursor = offset;
+                if (ReadWasmName(image, ref cursor, sectionEnd) == "name")
+                {
+                    // Subsections are ordered by id; the function-name subsection is id 1.
+                    while (cursor < sectionEnd)
+                    {
+                        byte subsectionId = ReadWasmByte(image, ref cursor, sectionEnd);
+                        uint subsectionSize = ReadWasmUleb32(image, ref cursor, sectionEnd);
+                        if (subsectionSize > sectionEnd - cursor)
+                            throw new BadImageFormatException("WASM name subsection extends beyond its section.");
+
+                        if (subsectionId == 1)
+                        {
+                            subsectionOffset = cursor;
+                            subsectionEnd = cursor + (int)subsectionSize;
+                            return true;
+                        }
+
+                        cursor += (int)subsectionSize;
+                    }
+                }
+            }
+
+            offset = sectionEnd;
+        }
+
+        return false;
     }
 
     private static Dictionary<(string Module, string Name), WasmImportIndex> ReadWasmImports(WebcilImageReader reader)
