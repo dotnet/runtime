@@ -134,26 +134,156 @@ public class R2RTestSuites
                 .Where(runtimeFunction => runtimeFunction.DebugInfo is not null)
                 .SelectMany(runtimeFunction => runtimeFunction.DebugInfo!.VariablesList)
                 .ToList();
+            Assert.Equal(4, doubleVariables.Count);
             Assert.DoesNotContain(doubleVariables,
                 variable => variable.VariableLocation.VarLocType is VarLocType.VLT_REG_FP or VarLocType.VLT_FPSTK);
-            Assert.Contains(doubleVariables, variable =>
-                variable.VariableLocation.VarLocType == VarLocType.VLT_REG &&
-                (uint)variable.VariableLocation.Data1 >> WasmRegTypeShift == F64WasmValueType);
+            NativeVarInfo leftInLocal = Assert.Single(doubleVariables, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0x22,
+                    locationType: VarLocType.VLT_REG,
+                    data1: unchecked((int)0x80000001),
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(doubleVariables, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x22,
+                    endOffset: 0x34,
+                    locationType: VarLocType.VLT_STK2,
+                    data1: 2,
+                    data2: 0x18,
+                    data3: 0));
+            Assert.Single(doubleVariables, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 1,
+                    startOffset: 0x0,
+                    endOffset: 0x22,
+                    locationType: VarLocType.VLT_REG,
+                    data1: unchecked((int)0x80000002),
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(doubleVariables, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 1,
+                    startOffset: 0x22,
+                    endOffset: 0x34,
+                    locationType: VarLocType.VLT_STK2,
+                    data1: 2,
+                    data2: 0x10,
+                    data3: 0));
+            Assert.All(
+                doubleVariables.Where(variable => variable.VariableLocation.VarLocType == VarLocType.VLT_REG),
+                variable => Assert.Equal(F64WasmValueType, (uint)variable.VariableLocation.Data1 >> WasmRegTypeShift));
+            Assert.DoesNotContain(doubleVariables, variable => variable.Variable.Type == VariableType.Local);
+
+            // Prove the exact assertion is sensitive to a garbled decoder rather than merely
+            // counting entries. Mutate the local-index bits in the packed register and verify the
+            // known-good record no longer matches.
+            NativeVarInfo mutatedLeft = leftInLocal;
+            VarLoc mutatedLocation = mutatedLeft.VariableLocation;
+            mutatedLocation.Data1++;
+            mutatedLeft.VariableLocation = mutatedLocation;
+            Assert.NotEqual(leftInLocal.VariableLocation.Data1, mutatedLeft.VariableLocation.Data1);
+            Assert.False(IsExactVariable(
+                mutatedLeft,
+                variableNumber: 0,
+                variableType: VariableType.Parameter,
+                variableIndex: 0,
+                startOffset: 0x0,
+                endOffset: 0x22,
+                locationType: VarLocType.VLT_REG,
+                data1: unchecked((int)0x80000001),
+                data2: 0,
+                data3: 0));
             // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
             ReadyToRunMethod sumWithFinally = Assert.Single(methods, method =>
                 method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal));
-            Assert.Contains(sumWithFinally.RuntimeFunctions, runtimeFunction =>
-                runtimeFunction.DebugInfo is not null &&
-                runtimeFunction.DebugInfo.VariablesList.Exists(variable => variable.Variable.Type == VariableType.Local));
+            RuntimeFunction sumWithFinallyRoot = Assert.Single(
+                sumWithFinally.RuntimeFunctions,
+                runtimeFunction => runtimeFunction.DebugInfo is not null);
+            Assert.Equal(3, sumWithFinallyRoot.DebugInfo!.VariablesList.Count);
+            Assert.Single(sumWithFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0x3B,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000001,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(sumWithFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x3B,
+                    endOffset: 0x1F2,
+                    locationType: VarLocType.VLT_STK,
+                    data1: 2,
+                    data2: 0x2C,
+                    data3: 0));
+            Assert.Single(sumWithFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x3B,
+                    endOffset: 0x1F2,
+                    locationType: VarLocType.VLT_STK,
+                    data1: 2,
+                    data2: 0x24,
+                    data3: 0));
+            Assert.Single(sumWithFinally.RuntimeFunctions, runtimeFunction =>
+                runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
             // Has a catch clause, so the JIT emits a try_table catch_ref that references the
             // imported restore-context exception tag.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
 
             Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
+
+            static bool IsExactVariable(
+                NativeVarInfo variable,
+                uint variableNumber,
+                VariableType variableType,
+                int variableIndex,
+                uint startOffset,
+                uint endOffset,
+                VarLocType locationType,
+                int data1,
+                int data2,
+                int data3)
+                => variable.VariableNumber == variableNumber
+                    && variable.Variable.Type == variableType
+                    && variable.Variable.Index == variableIndex
+                    && variable.StartOffset == startOffset
+                    && variable.EndOffset == endOffset
+                    && variable.VariableLocation.VarLocType == locationType
+                    && variable.VariableLocation.Data1 == data1
+                    && variable.VariableLocation.Data2 == data2
+                    && variable.VariableLocation.Data3 == data3;
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve to the fixed global
