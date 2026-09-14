@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -223,14 +224,44 @@ namespace System.Reflection.Tests
             }
         }
 
-        public static IEnumerable<object[]> Invoke_EnumConstructors_TestData() =>
-            IntrinsicInvokeTestData.EnumValues();
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_Byte() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeByteEnum)), IntrinsicInvokeByteEnum.Value);
 
-        [Theory]
-        [MemberData(nameof(Invoke_EnumConstructors_TestData))]
-        public void Invoke_EnumConstructors_MapActualUnderlyingType(Type enumType, object value)
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_SByte() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeSByteEnum)), IntrinsicInvokeSByteEnum.Value);
+
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_Int16() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt16Enum)), IntrinsicInvokeInt16Enum.Value);
+
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_UInt16() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt16Enum)), IntrinsicInvokeUInt16Enum.Value);
+
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_Int32() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt32Enum)), IntrinsicInvokeInt32Enum.Value);
+
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_UInt32() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt32Enum)), IntrinsicInvokeUInt32Enum.Value);
+
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_Int64() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt64Enum)), IntrinsicInvokeInt64Enum.Value);
+
+        [Fact]
+        public void Invoke_EnumConstructors_MapActualUnderlyingType_UInt64() =>
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt64Enum)), IntrinsicInvokeUInt64Enum.Value);
+
+        private static void Invoke_EnumConstructors_MapActualUnderlyingType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
+                DynamicallyAccessedMemberTypes.PublicFields)] Type targetType,
+            object value)
         {
-            Type targetType = typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(enumType);
+            Type enumType = value.GetType();
             ConstructorInfo constructor = targetType.GetConstructor(new Type[] { enumType })!;
 
             object result = constructor.Invoke(new object?[] { value });
