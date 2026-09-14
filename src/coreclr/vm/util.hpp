@@ -198,19 +198,40 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 //
 // WHEN THE REGION FORM MUST BE USED
 // --------------------------------
-// A region must be used instead of the plain GCX_ holder whenever the code inside it uses
-// UNINSTALL_UNWIND_AND_CONTINUE_HANDLER, UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(false),
-// UNINSTALL_MANAGED_EXCEPTION_DISPATCHER, or UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false),
-// or calls a function that uses one of those before transitioning to managed code.
+// A region must be used instead of the plain GCX_ holder whenever the foreign WebAssembly
+// exception tag used by RtlRestoreContext to resume a managed catch can unwind through the holder
+// while its GC mode transition is still active. This occurs in two principal shapes:
+//   - The holder spans an unbounded transition into managed execution. Examples include
+//     CallDescrWorker, interpreter-to-managed calls, and
+//     UnmanagedCallersOnlyCaller::InvokeDirect/InvokeDirect_Ret when invoking
+//     Ex::RhThrowEx, Ex::RhThrowHwEx, or Ex::RhRethrow.
+//   - The holder's scope contains a complete
+//     INSTALL/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER(_EX) or
+//     INSTALL/UNINSTALL_MANAGED_EXCEPTION_DISPATCHER(_EX) pair, or calls a function that performs
+//     such redispatch while the holder remains active. The UNINSTALL catches an ordinary C++
+//     exception and redispatches it as a managed exception before the holder has left its scope.
 //
-// The reason is non-obvious. Those macros mark the point at which a managed exception may resume
-// execution in managed code by unwinding out through this native frame. On WASM that resumption
-// is driven by RtlRestoreContext throwing a foreign WebAssembly exception tag. Clang lowers a C++
-// destructor cleanup to a catch_all, which intercepts a foreign tag, runs the destructor, and
-// rethrows -- so a plain GCX_ holder on such a frame would run its destructor and flip the
-// thread's GC mode as the exception passes through, leaving managed code running in the wrong
-// mode. Clang lowers an explicit catch (...) to a catch of the C++ tag only, so a region built
+// The containment direction matters. A plain holder nested entirely inside an installed
+// exception-handler span is safe: an ordinary C++ exception unwinds that holder before reaching
+// the matching catch. A holder containing the INSTALL and matching UNINSTALL is not safe because
+// managed redispatch occurs while that outer holder is still active.
+//
+// UnmanagedCallersOnlyCaller::InvokeThrowing/InvokeThrowing_Ret do not themselves require the
+// region form. They append an exception-handle out-parameter, so the UnmanagedCallersOnly calling
+// convention marshals a managed exception out as data. Their inner GCX_PREEMP holder ends before
+// COMPlusThrow raises the corresponding ordinary C++ exception. This does not make an outer
+// holder containing a complete INSTALL/UNINSTALL pair safe.
+//
+// On WASM, Clang lowers a C++ destructor cleanup to a catch_all, which intercepts the foreign tag,
+// runs the destructor, and rethrows. A plain GCX_ holder on such a frame would therefore flip the
+// thread's GC mode as the tag passes through, leaving managed code running in the wrong mode.
+// Clang lowers an explicit catch (...) to a catch of the C++ exception tag only, so a region built
 // from try/catch (...) does not misfire in the same way.
+//
+// Do not confuse the exception-dispatcher macros above with
+// INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME/_CONTEXT. The latter are guarded by
+// `#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)`, are no-ops on WASM, and are unrelated
+// to this hazard.
 //
 // It is always correct to use the plain GCX_ holder when none of the above applies; the region
 // form simply carries the restriction below, so prefer the holder where there is a choice.
