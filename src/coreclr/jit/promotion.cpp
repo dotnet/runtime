@@ -1458,6 +1458,23 @@ private:
     }
 
     //------------------------------------------------------------------------
+    // IsFullCopy: Check whether a copy covers both struct locals in their entirety.
+    //
+    // Parameters:
+    //   first  - One endpoint of the copy.
+    //   second - The other endpoint of the copy.
+    //   size   - The number of bytes copied.
+    //
+    // Returns:
+    //   True if both accesses cover their entire local.
+    //
+    bool IsFullCopy(GenTreeLclVarCommon* first, GenTreeLclVarCommon* second, unsigned size)
+    {
+        return m_compiler->IsEntireAccess(first->GetLclNum(), first->GetLclOffs(), ValueSize(size)) &&
+               m_compiler->IsEntireAccess(second->GetLclNum(), second->GetLclOffs(), ValueSize(size));
+    }
+
+    //------------------------------------------------------------------------
     // InduceAccessesFromRegularlyPromotedStruct:
     //   Create induced accesses based on the fact that there is a store
     //   between a physical promotion candidate and regularly promoted struct.
@@ -1475,15 +1492,12 @@ private:
                                                    GenTreeLclVarCommon* regPromLcl,
                                                    BasicBlock*          block)
     {
-        unsigned regPromOffs   = regPromLcl->GetLclOffs();
-        unsigned candidateOffs = candidateLcl->GetLclOffs();
-        unsigned size          = regPromLcl->GetLayout(m_compiler)->GetSize();
+        unsigned regPromOffs = regPromLcl->GetLclOffs();
+        unsigned size        = regPromLcl->GetLayout(m_compiler)->GetSize();
 
         LclVarDsc* regPromDsc = m_compiler->lvaGetDesc(regPromLcl);
 
-        bool isFullCopy = (candidateOffs == 0) && (regPromOffs == 0) &&
-                          (size == m_compiler->lvaGetDesc(candidateLcl)->GetLayout()->GetSize()) &&
-                          (size == regPromDsc->GetLayout()->GetSize());
+        bool isFullCopy = IsFullCopy(candidateLcl, regPromLcl, size);
         for (unsigned fieldLcl = regPromDsc->lvFieldLclStart, i = 0; i < regPromDsc->lvFieldCnt; fieldLcl++, i++)
         {
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(fieldLcl);
@@ -1521,9 +1535,7 @@ private:
         AggregateInfo* inducerAgg = aggregates.Lookup(inducer->GetLclNum());
         if (inducerAgg != nullptr)
         {
-            bool isFullCopy = (candOffs == 0) && (inducerOffs == 0) &&
-                              (size == m_compiler->lvaGetDesc(candidate)->GetLayout()->GetSize()) &&
-                              (size == m_compiler->lvaGetDesc(inducer)->GetLayout()->GetSize());
+            bool         isFullCopy = IsFullCopy(candidate, inducer, size);
             Replacement* firstRep;
             Replacement* endRep;
             if (inducerAgg->OverlappingReplacements(inducerOffs, size, &firstRep, &endRep))
