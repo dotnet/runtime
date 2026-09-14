@@ -299,6 +299,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 // fields.
 #ifndef DACCESS_COMPILE
 // Reflection uses volatile scalar access for naturally aligned primitive fields.
+// Atomicity is whatever VolatileLoad and VolatileStore provide on the target platform.
 // Misaligned fields are copied without atomicity or volatile ordering guarantees.
 void FieldDesc::GetPrimitiveValue(void* pAddress, void* pOutVal, UINT size)
 {
@@ -327,13 +328,7 @@ void FieldDesc::GetPrimitiveValue(void* pAddress, void* pOutVal, UINT size)
             break;
 
         case 8:
-#ifdef TARGET_64BIT
             *reinterpret_cast<INT64*>(pOutVal) = VolatileLoad(reinterpret_cast<INT64*>(pAddress));
-#else
-            // Match managed Volatile.Read, which guarantees atomic 64-bit access on 32-bit platforms.
-            *reinterpret_cast<INT64*>(pOutVal) =
-                InterlockedCompareExchange64(reinterpret_cast<LONGLONG volatile*>(pAddress), 0, 0);
-#endif
             break;
 
         default:
@@ -368,14 +363,7 @@ void FieldDesc::SetPrimitiveValue(void* pAddress, const void* pInVal, UINT size)
             break;
 
         case 8:
-#ifdef TARGET_64BIT
             VolatileStore(reinterpret_cast<INT64*>(pAddress), *reinterpret_cast<const INT64*>(pInVal));
-#else
-            // Match managed Volatile.Write, which guarantees atomic 64-bit access on 32-bit platforms.
-            InterlockedExchange64(
-                reinterpret_cast<LONGLONG volatile*>(pAddress),
-                *reinterpret_cast<const LONGLONG*>(pInVal));
-#endif
             break;
 
         default:

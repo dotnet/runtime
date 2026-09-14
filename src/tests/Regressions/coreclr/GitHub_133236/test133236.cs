@@ -87,29 +87,35 @@ public unsafe class Program
         VerifyValueTypeEquals();
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
-    public static void Int64AtAlignedOffsetOn32Bit()
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+    public static void Int64AtAlignedAddressOnArm32()
     {
         const long InitialValue = 0x0123456789abcdef;
         const long ReplacementValue = -0x0123456789abcdef;
 
-        FieldInfo field = typeof(PackedInt64AtOffsetZero).GetField(nameof(PackedInt64AtOffsetZero.Value)) ??
-            throw new InvalidOperationException($"Field {nameof(PackedInt64AtOffsetZero.Value)} was not found.");
-        int fieldOffset = Marshal.OffsetOf<PackedInt64AtOffsetZero>(nameof(PackedInt64AtOffsetZero.Value)).ToInt32();
+        FieldInfo field = typeof(AlignedInt64).GetField(nameof(AlignedInt64.Value)) ??
+            throw new InvalidOperationException($"Field {nameof(AlignedInt64.Value)} was not found.");
+        int fieldOffset = Marshal.OffsetOf<AlignedInt64>(nameof(AlignedInt64.Value)).ToInt32();
 
         Assert.Equal(0, fieldOffset);
 
-        RunWithPinnedBoxAtMisalignedAddress(
-            new PackedInt64AtOffsetZero { Value = InitialValue },
-            fieldOffset,
-            sizeof(long),
-            boxed =>
-            {
-                Assert.Equal(InitialValue, (long)field.GetValue(boxed)!);
-                Assert.Equal(InitialValue, (long)field.GetValue(boxed)!);
-                field.SetValue(boxed, ReplacementValue);
-                Assert.Equal(ReplacementValue, (long)field.GetValue(boxed)!);
-            });
+        object boxed = new AlignedInt64 { Value = InitialValue };
+        GCHandle handle = GCHandle.Alloc(boxed, GCHandleType.Pinned);
+
+        try
+        {
+            long fieldAddress = handle.AddrOfPinnedObject().ToInt64() + fieldOffset;
+            Assert.Equal(0L, fieldAddress & (sizeof(long) - 1));
+
+            Assert.Equal(InitialValue, (long)field.GetValue(boxed)!);
+            Assert.Equal(InitialValue, (long)field.GetValue(boxed)!);
+            field.SetValue(boxed, ReplacementValue);
+            Assert.Equal(ReplacementValue, (long)field.GetValue(boxed)!);
+        }
+        finally
+        {
+            handle.Free();
+        }
     }
 
     private static void VerifyReflectionAccess<
@@ -550,16 +556,6 @@ public unsafe class Program
             action);
     }
 
-    private static void RunWithPinnedBoxAtMisalignedAddress<TStruct>(
-        TStruct value,
-        int fieldOffset,
-        int fieldSize,
-        Action<object> action)
-        where TStruct : struct
-    {
-        RunWithPinnedBox(value, fieldOffset, fieldAddress => (fieldAddress & (fieldSize - 1)) != 0, action);
-    }
-
     private static void RunWithPinnedBoxAtAlignedAddress<TStruct>(
         TStruct value,
         int fieldOffset,
@@ -634,12 +630,6 @@ public unsafe class Program
     private struct PackedInt64
     {
         public byte Padding;
-        public long Value;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    private struct PackedInt64AtOffsetZero
-    {
         public long Value;
     }
 

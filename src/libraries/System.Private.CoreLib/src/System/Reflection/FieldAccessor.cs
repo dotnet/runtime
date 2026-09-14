@@ -508,7 +508,9 @@ namespace System.Reflection
             else if (fieldType == typeof(long) ||
                 fieldType == typeof(ulong) ||
                 fieldType == typeof(double))
-                accessorType = FieldAccessorType.StaticValueTypeSize8;
+                accessorType = IntPtr.Size == 8 ?
+                    FieldAccessorType.StaticValueTypeSize8 :
+                    FieldAccessorType.SlowPath;
             else if (fieldType == typeof(IntPtr) ||
                 fieldType == typeof(UIntPtr))
                 accessorType = GetIntPtrAccessorTypeForStatic();
