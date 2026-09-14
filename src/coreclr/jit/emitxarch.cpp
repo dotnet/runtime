@@ -1243,7 +1243,7 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 }
 
 //------------------------------------------------------------------------
-// AreUpper32BitsSignExtended: check if some previously emitted
+// AreUpperBitsSignExtended: check if some previously emitted
 //     instruction sign-extended the upper bits.
 //
 // Arguments:
@@ -1251,11 +1251,12 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 //    size - the size of data that the given register of interest is working with;
 //           remaining upper bits of the register that represent a larger size are the bits that are checked for
 //           sign-extended
+//    to32Bits - whether the result must be sign-extended to 32 bits and zero above bit 31
 //
 // Return Value:
 //    true if previous instruction upper bits are sign-extended.
 //    false if it did not, or if we can't safely determine.
-bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
+bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size, bool to32Bits)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
@@ -1282,8 +1283,17 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
                 case INS_call:
                     return PEEPHOLE_ABORT;
 
+                case INS_movsx32:
+                    result = to32Bits && (id->idOpSize() <= size);
+                    break;
+
                 case INS_movsx:
                 case INS_movsxd:
+                    // A native-width extension may leave ones in the upper 32 bits.
+                    if (to32Bits)
+                    {
+                        break;
+                    }
                     if ((size == EA_1BYTE) || (size == EA_2BYTE))
                     {
                         result = (id->idOpSize() <= size);
@@ -7872,8 +7882,9 @@ bool emitter::IsRedundantMov(
                 break;
 
             case INS_movsx:
+            case INS_movsx32:
             case INS_movsxd:
-                if (AreUpperBitsSignExtended(src, size))
+                if (AreUpperBitsSignExtended(src, size, ins == INS_movsx32))
                 {
                     JITDUMP("\n -- suppressing movsx or movsxd because upper bits are sign-extended.\n");
                     return true;

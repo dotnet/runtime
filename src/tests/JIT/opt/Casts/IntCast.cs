@@ -46,6 +46,13 @@ namespace CodeGenTests
                 s_byte = (byte)value;
                 Assert.Equal(unchecked(value + (byte)value), ExtendStaticByte(value));
                 Assert.Equal(unchecked(value + (sbyte)(value + 1)), ExtendPreservedByte(value, value + 1));
+                Assert.Equal((ulong)(uint)(sbyte)value, NativeThenInt(value));
+                Assert.Equal((long)(sbyte)value, IntThenNative(value));
+                Assert.Equal((ulong)(uint)(sbyte)value, LoadByteAsUInt(new[] { (sbyte)value }));
+                Assert.Equal((ulong)(uint)(short)value, LoadShortAsUInt(new[] { (short)value }));
+                Assert.Equal((long)(sbyte)value, LoadByteAsLong(new[] { (sbyte)value }));
+                Assert.Equal((long)(short)value, LoadShortAsLong(new[] { (short)value }));
+                Assert.Equal((ulong)(uint)(short)value, LoadShortWithMixedUses(new[] { (short)value }));
             }
             if (Cast_Short_To_Long(Int16.MaxValue) != 32767)
                 return 0;
@@ -97,6 +104,7 @@ namespace CodeGenTests
         static int NarrowShortFromMemory(int[] value) => (short)value[0];
 
         private static int s_observed;
+        private static long s_observedLong;
         private static byte s_byte;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -146,6 +154,70 @@ namespace CodeGenTests
             Observe(first);
             Observe(second);
             return first + (sbyte)second;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong NativeThenInt(int value)
+        {
+            // The second extension must clear the upper 32 bits for negative values.
+            // X64: movsx rax,
+            // X64: movsx eax,
+            long extended = (sbyte)value;
+            s_observedLong = extended;
+            return (uint)(sbyte)extended;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long IntThenNative(int value)
+        {
+            // A 32-bit extension does not establish the sign of the upper 32 bits.
+            // X64: movsx eax,
+            // X64: cdqe
+            int extended = (sbyte)value;
+            s_observed = extended;
+            return (sbyte)extended;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong LoadByteAsUInt(sbyte[] values)
+        {
+            // X64: movsx eax, byte ptr [
+            return (uint)values[0];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong LoadShortAsUInt(short[] values)
+        {
+            // X64: movsx eax, word ptr [
+            return (uint)values[0];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long LoadByteAsLong(sbyte[] values)
+        {
+            // X64: movsx rax, byte ptr [
+            // X64-NOT: movsxd
+            return values[0];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long LoadShortAsLong(short[] values)
+        {
+            // X64: movsx rax, word ptr [
+            // X64-NOT: movsxd
+            return values[0];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong LoadShortWithMixedUses(short[] values)
+        {
+            // The signed use must not leave sign bits in the unsigned result.
+            // X64: movsx rax, word ptr [
+            // X64: mov qword ptr [{{.*}}], {{r[a-z0-9]+}}
+            // X64: mov eax, eax
+            int value = values[0];
+            s_observedLong = value;
+            return (uint)value;
         }
     }
 }

@@ -176,7 +176,7 @@ static bool IsBitwiseInstruction(instruction ins);
 
 #ifdef TARGET_64BIT
 bool AreUpperBitsZero(regNumber reg, emitAttr size);
-bool AreUpperBitsSignExtended(regNumber reg, emitAttr size);
+bool AreUpperBitsSignExtended(regNumber reg, emitAttr size, bool to32Bits);
 #endif // TARGET_64BIT
 
 bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
