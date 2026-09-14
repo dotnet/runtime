@@ -559,12 +559,14 @@ public class R2RTestSuites
 
     [Theory]
     [InlineData(2, "ambient SP")]
+    [InlineData(3, "Unknown '3'")]
     [InlineData(0x20000001, "$1 (i32)")]
     [InlineData(0x40000002, "$2 (i64)")]
     [InlineData(0x60000003, "$3 (f32)")]
     [InlineData(unchecked((int)0x80000004), "$4 (f64)")]
     [InlineData(unchecked((int)0xA0000005), "$5 (v128)")]
     [InlineData(unchecked((int)0xC0000006), "$6 (exnref)")]
+    [InlineData(unchecked((int)0xE0000001), "Unknown '-536870911'")]
     public void WasmDebugRegisterIsDecoded(int register, string expected)
     {
         Assert.Equal(expected, DebugInfo.GetPlatformSpecificRegister(WasmMachine.Wasm32, register));
