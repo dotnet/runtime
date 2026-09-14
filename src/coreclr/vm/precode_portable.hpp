@@ -129,6 +129,18 @@ public:
     friend struct ::cdac_data<PortableEntryPoint>;
 };
 
+struct VirtualDispatchPortableEntryPoint
+{
+    void* Target;
+    DWORD PackedDispatchOffsets;
+    READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* InitialEntry;
+};
+
+// WasmVirtualDispatchThunkNode accesses these fields at fixed offsets.
+static_assert(offsetof(VirtualDispatchPortableEntryPoint, Target) == 0);
+static_assert(offsetof(VirtualDispatchPortableEntryPoint, PackedDispatchOffsets) == TARGET_POINTER_SIZE);
+static_assert(offsetof(VirtualDispatchPortableEntryPoint, InitialEntry) == 2 * TARGET_POINTER_SIZE);
+
 class UnboxingStubPortableEntryPoint final
 {
 public:

@@ -11,6 +11,28 @@ using Xunit;
 // (or the dominated relop can be reversed/rewritten).
 public class RedundantBranchSimplify
 {
+    // The bitwise complement of a 0/1 comparison is always nonzero and provides no information about the comparison.
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int ComplementedRelop(int a, int b)
+    {
+        int value = (a != b) ? 1 : 0;
+        if (~value != 0)
+        {
+            if (a != b)
+            {
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+
+    [Theory]
+    [InlineData(3, 3, 0)]
+    [InlineData(3, 5, 1)]
+    public static void TestComplementedRelop(int a, int b, int expected) =>
+        Assert.Equal(expected, ComplementedRelop(a, b));
+
     // if (a >= 100) { if (a <= 100) return 1; } => inner becomes (a == 100)
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int GeLe(int a)

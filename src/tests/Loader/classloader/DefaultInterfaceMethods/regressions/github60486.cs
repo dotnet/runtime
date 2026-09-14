@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 using TestLibrary;
@@ -117,8 +118,64 @@ public class Program : ProgramBase<InputData>, TestItf2<InputData>
     [Fact]
     public static void TestEntryPoint()
     {
+        ValidateCurrentMethod();
         new Program().Start();
         ValidateExceptionStackTrace();
+    }
+
+    private static void ValidateCurrentMethod()
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.Equal(nameof(ValidateCurrentMethod), MethodBase.GetCurrentMethod().Name);
+            Assert.Equal(nameof(GetCurrentMethodInlineable), GetCurrentMethodInlineable().Name);
+            MethodBase genericMethod = GetCurrentMethodGeneric<string>();
+            Assert.Equal(nameof(GetCurrentMethodGeneric), genericMethod.Name);
+            Assert.True(genericMethod.IsGenericMethodDefinition);
+            Assert.Equal(typeof(Program).Assembly, Assembly.GetExecutingAssembly());
+            Assert.Equal(typeof(Program).Assembly, Assembly.GetCallingAssembly());
+            ValidateRecursiveCurrentMethod(3);
+            InputData byref = new InputData { i = 2 };
+            ValidateTransitionRoots(new InputData { i = 1 }, ref byref,
+                (new InputData { i = 3 }, new InputData { i = 4 }));
+        }
+    }
+
+    private static MethodBase GetCurrentMethodInlineable() => MethodBase.GetCurrentMethod();
+
+    private static MethodBase GetCurrentMethodGeneric<T>() => MethodBase.GetCurrentMethod();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ValidateTransitionRoots(InputData value, ref InputData byref, (InputData, InputData) pair)
+    {
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        Assert.Equal(1, value.i);
+        Assert.Equal(2, byref.i);
+        Assert.Equal(3, pair.Item1.i);
+        Assert.Equal(4, pair.Item2.i);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ValidateRecursiveCurrentMethod(int depth)
+    {
+        Assert.Equal(nameof(ValidateRecursiveCurrentMethod), MethodBase.GetCurrentMethod().Name);
+        if (depth > 0)
+        {
+            ValidateRecursiveCurrentMethod(depth - 1);
+        }
+        else
+        {
+            int frameCount = 0;
+            foreach (System.Diagnostics.StackFrame frame in new System.Diagnostics.StackTrace().GetFrames())
+            {
+                if (frame.GetMethod().Name == nameof(ValidateRecursiveCurrentMethod))
+                {
+                    frameCount++;
+                }
+            }
+
+            Assert.Equal(4, frameCount);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
