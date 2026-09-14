@@ -3852,26 +3852,45 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
         private static bool MatchAbbreviatedTimeMark(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref TM result)
         {
-            // NOTENOTE : the assumption here is that abbreviated time mark is the first
-            // character of the AM/PM designator.  If this invariant changes, we have to
-            // change the code below.
             if (str.GetNext())
             {
                 string amDesignator = dtfi.AMDesignator;
-                if (amDesignator.Length > 0 && str.GetChar() == amDesignator[0])
+                if (MatchesDesignator(ref str, amDesignator))
                 {
                     result = TM.AM;
                     return true;
                 }
 
                 string pmDesignator = dtfi.PMDesignator;
-                if (pmDesignator.Length > 0 && str.GetChar() == pmDesignator[0])
+                if (MatchesDesignator(ref str, pmDesignator))
                 {
                     result = TM.PM;
                     return true;
                 }
             }
             return false;
+
+            static bool MatchesDesignator(ref __DTString str, string designator)
+            {
+                if (designator.Length == 0 || str.GetChar() != designator[0])
+                {
+                    return false;
+                }
+
+                if (char.IsHighSurrogate(designator[0]) &&
+                    designator.Length > 1 &&
+                    char.IsLowSurrogate(designator[1]))
+                {
+                    if (str.Index + 1 >= str.Length || str.Value[str.Index + 1] != designator[1])
+                    {
+                        return false;
+                    }
+
+                    str.Advance(1);
+                }
+
+                return true;
+            }
         }
 
         /*=================================CheckNewValue==================================

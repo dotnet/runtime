@@ -32,24 +32,26 @@ function(add_pgo TargetName)
             set(ProfileFileName "coreclr.profdata")
         endif(CLR_CMAKE_HOST_WIN32)
 
-        file(TO_NATIVE_PATH
-            "${CLR_CMAKE_OPTDATA_PATH}/data/${ProfileFileName}"
-            ProfilePath
-        )
+        set(ProfileSourcePath "${CLR_CMAKE_OPTDATA_PATH}/data/${ProfileFileName}")
 
         # If we don't have profile data available, gracefully fall back to a non-PGO opt build
-        if(NOT EXISTS ${ProfilePath})
-            message("PGO data file NOT found: ${ProfilePath}")
+        if(NOT EXISTS "${ProfileSourcePath}")
+            message("PGO data file NOT found: ${ProfileSourcePath}")
         elseif(CMAKE_GENERATOR MATCHES "Visual Studio")
             # MSVC is sensitive to exactly the options passed during PGO optimization and Ninja and
             # MSBuild differ slightly (but not meaningfully for runtime behavior)
             message("Cannot use PGO optimization built with Ninja from MSBuild. Re-run build with Ninja to apply PGO information")
-        else(NOT EXISTS ${ProfilePath})
+        else()
             if(CLR_CMAKE_HOST_WIN32)
+                # link.exe opens PGO databases without file sharing, so use a build-local copy.
+                set(ProfilePath "${CMAKE_CURRENT_BINARY_DIR}/${ProfileFileName}")
+                configure_file("${ProfileSourcePath}" "${ProfilePath}" COPYONLY)
+                file(TO_NATIVE_PATH "${ProfilePath}" ProfilePath)
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE        " /LTCG /USEPROFILE:PGD=\"${ProfilePath}\"")
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /LTCG /USEPROFILE:PGD=\"${ProfilePath}\"")
                 add_compile_definitions(WITH_NATIVE_PGO)
             else(CLR_CMAKE_HOST_WIN32)
+                file(TO_NATIVE_PATH "${ProfileSourcePath}" ProfilePath)
                 if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
                     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
                         check_have_lto_and_pgodata_supported(${ProfilePath})
@@ -64,7 +66,7 @@ function(add_pgo TargetName)
                     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
                 endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
             endif(CLR_CMAKE_HOST_WIN32)
-        endif(NOT EXISTS ${ProfilePath})
+        endif()
     endif(CLR_CMAKE_PGO_INSTRUMENT)
 endfunction(add_pgo)
 

@@ -4062,6 +4062,8 @@ public:
     // Returns "true" iff "tree" or its (transitive) children have any of the side effects in "flags".
     bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors = false);
 
+    GenTree* gtExtractSideEffectsFromUnusedNode(GenTree* node);
+
     void gtExtractSideEffList(GenTree*     expr,
                               GenTree**    pList,
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
@@ -5547,6 +5549,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -6118,6 +6121,12 @@ public:
                         // since fgMorphTree can be called from several places
 
     bool fgGlobalMorphDone = false;
+
+#ifdef DEBUG
+    // Retyping implicit byref parameters temporarily leaves existing local field
+    // accesses described using their pre-retyping struct types.
+    bool fgImplicitByRefLclFldsStale = false;
+#endif
 
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
@@ -6900,6 +6909,8 @@ public:
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block, unsigned* lclNum);
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
+
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
 
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 
@@ -8239,6 +8250,8 @@ public:
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
+    bool canKeepNonInlineableGdvCandidate(GenTreeCall* call);
+
     int getGDVMaxTypeChecks()
     {
         int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
@@ -9172,8 +9185,12 @@ public:
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(
-            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+        static AssertionDsc CreateCompareCheckedBound(const Compiler* comp,
+                                                      VNFunc          relop,
+                                                      ValueNum        op1VN,
+                                                      ValueNum        checkedBndVN,
+                                                      int             cns,
+                                                      bool            isVNNeverNegative = false)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
@@ -9185,7 +9202,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal    = cns;
-            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
+            dsc.m_op2.m_isVNNeverNegative = isVNNeverNegative || comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 
@@ -9831,6 +9848,47 @@ public:
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
+
+    template <typename Functor>
+    bool eeRunFunctorWithErrorTrap(Functor f)
+    {
+        return eeRunWithErrorTrap<Functor>(
+            [](Functor* pf) {
+            (*pf)();
+        },
+            &f);
+    }
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // eeRunExtraSuperPmiQueries: make JIT-EE queries whose only purpose is to enrich
+    //    the recorded SuperPMI method context (see JitConfig.EnableExtraSuperPmiQueries).
+    //
+    // Type parameters:
+    //    Functor - callable that makes the queries
+    //
+    // Arguments:
+    //    f - the functor
+    //
+    // Notes:
+    //    Extra queries must be observationally inert: enabling them must not change what
+    //    the JIT compiles. That is not automatic, because the EE may fail a query that the
+    //    JIT would never have made on its own. An AOT compiler in particular throws for a
+    //    handle it cannot embed, such as a type outside the current version bubble, and an
+    //    escaping exception would abort the enclosing inline or method. The collection
+    //    would then import less IL than a later replay does, and the context it recorded
+    //    would be missing the data that replay goes on to ask for.
+    //
+    //    Wrap only EE queries. JIT work must stay outside, because the trap does not
+    //    discriminate by origin: a noway_assert, NOMEM or assert raised inside the functor
+    //    would be quietly absorbed instead of failing the method.
+    //
+    template <typename Functor>
+    void eeRunExtraSuperPmiQueries(Functor f)
+    {
+        eeRunFunctorWithErrorTrap(f);
+    }
+#endif // DEBUG
 
     // Utility functions
 

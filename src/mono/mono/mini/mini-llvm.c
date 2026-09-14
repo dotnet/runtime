@@ -12821,7 +12821,13 @@ MONO_RESTORE_WARNING
 		return;
 
 	if (!has_terminator && bb->next_bb && bb != cfg->bb_exit && (bb == cfg->bb_entry || bb->in_count > 0)) {
-		LLVMBuildBr (builder, get_bb (ctx, bb->next_bb));
+		MonoBasicBlock *next_bb = bb->next_bb;
+
+		while (next_bb && next_bb->in_count == 0)
+			next_bb = next_bb->next_bb;
+
+		if (next_bb)
+			LLVMBuildBr (builder, get_bb (ctx, next_bb));
 	}
 
 	if (bb == cfg->bb_exit && sig->ret->type == MONO_TYPE_VOID) {

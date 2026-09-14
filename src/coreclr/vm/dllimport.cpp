@@ -3747,7 +3747,9 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
             }
             else if (marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY
                     || marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET
+#ifdef FEATURE_VARARGS
                     || marshalType == MarshalInfo::MARSHAL_TYPE_ARGITERATOR
+#endif // FEATURE_VARARGS
 #ifdef FEATURE_COMINTEROP
                     || marshalType == MarshalInfo::MARSHAL_TYPE_OLECOLOR
 #endif // FEATURE_COMINTEROP
@@ -4742,8 +4744,6 @@ namespace
         CONTRACTL_END;
 
         WORD ndirectflags = 0;
-        if (pNMD->IsVarArg())
-            ndirectflags |= PInvokeMethodDesc::kVarArgs;
 
         if (sigInfo.GetCharSet() == nltAnsi)
             ndirectflags |= PInvokeMethodDesc::kNativeAnsi;
@@ -5923,12 +5923,11 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
 
     CONSISTENCY_CHECK(pNMD->IsVarArg());
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#ifndef FEATURE_VARARGS
     COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
+#else // FEATURE_VARARGS
     // Vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
     (void)pNMD->GetOrCreatePrecode();
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     // Resolve the target of the P/Invoke method now.
     // This way we don't need to try to do this every time that this P/Invoke is called with this signature.
@@ -5938,6 +5937,7 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
     // varargs goes through vararg PInvoke stub
     //
     return TheVarargPInvokeStub(pNMD->HasRetBuffArg());
+#endif // FEATURE_VARARGS
 }
 
 void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
@@ -6129,8 +6129,9 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     return pMD->GetPInvokeTarget();
 }
 
+#ifdef FEATURE_VARARGS
 //===========================================================================
-//  Support for vararg Pinvoke and the Pinvoke Calli instruction
+//  Support for vararg Pinvoke
 //
 //===========================================================================
 static void GetILStubForVarargPInvoke(VASigCookie* pVASigCookie, MethodDesc* pMD)
@@ -6191,6 +6192,7 @@ static void GetILStubForVarargPInvoke(VASigCookie* pVASigCookie, MethodDesc* pMD
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 }
+#endif // FEATURE_VARARGS
 
 // Build the managed signature of the IL stub that implements an unmanaged CALLI call site.
 //
@@ -6461,6 +6463,7 @@ MethodDesc* PInvoke::CreateCalliILStub(
     return pStubMD;
 }
 
+#ifdef FEATURE_VARARGS
 EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
 {
     PreserveLastErrorHolder preserveLastError;
@@ -6488,6 +6491,7 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock,
 
     pFrame->Pop(CURRENT_THREAD);
 }
+#endif // FEATURE_VARARGS
 
 EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
 {

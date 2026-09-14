@@ -320,8 +320,7 @@ DacDbiInterfaceInstance(
                 if (cdac.IsValid())
                 {
                     ReleaseHolder<IUnknown> cdacInterface;
-                    cdac.CreateDacDbiInterface(&cdacInterface);
-                    if (cdacInterface != nullptr)
+                    if (cdac.CreateDacDbiInterface(&cdacInterface) == S_OK && cdacInterface != nullptr)
                     {
                         IDacDbiInterface* pCDacDbi = nullptr;
                         HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
@@ -5522,6 +5521,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 {
     DD_ENTER_MAY_THROW;
 
+#ifndef FEATURE_VARARGS
+    *pArgBase = (CORDB_ADDRESS)NULL;
+    *pRetVal = TargetBuffer();
+    return E_NOTIMPL;
+#else // FEATURE_VARARGS
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -5548,6 +5552,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+#endif // FEATURE_VARARGS
 }
 
 // returns TRUE if the type requires 8-byte alignment

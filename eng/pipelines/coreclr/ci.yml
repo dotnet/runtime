@@ -247,3 +247,5 @@ extends:
             nameSuffix: PALTests
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/run-paltests-step.yml
+                parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}

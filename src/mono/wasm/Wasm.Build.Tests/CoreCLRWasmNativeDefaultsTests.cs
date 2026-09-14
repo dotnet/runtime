@@ -19,6 +19,7 @@ namespace Wasm.Build.Tests
     public class CoreCLRWasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");
+        private static readonly Regex s_r2rDirectoryRegex = new("\\*\\* WasmPublishR2RDir: '([^']*)'");
 
         public CoreCLRWasmNativeDefaultsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -53,8 +54,10 @@ namespace Wasm.Build.Tests
             // comparison is textual, so a numerically equal but differently spelled size counts as
             // a mismatch. That only costs an unnecessary relink, never a mismatched binary.
             { "<EmccStackSize>2097152</EmccStackSize>", true },
-            // a non-registry trigger: setting WasmPerformanceInstrumentation always forces a relink
-            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", true },
+            // WasmPerformanceInstrumentation would force a relink, but that defaulting is temporarily
+            // disabled in BrowserWasmApp.CoreCLR.targets pending https://github.com/dotnet/runtime/issues/132772,
+            // so it currently does not relink.
+            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", false },
         };
 
         [Theory]
@@ -110,6 +113,93 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains("** WasmBuildNative: 'true'", line);
+        }
+
+        [Fact]
+        public void PublishReadyToRunDirectoryMatchesSdkOutputCasing()
+        {
+            Configuration config = Configuration.Debug;
+            string printValueTarget = """
+                <Target Name="PrintWasmPublishR2RDir"
+                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
+                    <Message Text="** WasmPublishR2RDir: '$(_WasmPublishR2RDir)'" Importance="High" />
+                    <Error Text="Stopping after validating the R2R directory" />
+                </Target>
+                """;
+
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_r2r_directory",
+                extraProperties: """
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <PublishTrimmed>true</PublishTrimmed>
+                    """,
+                insertAtEnd: printValueTarget);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: "-t:PrintWasmPublishR2RDir"));
+
+            Assert.Contains("Stopping after validating the R2R directory", output);
+            Match match = s_r2rDirectoryRegex.Match(output);
+            Assert.True(match.Success, output);
+            Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NativeRelinkResolvesCrossgen2WithoutReadyToRun(bool publish)
+        {
+            string targetsFile = $"{nameof(NativeRelinkResolvesCrossgen2WithoutReadyToRun)}.Build.targets";
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_sdk_crossgen2",
+                extraProperties: $$"""
+                    <PublishReadyToRun>false</PublishReadyToRun>
+                    <WasmBuildNative>true</WasmBuildNative>
+                    <_WasmBuildTestExpectNestedPublish>{{publish}}</_WasmBuildTestExpectNestedPublish>
+                    """,
+                insertAtEnd: $"""<Import Project="{targetsFile}" />""");
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, targetsFile), Path.Combine(_projectDir, targetsFile));
+
+            // Run the generator, then stop before native compilation.
+            string output = publish
+                ? PublishProject(info, Configuration.Debug, new PublishOptions(ExpectSuccess: false)).buildOutput
+                : BuildProject(info, Configuration.Debug, new BuildOptions(ExpectSuccess: false)).buildOutput;
+
+            Assert.Contains("Stopping after validating SDK crossgen2", output);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NativeRelinkWithoutCrossgen2PackReportsMissingGenerator(bool publish)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_missing_crossgen2",
+                extraProperties: """
+                    <PublishReadyToRun>false</PublishReadyToRun>
+                    <RequiresCrossgen2Pack>false</RequiresCrossgen2Pack>
+                    <WasmBuildNative>true</WasmBuildNative>
+                    """);
+
+            string output = publish
+                ? PublishProject(info, Configuration.Debug, new PublishOptions(ExpectSuccess: false)).buildOutput
+                : BuildProject(info, Configuration.Debug, new BuildOptions(ExpectSuccess: false)).buildOutput;
+
+            Assert.Contains("Could not resolve crossgen2. Update the .NET SDK and restore the project, or set $(Crossgen2Path) to a crossgen2 executable.", output);
+            Assert.DoesNotContain("NETSDK1094", output);
         }
 
         private string? BuildAndGetWasmBuildNativeLine(string projectPrefix, string extraProperties, bool expectSuccess)

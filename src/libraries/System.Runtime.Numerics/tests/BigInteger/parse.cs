@@ -1332,29 +1332,33 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public static void ParseWithNBSPAsGroupSeparator()
+        [Theory]
+        [InlineData("\u00A0", " ")]
+        [InlineData("\u202F", " ")]
+        [InlineData(" ", "\u00A0")]
+        [InlineData(" ", "\u202F")]
+        [InlineData("\u00A0", "\u202F")]
+        [InlineData("\u202F", "\u00A0")]
+        public static void ParseWithSpaceReplacingGroupSeparator(string groupSeparator, string inputSeparator)
         {
-            // Culture has NBSP as group separator; input has regular spaces.
-            // Exercises MatchChars path: cp=='\u0020' && IsSpaceReplacingChar(val=='\u00A0')
-            CultureInfo nbspCulture = new CultureInfo("en-US");
-            nbspCulture.NumberFormat.NumberGroupSeparator = "\u00A0";
+            CultureInfo culture = new("en-US");
+            culture.NumberFormat.NumberGroupSeparator = groupSeparator;
+            string value = $"1{inputSeparator}234";
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
 
-            BigInteger result = BigInteger.Parse("1 234 567", NumberStyles.AllowThousands, nbspCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            Assert.Equal((BigInteger)1234, BigInteger.Parse(value, NumberStyles.AllowThousands, culture));
+            Assert.Equal((BigInteger)1234, BigInteger.Parse(utf8Value, NumberStyles.AllowThousands, culture));
 
-            // Culture has regular space as group separator; input has NBSP.
-            // Exercises MatchChars path: val=='\u0020' && IsSpaceReplacingChar(cp=='\u00A0')
-            CultureInfo spaceCulture = new CultureInfo("en-US");
-            spaceCulture.NumberFormat.NumberGroupSeparator = " ";
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial(value + "x", NumberStyles.AllowThousands, culture, out BigInteger result, out int charsConsumed));
+            Assert.Equal((BigInteger)1234, result);
+            Assert.Equal(value.Length, charsConsumed);
 
-            result = BigInteger.Parse("1\u00A0234\u00A0567", NumberStyles.AllowThousands, spaceCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial([.. utf8Value, (byte)'x'], NumberStyles.AllowThousands, culture, out result, out int bytesConsumed));
+            Assert.Equal((BigInteger)1234, result);
+            Assert.Equal(utf8Value.Length, bytesConsumed);
 
-            // Culture has regular space as group separator; input has narrow NBSP (U+202F).
-            // Exercises IsSpaceReplacingChar matching U+202F against U+0020
-            result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            string trailingSeparatorValue = $"1{inputSeparator}";
+            Assert.Equal(BigInteger.One, BigInteger.Parse(Encoding.UTF8.GetBytes(trailingSeparatorValue), NumberStyles.AllowThousands, culture));
         }
 
         [Fact]
