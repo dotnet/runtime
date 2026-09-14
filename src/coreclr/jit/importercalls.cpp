@@ -5578,7 +5578,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_BitConverter_Int32BitsToSingle:
             {
                 GenTree* op1 = impPopStack().val;
-                assert(varTypeIsInt(op1));
+                assert(genActualTypeIsInt(op1));
 
                 if (op1->IsIntegralConst())
                 {
