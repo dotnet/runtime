@@ -30,6 +30,10 @@ namespace System.Collections
         /// <summary>sizeof(byte) * 8</summary>
         private const int BitsPerByte = 8;
 
+        /// <summary>Buffer size in bytes used for stack allocation.</summary>
+        private const int StackBufferSizeInBytes = 256;
+
+
         /// <summary>The array of bytes used to store bits.</summary>
         /// <remarks>
         /// The array is allocated to hold enough bytes to store the specified number of bits, rounded up to the nearest multiple
@@ -454,55 +458,76 @@ namespace System.Collections
             int count = IEnumerableCount(values);
 
             if (count == -1)
-                return CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
-
-            bitLength = count;
-            byte[] array = AllocateByteArray(bitLength);
-
-            using IEnumerator<bool> enumerator = values.GetEnumerator();
-
-            int index = 0;
-            byte bit = 0;
-            byte value = 0;
-            while (enumerator.MoveNext())
             {
-                if (enumerator.Current)
-                    value |= (byte)(1 << bit);
+                using ValueListBuilder<byte> valueList = new ValueListBuilder<byte>(stackalloc byte[StackBufferSizeInBytes]);
+                using IEnumerator<bool> enumerator = values.GetEnumerator();
 
-                if (++bit != BitsPerByte)
-                    continue;
+                byte bit = 0;
+                byte value = 0;
+                bitLength = 0;
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current)
+                        value |= (byte)(1 << bit);
 
-                array[index++] = value;
-                value = 0;
-                bit = 0;
+                    bitLength++;
+
+                    if (++bit != BitsPerByte)
+                        continue;
+
+                    valueList.Append(value);
+                    value = 0;
+                    bit = 0;
+                }
+                if (bit != 0)
+                    valueList.Append(value);
+
+                byte[] array = AllocateByteArray(bitLength);
+                valueList.AsSpan().CopyTo(array);
+                return array;
             }
-            if (bit != 0)
-                array[index] = value;
+            else
+            {
+                bitLength = count;
+                byte[] array = AllocateByteArray(bitLength);
+                using IEnumerator<bool> enumerator = values.GetEnumerator();
 
-            return array;
+                int index = 0;
+                byte bit = 0;
+                byte value = 0;
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current)
+                        value |= (byte)(1 << bit);
+
+                    if (++bit != BitsPerByte)
+                        continue;
+
+                    array[index++] = value;
+                    value = 0;
+                    bit = 0;
+                }
+                if (bit != 0)
+                    array[index] = value;
+
+                return array;
+            }
         }
 
         private static byte[] CreateArrayFromUnknownSizeIEnumerable<T>(IEnumerable<T> values, out int bitLength)
             where T : unmanaged
         {
-            using ValueListBuilder<T> valueList = new ValueListBuilder<T>(stackalloc T[256 / sizeof(T)]);
+            using ValueListBuilder<T> valueList = new ValueListBuilder<T>(stackalloc T[StackBufferSizeInBytes / sizeof(T)]);
             foreach (T value in values)
                 valueList.Append(value);
 
             ReadOnlySpan<T> span = valueList.AsSpan();
 
             if (typeof(T) == typeof(int))
-            {
                 return CreateArray(MemoryMarshal.Cast<T, int>(span), out bitLength);
-            }
+
             if (typeof(T) == typeof(byte))
-            {
                 return CreateArray(MemoryMarshal.Cast<T, byte>(span), out bitLength);
-            }
-            if (typeof(T) == typeof(bool))
-            {
-                return CreateArray(MemoryMarshal.Cast<T, bool>(span), out bitLength);
-            }
 
             throw new InvalidOperationException();
         }
