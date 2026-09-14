@@ -446,7 +446,7 @@ namespace ILCompiler
                     _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
-                if (moduleGroup.IsCompositeBuildMode)
+                if (moduleGroup.IsCompositeBuildMode && !_nodeFactory.OptimizationFlags.SuppressComponentRewrite)
                 {
                     // In composite mode with standalone MSIL we rewrite all input MSIL assemblies to the
                     // output folder, adding a formal R2R header to them with forwarding information to

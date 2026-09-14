@@ -46,7 +46,25 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
     }
 }
 
-export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
+// Attach an already-instantiated lazy R2R payload to a loaded assembly by name via the runtime's
+// CoreCLR_AttachLazyR2RImage export. Non-fatal: on failure the app keeps running on the eager image.
+export function attachLazyR2RImage(payloadPtr: number, payloadSize: number, assemblyName: string): number {
+    const sp = _ems_.stackSave();
+    try {
+        const nameLen = _ems_.lengthBytesUTF8(assemblyName) + 1;
+        const namePtr = _ems_.stackAlloc(nameLen);
+        _ems_.stringToUTF8Array(assemblyName, _ems_.HEAPU8, namePtr as any, nameLen);
+        const rc = _ems_._CoreCLR_AttachLazyR2RImage(namePtr as any, payloadPtr as any, payloadSize);
+        if (rc !== 0) {
+            _ems_.dotnetLogger.warn(`Lazy R2R attach for '${assemblyName}' failed (code ${rc}); continuing with the eager image.`);
+        }
+        return rc;
+    } finally {
+        _ems_.stackRestore(sp);
+    }
+}
+
+export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number, lazyR2RAssemblyName?: string): Promise<void> {
     // The boot config carries payloadSize for every webcil asset (and tableSize for R2R images), so
     // the loader never buffers the bytes, parses the data section or calls getWebcilSize. Assets
     // without a tableSize are plain (Webcil wrapper version 0) images.
@@ -71,7 +89,7 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
             const instantiated = await WebAssembly.instantiate(data, imports);
             instance = instantiated.instance;
         }
-        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
+        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath, lazyR2RAssemblyName);
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
@@ -138,9 +156,10 @@ function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tabl
     return webcilImports;
 }
 
-// Copies the payload into the allocated buffer, fills the R2R table (if any) and registers the
-// loaded image for BrowserHost_ExternalAssemblyProbe.
-function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number, payloadSize: number, tableSize: number, virtualPath: string): void {
+// Copies the payload into the allocated buffer, fills the R2R table (if any) and either attaches the
+// payload as a lazy R2R code supplement (lazyR2RAssemblyName set) or registers it as a loadable
+// assembly for BrowserHost_ExternalAssemblyProbe.
+function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number, payloadSize: number, tableSize: number, virtualPath: string, lazyR2RAssemblyName?: string): void {
     const webcilVersion = (instance.exports.webcilVersion as WebAssembly.Global).value;
     if (webcilVersion > 1 || webcilVersion < 0) {
         throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
@@ -151,6 +170,13 @@ function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number
     if (tableSize > 0) {
         const fillWebcilTable = instance.exports.fillWebcilTable as () => void;
         fillWebcilTable();
+    }
+
+    if (lazyR2RAssemblyName) {
+        // Lazy R2R supplement: the runtime takes ownership of the payload buffer (process lifetime),
+        // so it is neither registered as an assembly nor freed here.
+        attachLazyR2RImage(payloadPtr, payloadSize, lazyR2RAssemblyName);
+        return;
     }
 
     const name = virtualPath.startsWith(browserVirtualAppBase)

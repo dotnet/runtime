@@ -593,7 +593,12 @@ namespace ILCompiler
                         Get(_command.SynthesizeRandomMibc));
 
                     bool partial = Get(_command.Partial);
-                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, partial);
+                    bool partialComplement = Get(_command.PartialComplement);
+                    ProfileRestrictionMode profileMode =
+                        partialComplement ? ProfileRestrictionMode.ProfileComplement :
+                        partial ? ProfileRestrictionMode.ProfileOnly :
+                        ProfileRestrictionMode.None;
+                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, profileMode);
 
                     if ((singleMethod == null) && !compileNoMethods)
                     {
@@ -601,8 +606,9 @@ namespace ILCompiler
                         foreach (var module in rootingModules)
                         {
                             compilationRoots.Add(new ReadyToRunProfilingRootProvider(module, profileDataManager));
-                            // If we're doing partial precompilation, only use profile data.
-                            if (!partial)
+                            // ProfileOnly roots from the profile alone; None and ProfileComplement need the
+                            // full closure reachable so ContainsMethodBody can select the complement.
+                            if (profileMode != ProfileRestrictionMode.ProfileOnly)
                             {
                                 if (ReadyToRunVisibilityRootProvider.UseVisibilityBasedRootProvider(module))
                                 {
@@ -686,6 +692,7 @@ namespace ILCompiler
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
                     nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
+                    nodeFactoryFlags.SuppressComponentRewrite = Get(_command.SuppressComponentRewrite);
 
                     builder
                         .UseMapFile(Get(_command.Map))

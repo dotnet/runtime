@@ -24,6 +24,7 @@ interface EmscriptenModule {
     _free(ptr: VoidPtr): void;
     _sbrk(size: number): VoidPtr;
     _posix_memalign(res: VoidPtrPtr, alignment: number, size: number): number;
+    _CoreCLR_AttachLazyR2RImage(assemblyNamePtr: CharPtr, payloadPtr: VoidPtr, payloadSize: number): number;
     out(message: string): void;
     err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
@@ -243,6 +244,7 @@ interface Assets {
     coreAssembly: AssemblyAsset[];
     assembly: AssemblyAsset[];
     lazyAssembly?: AssemblyAsset[];
+    lazyR2R?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
     jsModuleDiagnostics?: JsAsset[];

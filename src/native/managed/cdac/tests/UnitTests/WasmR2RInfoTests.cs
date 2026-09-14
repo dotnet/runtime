@@ -41,7 +41,7 @@ public class WasmR2RInfoTests
         var rangeSectionLayout = helpers.LayoutFields([
             new("MinFunctionTableIndex", DataType.uint32),
             new("NumRuntimeFunctions", DataType.uint32),
-            new("R2RModule", DataType.pointer),
+            new("R2RInfo", DataType.pointer),
             new("Next", DataType.pointer),
         ]);
 
@@ -63,7 +63,7 @@ public class WasmR2RInfoTests
         var secFields = rangeSectionLayout.Fields;
         helpers.Write(sectionFrag.Data.AsSpan().Slice(secFields["MinFunctionTableIndex"].Offset, sizeof(uint)), MinFunctionTableIndex);
         helpers.Write(sectionFrag.Data.AsSpan().Slice(secFields["NumRuntimeFunctions"].Offset, sizeof(uint)), 1u);
-        helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["R2RModule"].Offset, helpers.PointerSize), module.Address);
+        helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["R2RInfo"].Offset, helpers.PointerSize), r2rInfo.Address);
         helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["Next"].Offset, helpers.PointerSize), 0ul);
 
         // The slot holds the pointer to the list head. The global points at the slot, not the head.
@@ -154,7 +154,7 @@ public class WasmR2RInfoTests
         var rangeSectionLayout = helpers.LayoutFields([
             new("MinFunctionTableIndex", DataType.uint32),
             new("NumRuntimeFunctions", DataType.uint32),
-            new("R2RModule", DataType.pointer),
+            new("R2RInfo", DataType.pointer),
             new("Next", DataType.pointer),
         ]);
 
@@ -179,7 +179,7 @@ public class WasmR2RInfoTests
         var secFields = rangeSectionLayout.Fields;
         helpers.Write(sectionFrag.Data.AsSpan().Slice(secFields["MinFunctionTableIndex"].Offset, sizeof(uint)), CapturedMinFunctionTableIndex);
         helpers.Write(sectionFrag.Data.AsSpan().Slice(secFields["NumRuntimeFunctions"].Offset, sizeof(uint)), CapturedNumRuntimeFunctions);
-        helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["R2RModule"].Offset, helpers.PointerSize), module.Address);
+        helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["R2RInfo"].Offset, helpers.PointerSize), r2rInfo.Address);
         helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["Next"].Offset, helpers.PointerSize), 0ul);
 
         var slotFrag = allocator.Allocate((uint)helpers.PointerSize, "FunctionTableIndexRangeListSlot");

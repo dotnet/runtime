@@ -19,6 +19,15 @@ using Internal.JitInterface;
 
 namespace ILCompiler
 {
+    // Selects which methods a profile-restricted (partial) R2R compilation includes. The complement
+    // mode is used to produce the lazy half of a split image: the native code the profile did NOT select.
+    public enum ProfileRestrictionMode
+    {
+        None,               // No restriction: compile everything (the profile only guides optimization).
+        ProfileOnly,        // Compile only methods present in the input profile (the classic --partial image).
+        ProfileComplement,  // Compile only methods NOT present in the input profile.
+    }
+
     public class ReadyToRunCompilationModuleGroupConfig
     {
         public CompilerTypeSystemContext Context;
@@ -947,7 +956,7 @@ namespace ILCompiler
             }
         }
 
-        public virtual void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool makePartial)
+        public virtual void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, ProfileRestrictionMode mode)
         {
             _profileData = profileGuidedCompileRestriction;
         }

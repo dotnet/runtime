@@ -14,6 +14,7 @@
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 #include "method.hpp"
+#include "methoditer.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 #include "dn-stdio.h"
@@ -804,7 +805,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
     m_pPersistentInlineTrackingMap(NULL),
-    m_pNextR2RForUnrelatedCode(NULL)
+    m_pNextR2RForUnrelatedCode(NULL),
+    m_pNextSupplemental(NULL)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1107,7 +1109,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     {
         uint32_t updatedModuleIndex;
         IfFailThrow(sig.GetData(&updatedModuleIndex));
-        pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex);
+        pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex, pZapSigContext->pR2RInfo);
     }
 
     if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
@@ -1404,7 +1406,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             BOOL mayUsePrecompiledPInvokeMethods = TRUE;
             mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
 
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods, this))
             {
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
                 goto done;
@@ -2880,12 +2882,11 @@ UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
     return result;
 }
 
-void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
+void ReadyToRunInfo::RegisterVirtualIPRange()
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pModule));
     } CONTRACTL_END;
 
     if (m_nRuntimeFunctions == 0)
@@ -2911,15 +2912,87 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
         m_pComposite->SetMinVirtualIP(ExecutionManager::AddVirtualIPRange(
             totalVirtualIPs,
             ExecutionManager::GetReadyToRunJitManager(),
-            pModule));
+            this));
 
         ExecutionManager::AddFunctionTableIndexRange(
             m_minFunctionTableIndex,
             m_nRuntimeFunctions,
-            pModule);
+            this);
     }
 
     m_minVirtualIP = m_pComposite->GetMinVirtualIP();
+}
+
+ReadyToRunInfo *ReadyToRunInfo::AttachSupplemental(Module *pModule, NativeImage *pLazyImage, AllocMemTracker *pamTracker)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pModule != NULL);
+    _ASSERTE(pLazyImage != NULL);
+
+    // The lazy composite must carry a component matching this module's assembly; otherwise it is not a
+    // supplement for this module and the attach is declined.
+    if (pLazyImage->GetComponentAssemblyHeader(pModule->GetSimpleName()) == NULL)
+        return NULL;
+
+    LoaderAllocator *pLoaderAllocator = pModule->GetLoaderAllocator();
+    READYTORUN_HEADER *pHeader = pLazyImage->GetReadyToRunInfo()->GetReadyToRunHeader();
+
+    void *pMemory = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ReadyToRunInfo))));
+    ReadyToRunInfo *pInfo = new (pMemory) ReadyToRunInfo(pModule, pLoaderAllocator, pHeader, pLazyImage, /*pLayout*/ nullptr, pamTracker);
+
+    // Register the image's virtual-IP and function-table ranges so its code is unwindable, run its
+    // eager fixups (notably InjectStringThunks) so its thunks resolve, then publish it on the module
+    // so GetPrecompiledR2RCode resolves the complement methods' entrypoints.
+    pInfo->RegisterVirtualIPRange();
+    pModule->RunSupplementalEagerFixups(pInfo);
+    pModule->AttachSupplementalReadyToRunInfo(pInfo);
+
+    // The caller re-points already-loaded interpreted methods (RebindLoadedInterpretedMethods) only after
+    // committing the allocation, so a rebind failure cannot release an image already linked on the module.
+    return pInfo;
+}
+
+// After a supplemental (lazy) image is attached, any method that was already called resolved to the
+// interpreter and cached its byte code, so INTOP_CALL no longer consults the portable entrypoint and
+// would keep interpreting instead of using the newly available native code. Re-point every already-loaded,
+// interpreter-resolved instance of the methods this image provides: poison the cached interpreter code so
+// the interpreter dispatches through the portable entrypoint, and reset the entrypoint so its next
+// invocation re-runs the prestub -> GetPrecompiledR2RCode -> this image's entrypoint. Methods not yet
+// called are left alone (their first call naturally finds the native code); methods this image does not
+// provide are never touched (poisoning one with no native code would trap when the prestub falls back to
+// the interpreter). UnmanagedCallersOnly methods are excluded to match the carve-out in
+// GetPrecompiledR2RCode: their reverse-P/Invoke thunk requires interpreter byte code, so they stay
+// interpreted. Generic method instantiations (m_instMethodEntryPoints) are not handled here yet.
+void ReadyToRunInfo::RebindLoadedInterpretedMethods()
+{
+    STANDARD_VM_CONTRACT;
+
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    AppDomain *pAppDomain = AppDomain::GetCurrentDomain();
+    uint count = m_methodDefEntryPoints.GetCount();
+    for (uint index = 0; index < count; index++)
+    {
+        uint offset;
+        if (!m_methodDefEntryPoints.TryGetAt(index, &offset))
+            continue;
+
+        mdMethodDef token = mdtMethodDef | (index + 1);
+        LoadedMethodDescIterator mdIt(pAppDomain, m_pModule, token);
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (mdIt.Next(pAssembly.This()))
+        {
+            MethodDesc *pMD = mdIt.Current();
+            if (pMD == NULL)
+                continue;
+
+            if (pMD->GetInterpreterCode() != NULL && !pMD->HasUnmanagedCallersOnlyAttribute())
+            {
+                pMD->PoisonInterpreterCode();
+                pMD->ResetPortableEntryPoint();
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER && FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // TARGET_WASM
 

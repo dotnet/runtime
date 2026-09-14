@@ -19,6 +19,7 @@
 #include "common.h"
 
 class SigBuilder;
+class ReadyToRunInfo;
 
 typedef DWORD(*ENCODEMODULE_CALLBACK)(LPVOID pModuleContext, CORINFO_MODULE_HANDLE moduleHandle);
 typedef DWORD (*EncodeModuleCallback)(void* pModuleContext, Module *pReferencedModule);
@@ -52,22 +53,28 @@ public:
                                                   // and is a code:ZapImportTable* when we are running ngen
         ExternalTokens  externalTokens;           // When we see a ELEMENT_TYPE_MODULE_ZAPSIG this tells us what type of token follows.
 
+        // When non-NULL, ELEMENT_TYPE_MODULE_ZAPSIG module indices are resolved against this (supplemental)
+        // R2R image's manifest rather than the ZapSig module's primary R2R info.
+        ReadyToRunInfo * pR2RInfo;
+
         Module * GetZapSigModule() const        { return (Module*) pModuleContext; }
 
         Context(
                 ModuleBase* _pInfoModule,
-                void* _pModuleContext, ExternalTokens _externalTokens)
+                void* _pModuleContext, ExternalTokens _externalTokens, ReadyToRunInfo* _pR2RInfo = NULL)
             : pInfoModule(_pInfoModule),
               pModuleContext(_pModuleContext),
-              externalTokens(_externalTokens)
+              externalTokens(_externalTokens),
+              pR2RInfo(_pR2RInfo)
         { LIMITED_METHOD_CONTRACT; _ASSERTE(externalTokens != IllegalValue); }
 
         Context(
                 ModuleBase* _pInfoModule,
-                Module* _pZapSigModule)
+                Module* _pZapSigModule, ReadyToRunInfo* _pR2RInfo = NULL)
             : pInfoModule(_pInfoModule),
               pModuleContext((void*) _pZapSigModule),
-              externalTokens(NormalTokens)
+              externalTokens(NormalTokens),
+              pR2RInfo(_pR2RInfo)
         { }
     };
 
@@ -136,11 +143,16 @@ public:
     //--------------------------------------------------------------------
     // Static helper encode/decode helper methods
 
+    // When pInfo is non-NULL, native module indices are resolved against that (supplemental) R2R image's
+    // manifest instead of fromModule's primary R2R info -- used for lazily-attached supplemental images
+    // whose owning module's primary image is a different (or IL-only) image.
     static ModuleBase *DecodeModuleFromIndex(Module *fromModule,
-        DWORD index);
+        DWORD index,
+        ReadyToRunInfo *pInfo = NULL);
 
     static ModuleBase *DecodeModuleFromIndexIfLoaded(Module *fromModule,
-        DWORD index);
+        DWORD index,
+        ReadyToRunInfo *pInfo = NULL);
 
     // referencingModule is the module that references the type.
     // fromModule is the module in which the type is defined.
@@ -151,13 +163,15 @@ public:
         ModuleBase          *fromModule,
         PCCOR_SIGNATURE     pBuffer,
         ClassLoadLevel      level = CLASS_LOADED,
-        PCCOR_SIGNATURE     *ppAfterSig = NULL);
+        PCCOR_SIGNATURE     *ppAfterSig = NULL,
+        ReadyToRunInfo      *pInfo = NULL);
 
     static MethodDesc *DecodeMethod(
         Module              *referencingModule,
         ModuleBase          *fromModule,
         PCCOR_SIGNATURE     pBuffer,
-        TypeHandle          *ppTH = NULL);
+        TypeHandle          *ppTH = NULL,
+        ReadyToRunInfo      *pInfo = NULL);
 
     static MethodDesc *DecodeMethod(
         ModuleBase          *pInfoModule,
@@ -174,14 +188,16 @@ public:
         Module              *referencingModule,
         ModuleBase          *fromModule,
         PCCOR_SIGNATURE     pBuffer,
-        TypeHandle          *ppTH = NULL);
+        TypeHandle          *ppTH = NULL,
+        ReadyToRunInfo      *pInfo = NULL);
 
     static FieldDesc *DecodeField(
         Module              *pReferencingModule,
         ModuleBase          *pInfoModule,
         PCCOR_SIGNATURE     pBuffer,
         SigTypeContext      *pContext,
-        TypeHandle          *ppTH = NULL);
+        TypeHandle          *ppTH = NULL,
+        ReadyToRunInfo      *pInfo = NULL);
 
     static BOOL EncodeMethod(
         MethodDesc             *pMethod,
