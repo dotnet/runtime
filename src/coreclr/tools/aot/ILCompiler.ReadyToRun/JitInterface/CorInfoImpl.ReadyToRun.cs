@@ -486,6 +486,7 @@ namespace Internal.JitInterface
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
+        private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -3309,6 +3310,52 @@ namespace Internal.JitInterface
             AddPrecodeFixup(fixup);
 
             handled = true;
+        }
+
+        partial void TryGetWasmMethodVirtualIPRelocation(
+            void* target,
+            CorInfoReloc fRelocType,
+            BlockType locationBlock,
+            int relocOffset,
+            ref ISymbolNode relocTarget,
+            ref RelocType relocType,
+            ref bool handled)
+        {
+            if (!_compilation.NodeFactory.Target.IsWasm)
+                return;
+
+            if (fRelocType != CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
+                return;
+
+            Debug.Assert(locationBlock is BlockType.ROData or BlockType.RWData);
+            Debug.Assert(findKnownBlock(target, out int targetOffset) == BlockType.Code);
+            Debug.Assert(targetOffset == 0);
+
+            ISymbolNode dataBlobNode = locationBlock == BlockType.ROData ? _roDataBlob : _rwDataBlob;
+            Debug.Assert(dataBlobNode is not null);
+
+            relocTarget = _compilation.NodeFactory.WasmMethodRelativeVirtualIP(_methodCodeNode);
+            relocType = RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32;
+            _wasmMethodVirtualIPFixups ??= new();
+            _wasmMethodVirtualIPFixups.Add((dataBlobNode, relocOffset));
+
+            handled = true;
+        }
+
+        partial void PublishWasmMethodVirtualIPFixups()
+        {
+            if (_wasmMethodVirtualIPFixups is null)
+                return;
+
+            foreach ((ISymbolNode location, int offset) in _wasmMethodVirtualIPFixups)
+            {
+                _compilation.NodeFactory.WasmAsyncResumeInfoFixups.AddFixup(location, offset);
+            }
+        }
+
+        partial void ClearWasmMethodVirtualIPFixups()
+        {
+            _wasmMethodVirtualIPFixups = null;
         }
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
