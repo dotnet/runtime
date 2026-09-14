@@ -10297,7 +10297,7 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
 
         changed = true;
     }
-    else if (op->OperIs(GT_LCL_FLD, GT_IND))
+    else if (op->OperIs(GT_LCL_FLD, GT_IND) && (genTypeSize(op) == genTypeSize(node)))
     {
         op->ChangeType(node->TypeGet());
         changed = true;
