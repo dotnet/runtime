@@ -1275,7 +1275,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         iss2Status: ThisOsRevocationStatusUnknown,
                         leafStatus: ThisOsNoErrorWithPreviousRevocationError);
 
-                    AssertExtensions.TrueExpression(success, "chain.Build(endEntity)");
+                    if (ThisOsNoErrorWithPreviousRevocationError == X509ChainStatusFlags.NoError)
+                    {
+                        AssertExtensions.TrueExpression(success, "chain.Build(endEntity)");
+                    }
+                    else
+                    {
+                        // On Android, the intermediate yielding a RevocationStatusUnknown
+                        // causes the leaf to also yield a RevocationStatusUnknown,
+                        // which we didn't suppress, so we expect false.
+                        AssertExtensions.FalseExpression(success, "chain.Build(endEntity)");
+                    }
                 });
         }
 
