@@ -16,6 +16,12 @@ parameters:
 - name: useRuntimeCDac
   type: boolean
   default: false
+- name: buildNameSuffix
+  type: string
+  default: AllSubsets_CoreCLR
+- name: artifactSuffix
+  type: string
+  default: ''
 
 jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -37,19 +43,19 @@ jobs:
       liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
       timeoutInMinutes: 360
       dependsOn:
-      - build_windows_x64_release_AllSubsets_CoreCLR
+      - build_windows_x64_release_${{ parameters.buildNameSuffix }}
       preBuildSteps:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-          artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
+          artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr${{ parameters.artifactSuffix }}
+          artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr${{ parameters.artifactSuffix }}$(archiveExtension)
           unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
           displayName: 'Runtime Build Artifacts'
       - ${{ if eq(parameters.useRuntimeCDac, true) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
-            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
-            artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac$(archiveExtension)
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac${{ parameters.artifactSuffix }}
+            artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac${{ parameters.artifactSuffix }}$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts/cdac
             displayName: 'cDAC Transport Package'
         - powershell: |
