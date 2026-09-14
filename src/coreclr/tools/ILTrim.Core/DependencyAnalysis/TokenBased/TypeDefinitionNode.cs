@@ -162,7 +162,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 InterfaceImplementation intfImpl = reader.GetInterfaceImplementation(intfImplHandle);
                 EcmaType interfaceType = _module.TryGetType(intfImpl.Interface)?.GetTypeDefinition() as EcmaType;
-                if (interfaceType != null && writeContext.Factory.InterfaceUse(interfaceType).Marked)
+                if (interfaceType != null &&
+                    (writeContext.Factory.InterfaceUse(interfaceType).Marked ||
+                     (writeContext.Factory.ConstructedType((EcmaType)_module.GetObject(Handle)).Marked &&
+                      writeContext.Factory.TypeDefinition(interfaceType.Module, interfaceType.Handle).Marked)))
                 {
                     builder.AddInterfaceImplementation(outputHandle,
                         writeContext.TokenMap.MapToken(intfImpl.Interface));
