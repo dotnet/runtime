@@ -222,6 +222,9 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -890,6 +893,8 @@ NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t
 #define INTOP_DISPATCH(op) opcode = (uint32_t)(op); goto SWITCH_OPCODE
 #define INTOP_NEXT break
 #endif // USE_COMPUTED_GOTO
+#define INTOP_EXIT_FRAME_NO_LOCALLOC goto EXIT_FRAME
+#define INTOP_EXIT_FRAME do { pThreadContext->frameDataAllocator.PopInfo(pFrame); INTOP_EXIT_FRAME_NO_LOCALLOC; } while (0)
 
 
 static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
@@ -1597,28 +1602,36 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_RET)
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_RET_I1)
                     // Return int8 value
                     *(int64_t*)pFrame->pRetVal = (int8_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_U1)
                     // Return uint8 value
                     *(int64_t*)pFrame->pRetVal = (uint8_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_I2)
                     // Return int16 value
                     *(int64_t*)pFrame->pRetVal = (int16_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_U2)
                     // Return uint16 value
                     *(int64_t*)pFrame->pRetVal = (uint16_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_VT)
                     memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_RET_VOID)
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
+                INTOP_CASE(INTOP_RET_LOCALLOC)
+                    *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
+                    INTOP_EXIT_FRAME;
+                INTOP_CASE(INTOP_RET_VOID_LOCALLOC)
+                    INTOP_EXIT_FRAME;
+                INTOP_CASE(INTOP_RET_VT_LOCALLOC)
+                    memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
+                    INTOP_EXIT_FRAME;
 
                 INTOP_CASE(INTOP_LDLOCA)
                     LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void);
@@ -3358,8 +3371,7 @@ SWITCH_OPCODE:
                         cookie = targetMethod->GetCalliCookie();
                         if (cookie == NULL)
                         {
-                            MetaSig sig(targetMethod);
-                            cookie = GetCookieForCalliSig(sig, NULL);
+                            cookie = GetCookieForManagedMethod(targetMethod);
                             _ASSERTE(cookie != NULL);
                             targetMethod->SetCalliCookie(cookie);
                             cookie = targetMethod->GetCalliCookie();
@@ -4472,10 +4484,10 @@ do                                                                      \
                 }
                 INTOP_CASE(INTOP_LEAVE_FILTER)
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_LEAVE_CATCH)
                     *(const int32_t**)pFrame->pRetVal = ip + ip[1];
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_THROW_PNSE)
                     INTERP_THROW(kPlatformNotSupportedException);
                     INTOP_NEXT;
@@ -4731,7 +4743,7 @@ do                                                                      \
                     _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
                     pInterpreterFrame->SetContinuation(continuation);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 }
 
                 INTOP_CASE(INTOP_RET_EXISTING_CONTINUATION)
@@ -4744,7 +4756,7 @@ do                                                                      \
                     }
 
                     // Otherwise exit without modifying current continuation
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 }
 
                 INTOP_CASE(INTOP_HANDLE_CONTINUATION_RESUME)
@@ -4882,12 +4894,9 @@ do                                                                      \
     }
 
 EXIT_FRAME:
-
     // Exit the current frame, MAKE CERTAIN not to trigger any GC between here and the return, since the interpreter
     // async resumption logic depends on not triggering a GC here for correctness.
 
-    // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
-    pThreadContext->frameDataAllocator.PopInfo(pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call

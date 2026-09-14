@@ -996,7 +996,9 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
             CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
             if (clsHnd != NO_CLASS_HANDLE)
             {
-                info.compCompHnd->getWasmLowering(clsHnd);
+                eeRunExtraSuperPmiQueries([&]() {
+                    info.compCompHnd->getWasmLowering(clsHnd);
+                });
             }
         }
 #endif // DEBUG
@@ -2608,7 +2610,13 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 #ifdef DEBUG
         if (JitConfig.EnableExtraSuperPmiQueries())
         {
+            // makeExtraStructQueries runs real JIT work, so it is not trapped here. It can also set
+            // compFloatingPointUsed, via impNormStructType, GetHfaType, and ClassLayout::Create,
+            // which would let the queries change codegen, so restore that.
+            //
+            const bool savedFloatingPointUsed = compFloatingPointUsed;
             makeExtraStructQueries(layout->GetClassHandle(), 2);
+            compFloatingPointUsed = savedFloatingPointUsed;
         }
 #endif // DEBUG
     }
@@ -2657,7 +2665,8 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
         size_t                   numNodes = ArrLen(nodes);
         info.compCompHnd->getTypeLayout(structHandle, nodes, &numNodes);
     };
-    queryLayout();
+    // Trapped because an AOT compiler rejects this query for an out-of-bubble type.
+    eeRunExtraSuperPmiQueries(queryLayout);
 
     // Bypass fetching instance fields of ref classes for now,
     // as it requires traversing the class hierarchy.

@@ -145,7 +145,6 @@ namespace Internal.JitInterface
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
         public readonly bool OwningTypeNotDerivedFromToken;
-        private readonly bool _forceOwningTypeNotDerivedFromToken;
         public readonly TypeDesc OwningType;
 
         public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, TypeSystemEntity genericContextObject, TypeDesc devirtualizedMethodOwner = null, bool forceOwningTypeFromMethodDesc = false)
@@ -156,8 +155,7 @@ namespace Internal.JitInterface
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            _forceOwningTypeNotDerivedFromToken = forceOwningTypeFromMethodDesc;
-            if (!_forceOwningTypeNotDerivedFromToken)
+            if (!forceOwningTypeFromMethodDesc)
             {
                 OwningType = GetMethodTokenOwningType(this, constrainedType, genericContextObject, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
             }
@@ -349,7 +347,7 @@ namespace Internal.JitInterface
                 && OwningType == methodWithToken.OwningType
                 && ConstrainedType == methodWithToken.ConstrainedType
                 && Unboxing == methodWithToken.Unboxing
-                && _forceOwningTypeNotDerivedFromToken == methodWithToken._forceOwningTypeNotDerivedFromToken;
+                && OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken;
 
             return equals;
         }
@@ -425,7 +423,7 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            result = _forceOwningTypeNotDerivedFromToken.CompareTo(other._forceOwningTypeNotDerivedFromToken);
+            result = OwningTypeNotDerivedFromToken.CompareTo(other.OwningTypeNotDerivedFromToken);
             if (result != 0)
                 return result;
 
@@ -1951,6 +1949,9 @@ namespace Internal.JitInterface
             useInstantiatingStub = originalMethod.OwningType.IsArray || originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
+            MethodDesc versioningCallerMethod = _compilation.TypeSystemContext.IsUnboxingThunk(callerMethod)
+                ? _compilation.TypeSystemContext.GetTargetOfUnboxingThunk(callerMethod)
+                : callerMethod;
 
             if (originalMethod.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.Instantiation))
             {
@@ -1962,8 +1963,8 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
             }
 
-            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) &&
-                !_compilation.NodeFactory.CompilationModuleGroup.CrossModuleInlineable(callerMethod))
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(versioningCallerMethod) &&
+                !_compilation.NodeFactory.CompilationModuleGroup.CrossModuleInlineable(versioningCallerMethod))
             {
                 // We must abort inline attempts calling from outside of the version bubble being compiled
                 // because we have no way to remap the token relative to the external module to the current version bubble.
@@ -1972,7 +1973,7 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
             }
 
-            callerModule = ((EcmaMethod)callerMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            callerModule = ((EcmaMethod)versioningCallerMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             bool isCallVirt = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0;
             bool isLdftn = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0;
             bool isStaticVirtual = (originalMethod.Signature.IsStatic && originalMethod.IsVirtual);
@@ -2136,6 +2137,13 @@ namespace Internal.JitInterface
             {
                 // Static methods are always direct calls
                 directCall = true;
+            }
+            else if (isCallVirt && targetMethod.IsArrayMethod())
+            {
+                // Multidimensional array methods are synthetic non-vtable methods whose slots follow
+                // the virtual slots in the MethodTable. They cannot become virtual across versions.
+                directCall = true;
+                resolvedCallVirt = true;
             }
             else if (!isCallVirt || resolvedConstraint)
             {
@@ -2337,7 +2345,9 @@ namespace Internal.JitInterface
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
             // function pointer
-            else if (targetMethod.HasInstantiation || _compilation.NodeFactory.Target.IsWasm) // WASM doesn't currently support the stub dispatch path
+            else if (targetMethod.HasInstantiation ||
+                (_compilation.NodeFactory.Target.IsWasm &&
+                    targetMethod.OwningType.IsInterface))
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
@@ -2347,19 +2357,6 @@ namespace Internal.JitInterface
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
                 pResult->nullInstanceCheck = true;
-
-                // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
-                // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
-                // performance optimization.
-                /* TODO-PERF, GitHub issue# 7168: uncommenting the conditional statement below enables
-                ** VTABLE-based calls for Corelib (and maybe a larger framework version bubble in the
-                ** future). Making it work requires construction of the method table in managed code
-                ** matching the CoreCLR algorithm (MethodTableBuilder).
-                if (MethodInSystemVersionBubble(callerMethod) && MethodInSystemVersionBubble(targetMethod))
-                {
-                    pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
-                }
-                */
             }
             else
             {
@@ -2639,9 +2636,9 @@ namespace Internal.JitInterface
                                 ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
-                        // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
-                        // so the call sig may carry a type arg (e.g., MD-array intrinsics); instParamLookup
-                        // is set up by the post-switch block below.
+                        // Wasm routes virtual calls that cannot use a pregenerated dispatch thunk through
+                        // LDVIRTFTN, so the call sig may carry a type arg (e.g., MD-array intrinsics);
+                        // instParamLookup is set up by the post-switch block below.
                         Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
                     }
                     break;
@@ -3732,14 +3729,6 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
         }
 
-        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
-        {
-            CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
-
-            WasmTypeNode typeNode = _compilation.NodeFactory.WasmTypeNode(typeArray);
-            return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)ObjectToHandle(typeNode);
-        }
-
 #pragma warning disable CA1822 // Mark members as static
         private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
         {
@@ -3755,20 +3744,7 @@ namespace Internal.JitInterface
             {
                 var sig = HandleToObject(callSig->methodSignature);
 
-                WasmLowering.LoweringFlags flags = 0;
-                if (callSig->hasTypeArg())
-                {
-                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-                }
-                if (callSig->isAsyncCall())
-                {
-                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-                }
-                if (((int)callSig->getCallConv() & 0xF) != 0)
-                {
-                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-                }
-
+                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(callSig);
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
                 // Only create R2R-to-interpreter thunks for managed calls.
@@ -3798,20 +3774,7 @@ namespace Internal.JitInterface
                     }
                 }
 
-                WasmLowering.LoweringFlags flags = 0;
-                if (callSig->hasTypeArg())
-                {
-                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-                }
-                if (callSig->isAsyncCall())
-                {
-                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-                }
-                if (((int)callSig->getCallConv() & 0xF) != 0)
-                {
-                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-                }
-
+                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(callSig);
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
                 // Only create R2R-to-interpreter thunks for managed calls.

@@ -992,6 +992,7 @@ namespace System.Text.Json.SourceGeneration
                 List<DerivedTypeSpec>? derivedTypes = null;
                 HashSet<object>? typeDiscriminators = null;
                 bool hasExplicitDerivedTypeAttribute = false;
+                bool hasInferredClosedTypePolymorphism = false;
                 bool hasUnionTypeClassifierSpecified = options?.TypeClassifiers is { Count: > 0 };
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
                 INamedTypeSymbol? namedUnionType = typeToGenerate.Type as INamedTypeSymbol;
@@ -1177,10 +1178,12 @@ namespace System.Text.Json.SourceGeneration
                 if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) && closedBaseType is not null)
                 {
                     List<ITypeSymbol>? closedDerivedTypes = closedBaseType.GetClosedDerivedTypes();
-                    hasClosedDerivedTypes = closedDerivedTypes is { Count: > 0 };
+                    // A non-null empty list represents a hierarchy with closed descendants but no terminal types.
+                    hasClosedDerivedTypes = closedDerivedTypes is not null;
 
                     if (shouldInferClosedTypePolymorphism && closedDerivedTypes is not null)
                     {
+                        hasInferredClosedTypePolymorphism = true;
                         InferClosedTypeDerivedTypes(typeToGenerate, closedDerivedTypes, ref typeDiscriminators, ref experimentalIds, ref derivedTypes);
                     }
                 }
@@ -1201,7 +1204,8 @@ namespace System.Text.Json.SourceGeneration
                     derivedTypes is not { Count: > 0 } &&
                     !hasNonDefaultPolymorphismSettings;
 
-                if (!optedOutOfPolymorphism && (hasPolymorphicAttribute || derivedTypes is { Count: > 0 }))
+                if (!optedOutOfPolymorphism &&
+                    (hasPolymorphicAttribute || hasInferredClosedTypePolymorphism || derivedTypes is { Count: > 0 }))
                 {
                     polymorphismOptions = new PolymorphismOptionsSpec
                     {
@@ -1213,9 +1217,8 @@ namespace System.Text.Json.SourceGeneration
                     };
                 }
 
-                // Union types: when the type is recognized as a union, enqueue all case
-                // types (constructor parameter types) for metadata generation.
-                if (isUnionType)
+                // Union types handled by the built-in converter need metadata for all case types.
+                if (isUnionType && !foundJsonConverterAttribute)
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified, ref experimentalIds);
                 }
@@ -1296,7 +1299,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             /// <summary>
-            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from a closed hierarchy's immediate
+            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from a closed hierarchy's inferred
             /// derived type set, mirroring the reflection-side inference in
             /// <c>DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata</c>. Each inferred
             /// entry uses the derived type's simple name as its string discriminator.

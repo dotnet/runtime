@@ -245,7 +245,7 @@ HCIMPLEND
 #include <optdefault.h>
 
 // Helper for the managed InitClass implementations
-extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
+extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -318,7 +318,7 @@ __declspec(selectany)
 #endif // _MSC_VER
 PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
-extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, BOOL gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -339,7 +339,7 @@ extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack re
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, BOOL gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -473,9 +473,10 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack)
+extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
+
     BOOL result = FALSE;
 
     BEGIN_QCALL;
@@ -502,7 +503,7 @@ HCIMPL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* ob
 }
 HCIMPLEND
 
-extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType)
+extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -600,7 +601,7 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
     return result;
 }
 
-extern "C" void* QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+extern "C" void* QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -675,7 +676,8 @@ void FlushVirtualFunctionPointerCaches()
 // slow helper to call from the fast one
 extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
                                                        EnregisteredTypeHandle classHnd,
-                                                       MethodDesc* pStaticMD)
+                                                       MethodDesc* pStaticMD,
+                                                       QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1133,12 +1135,15 @@ NOINLINE void JIT_PInvokeEndRarePath()
         // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
         // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
         // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
-        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
-        // will work correctly.
+        // and DisablePreemptiveGC around the exception dispatch handlers.
         thread->EnablePreemptiveGC();
-        BEGIN_QCALL;
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame())
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER
         thread->HandleThreadAbort();
-        END_QCALL;
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
         thread->DisablePreemptiveGC();
     }
 
@@ -1162,7 +1167,7 @@ void JIT_RareDisableHelperWorker()
 void JIT_RareDisableHelper()
 #endif
 {
-    // We do this here (before we enter the BEGIN_QCALL macro), because the following scenario
+    // We do this before installing the exception handlers because of the following scenario.
     // We are in the process of doing an inlined pinvoke.  Since we are in preemtive
     // mode, the thread is allowed to continue.  The thread continues and gets a context
     // switch just after it has cleared the preemptive mode bit but before it gets
@@ -1194,12 +1199,15 @@ void JIT_RareDisableHelper()
         // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
         // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
         // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
-        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
-        // will work correctly.
+        // and DisablePreemptiveGC around the exception dispatch handlers.
         thread->EnablePreemptiveGC();
-        BEGIN_QCALL;
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame())
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER
         thread->HandleThreadAbort();
-        END_QCALL;
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
         thread->DisablePreemptiveGC();
     }
 }
