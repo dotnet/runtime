@@ -223,6 +223,42 @@ Each variable entry in the Vars section is nibble-encoded as follows:
 
 Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.
 
+### WebAssembly Variable Register Encoding
+
+WASM has no physical registers. RyuJIT packs a `(local index, debug value type)` tuple into the
+32-bit `regNumber` payload, and that packed value appears in every register field of the Vars
+stream:
+
+```text
+packedRegister = localIndex | ((uint)debugValueType << WasmDebugRegisterTypeShift)
+```
+
+The encoding uses the following values:
+
+| Value type | Encoded value |
+| --- | --- |
+| `Invalid` | `0` |
+| `I32` | `1` |
+| `I64` | `2` |
+| `F32` | `3` |
+| `F64` | `4` |
+| `V128` | `5` |
+| `ExnRef` | `6` |
+
+The target advertises `WasmDebugRegisterTypeShift` and `WasmDebugValueTypeCount` as `uint8`
+numeric data descriptor globals. These values define how to separate the local index from the
+debug value type. A reader must reject an unsupported or missing encoding rather than fall back
+to a compiled-in shift and plausibly decode the wrong local or type.
+
+Debug value type `0` is reserved so that small raw values remain available for pseudo-registers
+such as `REGNUM_AMBIENT_SP`. A packed value whose value type is `0` or greater than or equal to
+`WasmDebugValueTypeCount` does not name a local.
+
+`WasmDebugValueTypeCount` is JIT debug-encoding vocabulary, not the complete WebAssembly
+specification type set. Managed references currently use the JIT's machine `I32`/`I64`
+representation; the encoding does not independently identify a managed GC reference. A future
+bit-width or value-count change requires a format-aware, versioned reader update.
+
 ### Async Suspension Point APIs
 
 We also support decoding async suspension points (and their captured continuation-object locals) from the `AsyncInfo` chunk of the debug info blob. The chunk is present only for methods that the JIT compiled with runtime-async suspension points; for all other methods, `AsyncInfoSize` is `0` in the FAT header and the API returns an empty list.
