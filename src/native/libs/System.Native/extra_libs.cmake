@@ -20,11 +20,4 @@ macro(append_extra_system_libs NativeLibsExtra)
         find_library(FOUNDATION Foundation REQUIRED)
         list(APPEND ${NativeLibsExtra} ${FOUNDATION})
     endif ()
-
-    # See the HAVE_LIBURING_H probe in configure.cmake: only added when liburing's headers and
-    # library were both found at configure time, so this is a no-op (and does not fail the
-    # build) on any machine/image without liburing-dev installed.
-    if (HAVE_LIBURING_H)
-        list(APPEND ${NativeLibsExtra} ${LIBURING_LIBRARY})
-    endif ()
 endmacro()

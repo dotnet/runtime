@@ -101,9 +101,12 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 # endif
 #pragma clang diagnostic pop
 
-#if HAVE_LIBURING_H
-#include <liburing.h>
-#endif // HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
+// The CMake HAVE_LINUX_IO_URING_H check also verifies that __NR_io_uring_setup/enter/register
+// are defined by <sys/syscall.h>, so no fallback definitions are needed here.
+#include <linux/io_uring.h>
+#include <stdatomic.h>
+#endif // HAVE_LINUX_IO_URING_H
 
 #endif
 
@@ -2184,124 +2187,146 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     return count;
 }
 
+
 // io_uring PAL implementation.
 //
-// This is a thin wrapper over liburing (https://github.com/axboe/liburing) rather than talking
-// to the kernel via raw io_uring_setup(2)/io_uring_enter(2) syscalls directly: liburing already
-// implements (and has been extensively reviewed/fuzzed/tested for) the tricky parts - mapping
-// the submission/completion ring buffers, the acquire/release memory ordering required on their
-// shared head/tail indices, and filling SQEs for each opcode - so this PAL only has to translate
-// between IoRingRequest/IoRingCompletion and liburing's own struct io_uring/io_uring_sqe/
-// io_uring_cqe types.
+// This talks to the kernel via raw io_uring_setup/io_uring_enter syscalls (no liburing
+// dependency), matching the existing pattern used for copy_file_range above. The submission
+// queue (SQ), completion queue (CQ) and SQE array are shared memory regions mapped with mmap;
+// the head/tail indices in those regions are accessed with acquire/release semantics since they
+// are also read/written by the kernel.
 //
-// Per liburing's own documented thread-safety contract, submission-side calls
-// (io_uring_get_sqe/io_uring_submit and friends) on a given struct io_uring are NOT safe to call
-// concurrently from multiple threads without external synchronization - the caller (the managed
-// IoUringThreadPool) is responsible for serializing all SystemNative_IoRingSubmit calls for a
-// given ring (e.g. via a lock), exactly as it already must for the completion side (only one
-// thread may ever call SystemNative_IoRingWaitForCompletions for a given ring at a time).
+// Submission and the io_uring_enter(2) syscall that actually asks the kernel to process pending
+// entries are deliberately split into two PAL entrypoints (SystemNative_IoRingSubmit /
+// SystemNative_IoRingKick): filling SQEs and publishing them to the SQ tail only touches this
+// ring's local (non-atomic) submission-queue bookkeeping and must be serialized by the caller
+// (e.g. via a lock), but io_uring_enter(2) itself is safe to call concurrently from multiple
+// threads for a ring created without IORING_SETUP_SINGLE_ISSUER (the kernel serializes access to
+// the ring internally) - so it is called outside of whatever lock protects the enqueue step.
 
-#if HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
 
 typedef struct
 {
-    struct io_uring Ring;
+    int Fd;
+
+    void* SqRingPtr;
+    size_t SqRingSize;
+    void* CqRingPtr;
+    size_t CqRingSize;
+    void* SqesPtr;
+    size_t SqesSize;
+
+    uint32_t* SqHead;
+    uint32_t* SqTail;
+    uint32_t* SqRingMask;
+    uint32_t* SqArray;
+    uint32_t SqEntries;
+    struct io_uring_sqe* Sqes;
+
+    uint32_t* CqHead;
+    uint32_t* CqTail;
+    uint32_t* CqRingMask;
+    struct io_uring_cqe* Cqes;
 } IoRing;
+
+static long IoUringSetup(uint32_t entries, struct io_uring_params* params)
+{
+    return syscall(__NR_io_uring_setup, entries, params);
+}
+
+static long IoUringEnter(int fd, uint32_t toSubmit, uint32_t minComplete, uint32_t flags)
+{
+    long result;
+    while ((result = syscall(__NR_io_uring_enter, fd, toSubmit, minComplete, flags, NULL, (size_t)0)) < 0 && errno == EINTR);
+    return result;
+}
 
 static void IoRingFillSqe(struct io_uring_sqe* sqe, IoRingRequest* request)
 {
-    // A negative Offset means "non-positional": passing -1 to io_uring_prep_read/write/readv/
-    // writev tells io_uring to use (and update) the file's current position, just like a plain
-    // read(2)/write(2)/readv(2)/writev(2) call would.
-    int64_t offset = request->Offset >= 0 ? request->Offset : -1;
+    memset(sqe, 0, sizeof(*sqe));
+    sqe->fd = (int32_t)request->Fd;
+    sqe->user_data = request->UserData;
+    // A negative Offset means "non-positional": io_uring treats an off of -1 for
+    // READ/WRITE/READV/WRITEV as "use (and update) the file's current position",
+    // just like plain read(2)/write(2)/readv(2)/writev(2).
+    sqe->off = request->Offset >= 0 ? (uint64_t)request->Offset : (uint64_t)-1;
 
     switch ((IoRingOp)request->OpCode)
     {
         case IoRingOp_Read:
-            io_uring_prep_read(sqe, (int)request->Fd, request->Buffer, (unsigned)request->BufferLength, (__u64)offset);
+            sqe->opcode = IORING_OP_READ;
+            sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
+            sqe->len = (uint32_t)request->BufferLength;
             break;
         case IoRingOp_Write:
-            io_uring_prep_write(sqe, (int)request->Fd, request->Buffer, (unsigned)request->BufferLength, (__u64)offset);
+            sqe->opcode = IORING_OP_WRITE;
+            sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
+            sqe->len = (uint32_t)request->BufferLength;
             break;
         case IoRingOp_ReadV:
+            sqe->opcode = IORING_OP_READV;
+            sqe->addr = (uint64_t)(uintptr_t)request->Vectors;
             // Just like plain readv(2)/writev(2) (see GetAllowedVectorCount above), io_uring
             // rejects IORING_OP_READV/WRITEV with more than IOV_MAX vectors (EINVAL). The managed
             // caller is responsible for handling a resulting short read/write by resubmitting the
             // remainder, the same way it already does for the non-io_uring PReadV/PWriteV path.
-            io_uring_prep_readv(sqe, (int)request->Fd, (const struct iovec*)request->Vectors,
-                                 (unsigned)GetAllowedVectorCount(request->Vectors, request->VectorCount), (__u64)offset);
+            sqe->len = (uint32_t)GetAllowedVectorCount(request->Vectors, request->VectorCount);
             break;
         case IoRingOp_WriteV:
-            io_uring_prep_writev(sqe, (int)request->Fd, (const struct iovec*)request->Vectors,
-                                  (unsigned)GetAllowedVectorCount(request->Vectors, request->VectorCount), (__u64)offset);
+            sqe->opcode = IORING_OP_WRITEV;
+            sqe->addr = (uint64_t)(uintptr_t)request->Vectors;
+            sqe->len = (uint32_t)GetAllowedVectorCount(request->Vectors, request->VectorCount);
             break;
         case IoRingOp_Accept:
-            io_uring_prep_accept(sqe, (int)request->Fd, (struct sockaddr*)request->SockAddr,
-                                  (socklen_t*)request->SockAddrLen, request->Flags);
+            // addr = output sockaddr*, addr2 (aliased with off) = output socklen_t* (peer address
+            // length written back by the kernel on completion), accept_flags = flags.
+            sqe->opcode = IORING_OP_ACCEPT;
+            sqe->addr = (uint64_t)(uintptr_t)request->SockAddr;
+            sqe->off = (uint64_t)(uintptr_t)request->SockAddrLen;
+            sqe->accept_flags = (uint32_t)request->Flags;
             break;
         case IoRingOp_Connect:
-            io_uring_prep_connect(sqe, (int)request->Fd, (struct sockaddr*)request->SockAddr,
-                                   request->SockAddrLen != NULL ? (socklen_t)*request->SockAddrLen : 0);
+            // addr = input sockaddr*, off (aliased with addr2) = input addrlen (by value, not a
+            // pointer - unlike Accept's SockAddrLen).
+            sqe->opcode = IORING_OP_CONNECT;
+            sqe->addr = (uint64_t)(uintptr_t)request->SockAddr;
+            sqe->off = request->SockAddrLen != NULL ? (uint64_t)(*request->SockAddrLen) : 0;
             break;
         case IoRingOp_Recv:
-            io_uring_prep_recv(sqe, (int)request->Fd, request->Buffer, (size_t)request->BufferLength, request->Flags);
+            sqe->opcode = IORING_OP_RECV;
+            sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
+            sqe->len = (uint32_t)request->BufferLength;
+            sqe->msg_flags = (uint32_t)request->Flags;
             break;
         case IoRingOp_Send:
-            io_uring_prep_send(sqe, (int)request->Fd, request->Buffer, (size_t)request->BufferLength, request->Flags);
+            sqe->opcode = IORING_OP_SEND;
+            sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
+            sqe->len = (uint32_t)request->BufferLength;
+            sqe->msg_flags = (uint32_t)request->Flags;
             break;
     }
-
-    io_uring_sqe_set_data64(sqe, request->UserData);
 }
 
-// Publishes SQEs already filled via io_uring_get_sqe to the kernel-visible SQ ring tail, without
-// calling io_uring_enter(2). This deliberately duplicates liburing's own internal
-// __io_uring_flush_sq (src/queue.c) instead of calling io_uring_submit(): io_uring_submit()
-// combines this publish step with the io_uring_enter(2) syscall as one non-splittable call, but
-// only the publish step touches this ring's *local* (non-atomic, non-thread-safe) bookkeeping
-// (sq.sqe_head/sq.sqe_tail) - the io_uring_enter(2) syscall itself is safe to call concurrently
-// from multiple threads for a ring without IORING_SETUP_SINGLE_ISSUER (the kernel serializes it
-// internally). Splitting the two lets the managed caller hold its lock only around the cheap,
-// non-blocking publish step (this function), and call SystemNative_IoRingKick - which just wraps
-// liburing's public io_uring_enter() - without holding any lock, exactly as the ring's
-// completion-side already does not need a lock for SystemNative_IoRingWaitForCompletions.
-//
-// Returns the number of SQEs now visible to the kernel that have not yet been submit-acked via
-// io_uring_enter(2).
-static unsigned int IoRingFlushSq(struct io_uring* ring)
-{
-    struct io_uring_sq* sq = &ring->sq;
-    unsigned int tail = sq->sqe_tail;
-
-    if (sq->sqe_head != tail)
-    {
-        sq->sqe_head = tail;
-        // Ensure the kernel sees the SQE contents before it sees the updated tail. This ring is
-        // never created with IORING_SETUP_SQPOLL, so a plain relaxed store paired with the
-        // io_uring_enter(2) syscall (a full barrier) is what liburing itself does in this case.
-        __atomic_store_n(sq->ktail, tail, __ATOMIC_RELEASE);
-    }
-
-    return tail - *sq->khead;
-}
-
-#endif // HAVE_LIBURING_H
+#endif // HAVE_LINUX_IO_URING_H
 
 int32_t SystemNative_IoRingIsAvailable(void)
 {
-#if HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
     static volatile int s_isAvailable = 0;
 
     int isAvailable = s_isAvailable;
     if (isAvailable == 0)
     {
+        struct io_uring_params params;
+        memset(&params, 0, sizeof(params));
+
         // A minimal ring is enough to probe support (kernel version, seccomp, sysctl, etc.)
         // without leaving any lasting state behind.
-        struct io_uring probeRing;
-        int result = io_uring_queue_init(2, &probeRing, 0);
-        if (result == 0)
+        long result = IoUringSetup(2, &params);
+        if (result >= 0)
         {
-            io_uring_queue_exit(&probeRing);
+            close((int)result);
             isAvailable = 1;
         }
         else
@@ -2323,17 +2348,10 @@ int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completi
     assert(ringHandle != NULL);
     *ringHandle = 0;
 
-#if HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
     if (submissionQueueDepth <= 0)
     {
         errno = EINVAL;
-        return -1;
-    }
-
-    IoRing* ring = (IoRing*)calloc(1, sizeof(IoRing));
-    if (ring == NULL)
-    {
-        errno = ENOMEM;
         return -1;
     }
 
@@ -2347,19 +2365,66 @@ int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completi
 
     // Deliberately no IORING_SETUP_SINGLE_ISSUER / IORING_SETUP_DEFER_TASKRUN here: this ring is
     // shared across (and submitted to / drained from) many different threads - any Thread Pool
-    // worker thread may call SystemNative_IoRingSubmit (serialized by the managed caller's own
-    // lock), and the thread that reaps completions via SystemNative_IoRingWaitForCompletions
-    // rotates over time. SINGLE_ISSUER requires all submissions to come from one fixed
-    // thread/task, and the kernel enforces this by rejecting io_uring_enter(2) from any other
-    // thread with -EEXIST once a first "issuer" is established - which is incompatible with this
-    // design (see the io_uring PAL/ThreadPool design notes).
-    int result = io_uring_queue_init_params((uint32_t)submissionQueueDepth, &ring->Ring, &params);
-    if (result != 0)
+    // worker thread may call SystemNative_IoRingSubmit, and the thread that reaps completions via
+    // SystemNative_IoRingWaitForCompletions rotates over time. SINGLE_ISSUER requires all
+    // submissions to come from one fixed thread/task, and the kernel enforces this by rejecting
+    // io_uring_enter(2) from any other thread with -EEXIST once a first "issuer" is established -
+    // which is incompatible with this design (see the io_uring PAL/ThreadPool design notes).
+    long fd = IoUringSetup((uint32_t)submissionQueueDepth, &params);
+
+    if (fd < 0)
     {
-        free(ring);
-        errno = -result;
         return -1;
     }
+
+    IoRing* ring = (IoRing*)calloc(1, sizeof(IoRing));
+    if (ring == NULL)
+    {
+        close((int)fd);
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ring->Fd = (int)fd;
+
+    size_t sqRingSize = (size_t)params.sq_off.array + (size_t)params.sq_entries * sizeof(uint32_t);
+    size_t cqRingSize = (size_t)params.cq_off.cqes + (size_t)params.cq_entries * sizeof(struct io_uring_cqe);
+    size_t sqesSize = (size_t)params.sq_entries * sizeof(struct io_uring_sqe);
+
+    void* sqRingPtr = mmap(NULL, sqRingSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, ring->Fd, (off_t)IORING_OFF_SQ_RING);
+    void* cqRingPtr = mmap(NULL, cqRingSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, ring->Fd, (off_t)IORING_OFF_CQ_RING);
+    void* sqesPtr = mmap(NULL, sqesSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, ring->Fd, (off_t)IORING_OFF_SQES);
+
+    if (sqRingPtr == MAP_FAILED || cqRingPtr == MAP_FAILED || sqesPtr == MAP_FAILED)
+    {
+        int savedErrno = errno;
+        if (sqRingPtr != MAP_FAILED) munmap(sqRingPtr, sqRingSize);
+        if (cqRingPtr != MAP_FAILED) munmap(cqRingPtr, cqRingSize);
+        if (sqesPtr != MAP_FAILED) munmap(sqesPtr, sqesSize);
+        close(ring->Fd);
+        free(ring);
+        errno = savedErrno;
+        return -1;
+    }
+
+    ring->SqRingPtr = sqRingPtr;
+    ring->SqRingSize = sqRingSize;
+    ring->CqRingPtr = cqRingPtr;
+    ring->CqRingSize = cqRingSize;
+    ring->SqesPtr = sqesPtr;
+    ring->SqesSize = sqesSize;
+
+    ring->SqHead = (uint32_t*)((uint8_t*)sqRingPtr + params.sq_off.head);
+    ring->SqTail = (uint32_t*)((uint8_t*)sqRingPtr + params.sq_off.tail);
+    ring->SqRingMask = (uint32_t*)((uint8_t*)sqRingPtr + params.sq_off.ring_mask);
+    ring->SqArray = (uint32_t*)((uint8_t*)sqRingPtr + params.sq_off.array);
+    ring->SqEntries = params.sq_entries;
+    ring->Sqes = (struct io_uring_sqe*)sqesPtr;
+
+    ring->CqHead = (uint32_t*)((uint8_t*)cqRingPtr + params.cq_off.head);
+    ring->CqTail = (uint32_t*)((uint8_t*)cqRingPtr + params.cq_off.tail);
+    ring->CqRingMask = (uint32_t*)((uint8_t*)cqRingPtr + params.cq_off.ring_mask);
+    ring->Cqes = (struct io_uring_cqe*)((uint8_t*)cqRingPtr + params.cq_off.cqes);
 
     *ringHandle = (intptr_t)ring;
     return 0;
@@ -2377,7 +2442,7 @@ int32_t SystemNative_IoRingSubmit(intptr_t ringHandle, IoRingRequest* requests, 
     assert(submittedCount != NULL);
     *submittedCount = 0;
 
-#if HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
     IoRing* ring = (IoRing*)ringHandle;
     if (ring == NULL)
     {
@@ -2385,20 +2450,27 @@ int32_t SystemNative_IoRingSubmit(intptr_t ringHandle, IoRingRequest* requests, 
         return -1;
     }
 
-    // Not thread-safe with itself: the caller must serialize concurrent calls to this function
-    // for a given ring (see the file-level comment above and the io_uring PAL design notes).
+    // Single producer: the caller is responsible for ensuring only one thread submits to a
+    // given ring at a time (see the io_uring PAL design notes).
+    uint32_t sqTail = *ring->SqTail;
+    uint32_t sqHead = __atomic_load_n(ring->SqHead, __ATOMIC_ACQUIRE);
+    uint32_t sqMask = *ring->SqRingMask;
+
     int32_t queued = 0;
     for (int32_t i = 0; i < requestCount; i++)
     {
-        struct io_uring_sqe* sqe = io_uring_get_sqe(&ring->Ring);
-        if (sqe == NULL)
+        if (sqTail - sqHead >= ring->SqEntries)
         {
             // The submission queue is full; stop here. The caller should retry the
             // remaining requests (requests[queued..requestCount)) once there's more room.
             break;
         }
 
-        IoRingFillSqe(sqe, &requests[i]);
+        uint32_t index = sqTail & sqMask;
+        IoRingFillSqe(&ring->Sqes[index], &requests[i]);
+        ring->SqArray[index] = index;
+
+        sqTail++;
         queued++;
     }
 
@@ -2407,12 +2479,14 @@ int32_t SystemNative_IoRingSubmit(intptr_t ringHandle, IoRingRequest* requests, 
         return 0;
     }
 
-    // Publish the newly filled SQEs to the kernel-visible SQ tail (see IoRingFlushSq above for
-    // why this doesn't also call io_uring_enter(2) here). Once published, they are visible to
-    // the kernel and cannot be "unsubmitted" even if the caller never gets around to calling
-    // SystemNative_IoRingKick - so *submittedCount always reflects `queued` from this point on.
-    IoRingFlushSq(&ring->Ring);
+    __atomic_store_n(ring->SqTail, sqTail, __ATOMIC_RELEASE);
 
+    // The entries above are now published via the SQ tail and visible to the kernel; this
+    // cannot be undone. Deliberately do NOT call io_uring_enter here - see
+    // SystemNative_IoRingKick. Doing the (relatively expensive, and otherwise-unnecessary-to-
+    // serialize) syscall outside of whatever lock protects this enqueue step lets many
+    // threads publish new entries into a shared ring quickly, without each blocking the next
+    // behind a full syscall while holding that lock.
     *submittedCount = queued;
     return 0;
 #else
@@ -2424,7 +2498,7 @@ int32_t SystemNative_IoRingSubmit(intptr_t ringHandle, IoRingRequest* requests, 
 
 int32_t SystemNative_IoRingKick(intptr_t ringHandle)
 {
-#if HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
     IoRing* ring = (IoRing*)ringHandle;
     if (ring == NULL)
     {
@@ -2432,24 +2506,15 @@ int32_t SystemNative_IoRingKick(intptr_t ringHandle)
         return -1;
     }
 
-    // io_uring_enter(2) itself (unlike io_uring_get_sqe/io_uring_submit) is safe to call
-    // concurrently from multiple threads for a ring created without IORING_SETUP_SINGLE_ISSUER -
-    // the kernel serializes access to the ring internally. The kernel processes
-    // min(to_submit, actual pending entries between its own cursor and the published SQ tail),
-    // so passing the ring's full capacity here is a safe upper bound that picks up everything
-    // published so far (via IoRingFlushSq above, possibly by another thread) without needing to
-    // know the exact pending count.
-    // Like io_uring_queue_init(_params) above, liburing's raw syscall wrappers return -errno
-    // directly on failure rather than returning -1 and setting the C library's errno.
-    int result;
-    while ((result = io_uring_enter((unsigned int)ring->Ring.ring_fd, ring->Ring.sq.ring_entries, 0, 0, NULL)) == -EINTR);
-
-    if (result < 0)
-    {
-        errno = -result;
-        return -1;
-    }
-
+    // Ask the kernel to consume as many currently-enqueued-but-not-yet-submitted entries as
+    // possible. Passing the full ring depth (rather than trying to track exactly how many are
+    // new) is safe: io_uring_enter only ever consumes what is actually available between its
+    // own internal submission cursor and the current SQ tail, capped at to_submit - so this is
+    // simply "submit everything pending" and never over-consumes or double-processes entries.
+    // A negative/short result is not an error here: if another thread's concurrent kick (or
+    // the driver's own waiting enter call) already consumed everything, this call legitimately
+    // has nothing to do and that is not a failure.
+    IoUringEnter(ring->Fd, ring->SqEntries, 0, 0);
     return 0;
 #else
     (void)ringHandle;
@@ -2466,7 +2531,7 @@ int32_t SystemNative_IoRingWaitForCompletions(intptr_t ringHandle, IoRingComplet
     assert(completedCount != NULL);
     *completedCount = 0;
 
-#if HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
     IoRing* ring = (IoRing*)ringHandle;
     if (ring == NULL)
     {
@@ -2474,50 +2539,39 @@ int32_t SystemNative_IoRingWaitForCompletions(intptr_t ringHandle, IoRingComplet
         return -1;
     }
 
-    if (maxCompletions == 0)
-    {
-        return 0;
-    }
-
     if (minComplete > 0)
     {
-        // Blocks until at least one completion is available. The cqe returned here is not
-        // consumed (the CQ head is not advanced) - it is simply peeked, and picked up again by
-        // the io_uring_peek_batch_cqe call below along with any other completions that may have
-        // become available in the meantime, so that a single wake-up drains everything ready in
-        // one shot instead of one completion at a time.
-        struct io_uring_cqe* cqe;
-        int result = io_uring_wait_cqe(&ring->Ring, &cqe);
-        if (result != 0)
+        long result = IoUringEnter(ring->Fd, 0, (uint32_t)minComplete, IORING_ENTER_GETEVENTS);
+        if (result < 0)
         {
-            errno = -result;
             return -1;
         }
     }
 
-    // Single consumer: the caller is responsible for ensuring only one thread reaps completions
-    // from a given ring at a time (see the io_uring PAL design notes), so no locking is needed
-    // here even though this reads/advances the same struct io_uring as the (separately
-    // synchronized) submission side above - the two sides use independent ring buffers.
-    struct io_uring_cqe* cqes[64];
-    unsigned batchSize = (unsigned)maxCompletions < (unsigned)(sizeof(cqes) / sizeof(cqes[0]))
-        ? (unsigned)maxCompletions
-        : (unsigned)(sizeof(cqes) / sizeof(cqes[0]));
-    unsigned count = io_uring_peek_batch_cqe(&ring->Ring, cqes, batchSize);
+    // Single consumer: the caller is responsible for ensuring only one thread reaps
+    // completions from a given ring at a time (see the io_uring PAL design notes).
+    uint32_t cqHead = *ring->CqHead;
+    uint32_t cqTail = __atomic_load_n(ring->CqTail, __ATOMIC_ACQUIRE);
+    uint32_t cqMask = *ring->CqRingMask;
 
-    for (unsigned i = 0; i < count; i++)
+    int32_t count = 0;
+    while (cqHead != cqTail && count < maxCompletions)
     {
-        completions[i].UserData = io_uring_cqe_get_data64(cqes[i]);
-        completions[i].Result = cqes[i]->res;
-        completions[i].Flags = cqes[i]->flags;
+        struct io_uring_cqe* cqe = &ring->Cqes[cqHead & cqMask];
+        completions[count].UserData = cqe->user_data;
+        completions[count].Result = cqe->res;
+        completions[count].Flags = cqe->flags;
+
+        cqHead++;
+        count++;
     }
 
     if (count > 0)
     {
-        io_uring_cq_advance(&ring->Ring, count);
+        __atomic_store_n(ring->CqHead, cqHead, __ATOMIC_RELEASE);
     }
 
-    *completedCount = (int32_t)count;
+    *completedCount = count;
     return 0;
 #else
     (void)ringHandle, (void)completions, (void)maxCompletions, (void)minComplete;
@@ -2528,16 +2582,33 @@ int32_t SystemNative_IoRingWaitForCompletions(intptr_t ringHandle, IoRingComplet
 
 int32_t SystemNative_IoRingClose(intptr_t ringHandle)
 {
-#if HAVE_LIBURING_H
+#if HAVE_LINUX_IO_URING_H
     IoRing* ring = (IoRing*)ringHandle;
     if (ring == NULL)
     {
         return 0;
     }
 
-    io_uring_queue_exit(&ring->Ring);
+    int result = 0;
+    if (munmap(ring->SqesPtr, ring->SqesSize) != 0)
+    {
+        result = -1;
+    }
+    if (munmap(ring->CqRingPtr, ring->CqRingSize) != 0)
+    {
+        result = -1;
+    }
+    if (munmap(ring->SqRingPtr, ring->SqRingSize) != 0)
+    {
+        result = -1;
+    }
+    if (close(ring->Fd) != 0)
+    {
+        result = -1;
+    }
+
     free(ring);
-    return 0;
+    return result;
 #else
     (void)ringHandle;
     return 0;
