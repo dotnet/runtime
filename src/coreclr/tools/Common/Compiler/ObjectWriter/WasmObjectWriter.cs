@@ -31,6 +31,7 @@ namespace ILCompiler.ObjectWriter
             { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
             { WasmObjectNodeSection.GlobalSection, WasmSectionType.Global },
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
+            { WasmObjectNodeSection.BranchHintSection, WasmSectionType.Custom },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
             { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount },
             { WasmObjectNodeSection.DataSection, WasmSectionType.Data },
@@ -49,6 +50,7 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.ExportSection.Name,
             WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
+            WasmObjectNodeSection.BranchHintSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
             WasmObjectNodeSection.DataSection.Name,
         ];
@@ -63,12 +65,55 @@ namespace ILCompiler.ObjectWriter
         /// logical WebAssembly indices and must not be used to resolve index relocations.
         /// </summary>
         private protected Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
+        private readonly List<PendingWasmBranchHint> _branchHints = new();
+        private int[] _branchHintRangeStarts;
         private int[] _sectionEmitOrder;
+
+        private readonly struct PendingWasmBranchHint
+        {
+            public PendingWasmBranchHint(int functionDefinitionIndex, uint codeOffset, bool isLikelyTaken)
+            {
+                FunctionDefinitionIndex = functionDefinitionIndex;
+                CodeOffset = codeOffset;
+                IsLikelyTaken = isLikelyTaken;
+            }
+
+            public int FunctionDefinitionIndex { get; }
+            public uint CodeOffset { get; }
+            public bool IsLikelyTaken { get; }
+        }
+
+        private protected readonly struct WasmCodeOffsetAdjustment
+        {
+            public WasmCodeOffsetAdjustment(uint offset, uint cumulativeShrink)
+            {
+                Offset = offset;
+                CumulativeShrink = cumulativeShrink;
+            }
+
+            public uint Offset { get; }
+            public uint CumulativeShrink { get; }
+        }
+
+        private readonly struct ResolvedWasmBranchHint
+        {
+            public ResolvedWasmBranchHint(int functionIndex, uint codeOffset, bool isLikelyTaken)
+            {
+                FunctionIndex = functionIndex;
+                CodeOffset = codeOffset;
+                IsLikelyTaken = isLikelyTaken;
+            }
+
+            public int FunctionIndex { get; }
+            public uint CodeOffset { get; }
+            public bool IsLikelyTaken { get; }
+        }
 
         /// <summary>
         /// The number of methods in the Function section.
         /// </summary>
         private protected int MethodCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
+        private protected bool HasBranchHints => _branchHints.Count != 0;
 
         private protected int[] SectionEmitOrder
         {
@@ -107,6 +152,10 @@ namespace ILCompiler.ObjectWriter
             {
                 wasmSection = CreateDataSection(section, sectionIndex, sectionStream);
             }
+            else if (sectionType == WasmSectionType.Custom)
+            {
+                wasmSection = new NamedWasmCustomSection(sectionStream, new Utf8String(section.Name), sectionIndex);
+            }
             else
             {
                 Utf8String sectionName = new(section.Name);
@@ -144,10 +193,30 @@ namespace ILCompiler.ObjectWriter
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
             WriteSignatureIndexForFunction(node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+            Utf8String mangledName = new(node.GetMangledName(_nodeFactory.NameMangler));
+            RegisterFunctionSymbol(mangledName);
+            int functionDefinitionIndex = MethodCount - 1;
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
+            }
+
+            if (node is INodeWithWasmBranchHints nodeWithBranchHints)
+            {
+                RecordBranchHints(functionDefinitionIndex, nodeWithBranchHints);
+            }
+        }
+
+        private void RecordBranchHints(int functionDefinitionIndex, INodeWithWasmBranchHints node)
+        {
+            Debug.Assert(_branchHintRangeStarts is null);
+            foreach (WasmBranchHint hint in node.WasmBranchHints)
+            {
+                int hintFunctionDefinitionIndex = checked(functionDefinitionIndex + (int)hint.FunctionOrdinal);
+                _branchHints.Add(new PendingWasmBranchHint(
+                    hintFunctionDefinitionIndex,
+                    hint.CodeOffset,
+                    hint.IsLikelyTaken));
             }
         }
 
@@ -370,6 +439,137 @@ namespace ILCompiler.ObjectWriter
             _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
         }
 
+        private protected void AdjustBranchHintOffsets(
+            int functionDefinitionIndex,
+            IReadOnlyList<WasmCodeOffsetAdjustment> adjustments)
+        {
+            if (adjustments.Count == 0)
+            {
+                return;
+            }
+
+            EnsureBranchHintRanges();
+            Debug.Assert((uint)functionDefinitionIndex < (uint)MethodCount);
+            int hintStart = _branchHintRangeStarts[functionDefinitionIndex];
+            int hintEnd = _branchHintRangeStarts[functionDefinitionIndex + 1];
+            for (int hintIndex = hintStart; hintIndex < hintEnd; hintIndex++)
+            {
+                PendingWasmBranchHint hint = _branchHints[hintIndex];
+                uint cumulativeShrink = 0;
+                foreach (WasmCodeOffsetAdjustment adjustment in adjustments)
+                {
+                    if (hint.CodeOffset < adjustment.Offset)
+                    {
+                        break;
+                    }
+
+                    cumulativeShrink = adjustment.CumulativeShrink;
+                }
+
+                Debug.Assert(hint.CodeOffset >= cumulativeShrink);
+                _branchHints[hintIndex] = new PendingWasmBranchHint(
+                    hint.FunctionDefinitionIndex,
+                    hint.CodeOffset - cumulativeShrink,
+                    hint.IsLikelyTaken);
+            }
+        }
+
+        private void EnsureBranchHintRanges()
+        {
+            if (_branchHintRangeStarts is not null)
+            {
+                return;
+            }
+
+            _branchHintRangeStarts = new int[MethodCount + 1];
+            int hintIndex = 0;
+            for (int functionIndex = 0; functionIndex < MethodCount; functionIndex++)
+            {
+                _branchHintRangeStarts[functionIndex] = hintIndex;
+                while (hintIndex < _branchHints.Count &&
+                       _branchHints[hintIndex].FunctionDefinitionIndex == functionIndex)
+                {
+                    hintIndex++;
+                }
+            }
+
+            _branchHintRangeStarts[MethodCount] = hintIndex;
+            Debug.Assert(hintIndex == _branchHints.Count);
+        }
+
+        private protected void WriteBranchHints()
+        {
+            if (_branchHints.Count == 0)
+            {
+                return;
+            }
+
+            Debug.Assert(_sectionEmitOrder is null);
+            // https://webassembly.github.io/branch-hinting/core/appendix/custom.html#branch-hinting-section
+            List<ResolvedWasmBranchHint> hints = new(_branchHints.Count);
+            int functionImportCount = _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function);
+            foreach (PendingWasmBranchHint hint in _branchHints)
+            {
+                if ((uint)hint.FunctionDefinitionIndex >= (uint)MethodCount)
+                {
+                    throw new InvalidOperationException(
+                        $"Wasm branch hint refers to function definition {hint.FunctionDefinitionIndex}, but only {MethodCount} functions are defined.");
+                }
+
+                hints.Add(new ResolvedWasmBranchHint(
+                    functionImportCount + hint.FunctionDefinitionIndex,
+                    hint.CodeOffset,
+                    hint.IsLikelyTaken));
+            }
+
+            hints.Sort(static (left, right) =>
+            {
+                int result = left.FunctionIndex.CompareTo(right.FunctionIndex);
+                return result != 0 ? result : left.CodeOffset.CompareTo(right.CodeOffset);
+            });
+
+            int functionCount = 1;
+            for (int i = 1; i < hints.Count; i++)
+            {
+                if (hints[i - 1].FunctionIndex != hints[i].FunctionIndex)
+                {
+                    functionCount++;
+                }
+            }
+
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.BranchHintSection);
+            writer.WriteULEB128((ulong)functionCount);
+
+            int hintIndex = 0;
+            while (hintIndex < hints.Count)
+            {
+                int functionIndex = hints[hintIndex].FunctionIndex;
+                int functionEnd = hintIndex + 1;
+                while (functionEnd < hints.Count && hints[functionEnd].FunctionIndex == functionIndex)
+                {
+                    functionEnd++;
+                }
+
+                writer.WriteULEB128((ulong)functionIndex);
+                writer.WriteULEB128((ulong)(functionEnd - hintIndex));
+                for (; hintIndex < functionEnd; hintIndex++)
+                {
+                    ResolvedWasmBranchHint hint = hints[hintIndex];
+                    if (hintIndex > 0 &&
+                        hints[hintIndex - 1].FunctionIndex == hint.FunctionIndex &&
+                        hints[hintIndex - 1].CodeOffset == hint.CodeOffset)
+                    {
+                        throw new InvalidOperationException(
+                            $"Duplicate Wasm branch hint for function {hint.FunctionIndex} at offset {hint.CodeOffset}.");
+                    }
+
+                    writer.WriteULEB128(hint.CodeOffset);
+                    writer.WriteULEB128(1);
+                    writer.WriteULEB128(hint.IsLikelyTaken ? 1u : 0u);
+                }
+            }
+        }
+
         private protected abstract void WriteImports();
         private protected abstract void WriteGlobalSection();
         private protected abstract void WriteExports();
@@ -393,6 +593,7 @@ namespace ILCompiler.ObjectWriter
         // TODO-WASM: Consider alignment needs for data sections
         public static readonly ObjectNodeSection DataSection = new("wasm.data", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection DataCountSection = new("wasm.datacount", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection BranchHintSection = new("metadata.code.branch_hint", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection CombinedDataSection = new("wasm.alldata", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection FunctionSection = new("wasm.function", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ExportSection = new("wasm.export", SectionType.ReadOnly, needsAlign: false);

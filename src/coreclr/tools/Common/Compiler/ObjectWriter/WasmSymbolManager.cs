@@ -95,6 +95,8 @@ internal sealed class WasmSymbolManager
 
     public int GetImportCount() => _importCounts.Values.Sum();
 
+    public int GetImportCount(WasmIndexSpace indexSpace) => _importCounts[indexSpace];
+
     public int GetDefinitionCount(WasmIndexSpace indexSpace) =>
         _definitionCounts[indexSpace];
 

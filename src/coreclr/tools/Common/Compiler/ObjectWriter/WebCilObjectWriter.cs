@@ -347,6 +347,9 @@ namespace ILCompiler.ObjectWriter
 
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
+            ResolveWasmSectionRelocations();
+            WriteBranchHints();
+
             FinalizeSectionEntryCounts();
 
            /*********************************************************************
@@ -361,19 +364,6 @@ namespace ILCompiler.ObjectWriter
             foreach (int index in SectionEmitOrder)
             {
                 SectionDataEmitter section = _sections[index];
-                if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) &&
-                    section is WasmSection)
-                {
-                    using (Stream originalStream = section.ContentReadStream)
-                    {
-                        MemoryStream destStream = new MemoryStream((int)originalStream.Length);
-                        originalStream.Position = 0;
-                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: true);
-                        section.ContentReadStream = destStream;
-                        // originalStream may be disposed, section.Stream now points to resolved stream
-                    }
-                }
-
                 if (index == codeSectionIndex)
                 {
                     // Function bodies begin after the section header and the (externally counted) entry-count prefix.
@@ -424,6 +414,25 @@ namespace ILCompiler.ObjectWriter
                 {
                     _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, _codeOffsetMap);
                 }
+            }
+        }
+
+        private void ResolveWasmSectionRelocations()
+        {
+            for (int index = 0; index < _sections.Count; index++)
+            {
+                SectionDataEmitter section = _sections[index];
+                if (!_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) ||
+                    section is not WasmSection)
+                {
+                    continue;
+                }
+
+                using Stream originalStream = section.ContentReadStream;
+                MemoryStream destStream = new((int)originalStream.Length);
+                originalStream.Position = 0;
+                ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: true);
+                section.ContentReadStream = destStream;
             }
         }
 
@@ -542,6 +551,7 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidDataException();
             }
 
+            Debug.Assert(blobs.Count == MethodCount);
             long maxBlobSize = blobs.Max(blob => blob.End - blob.Start);
             MemoryStream tempStream = new MemoryStream((int)maxBlobSize);
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
@@ -561,6 +571,8 @@ namespace ILCompiler.ObjectWriter
             for (int b = 0; b < blobs.Count; b++)
             {
                 CodeBlob blob = blobs[b];
+                List<WasmCodeOffsetAdjustment>? branchHintAdjustments = null;
+                uint cumulativeBranchHintShrink = 0;
                 // writeCursor is the post-shrink offset where this entry's (new) size prefix will be written.
                 postEntryStart[b] = writeCursor;
                 Debug.Assert(writeCursor <= blobs[b].Start, $"Write cursor {writeCursor} is beyond the start of blob {blobs[b].Start}");
@@ -594,7 +606,16 @@ namespace ILCompiler.ObjectWriter
                         }
 
                         int size = ResolveReloc(sectionIndex, sectionStream, curReloc.Offset, tempStream, tempStream.Position, curReloc, relocScratchBuffer, shrink: shrink);
-                        blobShrink[b] += (int)Relocation.GetSize(curReloc.Type) - size;
+                        int relocationShrink = (int)Relocation.GetSize(curReloc.Type) - size;
+                        blobShrink[b] += relocationShrink;
+                        if (relocationShrink > 0)
+                        {
+                            cumulativeBranchHintShrink += (uint)relocationShrink;
+                            branchHintAdjustments ??= new List<WasmCodeOffsetAdjustment>();
+                            branchHintAdjustments.Add(new WasmCodeOffsetAdjustment(
+                                checked((uint)(curReloc.Offset + Relocation.GetSize(curReloc.Type) - blob.Start)),
+                                cumulativeBranchHintShrink));
+                        }
 
                         long nextStart = curReloc.Offset + Relocation.GetSize(curReloc.Type);
                         long nextEnd = nextReloc is not null ? nextReloc.Offset : blob.End;
@@ -632,6 +653,11 @@ namespace ILCompiler.ObjectWriter
 
                     CopyOnly(src: sectionStream, srcPos: blob.Start, dest: sectionStream, destPos: writeCursor, count: blob.Size);
                     writeCursor += blob.Size;
+                }
+
+                if (branchHintAdjustments is not null)
+                {
+                    AdjustBranchHintOffsets(b, branchHintAdjustments);
                 }
             }
             sectionStream.SetLength(writeCursor);

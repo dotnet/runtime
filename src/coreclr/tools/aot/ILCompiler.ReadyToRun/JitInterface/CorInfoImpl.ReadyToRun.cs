@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -484,6 +485,7 @@ namespace Internal.JitInterface
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
         private List<MethodDesc> _ilBodiesNeeded;
+        private List<WasmBranchHint> _wasmBranchHints;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         public bool HasColdCode { get; private set; }
@@ -785,6 +787,7 @@ namespace Internal.JitInterface
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
+            _wasmBranchHints = null;
 
             try
             {
@@ -872,6 +875,14 @@ namespace Internal.JitInterface
 
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                 codeGotPublished = true;
+
+                if (compilationResult == CompilationResult.CompilationComplete && _wasmBranchHints is not null)
+                {
+                    foreach (WasmBranchHint branchHint in _wasmBranchHints)
+                    {
+                        _methodCodeNode.AddWasmBranchHint(branchHint);
+                    }
+                }
 
                 if (compilationResult == CompilationResult.CompilationRetryRequested && logger.IsVerbose)
                 {
@@ -1624,6 +1635,49 @@ namespace Internal.JitInterface
             _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
             _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
             _methodCodeNode.InitializeColdFrameInfos(Array.Empty<FrameInfo>());
+        }
+
+        partial void HandleReportedMetadata(byte* key, void* value, nuint length)
+        {
+            if (!_compilation.NodeFactory.Target.IsWasm)
+            {
+                return;
+            }
+
+            ReadOnlySpan<byte> metadataKey = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(key);
+            if (metadataKey.SequenceEqual("WasmBranchHintsReset"u8))
+            {
+                if (length != 0)
+                {
+                    throw new InvalidOperationException($"Unexpected Wasm branch hint reset metadata size: {length}.");
+                }
+
+                _wasmBranchHints = null;
+                return;
+            }
+
+            if (!metadataKey.SequenceEqual("WasmBranchHint"u8))
+            {
+                return;
+            }
+
+            const int WasmBranchHintMetadataSize = (2 * sizeof(uint)) + sizeof(byte);
+            if (length != WasmBranchHintMetadataSize)
+            {
+                throw new InvalidOperationException($"Unexpected Wasm branch hint metadata size: {length}.");
+            }
+
+            ReadOnlySpan<byte> metadata = new(value, WasmBranchHintMetadataSize);
+            uint functionOrdinal = BinaryPrimitives.ReadUInt32LittleEndian(metadata);
+            uint codeOffset = BinaryPrimitives.ReadUInt32LittleEndian(metadata.Slice(sizeof(uint)));
+            byte likelyTaken = metadata[2 * sizeof(uint)];
+            if (likelyTaken > 1)
+            {
+                throw new InvalidOperationException($"Unexpected Wasm branch hint value: {likelyTaken}.");
+            }
+
+            _wasmBranchHints ??= new List<WasmBranchHint>();
+            _wasmBranchHints.Add(new WasmBranchHint(functionOrdinal, codeOffset, likelyTaken != 0));
         }
 
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)

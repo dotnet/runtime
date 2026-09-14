@@ -17,6 +17,46 @@ public static class WasmWebcilModule
         return left + right;
     }
 
+    public static int SumTo(int limit)
+    {
+        int sum = 0;
+        for (int i = 0; i < limit; i++)
+        {
+            sum += i;
+        }
+
+        return sum;
+    }
+
+    public static int SumStaticDataTo(int limit)
+    {
+        int sum = 0;
+        for (int i = 0; i < limit; i++)
+        {
+            sum += s_primes[i % s_primes.Length];
+        }
+
+        return sum;
+    }
+
+    public static int SumInFinally(int limit)
+    {
+        int sum = 0;
+        try
+        {
+            sum = limit;
+        }
+        finally
+        {
+            for (int i = 0; i < limit; i++)
+            {
+                sum += i;
+            }
+        }
+
+        return sum;
+    }
+
     // Reads static data, which forces the JIT to materialize the imageBase address via a
     // 'global.get' of the wasm imageBase well-known global.
     public static int SumStaticData(int index)

@@ -1425,6 +1425,8 @@ public:
     void instGen(instruction ins);
 #if defined(TARGET_XARCH)
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
+#elif defined(TARGET_WASM)
+    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, WasmBranchHint branchHint = WasmBranchHint::None);
 #else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif
