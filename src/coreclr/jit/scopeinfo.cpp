@@ -57,6 +57,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
+#if defined(TARGET_WASM)
+// Stack VarLoc records use the target register-number convention, not packed wasm local indices.
+static_assert(REG_FPBASE == REG_SPBASE);
+static_assert(REG_FPBASE == REG_NA);
+static_assert(static_cast<int>(REG_NA) == static_cast<int>(ICorDebugInfo::REGNUM_AMBIENT_SP));
+static_assert(static_cast<int>(ICorDebugInfo::REGNUM_AMBIENT_SP) == 2);
+#endif // defined(TARGET_WASM)
+
 //============================================================================
 //           siVarLoc functions
 //============================================================================

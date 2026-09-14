@@ -27,6 +27,36 @@ public static class WasmWebcilModule
         return left + right;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int OptimizedTrackedVariables(int left, int right)
+    {
+        int sum = left + right;
+        if (sum < 0)
+        {
+            return AddIntegers(sum, right);
+        }
+
+        int difference = left - right;
+        return AddIntegers(sum, difference);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static unsafe int LeafFrameLocal(int value)
+    {
+        int local = value + 1;
+        int* address = &local;
+        return *address * 2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static unsafe int LocallocFrameLocal(int value)
+    {
+        int length = (value & 3) + 1;
+        int* storage = stackalloc int[length];
+        *storage = value;
+        return *storage;
+    }
+
     [MethodImpl(MethodImplOptions.NoOptimization)]
     public static double AddDoubles(double left, double right)
     {
@@ -86,6 +116,53 @@ public static class WasmWebcilModule
     public static void CollectAtGcSafepoint()
     {
         GC.Collect();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static unsafe int LocallocAcrossFinally(int value)
+    {
+        int length = (value & 3) + 1;
+        int* storage = stackalloc int[length];
+        *storage = value;
+        try
+        {
+            return *storage;
+        }
+        finally
+        {
+            CollectAtGcSafepoint();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int GcSlotIdentity()
+    {
+        GcMarker first = new(17);
+        if (first.Value == 0)
+        {
+            return 0;
+        }
+
+        GcMarker second = new(29);
+        if (second.Value == 0)
+        {
+            return 0;
+        }
+
+        GcMarker? empty = null;
+        TouchMarkerSlot(ref empty);
+
+        CollectAtGcSafepoint();
+        int result = (first.Value * 100) + second.Value;
+        GC.KeepAlive(first);
+        GC.KeepAlive(second);
+        GC.KeepAlive(empty);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TouchMarkerSlot(ref GcMarker? marker)
+    {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
