@@ -385,9 +385,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       and do not replace them. IL PDBs are still required for debugging. Native PDBs emitted by the R2R compiler are
       only used for profiling purposes.
       -->
-      <ResolvedFileToPublish Remove="@(_ReadyToRunCompositeBuildInput)" />
-      <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList)" />
-      <ResolvedFileToPublish Include="@(_ReadyToRunFilesToPublish)" />
+      <!-- A wasm composite emits separate component stubs. Keep the IL assemblies that those
+           stubs describe; unlike PE composites, the wasm sidecars do not replace the IL files. -->
+      <ResolvedFileToPublish Remove="@(_ReadyToRunCompositeBuildInput)"
+                             Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm' or '$(PublishReadyToRunComposite)' != 'true'" />
+      <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList)"
+                             Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm' or '$(PublishReadyToRunComposite)' != 'true'" />
+      <ResolvedFileToPublish Include="@(_ReadyToRunFilesToPublish)"
+                             Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm' or '$(PublishReadyToRunComposite)' != 'true'" />
     </ItemGroup>
 
   </Target>
