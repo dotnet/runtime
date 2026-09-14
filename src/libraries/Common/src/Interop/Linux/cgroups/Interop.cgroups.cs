@@ -143,7 +143,7 @@ internal static partial class Interop
                             minLimit = currentLevelLimit;
                         }
                     }
-                    if (string.Equals(currentCGroupMemoryPath, cgroupMemoryHierarchyMountPath, StringComparison.Ordinal))
+                    if (currentCGroupMemoryPath == cgroupMemoryHierarchyMountPath)
                     {
                         break;
                     }
@@ -159,12 +159,14 @@ internal static partial class Interop
 
         private static bool IsPathAtOrBelowMount(string path, string mount)
         {
-            if (string.Equals(path, mount, StringComparison.Ordinal))
+            if (!path.StartsWith(mount, StringComparison.Ordinal))
             {
-                return true;
+                return false;
             }
 
-            return mount == "/" || path.StartsWith(mount + "/", StringComparison.Ordinal);
+            return path.Length == mount.Length ||
+                mount == "/" ||
+                path[mount.Length] == '/';
         }
 
         /// <summary>Tries to parse a memory limit from the specified file.</summary>
