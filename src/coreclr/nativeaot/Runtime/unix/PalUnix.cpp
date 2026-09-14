@@ -1055,6 +1055,26 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
 #ifdef FEATURE_HIJACK
 static struct sigaction g_previousActivationHandler;
 
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    return (action->sa_flags & SA_SIGINFO) != 0;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
+    // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
+    // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_DFL;
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_IGN;
+}
+
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
     Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
@@ -1079,15 +1099,14 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
     }
 
     // Call the original handler when it is not ignored or default (terminate).
-    if (g_previousActivationHandler.sa_flags & SA_SIGINFO)
+    if (!IsSigDfl(&g_previousActivationHandler) && !IsSigIgn(&g_previousActivationHandler))
     {
-        _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
-        g_previousActivationHandler.sa_sigaction(code, siginfo, context);
-    }
-    else
-    {
-        if (g_previousActivationHandler.sa_handler != SIG_IGN &&
-            g_previousActivationHandler.sa_handler != SIG_DFL)
+        if (IsSaSigInfo(&g_previousActivationHandler))
+        {
+            _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
+            g_previousActivationHandler.sa_sigaction(code, siginfo, context);
+        }
+        else
         {
             _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
             g_previousActivationHandler.sa_handler(code);

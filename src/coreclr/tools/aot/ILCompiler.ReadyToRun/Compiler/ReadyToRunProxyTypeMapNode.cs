@@ -9,7 +9,12 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ReadyToRun
 {
-    internal class ReadyToRunProxyTypeMapNode(ModuleDesc triggeringModule, TypeDesc group, TypeMapMetadata.IProxyTypeMap map, ImportReferenceProvider importProvider) : SortableDependencyNode, IProxyTypeMapNode
+    internal class ReadyToRunProxyTypeMapNode(
+        ModuleDesc triggeringModule,
+        TypeDesc group,
+        TypeMapMetadata.IProxyTypeMap map,
+        ImportReferenceProvider importProvider,
+        bool requiresRuntimeProcessing) : SortableDependencyNode, IProxyTypeMapNode
     {
         public TypeDesc TypeMapGroup => group;
 
@@ -38,7 +43,7 @@ namespace ILCompiler.ReadyToRun
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider ProxyReferences)
         {
             Vertex typeMapGroupVertex = ProxyReferences.EncodeReferenceToType(writer, TypeMapGroup, TriggeringModule);
-            if (map.ThrowingMethodStub is not null)
+            if (map.ThrowingMethodStub is not null || requiresRuntimeProcessing)
             {
                 // We don't write out the throwing method stub for R2R
                 // as emitting loose methods is not supported/very expensive.
@@ -71,7 +76,7 @@ namespace ILCompiler.ReadyToRun
         {
             yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup, TriggeringModule), $"Type map '{TypeMapGroup}' key type");
 
-            if (map.ThrowingMethodStub is not null)
+            if (map.ThrowingMethodStub is not null || requiresRuntimeProcessing)
             {
                 yield break;
             }

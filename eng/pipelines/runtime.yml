@@ -65,6 +65,10 @@ extends:
           - template: /eng/pipelines/common/evaluate-default-paths.yml
 
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - group: DotNet-HelixApi-Access
       jobs:
       - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
         - template: /eng/common/core-templates/job/helix-job-monitor.yml

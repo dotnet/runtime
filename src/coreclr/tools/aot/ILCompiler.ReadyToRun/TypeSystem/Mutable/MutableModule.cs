@@ -124,15 +124,25 @@ namespace Internal.TypeSystem.Ecma
                 return result;
             }
 
-            static string GetNameOfAssemblyRefWhichResolvesToType(ModuleDesc module, MetadataType type)
+            // Looks up the AssemblyRef name used by an existing TypeRef in `moduleToSearch` that
+            // resolves to `referencedType` (potentially through a type-forwarder).
+            internal static bool TryGetAssemblyReferenceNameForTypeReference(
+                ModuleDesc moduleToSearch,
+                MetadataType referencedType,
+                out string assemblyReferenceName)
             {
-                if (!s_assemblyNameFromTypeLookups.TryGetValue(module, out var lookupTable))
+                if (!s_assemblyNameFromTypeLookups.TryGetValue(moduleToSearch, out var lookupTable))
                 {
-                    lookupTable = ComputeTypeLookupTable(module);
-                    s_assemblyNameFromTypeLookups.AddOrUpdate(module, lookupTable);
+                    lookupTable = ComputeTypeLookupTable(moduleToSearch);
+                    s_assemblyNameFromTypeLookups.AddOrUpdate(moduleToSearch, lookupTable);
                 }
 
-                if (lookupTable.TryGetValue(type, out string assemblyName))
+                return lookupTable.TryGetValue(referencedType, out assemblyReferenceName);
+            }
+
+            static string GetNameOfAssemblyRefWhichResolvesToType(ModuleDesc module, MetadataType type)
+            {
+                if (TryGetAssemblyReferenceNameForTypeReference(module, type, out string assemblyName))
                 {
                     return assemblyName;
                 }
@@ -147,6 +157,48 @@ namespace Internal.TypeSystem.Ecma
 
                 throw new KeyNotFoundException($"Unable to resolve an assembly reference from module '{module}' to type '{type}'.");
             }
+        }
+
+        internal static bool CanCreateReferenceToType(ModuleDesc sourceModule, MetadataType type, ReadyToRunCompilationModuleGroupBase compilationGroup)
+        {
+            ModuleDesc targetModule = type.Module;
+            if (targetModule == type.Context.SystemModule ||
+                compilationGroup.CrossModuleInlineableModule(targetModule) ||
+                compilationGroup.VersionsWithModule(targetModule))
+            {
+                return true;
+            }
+
+            if (sourceModule is not EcmaModule sourceEcmaModule || targetModule is not EcmaModule targetEcmaModule)
+            {
+                return false;
+            }
+
+            // An existing TypeRef in the source module (potentially resolving to `type` through a
+            // type-forwarder) already proves a matching AssemblyRef exists.
+            if (ManagedBinaryEmitterForInternalUse.TryGetAssemblyReferenceNameForTypeReference(sourceEcmaModule, type, out _))
+            {
+                return true;
+            }
+
+            // Otherwise falls back to the type's defining assembly name, ensuring the
+            // source module has an AssemblyRef to it.
+            string targetAssemblyName = targetEcmaModule.Assembly.GetName().Name;
+            return HasAssemblyReference(sourceEcmaModule, targetAssemblyName);
+        }
+
+        private static bool HasAssemblyReference(EcmaModule module, string assemblyName)
+        {
+            foreach (AssemblyReferenceHandle assemblyReferenceHandle in module.MetadataReader.AssemblyReferences)
+            {
+                AssemblyReference assemblyReference = module.MetadataReader.GetAssemblyReference(assemblyReferenceHandle);
+                if (module.MetadataReader.StringComparer.Equals(assemblyReference.Name, assemblyName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         class Cache
