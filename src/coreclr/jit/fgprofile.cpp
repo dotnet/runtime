@@ -2561,42 +2561,71 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool minimalProfiling =
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
-    // In majority of cases, methods marked with [Intrinsic] are imported directly
-    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes...
+    // Intrinsic recognition must not prevent ordinary managed implementations from
+    // benefiting from profiles. Exclude compiler primitives and explicit SIMD APIs,
+    // rather than requiring every managed fallback to be recognized here.
     if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        //... except a few intrinsics that might still need it:
-        bool           shouldBeInstrumented = false;
+        bool           shouldBeInstrumented = true;
         NamedIntrinsic ni                   = lookupNamedIntrinsic(info.compMethodHnd);
         switch (ni)
         {
-            // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
-            // In other cases they have large managed implementations we want to profile.
-            case NI_System_String_Equals:
-            case NI_System_SpanHelpers_Memmove:
-            case NI_System_MemoryExtensions_Equals:
-            case NI_System_MemoryExtensions_SequenceEqual:
-            case NI_System_MemoryExtensions_StartsWith:
-            case NI_System_SpanHelpers_Fill:
-            case NI_System_SpanHelpers_SequenceEqual:
-            case NI_System_SpanHelpers_ClearWithoutReferences:
-
-            // Same here, these are only folded when JIT knows the exact types
-            case NI_System_Type_IsAssignableFrom:
-            case NI_System_Type_IsAssignableTo:
-            case NI_System_Type_op_Equality:
-            case NI_System_Type_op_Inequality:
-                shouldBeInstrumented = true;
+            case NI_System_Runtime_Intrinsics_Intrinsic:
+            case NI_System_Runtime_Intrinsics_PlatformIntrinsic:
+            case NI_IsSupported:
+            case NI_IsHardwareAccelerated:
+            case NI_IsSupported_Type:
+            case NI_Vector_GetCount:
+            case NI_System_GC_KeepAlive:
+            case NI_System_Threading_Thread_FastPollGC:
+            case NI_System_Threading_Interlocked_MemoryBarrier:
+            case NI_System_Threading_Volatile_ReadBarrier:
+            case NI_System_Threading_Volatile_WriteBarrier:
+            case NI_System_StubHelpers_GetStubContext:
+            case NI_System_StubHelpers_NextCallReturnAddress:
+            case NI_System_Activator_AllocatorOf:
+            case NI_System_Activator_DefaultConstructorOf:
+            case NI_Internal_Runtime_MethodTable_Of:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait:
+            case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
+                shouldBeInstrumented = false;
                 break;
 
+            case NI_System_Numerics_Intrinsic:
+            {
+                // Fixed-size numerics are ordinary managed APIs. Only Vector and Vector<T>
+                // belong to the explicit SIMD policy.
+                const char* namespaceName = nullptr;
+                const char* className     = getClassNameFromMetadata(info.compClassHnd, &namespaceName);
+                shouldBeInstrumented      = (strcmp(className, "Vector") != 0) && (strcmp(className, "Vector`1") != 0);
+                break;
+            }
+
             default:
-                // Some Math intrinsics have large managed implementations we want to profile.
-                shouldBeInstrumented = ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
+                assert(ni != NI_Throw_PlatformNotSupportedException);
+#ifdef FEATURE_HW_INTRINSICS
+                if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
+                {
+                    shouldBeInstrumented = false;
+                    break;
+                }
+#endif
+                shouldBeInstrumented = !((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END));
                 break;
         }
 
         if (!shouldBeInstrumented)
         {
+            JITDUMP("Not instrumenting intrinsic excluded by minimal profiling\n");
             fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
             fgValueInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
