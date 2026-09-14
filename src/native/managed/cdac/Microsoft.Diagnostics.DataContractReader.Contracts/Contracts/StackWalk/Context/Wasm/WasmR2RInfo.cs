@@ -59,6 +59,28 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
     private Data.RuntimeFunction GetRuntimeFunction(Data.ReadyToRunInfo r2rInfo, uint localIndex)
         => _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, localIndex);
 
+    public bool TryGetFunctionIdentity(
+        uint functionTableIndex,
+        out TargetPointer module,
+        out uint runtimeFunctionIndex,
+        out bool isFunclet)
+    {
+        module = TargetPointer.Null;
+        runtimeFunctionIndex = 0;
+        isFunclet = false;
+
+        Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
+        if (section is null)
+            return false;
+
+        runtimeFunctionIndex = functionTableIndex - section.MinFunctionTableIndex;
+        Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
+        Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, runtimeFunctionIndex);
+        module = section.R2RModule;
+        isFunclet = (runtimeFunction.BeginAddress & FuncletFlag) != 0;
+        return true;
+    }
+
     public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
     {
         baseVirtualIP = 0;
@@ -101,5 +123,11 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
         Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, localIndex);
         unwindDataAddress = new TargetPointer(r2rInfo.LoadedImageBase.Value + runtimeFunction.UnwindData);
         return true;
+    }
+
+    // Mirrors ExecutionManager::IsFuncletFunctionIndex.
+    public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+    {
+        return TryGetFunctionIdentity(functionTableIndex, out _, out _, out isFunclet);
     }
 }

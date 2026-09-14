@@ -159,6 +159,10 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
 | `FuncEvalFrame` | `ReturnAddress` | `CodePointer` | Return address of the frame |
+| `FunctionTableIndexRangeSection` | `MinFunctionTableIndex` | `uint32` | First runtime-global shared function-table index owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `Next` | `pointer` | Pointer to the next registered WASM R2R function-table range |
+| `FunctionTableIndexRangeSection` | `NumRuntimeFunctions` | `uint32` | Number of consecutive RUNTIME_FUNCTION entries owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `R2RModule` | `pointer` | Pointer to the Module that owns this function-table range |
 | `GCFrame` | `GCFlags` | `uint32` | GC_CALL_* promotion flags applied when reporting the protected slots |
 | `GCFrame` | `Next` | `pointer` | Pointer to the next GCFrame toward the top of the chain |
 | `GCFrame` | `NumObjRefs` | `uint32` | Count of protected object reference slots starting at ObjRefs |
@@ -185,8 +189,14 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base synthetic virtual IP assigned to the WASM R2R module |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
+| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
+| `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
+| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 (the Thumb bit) is set. |
+| `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
@@ -203,6 +213,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` | `FirstGCRefMapSlot` | `pointer` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
 | `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
+| `TransitionBlock` | `StackPointer` | `pointer` | WASM R2R shadow-stack pointer saved by the transition helper |
 | `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
 ### Global variables used
@@ -211,6 +222,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | --- | --- | --- |
 | `<FrameType>Identifier` *(name pattern)* | `pointer` | Per-frame-type sentinel address used to identify and classify runtime frames |
 | `Architecture` | `string` | Target architecture |
+| `FunctionTableIndexRangeList` | `pointer` | Pointer to the head pointer of the registered WASM R2R function-table range list |
 | `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
 
 ### Contracts used
@@ -439,12 +451,18 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
+* On WASM, `CallerReturnAddress == INLINED_PINVOKE_FROM_R2R` is an active-frame marker rather than
+  an IP. Derive SP from `CallSiteSP`, derive the virtual IP from the R2R shadow frame, and derive
+  logical FP with the wasm funclet-aware frame-pointer walk.
 
 **Return Address**: `CallerReturnAddress`, but only when the frame has an active call (i.e., `CallerReturnAddress != 0`). Returns null otherwise.
 
 #### SoftwareExceptionFrame
 
 SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
+
+On WASM the serialized `WasmContext` already contains the coherent synthetic SP/IP/FP state, so
+copy the full context rather than only IP/SP plus a hardware callee-saved register set.
 
 **Return Address**: Read from the `ReturnAddress` field on the frame.
 
@@ -455,8 +473,16 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
+* On WASM, when `TransitionBlock.StackPointer` is non-null, it points into the R2R shadow stack.
+  If `ReturnAddress` is still zero, derive it lazily from that SP, matching
+  `FramedMethodFrame::GetTransitionBlock_Impl`. Use the saved SP and derive logical FP only when
+  both the saved SP and a resolved virtual IP are available. Otherwise use the generic
+  `TransitionBlock + sizeof(TransitionBlock)` fallback SP and clear FP; the fallback address is an
+  argument area, not an R2R shadow frame.
 
-**Return Address**: Read from `TransitionBlock.ReturnAddress`. This applies to all frame types that use the TransitionFrame mechanism.
+**Return Address**: Read from `TransitionBlock.ReturnAddress`. On WASM, a zero return address with a
+non-null saved stack pointer is resolved lazily from the R2R shadow frame. This applies to all frame
+types that use the TransitionFrame mechanism.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame
@@ -659,8 +685,40 @@ TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle)
 
 `GetContextFramePointer` returns the base pointer register from the current frame's context: EBP on x86, RBP on x64, and the platform frame-pointer register on other architectures.
 
+On WASM this is the logical R2R frame pointer maintained in `WasmContext.InterpreterFP`. A root
+function uses its own frame base. A funclet uses the containing method's establishing frame,
+resolved by unwinding through containing funclets or the `CallFuncletWith[out]Throwable`
+terminator. SP, IP, and FP are updated as one context state during virtual unwind and explicit-frame
+seeding.
+
 ```csharp
 TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetWasmFunctionIdentity` returns the raw runtime-global function-table index stored in a WASM R2R
+shadow frame. When that index belongs to a registered R2R range, the result also contains the
+owning Module, the RUNTIME_FUNCTION index within that image, and nullable funclet classification.
+The raw index is preserved even when range resolution fails.
+
+The API is valid only for `Frameless` frames whose code kind is `ReadyToRun`. It rejects native
+markers and interpreter frames before reading the stack pointer, because those addresses can
+contain bytes that resemble a valid shadow frame.
+
+WebAssembly engine function indices are module-local. A CDP consumer must use the owning module
+and image-relative runtime-function index to select the correct wasm script and translate through
+that image's element section. It must not interpret the raw shared-table index as a V8
+`func_index`.
+
+```csharp
+public readonly struct WasmFunctionIdentity
+{
+    public uint FunctionTableIndex { get; init; }
+    public TargetPointer? Module { get; init; }
+    public uint? RuntimeFunctionIndex { get; init; }
+    public bool? IsFunclet { get; init; }
+}
+
+WasmFunctionIdentity GetWasmFunctionIdentity(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
 Each `IStackDataFrameHandle` also exposes `IsInterrupted` and `HasFaulted`. `IsInterrupted` is true when the current managed frame was reached through an exception Frame. `HasFaulted` is true when that exception Frame is a `FaultingExceptionFrame` whose saved context still has `CONTEXT_EXCEPTION_ACTIVE` set.

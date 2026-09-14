@@ -199,6 +199,10 @@
     "FramedMethodFrame.TransitionBlockPtr": "Pointer to Frame's TransitionBlock",
     "FuncEvalFrame.DebuggerEvalPtr": "Pointer to the Frame's DebuggerEval object",
     "FuncEvalFrame.ReturnAddress": "Return address of the frame",
+    "FunctionTableIndexRangeSection.MinFunctionTableIndex": "First runtime-global shared function-table index owned by the R2R module",
+    "FunctionTableIndexRangeSection.Next": "Pointer to the next registered WASM R2R function-table range",
+    "FunctionTableIndexRangeSection.NumRuntimeFunctions": "Number of consecutive RUNTIME_FUNCTION entries owned by the R2R module",
+    "FunctionTableIndexRangeSection.R2RModule": "Pointer to the Module that owns this function-table range",
     "GCAllocContext.AllocBytes": "Number of bytes allocated on SOH by this context",
     "GCAllocContext.AllocBytesLoh": "Number of bytes allocated not on SOH by this context",
     "GCAllocContext.Limit": "Allocation limit pointer",
@@ -519,6 +523,7 @@
     "ReadyToRunInfo.HotColdMap": "Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80)",
     "ReadyToRunInfo.ImportSections": "Pointer to the array of ReadyToRun import sections",
     "ReadyToRunInfo.LoadedImageBase": "Base address of the loaded R2R image",
+    "ReadyToRunInfo.MinVirtualIP": "Base synthetic virtual IP assigned to the WASM R2R module",
     "ReadyToRunInfo.NumHotColdMap": "Number of entries in the `HotColdMap`",
     "ReadyToRunInfo.NumImportSections": "Number of ReadyToRun import sections",
     "ReadyToRunInfo.NumRuntimeFunctions": "Number of `RuntimeFunctions`",
@@ -682,6 +687,7 @@
     "TransitionBlock.CalleeSavedRegisters": "Platform specific CalleeSavedRegisters struct associated with the TransitionBlock",
     "TransitionBlock.FirstGCRefMapSlot": "Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset",
     "TransitionBlock.ReturnAddress": "Return address associated with the TransitionBlock",
+    "TransitionBlock.StackPointer": "WASM R2R shadow-stack pointer saved by the transition helper",
     "TransitionBlock.Size": "Size in bytes of the transition block, used to restore the caller's stack pointer",
     "TypedByRef.Data": "Managed pointer (the byref) stored in a System.TypedReference value",
     "TypedByRef.Type": "Raw TypeHandle pointer of the referent type",
@@ -752,6 +758,7 @@
     "FeatureOnStackReplacement": "Present (nonzero) when on-stack replacement is enabled",
     "FeaturePortableEntrypoints": "Present (nonzero) when portable entrypoints are enabled",
     "FeatureWebcil": "Present (nonzero) when Webcil is enabled",
+    "FunctionTableIndexRangeList": "Pointer to the head pointer of the registered WASM R2R function-table range list",
     "FieldOffsetBigRVA": "Sentinel value of FieldDesc::DWord2 indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (FieldDefinition.GetRelativeVirtualAddress).",
     "FieldOffsetDynamicRVA": "Sentinel FieldDesc offset for an EnC-added RVA field whose enclosing type is not yet loaded",
     "FieldOffsetNewEnc": "Sentinel offset value stored in FieldDesc::DWord2 for added fields whose storage has not yet been allocated.",
@@ -859,6 +866,8 @@
     "ThinlockThreadIdDispenser": "Pointer to the dispenser of thin-lock thread IDs",
     "ThreadStore": "Pointer to the runtime thread store",
     "TotalCpuCount": "Number of available processors",
-    "TotalGenerationCount": "The total number of generations in the GC"
+    "TotalGenerationCount": "The total number of generations in the GC",
+    "WasmDebugRegisterTypeShift": "Bit position at which the JIT debug-register encoding stores its WASM value type",
+    "WasmDebugValueTypeCount": "Number of values in the JIT's WASM debug-register value-type encoding"
   }
 }

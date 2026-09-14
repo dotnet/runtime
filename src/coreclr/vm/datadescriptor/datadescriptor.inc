@@ -1292,6 +1292,9 @@ CDAC_TYPE_END(InterpreterFrame)
 CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CodePointer), ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
+#ifdef TARGET_WASM
+CDAC_TYPE_FIELD(TransitionBlock, T_POINTER, StackPointer, offsetof(TransitionBlock, m_StackPointer))
+#endif // TARGET_WASM
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
 // Offset to argument registers and first GCRefMap slot (platform-specific)
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
