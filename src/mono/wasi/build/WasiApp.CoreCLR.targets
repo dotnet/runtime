@@ -6,8 +6,7 @@
           BeforeTargets="_CreateR2RImages">
     <ItemGroup>
       <_WasiReadyToRunPInvokeModule Remove="@(_WasiReadyToRunPInvokeModule)" />
-      <_WasiReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
-      <_WasiReadyToRunPInvokeModule Remove="libSystem.Native.Browser;libSystem.Runtime.InteropServices.JavaScript.Native" />
+      <_WasiReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))" />
       <_WasiReadyToRunPInvokeModule Remove="libSystem.Globalization.Native"
                                      Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
@@ -170,8 +169,7 @@
     <ItemGroup>
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
 
-      <_WasiPInvokeModules Include="@(WasmCoreClrFrameworkPInvokeModule)" />
-      <_WasiPInvokeModules Remove="libSystem.Native.Browser;libSystem.Runtime.InteropServices.JavaScript.Native" />
+      <_WasiPInvokeModules Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))" />
       <_WasiPInvokeModules Remove="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 

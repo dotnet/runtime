@@ -117,11 +117,16 @@
            Text="No assemblies to scan were found in $(_ScanPath)." />
 
     <ItemGroup>
+      <_TargetPInvokeModule Remove="@(_TargetPInvokeModule)" />
+      <_TargetPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))"
+                            Condition="'$(_TargetOS)' == 'browser'" />
+      <_TargetPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))"
+                            Condition="'$(_TargetOS)' == 'wasi'" />
       <_GeneratorArg Remove="@(_GeneratorArg)" />
       <_GeneratorArg Include="--targetos:$(_TargetOS)" />
       <_GeneratorArg Include="--targetarch:wasm" />
       <_GeneratorArg Include="--generate-portable-callhelpers:$(_StagingDir)" />
-      <_GeneratorArg Include="@(WasmCoreClrFrameworkPInvokeModule->'--directpinvoke:%(Identity)')" />
+      <_GeneratorArg Include="@(_TargetPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_GeneratorArg Include="@(_ScanAssembly->'%(FullPath)')" />
     </ItemGroup>
 

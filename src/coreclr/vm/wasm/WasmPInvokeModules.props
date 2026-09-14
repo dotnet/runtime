@@ -14,10 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Globalization.Native" />
-    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.IO.Compression.Native" />
-    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native" />
-    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native.Browser" />
-    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Globalization.Native" Browser="true" Wasi="true" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.IO.Compression.Native" Browser="true" Wasi="true" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native" Browser="true" Wasi="true" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native.Browser" Browser="true" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" Browser="true" />
   </ItemGroup>
 </Project>
