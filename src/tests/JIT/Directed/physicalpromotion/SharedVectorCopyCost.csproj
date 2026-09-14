@@ -8,6 +8,7 @@
     <Compile Include="SharedVectorCopyCost.cs">
       <HasDisasmCheck>true</HasDisasmCheck>
     </Compile>
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnablePhysicalPromotion" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
   </ItemGroup>

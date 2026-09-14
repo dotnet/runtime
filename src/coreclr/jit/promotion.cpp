@@ -100,7 +100,7 @@ struct Access
 
     // Number of times this access is the source of a store.
     unsigned CountStoreSource = 0;
-    // Number of times this access is the destination of a store.
+    // Number of times this access is a store destination, excluding struct initializations.
     unsigned CountStoreDestination = 0;
     // Number of times this is stored by being passed as the retbuf.
     // These stores need a readback
@@ -153,6 +153,7 @@ enum class AccessKindFlags : uint32_t
     IsCallRetBuf       = 8,
     IsStoreSource      = 16,
     IsStoreDestination = 32,
+    IsInit             = 128,
 #ifdef DEBUG
     IsReturned = 64,
 #endif
@@ -416,7 +417,8 @@ public:
             access->CountStoreSourceWtd += weight;
         }
 
-        if ((flags & AccessKindFlags::IsStoreDestination) != AccessKindFlags::None)
+        if (((flags & AccessKindFlags::IsStoreDestination) != AccessKindFlags::None) &&
+            ((flags & AccessKindFlags::IsInit) == AccessKindFlags::None))
         {
             access->CountStoreDestination++;
             access->CountStoreDestinationWtd += weight;
@@ -723,9 +725,9 @@ public:
         unsigned countVectorCopies    = 0;
         weight_t countVectorCopiesWtd = 0;
         unsigned primitiveAccessCount = 1;
-        // With only field definitions, promotion can propagate their values into the
-        // whole-struct copies and eliminate the local. Do not assume those copies fragment.
-        bool costVectorCopies = (access.Count > access.CountStoreDestination) &&
+        // Without field reads or induced accesses, promotion can propagate definitions
+        // into the whole-struct copies and eliminate the local. Do not assume those copies fragment.
+        bool costVectorCopies = ((access.Count > access.CountStoreDestination) || (inducedCount > 0)) &&
                                 (genTypeSize(access.AccessType) < TARGET_POINTER_SIZE) &&
                                 varTypeIsSIMD(layout->GetRegisterType());
         for (const Access& otherAccess : m_accesses)
@@ -759,7 +761,7 @@ public:
 
             if (costVectorCopies && (otherAccess.GetAccessSize() == layout->GetSize()))
             {
-                // Call-result read-backs are already costed separately.
+                // Initializations are not copies; call-result read-backs are costed separately.
                 countVectorCopies += otherAccess.CountStoreSource + otherAccess.CountStoreDestination +
                                      otherAccess.CountPassedAsRetbuf - otherAccess.CountStoredFromCall;
                 countVectorCopiesWtd += otherAccess.CountStoreSourceWtd + otherAccess.CountStoreDestinationWtd +
@@ -772,6 +774,25 @@ public:
                 // write-back.
                 countOverlappedCallArg -= otherAccess.CountRegCallArgs;
                 countOverlappedCallArgWtd -= otherAccess.CountRegCallArgsWtd;
+            }
+        }
+
+        if (costVectorCopies)
+        {
+            // Count induced-only fields too, without counting an existing scalar read twice.
+            for (const PrimitiveAccess& otherInduced : m_inducedAccesses)
+            {
+                if ((otherInduced.Offset == access.Offset) && (otherInduced.AccessType == access.AccessType))
+                {
+                    continue;
+                }
+
+                const Access* existing = FindAccess(otherInduced.Offset, otherInduced.AccessType);
+                if ((existing == nullptr) || (existing->Count <= existing->CountStoreDestination))
+                {
+                    primitiveAccessCount++;
+                    costVectorCopies &= genTypeSize(otherInduced.AccessType) < TARGET_POINTER_SIZE;
+                }
             }
         }
 
@@ -1606,6 +1627,11 @@ private:
         if (lcl->OperIsLocalStore())
         {
             flags |= AccessKindFlags::IsStoreDestination;
+
+            if (lcl->TypeIs(TYP_STRUCT) && lcl->Data()->gtEffectiveVal()->IsIntegralConst())
+            {
+                flags |= AccessKindFlags::IsInit;
+            }
 
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {

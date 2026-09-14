@@ -194,6 +194,83 @@ public class SharedVectorCopyCost
         destination[3] = source;
     }
 
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    private struct OuterValue
+    {
+        [FieldOffset(0)] public long Prefix;
+        [FieldOffset(8)] public ArrayValue Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static OuterValue CreateOuterValue(int input) =>
+        new OuterValue { Prefix = input, Value = new ArrayValue { A = input, B = input + 1, C = input + 2, D = input + 3 } };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CopyInducedToArray(int input, ArrayValue[] destination)
+    {
+        // Copy a subrange of the promoted source into a local with no explicit field reads.
+        // Its induced fields must still pay for fragmenting the subsequent array copies.
+        // X64: call {{.*}}SharedVectorCopyCost:CheckFields
+        // X64: call {{.*}}SharedVectorCopyCost:CheckFields
+        // X64: call {{.*}}SharedVectorCopyCost:CheckFields
+        // X64: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        // X64: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        OuterValue source = CreateOuterValue(input);
+        CheckFields(source.Value.A, source.Value.B, source.Value.C, source.Value.D);
+        CheckFields(source.Value.A, source.Value.B, source.Value.C, source.Value.D);
+        CheckFields(source.Value.A, source.Value.B, source.Value.C, source.Value.D);
+        ArrayValue value = source.Value;
+        destination[0] = value;
+        destination[1] = value;
+        destination[2] = value;
+        destination[3] = value;
+        destination[4] = value;
+        destination[5] = value;
+        destination[6] = value;
+        destination[7] = value;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    private struct MixedValue
+    {
+        [FieldOffset(0)] public long A;
+        [FieldOffset(8)] public short B;
+        [FieldOffset(10)] public short C;
+        [FieldOffset(12)] public short D;
+        [FieldOffset(14)] public short E;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static MixedValue CreateMixedValue(int value) =>
+        new MixedValue { A = value, B = (short)value, C = (short)value, D = (short)value, E = (short)value };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void MixedFields(long a, int b, int c, int d, int e) { }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CopyMixedToArray(int input, MixedValue[] destination)
+    {
+        // The native-width read keeps this mixed-width copy outside the fragmentation charge.
+        // X64: call {{.*}}SharedVectorCopyCost:MixedFields
+        // X64: call {{.*}}SharedVectorCopyCost:MixedFields
+        // X64-NOT: xmmword ptr
+        // X64-NOT: ptr [rsp
+        // X64: ret
+        MixedValue source = CreateMixedValue(input);
+        MixedFields(source.A, source.B, source.C, source.D, source.E);
+        MixedFields(source.A, source.B, source.C, source.D, source.E);
+        destination[0] = source;
+        destination[1] = source;
+        destination[2] = source;
+        destination[3] = source;
+        destination[4] = source;
+        destination[5] = source;
+        destination[6] = source;
+        destination[7] = source;
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {
@@ -214,6 +291,31 @@ public class SharedVectorCopyCost
             {
                 Assert.Equal(input, value.A);
                 CheckFields(value.A, value.B, value.C, value.D);
+            }
+        }
+
+        ArrayValue[] inducedValues = new ArrayValue[8];
+        foreach (int input in new[] { 10, -10 })
+        {
+            CopyInducedToArray(input, inducedValues);
+            foreach (ArrayValue value in inducedValues)
+            {
+                Assert.Equal(input, value.A);
+                CheckFields(value.A, value.B, value.C, value.D);
+            }
+        }
+
+        MixedValue[] mixedValues = new MixedValue[8];
+        foreach (int input in new[] { 10, -10, 32768 })
+        {
+            CopyMixedToArray(input, mixedValues);
+            foreach (MixedValue value in mixedValues)
+            {
+                Assert.Equal((long)input, value.A);
+                Assert.Equal((short)input, value.B);
+                Assert.Equal((short)input, value.C);
+                Assert.Equal((short)input, value.D);
+                Assert.Equal((short)input, value.E);
             }
         }
 
