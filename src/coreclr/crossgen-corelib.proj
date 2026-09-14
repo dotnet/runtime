@@ -132,6 +132,8 @@
       <Crossgen2Inputs Include="@(CoreLib)" />
       <Crossgen2Inputs Include="$(MergedMibcPath)" />
       <Crossgen2Inputs Include="@(Crossgen2Files->Metadata('OutputPath'))" />
+      <Crossgen2Inputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)"
+                       Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
     </ItemGroup>
   </Target>
 
@@ -162,8 +164,8 @@
       <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">$(CrossGenDllCmd) --codegenopt:JitWasmNyiToR2RUnsupported=1</CrossGenDllCmd>
       <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
       <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">$(CrossGenDllCmd) "--opt-cross-module:*"</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(FeatureDynamicCodeCompiled)' != ''">$(CrossGenDllCmd) --target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)</CrossGenDllCmd>
