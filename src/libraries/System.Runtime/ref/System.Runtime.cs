@@ -17445,6 +17445,17 @@ namespace System.Threading
         public static Microsoft.Win32.SafeHandles.SafeWaitHandle GetSafeWaitHandle(this System.Threading.WaitHandle waitHandle) { throw null; }
         public static void SetSafeWaitHandle(this System.Threading.WaitHandle waitHandle, Microsoft.Win32.SafeHandles.SafeWaitHandle? value) { }
     }
+    // EXPERIMENTAL, PROTOTYPE-ONLY: see the real implementation in
+    // src/libraries/System.Private.CoreLib/src/System/Threading/IoUring.Unix.cs for details.
+    [System.CLSCompliantAttribute(false)]
+    public static class IoUring
+    {
+        public static bool IsSupported { get { throw null; } }
+        public static unsafe bool TrySubmitRecv(System.Runtime.InteropServices.SafeHandle handle, byte* buffer, int length, int flags, System.Action<int> onCompleted) { throw null; }
+        public static unsafe bool TrySubmitSend(System.Runtime.InteropServices.SafeHandle handle, byte* buffer, int length, int flags, System.Action<int> onCompleted) { throw null; }
+        public static unsafe bool TrySubmitAccept(System.Runtime.InteropServices.SafeHandle handle, byte* sockAddr, int* sockAddrLen, int flags, System.Action<int> onCompleted) { throw null; }
+        public static unsafe bool TrySubmitConnect(System.Runtime.InteropServices.SafeHandle handle, byte* sockAddr, int* sockAddrLen, System.Action<int> onCompleted) { throw null; }
+    }
 }
 namespace System.Threading.Tasks
 {

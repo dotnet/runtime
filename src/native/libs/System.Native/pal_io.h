@@ -914,10 +914,14 @@ PALEXPORT int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t ve
  */
 typedef enum
 {
-    IoRingOp_Read = 0,   // single buffer read; positional (pread-like) if Offset >= 0, else read-like
-    IoRingOp_Write = 1,  // single buffer write; positional (pwrite-like) if Offset >= 0, else write-like
-    IoRingOp_ReadV = 2,  // scatter read into Vectors; positional (preadv-like) if Offset >= 0, else readv-like
-    IoRingOp_WriteV = 3, // gather write from Vectors; positional (pwritev-like) if Offset >= 0, else writev-like
+    IoRingOp_Read = 0,    // single buffer read; positional (pread-like) if Offset >= 0, else read-like
+    IoRingOp_Write = 1,   // single buffer write; positional (pwrite-like) if Offset >= 0, else write-like
+    IoRingOp_ReadV = 2,   // scatter read into Vectors; positional (preadv-like) if Offset >= 0, else readv-like
+    IoRingOp_WriteV = 3,  // gather write from Vectors; positional (pwritev-like) if Offset >= 0, else writev-like
+    IoRingOp_Accept = 4,  // accept(2)-like; writes the peer address into SockAddr/SockAddrLen; Result is the new fd
+    IoRingOp_Connect = 5, // connect(2)-like; SockAddr/SockAddrLen give the destination address
+    IoRingOp_Recv = 6,    // recv(2)-like single buffer read from a socket; Flags carries MSG_* flags
+    IoRingOp_Send = 7,    // send(2)-like single buffer write to a socket; Flags carries MSG_* flags
 } IoRingOp;
 
 /**
@@ -929,10 +933,14 @@ typedef struct
     int32_t OpCode;      // IoRingOp
     intptr_t Fd;
     int64_t Offset;      // file offset for positional ops; -1 for non-positional ops
-    uint8_t* Buffer;     // used by IoRingOp_Read / IoRingOp_Write
+    uint8_t* Buffer;     // used by IoRingOp_Read / IoRingOp_Write / IoRingOp_Recv / IoRingOp_Send
     int32_t BufferLength;
     IOVector* Vectors;   // used by IoRingOp_ReadV / IoRingOp_WriteV
     int32_t VectorCount;
+    int32_t Flags;       // MSG_* flags for IoRingOp_Recv / IoRingOp_Send; accept flags for IoRingOp_Accept
+    uint8_t* SockAddr;   // used by IoRingOp_Accept (output, peer address) / IoRingOp_Connect (input, destination address)
+    int32_t* SockAddrLen; // in/out length of SockAddr: Accept writes the actual peer address length back into it;
+                          // Connect reads it once, by value, as the input address length
     uint64_t UserData;   // opaque correlation token, echoed back in the matching IoRingCompletion
 } IoRingRequest;
 

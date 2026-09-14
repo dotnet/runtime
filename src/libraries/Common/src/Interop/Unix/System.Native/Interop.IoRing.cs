@@ -15,6 +15,10 @@ internal static partial class Interop
             Write = 1,
             ReadV = 2,
             WriteV = 3,
+            Accept = 4,
+            Connect = 5,
+            Recv = 6,
+            Send = 7,
         }
 
         // Mirrors the native IoRingRequest struct in pal_io.h.
@@ -26,10 +30,13 @@ internal static partial class Interop
             public IoRingOp OpCode;
             public IntPtr Fd;
             public long Offset; // -1 for non-positional ops
-            public byte* Buffer; // used by Read/Write
+            public byte* Buffer; // used by Read/Write/Recv/Send
             public int BufferLength;
             public IOVector* Vectors; // used by ReadV/WriteV
             public int VectorCount;
+            public int Flags; // MSG_* flags for Recv/Send; accept flags for Accept
+            public byte* SockAddr; // used by Accept (output, peer address) / Connect (input, destination address)
+            public int* SockAddrLen; // in/out length of SockAddr
             public ulong UserData;
         }
 

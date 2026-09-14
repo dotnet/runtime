@@ -1501,12 +1501,20 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
+            bool ready = _receiveQueue.IsReady(this, out observedSequenceNumber);
+            if (ready &&
                 SocketPal.TryCompleteAccept(_socket, socketAddress, out socketAddressLen, out acceptedFd, out errorCode))
             {
                 Debug.Assert(errorCode == SocketError.Success || acceptedFd == (IntPtr)(-1), $"Unexpected values: errorCode={errorCode}, acceptedFd={acceptedFd}");
 
                 return errorCode;
+            }
+
+            if (ready && TryAcceptViaIoUring(socketAddress, callback))
+            {
+                acceptedFd = (IntPtr)(-1);
+                socketAddressLen = 0;
+                return SocketError.IOPending;
             }
 
             AcceptOperation operation = RentAcceptOperation();
@@ -1563,6 +1571,12 @@ namespace System.Net.Sockets
             Debug.Assert(callback != null, "Expected non-null callback");
 
             SetHandleNonBlocking();
+
+            if (buffer.Length == 0 && !_socket.IsDisconnected && TryConnectViaIoUring(socketAddress, callback))
+            {
+                sentBytes = 0;
+                return SocketError.IOPending;
+            }
 
             // Connect is different than the usual "readiness" pattern of other operations.
             // We need to initiate the connect before we try to complete it.
@@ -1706,10 +1720,17 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
+            bool ready = _receiveQueue.IsReady(this, out observedSequenceNumber);
+            if (ready &&
                 SocketPal.TryCompleteReceive(_socket, buffer.Span, flags, out bytesReceived, out errorCode))
             {
                 return errorCode;
+            }
+
+            if (ready && TryReceiveViaIoUring(buffer, flags, callback))
+            {
+                bytesReceived = 0;
+                return SocketError.IOPending;
             }
 
             BufferMemoryReceiveOperation operation = RentBufferMemoryReceiveOperation();
@@ -1738,10 +1759,20 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
+            bool ready = _receiveQueue.IsReady(this, out observedSequenceNumber);
+            if (ready &&
                 SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 return errorCode;
+            }
+
+            if (ready && socketAddress.Length == 0 &&
+                TryReceiveViaIoUring(buffer, flags, callback))
+            {
+                socketAddressLen = 0;
+                bytesReceived = 0;
+                receivedFlags = SocketFlags.None;
+                return SocketError.IOPending;
             }
 
             BufferMemoryReceiveOperation operation = RentBufferMemoryReceiveOperation();
@@ -2050,10 +2081,17 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
+            bool ready = _sendQueue.IsReady(this, out observedSequenceNumber);
+            if (ready &&
                 SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress.Span, ref bytesSent, out errorCode))
             {
                 return errorCode;
+            }
+
+            if (ready && socketAddress.Length == 0 &&
+                TrySendViaIoUring(buffer, offset, count, flags, callback))
+            {
+                return SocketError.IOPending;
             }
 
             BufferMemorySendOperation operation = RentBufferMemorySendOperation();

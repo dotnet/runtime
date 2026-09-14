@@ -2235,6 +2235,20 @@ static void IoRingFillSqe(struct io_uring_sqe* sqe, IoRingRequest* request)
             io_uring_prep_writev(sqe, (int)request->Fd, (const struct iovec*)request->Vectors,
                                   (unsigned)GetAllowedVectorCount(request->Vectors, request->VectorCount), (__u64)offset);
             break;
+        case IoRingOp_Accept:
+            io_uring_prep_accept(sqe, (int)request->Fd, (struct sockaddr*)request->SockAddr,
+                                  (socklen_t*)request->SockAddrLen, request->Flags);
+            break;
+        case IoRingOp_Connect:
+            io_uring_prep_connect(sqe, (int)request->Fd, (struct sockaddr*)request->SockAddr,
+                                   request->SockAddrLen != NULL ? (socklen_t)*request->SockAddrLen : 0);
+            break;
+        case IoRingOp_Recv:
+            io_uring_prep_recv(sqe, (int)request->Fd, request->Buffer, (size_t)request->BufferLength, request->Flags);
+            break;
+        case IoRingOp_Send:
+            io_uring_prep_send(sqe, (int)request->Fd, request->Buffer, (size_t)request->BufferLength, request->Flags);
+            break;
     }
 
     io_uring_sqe_set_data64(sqe, request->UserData);
