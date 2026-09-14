@@ -6958,10 +6958,12 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     }
 
     emitAttr attr = EA_ATTR(insSize);
+#ifdef TARGET_AMD64
     if ((ins == INS_movsx) && (cast->TypeIs(TYP_LONG) || genIsSignedWideningUse(cast)))
     {
         attr = EA_SET_FLG(attr, EA_8BYTE_DST);
     }
+#endif
 
     if (srcReg != REG_NA)
     {
