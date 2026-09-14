@@ -11,6 +11,15 @@
 class ICorDebugInfo
 {
 public:
+#ifdef TARGET_WASM
+    // WASM variable locations encode a JIT-local index and a JIT WasmValueType in the 32-bit
+    // RegNum payload. These constants are part of the debug-info encoding consumed by cDAC and
+    // ILCompiler.Reflection.ReadyToRun.
+    static constexpr uint32_t WASM_REG_TYPE_BITS = 3;
+    static constexpr uint32_t WASM_REG_TYPE_SHIFT = 32 - WASM_REG_TYPE_BITS;
+    static constexpr uint32_t WASM_VALUE_TYPE_COUNT = 7;
+#endif // TARGET_WASM
+
     /*----------------------------- Boundary-info ---------------------------*/
 
     enum MappingTypes

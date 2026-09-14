@@ -95,6 +95,9 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private static string GetWasmRegister(int regnum)
         {
+            // Keep in sync with ICorDebugInfo::WASM_REG_TYPE_SHIFT in cordebuginfo.h. A future
+            // width change requires a versioned ReadyToRun debug-info format change because this
+            // static image reader has no live target descriptor from which to discover it.
             const int WasmRegTypeShift = 29;
             const uint WasmRegIndexMask = (1u << WasmRegTypeShift) - 1;
 
