@@ -29,6 +29,9 @@ const legacyExport = async (moduleFactory: DotnetModuleConfig | ((api: RuntimeAP
     if (typeof moduleFactory === "function") {
         cfg = moduleFactory(dotnetApi);
     }
+    if (cfg.config) {
+        dotnet.withConfig(cfg.config);
+    }
     Object.assign(Module, cfg);
     return dotnet.create();
 };
