@@ -162,16 +162,19 @@ public class SharedVectorCopyCost
     private static void CopyToArray(int input, ArrayValue[] destination)
     {
         // Preserve vector copies instead of splitting each array store into four field stores.
+        // ARM64 pairs the four array copies into two vector stores.
+        // ARM64: SharedVectorCopyCost:CheckFields
+        // ARM64: SharedVectorCopyCost:CheckFields
+        // ARM64: stp q{{[0-9]+}}, q{{[0-9]+}},
+        // ARM64: stp q{{[0-9]+}}, q{{[0-9]+}},
+        // ARM64-LABEL: {{^ *ret}}
         // X64-WINDOWS: call {{.*}}SharedVectorCopyCost:CheckFields
         // X64-WINDOWS: call {{.*}}SharedVectorCopyCost:CheckFields
-        // X64-WINDOWS: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
         // X64-WINDOWS: {{v?movups}} xmmword ptr
-        // X64-WINDOWS: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
         // X64-WINDOWS: {{v?movups}} xmmword ptr
-        // X64-WINDOWS: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
         // X64-WINDOWS: {{v?movups}} xmmword ptr
-        // X64-WINDOWS: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
         // X64-WINDOWS: {{v?movups}} xmmword ptr
+        // X64-WINDOWS-LABEL: {{^ *ret}}
         ArrayValue source = CreateArrayValue(input);
         CheckFields(source.A, source.B, source.C, source.D);
         CheckFields(source.A, source.B, source.C, source.D);
@@ -213,9 +216,13 @@ public class SharedVectorCopyCost
         // ARM64: SharedVectorCopyCost:CheckFields
         // ARM64: SharedVectorCopyCost:CheckFields
         // ARM64: SharedVectorCopyCost:CheckFields
-        // ARM64: ldr q{{[0-9]+}}, [{{fp|sp}}
-        // ARM64: {{stp|str}} q{{[0-9]+}},
-        // ARM64: ret
+        // Check all eight copies before the first return, excluding the fallback path.
+        // ARM64 pairs the copies; do not require a reload for each store.
+        // ARM64: stp q{{[0-9]+}}, q{{[0-9]+}},
+        // ARM64: stp q{{[0-9]+}}, q{{[0-9]+}},
+        // ARM64: stp q{{[0-9]+}}, q{{[0-9]+}},
+        // ARM64: stp q{{[0-9]+}}, q{{[0-9]+}},
+        // ARM64-LABEL: {{^ *ret}}
         // On x86 these int fields are native-sized and must remain uncharged.
         // X86: call {{.*}}SharedVectorCopyCost:CheckFields
         // X86-NOT: xmmword ptr
@@ -223,10 +230,15 @@ public class SharedVectorCopyCost
         // X64: call {{.*}}SharedVectorCopyCost:CheckFields
         // X64: call {{.*}}SharedVectorCopyCost:CheckFields
         // X64: call {{.*}}SharedVectorCopyCost:CheckFields
-        // X64: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
         // X64: {{v?movups}} xmmword ptr
-        // X64: {{v?movups}} xmm{{[0-9]+}}, xmmword ptr
         // X64: {{v?movups}} xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        // X64: {{v?movups}} xmmword ptr
+        // X64-LABEL: {{^ *ret}}
         OuterValue source = CreateOuterValue(input);
         CheckFields(source.Value.A, source.Value.B, source.Value.C, source.Value.D);
         CheckFields(source.Value.A, source.Value.B, source.Value.C, source.Value.D);
