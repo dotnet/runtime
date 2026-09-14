@@ -801,7 +801,7 @@ namespace System.IO.Tests.Enumeration
             // If short names are enabled, we should get matches
             if (paths.Length > 0)
             {
-                Assert.True(paths.All(p => p.Contains("LongFileName")));
+                Assert.All(paths, p => Assert.Contains(p, new string[] { longName1.FullName, longName2.FullName }));
             }
 
             // Long* should match long file names by their actual name
