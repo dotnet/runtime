@@ -1,13 +1,15 @@
 <Project>
+  <Import Project="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', '..', 'coreclr', 'vm', 'wasm', 'WasmPInvokeModules.props'))" />
+
   <Target Name="_WasiConfigureReadyToRunPInvokes"
           Condition="'$(PublishReadyToRun)' == 'true'"
           BeforeTargets="_CreateR2RImages">
     <ItemGroup>
       <_WasiReadyToRunPInvokeModule Remove="@(_WasiReadyToRunPInvokeModule)" />
-      <_WasiReadyToRunPInvokeModule Include="libSystem.Native" />
-      <_WasiReadyToRunPInvokeModule Include="libSystem.IO.Compression.Native" />
-      <_WasiReadyToRunPInvokeModule Include="libSystem.Globalization.Native"
-                                     Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasiReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
+      <_WasiReadyToRunPInvokeModule Remove="libSystem.Native.Browser;libSystem.Runtime.InteropServices.JavaScript.Native" />
+      <_WasiReadyToRunPInvokeModule Remove="libSystem.Globalization.Native"
+                                     Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
       <_WasiReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasiReadyToRunPInvokeManifest>
@@ -168,9 +170,9 @@
     <ItemGroup>
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
 
-      <_WasiPInvokeModules Include="libSystem.Native" />
-      <_WasiPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasiPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasiPInvokeModules Include="@(WasmCoreClrFrameworkPInvokeModule)" />
+      <_WasiPInvokeModules Remove="libSystem.Native.Browser;libSystem.Runtime.InteropServices.JavaScript.Native" />
+      <_WasiPInvokeModules Remove="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
     <FilterManagedAssemblies Assemblies="@(_WasiBundledFile)">
