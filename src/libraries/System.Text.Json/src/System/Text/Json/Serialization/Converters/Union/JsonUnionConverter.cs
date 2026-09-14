@@ -31,6 +31,10 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TUnion? value)
         {
             JsonTypeInfo<TUnion> typeInfo = (JsonTypeInfo<TUnion>)state.Current.JsonTypeInfo;
+            if (typeInfo.NumberHandling is { } numberHandling)
+            {
+                state.Current.NumberHandling = numberHandling;
+            }
 
             Func<Type, object?, TUnion>? constructor = typeInfo.UnionConstructor;
             if (constructor is null)
@@ -165,6 +169,10 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             JsonTypeInfo<TUnion> typeInfo = (JsonTypeInfo<TUnion>)state.Current.JsonTypeInfo;
+            if (typeInfo.NumberHandling is { } numberHandling)
+            {
+                state.Current.NumberHandling = numberHandling;
+            }
 
             Func<TUnion, (Type?, object?)>? deconstructor = typeInfo.UnionDeconstructor;
             if (deconstructor is null)

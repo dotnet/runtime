@@ -1788,11 +1788,12 @@ namespace System.Text.Json.SourceGeneration
             {
                 string unionTypeName = unionType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                 Dictionary<JsonValueType, List<string>> valueTypeToTypes = new();
+                JsonNumberHandling? unionNumberHandling = GetNumberHandling(unionType);
 
                 foreach (ITypeSymbol caseType in caseTypes)
                 {
                     string caseTypeName = caseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                    JsonValueType valueTypes = GetSupportedJsonValueTypes(caseType);
+                    JsonValueType valueTypes = GetSupportedJsonValueTypes(caseType, unionNumberHandling);
 
                     for (int flag = 1; flag <= (int)JsonValueType.Boolean; flag <<= 1)
                     {
@@ -1837,7 +1838,7 @@ namespace System.Text.Json.SourceGeneration
             //
             // User-defined converters are conservatively classified as potentially representing
             // every JSON value shape, matching the JsonConverter base implementation.
-            private JsonValueType GetSupportedJsonValueTypes(ITypeSymbol type)
+            private JsonValueType GetSupportedJsonValueTypes(ITypeSymbol type, JsonNumberHandling? unionNumberHandling)
             {
                 if (HasCustomConverterAttribute(type))
                 {
@@ -1877,7 +1878,7 @@ namespace System.Text.Json.SourceGeneration
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal64Type) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal128Type))
                 {
-                    return HasAllowReadingFromString(type)
+                    return (unionNumberHandling ?? GetNumberHandling(type) ?? JsonNumberHandling.Strict).HasFlag(JsonNumberHandling.AllowReadingFromString)
                         ? JsonValueType.Number | JsonValueType.String
                         : JsonValueType.Number;
                 }
@@ -1992,26 +1993,25 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            private bool HasAllowReadingFromString(ITypeSymbol type)
+            private JsonNumberHandling? GetNumberHandling(ITypeSymbol type)
             {
                 INamedTypeSymbol? numberHandlingAttr = _knownSymbols.JsonNumberHandlingAttributeType;
                 if (numberHandlingAttr is null)
                 {
-                    return false;
+                    return null;
                 }
 
                 foreach (AttributeData attr in type.GetAttributes())
                 {
                     if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, numberHandlingAttr) &&
                         attr.ConstructorArguments.Length > 0 &&
-                        attr.ConstructorArguments[0].Value is int handlingValue &&
-                        ((JsonNumberHandling)handlingValue & JsonNumberHandling.AllowReadingFromString) != 0)
+                        attr.ConstructorArguments[0].Value is int handlingValue)
                     {
-                        return true;
+                        return (JsonNumberHandling)handlingValue;
                     }
                 }
 
-                return false;
+                return null;
             }
 
             private bool TryResolveCollectionType(
