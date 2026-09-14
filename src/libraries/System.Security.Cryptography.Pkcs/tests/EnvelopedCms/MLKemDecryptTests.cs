@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     [PlatformSpecific(~TestPlatforms.Windows)]
     [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
-    public static class KemDecryptTests
+    public static class MLKemDecryptTests
     {
         public static TheoryData<byte[]> AesKeyWrapDocuments { get; } = new TheoryData<byte[]>
         {

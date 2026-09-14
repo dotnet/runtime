@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     [PlatformSpecific(~TestPlatforms.Windows)]
     [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
-    public static class KemEncryptTests
+    public static class MLKemEncryptTests
     {
         public static TheoryData<string, byte[], string, int> MlKemParameterSets { get; } =
             new TheoryData<string, byte[], string, int>
