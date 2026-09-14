@@ -1340,6 +1340,28 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
     }
 
+    // We must check that decreasing loops with unsigned control variables can't wrap around.
+    if (!isIncreasingLoop && (stride != 1) && iterInfo->TestTree->IsUnsigned())
+    {
+        bool provenSafe = false;
+        if (iterInfo->HasConstInit && iterInfo->HasConstLimit)
+        {
+            const int constInit  = iterInfo->ConstInitValue;
+            const int constLimit = iterInfo->ConstLimit();
+            if ((constInit >= 0) && (constLimit >= 0) && (constInit >= constLimit) &&
+                (((unsigned)constInit - (unsigned)constLimit) % (unsigned)stride == 0))
+            {
+                provenSafe = true;
+            }
+        }
+
+        if (!provenSafe)
+        {
+            JITDUMP("> Unsigned decreasing loop with stride %d: IV might wrap around 0\n", stride);
+            return false;
+        }
+    }
+
     // If AnalyzeIteration could not prove the loop condition holds on entry,
     // emit an explicit runtime entry guard as one of the cloning conditions.
     // The fast path is then only entered when "init TestOper limit" holds.

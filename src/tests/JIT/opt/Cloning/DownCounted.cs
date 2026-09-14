@@ -49,6 +49,50 @@ public class DownCounted
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGT(int[] a, uint n, uint limit)
+    {
+        int sum = 0;
+        for (uint i = n; i > limit; i -= 3)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGE(int[] a, uint n, uint limit)
+    {
+        int sum = 0;
+        for (uint i = n; i >= limit; i -= 3)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedSpanGT(Span<int> a, uint n, uint limit)
+    {
+        int sum = 0;
+        for (uint i = n; i > limit; i -= 3)
+        {
+            sum += a[(int)i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedSpanGE(Span<int> a, uint n, uint limit)
+    {
+        int sum = 0;
+        for (uint i = n; i >= limit; i -= 3)
+        {
+            sum += a[(int)i];
+        }
+        return sum;
+    }
+
     [Fact]
     public static int SpanTest()
     {
@@ -67,6 +111,19 @@ public class DownCounted
         return result;
     }
 
+    [Fact]
+    public static void UnsignedUnderflowTest()
+    {
+        int[] a = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
+        Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGT(a, 7, 0));
+        Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGE(a, 7, 1));
+        Assert.Throws<IndexOutOfRangeException>(() => UnsignedSpanGT(a, 7, 0));
+        Assert.Throws<IndexOutOfRangeException>(() => UnsignedSpanGE(a, 7, 1));
+
+        Assert.Equal(11, UnsignedArrayGT(a, 7, 1));
+        Assert.Equal(11, UnsignedArrayGE(a, 7, 2));
+        Assert.Equal(11, UnsignedSpanGT(a, 7, 1));
+        Assert.Equal(11, UnsignedSpanGE(a, 7, 2));
+    }
 }
-    
