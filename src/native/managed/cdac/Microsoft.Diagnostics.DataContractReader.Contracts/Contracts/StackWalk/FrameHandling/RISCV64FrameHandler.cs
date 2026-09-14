@@ -19,7 +19,7 @@ internal class RISCV64FrameHandler(Target target, ContextHolder<RISCV64Context> 
         _holder.InstructionPointer = frame.ReturnAddress;
 
         // The stack pointer is the address immediately following HijackArgs
-        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        uint hijackArgsSize = Data.HijackArgs.GetSize(_target);
         Debug.Assert(hijackArgsSize % 8 == 0, "HijackArgs contains register values and should be a multiple of the pointer size (8 bytes for RISC-V64)");
         // The stack must be multiple of 16. So if hijackArgsSize is not multiple of 16 then there must be padding of 8 bytes
         hijackArgsSize += hijackArgsSize % 16;

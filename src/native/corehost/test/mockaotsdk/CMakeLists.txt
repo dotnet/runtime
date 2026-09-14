@@ -3,6 +3,11 @@
 
 add_library(mockaotsdk SHARED mockaotsdk.cpp)
 
+if(CLR_CMAKE_TARGET_WIN32)
+    target_sources(mockaotsdk PRIVATE
+        mockaotsdk.def)
+endif()
+
 target_link_libraries(mockaotsdk PRIVATE hostmisc)
 
 target_compile_definitions(mockaotsdk PRIVATE EXPORT_SHARED_API)

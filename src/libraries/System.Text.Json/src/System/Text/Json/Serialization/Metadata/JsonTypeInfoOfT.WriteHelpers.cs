@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Even though this is already handled by JsonMetadataServicesConverter,
                 // this avoids creating a WriteStack and calling into the converter infrastructure.
 
-                Debug.Assert(SerializeHandler != null);
+                Debug.Assert(SerializeHandler is not null);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 SerializeHandler(writer, rootValue!);
@@ -96,7 +96,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Short-circuit calls into SerializeHandler, if the `CanUseSerializeHandlerInStreaming` heuristic allows it.
 
-                Debug.Assert(SerializeHandler != null);
+                Debug.Assert(SerializeHandler is not null);
                 Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
@@ -256,7 +256,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Short-circuit calls into SerializeHandler, if the `CanUseSerializeHandlerInStreaming` heuristic allows it.
 
-                Debug.Assert(SerializeHandler != null);
+                Debug.Assert(SerializeHandler is not null);
                 Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
@@ -312,7 +312,7 @@ namespace System.Text.Json.Serialization.Metadata
                         bufferWriter.WriteToStream(utf8Json);
                         bufferWriter.Clear();
 
-                        Debug.Assert(state.PendingTask == null);
+                        Debug.Assert(state.PendingTask is null);
                     } while (!isFinalBlock);
 
                     if (CanUseSerializeHandler)

@@ -31,6 +31,10 @@ namespace System.Numerics
         /// <summary>Splits a shift by int.MinValue into two shifts to avoid negation overflow (-int.MinValue overflows int).</summary>
         private const int MinIntSplitShift = int.MaxValue - BitsPerUInt32 + 1;
 
+        // Scanning and slicing starts paying for itself at 32 skipped limbs.
+        private const int AddSubtractZeroLimbThreshold = 32;
+        private const int Pow7CombinationThreshold = 128;
+
         /// <summary>
         /// Maximum number of limbs in a <see cref="BigInteger"/>. Restricts allocations to ~256MB,
         /// supporting almost 646,456,974 digits.
@@ -856,22 +860,22 @@ namespace System.Numerics
             return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<BigInteger>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBigIntegerPartial(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<BigInteger>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int bytesConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int bytesConsumed)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBigIntegerPartial(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<BigInteger>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBigIntegerPartial(MemoryMarshal.Cast<char, Utf16Char>(s), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
@@ -947,7 +951,20 @@ namespace System.Numerics
 
             Debug.Assert(divisor._bits is not null);
 
-            if (dividend._bits.Length < divisor._bits.Length)
+            if (TryGetPowerOfTwoExponent(divisor, out int powerOfTwoExponent))
+            {
+                BigInteger quotient = DivideByPowerOfTwo(dividend, divisor, powerOfTwoExponent);
+                remainder = RemainderByPowerOfTwo(dividend, powerOfTwoExponent);
+                return quotient;
+            }
+
+            int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
+                ? BigIntegerCalculator.GetCommonLimbOffset(dividend._bits, divisor._bits)
+                : 0;
+            ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
+
+            if (dividendBits.Length < divisorBits.Length)
             {
                 remainder = dividend;
                 return s_zero;
@@ -957,10 +974,18 @@ namespace System.Numerics
                 int size = dividend._bits.Length;
                 Span<nuint> rest = RentedBuffer.Create(size, out RentedBuffer restBuffer);
 
-                size = dividend._bits.Length - divisor._bits.Length + 1;
+                size = dividendBits.Length - divisorBits.Length + 1;
                 Span<nuint> quotient = RentedBuffer.Create(size, out RentedBuffer quotientBuffer);
 
-                BigIntegerCalculator.Divide(dividend._bits, divisor._bits, quotient, rest);
+                Span<nuint> remainderBits = rest.Slice(commonOffset, dividendBits.Length);
+                if (ShouldUseSpecialDivision(dividendBits, divisorBits))
+                {
+                    BigIntegerCalculator.DivideSpecial(dividendBits, divisorBits, quotient, remainderBits);
+                }
+                else
+                {
+                    BigIntegerCalculator.Divide(dividendBits, divisorBits, quotient, remainderBits);
+                }
 
                 remainder = new(rest, dividend._sign < 0);
                 BigInteger result = new(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
@@ -1046,6 +1071,26 @@ namespace System.Numerics
 
         public static BigInteger GreatestCommonDivisor(BigInteger left, BigInteger right)
         {
+            if (left.IsZero)
+            {
+                return Abs(right);
+            }
+
+            if (right.IsZero)
+            {
+                return Abs(left);
+            }
+
+            if (TryGetPowerOfTwoExponent(left, out int powerOfTwoExponent))
+            {
+                return CreatePowerOfTwo(Math.Min(powerOfTwoExponent, GetTrailingZeroCount(right)), negative: false);
+            }
+
+            if (TryGetPowerOfTwoExponent(right, out powerOfTwoExponent))
+            {
+                return CreatePowerOfTwo(Math.Min(powerOfTwoExponent, GetTrailingZeroCount(left)), negative: false);
+            }
+
             bool trivialLeft = left._bits is null;
             bool trivialRight = right._bits is null;
 
@@ -1071,13 +1116,24 @@ namespace System.Numerics
             }
 
             Debug.Assert(left._bits is not null && right._bits is not null);
-
-            return BigIntegerCalculator.Compare(left._bits, right._bits) < 0
-                ? GreatestCommonDivisor(right._bits, left._bits)
-                : GreatestCommonDivisor(left._bits, right._bits);
+            return GreatestCommonDivisor(left._bits, right._bits);
         }
 
-        private static BigInteger GreatestCommonDivisor(ReadOnlySpan<nuint> leftBits, ReadOnlySpan<nuint> rightBits)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static BigInteger GreatestCommonDivisor(nuint[] leftBits, nuint[] rightBits)
+        {
+            int commonOffset = leftBits[0] == 0 && rightBits[0] == 0
+                ? BigIntegerCalculator.GetCommonLimbOffset(leftBits, rightBits)
+                : 0;
+            ReadOnlySpan<nuint> reducedLeft = leftBits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> reducedRight = rightBits.AsSpan(commonOffset);
+
+            return BigIntegerCalculator.Compare(reducedLeft, reducedRight) < 0
+                ? GreatestCommonDivisor(reducedRight, reducedLeft, commonOffset)
+                : GreatestCommonDivisor(reducedLeft, reducedRight, commonOffset);
+        }
+
+        private static BigInteger GreatestCommonDivisor(ReadOnlySpan<nuint> leftBits, ReadOnlySpan<nuint> rightBits, int resultOffset)
         {
             Debug.Assert(BigIntegerCalculator.Compare(leftBits, rightBits) >= 0);
 
@@ -1103,11 +1159,18 @@ namespace System.Numerics
             }
             else
             {
-                Span<nuint> bits = RentedBuffer.Create(leftBits.Length, out RentedBuffer bitsBuffer);
+                Span<nuint> bits = RentedBuffer.Create(leftBits.Length + resultOffset, out RentedBuffer bitsBuffer);
 
-                BigIntegerCalculator.Gcd(leftBits, rightBits, bits);
+                BigIntegerCalculator.Gcd(leftBits, rightBits, bits[resultOffset..]);
                 result = new BigInteger(bits, negative: false);
                 bitsBuffer.Dispose();
+
+                return result;
+            }
+
+            if (resultOffset != 0)
+            {
+                result <<= checked(resultOffset * BigIntegerCalculator.BitsPerLimb);
             }
 
             return result;
@@ -1123,9 +1186,150 @@ namespace System.Numerics
             return left.CompareTo(right) <= 0 ? left : right;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryGetPowerOfTwoExponent(BigInteger value, out int exponent)
+        {
+            if (value._bits is null)
+            {
+                nuint magnitude = NumericsHelpers.Abs(value._sign);
+                if (!BitOperations.IsPow2(magnitude))
+                {
+                    exponent = 0;
+                    return false;
+                }
+
+                exponent = BitOperations.TrailingZeroCount(magnitude);
+                return true;
+            }
+
+            ReadOnlySpan<nuint> bits = value._bits;
+
+            if (bits[0] != 0)
+            {
+                if (bits.Length == 1 && BitOperations.IsPow2(bits[0]))
+                {
+                    exponent = BitOperations.TrailingZeroCount(bits[0]);
+                    return true;
+                }
+
+                exponent = 0;
+                return false;
+            }
+
+            if (!BitOperations.IsPow2(bits[^1]))
+            {
+                exponent = 0;
+                return false;
+            }
+
+            int nonZeroIndex = bits.IndexOfAnyExcept((nuint)0);
+            if (nonZeroIndex != bits.Length - 1)
+            {
+                exponent = 0;
+                return false;
+            }
+
+            exponent = checked((nonZeroIndex * BigIntegerCalculator.BitsPerLimb)
+                + BitOperations.TrailingZeroCount(bits[^1]));
+            return true;
+        }
+
+        private static BigInteger CreatePowerOfTwo(int exponent, bool negative)
+        {
+            BigInteger result = s_one << exponent;
+            return negative ? -result : result;
+        }
+
+        private static BigInteger DivideByPowerOfTwo(BigInteger dividend, BigInteger divisor, int exponent)
+        {
+            bool negative = (dividend._sign < 0) != (divisor._sign < 0);
+            BigInteger magnitude = dividend._sign < 0 ? -dividend : dividend;
+            BigInteger quotient = magnitude >> exponent;
+            return negative ? -quotient : quotient;
+        }
+
+        private static BigInteger RemainderByPowerOfTwo(BigInteger dividend, int exponent)
+        {
+            Debug.Assert(dividend._bits is not null);
+
+            if (exponent == 0)
+            {
+                return s_zero;
+            }
+
+            ReadOnlySpan<nuint> dividendBits = dividend._bits;
+            int bitsPerLimb = BigIntegerCalculator.BitsPerLimb;
+            int topBits = bitsPerLimb - BitOperations.LeadingZeroCount(dividendBits[^1]);
+            long bitLength = ((long)dividendBits.Length - 1) * bitsPerLimb + topBits;
+            if (exponent >= bitLength)
+            {
+                return dividend;
+            }
+
+            int limbCount = Math.DivRem(exponent, bitsPerLimb, out int partialBits);
+            if (partialBits == 0)
+            {
+                return new BigInteger(dividendBits[..limbCount], dividend._sign < 0);
+            }
+
+            Span<nuint> bits = RentedBuffer.Create(limbCount + 1, out RentedBuffer bitsBuffer);
+            dividendBits[..(limbCount + 1)].CopyTo(bits);
+            bits[^1] &= nuint.MaxValue >> (bitsPerLimb - partialBits);
+            BigInteger remainder = new(bits, dividend._sign < 0);
+            bitsBuffer.Dispose();
+            return remainder;
+        }
+
+        private static void ShiftLeftInPlace(Span<nuint> bits, int shift)
+        {
+            int length = BigIntegerCalculator.ActualLength(bits);
+            int digitShift = Math.DivRem(shift, BigIntegerCalculator.BitsPerLimb, out int smallShift);
+            bits[..length].CopyTo(bits[digitShift..]);
+            bits[..digitShift].Clear();
+
+            if (smallShift != 0)
+            {
+                Span<nuint> shiftedBits = bits.Slice(digitShift, length);
+                BigIntegerCalculator.LeftShiftSelf(shiftedBits, smallShift, out nuint carry);
+
+                if (carry != 0)
+                {
+                    bits[digitShift + length] = carry;
+                }
+            }
+        }
+
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(exponent.Sign, nameof(exponent));
+
+            if (TryGetPowerOfTwoExponent(value, out int valueExponent)
+                && TryGetPowerOfTwoExponent(modulus, out int modulusExponent))
+            {
+                if (modulusExponent == 0)
+                {
+                    return s_zero;
+                }
+
+                if (exponent.IsZero)
+                {
+                    return s_one;
+                }
+
+                if (valueExponent == 0)
+                {
+                    return value._sign < 0 && !exponent.IsEven ? s_minusOne : s_one;
+                }
+
+                int maximumExponent = (modulusExponent - 1) / valueExponent;
+                if (exponent > maximumExponent)
+                {
+                    return s_zero;
+                }
+
+                int resultExponent = valueExponent * (int)exponent;
+                return CreatePowerOfTwo(resultExponent, value._sign < 0 && !exponent.IsEven);
+            }
 
             bool trivialValue = value._bits is null;
             bool trivialExponent = exponent._bits is null;
@@ -1188,6 +1392,17 @@ namespace System.Numerics
                 return value;
             }
 
+            if (TryGetPowerOfTwoExponent(value, out int powerOfTwoExponent))
+            {
+                int resultExponent = checked(powerOfTwoExponent * exponent);
+                return CreatePowerOfTwo(resultExponent, value._sign < 0 && (exponent & 1) != 0);
+            }
+
+            if (value.IsZero)
+            {
+                return value;
+            }
+
             bool trivialValue = value._bits is null;
 
             nuint power = NumericsHelpers.Abs(exponent);
@@ -1205,15 +1420,243 @@ namespace System.Numerics
                     return (exponent & 1) != 0 ? value : s_one;
                 }
 
-                if (value._sign == 0)
+                nuint magnitude = NumericsHelpers.Abs(value._sign);
+                int shift = BitOperations.TrailingZeroCount(magnitude);
+                nuint oddMagnitude = magnitude >> shift;
+                nuint remainingMagnitude = oddMagnitude;
+                uint factorResidue = (uint)oddMagnitude % (3 * 5 * 7);
+                bool hasFactorThree = factorResidue % 3 == 0;
+                bool hasFactorFive = factorResidue % 5 == 0;
+                bool hasFactorSeven = factorResidue % 7 == 0;
+                int distinctFactorCount = (hasFactorThree ? 1 : 0)
+                    + (hasFactorFive ? 1 : 0)
+                    + (hasFactorSeven ? 1 : 0);
+                bool extractFactors = distinctFactorCount <= 2
+                    && !(hasFactorSeven
+                        && distinctFactorCount == 2
+                        && exponent < Pow7CombinationThreshold);
+
+                if (!extractFactors)
                 {
-                    return value;
+                    int genericSize = BigIntegerCalculator.PowBound(power, 1);
+                    Span<nuint> genericBits = RentedBuffer.Create(genericSize, out RentedBuffer genericBuffer);
+
+                    BigIntegerCalculator.Pow(magnitude, power, genericBits);
+                    result = new BigInteger(genericBits, value._sign < 0 && (exponent & 1) != 0);
+                    genericBuffer.Dispose();
+                    return result;
                 }
 
-                int size = BigIntegerCalculator.PowBound(power, 1);
+                int powerOfThree = hasFactorThree
+                    ? BigIntegerCalculator.ExtractFactorPower(
+                        ref remainingMagnitude, 3, BigIntegerCalculator.Pow3FactorizationPowers)
+                    : 0;
+                int powerOfFive = hasFactorFive
+                    ? BigIntegerCalculator.ExtractFactorPower(
+                        ref remainingMagnitude, 5, BigIntegerCalculator.Pow5FactorizationPowers)
+                    : 0;
+                int powerOfSeven = hasFactorSeven
+                    ? BigIntegerCalculator.ExtractFactorPower(
+                        ref remainingMagnitude, 7, BigIntegerCalculator.Pow7FactorizationPowers)
+                    : 0;
+
+                ReadOnlySpan<int> powerIndices = default;
+                ReadOnlySpan<nuint> powers = default;
+                int powerTableStartIndex = 0;
+                nuint tableBase = 0;
+
+                if (remainingMagnitude == 1 && powerOfThree != 0 && powerOfFive == 0 && powerOfSeven == 0)
+                {
+                    tableBase = 3;
+                    powerIndices = BigIntegerCalculator.Pow3TableIndices;
+                    powers = BigIntegerCalculator.Pow3Table;
+                    powerTableStartIndex = BigIntegerCalculator.Pow3TableStartIndex;
+                }
+                else if (remainingMagnitude == 1 && powerOfThree == 0 && powerOfFive != 0 && powerOfSeven == 0)
+                {
+                    tableBase = 5;
+                    powerIndices = BigIntegerCalculator.Pow5TableIndices;
+                    powers = BigIntegerCalculator.Pow5Table;
+                    powerTableStartIndex = BigIntegerCalculator.Pow5TableStartIndex;
+                }
+                else if (remainingMagnitude == 1 && powerOfThree == 0 && powerOfFive == 0 && powerOfSeven != 0)
+                {
+                    tableBase = 7;
+                    powerIndices = BigIntegerCalculator.Pow7TableIndices;
+                    powers = BigIntegerCalculator.Pow7Table;
+                    powerTableStartIndex = BigIntegerCalculator.Pow7TableStartIndex;
+                }
+
+                bool usePowerTable = !powers.IsEmpty;
+                bool useMultiplePowerTables = remainingMagnitude == 1
+                    && distinctFactorCount == 2;
+                nuint tablePower = usePowerTable
+                    ? checked(power * (uint)(powerOfThree + powerOfFive + powerOfSeven))
+                    : 0;
+
+                (ulong LowerBound, ulong UpperBound) bitLengthBounds = default;
+
+                if (usePowerTable || useMultiplePowerTables)
+                {
+                    bitLengthBounds = BigIntegerCalculator.GetPowBitLengthBounds(
+                        powerOfThree, powerOfFive, powerOfSeven, shift, exponent);
+
+                    if (((bitLengthBounds.LowerBound + (uint)BigIntegerCalculator.BitsPerLimb - 1)
+                        / (uint)BigIntegerCalculator.BitsPerLimb) > (uint)MaxLength)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                }
+
+                if (usePowerTable && tablePower <= 1_024 && BitOperations.IsPow2(tablePower))
+                {
+                    int powerIndex = BitOperations.Log2(tablePower);
+
+                    if (powerIndex >= powerTableStartIndex)
+                    {
+                        ReadOnlySpan<nuint> exactBits = BigIntegerCalculator.GetPower(
+                            powerIndices,
+                            powers,
+                            powerIndex - powerTableStartIndex);
+                        BigInteger exactPower = exactBits.Length == 1 && exactBits[0] <= int.MaxValue
+                            ? new BigInteger((int)exactBits[0])
+                            : new BigInteger(exactBits, negative: false);
+
+                        if (shift != 0)
+                        {
+                            exactPower <<= checked(shift * exponent);
+                        }
+
+                        return value._sign < 0 && (exponent & 1) != 0 ? -exactPower : exactPower;
+                    }
+                }
+
+                int size;
+
+                if (usePowerTable || useMultiplePowerTables)
+                {
+                    ulong finalSize = (bitLengthBounds.UpperBound + (uint)BigIntegerCalculator.BitsPerLimb - 1)
+                        / (uint)BigIntegerCalculator.BitsPerLimb;
+                    Debug.Assert(finalSize <= (uint)MaxLength + 1);
+                    size = checked((int)finalSize + 1);
+                }
+                else
+                {
+                    size = BigIntegerCalculator.PowBound(power, 1);
+                }
+
                 Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
 
-                BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), power, bits);
+                if (usePowerTable)
+                {
+                    BigIntegerCalculator.Pow(
+                        tableBase,
+                        powerTableStartIndex,
+                        powerIndices,
+                        powers,
+                        tablePower,
+                        bits);
+
+                    if (shift != 0)
+                    {
+                        ShiftLeftInPlace(bits, checked(shift * exponent));
+                    }
+                }
+                else if (useMultiplePowerTables)
+                {
+                    nuint firstBase;
+                    int firstPower;
+                    int firstTableStartIndex;
+                    ReadOnlySpan<int> firstPowerIndices;
+                    ReadOnlySpan<nuint> firstPowers;
+
+                    if (powerOfThree != 0)
+                    {
+                        firstBase = 3;
+                        firstPower = powerOfThree;
+                        firstTableStartIndex = BigIntegerCalculator.Pow3TableStartIndex;
+                        firstPowerIndices = BigIntegerCalculator.Pow3TableIndices;
+                        firstPowers = BigIntegerCalculator.Pow3Table;
+                    }
+                    else
+                    {
+                        firstBase = 5;
+                        firstPower = powerOfFive;
+                        firstTableStartIndex = BigIntegerCalculator.Pow5TableStartIndex;
+                        firstPowerIndices = BigIntegerCalculator.Pow5TableIndices;
+                        firstPowers = BigIntegerCalculator.Pow5Table;
+                    }
+
+                    nuint secondBase = powerOfSeven != 0 ? 7u : 5u;
+                    int secondPower = powerOfSeven != 0 ? powerOfSeven : powerOfFive;
+                    int secondTableStartIndex = powerOfSeven != 0
+                        ? BigIntegerCalculator.Pow7TableStartIndex
+                        : BigIntegerCalculator.Pow5TableStartIndex;
+                    ReadOnlySpan<int> secondPowerIndices = powerOfSeven != 0
+                        ? BigIntegerCalculator.Pow7TableIndices
+                        : BigIntegerCalculator.Pow5TableIndices;
+                    ReadOnlySpan<nuint> secondPowers = powerOfSeven != 0
+                        ? BigIntegerCalculator.Pow7Table
+                        : BigIntegerCalculator.Pow5Table;
+
+                    nuint firstExponent = checked(power * (uint)firstPower);
+                    nuint secondExponent = checked(power * (uint)secondPower);
+                    ulong firstBitLength = BigIntegerCalculator.GetPowBitLengthBounds(
+                        firstBase == 3 ? 1 : 0,
+                        firstBase == 5 ? 1 : 0,
+                        0,
+                        0,
+                        checked(exponent * firstPower)).UpperBound;
+                    ulong secondBitLength = BigIntegerCalculator.GetPowBitLengthBounds(
+                        0,
+                        secondBase == 5 ? 1 : 0,
+                        secondBase == 7 ? 1 : 0,
+                        0,
+                        checked(exponent * secondPower)).UpperBound;
+                    int firstSize = checked((int)((firstBitLength
+                        + (uint)BigIntegerCalculator.BitsPerLimb - 1) / (uint)BigIntegerCalculator.BitsPerLimb) + 1);
+                    int secondSize = checked((int)((secondBitLength
+                        + (uint)BigIntegerCalculator.BitsPerLimb - 1) / (uint)BigIntegerCalculator.BitsPerLimb) + 1);
+
+                    Span<nuint> firstBits = RentedBuffer.Create(firstSize, out RentedBuffer firstBuffer);
+                    BigIntegerCalculator.Pow(
+                        firstBase,
+                        firstTableStartIndex,
+                        firstPowerIndices,
+                        firstPowers,
+                        firstExponent,
+                        firstBits);
+
+                    Span<nuint> secondBits = RentedBuffer.Create(secondSize, out RentedBuffer secondBuffer);
+                    BigIntegerCalculator.Pow(
+                        secondBase,
+                        secondTableStartIndex,
+                        secondPowerIndices,
+                        secondPowers,
+                        secondExponent,
+                        secondBits);
+
+                    int firstLength = BigIntegerCalculator.ActualLength(firstBits);
+                    int secondLength = BigIntegerCalculator.ActualLength(secondBits);
+                    int productLength = firstLength + secondLength;
+                    BigIntegerCalculator.Multiply(
+                        firstBits[..firstLength],
+                        secondBits[..secondLength],
+                        bits[..productLength]);
+
+                    if (shift != 0)
+                    {
+                        ShiftLeftInPlace(bits, checked(shift * exponent));
+                    }
+
+                    secondBuffer.Dispose();
+                    firstBuffer.Dispose();
+                }
+                else
+                {
+                    BigIntegerCalculator.Pow(magnitude, power, bits);
+                }
+
                 result = new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0);
                 bitsBuffer.Dispose();
             }
@@ -1893,6 +2336,15 @@ namespace System.Numerics
 
             Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
+            if (leftBits.Length > AddSubtractZeroLimbThreshold
+                && rightBits.Length > AddSubtractZeroLimbThreshold
+                && leftBits[0] == 0
+                && rightBits[0] == 0
+                && TryAddWithCommonLimbOffset(leftBits, leftSign, rightBits, out BigInteger fastResult))
+            {
+                return fastResult;
+            }
+
             BigInteger result;
 
             if (trivialLeft)
@@ -1962,6 +2414,15 @@ namespace System.Numerics
 
             Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
+            if (leftBits.Length > AddSubtractZeroLimbThreshold
+                && rightBits.Length > AddSubtractZeroLimbThreshold
+                && leftBits[0] == 0
+                && rightBits[0] == 0
+                && TrySubtractWithCommonLimbOffset(leftBits, leftSign, rightBits, out BigInteger fastResult))
+            {
+                return fastResult;
+            }
+
             BigInteger result;
 
             if (trivialLeft)
@@ -2010,6 +2471,67 @@ namespace System.Numerics
             return result;
         }
 
+        private static bool TryAddWithCommonLimbOffset(
+            ReadOnlySpan<nuint> leftBits,
+            int leftSign,
+            ReadOnlySpan<nuint> rightBits,
+            out BigInteger result)
+        {
+            int commonOffset = BigIntegerCalculator.GetCommonLimbOffset(leftBits, rightBits);
+            if (commonOffset < AddSubtractZeroLimbThreshold)
+            {
+                result = default;
+                return false;
+            }
+
+            ReadOnlySpan<nuint> reducedLeft = leftBits[commonOffset..];
+            ReadOnlySpan<nuint> reducedRight = rightBits[commonOffset..];
+            int size = Math.Max(leftBits.Length, rightBits.Length) + 1;
+            Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
+            Span<nuint> reducedBits = bits[commonOffset..];
+
+            if (reducedLeft.Length < reducedRight.Length)
+            {
+                BigIntegerCalculator.Add(reducedRight, reducedLeft, reducedBits);
+            }
+            else
+            {
+                BigIntegerCalculator.Add(reducedLeft, reducedRight, reducedBits);
+            }
+
+            result = new BigInteger(bits, leftSign < 0);
+            bitsBuffer.Dispose();
+            return true;
+        }
+
+        private static bool TrySubtractWithCommonLimbOffset(
+            ReadOnlySpan<nuint> leftBits,
+            int leftSign,
+            ReadOnlySpan<nuint> rightBits,
+            out BigInteger result)
+        {
+            int commonOffset = BigIntegerCalculator.GetCommonLimbOffset(leftBits, rightBits);
+            if (commonOffset < AddSubtractZeroLimbThreshold)
+            {
+                result = default;
+                return false;
+            }
+
+            ReadOnlySpan<nuint> reducedLeft = leftBits[commonOffset..];
+            ReadOnlySpan<nuint> reducedRight = rightBits[commonOffset..];
+            int compare = BigIntegerCalculator.Compare(reducedLeft, reducedRight);
+            ReadOnlySpan<nuint> large = compare < 0 ? reducedRight : reducedLeft;
+            ReadOnlySpan<nuint> small = compare < 0 ? reducedLeft : reducedRight;
+            int size = Math.Max(leftBits.Length, rightBits.Length);
+            Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
+
+            BigIntegerCalculator.Subtract(large, small, bits.Slice(commonOffset, large.Length));
+
+            result = new BigInteger(bits, compare < 0 ? leftSign >= 0 : leftSign < 0);
+            bitsBuffer.Dispose();
+            return true;
+        }
+
         //
         // Explicit Conversions From BigInteger
         //
@@ -2031,15 +2553,41 @@ namespace System.Numerics
             return checked((decimal)(Int128)value);
         }
 
-        public static explicit operator double(BigInteger value) => ConvertToDouble(value, roundToOdd: false);
-
-        // Converts a big integer to an IEEE 754 double. When `roundToOdd` is false the result is the
-        // correctly rounded (round-to-nearest, ties-to-even) double. When it is true the result is
-        // instead rounded to odd: the mantissa's least significant bit is forced set whenever any
-        // information is discarded. Re-rounding such a value to a narrower type (float, Half,
-        // BFloat16) then yields the correctly rounded narrow value, avoiding double rounding.
-        private static double ConvertToDouble(BigInteger value, bool roundToOdd)
+        public static explicit operator double(BigInteger value)
         {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return sign;
+            }
+
+            // Magnitudes that fit in a single 64-bit value convert directly through the correctly
+            // rounded ulong -> double conversion, which the hardware handles far more cheaply than
+            // the general limb scan below. Anything wider falls through to that scan, which stays
+            // cheap until the lower limbs actually have to be examined for rounding.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                double result = (double)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+
+            return ConvertToDouble(value, precision: 53);
+        }
+
+        // Converts a big integer to an IEEE 754 double whose significand is rounded to `precision`
+        // significant bits using round-to-nearest, ties-to-even. For `precision` == 53 this is the
+        // correctly rounded double. For a narrower target (24 for float, 8 for BFloat16) the result is
+        // a double that already lies exactly on that target's grid, so the subsequent narrowing cast
+        // is exact and no double rounding can occur. This relies on every bits[]-backed magnitude
+        // being at least 2^31, which is comfortably within the normal range of every target, so a
+        // target subnormal (which would need more significand bits than the target holds) is never
+        // produced and rounding a single time at `precision` bits is sufficient.
+        private static double ConvertToDouble(BigInteger value, int precision)
+        {
+            Debug.Assert(precision is > 0 and <= 53);
+
             int sign = value._sign;
             nuint[]? bits = value._bits;
 
@@ -2061,15 +2609,17 @@ namespace System.Numerics
             }
 
             // Gather the top 64 significant bits of the magnitude into `man`, with the most
-            // significant set bit at bit 63, the position of that bit within the full magnitude
-            // in `topBit`, and whether any lower (uncaptured) bits are set in `sticky`. These are
-            // everything needed to round to the nearest double using round-to-nearest, ties-to-even.
-            // `man` must be 64 bits wide regardless of the limb width, since a single 32-bit limb
-            // cannot hold the full significand. The top limb is always non-zero, so the leading
-            // zero count is strictly less than the limb width.
+            // significant set bit at bit 63, and the position of that bit within the full magnitude
+            // in `topBit`. `man` must be 64 bits wide regardless of the limb width, since a single
+            // 32-bit limb cannot hold the full significand. The top limb is always non-zero, so the
+            // leading zero count is strictly less than the limb width. `sticky` records whether any
+            // bit below `man` is set; the bits captured within the top limbs are folded in here and
+            // the remaining `lowerLimbCount` limbs are scanned lazily below, only when the rounding
+            // decision actually depends on them.
             ulong man;
             int topBit;
             bool sticky;
+            int lowerLimbCount;
 
             if (nint.Size == 8)
             {
@@ -2080,9 +2630,10 @@ namespace System.Numerics
                 topBit = (length - 1) * 64 + (63 - z);
                 man = z == 0 ? h : (h << z) | (m >> (64 - z));
 
-                // Any bits of `m` not captured in `man`, plus all lower limbs, are sticky.
+                // Any bits of `m` not captured in `man` are sticky; lower limbs are scanned later.
                 ulong mLow = z == 0 ? m : (m & ((1UL << (64 - z)) - 1));
-                sticky = mLow != 0 || (length > 2 && bits.AsSpan(0, length - 2).ContainsAnyExcept((nuint)0));
+                sticky = mLow != 0;
+                lowerLimbCount = length - 2;
             }
             else
             {
@@ -2094,32 +2645,33 @@ namespace System.Numerics
                 topBit = (length - 1) * 32 + (31 - z);
                 man = (h << (32 + z)) | (m << z) | (l >> (32 - z));
 
-                // Any bits of `l` not captured in `man`, plus all lower limbs, are sticky.
+                // Any bits of `l` not captured in `man` are sticky; lower limbs are scanned later.
                 ulong lLow = l & ((1UL << (32 - z)) - 1);
-                sticky = lLow != 0 || (length > 3 && bits.AsSpan(0, length - 3).ContainsAnyExcept((nuint)0));
+                sticky = lLow != 0;
+                lowerLimbCount = length - 3;
             }
 
-            // `man` holds 64 bits with the leading 1 at bit 63; a double keeps 53 significant
-            // bits, so bits [63:11] form the significand, bit 10 is the round bit, and bits
-            // [9:0] (together with `sticky`) determine whether we round up.
-            sticky |= (man & 0x3FF) != 0;
-            ulong roundBit = (man >> 10) & 1;
-            ulong mantissa = man >> 11;
+            // `man` holds 64 bits with the leading 1 at bit 63. Keep the top `precision` bits as the
+            // significand; the next bit down is the round bit and everything below it (together with
+            // `sticky`) determines whether we round up.
+            int shift = 64 - precision;
+            sticky |= (man & ((1UL << (shift - 1)) - 1)) != 0;
+            ulong roundBit = (man >> (shift - 1)) & 1;
+            ulong mantissa = man >> shift;
 
-            if (roundToOdd)
+            // The lower limbs only affect the result when `sticky` is not already set and we are at
+            // the halfway point (the round bit is set); otherwise the rounding decision is already
+            // determined. Scanning them is O(n), so skip it whenever we can.
+            if (!sticky && lowerLimbCount > 0 && roundBit != 0)
             {
-                // Force the least significant bit set whenever anything was discarded. This never
-                // carries, so `topBit` is unchanged and the value stays normalized.
-                if (roundBit != 0 || sticky)
-                {
-                    mantissa |= 1;
-                }
+                sticky = bits.AsSpan(0, lowerLimbCount).ContainsAnyExcept((nuint)0);
             }
-            else if (roundBit != 0 && (sticky || (mantissa & 1) != 0))
+
+            if (roundBit != 0 && (sticky || (mantissa & 1) != 0))
             {
                 mantissa++;
 
-                if ((mantissa >> 53) != 0)
+                if ((mantissa >> precision) != 0)
                 {
                     // Rounding carried into a new leading bit; renormalize.
                     mantissa >>= 1;
@@ -2135,7 +2687,11 @@ namespace System.Numerics
                 return sign == 1 ? double.PositiveInfinity : double.NegativeInfinity;
             }
 
-            ulong result = (mantissa & 0x000F_FFFF_FFFF_FFFF) | ((ulong)biasedExp << 52);
+            // `mantissa` holds `precision` significant bits with the leading 1 at bit `precision - 1`.
+            // Shift it up so that leading 1 lands at bit 52, then drop it to form the stored 52-bit
+            // significand. For a narrower `precision` the low bits are left zero, placing the value
+            // exactly on the target type's grid.
+            ulong result = ((mantissa << (53 - precision)) & 0x000F_FFFF_FFFF_FFFF) | ((ulong)biasedExp << 52);
 
             if (sign < 0)
             {
@@ -2145,15 +2701,65 @@ namespace System.Numerics
             return BitConverter.UInt64BitsToDouble(result);
         }
 
+        // Reconstructs the unsigned magnitude of a bits[]-backed BigInteger that is known to fit in
+        // 64 bits (a single 64-bit limb, or at most two 32-bit limbs).
+        private static ulong ToUInt64(nuint[] bits)
+        {
+            Debug.Assert((uint)bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb);
+
+            ulong result = bits[0];
+
+            if (BigIntegerCalculator.BitsPerLimb == 32 && bits.Length > 1)
+            {
+                result |= (ulong)bits[1] << 32;
+            }
+
+            return result;
+        }
+
         /// <summary>Explicitly converts a big integer to a <see cref="Half" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="Half" /> value.</returns>
-        public static explicit operator Half(BigInteger value) => (Half)ConvertToDouble(value, roundToOdd: true);
+        public static explicit operator Half(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return (Half)sign;
+            }
+
+            // Every bits[]-backed magnitude is at least 2^31, which is far outside Half's finite
+            // range, so the result is always an infinity carrying the value's sign. There is no
+            // finite Half to round to, so skip the limb scan entirely.
+            return sign < 0 ? Half.NegativeInfinity : Half.PositiveInfinity;
+        }
 
         /// <summary>Explicitly converts a big integer to a <see cref="BFloat16" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="BFloat16" /> value.</returns>
-        public static explicit operator BFloat16(BigInteger value) => (BFloat16)ConvertToDouble(value, roundToOdd: true);
+        public static explicit operator BFloat16(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return (BFloat16)sign;
+            }
+
+            // Magnitudes up to 64 bits convert directly through the correctly rounded ulong ->
+            // BFloat16 conversion. Wider magnitudes round directly at BFloat16's 8-bit significand,
+            // so the narrowing cast is exact and cannot double round.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                BFloat16 result = (BFloat16)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+
+            return (BFloat16)ConvertToDouble(value, precision: 8);
+        }
 
         public static explicit operator short(BigInteger value) => checked((short)((int)value));
 
@@ -2278,7 +2884,32 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static explicit operator sbyte(BigInteger value) => checked((sbyte)((int)value));
 
-        public static explicit operator float(BigInteger value) => (float)ConvertToDouble(value, roundToOdd: true);
+        public static explicit operator float(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return sign;
+            }
+
+#if !MONO
+            // Magnitudes up to 64 bits convert directly through the correctly rounded ulong -> float
+            // conversion. Wider magnitudes round directly at float's 24-bit significand, so the
+            // narrowing cast is exact and cannot double round. Mono routes ulong -> float through
+            // double, which double rounds, so it is excluded and always rounds directly below.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                float result = (float)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+#endif
+
+            // Round directly at float's 24-bit significand so the double we produce already lies on
+            // float's grid and the narrowing cast is exact, avoiding any double rounding.
+            return (float)ConvertToDouble(value, precision: 24);
+        }
 
         [CLSCompliant(false)]
         public static explicit operator ushort(BigInteger value) => checked((ushort)((int)value));
@@ -2681,9 +3312,19 @@ namespace System.Numerics
                 : bits[^1] >> (BigIntegerCalculator.BitsPerLimb - smallShift);
 
             nuint[] z;
+            if (digitShift > MaxLength - bits.Length)
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+
             int zLength = bits.Length + digitShift;
             if (over != 0)
             {
+                if (zLength == MaxLength)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
                 z = new nuint[++zLength];
                 z[^1] = over;
             }
@@ -2727,10 +3368,20 @@ namespace System.Numerics
                     return new BigInteger(value >= 0 ? (int)r : -(int)r, null);
                 }
 
+                if (digitShift >= MaxLength)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
                 rgu = new nuint[digitShift + 1];
             }
             else
             {
+                if (digitShift >= MaxLength - 1)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
                 rgu = new nuint[digitShift + 2];
                 rgu[^1] = over;
             }
@@ -2918,10 +3569,27 @@ namespace System.Numerics
                 : Add(left._bits, left._sign, right._bits, right._sign);
         }
 
-        public static BigInteger operator *(BigInteger left, BigInteger right) =>
-            left._bits is null && right._bits is null
-                ? (BigInteger)((long)left._sign * right._sign)
-                : Multiply(left._bits, left._sign, right._bits, right._sign);
+        public static BigInteger operator *(BigInteger left, BigInteger right)
+        {
+            if (left._bits is null && right._bits is null)
+            {
+                return (BigInteger)((long)left._sign * right._sign);
+            }
+
+            if (TryGetPowerOfTwoExponent(left, out int exponent))
+            {
+                BigInteger result = right << exponent;
+                return left._sign < 0 ? -result : result;
+            }
+
+            if (TryGetPowerOfTwoExponent(right, out exponent))
+            {
+                BigInteger result = left << exponent;
+                return right._sign < 0 ? -result : result;
+            }
+
+            return Multiply(left._bits, left._sign, right._bits, right._sign);
+        }
 
         private static BigInteger Multiply(ReadOnlySpan<nuint> left, int leftSign, ReadOnlySpan<nuint> right, int rightSign)
         {
@@ -3014,16 +3682,34 @@ namespace System.Numerics
 
             Debug.Assert(dividend._bits is not null && divisor._bits is not null);
 
-            if (dividend._bits.Length < divisor._bits.Length)
+            if (TryGetPowerOfTwoExponent(divisor, out int powerOfTwoExponent))
+            {
+                return DivideByPowerOfTwo(dividend, divisor, powerOfTwoExponent);
+            }
+
+            int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
+                ? BigIntegerCalculator.GetCommonLimbOffset(dividend._bits, divisor._bits)
+                : 0;
+            ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
+
+            if (dividendBits.Length < divisorBits.Length)
             {
                 return s_zero;
             }
             else
             {
-                int size = dividend._bits.Length - divisor._bits.Length + 1;
+                int size = dividendBits.Length - divisorBits.Length + 1;
                 Span<nuint> quotient = RentedBuffer.Create(size, out RentedBuffer quotientBuffer);
 
-                BigIntegerCalculator.Divide(dividend._bits, divisor._bits, quotient);
+                if (ShouldUseSpecialDivision(dividendBits, divisorBits))
+                {
+                    BigIntegerCalculator.DivideSpecial(dividendBits, divisorBits, quotient);
+                }
+                else
+                {
+                    BigIntegerCalculator.Divide(dividendBits, divisorBits, quotient);
+                }
                 BigInteger result = new(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
 
                 quotientBuffer.Dispose();
@@ -3058,7 +3744,18 @@ namespace System.Numerics
 
             Debug.Assert(dividend._bits is not null && divisor._bits is not null);
 
-            if (dividend._bits.Length < divisor._bits.Length)
+            if (TryGetPowerOfTwoExponent(divisor, out int powerOfTwoExponent))
+            {
+                return RemainderByPowerOfTwo(dividend, powerOfTwoExponent);
+            }
+
+            int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
+                ? BigIntegerCalculator.GetCommonLimbOffset(dividend._bits, divisor._bits)
+                : 0;
+            ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
+
+            if (dividendBits.Length < divisorBits.Length)
             {
                 return dividend;
             }
@@ -3066,13 +3763,24 @@ namespace System.Numerics
             int size = dividend._bits.Length;
             Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
 
-            BigIntegerCalculator.Remainder(dividend._bits, divisor._bits, bits);
+            Span<nuint> remainderBits = bits.Slice(commonOffset, dividendBits.Length);
+            if (ShouldUseSpecialDivision(dividendBits, divisorBits))
+            {
+                BigIntegerCalculator.RemainderSpecial(dividendBits, divisorBits, remainderBits);
+            }
+            else
+            {
+                BigIntegerCalculator.Remainder(dividendBits, divisorBits, remainderBits);
+            }
             BigInteger result = new(bits, dividend._sign < 0);
 
             bitsBuffer.Dispose();
 
             return result;
         }
+
+        private static bool ShouldUseSpecialDivision(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right)
+            => left.Length >= 16 && (right[0] == 0 || right[0] == nuint.MaxValue);
 
         public static bool operator <(BigInteger left, BigInteger right) => left.CompareTo(right) < 0;
 
@@ -3638,27 +4346,30 @@ namespace System.Numerics
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static BigInteger TrailingZeroCount(BigInteger value)
         {
+            return GetTrailingZeroCount(value);
+        }
+
+        private static int GetTrailingZeroCount(BigInteger value)
+        {
             if (value._bits is null)
             {
                 return int.TrailingZeroCount(value._sign);
             }
 
-            ulong result = 0;
-
             // Both positive values and their two's-complement negative representation will share the same TrailingZeroCount,
             // so the sign of value does not matter and both cases can be handled in the same way
 
             nuint part = value._bits[0];
+            int zeroLimbCount = 0;
 
             for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
             {
                 part = value._bits[i];
-                result += (uint)BigIntegerCalculator.BitsPerLimb;
+                zeroLimbCount++;
             }
 
-            result += (ulong)BitOperations.TrailingZeroCount(part);
-
-            return result;
+            return checked((zeroLimbCount * BigIntegerCalculator.BitsPerLimb)
+                + BitOperations.TrailingZeroCount(part));
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />

@@ -39,6 +39,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\..\Common\tests\System\Runtime\CompilerServices\RuntimeHelpers.cs" Link="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="..\..\Common\tests\System\Runtime\InteropServices\NativeMemory.cs" Link="System\Runtime\InteropServices\NativeMemory.cs" />
     <ProjectReference Include="..\src\Microsoft.Bcl.Memory.csproj" />
   </ItemGroup>
 

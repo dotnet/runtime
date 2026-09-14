@@ -6,7 +6,7 @@ set(SOURCES
 )
 # Additional files to reference:
 # add the executable
-add_library (RPIP_ByOutNative SHARED ${SOURCES})
+add_library (RPIP_ByOutNative ${TEST_LIB_TYPE} ${SOURCES})
 set_property (TARGET RPIP_ByOutNative PROPERTY OUTPUT_NAME ReversePInvokePassingByOutNative)
 target_link_libraries(RPIP_ByOutNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 # add the install targets

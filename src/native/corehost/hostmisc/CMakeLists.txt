@@ -80,6 +80,12 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     target_link_libraries(hostmisc_public PUBLIC minipal_objects)
 endif()
 set_target_properties(hostmisc_public PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+if (MSVC)
+    # Embed debug info in the object files (/Z7). CMake does not assign a compile
+    # PDB to OBJECT libraries, so the objects archived into the shipped libhostfxr
+    # would otherwise reference an absent vc140.pdb, producing LNK4099 for consumers.
+    set_target_properties(hostmisc_public PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+endif()
 
 add_library(hostmisc::public ALIAS hostmisc_public)
 
@@ -90,3 +96,9 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     target_link_libraries(hostmisc_c PUBLIC minipal_objects)
 endif()
 set_target_properties(hostmisc_c PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+if (MSVC)
+    # Embed debug info in the object files (/Z7). CMake does not assign a compile
+    # PDB to OBJECT libraries, so the objects archived into the shipped libnethost
+    # would otherwise reference an absent vc140.pdb, producing LNK4099 for consumers.
+    set_target_properties(hostmisc_c PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+endif()

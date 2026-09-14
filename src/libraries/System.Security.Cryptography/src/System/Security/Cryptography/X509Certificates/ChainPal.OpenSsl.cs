@@ -8,6 +8,9 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class ChainPal
     {
+        // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
+        internal static readonly TimeSpan DefaultRetrievalTimeout = TimeSpan.FromSeconds(15);
+
         private static readonly TimeSpan s_maxUrlRetrievalTimeout = TimeSpan.FromMinutes(1);
 
 #pragma warning disable IDE0060
@@ -87,8 +90,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (timeout == TimeSpan.Zero)
             {
-                // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
-                timeout = TimeSpan.FromSeconds(15);
+                timeout = DefaultRetrievalTimeout;
             }
             else if (timeout > s_maxUrlRetrievalTimeout || timeout < TimeSpan.Zero)
             {

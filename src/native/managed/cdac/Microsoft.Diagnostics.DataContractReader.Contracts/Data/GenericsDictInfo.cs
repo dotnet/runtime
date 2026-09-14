@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.GenericsDictInfo))]
 internal sealed partial class GenericsDictInfo : IData<GenericsDictInfo>
 {
-    [Field] public ushort NumDicts { get; }
-    [Field] public ushort NumTypeArgs { get; }
+    [Field] public partial ushort NumDicts { get; }
+    [Field] public partial ushort NumTypeArgs { get; }
 }

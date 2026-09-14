@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
             byteBuffer = byteBuffer.Slice(0, written);
 
             bool success = TryParse(byteBuffer, out result);
-            if (rentedByteBuffer != null)
+            if (rentedByteBuffer is not null)
             {
                 ArrayPool<byte>.Shared.Return(rentedByteBuffer);
             }

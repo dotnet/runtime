@@ -22,6 +22,8 @@ using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
 using ILCompiler.ReadyToRun;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public struct NodeCache<TKey, TValue>
@@ -64,6 +66,7 @@ namespace ILCompiler.DependencyAnalysis
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
+        public bool GenerateUnboxingStubs;
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
@@ -73,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
 
     // To make the code future compatible to the composite R2R story
     // do NOT attempt to pass and store _inputModule here
-    public sealed class NodeFactory
+    public sealed partial class NodeFactory
     {
         private bool _markingComplete;
 
@@ -134,6 +137,72 @@ namespace ILCompiler.DependencyAnalysis
             return _localMethodCache.GetOrAdd(method);
         }
 
+        private bool CanPrecompileUnboxingStub(MethodDesc targetMethod)
+        {
+            if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
+                return false;
+
+            // The IL implementation of the generic unboxing thunk does not support a MethodDesc
+            // generic context. Wasm uses a generated assembly stub for this case instead.
+            if (targetMethod.RequiresInstMethodDescArg() && Target.Architecture != TargetArchitecture.Wasm32)
+                return false;
+
+            // TODO See comment in UnboxingThunk.EmitIL
+            if (targetMethod.IsAsyncCall())
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Does an instance method on a value type need an unboxing thunk, i.e. can it be entered
+        /// with a boxed 'this'? Interface implementations and virtual overrides are both emitted as
+        /// virtual by compilers, so IsVirtual covers both.
+        /// </summary>
+        public bool NeedsUnboxingStub(MethodDesc method)
+        {
+            return OptimizationFlags.GenerateUnboxingStubs
+                && method.OwningType.IsValueType
+                && !method.Signature.IsStatic
+                && method.IsVirtual
+                && CanPrecompileUnboxingStub(method);
+        }
+
+        public DependencyNodeCore<NodeFactory> UnboxingStub(MethodDesc targetMethod)
+        {
+            Debug.Assert(NeedsUnboxingStub(targetMethod));
+
+            if (Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                return _wasmUnboxingStubTargets.GetOrAdd(targetMethod);
+            }
+
+            ModuleDesc ownerModule = ((MetadataType)targetMethod.GetTypicalMethodDefinition().OwningType).Module;
+            MethodDesc thunk = targetMethod.IsSharedByGenericInstantiations && !targetMethod.HasInstantiation
+                ? TypeSystemContext.GetSpecialUnboxingThunk(targetMethod, ownerModule)
+                : TypeSystemContext.GetUnboxingThunk(targetMethod, ownerModule);
+
+            return _localMethodCache.GetOrAdd(thunk);
+        }
+
+        private WasmUnboxingStubTargetNode CreateWasmUnboxingStubTargetNode(MethodDesc targetMethod)
+        {
+            ModuleDesc ownerModule = ((MetadataType)targetMethod.GetTypicalMethodDefinition().OwningType).Module;
+            MethodDesc thunk = targetMethod.IsSharedByGenericInstantiations && !targetMethod.HasInstantiation
+                ? TypeSystemContext.GetSpecialUnboxingThunk(targetMethod, ownerModule)
+                : TypeSystemContext.GetUnboxingThunk(targetMethod, ownerModule);
+            UnboxingStubKind kind = targetMethod.RequiresInstMethodDescArg()
+                ? UnboxingStubKind.MethodDesc
+                : (targetMethod.RequiresInstMethodTableArg() ? UnboxingStubKind.MethodTable : UnboxingStubKind.Normal);
+            WasmSignature signature = WasmLowering.GetSignature(thunk.Signature, WasmLowering.LoweringFlags.None);
+            WasmSignature targetSignature = WasmLowering.GetSignature(targetMethod);
+            WasmTypeNode targetType = WasmTypeNode(targetSignature);
+            bool hasReturnBuffer = kind != UnboxingStubKind.Normal && signature.SignatureString[0] == 'S';
+            WasmUnboxingStubNode stub = _wasmUnboxingStubs.GetOrAdd(
+                new WasmUnboxingStubKey(signature, targetType, kind, hasReturnBuffer));
+            return new WasmUnboxingStubTargetNode(targetMethod, signature, stub);
+        }
+
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
 
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
@@ -143,9 +212,43 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeDesc, InheritedVirtualMethodsNode> _inheritedVirtualMethods;
 
-        public InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
+        private InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
         {
-            return _inheritedVirtualMethods.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            return _inheritedVirtualMethods.GetOrAdd(type);
+        }
+
+        private NodeCache<ArrayType, ArrayInterfaceMethodsNode> _arrayInterfaceMethods;
+
+        public ArrayInterfaceMethodsNode ArrayInterfaceMethods(ArrayType arrayType)
+        {
+            return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
+        }
+
+        public void AddVirtualMethodDiscoveryDependencies(ref DependencyList dependencies, TypeDesc type)
+        {
+            if (CompilationCurrentPhase != 0)
+                return;
+
+            type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            // We record the usage of this type, so that virtual method dependency analysis can resolve implementations.
+            // GVMDependenciesNode uses this for generic virtual methods (dynamic dependencies).
+            // InheritedVirtualMethodsNode uses conditional static dependencies for non-GVM virtual methods.
+            if (!type.IsGenericDefinition &&
+                !type.IsInterface &&
+                type.IsDefType &&
+                CompilationModuleGroup.VersionsWithType(type))
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(InheritedVirtualMethods(type), "Inherited virtual/interface methods on type");
+            }
+            // Arrays implement the generic collection interfaces through SZArrayHelper. Discover those
+            // implementations so that e.g. ((ICollection<int>)intArray).Count gets discovered.
+            else if (type.IsSzArray)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(ArrayInterfaceMethods((ArrayType)type), "Array generic interface methods");
+            }
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
@@ -301,6 +404,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GVMDependenciesNode(method);
             });
 
+            _arrayInterfaceMethods = new NodeCache<ArrayType, ArrayInterfaceMethodsNode>(arrayType =>
+            {
+                return new ArrayInterfaceMethodsNode(arrayType);
+            });
+
             _virtualMethodUseNodes = new NodeCache<MethodDesc, VirtualMethodUseNode>(method =>
             {
                 return new VirtualMethodUseNode(method);
@@ -340,7 +448,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmImportThunks = new NodeCache<WasmImportThunkKey, ISymbolDefinitionNode>(key =>
             {
-                return new WasmImportThunk(this, key.Signature, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
+                return new WasmImportThunk(this, key.Signature, key.Helper, key.UseJumpableStub);
             });
 
             _wasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
@@ -357,6 +465,18 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new WasmInterpreterToR2RThunkNode(this, key);
             });
+
+            _wasmVirtualDispatchThunks = new NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode>(key =>
+            {
+                return new WasmVirtualDispatchThunkNode(this, key.Signature);
+            });
+
+            _wasmUnboxingStubs = new NodeCache<WasmUnboxingStubKey, WasmUnboxingStubNode>(key =>
+            {
+                return new WasmUnboxingStubNode(this, key.Signature, key.TargetType, key.Kind, key.HasReturnBuffer);
+            });
+
+            _wasmUnboxingStubTargets = new NodeCache<MethodDesc, WasmUnboxingStubTargetNode>(CreateWasmUnboxingStubTargetNode);
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
 
@@ -810,16 +930,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             public readonly WasmSignature Signature;
             public readonly ReadyToRunHelper Helper;
-            public readonly ImportSectionNode ContainingImportSection;
-            public readonly bool UseVirtualCall;
             public readonly bool UseJumpableStub;
 
-            public WasmImportThunkKey(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+            public WasmImportThunkKey(WasmSignature signature, ReadyToRunHelper helper, bool useJumpableStub)
             {
                 Signature = signature;
                 Helper = helper;
-                ContainingImportSection = containingImportSection;
-                UseVirtualCall = useVirtualCall;
                 UseJumpableStub = useJumpableStub;
             }
 
@@ -827,8 +943,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return Signature.Equals(other.Signature) &&
                     Helper == other.Helper &&
-                    ContainingImportSection == other.ContainingImportSection &&
-                    UseVirtualCall == other.UseVirtualCall &&
                     UseJumpableStub == other.UseJumpableStub;
             }
 
@@ -841,17 +955,15 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return HashCode.Combine(Helper.GetHashCode(),
                     Signature.GetHashCode(),
-                    ContainingImportSection.GetHashCode(),
-                    UseVirtualCall.GetHashCode(),
                     UseJumpableStub.GetHashCode());
             }
         }
 
         private NodeCache<WasmImportThunkKey, ISymbolDefinitionNode> _wasmImportThunks;
 
-        public ISymbolDefinitionNode WasmImportThunk(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public ISymbolDefinitionNode WasmImportThunk(WasmSignature signature, ReadyToRunHelper helper, bool useJumpableStub)
         {
-            WasmImportThunkKey thunkKey = new WasmImportThunkKey(signature, helper, containingImportSection, useVirtualCall, useJumpableStub);
+            WasmImportThunkKey thunkKey = new WasmImportThunkKey(signature, helper, useJumpableStub);
             return _wasmImportThunks.GetOrAdd(thunkKey);
         }
 
@@ -898,6 +1010,37 @@ namespace ILCompiler.DependencyAnalysis
         public WasmInterpreterToR2RThunkNode WasmInterpreterToR2RThunk(WasmSignature wasmSignature)
         {
             return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
+        }
+
+        private readonly struct WasmVirtualDispatchThunkKey : IEquatable<WasmVirtualDispatchThunkKey>
+        {
+            public WasmSignature Signature { get; }
+
+            public WasmVirtualDispatchThunkKey(WasmSignature signature)
+            {
+                Signature = signature;
+            }
+
+            public bool Equals(WasmVirtualDispatchThunkKey other)
+            {
+                return Signature.FuncType.Equals(other.Signature.FuncType);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is WasmVirtualDispatchThunkKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return Signature.FuncType.GetHashCode();
+            }
+        }
+
+        private NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode> _wasmVirtualDispatchThunks;
+        public WasmVirtualDispatchThunkNode WasmVirtualDispatchThunk(WasmSignature wasmSignature)
+        {
+            return _wasmVirtualDispatchThunks.GetOrAdd(new WasmVirtualDispatchThunkKey(wasmSignature));
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)
@@ -1104,7 +1247,7 @@ namespace ILCompiler.DependencyAnalysis
                 "DispatchImports",
                 ReadyToRunImportSectionType.StubDispatch,
                 ReadyToRunImportSectionFlags.PCode,
-                this.OptimizationFlags.EnableCachedInterfaceDispatchSupport ? (byte)(2 * Target.PointerSize) : (byte)Target.PointerSize,
+                (this.OptimizationFlags.EnableCachedInterfaceDispatchSupport && !Target.IsWasm) ? (byte)(2 * Target.PointerSize) : (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);
@@ -1314,6 +1457,33 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
+
+        private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
+        {
+            public readonly WasmSignature Signature;
+            public readonly WasmTypeNode TargetType;
+            public readonly UnboxingStubKind Kind;
+            public readonly bool HasReturnBuffer;
+
+            public WasmUnboxingStubKey(WasmSignature signature, WasmTypeNode targetType, UnboxingStubKind kind, bool hasReturnBuffer)
+            {
+                Signature = signature;
+                TargetType = targetType;
+                Kind = kind;
+                HasReturnBuffer = hasReturnBuffer;
+            }
+
+            public bool Equals(WasmUnboxingStubKey other) =>
+                Signature.FuncType.Equals(other.Signature.FuncType) &&
+                TargetType == other.TargetType &&
+                Kind == other.Kind &&
+                HasReturnBuffer == other.HasReturnBuffer;
+            public override bool Equals(object obj) => obj is WasmUnboxingStubKey other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(Signature.FuncType, TargetType, Kind, HasReturnBuffer);
+        }
+
+        private NodeCache<WasmUnboxingStubKey, WasmUnboxingStubNode> _wasmUnboxingStubs;
+        private NodeCache<MethodDesc, WasmUnboxingStubTargetNode> _wasmUnboxingStubTargets;
 
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {

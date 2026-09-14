@@ -103,7 +103,7 @@ enum class ClasslibFunctionId
     FailFast = 1,
     ThreadEntryPoint = 2,
     AppendExceptionStackFrame = 3,
-    // unused = 4,
+    ResolveDispatch = 4,
     GetSystemArrayEEType = 5,
     OnFirstChanceException = 6,
     OnUnhandledException = 7,

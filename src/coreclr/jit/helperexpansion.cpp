@@ -183,12 +183,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         return false;
     }
 
-    assert(call->gtArgs.CountArgs() == 2);
+    assert(call->gtArgs.CountUserArgs() == 2);
     // The call has the following signature:
     //
     //   type = call(genericCtx, signatureCns);
     //
-    const GenTree* signatureNode = call->gtArgs.GetArgByIndex(1)->GetNode();
+    const GenTree* signatureNode = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (!signatureNode->IsCnsIntOrI())
     {
         // We expect the signature to be a constant node here (it's marked as DONT_CSE)
@@ -260,7 +260,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         gtUpdateStmtSideEffects(stmt);
     }
 
-    GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* ctxTree = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
     // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
     GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
@@ -872,7 +872,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
     JITDUMP("offsetOfBaseOfThreadLocalData= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData));
 
-    assert(call->gtArgs.CountArgs() == 1);
+    assert(call->gtArgs.CountUserArgs() == 1);
 
     // Split block right before the call tree
     BasicBlock* prevBb       = block;
@@ -1020,7 +1020,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // Cache the tls value
     tlsValueDef                              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse                  = gtNewLclVarNode(tlsLclNum);
-    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetUserArgByIndex(0)->GetNode();
     assert(genActualType(typeThreadStaticBlockIndexValue) == TYP_INT);
 
     if (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
@@ -2064,8 +2064,10 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             case CORINFO_HELP_CHKCASTCLASS:
             case CORINFO_HELP_CHKCASTARRAY:
             case CORINFO_HELP_CHKCASTANY:
-                likelihoods[0] = 50; // 50% speculative guess
-                candidates[0]  = NO_CLASS_HANDLE;
+                *typeCheckFailed = helper == CORINFO_HELP_CHKCASTCLASS ? TypeCheckFailedAction::CallHelper_Specialized
+                                                                       : TypeCheckFailedAction::CallHelper;
+                likelihoods[0]   = 50; // 50% speculative guess
+                candidates[0]    = NO_CLASS_HANDLE;
                 return 1;
 
             default:
@@ -2145,29 +2147,19 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
     if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
-        // obj is string
-        // obj is string[]
+        // (string)obj
+        // (string[])obj
         //
-        if ((helper == CORINFO_HELP_CHKCASTCLASS))
-        {
-            // (string)obj
-            //
-            // Fallback for this expansion always throws InvalidCastException
-            // TODO: can we do the same for string[]? (importer did not)
-            *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
+        // Fallback for this expansion always throws InvalidCastException.
+        // Exactness excludes array covariance and primitive-array interchange.
+        *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
 
-            // Assume that exceptions are rare
-            likelihoods[0] = 100;
+        // Assume that exceptions are rare
+        likelihoods[0] = 100;
 
-            // Update the common denominator class to be more exact as
-            // the fallback always throws anyway, so we don't have to worry about what it returns.
-            *commonCls = castToCls;
-        }
-        else
-        {
-            // 50% chance of successful type check (speculative guess)
-            likelihoods[0] = 50;
-        }
+        // Update the common denominator class to be more exact as
+        // the fallback always throws anyway, so we don't have to worry about what it returns.
+        *commonCls    = castToCls;
         candidates[0] = castToCls;
         return 1;
     }
@@ -2177,8 +2169,6 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         // obj is string[]
         //
         // Fallbacks for these expansions simply return null
-        // TODO: should we keep the helper call for ISINSTANCEOFARRAY like we do for CHKCASTARRAY above?
-        // The logic is copied from the importer.
         *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
 
         // We're done, there is no need in consulting with PGO data
@@ -2299,6 +2289,13 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         }
         if (castResult == TypeCompareState::Must)
         {
+            // The specialized helper skips null and exact-type checks. A failed guard against
+            // a subclass would not rule out the target class itself.
+            if ((helper == CORINFO_HELP_CHKCASTCLASS) && (candidates[0] == castToCls))
+            {
+                *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
+            }
+
             // return actual object on successful type check
             *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
             return 1;
@@ -2805,25 +2802,34 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
     {
         for (Statement* const stmt : block->Statements())
         {
-            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
-            {
-                continue;
-            }
+            // A single statement can contain more than one allocation. Expanding one splits
+            // the statement's tree and leaves the remainder (which may hold further
+            // allocations) in "stmt", so keep rescanning it until nothing is left to expand.
+            //
+            bool expanded = true;
 
-            for (GenTree* const tree : stmt->TreeList())
+            while (expanded)
             {
-                if (!tree->IsCall())
+                expanded = false;
+
+                if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
                 {
-                    continue;
+                    break;
                 }
 
-                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                for (GenTree* const tree : stmt->TreeList())
                 {
-                    // If we expand, we split the statement's tree
-                    // so will be done with this statment.
-                    //
-                    modified = true;
-                    break;
+                    if (!tree->IsCall())
+                    {
+                        continue;
+                    }
+
+                    if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                    {
+                        modified = true;
+                        expanded = true;
+                        break;
+                    }
                 }
             }
         }
@@ -2902,7 +2908,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array method table pointer.
     //
-    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
+    GenTree* const   mt      = call->gtArgs.GetUserArgByIndex(typeArgIndex)->GetNode();
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
 
@@ -2910,7 +2916,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array length.
     //
-    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* const   lengthArg     = call->gtArgs.GetUserArgByIndex(lengthArgIndex)->GetNode();
     GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
     GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
                                                    gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));

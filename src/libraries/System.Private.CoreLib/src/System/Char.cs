@@ -208,8 +208,11 @@ namespace System
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            new Rune(this).TryEncodeToUtf8(utf8Destination, out bytesWritten);
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            Rune rune = Rune.TryCreate(this, out Rune value) ? value : Rune.ReplacementChar;
+            return rune.TryEncodeToUtf8(utf8Destination, out bytesWritten);
+        }
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
 
@@ -1974,7 +1977,7 @@ namespace System
 
         static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
-        static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        static bool INumberBase<char>.TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
         {
             if (TryParse(s, out result))
             {
@@ -1986,7 +1989,7 @@ namespace System
             return false;
         }
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
         {
             if (TryParse(s, out result))
             {
@@ -1998,7 +2001,7 @@ namespace System
             return false;
         }
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
         {
             if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out bytesConsumed) != Buffers.OperationStatus.Done ||
                 bytesConsumed != utf8Text.Length ||
@@ -2072,6 +2075,8 @@ namespace System
         //
         // IUtfChar
         //
+
+        static bool IUtfChar<char>.IsUtf8 => false;
 
         static char IUtfChar<char>.CastFrom(byte value) => (char)value;
         static char IUtfChar<char>.CastFrom(char value) => value;

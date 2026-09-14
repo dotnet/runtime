@@ -565,7 +565,7 @@ DECODE_OPCODE:
 
                 INT_OP:
                     dumpILBytes(startOpcodePtr, (unsigned)((opcodePtr - startOpcodePtr) + sz), ALIGN_WIDTH);
-                    printf(" %-12s 0x%X", opcodeNames[opcode], iOp);
+                    printf(" %-12s 0x%llX", opcodeNames[opcode], (unsigned long long)iOp);
                     break;
 
                 case ShortInlineR:
@@ -4186,7 +4186,7 @@ public:
             return;
         }
 
-        if (strBufferSize > bufferSize)
+        if (static_cast<size_t>(strBufferSize) > bufferSize)
         {
             m_pBuffer = new WCHAR[strBufferSize];
         }

@@ -51,7 +51,7 @@ internal struct GC_1 : IGC
 
     private readonly record struct AllocContext(TargetPointer Pointer, TargetPointer Limit);
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _allocContexts = null;
     }
@@ -221,7 +221,7 @@ internal struct GC_1 : IGC
     private List<GCGenerationData> GetGenerationData(TargetPointer generationTableArrayStart)
     {
         uint generationTableLength = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
-        uint generationSize = _target.GetTypeInfo(DataType.Generation).Size ?? throw new InvalidOperationException("Type Generation has no size");
+        uint generationSize = Data.Generation.GetSize(_target);
         List<Data.Generation> generationTable = [];
         for (uint i = 0; i < generationTableLength; i++)
         {
@@ -292,8 +292,16 @@ internal struct GC_1 : IGC
 
     void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
     {
-        TargetPointer globalAllocContextAddress = _target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
-        Data.EEAllocContext eeAllocContext = _target.ProcessedData.GetOrAdd<Data.EEAllocContext>(globalAllocContextAddress);
+        // Runtimes which allocate only out of thread allocation contexts do not export the global.
+        // It is required in c1 and optional in c2 and later.
+        if (!_target.TryReadGlobalPointer(Constants.Globals.GlobalAllocContext, out TargetPointer? globalAllocContextAddress))
+        {
+            allocPtr = TargetPointer.Null;
+            allocLimit = TargetPointer.Null;
+            return;
+        }
+
+        Data.EEAllocContext eeAllocContext = _target.ProcessedData.GetOrAdd<Data.EEAllocContext>(globalAllocContextAddress.Value);
         allocPtr = eeAllocContext.GCAllocationContext.Pointer;
         allocLimit = eeAllocContext.GCAllocationContext.Limit;
     }
@@ -644,7 +652,6 @@ internal struct GC_1 : IGC
         HandleData handleData = default;
         handleData.Handle = handleAddress;
         handleData.Type = GetInternalHandleType(type);
-        handleData.IsPegged = false;
         handleData.StrongReference = IsStrongReference(type);
         if (HasSecondary(type))
         {
@@ -800,8 +807,7 @@ internal struct GC_1 : IGC
         if (_target.TryReadGlobal<uint>(Constants.Globals.CountFreeRegionKinds, out uint? freeRegionKindsValue))
         {
             countFreeRegionKinds = Math.Min((int)freeRegionKindsValue.Value, 16);
-            regionFreeListSize = _target.GetTypeInfo(DataType.RegionFreeList).Size
-                ?? throw new InvalidOperationException("RegionFreeList type has no size");
+            regionFreeListSize = Data.RegionFreeList.GetSize(_target);
         }
 
         // Global free huge regions
@@ -888,8 +894,7 @@ internal struct GC_1 : IGC
         Data.TableSegment tableSegment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentBase);
 
         // The RgValue offset within the segment equals the header size.
-        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.TableSegment);
-        uint rgValueOffset = (uint)typeInfo.Fields[nameof(Data.TableSegment.RgValue)].Offset;
+        uint rgValueOffset = (uint)Data.TableSegment.GetRgValueOffset(_target);
 
         // Compute the handle index within the segment's value area.
         uint handleIndex = (uint)((ulong)(handle - segmentBase) - rgValueOffset) / (uint)_target.PointerSize;

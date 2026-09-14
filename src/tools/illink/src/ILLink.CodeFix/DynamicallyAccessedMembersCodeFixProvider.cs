@@ -96,19 +96,26 @@ namespace ILLink.CodeFix
             var diagnostic = context.Diagnostics[0];
             var codeFixTitle = CodeFixTitle.ToString();
 
-            if (await document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
+            if (!diagnostic.Properties.TryGetValue(DynamicallyAccessedMembersAnalyzer.attributeArgument, out string? stringArgs)
+                || stringArgs is null
+                || stringArgs.Contains(","))
                 return;
-            if (diagnostic.AdditionalLocations.Count == 0)
+            Location targetLocation = diagnostic.AdditionalLocations.Count > 0
+                ? diagnostic.AdditionalLocations[0]
+                : diagnostic.Location;
+
+            if (targetLocation.SourceTree is not { } targetTree
+                || document.Project.Solution.GetDocument(targetTree) is not { } targetDocument)
                 return;
-            if (root.FindNode(diagnostic.AdditionalLocations[0].SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
+            if (await targetDocument.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } targetRoot)
                 return;
-            if (diagnostic.Properties["attributeArgument"] is not string stringArgs || stringArgs.Contains(","))
+            if (targetRoot.FindNode(targetLocation.SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
                 return;
 
             context.RegisterCodeFix(CodeAction.Create(
                 title: CodeFixTitle.ToString(),
                 createChangedDocument: ct => AddAttributeAsync(
-                    document,
+                    targetDocument,
                     targetNode,
                     stringArgs,
                     addAsReturnAttribute: AttributeOnReturn.Contains(diagnostic.Id),

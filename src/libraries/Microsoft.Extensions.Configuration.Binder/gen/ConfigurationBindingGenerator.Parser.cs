@@ -157,8 +157,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null)
+            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null, TypeRef? knownTypeRef = null)
             {
+                Debug.Assert(knownTypeRef is null || knownTypeRef.FullyQualifiedName == memberTypeSymbol.GetFullyQualifiedName(),
+                    $"'{nameof(knownTypeRef)}' must describe '{nameof(memberTypeSymbol)}'.");
+
                 TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, diagDescriptor, memberName);
 
                 if (_createdTypeSpecs.TryGetValue(memberTypeSymbol, out TypeSpec? memberTypeSpec))
@@ -168,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 _typesToParse.Enqueue(memberTypeParseInfo);
-                return new TypeRef(memberTypeSymbol);
+                return knownTypeRef ?? new TypeRef(memberTypeSymbol);
             }
 
             private TypeSpec CreateTypeSpec(TypeParseInfo typeParseInfo)
@@ -556,6 +559,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool IsUnsupportedType(ITypeSymbol type, HashSet<ITypeSymbol>? visitedTypes = null)
             {
+                if (ContainsErrorType(type))
+                {
+                    return true;
+                }
+
                 if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
                     type = ((INamedTypeSymbol)type).TypeArguments[0]; // extract the T from a Nullable<T>
@@ -636,6 +644,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
+            private static bool BacksConstructorParameter(IMethodSymbol? ctor, string propertyName)
+            {
+                return ctor is not null
+                    && ctor.Parameters.Any(parameter => string.Equals(parameter.Name, propertyName, StringComparison.OrdinalIgnoreCase));
+            }
+
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
@@ -706,6 +720,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 Dictionary<string, PropertySpec>? properties = null;
+                HashSet<string>? reportedUnsupportedProperties = null;
 
                 INamedTypeSymbol? current = typeSymbol;
                 while (current is not null)
@@ -713,27 +728,48 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ImmutableArray<ISymbol> members = current.GetMembers();
                     foreach (ISymbol member in members)
                     {
-                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property && !IsUnsupportedType(property.Type))
+                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
                         {
                             string propertyName = property.Name;
+                            bool isDuplicateOrOverride = property.IsOverride || properties?.ContainsKey(propertyName) is true;
 
-                            if (property.IsOverride || properties?.ContainsKey(propertyName) is true)
+                            if (IsUnsupportedType(property.Type))
+                            {
+                                // Report the skip once per property name. The override/duplicate check covers an
+                                // error-typed property that is overridden or shadows an already-bound member, while
+                                // the name set covers a `new`-shadowed error-typed property: both the base and
+                                // derived copies are skipped (so neither lands in 'properties' to dedupe the other),
+                                // which would otherwise fire SYSLIB1101 twice for the same name.
+                                if (ContainsErrorType(property.Type) && !isDuplicateOrOverride &&
+                                    (reportedUnsupportedProperties ??= new(StringComparer.OrdinalIgnoreCase)).Add(propertyName))
+                                {
+                                    RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [propertyName, typeParseInfo.FullName]);
+                                }
+
+                                continue;
+                            }
+
+                            if (isDuplicateOrOverride)
                             {
                                 continue;
                             }
 
-                            TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);
                             ImmutableArray<AttributeData> attributes = property.GetAttributes();
 
                             AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
                             bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
 
-                            PropertySpec spec = new(property, propertyTypeRef)
+                            PropertySpec spec = new(property, new TypeRef(property.Type))
                             {
                                 ConfigurationKeyName = configKeyName,
                                 IsIgnored = isIgnored,
                             };
+
+                            if (!spec.IsIgnored && (spec.CanGet || spec.CanSet || BacksConstructorParameter(ctor, propertyName)))
+                            {
+                                EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName, spec.TypeRef);
+                            }
 
                             (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
                         }
@@ -883,6 +919,44 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return SymbolEqualityComparer.Default.Equals(type, @interface);
+            }
+
+            // A member type is unsupported when it, a nested array element, a generic type argument, or an
+            // enclosing (containing) type is an error symbol — i.e. an unresolved or ambiguous metadata type
+            // from a reference that isn't available to the current compilation. Emitting binding code that names
+            // such a type produces uncompilable output (missing/ambiguous type errors), so callers skip these
+            // members instead.
+            private static bool ContainsErrorType(ITypeSymbol type)
+            {
+                if (type.TypeKind is TypeKind.Error)
+                {
+                    return true;
+                }
+
+                if (type is IArrayTypeSymbol arrayType)
+                {
+                    return ContainsErrorType(arrayType.ElementType);
+                }
+
+                if (type is INamedTypeSymbol { IsGenericType: true } genericType)
+                {
+                    foreach (ITypeSymbol typeArgument in genericType.TypeArguments)
+                    {
+                        if (ContainsErrorType(typeArgument))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                // A nested type (e.g. Outer<Missing>.Inner) carries the error symbol on its containing type rather
+                // than in its own type arguments, so inspect the enclosing type as well.
+                if (type.ContainingType is not null && ContainsErrorType(type.ContainingType))
+                {
+                    return true;
+                }
+
+                return false;
             }
 
             private static bool ContainsGenericParameters(ITypeSymbol type)

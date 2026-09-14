@@ -30,7 +30,7 @@ To build the CoreCLR runtime for WebAssembly, use the following command from the
 ```
 
 This command will:
-- Install the Emscripten SDK (emsdk) automatically
+- Install the Emscripten SDK (emsdk) automatically, into a shared cache under the main checkout
 - Build the CoreCLR runtime for WebAssembly
 - Build the required libraries
 

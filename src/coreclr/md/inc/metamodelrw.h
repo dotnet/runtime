@@ -20,6 +20,7 @@
 #include "metadatahash.h"
 #include "rwutil.h"
 #include "shash.h"
+#include "cdacdata.h"
 
 #include "../heaps/export.h"
 #include "../tables/export.h"
@@ -27,9 +28,6 @@
 #include<minipal/utils.h>
 
 struct HENUMInternal;
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-struct IMDCustomDataSource;
-#endif
 
 // ENUM for marking bit
 enum
@@ -201,15 +199,16 @@ typedef CMetaDataHashBase CLookUpHash;
 
 class MDTOKENMAP;
 class MDInternalRW;
-class UTSemReadWrite;
 
 template <class MiniMd> class CLiteWeightStgdb;
+class DacDbiInterfaceImpl;
 //*****************************************************************************
 // Read/Write MiniMd.
 //*****************************************************************************
 class CMiniMdRW : public CMiniMdTemplate<CMiniMdRW>
 {
 public:
+    friend class ::DacDbiInterfaceImpl;
     friend class CLiteWeightStgdb<CMiniMdRW>;
     friend class CLiteWeightStgdbRW;
     friend class CMiniMdTemplate<CMiniMdRW>;
@@ -219,7 +218,7 @@ public:
     friend class RegMeta;
     friend class FilterTable;
     friend class ImportHelper;
-    friend class VerifyLayoutsMD;
+    friend struct ::cdac_data<CMiniMdRW>;
 
     CMiniMdRW();
     ~CMiniMdRW();
@@ -234,10 +233,6 @@ public:
     HRESULT InitPoolOnMem(int iPool, void *pbData, ULONG cbData, int bReadOnly);
     __checkReturn
     HRESULT InitOnRO(CMiniMd *pMd, int bReadOnly);
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    __checkReturn
-    HRESULT InitOnCustomDataSource(IMDCustomDataSource* pDataSource);
-#endif
     __checkReturn
     HRESULT ConvertToRW();
 
@@ -1232,22 +1227,27 @@ protected:
 
     CMiniMdSchema m_StartupSchema;      // Schema at start time.  Keep count of records.
     BYTE        m_bSortable[TBL_COUNT]; // Is a given table sortable?  (Can it be reorganized?)
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    ReleaseHolder<IMDCustomDataSource> m_pCustomDataSource;
-#endif
 
 #ifdef _DEBUG
 
 protected:
-    UTSemReadWrite * dbg_m_pLock;
+    bool dbg_m_fLockEnabled;
+    Volatile<bool> dbg_m_fIsLockedForWrite;
 
 public:
     // Checks that MetaData is locked for write operation (if thread-safety is enabled and the lock exists)
     void Debug_CheckIsLockedForWrite();
 
-    void Debug_SetLock(UTSemReadWrite * pLock)
+    void Debug_EnableLockCheck()
     {
-        dbg_m_pLock = pLock;
+        dbg_m_fLockEnabled = true;
+    }
+
+    void Debug_SetIsLockedForWrite(bool isLockedForWrite)
+    {
+        _ASSERTE(dbg_m_fLockEnabled);
+        _ASSERTE(dbg_m_fIsLockedForWrite.Load() != isLockedForWrite);
+        dbg_m_fIsLockedForWrite.Store(isLockedForWrite);
     }
 
 #endif //_DEBUG
@@ -1328,6 +1328,7 @@ public:
 
 private:
     BOOL m_fMinimalDelta;
+    BOOL m_fAll4ByteColumns;
 
 public:
     BOOL IsMinimalDelta()
@@ -1395,5 +1396,16 @@ public:
         bool * pfIsTableVirtualSortValid);
 
 }; // class CMiniMdRW : public CMiniMdTemplate<CMiniMdRW>
+
+template<>
+struct cdac_data<CMiniMdRW>
+{
+    static constexpr size_t All4ByteColumns = offsetof(CMiniMdRW, m_fAll4ByteColumns);
+    static constexpr size_t Tables = offsetof(CMiniMdRW, m_Tables);
+    static constexpr size_t StringHeap = offsetof(CMiniMdRW, m_StringHeap);
+    static constexpr size_t BlobHeap = offsetof(CMiniMdRW, m_BlobHeap);
+    static constexpr size_t UserStringHeap = offsetof(CMiniMdRW, m_UserStringHeap);
+    static constexpr size_t GuidHeap = offsetof(CMiniMdRW, m_GuidHeap);
+};
 
 #endif // _METAMODELRW_H_

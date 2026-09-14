@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EnCSyncBlockInfo))]
 internal sealed partial class EnCSyncBlockInfo : IData<EnCSyncBlockInfo>
 {
-    [Field] public TargetPointer List { get; }
+    [Field] public partial TargetPointer List { get; }
 }

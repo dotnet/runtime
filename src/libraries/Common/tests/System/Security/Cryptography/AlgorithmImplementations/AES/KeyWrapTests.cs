@@ -37,12 +37,19 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void NotValidForAesCsp()
         {
-            byte[] input = new byte[16];
+            byte[] plaintext = new byte[16];
+            byte[] ciphertext = new byte[24];
 
             using (Aes aes = new AesCryptoServiceProvider())
             {
-                Assert.Throws<NotSupportedException>(() => aes.EncryptKeyWrapPadded(input));
-                Assert.Throws<NotSupportedException>(() => aes.DecryptKeyWrapPadded(input));
+                Assert.Throws<NotSupportedException>(() => aes.EncryptKeyWrap(plaintext));
+                Assert.Throws<NotSupportedException>(() => aes.EncryptKeyWrap(new ReadOnlySpan<byte>(plaintext)));
+                Assert.Throws<NotSupportedException>(() => aes.EncryptKeyWrap(plaintext, ciphertext));
+
+                Assert.Throws<NotSupportedException>(() => aes.DecryptKeyWrap(ciphertext));
+                Assert.Throws<NotSupportedException>(() => aes.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext)));
+                Assert.Throws<NotSupportedException>(() => aes.DecryptKeyWrap(ciphertext, plaintext));
+                Assert.Throws<NotSupportedException>(() => aes.TryDecryptKeyWrap(ciphertext, plaintext, out _));
             }
         }
     }
@@ -61,36 +68,23 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     public static class KeyWrapContractTests
     {
         [Theory]
-        [InlineData(1, 16)]
-        [InlineData(5, 16)]
-        [InlineData(8, 16)]
-        [InlineData(9, 24)]
-        [InlineData(15, 24)]
         [InlineData(16, 24)]
-        [InlineData(17, 32)]
-        public static void VerifyGetPaddedLength(int inputLength, int expectedLength)
+        [InlineData(0x7FFF_FFF0, 0x7FFF_FFF8)]
+        public static void VerifyGetLength(int inputLength, int expectedLength)
         {
-            Assert.Equal(expectedLength, Aes.GetKeyWrapPaddedLength(inputLength));
+            Assert.Equal(expectedLength, Aes.GetKeyWrapLength(inputLength));
         }
 
         [Fact]
-        public static void VerifyGetPaddedLength_Random()
+        public static void VerifyGetLength_Random()
         {
-            int value = Random.Shared.Next(0x7FFF_FFF1);
-            int actual = Aes.GetKeyWrapPaddedLength(value);
-
-            // Rather than repeat the formula of `(value + 7) / 8 * 8 + 8`, let's prove it by deconstruction.
-            int minus8 = actual - 8;
-            int minus16 = actual - 16;
-
-            if (value <= minus16 || value > minus8)
-            {
-                Assert.Fail($"Expected {value} to be in the range ({minus16}, {minus8}] for padded length {actual}");
-            }
+            int value = Random.Shared.Next(16, 0x7FFF_FFF1) & ~0b111;
+            int actual = Aes.GetKeyWrapLength(value);
+            Assert.Equal(value + 8, actual);
         }
 
         [Fact]
-        public static void GetPaddedLength_TooLarge()
+        public static void GetLength_TooLarge()
         {
             int i = int.MaxValue;
 
@@ -98,21 +92,34 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
                     "plaintextLengthInBytes",
-                    () => Aes.GetKeyWrapPaddedLength(i));
+                    () => Aes.GetKeyWrapLength(i));
             }
 
-            Assert.Equal(0x7FFF_FFF8, Aes.GetKeyWrapPaddedLength(i));
+            Assert.Equal(0x7FFF_FFF8, Aes.GetKeyWrapLength(i));
         }
 
-        [Fact]
-        public static void GetPaddedLengthNeedsPositiveInput()
+        [Theory]
+        [InlineData(15)]
+        [InlineData(8)]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public static void GetLengthTooSmall(int len)
         {
-            foreach (int len in new int[] { 0, -1, -2, int.MinValue })
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                    "plaintextLengthInBytes",
-                    () => Aes.GetKeyWrapPaddedLength(len));
-            }
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "plaintextLengthInBytes",
+                () => Aes.GetKeyWrapLength(len));
+        }
+
+        [Theory]
+        [InlineData(17)]
+        [InlineData(19)]
+        [InlineData(25)]
+        public static void GetLengthNotAlignedToMultiple(int len)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "plaintextLengthInBytes",
+                () => Aes.GetKeyWrapLength(len));
         }
 
         [Fact]
@@ -122,127 +129,201 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 byte[] output = new byte[24];
 
-                AssertExtensions.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentNullException>(
                     "plaintext",
-                    () => key.EncryptKeyWrapPadded(null));
+                    () => key.EncryptKeyWrap(null));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "plaintext",
-                    () => key.EncryptKeyWrapPadded(Array.Empty<byte>()));
+                    () => key.EncryptKeyWrap(Array.Empty<byte>()));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "plaintext",
-                    () => key.EncryptKeyWrapPadded(ReadOnlySpan<byte>.Empty));
+                    () => key.EncryptKeyWrap(ReadOnlySpan<byte>.Empty));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "plaintext",
-                    () => key.EncryptKeyWrapPadded(ReadOnlySpan<byte>.Empty, output));
+                    () => key.EncryptKeyWrap(ReadOnlySpan<byte>.Empty, output));
 
                 AssertExtensions.Throws<ArgumentNullException>(
                     "ciphertext",
-                    () => key.DecryptKeyWrapPadded(null));
+                    () => key.DecryptKeyWrap(null));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
-                    () => key.DecryptKeyWrapPadded(ReadOnlySpan<byte>.Empty, output));
+                    () => key.DecryptKeyWrap(Array.Empty<byte>()));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
-                    () => key.DecryptKeyWrapPadded(ReadOnlySpan<byte>.Empty));
+                    () => key.DecryptKeyWrap(ReadOnlySpan<byte>.Empty));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
-                    () => key.DecryptKeyWrapPadded(ReadOnlySpan<byte>.Empty, output));
+                    () => key.DecryptKeyWrap(ReadOnlySpan<byte>.Empty, output));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
-                    () => key.TryDecryptKeyWrapPadded(ReadOnlySpan<byte>.Empty, output, out _));
+                    () => key.TryDecryptKeyWrap(ReadOnlySpan<byte>.Empty, output, out _));
 
-                Assert.Equal(0, key.DecryptKeyWrapPaddedCallCount);
+                Assert.Equal(0, key.DecryptKeyWrapCallCount);
             }
         }
 
         [Fact]
         public static void DecryptNeverCalledWithPartialBlocks()
         {
-            byte[] input = new byte[33];
+            byte[] input = new byte[129];
+            byte[] buffer = new byte[input.Length];
 
             using (TestAes key = new TestAes())
             {
-                key.DecryptOverride = (source, destination) => source.Length - 15;
+                key.DecryptOverride = (source, destination) => source.Length - 8;
 
-                Assert.ThrowsAny<Exception>(() => key.DecryptKeyWrapPadded(Array.Empty<byte>()));
-                Assert.Equal(0, key.DecryptKeyWrapPaddedCallCount);
+                Assert.ThrowsAny<Exception>(() => key.DecryptKeyWrap(Array.Empty<byte>()));
+                Assert.Equal(0, key.DecryptKeyWrapCallCount);
 
                 int expectedCallCount = 0;
+                const int MinCiphertextLength = 24;
 
-                for (int i = input.Length; i > 0; i--)
+                for (int i = input.Length; i >= 0; i--)
                 {
-                    if (i % 8 == 0 && i > 8)
+                    if (i % 8 == 0 && i >= MinCiphertextLength)
                     {
                         // Assert.NoThrow
-                        key.DecryptKeyWrapPadded(new ReadOnlySpan<byte>(input, 0, i));
+                        key.DecryptKeyWrap(new ReadOnlySpan<byte>(input, 0, i));
                         expectedCallCount++;
                     }
                     else
                     {
                         AssertExtensions.Throws<ArgumentException>(
                             "ciphertext",
-                            () => key.DecryptKeyWrapPadded(new ReadOnlySpan<byte>(input, 0, i)));
+                            () => key.DecryptKeyWrap(new ReadOnlySpan<byte>(input, 0, i)));
+
+                        AssertExtensions.Throws<ArgumentException>(
+                            "ciphertext",
+                            () => key.TryDecryptKeyWrap(new ReadOnlySpan<byte>(input, 0, i), buffer, out _));
                     }
 
-                    Assert.Equal(expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                    Assert.Equal(expectedCallCount, key.DecryptKeyWrapCallCount);
                 }
             }
         }
 
         [Fact]
-        public static void DecryptMustReportMinimumLength()
+        public static void EncryptNeverCalledWithPartialBlocks()
         {
+            byte[] input = new byte[32];
+            byte[] buffer = new byte[input.Length + 8];
+
             using (TestAes key = new TestAes())
             {
-                key.DecryptOverride = (source, destination) => source.Length - 16;
-                byte[] input = new byte[32];
+                key.EncryptOverride = (source, destination) => {};
 
-                Assert.Throws<CryptographicException>(() => key.DecryptKeyWrapPadded(input));
-                Assert.Equal(1, key.DecryptKeyWrapPaddedCallCount);
 
-                key.DecryptOverride = (source, destination) => source.Length - 15;
-                byte[] ret = key.DecryptKeyWrapPadded(input);
-                Assert.Equal(17, ret.Length);
-                Assert.Equal(2, key.DecryptKeyWrapPaddedCallCount);
-            }
-        }
+                Assert.Throws<ArgumentException>(() => key.EncryptKeyWrap(new byte[15]));
+                Assert.Throws<ArgumentException>(() => key.EncryptKeyWrap(new ReadOnlySpan<byte>(new byte[15])));
+                Assert.Throws<ArgumentException>(() => key.EncryptKeyWrap(new ReadOnlySpan<byte>(new byte[15]), buffer));
+                Assert.Equal(0, key.EncryptKeyWrapCallCount);
 
-        [Fact]
-        public static void ExcessiveLengthFromDecrypt()
-        {
-            using (TestAes key = new TestAes())
-            {
-                byte[] input = new byte[32];
-                byte[] output = new byte[32];
-                int retLen = input.Length;
                 int expectedCallCount = 0;
-                key.DecryptOverride = (source, destination) => retLen;
+                const int MinPlaintextLength = 16;
 
-                for (; retLen > input.Length - 8; retLen--)
+                for (int i = input.Length; i >= 0; i--)
                 {
-                    Assert.Throws<CryptographicException>(() => key.DecryptKeyWrapPadded(input));
-                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                    if (i % 8 == 0 && i >= MinPlaintextLength)
+                    {
+                        // Assert.NoThrow
+                        key.EncryptKeyWrap(new ReadOnlySpan<byte>(input, 0, i));
+                        expectedCallCount++;
+                    }
+                    else
+                    {
+                        AssertExtensions.Throws<ArgumentException>(
+                            "plaintext",
+                            () => key.EncryptKeyWrap(new ReadOnlySpan<byte>(input, 0, i)));
 
-                    Assert.Throws<CryptographicException>(() => key.DecryptKeyWrapPadded(new ReadOnlySpan<byte>(input)));
-                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                        AssertExtensions.Throws<ArgumentException>(
+                            "plaintext",
+                            () => key.EncryptKeyWrap(new ReadOnlySpan<byte>(input, 0, i), buffer));
+                    }
 
-                    Assert.Throws<CryptographicException>(() => key.DecryptKeyWrapPadded(input, output));
-                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                    Assert.Equal(expectedCallCount, key.EncryptKeyWrapCallCount);
+                }
+            }
+        }
 
-                    Assert.Throws<CryptographicException>(() => key.TryDecryptKeyWrapPadded(input, output, out _));
-                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+        [Fact]
+        public static void DecryptMustReportCorrectLength()
+        {
+            using (TestAes key = new TestAes())
+            {
+                byte[] input = new byte[32];
+                byte[] output = new byte[24];
+                int expectedCallCount = 0;
+
+                foreach (int reportedLength in new[] { 23, 25 })
+                {
+                    key.DecryptOverride =
+                        (source, destination) =>
+                        {
+                            destination.Fill(0xDD);
+                            return reportedLength;
+                        };
+
+                    Assert.Throws<CryptographicException>(() => key.DecryptKeyWrap(input));
+                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
+
+                    Assert.Throws<CryptographicException>(
+                        () => key.DecryptKeyWrap(new ReadOnlySpan<byte>(input)));
+
+                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
+
+                    output.AsSpan().Fill(0xFF);
+                    Assert.Throws<CryptographicException>(() => key.DecryptKeyWrap(input, output));
+                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
+                    AssertExtensions.TrueExpression(output.IndexOfAnyExcept((byte)0) == -1);
+
+                    output.AsSpan().Fill(0xFF);
+                    Assert.Throws<CryptographicException>(() => key.TryDecryptKeyWrap(input, output, out _));
+                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
+                    AssertExtensions.TrueExpression(output.IndexOfAnyExcept((byte)0) == -1);
                 }
 
-                byte[] ret = key.DecryptKeyWrapPadded(input);
-                Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
-                Assert.Equal(retLen, ret.Length);
+                key.DecryptOverride = (source, destination) => source.Length - 8;
+                byte[] ret = key.DecryptKeyWrap(input);
+                Assert.Equal(24, ret.Length);
+                Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
+            }
+        }
+
+        [Fact]
+        public static void DecryptClearsDestinationWhenVirtualThrows()
+        {
+            byte[] input = new byte[24];
+            byte[] output = new byte[24];
+            const int OutputLength = 16;
+            const byte PreFill = 0xB5;
+
+            using (TestAes key = new TestAes())
+            {
+                key.DecryptOverride =
+                    (source, destination) =>
+                    {
+                        destination.Fill(0xDD);
+                        throw new CryptographicException();
+                    };
+
+                Array.Fill(output, PreFill);
+                Assert.Throws<CryptographicException>(() => key.DecryptKeyWrap(input, output));
+                Assert.Equal(1, key.DecryptKeyWrapCallCount);
+                AssertExtensions.TrueExpression(output.AsSpan(0, OutputLength).IndexOfAnyExcept((byte)0) == -1);
+                AssertExtensions.TrueExpression(output.AsSpan(OutputLength).IndexOfAnyExcept(PreFill) == -1);
+
+                Array.Fill(output, PreFill);
+                Assert.Throws<CryptographicException>(() => key.TryDecryptKeyWrap(input, output, out _));
+                Assert.Equal(2, key.DecryptKeyWrapCallCount);
+                AssertExtensions.TrueExpression(output.AsSpan(0, OutputLength).IndexOfAnyExcept((byte)0) == -1);
+                AssertExtensions.TrueExpression(output.AsSpan(OutputLength).IndexOfAnyExcept(PreFill) == -1);
             }
         }
 
@@ -251,7 +332,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         {
             using (TestAes key = new TestAes())
             {
-                byte[] input = new byte[32];
+                byte[] input = new byte[64];
                 int callLen = input.Length;
 
                 key.EncryptOverride =
@@ -260,9 +341,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                         AssertExtensions.TrueExpression(source.Overlaps(input));
                     };
 
-                for (; callLen > 0; callLen--)
+                for (; callLen >= 16; callLen -= 8)
                 {
-                    key.EncryptKeyWrapPadded(input.AsSpan(0, callLen));
+                    key.EncryptKeyWrap(input.AsSpan(0, callLen));
                 }
             }
         }
@@ -279,31 +360,31 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 key.EncryptOverride =
                     (source, destination) =>
                     {
-                        Assert.Equal(Aes.GetKeyWrapPaddedLength(source.Length), destination.Length);
+                        Assert.Equal(Aes.GetKeyWrapLength(source.Length), destination.Length);
                         AssertExtensions.TrueExpression(destination.Overlaps(output, out int offset));
                         Assert.Equal(0, offset);
                     };
 
-                int correctLength = Aes.GetKeyWrapPaddedLength(input.Length);
+                int correctLength = Aes.GetKeyWrapLength(input.Length);
 
                 for (int i = 0; i <= output.Length; i++)
                 {
                     if (i == correctLength)
                     {
                         // Assert.NoThrow
-                        key.EncryptKeyWrapPadded(input, output.AsSpan(0, i));
-                        Assert.Equal(++expectedCallCount, key.EncryptKeyWrapPaddedCallCount);
+                        key.EncryptKeyWrap(input, output.AsSpan(0, i));
+                        Assert.Equal(++expectedCallCount, key.EncryptKeyWrapCallCount);
                     }
                     else
                     {
                         AssertExtensions.Throws<ArgumentException>(
                             "destination",
-                            () => key.EncryptKeyWrapPadded(input, output.AsSpan(0, i)));
-                        Assert.Equal(expectedCallCount, key.EncryptKeyWrapPaddedCallCount);
+                            () => key.EncryptKeyWrap(input, output.AsSpan(0, i)));
+                        Assert.Equal(expectedCallCount, key.EncryptKeyWrapCallCount);
                     }
                 }
 
-                Assert.Equal(1, key.EncryptKeyWrapPaddedCallCount);
+                Assert.Equal(1, key.EncryptKeyWrapCallCount);
             }
         }
 
@@ -312,121 +393,54 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         {
             using (TestAes key = new TestAes())
             {
-                byte[] input = new byte[32];
-                byte[] output = new byte[32];
+                byte[] input = new byte[64];
+                byte[] output = new byte[64];
                 int callLen = output.Length;
                 int expectedCallCount = 0;
 
                 key.DecryptOverride =
                     (source, destination) =>
                     {
-                        int maxOutput = source.Length - 8;
-                        Assert.Equal(maxOutput, destination.Length);
-
-                        if (callLen >= maxOutput)
-                        {
-                            AssertExtensions.TrueExpression(destination.Overlaps(output, out int offset));
-                            Assert.Equal(0, offset);
-                        }
-                        else
-                        {
-                            AssertExtensions.FalseExpression(destination.Overlaps(output));
-                        }
-
-                        return source.Length - 15;
+                        // Since decrypt is unpadded we never need to rent a destination buffer, so we should always
+                        // be decrypting into the caller supplied buffer.
+                        int outputLength = source.Length - 8;
+                        Assert.Equal(outputLength, destination.Length);
+                        AssertExtensions.TrueExpression(destination.Overlaps(output, out int offset));
+                        Assert.Equal(0, offset);
+                        return source.Length - 8;
                     };
 
-                for (; callLen > input.Length - 16; callLen--)
+                for (; callLen >= input.Length - 8; callLen--)
                 {
-                    key.DecryptKeyWrapPadded(input, output.AsSpan(0, callLen));
-                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                    key.DecryptKeyWrap(input, output.AsSpan(0, callLen));
+                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
 
-                    AssertExtensions.TrueExpression(key.TryDecryptKeyWrapPadded(input, output.AsSpan(0, callLen), out _));
-                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                    AssertExtensions.TrueExpression(key.TryDecryptKeyWrap(input, output.AsSpan(0, callLen), out _));
+                    Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
                 }
 
                 // Now that callLen is too short, we should get an ArgumentException with no increase in call count.
                 AssertExtensions.Throws<ArgumentException>(
                     "destination",
-                    () => key.DecryptKeyWrapPadded(input, output.AsSpan(0, callLen)));
+                    () => key.DecryptKeyWrap(input, output.AsSpan(0, callLen)));
 
-                Assert.Equal(expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                Assert.Equal(expectedCallCount, key.DecryptKeyWrapCallCount);
+                AssertExtensions.TrueExpression(expectedCallCount > 0);
 
                 // TryDecrypt doesn't throw, but also doesn't call the virtual
-                AssertExtensions.FalseExpression(key.TryDecryptKeyWrapPadded(input, output.AsSpan(0, callLen), out _));
-                Assert.Equal(expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                AssertExtensions.FalseExpression(key.TryDecryptKeyWrap(input, output.AsSpan(0, callLen), out _));
+                Assert.Equal(expectedCallCount, key.DecryptKeyWrapCallCount);
             }
         }
 
         [Fact]
-        public static void BaseClassForcesZeroPadding()
-        {
-            // To make it permissible for a derived class to perform the unwrap in a different buffer,
-            // and only copy over bytesWritten bytes to the destination, the base class forces any
-            // extra bytes in destination to be zeroed out.
-            // This test shows that works.
-
-            using (TestAes key = new TestAes())
-            {
-                ReadOnlySpan<byte> input = stackalloc byte[24];
-                Span<byte> output = stackalloc byte[32];
-                int retLen = 0;
-                int outputOffset = 0;
-
-                int minOutput = input.Length - 15;
-                int maxOutput = input.Length - 8;
-
-                const byte PreFill = 0xEE;
-                const byte CallFill = 0xCC;
-
-                key.DecryptOverride =
-                    (source, destination) =>
-                    {
-                        destination.Fill(CallFill);
-                        return retLen;
-                    };
-
-                for (int outputLen = minOutput; outputLen <= output.Length; outputLen++)
-                {
-                    outputOffset = (output.Length - outputLen + 1) / 2;
-                    Span<byte> destination = output.Slice(outputOffset, outputLen);
-                    ReadOnlySpan<byte> trimmedDest = destination;
-
-                    if (trimmedDest.Length > maxOutput)
-                    {
-                        trimmedDest = trimmedDest.Slice(0, maxOutput);
-                    }
-
-                    ReadOnlySpan<byte> preDest = output.Slice(0, outputOffset);
-                    ReadOnlySpan<byte> postDest = output.Slice(outputOffset + trimmedDest.Length);
-
-                    for (retLen = minOutput; retLen <= int.Min(outputLen, maxOutput); retLen++)
-                    {
-                        output.Fill(PreFill);
-                        int ret = key.DecryptKeyWrapPadded(input, destination);
-                        Assert.Equal(retLen, ret);
-
-                        ReadOnlySpan<byte> padding = trimmedDest.Slice(retLen);
-                        ReadOnlySpan<byte> answer = trimmedDest.Slice(0, retLen);
-
-                        AssertExtensions.TrueExpression(padding.IndexOfAnyExcept((byte)0) == -1);
-                        AssertExtensions.TrueExpression(answer.IndexOfAnyExcept(CallFill) == -1);
-                        AssertExtensions.TrueExpression(preDest.IndexOfAnyExcept(PreFill) == -1);
-                        AssertExtensions.TrueExpression(postDest.IndexOfAnyExcept(PreFill) == -1);
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public static void DecryptCallsVirtualWhenDestinationIsPlausible()
+        public static void DecryptCallsVirtualWhenDestinationIsBigEnough()
         {
             using (TestAes key = new TestAes())
             {
                 byte[] input = new byte[24];
                 byte[] output = new byte[32];
-                int retLen = input.Length - 9;
-                int maxOutput = input.Length - 8;
+                int retLen = input.Length - 8;
                 int expectedCallCount = 0;
 
                 const byte CallFill = 0xDD;
@@ -435,15 +449,14 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 key.DecryptOverride =
                     (source, destination) =>
                     {
-                        destination[0..^1].Fill(CallFill);
-                        destination[^1] = 0;
-                        return destination.Length - 1;
+                        destination.Fill(CallFill);
+                        return destination.Length;
                     };
 
-                for (int outputLen = output.Length; outputLen > input.Length - 16; outputLen--)
+                for (int outputLen = output.Length; outputLen >= 0; outputLen--)
                 {
                     int outputOffset = (output.Length - outputLen + 1) / 2;
-                    int trimmedLen = int.Min(maxOutput, outputLen);
+                    int trimmedLen = int.Min(retLen, outputLen);
                     Span<byte> destination = output.AsSpan(outputOffset, outputLen);
 
                     ReadOnlySpan<byte> preDest = output.AsSpan(0, outputOffset);
@@ -452,22 +465,19 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     if (outputLen >= retLen)
                     {
                         Array.Fill(output, PreFill);
-                        int ret = key.DecryptKeyWrapPadded(input, destination);
-                        Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                        int ret = key.DecryptKeyWrap(input, destination);
+                        Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
 
                         ReadOnlySpan<byte> answer = destination.Slice(0, retLen);
-                        ReadOnlySpan<byte> padding = destination.Slice(retLen, trimmedLen - retLen);
 
-                        AssertExtensions.TrueExpression(padding.IndexOfAnyExcept((byte)0) == -1);
                         AssertExtensions.TrueExpression(answer.IndexOfAnyExcept(CallFill) == -1);
                         AssertExtensions.TrueExpression(preDest.IndexOfAnyExcept(PreFill) == -1);
                         AssertExtensions.TrueExpression(postDest.IndexOfAnyExcept(PreFill) == -1);
 
                         Array.Fill(output, PreFill);
-                        AssertExtensions.TrueExpression(key.TryDecryptKeyWrapPadded(input, destination, out ret));
-                        Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                        AssertExtensions.TrueExpression(key.TryDecryptKeyWrap(input, destination, out ret));
+                        Assert.Equal(++expectedCallCount, key.DecryptKeyWrapCallCount);
 
-                        AssertExtensions.TrueExpression(padding.IndexOfAnyExcept((byte)0) == -1);
                         AssertExtensions.TrueExpression(answer.IndexOfAnyExcept(CallFill) == -1);
                         AssertExtensions.TrueExpression(preDest.IndexOfAnyExcept(PreFill) == -1);
                         AssertExtensions.TrueExpression(postDest.IndexOfAnyExcept(PreFill) == -1);
@@ -478,14 +488,14 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                         AssertExtensions.Throws<ArgumentException>(
                             "destination",
-                            () => key.DecryptKeyWrapPadded(input, output.AsSpan(outputOffset, outputLen)));
+                            () => key.DecryptKeyWrap(input, output.AsSpan(outputOffset, outputLen)));
 
-                        Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                        Assert.Equal(expectedCallCount, key.DecryptKeyWrapCallCount);
                         AssertExtensions.TrueExpression(output.IndexOfAnyExcept(PreFill) == -1);
 
                         Array.Fill(output, PreFill);
-                        AssertExtensions.FalseExpression(key.TryDecryptKeyWrapPadded(input, destination, out int ret));
-                        Assert.Equal(++expectedCallCount, key.DecryptKeyWrapPaddedCallCount);
+                        AssertExtensions.FalseExpression(key.TryDecryptKeyWrap(input, destination, out int ret));
+                        Assert.Equal(expectedCallCount, key.DecryptKeyWrapCallCount);
                         AssertExtensions.TrueExpression(output.IndexOfAnyExcept(PreFill) == -1);
                         Assert.Equal(0, ret);
                     }
@@ -496,46 +506,46 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void NoOverlapForEncrypt()
         {
-            byte[] buffer = new byte[32];
+            byte[] buffer = new byte[40];
 
             using (TestAes key = new TestAes())
             {
                 AssertExtensions.Throws<CryptographicException>(
-                    () => key.EncryptKeyWrapPadded(buffer.AsSpan(15, 8), buffer.AsSpan(0, 16)));
+                    () => key.EncryptKeyWrap(buffer.AsSpan(24, 16), buffer.AsSpan(1, 24)));
 
-                Assert.Equal(0, key.EncryptKeyWrapPaddedCallCount);
+                Assert.Equal(0, key.EncryptKeyWrapCallCount);
 
                 key.EncryptOverride = (source, destination) => { };
 
                 // Adjacent is OK
-                key.EncryptKeyWrapPadded(buffer.AsSpan(16, 8), buffer.AsSpan(0, 16));
-                Assert.Equal(1, key.EncryptKeyWrapPaddedCallCount);
+                key.EncryptKeyWrap(buffer.AsSpan(24, 16), buffer.AsSpan(0, 24));
+                Assert.Equal(1, key.EncryptKeyWrapCallCount);
             }
         }
 
         [Fact]
         public static void NoOverlapForDecrypt()
         {
-            byte[] buffer = new byte[32];
+            byte[] buffer = new byte[40];
 
             using (TestAes key = new TestAes())
             {
                 AssertExtensions.Throws<CryptographicException>(
-                    () => key.DecryptKeyWrapPadded(buffer.AsSpan(0, 16), buffer.AsSpan(15, 8)));
+                    () => key.DecryptKeyWrap(buffer.AsSpan(0, 24), buffer.AsSpan(23, 16)));
 
                 AssertExtensions.Throws<CryptographicException>(
-                    () => key.TryDecryptKeyWrapPadded(buffer.AsSpan(0, 16), buffer.AsSpan(15, 8), out _));
+                    () => key.TryDecryptKeyWrap(buffer.AsSpan(0, 24), buffer.AsSpan(23, 16), out _));
 
-                Assert.Equal(0, key.EncryptKeyWrapPaddedCallCount);
+                Assert.Equal(0, key.DecryptKeyWrapCallCount);
 
-                key.DecryptOverride = (source, destination) => destination.Length - 1;
+                key.DecryptOverride = (source, destination) => source.Length - 8;
 
                 // Adjacent is OK
-                key.DecryptKeyWrapPadded(buffer.AsSpan(0, 16), buffer.AsSpan(16, 8));
-                Assert.Equal(1, key.DecryptKeyWrapPaddedCallCount);
+                key.DecryptKeyWrap(buffer.AsSpan(0, 24), buffer.AsSpan(24, 16));
+                Assert.Equal(1, key.DecryptKeyWrapCallCount);
 
-                AssertExtensions.TrueExpression(key.TryDecryptKeyWrapPadded(buffer.AsSpan(0, 16), buffer.AsSpan(16, 8), out _));
-                Assert.Equal(2, key.DecryptKeyWrapPaddedCallCount);
+                AssertExtensions.TrueExpression(key.TryDecryptKeyWrap(buffer.AsSpan(0, 24), buffer.AsSpan(24, 16), out _));
+                Assert.Equal(2, key.DecryptKeyWrapCallCount);
             }
         }
 
@@ -544,8 +554,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             public delegate void EncryptCallback(ReadOnlySpan<byte> source, Span<byte> destination);
             public delegate int DecryptCallback(ReadOnlySpan<byte> source, Span<byte> destination);
 
-            public int EncryptKeyWrapPaddedCallCount { get; private set; }
-            public int DecryptKeyWrapPaddedCallCount { get; private set; }
+            public int EncryptKeyWrapCallCount { get; private set; }
+            public int DecryptKeyWrapCallCount { get; private set; }
             public EncryptCallback EncryptOverride { get; set; }
             public DecryptCallback DecryptOverride { get; set; }
 
@@ -569,9 +579,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 return null;
             }
 
-            protected override void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+            protected override void EncryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                EncryptKeyWrapPaddedCallCount++;
+                EncryptKeyWrapCallCount++;
 
                 if (EncryptOverride is not null)
                 {
@@ -579,20 +589,20 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 }
                 else
                 {
-                    Assert.Fail("Unexpected call to EncryptKeyWrapPaddedCore");
+                    Assert.Fail("Unexpected call to EncryptKeyWrapCore");
                 }
             }
 
-            protected override int DecryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+            protected override int DecryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                DecryptKeyWrapPaddedCallCount++;
+                DecryptKeyWrapCallCount++;
 
                 if (DecryptOverride is not null)
                 {
                     return DecryptOverride(source, destination);
                 }
 
-                Assert.Fail("Unexpected call to EncryptKeyWrapPaddedCore");
+                Assert.Fail("Unexpected call to EncryptKeyWrapCore");
                 return -1;
             }
         }
@@ -614,247 +624,100 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [InlineData(128, 1, 16)]
-        [InlineData(128, 96, 103)]
-        [InlineData(192, 1, 16)]
-        [InlineData(192, 96, 103)]
-        [InlineData(256, 1, 16)]
-        [InlineData(256, 96, 103)]
-        public void VerifyRoundtrip(int kekSize, int ptMin, int ptMax)
+        [InlineData(128, 16)]
+        [InlineData(128, 96)]
+        [InlineData(128, 128)]
+        [InlineData(192, 16)]
+        [InlineData(192, 96)]
+        [InlineData(192, 128)]
+        [InlineData(256, 16)]
+        [InlineData(256, 96)]
+        [InlineData(256, 128)]
+        public void VerifyRoundtrip(int kekSize, int plaintextSize)
         {
             byte[] kek = new byte[kekSize / 8];
             RandomNumberGenerator.Fill(kek);
 
             using (Aes key = CreateKey(kek))
             {
-                for (int i = ptMin; i <= ptMax; i++)
-                {
-                    // Round plaintext up to the nearest multiple of 8,
-                    // and add the 8 bytes for the IV semi-block.
-                    int expectedSize = (i + 7) / 8 * 8 + 8;
+                int expectedSize = plaintextSize + 8;
 
-                    byte[] plaintext = new byte[i];
-                    RandomNumberGenerator.Fill(plaintext);
-                    byte[] ciphertext = key.EncryptKeyWrapPadded(plaintext);
-                    Assert.Equal(expectedSize, ciphertext.Length);
+                byte[] plaintext = new byte[plaintextSize];
+                RandomNumberGenerator.Fill(plaintext);
+                byte[] ciphertext = key.EncryptKeyWrap(plaintext);
+                Assert.Equal(expectedSize, ciphertext.Length);
 
-                    VerifyUnwrap(key, ciphertext, plaintext);
-                    VerifyWrap(key, plaintext, ciphertext);
-                }
+                VerifyUnwrap(key, ciphertext, plaintext);
+                VerifyWrap(key, plaintext, ciphertext);
             }
         }
 
-        [Fact]
-        public void UnwrapBadIV_SingleBlock()
+        [Theory]
+        [MemberData(nameof(KnownAnswerTests))]
+        public void RejectsTamperedCiphertext(KnownAnswerTest kat)
         {
-            // At the end of unwrap, the header block will have the incorrect value A65959A7.
-            byte[] kek = "9FC9E4BA68CA3EC8BAC82B02223EADDAAA1A67350E12510D0016083095B32BBC".HexToByteArray();
-            byte[] ciphertext = "1B2DE25B6990AA8B74087499294ECB39".HexToByteArray();
+            byte[] tampered = (byte[])kat.Ciphertext.Clone();
+            const byte TamperedBit = 1 << 2;
 
-            VerifyUnwrapFails(kek, ciphertext);
+            for (int i = 0; i < tampered.Length; i++)
+            {
+                tampered[i] ^= TamperedBit;
+                VerifyUnwrapFails(kat.Key, tampered);
+                tampered[i] ^= TamperedBit; // Put the tampered bit back so only one bit is tampered at a time.
+            }
         }
 
-        [Fact]
-        public void UnwrapBadIV_MultiBlock()
+        [Theory]
+        [InlineData("079E449C7E8504B8D559EDA0387724C78820C1E93F4F9716")]
+        [InlineData("BAB95D7021F1196EE8BC5146D20167F58362B46EED49CB9E")]
+        public void RejectsIncorrectInitialValue(string ciphertextHex)
         {
-            // At the end of unwrap, the header block will have the incorrect value A65959A7.
-            byte[] kek = "B1D18A0296DF025443EE1677ED783FB6C137A98814E09FE1".HexToByteArray();
-            byte[] ciphertext = (
-                "67A3F00F801" +
-                "A1CDAFF2D324C7AC393EB97938556FA8D54C5DB303F9EBB6321B84BCED6DD3A80EC98B3047110" +
-                "89A8EF9ADADA14A3ADD324E55BEFB6A5598ABB90A40CA8F36CB175498FAA3BDC11FDAC1113042" +
-                "E3229B790FA4BD0240830933FA9D0C8255CD271D5B7C301DDF85F098C62").HexToByteArray();
-
-            VerifyUnwrapFails(kek, ciphertext);
-        }
-
-        [Fact]
-        public void UnwrapLengthTooBig_Single()
-        {
-            // At the end of unwrap, the length segment will report 8 bytes more than the original input was,
-            // which requires reading beyond the end of the processed buffer.
-            byte[] kek = "3D7C64D35E1CEC5BBEA04867073F5E9F6DB671B28EA325215FA6DA3B1B561F48".HexToByteArray();
-            byte[] ciphertext = "9EDBCAFD999E7A1CEEC4529DC192797E".HexToByteArray();
-
-            VerifyUnwrapFails(kek, ciphertext);
-        }
-
-        [Fact]
-        public void UnwrapLengthTooBig_MultiBlock()
-        {
-            // At the end of unwrap, the length segment will report 8 bytes more than the original input was,
-            // which requires reading beyond the end of the processed buffer.
-            byte[] kek = "3D7C64D35E1CEC5BBEA04867073F5E9F6DB671B28EA325215FA6DA3B1B561F48".HexToByteArray();
-            byte[] ciphertext = "1A91401A927296BEF253F857C6124B20A2FEFB580FF472F5".HexToByteArray();
-
-            VerifyUnwrapFails(kek, ciphertext);
-        }
-
-        [Fact]
-        public void UnwrapLengthZero_Single()
-        {
-            // At the end of unwrap, the length segment will report zero, which is always invalid.
-            byte[] kek = "B870467A475D675AEE893430A09FD77F".HexToByteArray();
-            byte[] ciphertext = "024D1848259597D20FFDCE39BC3E461D".HexToByteArray();
-
-            VerifyUnwrapFails(kek, ciphertext);
-        }
-
-        [Fact]
-        public void UnwrapLengthZero_MultiBlock()
-        {
-            // At the end of unwrap, the length segment will report zero, which is always invalid.
-            byte[] kek = "DA536B4D274173D0DAD5DBB8FF21F6E27AC8BB6F9E12F51A".HexToByteArray();
-            byte[] ciphertext = "29288FFE637F4CCBF3D44FEAB22300C67796C14AAFB682E3".HexToByteArray();
-
-            VerifyUnwrapFails(kek, ciphertext);
-        }
-
-        [Fact]
-        public void UnwrapBadPadding_Single()
-        {
-            // At the end of unwrap, some of the "padding" bytes will be non-zero.
-            byte[] kek = "838E662F79DC11058ED1EC27928DE835119BAC751B689A1DFC09011BD634842E".HexToByteArray();
-            byte[] ciphertext = "E9D57F431E9A9A2878E6629A890E4C3E".HexToByteArray();
-
-            VerifyUnwrapFails(kek, ciphertext);
-        }
-
-        [Fact]
-        public void UnwrapBadPadding_MultiBlock()
-        {
-            // At the end of unwrap, some of the "padding" bytes will be non-zero.
-            byte[] kek = "6BA88BFEA55ECE448898BFEE524244B965C5EB3CADA463E0".HexToByteArray();
-            byte[] ciphertext = "852CA39B8A1DE2FD2EF10DA6F01AF860F1DF6E16F0593E85".HexToByteArray();
-
-            VerifyUnwrapFails(kek, ciphertext);
-        }
-
-        [Fact]
-        public void UnwrapLengthTooShort()
-        {
-            // At the end of unwrap, this length will report 8 less than the original input was,
-            // which means the ciphertext should have had one block fewer than it does.
-            //
-            // Subtracting 8 from the length of a single-block ciphertext is either zero (already covered),
-            // or "extremely large" (already covered), so there is not a single-block variant of this.
-            byte[] kek = "7F0B9A269A182935200F4D92FFE291F94D132D9FBCB8982F".HexToByteArray();
-            byte[] ciphertext = "9C21E8325D1D7406DE94B2009D3E67152EE6C7DBC0E5B911".HexToByteArray();
+            // Each of these chosen ciphertexts produces a recovered IV that is off by a single bit, one in the top 32-bit
+            // half and the other in the lower 32-bit half (A7A6A6A6A6A6A6A6 and A6A6A6A6A7A6A6A6, respectively).
+            byte[] kek = "000102030405060708090A0B0C0D0E0F".HexToByteArray();
+            byte[] ciphertext = ciphertextHex.HexToByteArray();
 
             VerifyUnwrapFails(kek, ciphertext);
         }
 
         private static void VerifyWrap(Aes key, byte[] plaintext, byte[] ciphertext)
         {
-            // EncryptKeyWrapPadded(byte[])
-            byte[] wrapped = key.EncryptKeyWrapPadded(plaintext);
+            // EncryptKeyWrap(byte[])
+            byte[] wrapped = key.EncryptKeyWrap(plaintext);
             AssertExtensions.SequenceEqual(ciphertext, wrapped);
 
-            // EncryptKeyWrapPadded(ReadOnlySpan<byte>)
-            wrapped = key.EncryptKeyWrapPadded(new ReadOnlySpan<byte>(plaintext));
+            // EncryptKeyWrap(ReadOnlySpan<byte>)
+            wrapped = key.EncryptKeyWrap(new ReadOnlySpan<byte>(plaintext));
             AssertExtensions.SequenceEqual(ciphertext, wrapped);
 
-            // void EncryptKeyWrapPadded(ReadOnlySpan<byte>, Span<byte>)
+            // void EncryptKeyWrap(ReadOnlySpan<byte>, Span<byte>)
             Array.Clear(wrapped);
-            key.EncryptKeyWrapPadded(plaintext, wrapped.AsSpan());
+            key.EncryptKeyWrap(plaintext, wrapped.AsSpan());
             AssertExtensions.SequenceEqual(ciphertext, wrapped);
         }
 
         private static void VerifyUnwrap(Aes key, byte[] ciphertext, byte[] plaintext)
         {
-            // DecryptKeyWrapPadded(byte[])
-            byte[] unwrapped = key.DecryptKeyWrapPadded(ciphertext);
+            // DecryptKeyWrap(byte[])
+            byte[] unwrapped = key.DecryptKeyWrap(ciphertext);
             AssertExtensions.SequenceEqual(plaintext, unwrapped);
 
-            // DecryptKeyWrapPadded(ReadOnlySpan<byte>)
-            unwrapped = key.DecryptKeyWrapPadded(new ReadOnlySpan<byte>(ciphertext));
+            // DecryptKeyWrap(ReadOnlySpan<byte>)
+            unwrapped = key.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext));
             AssertExtensions.SequenceEqual(plaintext, unwrapped);
 
-            byte[] tooBig = new byte[ciphertext.Length];
-            tooBig.AsSpan().Fill(0xFF);
-            int maxOutput = ciphertext.Length - 8;
-            int minOutput = maxOutput - 7;
-            int expectedPadding = maxOutput - plaintext.Length;
-            ReadOnlySpan<byte> paddingSlice = tooBig.AsSpan(plaintext.Length, expectedPadding);
-            ReadOnlySpan<byte> untouchedSlice = tooBig.AsSpan(maxOutput);
+            // DecryptKeyWrap(ReadOnlySpan<byte>, Span<byte>)
+            Array.Clear(unwrapped);
+            int written = key.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext), unwrapped);
+            Assert.Equal(unwrapped.Length, written);
+            AssertExtensions.SequenceEqual(plaintext, unwrapped);
 
-            // The tooBig buffer will be composed of [the right answer][padding][bytes that are not touched]
-            // Our slice point in this loop is always within [bytes that are not touched], so we expect all
-            // padding bytes to be written (as 0) and all untouched bytes to remain 0xFF.
-            for (int i = tooBig.Length; i >= maxOutput; i--)
-            {
-                Span<byte> targetSlice = tooBig.AsSpan(0, i);
-                int written = key.DecryptKeyWrapPadded(ciphertext, targetSlice);
-                ReadOnlySpan<byte> answerSlice = targetSlice.Slice(0, written);
-                // SequenceEqual will also check that `written` is correct
-                AssertExtensions.SequenceEqual(plaintext, answerSlice);
-
-                // Since `written` is correct, paddingSlice and untouchedSlice are sliced correctly.
-                AssertExtensions.TrueExpression(paddingSlice.IndexOfAnyExcept((byte)0) == -1);
-                AssertExtensions.TrueExpression(untouchedSlice.IndexOfAnyExcept((byte)0xFF) == -1);
-
-                // Repeat with TryDecryptKeyWrapPadded
-                tooBig.AsSpan().Fill(0xFF);
-                AssertExtensions.TrueExpression(key.TryDecryptKeyWrapPadded(ciphertext, targetSlice, out written));
-                answerSlice = targetSlice.Slice(0, written);
-                // SequenceEqual will also check that `written` is correct
-                AssertExtensions.SequenceEqual(plaintext, answerSlice);
-
-                // Since `written` is correct, paddingSlice and untouchedSlice are sliced correctly.
-                AssertExtensions.TrueExpression(paddingSlice.IndexOfAnyExcept((byte)0) == -1);
-                AssertExtensions.TrueExpression(untouchedSlice.IndexOfAnyExcept((byte)0xFF) == -1);
-            }
-
-            // In this loop, the input buffer is plausibly big enough, but not guaranteed big enough,
-            // so the implementation is going to use rented space to compute the unwrap.
-            //
-            // Any surplus bytes should be set to 0 (as the padding), and we can still assert that
-            // the untouched range is 0xFF, but this loop never even sees it.
-            for (int i = maxOutput - 1; i >= plaintext.Length; i--)
-            {
-                Span<byte> targetSlice = tooBig.AsSpan(0, i);
-                untouchedSlice = targetSlice.Slice(i);
-
-                int written = key.DecryptKeyWrapPadded(ciphertext, targetSlice);
-                ReadOnlySpan<byte> answerSlice = targetSlice.Slice(0, written);
-                // SequenceEqual will also check that `written` is correct
-                AssertExtensions.SequenceEqual(plaintext, answerSlice);
-
-                paddingSlice = targetSlice.Slice(written);
-                AssertExtensions.TrueExpression(paddingSlice.IndexOfAnyExcept((byte)0) == -1);
-                AssertExtensions.TrueExpression(untouchedSlice.IndexOfAnyExcept((byte)0xFF) == -1);
-
-                // Repeat with TryDecryptKeyWrapPadded
-                tooBig.AsSpan().Fill(0xFF);
-                AssertExtensions.TrueExpression(key.TryDecryptKeyWrapPadded(ciphertext, targetSlice, out written));
-                answerSlice = targetSlice.Slice(0, written);
-                // SequenceEqual will also check that `written` is correct
-                AssertExtensions.SequenceEqual(plaintext, answerSlice);
-
-                // Since `written` is correct, paddingSlice and untouchedSlice are still sliced correctly.
-                AssertExtensions.TrueExpression(paddingSlice.IndexOfAnyExcept((byte)0) == -1);
-                AssertExtensions.TrueExpression(untouchedSlice.IndexOfAnyExcept((byte)0xFF) == -1);
-            }
-
-            tooBig.AsSpan().Fill(0xFF);
-
-            // targetSlice is now too small to hold the plaintext, but that can only be determined after
-            // running the algorithm.
-            // In this case, we should never touch the destination buffer.
-            for (int i = plaintext.Length - 1; i >= minOutput; i--)
-            {
-                AssertExtensions.Throws<ArgumentException>(
-                    "destination",
-                    () => key.DecryptKeyWrapPadded(ciphertext, tooBig.AsSpan(0, i)));
-
-                AssertExtensions.TrueExpression(tooBig.IndexOfAnyExcept((byte)0xFF) == -1);
-
-                AssertExtensions.FalseExpression(
-                    key.TryDecryptKeyWrapPadded(ciphertext, tooBig.AsSpan(0, i), out int written));
-                Assert.Equal(0, written);
-
-                AssertExtensions.TrueExpression(tooBig.IndexOfAnyExcept((byte)0xFF) == -1);
-            }
+            // TryDecryptKeyWrap(ReadOnlySpan<byte>, Span<byte>, out int)
+            Array.Clear(unwrapped);
+            bool result = key.TryDecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext), unwrapped, out written);
+            AssertExtensions.TrueExpression(result);
+            Assert.Equal(unwrapped.Length, written);
+            AssertExtensions.SequenceEqual(plaintext, unwrapped);
         }
 
         private void VerifyUnwrapFails(byte[] kek, byte[] ciphertext)
@@ -862,11 +725,21 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             using (Aes key = CreateKey(kek))
             {
                 byte[] dest = new byte[ciphertext.Length];
+                int plaintextLength = ciphertext.Length - 8;
+                const byte PreFill = 0xB5;
 
-                Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrapPadded(ciphertext));
-                Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrapPadded(new ReadOnlySpan<byte>(ciphertext)));
-                Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrapPadded(ciphertext, dest));
-                Assert.ThrowsAny<CryptographicException>(() => key.TryDecryptKeyWrapPadded(ciphertext, dest, out _));
+                Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(ciphertext));
+                Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext)));
+
+                Array.Fill(dest, PreFill);
+                Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(ciphertext, dest));
+                AssertExtensions.TrueExpression(dest.AsSpan(0, plaintextLength).IndexOfAnyExcept((byte)0) == -1);
+                AssertExtensions.TrueExpression(dest.AsSpan(plaintextLength).IndexOfAnyExcept(PreFill) == -1);
+
+                Array.Fill(dest, PreFill);
+                Assert.ThrowsAny<CryptographicException>(() => key.TryDecryptKeyWrap(ciphertext, dest, out _));
+                AssertExtensions.TrueExpression(dest.AsSpan(0, plaintextLength).IndexOfAnyExcept((byte)0) == -1);
+                AssertExtensions.TrueExpression(dest.AsSpan(plaintextLength).IndexOfAnyExcept(PreFill) == -1);
             }
         }
 
@@ -875,19 +748,55 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 new object[]
                 {
                     new KnownAnswerTest(
-                        "RFC 5649 Example 1",
-                        "5840df6e29b02af1ab493b705bf16ea1ae8338f4dcc176a8".HexToByteArray(),
-                        "c37b7e6492584340bed12207808941155068f738".HexToByteArray(),
-                        "138bdeaa9b8fa7fc61f97742e72248ee5ae6ae5360d1ae6a5f54f373fa543b6a".HexToByteArray())
+                        "RFC 3394 4.1",
+                        "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF".HexToByteArray(),
+                        "1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5".HexToByteArray())
                 },
 
                 new object[]
                 {
                     new KnownAnswerTest(
-                        "RFC 5649 Example 2",
-                        "5840df6e29b02af1ab493b705bf16ea1ae8338f4dcc176a8".HexToByteArray(),
-                        "466f7250617369".HexToByteArray(),
-                        "afbeb0f07dfbf5419200f2ccb50bb24f".HexToByteArray())
+                        "RFC 3394 4.2",
+                        "000102030405060708090A0B0C0D0E0F1011121314151617".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF".HexToByteArray(),
+                        "96778B25AE6CA435F92B5B97C050AED2468AB8A17AD84E5D".HexToByteArray())
+                },
+
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 4.3",
+                        "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF".HexToByteArray(),
+                        "64E8C3F9CE0F5BA263E9777905818A2A93C8191E7D6E8AE7".HexToByteArray())
+                },
+
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 4.4",
+                        "000102030405060708090A0B0C0D0E0F1011121314151617".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF0001020304050607".HexToByteArray(),
+                        "031D33264E15D33268F24EC260743EDCE1C6C7DDEE725A936BA814915C6762D2".HexToByteArray())
+                },
+
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 4.5",
+                        "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF0001020304050607".HexToByteArray(),
+                        "A8F9BC1612C68B3FF6E6F4FBE30E71E4769C8B80A32CB8958CD5D17D6B254DA1".HexToByteArray())
+                },
+
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 4.6",
+                        "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        "28C9F404C4B810F4CBCCB35CFB87F8263F5786E2D80ED326CBC7F0E71A99F43BFB988B9B7A02DD21".HexToByteArray())
                 },
             ];
 

@@ -7,12 +7,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.BindingFlagSupport;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
@@ -46,28 +46,24 @@ namespace System.Reflection.Runtime.FieldInfos
             _reflectedType = reflectedType;
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
+        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
+
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            get
-            {
-                foreach (CustomAttributeData cad in TrueCustomAttributes)
-                    yield return cad;
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+        }
 
-                if (DeclaringType.IsExplicitLayout)
-                {
-                    int offset = ExplicitLayoutFieldOffsetData;
-                    CustomAttributeTypedArgument offsetArgument = new CustomAttributeTypedArgument(typeof(int), offset);
-                    yield return new RuntimePseudoCustomAttributeData(typeof(FieldOffsetAttribute), new CustomAttributeTypedArgument[] { offsetArgument });
-                }
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
 
-                FieldAttributes attributes = Attributes;
-#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
-                if (0 != (attributes & FieldAttributes.NotSerialized))
-                {
-                    yield return new RuntimePseudoCustomAttributeData(typeof(NonSerializedAttribute), null);
-                }
-#pragma warning restore SYSLIB0050
-            }
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
+
+        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
         public sealed override Type DeclaringType
@@ -242,8 +238,7 @@ namespace System.Reflection.Runtime.FieldInfos
         /// </summary>
         protected abstract RuntimeTypeInfo DefiningType { get; }
 
-        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
-        protected abstract int ExplicitLayoutFieldOffsetData { get; }
+        internal abstract int ExplicitLayoutFieldOffsetData { get; }
 
         /// <summary>
         /// Returns the field offset (asserts and throws if not an instance field). Does not include the size of the object header.

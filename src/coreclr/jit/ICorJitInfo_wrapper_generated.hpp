@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(canValueClassInstancePointerEscape);
+    bool temp = wrapHnd->canValueClassInstancePointerEscape(ftn);
+    API_LEAVE(canValueClassInstancePointerEscape);
+    return temp;
+}
+
 bool WrapICorJitInfo::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -1190,6 +1199,19 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitReturnCall(
     return temp;
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    API_ENTER(getAwaitAwaiterInContinuationCall);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    API_LEAVE(getAwaitAwaiterInContinuationCall);
+    return temp;
+}
+
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1277,6 +1299,14 @@ uint32_t WrapICorJitInfo::getAddressAlignment(
     uint32_t temp = wrapHnd->getAddressAlignment(address);
     API_LEAVE(getAddressAlignment);
     return temp;
+}
+
+void WrapICorJitInfo::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    API_ENTER(getWasmWellKnownGlobals);
+    wrapHnd->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    API_LEAVE(getWasmWellKnownGlobals);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
@@ -1394,16 +1424,6 @@ void WrapICorJitInfo::getAddressOfPInvokeTarget(
     API_ENTER(getAddressOfPInvokeTarget);
     wrapHnd->getAddressOfPInvokeTarget(method, pLookup);
     API_LEAVE(getAddressOfPInvokeTarget);
-}
-
-void* WrapICorJitInfo::GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection)
-{
-    API_ENTER(GetCookieForPInvokeCalliSig);
-    void* temp = wrapHnd->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-    API_LEAVE(GetCookieForPInvokeCalliSig);
-    return temp;
 }
 
 void* WrapICorJitInfo::GetCookieForInterpreterCalliSig(

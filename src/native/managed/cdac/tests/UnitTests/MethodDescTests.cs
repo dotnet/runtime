@@ -316,7 +316,7 @@ public class MethodDescTests
             int pointerSize = helpers.PointerSize;
             int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
             TargetPointer sigBuffer = methodDescBuilder.AddSignatureBuffer(expectedSig);
-            helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.IsAsyncVariant);
+            helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant);
             helpers.WritePointer(chunk.Memory.Span.Slice(asyncDataOffset + pointerSize, pointerSize), sigBuffer.Value);
             helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset + pointerSize * 2, sizeof(uint)), (uint)expectedSig.Length);
         });
@@ -324,6 +324,46 @@ public class MethodDescTests
         MethodDescHandle handle = rts.GetMethodDescHandle(asyncVariantMethod);
         Assert.True(rts.TryGetMethodSignature(handle, out ReadOnlySpan<byte> signature));
         Assert.Equal(expectedSig, signature.ToArray());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAsyncVariant_ReturnsLoadedVariant(MockTarget.Architecture arch)
+    {
+        TargetPointer thunkMethod = TargetPointer.Null;
+        TargetPointer asyncVariantMethod = TargetPointer.Null;
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            TargetTestHelpers helpers = methodDescBuilder.TargetTestHelpers;
+            MockMethodTable methodTable = methodDescBuilder.RTSBuilder.SystemObjectMethodTable;
+            uint methodDescSize = (uint)methodDescBuilder.MethodDescLayout.Size + methodDescBuilder.AsyncMethodDataSize;
+            uint methodDescSizeByAlignment = methodDescSize / methodDescBuilder.MethodDescAlignment;
+            byte chunkSize = (byte)(2 * methodDescSizeByAlignment);
+            MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncVariants", chunkSize);
+            chunk.MethodTable = methodTable.Address;
+            chunk.Size = chunkSize;
+            chunk.Count = 1;
+            methodDescBuilder.RTSBuilder.SystemObjectEEClass.MethodDescChunk = chunk.Address;
+
+            MockMethodDesc thunk = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+            thunk.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+            thunk.Slot = 1;
+            thunkMethod = new TargetPointer(thunk.Address);
+            int thunkDataOffset = (int)(thunk.Address - chunk.Address) + methodDescBuilder.MethodDescLayout.Size;
+            helpers.Write(chunk.Memory.Span.Slice(thunkDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk));
+
+            MockMethodDesc asyncVariant = chunk.GetMethodDescAtChunkIndex((int)methodDescSizeByAlignment, methodDescBuilder.MethodDescLayout);
+            asyncVariant.ChunkIndex = (byte)methodDescSizeByAlignment;
+            asyncVariant.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+            asyncVariant.Slot = 1;
+            asyncVariantMethod = new TargetPointer(asyncVariant.Address);
+            int asyncVariantDataOffset = (int)(asyncVariant.Address - chunk.Address) + methodDescBuilder.MethodDescLayout.Size;
+            helpers.Write(chunk.Memory.Span.Slice(asyncVariantDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant));
+        });
+
+        MethodDescHandle thunkHandle = rts.GetMethodDescHandle(thunkMethod);
+        Assert.Equal(asyncVariantMethod, rts.GetAsyncVariant(thunkHandle));
     }
 
     [Theory]
@@ -395,7 +435,7 @@ public class MethodDescTests
             MethodDescHandle handle = rts.GetMethodDescHandle(genericMethodDef);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(rts.IsGenericMethodDefinition(handle));
-            ReadOnlySpan<TypeHandle> instantiation = rts.GetGenericMethodInstantiation(handle);
+            ReadOnlySpan<ITypeHandle> instantiation = rts.GetGenericMethodInstantiation(handle);
             Assert.Equal(0, instantiation.Length);
         }
 
@@ -403,7 +443,7 @@ public class MethodDescTests
             MethodDescHandle handle = rts.GetMethodDescHandle(genericWithInst);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(rts.IsGenericMethodDefinition(handle));
-            ReadOnlySpan<TypeHandle> instantiation = rts.GetGenericMethodInstantiation(handle);
+            ReadOnlySpan<ITypeHandle> instantiation = rts.GetGenericMethodInstantiation(handle);
             Assert.Equal(typeArgsRawAddrs.Length, instantiation.Length);
             for (int i = 0; i < typeArgsRawAddrs.Length; i++)
             {
@@ -578,6 +618,8 @@ public class MethodDescTests
         TargetPointer asyncThunkMethod = TargetPointer.Null;
         TargetPointer asyncNonThunkMethod = TargetPointer.Null;
         TargetPointer asyncThunkWithNativeCodeSlotMethod = TargetPointer.Null;
+        TargetPointer asyncVariantThunkMethod = TargetPointer.Null;
+        TargetPointer asyncReturnDroppingThunkMethod = TargetPointer.Null;
 
         IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
         {
@@ -648,7 +690,7 @@ public class MethodDescTests
                 instantiatingStubMethod = new TargetPointer(md.Address);
             }
 
-            // Async thunk method (diagnostics hidden via IsAsyncThunkMethod, no NativeCodeSlot)
+            // Async thunk method (Thunk only: classified AsyncThunk, no NativeCodeSlot)
             {
                 uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
                 uint totalSize = mdBaseSize + methodDescBuilder.AsyncMethodDataSize;
@@ -661,7 +703,7 @@ public class MethodDescTests
                 md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
                 asyncThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.Thunk);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk);
             }
 
             // Async non-thunk method (not diagnostics hidden, has async data but not Thunk flag)
@@ -678,10 +720,10 @@ public class MethodDescTests
                 md.Slot = 1;
                 asyncNonThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.None);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.None);
             }
 
-            // Async thunk method with NativeCodeSlot (diagnostics hidden, verifies offset calculation with preceding slots)
+            // Async thunk method with NativeCodeSlot (Thunk only: classified AsyncThunk, verifies offset calculation with preceding slots)
             {
                 uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
                 uint totalSize = mdBaseSize + methodDescBuilder.NativeCodeSlotSize + methodDescBuilder.AsyncMethodDataSize;
@@ -695,7 +737,41 @@ public class MethodDescTests
                 md.Slot = 2;
                 asyncThunkWithNativeCodeSlotMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize + (int)methodDescBuilder.NativeCodeSlotSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.Thunk);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk);
+            }
+
+            // Async variant thunk method (not diagnostics hidden: thunk that is an async variant and not return-dropping)
+            {
+                uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
+                uint totalSize = mdBaseSize + methodDescBuilder.AsyncMethodDataSize;
+                byte chunkSize = (byte)(totalSize / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncVariantThunk", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+                md.Slot = 3;
+                asyncVariantThunkMethod = new TargetPointer(md.Address);
+                int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk | RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant));
+            }
+
+            // Async return-dropping thunk method (diagnostics hidden: return-dropping takes precedence over async variant)
+            {
+                uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
+                uint totalSize = mdBaseSize + methodDescBuilder.AsyncMethodDataSize;
+                byte chunkSize = (byte)(totalSize / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncReturnDroppingThunk", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+                md.Slot = 4;
+                asyncReturnDroppingThunkMethod = new TargetPointer(md.Address);
+                int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk | RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant | RuntimeTypeSystem_1.AsyncMethodFlags_1.ReturnDroppingThunk));
             }
         });
 
@@ -703,7 +779,7 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(normalMethod);
             Assert.False(rts.IsILStub(handle));
-            Assert.False(rts.IsAsyncThunkMethod(handle));
+            Assert.Equal(AsyncMethodFlags.None, rts.GetAsyncMethodFlags(handle));
             Assert.False(rts.IsWrapperStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
@@ -719,7 +795,7 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(lcgMethod);
             Assert.False(rts.IsILStub(handle));
-            Assert.False(rts.IsAsyncThunkMethod(handle));
+            Assert.Equal(AsyncMethodFlags.None, rts.GetAsyncMethodFlags(handle));
             Assert.False(rts.IsWrapperStub(handle));
             Assert.True(rts.IsDynamicMethod(handle));
         }
@@ -738,22 +814,34 @@ public class MethodDescTests
             Assert.False(rts.IsDynamicMethod(handle));
         }
 
-        // Async thunk: hidden via IsAsyncThunkMethod
+        // Async thunk (not variant, not return-dropping): Thunk only
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkMethod);
-            Assert.True(rts.IsAsyncThunkMethod(handle));
+            Assert.Equal(AsyncMethodFlags.Thunk, rts.GetAsyncMethodFlags(handle));
         }
 
-        // Async non-thunk: not hidden
+        // Async non-thunk: has async data but no flags set
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncNonThunkMethod);
-            Assert.False(rts.IsAsyncThunkMethod(handle));
+            Assert.Equal(AsyncMethodFlags.None, rts.GetAsyncMethodFlags(handle));
         }
 
-        // Async thunk with NativeCodeSlot: hidden via IsAsyncThunkMethod (verifies offset calculation)
+        // Async thunk with NativeCodeSlot: Thunk only (verifies offset calculation)
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkWithNativeCodeSlotMethod);
-            Assert.True(rts.IsAsyncThunkMethod(handle));
+            Assert.Equal(AsyncMethodFlags.Thunk, rts.GetAsyncMethodFlags(handle));
+        }
+
+        // Async variant thunk (variant, not return-dropping): Thunk | IsAsyncVariant
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(asyncVariantThunkMethod);
+            Assert.Equal(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant, rts.GetAsyncMethodFlags(handle));
+        }
+
+        // Async return-dropping thunk: Thunk | IsAsyncVariant | ReturnDroppingThunk
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(asyncReturnDroppingThunkMethod);
+            Assert.Equal(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant | AsyncMethodFlags.ReturnDroppingThunk, rts.GetAsyncMethodFlags(handle));
         }
     }
 

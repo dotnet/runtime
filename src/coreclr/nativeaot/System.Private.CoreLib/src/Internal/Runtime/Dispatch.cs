@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using Internal.Metadata.NativeFormat;
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
+using Internal.Runtime.TypeLoader;
 
 namespace Internal.Runtime
 {
@@ -23,13 +25,13 @@ namespace Internal.Runtime
                 var pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellRegion, out int length);
                 if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
-                    return ResolveStaticInterfaceDispatch(typeManager, pObject, (nint)(pCell - pDispatchCellRegion));
+                    return ResolveStaticInterfaceDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion));
                 }
 
                 pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellRegion, out length);
                 if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
-                    return ResolveGvmDispatch(typeManager, pObject, (nint)(pCell - pDispatchCellRegion));
+                    return ResolveGvmDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion));
                 }
             }
 
@@ -51,85 +53,68 @@ namespace Internal.Runtime
             return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, (MethodTable*)pDynamicInterfaceCell->InterfaceType, (ushort)pDynamicInterfaceCell->Slot);
         }
 
-        private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
+        private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex)
         {
-            IntPtr pDispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, out _);
-            if (MethodTable.SupportsRelativePointers)
+            NativeParser parser = GetDispatchCellInfo(
+                typeManager,
+                ReadyToRunSectionType.InterfaceDispatchCellInfoRegion,
+                checked((uint)cellIndex),
+                out ExternalReferencesTable externalReferences);
+
+            uint interfaceTypeIndex = parser.GetUnsigned();
+            uint slot = parser.GetUnsigned();
+
+            MethodTable* interfaceType = (MethodTable*)externalReferences.GetIntPtrFromIndex(interfaceTypeIndex);
+            return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, interfaceType, checked((ushort)slot));
+        }
+
+        private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex)
+        {
+            NativeParser parser = GetDispatchCellInfo(
+                typeManager,
+                ReadyToRunSectionType.GvmDispatchCellInfoRegion,
+                checked((uint)cellIndex),
+                out ExternalReferencesTable externalReferences);
+
+            uint owningTypeIndex = parser.GetUnsigned();
+            uint instantiationIndex = parser.GetUnsigned();
+            uint token = parser.GetUnsigned();
+            uint isAsyncVariant = parser.GetUnsigned();
+
+            MethodTable* owningType = (MethodTable*)externalReferences.GetIntPtrFromIndex(owningTypeIndex);
+            void* instantiation = (void*)externalReferences.GetIntPtrFromIndex(instantiationIndex);
+
+            return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                new RuntimeTypeHandle(pObject.GetMethodTable()),
+                new RuntimeTypeHandle(owningType),
+                new MethodHandle((int)token),
+                isAsyncVariant != 0,
+                instantiation,
+                isMethodInstantiationDataRelative: MethodTable.SupportsRelativePointers);
+        }
+
+        private static unsafe NativeParser GetDispatchCellInfo(
+            TypeManagerHandle typeManager,
+            ReadyToRunSectionType section,
+            uint cellIndex,
+            out ExternalReferencesTable externalReferences)
+        {
+            byte* pInfo = (byte*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
+
+            externalReferences = default;
+            externalReferences.InitializeNativeReferences(typeManager);
+
+            NativeReader reader = new NativeReader(pInfo, checked((uint)length));
+            NativeArray entries = new NativeArray(new NativeParser(reader, 0));
+
+            NativeParser parser;
+            while (!entries.TryGetAt(cellIndex, out parser))
             {
-                var dispatchCellInfo = &((RelativeInterfaceDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
+                Debug.Assert(cellIndex > 0);
+                cellIndex--;
             }
-            else
-            {
-                var dispatchCellInfo = &((InterfaceDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
-            }
-        }
 
-        private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
-        {
-            IntPtr pDispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellInfoRegion, out _);
-            if (MethodTable.SupportsRelativePointers)
-            {
-                var dispatchCellInfo = &((RelativeGvmDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
-                    new RuntimeTypeHandle(pObject.GetMethodTable()), new RuntimeTypeHandle(dispatchCellInfo->OwningType), dispatchCellInfo->Handle, dispatchCellInfo->IsAsyncVariant, dispatchCellInfo->Instantiation, isMethodInstantiationDataRelative: true);
-            }
-            else
-            {
-                var dispatchCellInfo = &((GvmDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
-                    new RuntimeTypeHandle(pObject.GetMethodTable()), new RuntimeTypeHandle(dispatchCellInfo->OwningType), dispatchCellInfo->Handle, dispatchCellInfo->IsAsyncVariant, dispatchCellInfo->Instantiation, isMethodInstantiationDataRelative: false);
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RelativeInterfaceDispatchInfo
-        {
-            private int _interfaceTypeRelPtr;
-            public int Slot;
-
-            public unsafe MethodTable* InterfaceType
-                => (MethodTable*)((byte*)Unsafe.AsPointer(ref _interfaceTypeRelPtr) + _interfaceTypeRelPtr);
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct InterfaceDispatchInfo
-        {
-            public unsafe MethodTable* InterfaceType;
-            private nint _slot;
-
-            public int Slot => (int)_slot;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RelativeGvmDispatchInfo
-        {
-            private int _owningTypeRelPtr;
-            private int _compositionRelPtr;
-            private int _flagsAndToken;
-
-            public unsafe MethodTable* OwningType
-                => (MethodTable*)((byte*)Unsafe.AsPointer(ref _owningTypeRelPtr) + _owningTypeRelPtr);
-
-            public unsafe void* Instantiation
-                => (byte*)Unsafe.AsPointer(ref _compositionRelPtr) + _compositionRelPtr;
-
-            public MethodHandle Handle => new MethodHandle(_flagsAndToken & ~GvmDispatchCellFlags.IsAsyncVariant);
-
-            public bool IsAsyncVariant => (_flagsAndToken & GvmDispatchCellFlags.IsAsyncVariant) != 0;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct GvmDispatchInfo
-        {
-            public unsafe MethodTable* OwningType;
-            public unsafe void* Instantiation;
-            private nint _flagsAndToken;
-
-            public MethodHandle Handle => new MethodHandle((int)_flagsAndToken & ~GvmDispatchCellFlags.IsAsyncVariant);
-
-            public bool IsAsyncVariant => ((int)_flagsAndToken & GvmDispatchCellFlags.IsAsyncVariant) != 0;
+            return parser;
         }
     }
 }

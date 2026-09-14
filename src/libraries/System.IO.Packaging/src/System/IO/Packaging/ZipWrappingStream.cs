@@ -119,12 +119,22 @@ namespace System.IO.Packaging
         {
             get
             {
-                // ZipArchiveEntry's read stream doesn't provide a length since it's a raw DeflateStream
-                // Return length from the archive entry.
+#if NET11_0_OR_GREATER
+                // Read-only streams may read directly from the archive. Prefer the stream's own length
+                // when it can report one (a seekable in-memory or stored-entry stream); fall back to the
+                // entry's uncompressed size only for forward-only compressed read streams, whose raw
+                // decompressor cannot report a length.
+                if (!_canWrite)
+                    return _baseStream.CanSeek ? _baseStream.Length : _zipArchiveEntry.Length;
+                return _baseStream.Length;
+#else
+                // ZipArchiveEntry's read stream doesn't provide a length since it's a raw decompressor.
+                // Return the length from the archive entry for streams that read directly from the archive.
                 if (_packageFileAccess == FileAccess.Read)
                     return _zipArchiveEntry.Length;
                 else
                     return _baseStream.Length;
+#endif
             }
         }
 

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -2159,7 +2160,6 @@ namespace System.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/19794", TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void ToSerializedString_FromSerializedString_RoundTrips(TimeZoneInfo timeZone)
@@ -2168,6 +2168,328 @@ namespace System.Tests
             TimeZoneInfo deserializedTimeZone = TimeZoneInfo.FromSerializedString(serialized);
             Assert.Equal(timeZone, deserializedTimeZone);
             Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
+        }
+
+        [Fact]
+        public static void ToSerializedString_WindowsShapedRules_HasNoFullFidelityData()
+        {
+            // A time zone whose rules are already in the Windows-shaped public form must serialize
+            // without the full-fidelity trailer, keeping the string byte-identical to older runtimes.
+            TimeZoneInfo.TransitionTime start = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 2, 0, 0), 3, 15);
+            TimeZoneInfo.TransitionTime end = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 2, 0, 0), 10, 15);
+            TimeZoneInfo.AdjustmentRule rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+                DateTime.MinValue.Date, DateTime.MaxValue.Date, TimeSpan.FromHours(1), start, end);
+
+            TimeZoneInfo tz = TimeZoneInfo.CreateCustomTimeZone(
+                "Custom Standard Time", TimeSpan.FromHours(2), "Custom", "Custom Standard", "Custom Daylight",
+                new[] { rule });
+
+            string serialized = tz.ToSerializedString();
+            Assert.DoesNotContain('!', serialized);
+
+            TimeZoneInfo deserialized = TimeZoneInfo.FromSerializedString(serialized);
+            Assert.Equal(tz, deserialized);
+            Assert.Equal(serialized, deserialized.ToSerializedString());
+        }
+
+        private static void AssertAllRulesHaveNoDaylightTransitions(TimeZoneInfo tz, bool expected)
+        {
+            // AdjustmentRule.Equals (used by TimeZoneInfo.Equals) does not compare NoDaylightTransitions, so
+            // asserting zone equality cannot verify that this flag round-trips. Check it directly on the internal
+            // rules, which keep the flag on every platform (GetAdjustmentRules() projects it away on Unix).
+            FieldInfo rulesField = typeof(TimeZoneInfo).GetField("_adjustmentRules", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            PropertyInfo noDstProp = typeof(TimeZoneInfo.AdjustmentRule).GetProperty("NoDaylightTransitions", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var rules = (TimeZoneInfo.AdjustmentRule[])rulesField.GetValue(tz)!;
+            Assert.NotEmpty(rules);
+            foreach (TimeZoneInfo.AdjustmentRule rule in rules)
+            {
+                Assert.Equal(expected, (bool)noDstProp.GetValue(rule)!);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        public static void FullFidelitySerialization_RuleAndTransitionFields_AreKnown()
+        {
+            // The full-fidelity trailer serializes every instance field of AdjustmentRule and TransitionTime.
+            // If a field is added or removed, update SerializeFullFidelityRules / GetNextFullFidelityRules (and
+            // the transition serialization), bump FullFidelityRulesVersion, and then update the expected sets
+            // below. This guard exists so the format is not silently left incomplete when the types change.
+            AssertInstanceFieldNames(typeof(TimeZoneInfo.AdjustmentRule), new[]
+            {
+                "_dateStart", "_dateEnd", "_daylightDelta", "_daylightTransitionStart",
+                "_daylightTransitionEnd", "_baseUtcOffsetDelta", "_noDaylightTransitions",
+            });
+            AssertInstanceFieldNames(typeof(TimeZoneInfo.TransitionTime), new[]
+            {
+                "_timeOfDay", "_month", "_week", "_day", "_dayOfWeek", "_isFixedDateRule",
+            });
+        }
+
+        private static void AssertInstanceFieldNames(Type type, string[] expected)
+        {
+            string[] actual = type
+                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .Select(f => f.Name)
+                .OrderBy(n => n, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(expected.OrderBy(n => n, StringComparer.Ordinal).ToArray(), actual);
+        }
+
+        [Fact]
+        public static void FromSerializedString_FullFidelityRules_RoundTripsExactly()
+        {
+            // Native (Unix) time zones store rules that the Windows-shaped public projection cannot
+            // represent losslessly: NoDaylightTransitions rules whose boundaries are exact UTC instants
+            // with a sub-day time component. These rules are carried in the full-fidelity trailer.
+            // This validates that once such rules are present, the round trip preserves them exactly on
+            // every platform.
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "FullFidelity", TimeSpan.FromHours(2), "FullFidelity", "FullFidelity");
+            string baseSerialized = baseZone.ToSerializedString();
+
+            DateTime dateStart = new DateTime(2000, 6, 1, 3, 30, 15, DateTimeKind.Utc);
+            DateTime dateEnd = new DateTime(2000, 10, 1, 2, 0, 0, DateTimeKind.Utc).AddTicks(-1);
+            TimeSpan daylightDelta = TimeSpan.FromHours(1);
+
+            // !<version>;<count>; then one rule:
+            // <startTicks>;<startKind>;<endTicks>;<endKind>;<daylightDeltaTicks>;<baseUtcOffsetDeltaTicks>;<noDst>;<transStart><transEnd>
+            // where a default (empty) transition is encoded as "D;".
+            string trailer =
+                $"!1;1;{dateStart.Ticks};{(int)DateTimeKind.Utc};{dateEnd.Ticks};{(int)DateTimeKind.Utc};{daylightDelta.Ticks};0;1;D;D;";
+
+            TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseSerialized + trailer);
+
+            string reserialized = zone.ToSerializedString();
+            Assert.Contains('!', reserialized);
+
+            TimeZoneInfo roundTripped = TimeZoneInfo.FromSerializedString(reserialized);
+            Assert.Equal(zone, roundTripped);
+            Assert.Equal(reserialized, roundTripped.ToSerializedString());
+            AssertAllRulesHaveNoDaylightTransitions(roundTripped, expected: true);
+        }
+
+        [Fact]
+        public static void FromSerializedString_FullFidelityRules_PreservesSubMinuteBaseUtcOffsetDelta()
+        {
+            // A rule with a sub-minute BaseUtcOffsetDelta cannot be represented by the legacy format, whose
+            // offset is written in whole minutes. Such a rule must be carried in the full-fidelity trailer
+            // and round trip with its exact tick value preserved on every platform. This is the only field
+            // in the trailer that the legacy public projection also stores, so a mismatch here would go
+            // unnoticed without an explicit sub-minute value.
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "SubMinute", TimeSpan.FromHours(2), "SubMinute", "SubMinute");
+            string baseSerialized = baseZone.ToSerializedString();
+
+            DateTime dateStart = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dateEnd = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
+            TimeSpan baseUtcOffsetDelta = TimeSpan.FromSeconds(90); // 1.5 minutes: not representable in the legacy whole-minute offset.
+
+            string trailer =
+                $"!1;1;{dateStart.Ticks};{(int)DateTimeKind.Utc};{dateEnd.Ticks};{(int)DateTimeKind.Utc};0;{baseUtcOffsetDelta.Ticks};1;D;D;";
+
+            TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseSerialized + trailer);
+
+            string reserialized = zone.ToSerializedString();
+            // The sub-minute delta must force the full-fidelity trailer and appear in it with its exact ticks.
+            Assert.Contains('!', reserialized);
+            Assert.Contains($";{baseUtcOffsetDelta.Ticks};", reserialized.Substring(reserialized.IndexOf('!')));
+
+            // The legacy portion stores the offset in whole minutes; a reader that ignores the trailer (for
+            // example an older runtime) must still be able to parse it, so it must not contain a fractional
+            // minute value. Simulate that reader by stripping the trailer and parsing the legacy rules alone.
+            string legacyOnly = reserialized.Substring(0, reserialized.IndexOf('!'));
+            TimeZoneInfo legacyZone = TimeZoneInfo.FromSerializedString(legacyOnly);
+            Assert.NotNull(legacyZone);
+
+            TimeZoneInfo roundTripped = TimeZoneInfo.FromSerializedString(reserialized);
+            Assert.Equal(zone, roundTripped);
+            Assert.Equal(reserialized, roundTripped.ToSerializedString());
+            AssertAllRulesHaveNoDaylightTransitions(roundTripped, expected: true);
+        }
+
+        [Fact]
+        public static void ToSerializedString_FullFidelityRules_PreservesFixedAndFloatingTransitions()
+        {
+            // A rule whose boundaries are exact UTC instants cannot be represented by the Windows-shaped
+            // public projection, so it is carried in the full-fidelity trailer. This exercises the trailer
+            // encode and decode of both a fixed-date and a floating-date transition on every platform.
+            TimeZoneInfo.TransitionTime fixedStart = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 2, 0, 0), 3, 15);
+            TimeZoneInfo.TransitionTime floatingEnd = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), 10, 5, DayOfWeek.Sunday);
+            TimeZoneInfo.AdjustmentRule rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+                new DateTime(2000, 1, 1, 1, 0, 0, DateTimeKind.Utc),
+                new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1),
+                TimeSpan.FromHours(1), fixedStart, floatingEnd);
+
+            TimeZoneInfo tz = TimeZoneInfo.CreateCustomTimeZone(
+                "Utc Boundary Time", TimeSpan.FromHours(2), "Utc Boundary", "Utc Boundary Standard", "Utc Boundary Daylight",
+                new[] { rule });
+
+            string serialized = tz.ToSerializedString();
+            Assert.Contains('!', serialized);
+            // The trailer must be stamped with the current version (1) so a reader can detect and skip a
+            // newer, unrecognized layout. This guards against changing the trailer layout without bumping
+            // the version constant.
+            Assert.StartsWith("!1;", serialized.Substring(serialized.IndexOf('!')));
+            // The fixed ('F') and floating ('W') transitions must be present in the full-fidelity trailer.
+            Assert.Contains(";F;", serialized);
+            Assert.Contains(";W;", serialized);
+
+            TimeZoneInfo deserialized = TimeZoneInfo.FromSerializedString(serialized);
+            Assert.Equal(tz, deserialized);
+            Assert.Equal(serialized, deserialized.ToSerializedString());
+        }
+
+        [Theory]
+        [InlineData("!x;")]
+        [InlineData("!1;x;")]
+        [InlineData("!1;0;")]
+        [InlineData("!1;2147483647;")]
+        [InlineData("!1;1;123;9;")]
+        [InlineData("!1;1;123;0;456;0;0;0;0;Z;D;")]
+        // A NoDaylightTransitions flag other than 0 or 1 is rejected rather than treated as true.
+        [InlineData("!1;1;0;0;630000000000000000;0;0;0;2;D;D;")]
+        // Valid dates but extreme delta ticks that overflow while CreateAdjustmentRule normalizes them.
+        [InlineData("!1;1;0;0;630000000000000000;0;9223372036854775807;9223372036854775807;1;D;D;")]
+        public static void FromSerializedString_MalformedFullFidelityTrailer_Throws(string trailer)
+        {
+            // The full-fidelity trailer is untrusted input. Any malformed marker, version, count, or token
+            // must surface as SerializationException, never as an unbounded allocation or an unexpected type.
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "Malformed", TimeSpan.FromHours(2), "Malformed", "Malformed");
+            string baseSerialized = baseZone.ToSerializedString();
+
+            Assert.Throws<SerializationException>(() => TimeZoneInfo.FromSerializedString(baseSerialized + trailer));
+            Assert.NotNull(TimeZoneInfo.FromSerializedString(baseSerialized));
+        }
+
+        [Fact]
+        public static void FromSerializedString_UnknownFullFidelityVersion_IsIgnored()
+        {
+            // A trailer written by a newer runtime (unrecognized version) must be ignored so the string
+            // still deserializes using the legacy rules, rather than throwing or misparsing newer data.
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "FutureVersion", TimeSpan.FromHours(2), "FutureVersion", "FutureVersion");
+            string baseSerialized = baseZone.ToSerializedString();
+
+            TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseSerialized + "!99;whatever;data;");
+
+            Assert.Equal(baseZone, zone);
+        }
+
+        [Fact]
+        public static void ToSerializedString_LegacyRulesRemainValid_WhenFullFidelityTrailerIgnored()
+        {
+            // Internal rules with sub-day UTC boundaries can collapse onto the same calendar day in the
+            // legacy (date-only) format, which would make consecutive legacy rules overlap. A reader that
+            // ignores the full-fidelity trailer (for example an older runtime) validates the legacy rules
+            // for chronological order, so the serializer must keep them ordered. Simulate that reader by
+            // stripping the trailer and verifying the legacy rules alone still form a valid TimeZoneInfo.
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "Colliding", TimeSpan.FromHours(2), "Colliding", "Colliding");
+            string baseSerialized = baseZone.ToSerializedString();
+
+            // Two adjacent NoDaylightTransitions rules whose UTC boundaries land on the same calendar day
+            // (rule 1 ends at 2000-10-01 01:59:59.9999999Z, rule 2 starts at 2000-10-01 02:00:00Z). Both
+            // rules stay within a single calendar year so the Unix projection does not split them across
+            // years, and both carry a non-zero whole-minute BaseUtcOffsetDelta so the Unix projection keeps
+            // them (it drops NoDaylightTransitions rules only when every delta is zero). That way the legacy
+            // portion contains the two rules on every platform and the ordering check below is not vacuous.
+            DateTime rule1Start = new DateTime(2000, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime rule1End = new DateTime(2000, 10, 1, 2, 0, 0, DateTimeKind.Utc).AddTicks(-1);
+            DateTime rule2Start = new DateTime(2000, 10, 1, 2, 0, 0, DateTimeKind.Utc);
+            DateTime rule2End = new DateTime(2000, 12, 31, 0, 0, 0, DateTimeKind.Utc);
+            int utc = (int)DateTimeKind.Utc;
+            long baseUtcOffsetDeltaTicks = TimeSpan.FromHours(1).Ticks;
+
+            string trailer =
+                $"!1;2;{rule1Start.Ticks};{utc};{rule1End.Ticks};{utc};0;{baseUtcOffsetDeltaTicks};1;D;D;" +
+                $"{rule2Start.Ticks};{utc};{rule2End.Ticks};{utc};0;{baseUtcOffsetDeltaTicks};1;D;D;";
+
+            TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseSerialized + trailer);
+            string serialized = zone.ToSerializedString();
+
+            int markerIndex = serialized.IndexOf('!');
+            Assert.True(markerIndex > 0);
+            string legacyOnly = serialized.Substring(0, markerIndex);
+
+            // Prove the serializer never emits overlapping legacy rules: extract the whole-day MM:dd:yyyy
+            // rule boundaries (two per rule) and verify each rule's start is on or before its end, and each
+            // rule ends strictly before the next rule starts. Without the ordering fix, the first rule's end
+            // and the second rule's start both land on 2000-10-01 and overlap, which an older reader rejects.
+            // Both rules survive the Unix projection, so the legacy portion carries at least the two rules
+            // (four dates) on every platform; asserting that minimum keeps the ordering check from passing
+            // vacuously.
+            List<DateTime> legacyDates = new List<DateTime>();
+            foreach (Match match in Regex.Matches(legacyOnly, @"\b\d{2}:\d{2}:\d{4}\b"))
+            {
+                legacyDates.Add(DateTime.ParseExact(match.Value, "MM:dd:yyyy", CultureInfo.InvariantCulture));
+            }
+            Assert.True(legacyDates.Count >= 4, "The legacy portion must contain at least the two colliding rules so the ordering check is exercised.");
+            Assert.Equal(0, legacyDates.Count % 2);
+            for (int i = 0; i + 1 < legacyDates.Count; i += 2)
+            {
+                Assert.True(legacyDates[i] <= legacyDates[i + 1], "A legacy rule's start date must not be after its end date.");
+                if (i + 2 < legacyDates.Count)
+                {
+                    Assert.True(legacyDates[i + 1] < legacyDates[i + 2], "Consecutive legacy rules must not overlap on the same calendar day.");
+                }
+            }
+
+            // Must not throw: the legacy rules must be chronologically valid on their own.
+            TimeZoneInfo legacyZone = TimeZoneInfo.FromSerializedString(legacyOnly);
+            Assert.NotNull(legacyZone);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GetAdjustmentRules() returns NoDaylightTransitions rules verbatim only on Windows; Unix projects them to Windows-shaped rules.
+        public static void ToSerializedString_NoDaylightTransitionsRule_LegacyPortionPreservesMarker()
+        {
+            // A NoDaylightTransitions rule is carried in the full-fidelity trailer, but its legacy portion
+            // must also emit the NoDaylightTransitions marker so a reader that ignores the trailer (for
+            // example an older runtime) reconstructs a Linux-style rule and treats DateStart/DateEnd as an
+            // exact UTC window. Without the marker the same reader parses a Windows-style seasonal rule and
+            // interprets the placeholder transitions as local time, changing the calculated offsets.
+            //
+            // The legacy reader distinguishes the optional BaseUtcOffsetDelta and NoDaylightTransitions
+            // fields positionally, so a zero BaseUtcOffsetDelta must be written before the marker; otherwise
+            // a bare '1' is misread as a one-minute BaseUtcOffsetDelta. This rule uses a zero
+            // BaseUtcOffsetDelta to exercise that positional case.
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "NoDstMarker", TimeSpan.FromHours(2), "NoDstMarker", "NoDstMarker");
+            string baseSerialized = baseZone.ToSerializedString();
+
+            DateTime dateStart = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dateEnd = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
+            TimeSpan daylightDelta = TimeSpan.FromHours(1);
+            int utc = (int)DateTimeKind.Utc;
+
+            // NoDaylightTransitions rule, zero BaseUtcOffsetDelta, default (empty) transitions.
+            string trailer =
+                $"!1;1;{dateStart.Ticks};{utc};{dateEnd.Ticks};{utc};{daylightDelta.Ticks};0;1;D;D;";
+
+            TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseSerialized + trailer);
+            string serialized = zone.ToSerializedString();
+            Assert.Contains('!', serialized);
+
+            // Simulate a reader that ignores the full-fidelity trailer: strip it and parse the legacy rules alone.
+            string legacyOnly = serialized.Substring(0, serialized.IndexOf('!'));
+            TimeZoneInfo legacyZone = TimeZoneInfo.FromSerializedString(legacyOnly);
+            TimeZoneInfo.AdjustmentRule legacyRule = Assert.Single(legacyZone.GetAdjustmentRules());
+
+            // The marker must survive in the legacy portion so the rule keeps the UTC-window (Linux) dialect.
+            // Reverting the serializer change drops the marker and this reads false.
+            bool noDaylightTransitions = (bool)legacyRule.GetType()
+                .GetProperty("NoDaylightTransitions", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(legacyRule)!;
+            Assert.True(noDaylightTransitions, "The legacy portion must preserve the NoDaylightTransitions marker.");
+
+            // The marker must land in its own field, not be misread as a one-minute BaseUtcOffsetDelta.
+            Assert.Equal(TimeSpan.Zero, legacyRule.BaseUtcOffsetDelta);
+
+            // The full string (legacy portion plus trailer) must still round trip exactly.
+            TimeZoneInfo roundTripped = TimeZoneInfo.FromSerializedString(serialized);
+            Assert.Equal(zone, roundTripped);
+            Assert.Equal(serialized, roundTripped.ToSerializedString());
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]

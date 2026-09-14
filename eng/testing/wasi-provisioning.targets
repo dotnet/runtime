@@ -1,35 +1,45 @@
+<!--
+  Acquires wasmtime into the shared cache described in eng/wasm/WasmToolCache.props.
+  $(WasmtimeVersion), $(WasmtimeCacheDir) and $(WasmtimeStampFile) are defined there, and
+  $(WasmtimeDir) is resolved in Directory.Build.props.
+-->
 <Project>
+
   <PropertyGroup>
-    <_WasmtimeVersionFile>$(WasiProjectRoot)wasmtime-version.txt</_WasmtimeVersionFile>
-    <_WasmtimeStampPath>$(WasmtimeDir)\.stamp-wasmtime-version.txt</_WasmtimeStampPath>
-    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
+    <_WasmtimeOS>linux</_WasmtimeOS>
+    <_WasmtimeOS Condition="'$(HostOS)' == 'osx'">macos</_WasmtimeOS>
+    <_WasmtimeOS Condition="'$(HostOS)' == 'windows'">windows</_WasmtimeOS>
+    <_WasmtimeArch Condition="'$(BuildArchitecture)' == 'arm64'">aarch64</_WasmtimeArch>
+    <_WasmtimeArch Condition="'$(_WasmtimeArch)' == ''">x86_64</_WasmtimeArch>
+    <!-- Windows releases are only published for x86_64, and as a zip rather than a tarball. -->
+    <_WasmtimeArch Condition="'$(_WasmtimeOS)' == 'windows'">x86_64</_WasmtimeArch>
+    <_WasmtimeArchiveExt Condition="'$(_WasmtimeOS)' == 'windows'">zip</_WasmtimeArchiveExt>
+    <_WasmtimeArchiveExt Condition="'$(_WasmtimeArchiveExt)' == ''">tar.xz</_WasmtimeArchiveExt>
+    <_WasmtimeKind Condition="'$(_WasmtimeOS)' == 'windows'">zip</_WasmtimeKind>
+    <_WasmtimeKind Condition="'$(_WasmtimeKind)' == ''">tarxz</_WasmtimeKind>
+    <_WasmtimeArchiveName>wasmtime-v$(WasmtimeVersion)-$(_WasmtimeArch)-$(_WasmtimeOS)</_WasmtimeArchiveName>
+    <_WasmtimeUrl>https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/$(_WasmtimeArchiveName).$(_WasmtimeArchiveExt)</_WasmtimeUrl>
+
+    <_WasmtimeBinaryName Condition="'$(HostOS)' == 'windows'">wasmtime.exe</_WasmtimeBinaryName>
+    <_WasmtimeBinaryName Condition="'$(HostOS)' != 'windows'">wasmtime</_WasmtimeBinaryName>
   </PropertyGroup>
 
-  <!-- FIXMEWASI: prevent multiple downloads -->
   <Target Name="ProvisionWasmtime"
           AfterTargets="Build"
-          Condition="'$(InstallWasmtimeForTests)' == 'true' and !Exists($(WasmtimeDir))"
-          Inputs="$(_WasmtimeVersionFile)"
-          Outputs="$(_WasmtimeStampPath)">
-
-    <ReadLinesFromFile File="$(_WasmtimeVersionFile)">
-      <Output TaskParameter="Lines" ItemName="_VersionLines" />
-    </ReadLinesFromFile>
-
-    <PropertyGroup>
-      <WasmtimeVersion>%(_VersionLines.Identity)</WasmtimeVersion>
-      <WasmtimeURL>https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-linux.tar.xz</WasmtimeURL>
-      <WasmtimeURL Condition="'$(HostOS)' == 'osx'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-macos.tar.xz</WasmtimeURL>
-      <WasmtimeURL Condition="'$(HostOS)' == 'windows'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-windows.zip</WasmtimeURL>
-    </PropertyGroup>
-
-    <DownloadFile SourceUrl="$(WasmtimeURL)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="true">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-
-    <MakeDir Directories="$(WasmtimeDir)" />
-    <Exec Command="powershell -command &quot;Expand-Archive $(_DownloadedFile) . ; Move-Item wasmtime-v$(WasmtimeVersion)-x86_64-windows/*.* . &quot;" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' == 'windows'"/>
-    <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' != 'windows'"/>
-    <Copy SourceFiles="$(WasiProjectRoot)wasmtime-version.txt" DestinationFiles="$(_WasmtimeStampPath)" SkipUnchangedFiles="true" />
+          Condition="'$(InstallWasmtimeForTests)' == 'true' and !Exists('$(WasmtimeStampFile)')">
+    <!-- Both the tarballs and the Windows zip wrap their contents in a single versioned
+         directory, so promote that directory instead of nesting it. -->
+    <MSBuild Projects="$(RepositoryEngineeringDir)wasm\AcquireWasmTool.proj"
+             Targets="AcquireWasmTool"
+             Properties="WasmToolName=wasmtime $(WasmtimeVersion);
+                         WasmToolUrl=$(_WasmtimeUrl);
+                         WasmToolKind=$(_WasmtimeKind);
+                         WasmToolInnerDir=$(_WasmtimeArchiveName);
+                         WasmToolCacheEntryDir=$(WasmtimeCacheDir);
+                         WasmToolStampFile=$(WasmtimeStampFile);
+                         WasmToolVerify=$(WasmtimeCacheDir)$(_WasmtimeBinaryName);
+                         WasmToolChmod=$(WasmtimeCacheDir)$(_WasmtimeBinaryName);
+                         WasmToolDownloadDir=$(WasmToolDownloadDir);
+                         HostOS=$(HostOS)" />
   </Target>
 </Project>

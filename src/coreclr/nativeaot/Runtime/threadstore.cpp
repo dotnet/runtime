@@ -246,6 +246,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     }
 
     // set the global trap for pinvoke leave and return
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
@@ -346,6 +347,7 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
 
     RhpSuspendingThread = NULL;
     if (waitForGCEvent)

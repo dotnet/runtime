@@ -340,6 +340,16 @@ public abstract class Target
     public abstract ContractRegistry Contracts { get; }
 
     /// <summary>
+    /// <see langword="true"/> when the named sub-descriptor has been published by the target and
+    /// parsed into the registry (or was never advertised). A sub-descriptor is written lazily by a
+    /// subordinate module (for example the GC), so a target attached very early - before that module
+    /// publishes its sub-descriptor address (see dotnet/runtime#128215) - reports <see langword="false"/>
+    /// for that name until a later <see cref="Flush"/> picks it up.
+    /// </summary>
+    /// <param name="name">The sub-descriptor name (for example <c>"GC"</c>).</param>
+    public virtual bool IsSubDescriptorResolved(string name) => true;
+
+    /// <summary>
     /// Clear cached data held by this target for the given <paramref name="scope"/>.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>

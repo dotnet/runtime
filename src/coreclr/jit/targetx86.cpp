@@ -80,6 +80,12 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
                                               ClassLayout* structLayout,
                                               WellKnownArg wellKnownParam)
 {
+    if (wellKnownParam == WellKnownArg::SecretStubParam)
+    {
+        return ABIPassingInformation::FromSegmentByValue(comp, ABIPassingSegment::InRegister(REG_SECRET_STUB_PARAM, 0,
+                                                                                             TARGET_POINTER_SIZE));
+    }
+
     unsigned size     = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
     unsigned numSlots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
 

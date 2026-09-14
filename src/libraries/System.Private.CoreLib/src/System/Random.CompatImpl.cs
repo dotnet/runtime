@@ -335,6 +335,8 @@ namespace System
                 }
             }
 
+            // Inlining this into hot caller loops can produce branch-heavy code that is slower than the standalone method.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             internal int InternalSample()
             {
                 Debug.Assert(_seedArray is not null);

@@ -19,18 +19,15 @@ IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersio
 
 /* Methods to query information from the GCInfo */
 
+// Decodes the GC info header for the method (version, code/prolog size, stack base
+// register, stack parameter area size, varargs flag, GS cookie, PSP sym, and generics
+// instantiation context). See the GCInfoHeader record below. The stack base register and
+// the size of the outgoing-argument scratch area (previously exposed as separate methods)
+// are now reported as the StackBaseRegister and SizeOfStackParameterArea header fields.
+GCInfoHeader GetHeader(IGCInfoHandle handle);
+
 // Fetches length of code as reported in GCInfo
 uint GetCodeLength(IGCInfoHandle handle);
-
-// Returns the stack base register number decoded from GCInfo
-uint GetStackBaseRegister(IGCInfoHandle handle);
-
-// Returns the size in bytes of the outgoing-argument scratch area in the current
-// frame, decoded from `_fixedStackParameterScratchArea` (`SizeOfStackOutgoingAndScratchArea`,
-// encoded via `SIZE_OF_STACK_AREA_ENCBASE`). Platform-specific and can be non-zero on
-// AMD64/ARM64/ARM/RISCV64/LoongArch64. Not supported on x86 (the x86 GC info scheme has
-// no separate scratch-area concept; the x86 GC walker uses per-offset transitions).
-uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
 
 // Returns the size in bytes of stack-passed arguments that the callee pops on return,
 // mirroring native `EECodeManager::GetStackParameterSize` (eetwain.cpp). Non-zero only
@@ -39,20 +36,99 @@ uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
 // header. Returns 0 on every other architecture.
 uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle);
 
-// Returns the list of interruptible code offset ranges from the GCInfo
-// (not implemented for x86 — x86 encodes per-offset transitions rather than explicit ranges).
+// Returns the list of interruptible code offset ranges from the GCInfo.
 IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 
-// Returns all live GC slots at the given instruction offset
-// (not implemented for x86 — see X86GCInfo for the underlying transition data; the cDAC
-// adapter is future work).
+// Returns the code offsets of all partially-interruptible safe points (call sites).
+IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle);
+
+// Returns the lifetime (live code range) of every GC slot tracked by the GCInfo,
+// covering both tracked slots (from interruptible ranges or per-safe-point live states)
+// and untracked slots (live for the whole method).
+IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle);
+
+// Returns all live GC slots at the given instruction offset.
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 
 // Returns true if the instruction offset is a GC-safe point.
 bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset);
+
+// Returns the storage location of the exact generic context at an instruction offset.
+bool TryGetGenericContextStorage(
+    IGCInfoHandle handle,
+    GenericContextLoc contextKind,
+    uint instructionOffset,
+    out GenericContextStorage storage);
+
+TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp);
 ```
 
 ```csharp
+// Stack offset of a special GC info slot (GS cookie, PSP sym, or generics inst context).
+public readonly record struct SpecialSlot(int SpOffset);
+
+// Kind of the generics instantiation context reported in the GC info header.
+public enum GenericsContextKind
+{
+    None = 0,
+    MethodDesc = 1,
+    MethodHandle = 2,
+    This = 3,
+}
+
+// Header fields decoded from the GC info stream for a method.
+public readonly record struct GCInfoHeader(
+    uint Version,                          // GC info version
+    uint CodeSize,                         // Method code length in bytes
+    uint PrologSize,                       // Size of the prolog in bytes
+    uint StackBaseRegister,                // Stack base register number (NO_STACK_BASE_REGISTER if none)
+    uint SizeOfStackParameterArea,         // Size in bytes of the outgoing-argument scratch area (0 on x86)
+    bool IsVarArg,                         // True if the method is varargs
+    bool WantsReportOnlyLeaf,              // True if only the leaf frame should report GC references
+    bool HasTailCalls,                     // True if the method contains tail calls
+    SpecialSlot? GSCookie,                 // GS cookie stack slot, or null if none
+    uint GSCookieValidRangeStart,          // Start of the code range where the GS cookie is valid
+    uint GSCookieValidRangeEnd,            // End (exclusive) of the GS cookie valid range
+    SpecialSlot? PSPSym,                   // PSP sym stack slot, or null if none
+    SpecialSlot? GenericsInstContext,      // Generics instantiation context stack slot, or null if none
+    GenericsContextKind GenericsInstContextKind); // Kind of the generics instantiation context
+
+// Unified lifetime (live code range) of a GC slot, register or stack.
+public readonly record struct GCSlotLifetime(
+    bool IsRegister,       // True if the slot is a CPU register; false if stack location
+    uint RegisterNumber,   // Register number (meaningful only when IsRegister is true)
+    int SpOffset,          // Stack offset from the base (meaningful only when IsRegister is false)
+    uint BaseRegister,     // Stack base: 0 = CALLER_SP_REL, 1 = SP_REL, 2 = FRAMEREG_REL
+    uint GcFlags,          // GC slot flags: 0x1 = interior pointer, 0x2 = pinned, 0x4 = untracked
+    uint BeginOffset,      // Code offset where the slot becomes live
+    uint EndOffset);       // Code offset where the slot becomes dead (exclusive)
+
+public enum GenericContextStorageKind
+{
+    Register,                    // The register value is the context value
+    StackPointerRelative,        // Memory at SP + Offset
+    RegisterRelative,            // Memory at the named register + Offset
+    InterpreterArgumentRelative, // Memory at the interpreter argument base + Offset
+}
+
+public readonly record struct GenericContextStorage
+{
+    public GenericContextStorage(
+        GenericContextStorageKind kind,
+        uint registerNumber,
+        int offset);
+
+    public GenericContextStorage(
+        GenericContextStorageKind kind,
+        string registerName,
+        int offset);
+
+    public GenericContextStorageKind Kind { get; }
+    public string RegisterName { get; }
+    public uint RegisterNumber { get; }
+    public int Offset { get; }
+}
+
 // Describes a code region where the GC can safely interrupt execution.
 public readonly record struct InterruptibleRange(
     uint StartOffset,   // Start of the interruptible region (byte offset from method start)
@@ -79,15 +155,22 @@ public record struct GcSlotEnumerationOptions
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| _none_ |  | |
+<!-- BEGIN GENERATED: usage contract=GCInfo version=c1 -->
+### Data descriptors used
 
-Contracts used:
+_None._
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
 | Contract Name |
 | --- |
-| _none_ |
+| `RuntimeInfo` |
+<!-- END GENERATED: usage contract=GCInfo version=c1 -->
+
 
 Constants:
 | Constant Name | Meaning | Value |
@@ -98,6 +181,8 @@ Constants:
 | `NO_GENERICS_INST_CONTEXT` | Indicates no generics instantiation context | -1 |
 | `NO_REVERSE_PINVOKE_FRAME` | Indicates no reverse P/Invoke frame | -1 |
 | `NO_PSP_SYM` | Indicates no PSP symbol | -1 |
+| `INVALID_SYNC_OFFSET` | Sync start offset value indicating the method is not synchronized (x86) | 0 |
+| `SHADOW_SP_BITS` | Flag bits stored in the low bits of an x86 shadow-SP slot; masked off to recover the SP | 0x3 |
 
 
 ### GCInfo Format
@@ -611,6 +696,49 @@ bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset)
     // Ensure header and body are decoded through interruptible ranges, then return true
     // if the offset is fully interruptible or (for the general decoder) matches an entry
     // in the safe point table.
+}
+
+bool TryGetGenericContextStorage(IGCInfoHandle handle,
+    GenericContextLoc contextKind, uint instructionOffset,
+    out GenericContextStorage storage)
+{
+    // Non-x86 JIT GC info: ensure the header is decoded through the generic instantiation
+    // context and stack base register fields. If the method reports no context slot
+    // (NO_GENERICS_INST_CONTEXT), return false. Otherwise return the denormalized signed
+    // slot as RegisterRelative with the decoded stack-base register number when a
+    // stack base register is present, or StackPointerRelative otherwise.
+    //
+    // Interpreter GC info:
+    //   - ThisPtr is InterpreterArgumentRelative at offset zero, matching
+    //     InterpreterCodeManager::GetInstance's dereference of frame->pStack;
+    //   - explicit MethodDesc / MethodTable contexts use the decoded generic context offset
+    //     relative to the same interpreter argument base.
+    //
+    // x86 (InfoHdr) decoder:
+    //   - return false in the prolog or an epilog;
+    //   - explicit MethodDesc / MethodTable contexts are RegisterRelative to EBP at
+    //     -(savedRegsCountExclFP + (synchronized ? 1 : 0) + localloc + 1) * sizeof(TADDR);
+    //   - for ThisPtr, replay the argument/register transition stream at instructionOffset.
+    //     If thisPtrResult identifies a register, return Register storage with
+    //     that register's numeric identifier;
+    //   - otherwise use the first untracked slot, relative to EBP for EBP frames or to
+    //     SP plus the decoded pushed-argument depth for ESP frames.
+}
+
+TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp)
+{
+    // ARM32: return sp.
+    //
+    // Other non-x86 decoders: return TargetPointer.Null (there is no ambient SP).
+    //
+    // x86 (InfoHdr) decoder, mirroring native EECodeManager::GetAmbientSP:
+    //   - return Null if codeOffset is in the prolog or an epilog;
+    //   - if the method has handlers, return GetOutermostBaseFP(fp) with the low
+    //     SHADOW_SP_BITS masked off;
+    //   - else if it is an EBP frame, return GetOutermostBaseFP(fp);
+    //   - else (ESP frame) return sp plus the pushed-argument size at codeOffset.
+    // GetOutermostBaseFP reads the localloc slot when the method uses localloc,
+    // otherwise returns fp - stackSize + sizeof(int).
 }
 ```
 

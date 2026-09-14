@@ -1222,7 +1222,7 @@ namespace Microsoft.Extensions.Primitives
 
             // Act & Assert
             ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOfAny(new []{ '5' }, 2, 3));
-            Assert.Equal("start", exception.ParamName);
+            Assert.Equal("startIndex", exception.ParamName);
         }
 
         [Fact]

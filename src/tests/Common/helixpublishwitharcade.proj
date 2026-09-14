@@ -78,13 +78,15 @@
   </PropertyGroup>
 
   <!-- Stage $(WasmtimeDir) -> $(WasmtimeDirForHelixPayload) before the
-       correlation payload is assembled for the Helix send. -->
+       correlation payload is assembled for the Helix send. The Outputs stamp is named after the
+       version-keyed source sentinel so switching to an already-provisioned older version (whose
+       .complete may predate the last staging) still re-stages instead of shipping a stale copy. -->
   <Target Name="StageWasmtimeForHelixPayload"
           Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'"
           BeforeTargets="CoreTest"
           DependsOnTargets="ProvisionWasmtime"
-          Inputs="$(WasmtimeDir)\.stamp-wasmtime-version.txt"
-          Outputs="$(WasmtimeDirForHelixPayload)\.stamp-wasmtime-version.txt">
+          Inputs="$(WasmtimeStampFile)"
+          Outputs="$(WasmtimeDirForHelixPayload).staged-$([System.IO.Path]::GetFileName('$(WasmtimeStampFile)'))">
     <ItemGroup>
       <_WasmtimeFilesToStage Include="$(WasmtimeDir)**\*" />
     </ItemGroup>
@@ -92,6 +94,7 @@
     <Copy SourceFiles="@(_WasmtimeFilesToStage)"
           DestinationFiles="@(_WasmtimeFilesToStage->'$(WasmtimeDirForHelixPayload)%(RecursiveDir)%(FileName)%(Extension)')"
           SkipUnchangedFiles="true" />
+    <Touch Files="$(WasmtimeDirForHelixPayload).staged-$([System.IO.Path]::GetFileName('$(WasmtimeStampFile)'))" AlwaysCreate="true" />
   </Target>
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
@@ -110,6 +113,8 @@
          mobile/xharness AppBundle path used by Mono wasm/wasi tests
          doesn't apply (see mergedrunner.targets). -->
     <TargetsMobile Condition="'$(TargetsBrowserOnCoreCLR)' == 'true' or '$(TargetsWasiOnCoreCLR)' == 'true'">false</TargetsMobile>
+    <!-- Double the timeout for browser-wasm: more tests are now merged into shared runners -->
+    <_TimeoutPerTestCollectionInMinutes Condition="'$(TargetsBrowserOnCoreCLR)' == 'true' or '$(TargetsWasiOnCoreCLR)' == 'true'">246</_TimeoutPerTestCollectionInMinutes>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
     <MobileAppBundleDirName Condition="'$(TargetsBrowserOnMono)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
@@ -235,6 +240,7 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
     <!-- Apple mobile test runs need to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>osx-x64</DotNetCliRuntime>
+    <DotNetCliRuntime Condition="'$(TargetArchitecture)' == 'arm64' and ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst')">osx-arm64</DotNetCliRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">

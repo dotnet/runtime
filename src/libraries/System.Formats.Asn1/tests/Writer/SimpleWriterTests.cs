@@ -1,13 +1,202 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Asn1.Tests.Writer
 {
     public static class SimpleWriterTests
     {
+        public static IEnumerable<object[]> VectorBoundaryLengths
+        {
+            get
+            {
+                yield return new object[] { Vector<byte>.Count - 1 };
+                yield return new object[] { Vector<byte>.Count };
+                yield return new object[] { Vector<byte>.Count + 1 };
+            }
+        }
+
+        public static IEnumerable<object[]> RestrictedAsciiVectorBoundaryData
+        {
+            get
+            {
+                foreach (UniversalTagNumber encodingType in new[] { UniversalTagNumber.NumericString, UniversalTagNumber.PrintableString })
+                {
+                    foreach (object[] length in VectorBoundaryLengths)
+                    {
+                        yield return new object[] { encodingType, length[0] };
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> RestrictedAsciiCharacterSets
+        {
+            get
+            {
+                yield return new object[] { UniversalTagNumber.NumericString, "0123456789 " };
+                yield return new object[]
+                {
+                    UniversalTagNumber.PrintableString,
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 '()+,-./:=?",
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> RestrictedAsciiInvalidData
+        {
+            get
+            {
+                char[] numericInvalid = { '/', ':', 'A', '\u007F', '\u00FF' };
+                char[] printableInvalid = { '!', '&', '*', ';', '<', '>', '@', '[', '`', '{', '\u007F', '\u00FF' };
+
+                foreach (bool invalidInVector in new[] { true, false })
+                {
+                    foreach (char invalidValue in numericInvalid)
+                    {
+                        yield return new object[] { UniversalTagNumber.NumericString, invalidInVector, invalidValue };
+                    }
+
+                    foreach (char invalidValue in printableInvalid)
+                    {
+                        yield return new object[] { UniversalTagNumber.PrintableString, invalidInVector, invalidValue };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RestrictedAsciiVectorBoundaryData))]
+        public static void WriteRestrictedAsciiString_DoesNotAccessOutsideBounds(
+            UniversalTagNumber encodingType,
+            int payloadLength)
+        {
+            using BoundedMemory<char> value = BoundedMemory.Allocate<char>(payloadLength);
+            value.Span.Fill('0');
+            value.MakeReadonly();
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(encodingType, value.Span);
+            byte[] encoded = writer.Encode();
+
+            string decoded = AsnDecoder.ReadCharacterString(
+                encoded,
+                AsnEncodingRules.DER,
+                encodingType,
+                out int bytesConsumed);
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(payloadLength, decoded.Length);
+            AssertExtensions.FilledWith('0', decoded);
+        }
+
+        [Theory]
+        [MemberData(nameof(RestrictedAsciiCharacterSets))]
+        public static void WriteRestrictedAsciiString_VectorSizedCharacterSet(
+            UniversalTagNumber encodingType,
+            string allowedCharacters)
+        {
+            const int PayloadLength = 128;
+            char[] value = new char[PayloadLength];
+
+            for (int i = 0; i < PayloadLength; i++)
+            {
+                value[i] = allowedCharacters[i % allowedCharacters.Length];
+            }
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(encodingType, value);
+            byte[] encoded = writer.Encode();
+
+            Assert.Equal((byte)encodingType, encoded[0]);
+            Assert.Equal(0x81, encoded[1]);
+            Assert.Equal(PayloadLength, encoded[2]);
+            Assert.Equal(new string(value), Encoding.ASCII.GetString(encoded, 3, PayloadLength));
+        }
+
+        [Theory]
+        [MemberData(nameof(RestrictedAsciiInvalidData))]
+        public static void WriteRestrictedAsciiString_Invalid(
+            UniversalTagNumber encodingType,
+            bool invalidInVector,
+            char invalidValue)
+        {
+            int invalidIndex = invalidInVector ? 1 : Vector<byte>.Count;
+            char[] value = new string('0', Vector<byte>.Count + 1).ToCharArray();
+            value[invalidIndex] = invalidValue;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            EncoderFallbackException exception = Assert.Throws<EncoderFallbackException>(
+                () => writer.WriteCharacterString(encodingType, value));
+            Assert.Equal(invalidIndex, exception.Index);
+            Assert.Equal(0, writer.GetEncodedLength());
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorBoundaryLengths))]
+        public static void WriteVisibleString_DoesNotAccessOutsideBounds(int payloadLength)
+        {
+            using BoundedMemory<char> value = BoundedMemory.Allocate<char>(payloadLength);
+            value.Span.Fill('A');
+            value.MakeReadonly();
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.VisibleString, value.Span);
+            byte[] encoded = writer.Encode();
+
+            string decoded = AsnDecoder.ReadCharacterString(
+                encoded,
+                AsnEncodingRules.DER,
+                UniversalTagNumber.VisibleString,
+                out int bytesConsumed);
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(payloadLength, decoded.Length);
+            AssertExtensions.FilledWith('A', decoded);
+        }
+
+        [Fact]
+        public static void WriteVisibleString_VectorSizedRange()
+        {
+            const int PayloadLength = 128;
+            char[] value = new char[PayloadLength];
+
+            for (int i = 0; i < PayloadLength; i++)
+            {
+                value[i] = i % 2 == 0 ? (char)0x20 : (char)0x7E;
+            }
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.VisibleString, value);
+            byte[] encoded = writer.Encode();
+
+            Assert.Equal((byte)UniversalTagNumber.VisibleString, encoded[0]);
+            Assert.Equal(0x81, encoded[1]);
+            Assert.Equal(PayloadLength, encoded[2]);
+            Assert.Equal(new string(value), Encoding.ASCII.GetString(encoded, 3, PayloadLength));
+        }
+
+        [Theory]
+        [InlineData('\u001F', 10)]
+        [InlineData('\u007F', 10)]
+        [InlineData('\u001F', 128)]
+        [InlineData('\u007F', 128)]
+        public static void WriteVisibleString_Invalid(char invalidValue, int invalidIndex)
+        {
+            char[] value = new string('A', 129).ToCharArray();
+            value[invalidIndex] = invalidValue;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            EncoderFallbackException exception = Assert.Throws<EncoderFallbackException>(
+                () => writer.WriteCharacterString(UniversalTagNumber.VisibleString, value));
+            Assert.Equal(invalidIndex, exception.Index);
+            Assert.Equal(0, writer.GetEncodedLength());
+        }
+
         [Theory]
         [InlineData(-1)]
         [InlineData(3)]

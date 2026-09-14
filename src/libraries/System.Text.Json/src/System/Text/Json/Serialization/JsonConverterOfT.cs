@@ -184,7 +184,7 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
+                    if (state.Current.NumberHandling is not null && IsInternalConverterForNumberType)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, options);
                     }
@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization
                 state.Current.OriginalDepth = reader.CurrentDepth;
             }
 
-            if (parentObj != null && propertyInfo != null && !propertyInfo.IsForTypeInfo)
+            if (parentObj is not null && propertyInfo is not null && !propertyInfo.IsForTypeInfo)
             {
                 state.Current.HasParentObject = true;
             }
@@ -345,7 +345,7 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
+                if (state.Current.NumberHandling is not null && IsInternalConverterForNumberType)
                 {
                     WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
                 }
@@ -444,7 +444,7 @@ namespace System.Text.Json.Serialization
 
         internal bool TryWriteDataExtensionProperty(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             if (!IsInternalConverter)
             {
@@ -454,7 +454,7 @@ namespace System.Text.Json.Serialization
             JsonDictionaryConverter<T>? dictionaryConverter = this as JsonDictionaryConverter<T>
                 ?? (this as JsonMetadataServicesConverter<T>)?.Converter as JsonDictionaryConverter<T>;
 
-            if (dictionaryConverter == null)
+            if (dictionaryConverter is null)
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.

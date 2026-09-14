@@ -6,14 +6,6 @@
 
 #include "corpriv.h"					// for IMDInternalImport
 
-// ILDASM code doesn't memcpy on gc pointers, so it prefers the real
-// memcpy rather than GCSafeMemCpy.
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-#ifdef memcpy
-#undef memcpy
-#endif
-#endif
-
 #define MAX_PREFIX_SIZE 32
 
 struct ParamDescriptor

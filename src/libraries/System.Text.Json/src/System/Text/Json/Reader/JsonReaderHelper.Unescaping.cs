@@ -27,7 +27,7 @@ namespace System.Text.Json
 
             bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes!);
 
-            if (unescapedArray != null)
+            if (unescapedArray is not null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
@@ -57,7 +57,7 @@ namespace System.Text.Json
 
             string utf8String = TranscodeHelper(utf8Unescaped);
 
-            if (pooledName != null)
+            if (pooledName is not null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(pooledName);
@@ -82,7 +82,7 @@ namespace System.Text.Json
             byte[] propertyName = utf8Unescaped.Slice(0, written).ToArray();
             Debug.Assert(propertyName.Length is not 0);
 
-            if (pooledName != null)
+            if (pooledName is not null)
             {
                 new Span<byte>(pooledName, 0, written).Clear();
                 ArrayPool<byte>.Shared.Return(pooledName);
@@ -109,7 +109,7 @@ namespace System.Text.Json
 
             bool result = other.SequenceEqual(utf8Unescaped);
 
-            if (unescapedArray != null)
+            if (unescapedArray is not null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
@@ -147,9 +147,9 @@ namespace System.Text.Json
 
             bool result = other.SequenceEqual(utf8Unescaped);
 
-            if (unescapedArray != null)
+            if (unescapedArray is not null)
             {
-                Debug.Assert(escapedArray != null);
+                Debug.Assert(escapedArray is not null);
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
                 utf8Escaped.Clear();
@@ -188,13 +188,13 @@ namespace System.Text.Json
 
             bool result = utf8Unescaped1.SequenceEqual(utf8Unescaped2);
 
-            if (unescapedArray1 != null)
+            if (unescapedArray1 is not null)
             {
                 utf8Unescaped1.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray1);
             }
 
-            if (unescapedArray2 != null)
+            if (unescapedArray2 is not null)
             {
                 utf8Unescaped2.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray2);
@@ -229,7 +229,7 @@ namespace System.Text.Json
             {
                 bytes = null;
 
-                if (pooledArray != null)
+                if (pooledArray is not null)
                 {
                     byteSpan.Clear();
                     ArrayPool<byte>.Shared.Return(pooledArray);
@@ -241,7 +241,7 @@ namespace System.Text.Json
 
             bytes = byteSpan.Slice(0, bytesWritten).ToArray();
 
-            if (pooledArray != null)
+            if (pooledArray is not null)
             {
                 byteSpan.Clear();
                 ArrayPool<byte>.Shared.Return(pooledArray);

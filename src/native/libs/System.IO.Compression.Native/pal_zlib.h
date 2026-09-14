@@ -103,6 +103,16 @@ Returns a PAL_ErrorCode indicating success or an error number on failure.
 FUNCTIONEXPORT int32_t FUNCTIONCALLINGCONVENTION CompressionNative_DeflateEnd(PAL_ZStream* stream);
 
 /*
+This function is equivalent to CompressionNative_DeflateEnd followed by CompressionNative_DeflateInit2_,
+but does not free and reallocate the internal compression state. The stream preserves the original
+initialization settings (compression level, window bits, memory level, and strategy) that were supplied
+to CompressionNative_DeflateInit2_.
+
+Returns a PAL_ErrorCode indicating success or an error number on failure.
+*/
+FUNCTIONEXPORT int32_t FUNCTIONCALLINGCONVENTION CompressionNative_DeflateReset(PAL_ZStream* stream);
+
+/*
 Initializes the PAL_ZStream so the Inflate function can be invoked on it.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.

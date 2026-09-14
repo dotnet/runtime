@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 [CdacType(nameof(DataType.CalleeSavedRegisters))]
 internal partial class CalleeSavedRegisters : IData<CalleeSavedRegisters>
 {
-    public IReadOnlyDictionary<string, TargetNUInt> Registers { get; private set; }
+    [CustomInit(nameof(InitRegisters))] public partial IReadOnlyDictionary<string, TargetNUInt> Registers { get; }
 
-    [MemberNotNull(nameof(Registers))]
-    partial void OnInit(Target target, TargetPointer address)
+    private partial IReadOnlyDictionary<string, TargetNUInt> InitRegisters(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.CalleeSavedRegisters);
         Dictionary<string, TargetNUInt> registers = new(type.Fields.Count);
@@ -21,6 +19,6 @@ internal partial class CalleeSavedRegisters : IData<CalleeSavedRegisters>
             TargetNUInt value = target.ReadNUInt(address + (ulong)field.Offset);
             registers.Add(name, value);
         }
-        Registers = registers;
+        return registers;
     }
 }

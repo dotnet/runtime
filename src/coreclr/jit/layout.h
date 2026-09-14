@@ -172,6 +172,8 @@ public:
         return m_size;
     }
 
+    unsigned GetAlignmentRequirement(Compiler* comp) const;
+
     var_types GetType() const
     {
         return m_type;

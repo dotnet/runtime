@@ -321,7 +321,7 @@ mono_interp_pgo_load_table (uint8_t * data, int data_size) {
 	uint32_t size = *(uint32_t *)data;
 
 	if (mono_opt_interp_pgo_logging)
-		g_print ("Loading %d bytes of interp_pgo data (table size == %zu)\n", data_size, size);
+		g_print ("Loading %d bytes of interp_pgo data (table size == %u)\n", data_size, size);
 
 	result->data = g_malloc0 (data_size);
 	g_assert ((int64_t)size < (int64_t)data_size);

@@ -41,7 +41,7 @@ namespace ILLink.Shared.TrimAnalysis
             _owningSymbol = owningSymbol;
             _operation = operation;
             _isNewObj = operation.Kind == OperationKind.ObjectCreation;
-            _diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
+            _diagnosticContext = new DiagnosticContext(location, reportDiagnostic, typeNameResolver.Compilation);
             _annotations = FlowAnnotations.Instance;
             _reflectionAccessAnalyzer = new(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
             _typeNameResolver = typeNameResolver;

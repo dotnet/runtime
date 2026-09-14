@@ -444,7 +444,7 @@ namespace {Namespace}._Sve
 
             for (var i = 0; i < DataElementCount; i++)
             {
-                {Op1BaseType} expectedResult = mask[i] == 0 ? 0 : data[i];
+                {Op1BaseType} expectedResult = Helpers.IsMaskInactive(mask[i]) ? 0 : data[i];
                 if (actualResult[i] != ({NarrowingType})expectedResult)
                 {
                     succeeded = false;

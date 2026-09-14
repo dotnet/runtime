@@ -81,12 +81,6 @@
 
     <!-- Generate wasm-props.json -->
 
-    <!-- Clear stale _VersionLines items that may have been added by _AcquireLocalEmscriptenSdk
-         (which reads emscripten-version.txt into the same item group during SDK provisioning) -->
-    <ItemGroup>
-      <_VersionLines Remove="@(_VersionLines)" />
-    </ItemGroup>
-
     <RunWithEmSdkEnv Command="$(EmccCmd) --version"
           ConsoleToMsBuild="true"
           EmSdkPath="$(EMSDK_PATH)"
@@ -144,6 +138,7 @@
       <EmccExportedRuntimeMethod Include="HEAPU64" />
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
 
+      <EmccExportedFunction Include="_emscripten_force_exit" Condition="'$(WasmEnableThreads)' == 'true'" />
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
       <EmccExportedFunction Include="_malloc" />
@@ -230,6 +225,7 @@
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkFlags Include="-s GROWABLE_ARRAYBUFFERS=0" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=0" />

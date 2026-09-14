@@ -7,6 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal class InterpreterGCInfoTraits : IGCInfoTraits
 {
+    public static bool IsInterpreter => true;
     public static uint DenormalizeStackBaseRegister(uint reg) => reg;
     public static uint DenormalizeCodeLength(uint len) => len;
     public static uint NormalizeCodeLength(uint len) => len;

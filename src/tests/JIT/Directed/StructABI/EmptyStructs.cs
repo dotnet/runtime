@@ -10,8 +10,10 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public static class Program
 {
 	public static bool IsSystemV =>

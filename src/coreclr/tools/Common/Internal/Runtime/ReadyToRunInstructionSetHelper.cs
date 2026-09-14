@@ -34,6 +34,8 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.ARM64_Dp_Arm64: return ReadyToRunInstructionSet.Dp;
                         case InstructionSet.ARM64_Rdm: return ReadyToRunInstructionSet.Rdm;
                         case InstructionSet.ARM64_Rdm_Arm64: return ReadyToRunInstructionSet.Rdm;
+                        case InstructionSet.ARM64_Fp16: return ReadyToRunInstructionSet.Fp16;
+                        case InstructionSet.ARM64_Fp16_Arm64: return ReadyToRunInstructionSet.Fp16;
                         case InstructionSet.ARM64_Sha1: return ReadyToRunInstructionSet.Sha1;
                         case InstructionSet.ARM64_Sha1_Arm64: return ReadyToRunInstructionSet.Sha1;
                         case InstructionSet.ARM64_Sha256: return ReadyToRunInstructionSet.Sha256;
@@ -74,6 +76,7 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.RiscV64_Zba: return ReadyToRunInstructionSet.Zba;
                         case InstructionSet.RiscV64_Zbb: return ReadyToRunInstructionSet.Zbb;
                         case InstructionSet.RiscV64_Zbs: return ReadyToRunInstructionSet.Zbs;
+                        case InstructionSet.RiscV64_Zicond: return ReadyToRunInstructionSet.Zicond;
 
                         default: throw new Exception("Unknown instruction set");
                     }

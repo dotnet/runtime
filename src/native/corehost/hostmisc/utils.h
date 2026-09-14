@@ -109,14 +109,9 @@ const pal::char_t* get_current_arch_name();
 pal::string_t get_runtime_id();
 bool try_get_runtime_id_from_env(pal::string_t& out_rid);
 
-bool multilevel_lookup_enabled();
-void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
-
-pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch);
-bool get_dotnet_root_from_env(pal::string_t* used_dotnet_root_env_var_name, pal::string_t* recv);
 
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
 pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name);
@@ -131,7 +126,6 @@ pal::string_t get_download_url(const pal::char_t* framework_name = nullptr, cons
 pal::string_t get_host_version_description();
 
 pal::string_t to_lower(const pal::char_t* in);
-pal::string_t to_upper(const pal::char_t* in);
 
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped
@@ -215,6 +209,9 @@ extern "C" {
 #endif
 
 void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
+
+bool utils_starts_with(const pal_char_t* value, size_t value_len, const pal_char_t* prefix, size_t prefix_len, bool match_case);
+bool utils_ends_with(const pal_char_t* value, size_t value_len, const pal_char_t* suffix, size_t suffix_len, bool match_case);
 
 void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component);
 

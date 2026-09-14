@@ -45,12 +45,37 @@ public class PlatformContextTests
     }
 
     [Theory]
-    [InlineData(33)]
+    [InlineData(65)] // REGNUM_COUNT
+    [InlineData(66)] // REGNUM_AMBIENT_SP
     public void ARM64_OutOfRange_ReturnsFalse(int regNum)
     {
         var ctx = new ARM64Context();
         Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0)));
         Assert.False(ctx.TryReadRegister(regNum, out _));
+    }
+
+    [Theory]
+    [InlineData(33)] // V0
+    [InlineData(64)] // V31
+    public void ARM64_VectorRegisterNumber_WriteReturnsFalse(int regNum)
+    {
+        // Vector registers are read-only through the numeric register accessor.
+        var ctx = new ARM64Context();
+        Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0x1122334455667788UL)));
+    }
+
+    [Theory]
+    [InlineData(33, 0)]  // V0 -> V[0]
+    [InlineData(64, 62)] // V31 -> V[62]
+    public unsafe void ARM64_VectorRegisterNumber_ReadUsesLow64Bits(int regNum, int vIndex)
+    {
+        var ctx = new ARM64Context();
+        ulong* registers = ctx.V;
+        registers[vIndex] = 0x1122334455667788UL;      // low 64 bits
+        registers[vIndex + 1] = 0x8877665544332211UL;  // high 64 bits (must be ignored)
+
+        Assert.True(ctx.TryReadRegister(regNum, out TargetNUInt value));
+        Assert.Equal(0x1122334455667788UL, value.Value);
     }
 
     [Theory]
@@ -94,6 +119,16 @@ public class PlatformContextTests
         var ctx = new X86Context();
         Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0)));
         Assert.False(ctx.TryReadRegister(regNum, out _));
+    }
+
+    [Fact]
+    public void X86_ContextFlags_MatchNativeContext()
+    {
+        var ctx = new X86Context();
+
+        Assert.Equal(0x00010001u, ctx.ContextControlFlags);
+        Assert.Equal(0x00010007u, ctx.FullContextFlags);
+        Assert.Equal(0x0001003fu, ctx.AllContextFlags);
     }
 
     [Theory]

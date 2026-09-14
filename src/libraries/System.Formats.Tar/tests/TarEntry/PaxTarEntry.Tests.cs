@@ -62,6 +62,18 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public void Constructor_DuplicateExtendedAttributes_Throws()
+        {
+            List<KeyValuePair<string, string>> extendedAttributes =
+            [
+                new("key", "value1"),
+                new("key", "value2"),
+            ];
+
+            Assert.Throws<ArgumentException>(() => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes));
+        }
+
+        [Fact]
         public void SupportedEntryType_RegularFile()
         {
             PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);

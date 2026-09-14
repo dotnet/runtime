@@ -33,20 +33,7 @@ engine:
   id: copilot
   model: claude-opus-4.8
   env:
-    COPILOT_GITHUB_TOKEN: |
-      ${{ case(
-        needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
-        needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
-        needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
-        needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
-        needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
-        needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
-        needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
-        needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
-        needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
-        needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
-        'NO COPILOT PAT AVAILABLE')
-      }}
+    COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
 
 concurrency:
   group: "ci-failure-fix"
@@ -80,6 +67,20 @@ safe-outputs:
   add-comment:
     target: "*"
     max: 10
+  data:
+    type: object
+    properties:
+      workflow_artifact:
+        type: string
+        enum: [ci-fix]
+      artifact_kind:
+        type: string
+        enum: [fix, help, handoff]
+      linked_kbe:
+        type: integer
+        minimum: 1
+    required: [workflow_artifact, artifact_kind, linked_kbe]
+    additionalProperties: false
 
 timeout-minutes: 90
 
@@ -110,8 +111,8 @@ To suggest changes, edit this file or comment on the PRs/comments it produces �
 2. **Caps per run: 5 `create_pull_request`, 10 `add_comment`.** On cap, record `-> skipped: cap reached` and move on.
 3. **Never mute.** No `[ActiveIssue]`, `[SkipOnPlatform]`, `[ConditionalFact]` added to disable, `<GCStressIncompatible>`, `<NativeAotIncompatible>`, `<*TestUnsupported>`, `Skip = "..."`, or any csproj exclusion that stops a test from running. If the only available mitigation is to disable a test, do NOT do it — open a help-wanted PR with a non-disabling best-effort change, or (if no code change is possible) a loop-in comment. Disabling is a human decision that lives outside this workflow.
 4. **One KBE = one outcome per run.** Exactly one of: a fix PR (confident or help-wanted), a loop-in comment, or a recorded skip. Never both a PR and a comment for the same KBE in the same run; always prefer the PR.
-5. **At most one open `[ci-fix]` PR and one `ci-fix` loop-in comment per KBE, ever.** Before opening a PR, run the Step 3 PR dedup. Before commenting, search for a prior `ci-fix` comment on that KBE (the marker `<!-- ci-fix:handoff -->`). If a comment already exists, skip with `-> skipped: loop-in comment already posted`. Build Analysis tracks occurrence counts in the KBE body; do not add occurrence chatter.
-6. **Every PR title starts with `[ci-fix] `.** Every PR body and every loop-in comment carries the artifact marker block (see Output markers).
+5. **At most one open `[ci-fix]` PR and one `ci-fix` loop-in comment per KBE, ever.** Before opening a PR, run the Step 3 PR dedup. Before commenting, search for a prior `ci-fix` handoff using the structured-data or legacy-visible signatures in Step 3.6. If a comment already exists, skip with `-> skipped: loop-in comment already posted`. Build Analysis tracks occurrence counts in the KBE body; do not add occurrence chatter.
+6. **Every PR title starts with `[ci-fix] `.** Every PR body and every loop-in comment carries the visible artifact block and the matching `safe-outputs.data` object (see Output identity).
 7. **Cross-run dedup is GitHub-search based, not `/tmp`.** `/tmp/gh-aw/agent/` is per-run only. Before emitting anything for a KBE, run the existing-artifact searches in Step 3 against live GitHub.
 8. **Fixes are small and validated; help-wanted PRs are honest.** A confident fix PR satisfies the small-fix bounds in Step 5 and is build-validated. A help-wanted PR may exceed those bounds or be unvalidated, but it MUST stay draft, carry a real best-effort diff (never a test-disable), and state plainly in the body what is unverified and what help is needed.
 9. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
@@ -160,14 +161,18 @@ For each result, read the body + latest comments through the `github` MCP (NOT `
 
 ### Step 3 — Existing-artifact dedup (search live GitHub, every KBE)
 
-Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing each `Linked KBE:` marker, then resolve checks 1–3 against that map. Use the `github` MCP search tools:
+Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing both its `head.ref` branch and each visible `Linked KBE:` field. Every `[ci-fix]` PR MUST use a `ci-fix/<kbe>-...` head branch, making the branch prefix a deterministic, punctuation-free dedup key. Resolve checks 1–3 against that map. Use the `github` MCP search tools:
 
-1. **Open fix PR already exists** — `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
+1. **Open fix PR already exists** — first check the enumerated `[ci-fix]` PR map for any open PR whose `head.ref` starts with `ci-fix/<kbe>-`. This prefix match is authoritative: if found, skip immediately even when title/body search misses. Otherwise fall back to `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
 2. **Merged fix PR exists** — `repo:dotnet/runtime is:pr is:merged "Linked KBE: #<kbe>"`. If found, the KBE is likely already fixed -> `-> skipped: fix PR #<n> already merged; KBE may be stale`.
 3. **Closed-unmerged fix PR within 30d** — `repo:dotnet/runtime is:pr is:closed -is:merged "Linked KBE: #<kbe>" closed:>=<today-30d>`. If found, do NOT re-open the same fix unless you have a clearly different change. Record `-> skipped: prior fix PR #<n> closed without merge within 30d`.
 4. **A human (non-`[ci-fix]`) PR already references the KBE** — `repo:dotnet/runtime is:pr is:open "#<kbe>"`. If a maintainer is already fixing it -> `-> skipped: human PR #<n> already addressing`.
-5. **Author already engaged on the KBE.** From the KBE comments you read in Step 2, if any `MEMBER`/`OWNER` comment expresses active investigation or fix-forward intent (case-insensitive any of: `i'm fixing`, `i am fixing`, `investigating`, `will investigate`, `looking into`, `root cause`, `fix forward`, `fix-forward`, `landing in #`, `wait for #`, `pr is up`, `working on`), do NOT duplicate their work -> `-> skipped: author already engaged on #<kbe>`.
-6. **Prior hand-off comment** — if the KBE already carries a comment containing the marker `<!-- ci-fix:handoff -->`, a hand-off was already posted; you may still emit a fix PR this run if you have one, but you may NOT post a second comment (Hard rule 5).
+5. **Author already engaged on the KBE.** Inspect the comments collection itself; do not assume comments live at a fixed array index in an issue-read response. If the issue read did not return comments, call the corresponding comments tool explicitly. If any `MEMBER`/`OWNER` comment expresses active investigation or fix-forward intent (case-insensitive any of: `i'm fixing`, `i am fixing`, `investigating`, `will investigate`, `looking into`, `root cause`, `fix forward`, `fix-forward`, `landing in #`, `wait for #`, `pr is up`, `working on`), do NOT duplicate their work -> `-> skipped: author already engaged on #<kbe>`.
+6. **Prior hand-off comment** — inspect each comment independently. A handoff already exists when EITHER:
+   - its `Structured data:` JSON has `workflow_artifact: "ci-fix"`, `artifact_kind: "handoff"`, and `linked_kbe: <kbe>`; OR
+   - for artifacts created before structured data was available, the same comment contains all three visible lines `Workflow artifact: ci-fix`, `Artifact kind: handoff`, and `Linked KBE: #<kbe>`.
+
+   You may still emit a fix PR this run if you have one, but you may NOT post a second comment (Hard rule 5).
 
 Persist each KBE's dedup verdict to `/tmp/gh-aw/agent/dedup/<kbe>.txt` so later steps don't re-query.
 
@@ -176,11 +181,15 @@ Persist each KBE's dedup verdict to `/tmp/gh-aw/agent/dedup/<kbe>.txt` so later 
 For each surviving KBE, locate the failure and a likely cause.
 
 1. **Reproduce the signature.** From the `Build:` link, walk the AzDO timeline (`/builds/{id}/timeline?api-version=7.1`, reconstruct via `parentId`), find the failing task/Helix work item, and `curl -s "$log_url" | tee /tmp/gh-aw/agent/failure_<kbe>.log`. Confirm the KBE's `Error Message` substring actually appears in the log. If it does not, the KBE may be stale or already fixed -> `-> skipped: signature no longer reproduces in cited build`.
-2. **Locate the failing test/source.** From the test name or compile error, find the owning file(s) at `HEAD`. Read them. For build breaks, read the failing compile unit and the cited error code/line.
-3. **Identify the regression-introducing change (attribution gates).** Prefer the *first-bad-commit* range over raw `git blame`:
+2. **Freshness and live-leg gate (mandatory, before any fix attempt).** A KBE only deserves a fix if the failure still happens, on a leg that still runs, with the bug still present at `HEAD`. Run all three checks; the first one that trips ends this KBE with the recorded skip — no PR, no loop-in comment.
+   - **Recent occurrence.** List recent completed builds of the KBE's definition (`/builds?definitions=<id>&statusFilter=completed&%24top=20&api-version=7.1`) and check the signature against the newest ones, alongside any Build Analysis occurrence data already in the KBE body. If the most recent occurrence is older than 14 days, the failure was almost certainly fixed or retired already -> `-> skipped: no occurrence in last 14d, likely already fixed or retired`.
+   - **Live leg.** Confirm the leg from `Build error leg or test failing:` still runs: it appears in the timeline of the most recent completed build of that definition, and its job/queue/platform is still defined in the pipeline YAML at `HEAD` (`eng/pipelines/**`). Retired legs (removed Mono mobile or wasm legs, deleted queues, dropped OS images) cannot be fixed by a PR -> `-> skipped: failing leg retired, no longer runs at HEAD`.
+   - **Fix already landed.** Read the failing source at `HEAD` and `git log --oneline --since=<KBE creation date> -- <failing file(s)>`. If a merged change already removed the faulty code path, or the KBE cites a fix PR that has since merged, the KBE is stale -> `-> skipped: fix already present at HEAD; KBE stale`.
+3. **Locate the failing test/source.** From the test name or compile error, find the owning file(s) at `HEAD`. Read them. For build breaks, read the failing compile unit and the cited error code/line.
+4. **Identify the regression-introducing change (attribution gates).** Prefer the *first-bad-commit* range over raw `git blame`:
    - Anchor on the KBE's `First build it occurred` commit/date. `git log --oneline --since=<a few days before first-occurrence> -- <failing file>` to find candidate PRs that touched the failing file/function/test before the first failing build.
    - **Exclude** formatting-only, bulk-rename, file-move, dependency-bump, container-digest, and bot/codeflow commits (authors like `dotnet-maestro[bot]`, `github-actions[bot]`, codeflow merges) unless clearly causal.
-   - Require **>= 2 evidence points** before attributing to an author: (a) the failure first appears after their merge, (b) their change touched the failing file/function/test, (c) the change is topically related to the failure (same API/area). 
+   - Require **>= 2 evidence points** before attributing to an author: (a) the failure first appears after their merge, (b) their change touched the failing file/function/test, (c) the change is topically related to the failure (same API/area).
    - If confidence is high, record at most ONE likely author handle. If confidence is low, record the candidate as a "possible related PR" link with NO author handle.
 
 ### Step 5 — Decide: confident fix, help-wanted PR, or loop-in comment
@@ -221,6 +230,8 @@ Always try to produce a real candidate change first. Read every file you would m
 
 **Already-rooted test-assembly caution.** For any failing leg, when the symptom is a type, assembly, or method *missing at run time* (a `FileNotFoundException` for a `*.TestAssembly.dll`, a reflection lookup returning null, a missing logging/DI provider), first inspect the harness and project sources for existing roots and for whether the missing artifact is already present in the app/layout. If the test assembly or member is already rooted, do **not** propose another `[DynamicDependency]`, `.rd.xml`/`ILLink.Descriptors.xml` root, or `TrimmerRootAssembly` — the change is a no-op reviewers will reject. Similarly, if the assembly is already copied into the app bundle/layout, do **not** propose an additional bundle-copy. Only add a root or copy step when source confirms it is missing. Otherwise pin a concrete product-side root cause, or treat it as no-producible-diff and route to Branch COMMENT (Step 5.5).
 
+**Platform crypto-config caution.** When a `System.Security.Cryptography.*` test fails only on a specific distro/OS crypto configuration (AzureLinux/mariner, `linux_musl`, FIPS, or an OpenSSL-provider variant) and the candidate change would hard-code a platform-specific crypto expectation — a key-size floor, algorithm availability, cipher enable/disable, or a per-distro test-expectation change — do **not** open a confident (Branch FIX) PR. The correct behavior depends on the distro's crypto provider configuration, which is a security-area-owner decision, so a guessed expectation change will be rejected. Route to Branch COMMENT (Step 5.5, loop-in), or Branch HELP (Step 5.4) only when you name the specific platform crypto configuration as the explicit open question for a human to confirm.
+
 Once you have a candidate diff, classify it:
 
 **Confident (Branch FIX, Step 5.3)** — ALL of:
@@ -237,17 +248,17 @@ Once you have a candidate diff, classify it:
 
 #### Step 5.3 — Emit a confident fix PR (Branch FIX)
 
-Branch from `origin/main`. Stage only the files you change with `git add <specific path>` (never `git add -A`); verify with `git diff --name-only --cached`.
+Branch from `origin/main` using a `ci-fix/<kbe>-<slug>-<hash>` head-branch name (numeric KBE id first). Stage only the files you change with `git add <specific path>` (never `git add -A`); verify with `git diff --name-only --cached`.
 
 **Validation contract.** Build-validate the change. For libraries: `dotnet build` the affected test project (and run the single failing test if feasible). Record the exact command and its result. If you ultimately cannot validate within the environment, this is no longer a confident fix — drop to Branch HELP (Step 5.4).
 
-Emit one `create_pull_request` using the Fix-PR template (Templates section). The PR MUST link the KBE (`Linked KBE: #<n>`) and carry the artifact marker block (`Artifact kind: fix`). Do not apply any label other than `agentic-workflows`. Do NOT add `area-*` labels — the labeler owns area triage.
+Emit one `create_pull_request` using the Fix-PR template (Templates section). The PR MUST link the KBE (`Linked KBE: #<n>`) and carry the visible artifact block plus matching structured data (`Artifact kind: fix`). Do not apply any label other than `agentic-workflows`. Do NOT add `area-*` labels — the labeler owns area triage.
 
 #### Step 5.4 — Emit a help-wanted PR (Branch HELP)
 
 You have a real candidate change but cannot stand fully behind it. Open it anyway so reviewers have something concrete to react to, instead of a bare comment.
 
-Branch from `origin/main`. Stage only the files you change with `git add <specific path>`; verify with `git diff --name-only --cached`. The diff MUST be a genuine attempt at the fix — **never** a test-disable, `[ActiveIssue]`, or csproj exclusion (that is muting, Hard rule 3).
+Branch from `origin/main` using a `ci-fix/<kbe>-<slug>-<hash>` head-branch name (numeric KBE id first). Stage only the files you change with `git add <specific path>`; verify with `git diff --name-only --cached`. The diff MUST be a genuine attempt at the fix — **never** a test-disable, `[ActiveIssue]`, or csproj exclusion (that is muting, Hard rule 3).
 
 Run whatever validation you can and record the exact command + result (including "not run because <reason>"). Emit one `create_pull_request` using the Help-wanted-PR template. The title MUST make the ask visible (e.g. `[ci-fix] Needs review: <short description> (refs #<kbe>)`). The body MUST link the KBE (`Linked KBE: #<n>`), carry `Artifact kind: help`, state exactly what is unverified, and loop in the likely author + area owners under a non-accusatory "Help wanted" heading (Step 6 mention rules apply). Keep it draft.
 
@@ -255,7 +266,7 @@ Run whatever validation you can and record the exact command + result (including
 
 Only when no candidate diff is producible at all. Emit one `add_comment` on the KBE using the Loop-in comment template. This contains your root-cause analysis, the suspected regressing PR (if any), and a "Suggested reviewers / area contacts" section.
 
-Respect Hard rule 5 (at most one loop-in comment per KBE, ever) — re-check the `<!-- ci-fix:handoff -->` marker immediately before emitting.
+Respect Hard rule 5 (at most one loop-in comment per KBE, ever) — immediately before emitting, re-check the structured-data and legacy-visible handoff signatures from Step 3.6.
 
 ### Step 6 — Mention rules (apply to help-wanted PR bodies and loop-in comments)
 
@@ -278,7 +289,7 @@ Per KBE, append one outcome line to `/tmp/gh-aw/agent/coverage.txt`:
 
 `<outcome>` is one of: `fix-PR #aw_<id>` (confident), `help-PR #aw_<id>` (needs review), `loopin-comment #<kbe>`, `skipped: <reason>`.
 
-Recognized skip reasons (reuse these phrasings so the feedback workflow's aggregation stays stable): `not yet area-labeled`, `KBE too fresh, defer to next run`, `open fix PR #<n> already exists`, `fix PR #<n> already merged; KBE may be stale`, `prior fix PR #<n> closed without merge within 30d`, `human PR #<n> already addressing`, `author already engaged on #<kbe>`, `loop-in comment already posted`, `signature no longer reproduces in cited build`, `candidate fix already present in source`, `no producible diff (JIT/GC/security/API/infra) — comment`, `cap reached`, `integrity-filtered candidate, needs human review`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings.
+Recognized skip reasons (reuse these phrasings so the feedback workflow's aggregation stays stable): `not yet area-labeled`, `KBE too fresh, defer to next run`, `open fix PR #<n> already exists`, `fix PR #<n> already merged; KBE may be stale`, `prior fix PR #<n> closed without merge within 30d`, `human PR #<n> already addressing`, `author already engaged on #<kbe>`, `loop-in comment already posted`, `signature no longer reproduces in cited build`, `no occurrence in last 14d, likely already fixed or retired`, `failing leg retired, no longer runs at HEAD`, `fix already present at HEAD; KBE stale`, `candidate fix already present in source`, `no producible diff (JIT/GC/security/API/infra) — comment`, `cap reached`, `integrity-filtered candidate, needs human review`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings.
 
 At end of run, print this table to the agent log:
 
@@ -286,9 +297,9 @@ At end of run, print this table to the agent log:
 | kbe | area | outcome | reason |
 ```
 
-## Output markers
+## Output identity
 
-Every PR body and every loop-in comment MUST begin with this marker block (the feedback workflow greps it to separate confident-fix, help-wanted, and comment artifacts and to dedup):
+Every PR body and every loop-in comment MUST begin with this visible block (the feedback workflow reads it for human-friendly classification and backward compatibility):
 
 ```
 Workflow artifact: ci-fix
@@ -296,7 +307,17 @@ Artifact kind: fix        # "fix" = confident PR, "help" = help-wanted PR, "hand
 Linked KBE: #<n>
 ```
 
-Loop-in comments MUST additionally include the HTML marker `<!-- ci-fix:handoff -->` somewhere in the body (used by the one-comment-per-KBE dedup in Step 3.6 / Hard rule 5).
+Every `create_pull_request` and `add_comment` safe-output call MUST also provide this `data` object, using the matching kind:
+
+```json
+{
+  "workflow_artifact": "ci-fix",
+  "artifact_kind": "<fix|help|handoff>",
+  "linked_kbe": <n>
+}
+```
+
+Do not paste this JSON into the body. `safe-outputs.data` validates it and appends it after sanitization as a `Structured data:` fenced JSON block. New readers use that block as the machine-readable identity; the visible block remains the legacy fallback.
 
 ## Templates
 
@@ -376,7 +397,6 @@ Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/
 Workflow artifact: ci-fix
 Artifact kind: handoff
 Linked KBE: #<n>
-<!-- ci-fix:handoff -->
 
 > [!NOTE]
 > AI/Copilot-generated triage note.
