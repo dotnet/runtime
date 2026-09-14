@@ -12,6 +12,34 @@ namespace System.Tests
 {
     public class Decimal64Tests
     {
+        [Theory]
+        [InlineData("-883.2925549776085", "2.45990008214473e-384")]
+        public static void ExpSubnormalRoundingTest(string input, string expected)
+        {
+            Assert.Equal(Decimal64.Parse(expected, CultureInfo.InvariantCulture),
+                Decimal64.Exp(Decimal64.Parse(input, CultureInfo.InvariantCulture)));
+        }
+
+        [Theory]
+        [InlineData(-399, 0)]
+        [InlineData(-398, 1)]
+        [InlineData(-397, 10)]
+        public static void Exp10SubnormalAccuracyTest(int input, int expectedUnits)
+        {
+            Assert.Equal(Decimal64.Epsilon * expectedUnits, Decimal64.Exp10(input));
+        }
+
+        [Theory]
+        [InlineData("0.9999999999999999", "1.4142135623730950605868e-8", "-1.00000000000000005e-16", "3.14159265358979323846264e-16")]
+        public static void TranscendentalBoundaryAccuracyTest(string input, string acos, string log, string sinPi)
+        {
+            Decimal64 x = Decimal64.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(Decimal64.Parse(acos, CultureInfo.InvariantCulture), Decimal64.Acos(x));
+            Assert.Equal(Decimal64.Parse(log, CultureInfo.InvariantCulture), Decimal64.Log(x));
+            Assert.Equal(Decimal64.Parse(sinPi, CultureInfo.InvariantCulture), Decimal64.SinPi(x));
+            Assert.Equal(Decimal64.SinPi(x), Decimal64.SinCosPi(x).SinPi);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;

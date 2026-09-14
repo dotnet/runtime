@@ -13,6 +13,35 @@ namespace System.Tests
 {
     public class Decimal32Tests
     {
+        [Theory]
+        [InlineData("-219.1358", "6.76911e-96")]
+        [InlineData("-219.6328", "4.11801e-96")]
+        public static void ExpSubnormalRoundingTest(string input, string expected)
+        {
+            Assert.Equal(Decimal32.Parse(expected, CultureInfo.InvariantCulture),
+                Decimal32.Exp(Decimal32.Parse(input, CultureInfo.InvariantCulture)));
+        }
+
+        [Theory]
+        [InlineData(-102, 0)]
+        [InlineData(-101, 1)]
+        [InlineData(-100, 10)]
+        public static void Exp10SubnormalAccuracyTest(int input, int expectedUnits)
+        {
+            Assert.Equal(Decimal32.Epsilon * (Decimal32)expectedUnits, Decimal32.Exp10((Decimal32)input));
+        }
+
+        [Theory]
+        [InlineData("0.9999999", "0.000447213599226738", "-1.00000005e-7", "3.14159265358974e-7")]
+        public static void TranscendentalBoundaryAccuracyTest(string input, string acos, string log, string sinPi)
+        {
+            Decimal32 x = Decimal32.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(Decimal32.Parse(acos, CultureInfo.InvariantCulture), Decimal32.Acos(x));
+            Assert.Equal(Decimal32.Parse(log, CultureInfo.InvariantCulture), Decimal32.Log(x));
+            Assert.Equal(Decimal32.Parse(sinPi, CultureInfo.InvariantCulture), Decimal32.SinPi(x));
+            Assert.Equal(Decimal32.SinPi(x), Decimal32.SinCosPi(x).SinPi);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;
