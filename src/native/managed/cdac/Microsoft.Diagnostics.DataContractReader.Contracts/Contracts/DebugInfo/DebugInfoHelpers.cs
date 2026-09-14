@@ -15,6 +15,40 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 /// </summary>
 internal static class DebugInfoHelpers
 {
+    internal readonly struct WasmDebugInfoEncoding
+    {
+        public byte RegisterTypeShift { get; }
+        public byte ValueTypeCount { get; }
+
+        public WasmDebugInfoEncoding(byte registerTypeShift, byte valueTypeCount)
+        {
+            if (registerTypeShift is 0 or >= 32)
+                throw new NotSupportedException($"Unsupported WASM debug register type shift {registerTypeShift}.");
+            if (valueTypeCount != (byte)WasmDebugValueType.Count)
+                throw new NotSupportedException(
+                    $"Unsupported WASM debug value type count {valueTypeCount}; reader supports {(byte)WasmDebugValueType.Count}.");
+            uint encodableTypeCount = 1u << (32 - registerTypeShift);
+            if (encodableTypeCount < valueTypeCount)
+                throw new NotSupportedException(
+                    $"WASM debug register type shift {registerTypeShift} cannot encode {valueTypeCount} value types.");
+
+            RegisterTypeShift = registerTypeShift;
+            ValueTypeCount = valueTypeCount;
+        }
+    }
+
+    internal static WasmDebugInfoEncoding GetWasmDebugInfoEncoding(Target target)
+    {
+        if (!target.TryReadGlobal<byte>(Constants.Globals.WasmDebugRegisterTypeShift, out byte? registerTypeShift) ||
+            !target.TryReadGlobal<byte>(Constants.Globals.WasmDebugValueTypeCount, out byte? valueTypeCount))
+        {
+            throw new InvalidOperationException(
+                "The target does not describe its WASM variable debug-register encoding.");
+        }
+
+        return new WasmDebugInfoEncoding(registerTypeShift.Value, valueTypeCount.Value);
+    }
+
     /// <summary>
     /// Mirrors ICorDebugInfo::VarLocType from cordebuginfo.h.
     /// Describes how a variable is stored at a particular point in native code.
@@ -109,7 +143,10 @@ internal static class DebugInfoHelpers
     /// public <see cref="DebugVarInfo"/> entries directly.
     /// Mirrors the native DoNativeVarInfo/TransferReader logic from debuginfostore.cpp.
     /// </summary>
-    internal static IEnumerable<DebugVarInfo> DoVars(NativeReader nativeReader, bool isX86)
+    internal static IEnumerable<DebugVarInfo> DoVars(
+        NativeReader nativeReader,
+        bool isX86,
+        WasmDebugInfoEncoding? wasmEncoding = null)
     {
         NibbleReader reader = new(nativeReader, 0);
 
@@ -137,7 +174,7 @@ internal static class DebugInfoHelpers
             if (locType is VarLocType.VLT_INVALID or VarLocType.VLT_COUNT)
                 continue;
 
-            yield return locType switch
+            DebugVarInfo info = locType switch
             {
                 VarLocType.VLT_REG => new DebugVarInfo
                 {
@@ -199,7 +236,73 @@ internal static class DebugInfoHelpers
                     StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
                 },
             };
+
+            yield return wasmEncoding is WasmDebugInfoEncoding encoding
+                ? ApplyWasmProjection(info, encoding)
+                : info;
         }
+    }
+
+    /// <summary>
+    /// Decodes a packed WASM <c>regNumber</c> into a local index and value type. Returns null for
+    /// values that do not name a local, which is the reserved pseudo-register range
+    /// (<c>PC</c>, <c>REGNUM_COUNT</c>, <c>REGNUM_AMBIENT_SP</c>) and any out-of-range value type.
+    /// </summary>
+    internal static WasmLocalInfo? DecodeWasmRegister(
+        uint packedRegister,
+        WasmDebugInfoEncoding encoding)
+    {
+        uint valueType = packedRegister >> encoding.RegisterTypeShift;
+        if (valueType is (uint)WasmDebugValueType.Invalid ||
+            valueType >= encoding.ValueTypeCount)
+        {
+            return null;
+        }
+
+        return new WasmLocalInfo
+        {
+            Index = packedRegister & ((1u << encoding.RegisterTypeShift) - 1),
+            ValueType = (WasmDebugValueType)valueType,
+        };
+    }
+
+    /// <summary>
+    /// Reinterprets an architecture-neutral <see cref="DebugVarInfo"/> for WASM, where the JIT's
+    /// "registers" are packed WASM local descriptors rather than physical registers.
+    /// </summary>
+    private static DebugVarInfo ApplyWasmProjection(
+        DebugVarInfo info,
+        WasmDebugInfoEncoding encoding)
+    {
+        WasmLocalInfo? local = DecodeWasmRegister(info.Register, encoding);
+        WasmLocalInfo? local2 = DecodeWasmRegister(info.Register2, encoding);
+
+        // Promote the kinds whose storage is entirely WASM locals, so that consumers written
+        // against a real register file cannot mistake them for readable registers. Stack-based
+        // kinds keep their kind: their storage is linear memory, which is readable; only the
+        // base register is a WASM local.
+        DebugVarLocKind kind = info.Kind switch
+        {
+            DebugVarLocKind.Register => local is not null
+                ? DebugVarLocKind.WasmLocal
+                : throw new InvalidOperationException(
+                    $"Invalid WASM debug register encoding 0x{info.Register:X8}."),
+            DebugVarLocKind.RegisterRegister => local is not null && local2 is not null
+                ? DebugVarLocKind.WasmLocalPair
+                : throw new InvalidOperationException(
+                    $"Invalid WASM debug register pair encoding 0x{info.Register:X8}, 0x{info.Register2:X8}."),
+            DebugVarLocKind.RegisterStack or DebugVarLocKind.StackRegister when local is null =>
+                throw new InvalidOperationException(
+                    $"Invalid WASM debug register encoding 0x{info.Register:X8}."),
+            _ => info.Kind,
+        };
+
+        return info with
+        {
+            Kind = kind,
+            WasmLocal = local,
+            WasmLocal2 = local2,
+        };
     }
 
     private static int ReadEncodedStackOffset(NibbleReader reader, bool isX86)
