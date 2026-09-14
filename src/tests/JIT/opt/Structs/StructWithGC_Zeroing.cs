@@ -54,8 +54,9 @@ public class StructWithGC_Zeroing
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static string? InitializeReference(string? value)
     {
-        // X64: xor eax, eax
-        // X64: mov {{[qg]}}word ptr [{{.*}}], rax
+        // X64: xor {{e|r}}[[ZERO:[a-z]{2}|[0-9]+]]{{d?}}, {{e|r}}[[ZERO]]{{d?}}
+        // X64-NEXT: mov {{[qg]}}word ptr [{{.*}}], r[[ZERO]]
+        // X64: call {{.*}}ReadReference
         string? s = value;
         return ReadReference(ref s);
     }
