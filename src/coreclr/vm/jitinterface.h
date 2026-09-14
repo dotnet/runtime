@@ -149,10 +149,6 @@ EXTERN_C FCDECL0(void, JIT_FailFast);
 
 EXTERN_C void ReversePInvokeBadTransition();
 
-#if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
-// Extra argument for the classification of the checked barriers.
-extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind);
-#else
 // Regular checked write barrier.
 extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
@@ -164,8 +160,6 @@ extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 #elif defined (TARGET_RISCV64)
 #define RhpAssignRef RhpAssignRefRiscV64
 #endif // TARGET_*
-
-#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 
 extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
 extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
 using System.Runtime.CompilerServices;
@@ -60,7 +59,9 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
             }
         }
 
-        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.CustomAttributes);
+        internal sealed override MetadataReader GetMetadataReader() => Reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _parameter.CustomAttributes;
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object? defaultValue)
         {

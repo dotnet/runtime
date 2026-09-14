@@ -3311,9 +3311,22 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
             return nullptr;
         }
 
-        // Were able to optimize.
+        // We're able to optimize.
         conValTree->gtVNPair = vnPair;
-        return gtWrapWithSideEffects(conValTree, tree, GTF_SIDE_EFFECT, true);
+
+        bool ignoreRoot = true;
+        if (((tree->gtFlags & GTF_EXCEPT) != 0) && (tree->OperExceptions(this) != ExceptionSetFlags::None))
+        {
+            ValueNumPair operandsExcSet = vnStore->VNPForEmptyExcSet();
+            for (GenTree* operand : tree->Operands())
+            {
+                ValueNumPair operandVNP = operand->gtVNPair.BothDefined() ? operand->gtVNPair : vnStore->VNPForVoid();
+                operandsExcSet          = vnStore->VNPUnionExcSet(operandVNP, operandsExcSet);
+            }
+            ignoreRoot = vnStore->VNPExcIsSubset(operandsExcSet, vnStore->VNPExceptionSet(vnPair));
+        }
+
+        return gtWrapWithSideEffects(conValTree, tree, GTF_SIDE_EFFECT, ignoreRoot);
     }
     else
     {
@@ -5859,9 +5872,6 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             // to the next node in the tree. We will re-morph this entire statement in
             // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
             newTree->gtNext = tree->gtNext;
-
-            // Old tree should not be referenced anymore.
-            DEBUG_DESTROY_NODE(tree);
         }
     }
 

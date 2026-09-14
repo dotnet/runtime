@@ -10318,7 +10318,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
         }
         else
         {
-            assert(typ == TYP_INT);
+            assert((typ == TYP_INT) || ((typ == TYP_LONG) && m_compiler->IsBitCountingIntrinsic(gtMathFN)));
             int res = 0;
 
             if (gtMathFN == NI_System_Math_ILogB)
@@ -10418,7 +10418,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 unreached();
             }
 
-            return VNForIntCon(res);
+            return (typ == TYP_LONG) ? VNForLongCon(res) : VNForIntCon(res);
         }
     }
     else
@@ -14952,11 +14952,67 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         }
     }
 
+    // Async calls define the "resumed" indicator: it is set to 1 when the call
+    // suspends and we are later resumed in this frame, and is left alone
+    // otherwise. Thus we know the value after the call is 1 if the call always
+    // suspends, or if the indicator was already known to be 1 before it.
+    GenTreeLclVarCommon* asyncResumedLclAddr = gtCallGetDefinedAsyncResumedLclAddr(call);
+    ValueNumPair         asyncResumedVNP;
+    if (asyncResumedLclAddr != nullptr)
+    {
+        if (call->GetAsyncInfo().AlwaysSuspends)
+        {
+            JITDUMP("Call [%06u] always suspends; establishing always resumed state for V%02u\n", dspTreeID(call),
+                    asyncResumedLclAddr->GetLclNum());
+            asyncResumedVNP.SetBoth(vnStore->VNOneForType(TYP_I_IMPL));
+        }
+        else
+        {
+            CallArg* resumedUseArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
+            if (resumedUseArg != nullptr)
+            {
+                // The arg is usually a TYP_INT use of the TYP_I_IMPL indicator var.
+                assert(genActualTypeIsInt(resumedUseArg->GetNode()));
+
+                // The indicator is monotonic, so it stays 1 for whichever kinds
+                // it was already known to be 1 for.
+                ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
+                for (ValueNumKind vnKind : vnKinds)
+                {
+                    ValueNum resumedUseVN = vnStore->VNNormalValue(resumedUseArg->GetNode()->GetVN(vnKind));
+                    if (vnStore->IsVNConstant(resumedUseVN) && (vnStore->CoercedConstantValue<int>(resumedUseVN) == 1))
+                    {
+                        JITDUMP("Call [%06u] propagates always resumed state for V%02u (%s VN)\n", dspTreeID(call),
+                                asyncResumedLclAddr->GetLclNum(), vnKind == VNK_Liberal ? "liberal" : "conservative");
+                        asyncResumedVNP.Set(vnKind, vnStore->VNOneForType(TYP_I_IMPL));
+                    }
+                }
+            }
+        }
+    }
+
     // If the call generates any definitions, for example because it uses "return buffer", then VN the local
     // as well.
     auto visitDef = [=](const auto& def) {
         ValueNumPair storeValue;
-        storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.GetDefNode())->TypeGet()));
+        if (def.GetDefNode() == asyncResumedLclAddr)
+        {
+            storeValue = asyncResumedVNP;
+        }
+
+        if (!storeValue.BothDefined())
+        {
+            // Use the same new unique VN for any kind we do not know the value of.
+            ValueNum newVN = vnStore->VNForExpr(compCurBB, lvaGetDesc(def.GetLclNum())->TypeGet());
+            if (storeValue.GetLiberal() == ValueNumStore::NoVN)
+            {
+                storeValue.SetLiberal(newVN);
+            }
+            if (storeValue.GetConservative() == ValueNumStore::NoVN)
+            {
+                storeValue.SetConservative(newVN);
+            }
+        }
 
         fgValueNumberLocalStore(call, def, storeValue);
         return GenTree::VisitResult::Continue;

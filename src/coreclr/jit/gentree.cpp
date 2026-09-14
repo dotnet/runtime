@@ -19680,6 +19680,48 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
 }
 
 //------------------------------------------------------------------------
+// gtExtractSideEffectsFromUnusedNode: Converts an unused node to a null check
+//    when only its faulting behavior is needed.
+//
+// Arguments:
+//    node - the node whose value is unused
+//
+// Return Value:
+//    The converted node, the original node if no conversion applies, or
+//    nullptr if only the original node's operands need to be evaluated.
+//
+GenTree* Compiler::gtExtractSideEffectsFromUnusedNode(GenTree* node)
+{
+    if (node->OperIsBlk() && !node->OperIsStoreBlk())
+    {
+        JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+        gtChangeOperToNullCheck(node);
+        return node;
+    }
+
+    if (node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
+    {
+        GenTree* obj = node->gtGetOp1();
+        if (!fgAddrCouldBeNull(obj))
+        {
+            return nullptr;
+        }
+
+        JITDUMP("Replace an unused GetType node [%06d] with a NULLCHECK\n", dspTreeID(node));
+        ValueNumPair vnPair = node->gtVNPair;
+        node                = gtNewNullCheck(obj);
+        if ((vnStore != nullptr) && vnPair.BothDefined())
+        {
+            node->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnStore->VNPExceptionSet(vnPair));
+        }
+        node->SetMorphed(this);
+        return node;
+    }
+
+    return node;
+}
+
+//------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:
@@ -19733,13 +19775,13 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
             if (m_compiler->gtNodeHasSideEffects(node, m_flags))
             {
-                if (node->OperIsBlk() && !node->OperIsStoreBlk())
+                GenTree* sideEffect = m_compiler->gtExtractSideEffectsFromUnusedNode(node);
+                if (sideEffect == nullptr)
                 {
-                    JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                    m_compiler->gtChangeOperToNullCheck(node);
+                    return Compiler::WALK_CONTINUE;
                 }
 
-                Append(node);
+                Append(sideEffect);
                 return Compiler::WALK_SKIP_SUBTREES;
             }
 
@@ -33489,11 +33531,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 
 #ifdef DEBUG
     // Once in LIR, lowering may feed a size-changing SIMD reinterpret operand directly -- e.g. an
-    // elided GetLower or ToVectorXXXUnsafe. It still occupies a full SIMD register and is consumed
-    // at the node's width, so treat any SIMD-typed operand as a full-vector operand rather than
-    // requiring an exact size match. In HIR the operand size must still be exact.
+    // elided GetLower or ToVectorXXXUnsafe -- or a scalar FP operand from CreateScalarUnsafe.
+    // These occupy SIMD registers and are consumed at the node's width; containment separately
+    // checks the memory-access size. In HIR the operand size must still be exact.
     auto isFullVectorOp = [=](GenTree* op) -> bool {
-        return op->TypeIs(simdType) || ((comp->fgNodeThreading == NodeThreading::LIR) && varTypeIsSIMD(op));
+        return op->TypeIs(simdType) || ((comp->fgNodeThreading == NodeThreading::LIR) && varTypeUsesFloatReg(op));
     };
 #endif // DEBUG
 
