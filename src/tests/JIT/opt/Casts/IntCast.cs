@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Xunit;
 
 namespace CodeGenTests
@@ -55,6 +56,30 @@ namespace CodeGenTests
                 Assert.Equal((long)(sbyte)value, LoadByteAsLong(new[] { (sbyte)value }));
                 Assert.Equal((long)(short)value, LoadShortAsLong(new[] { (short)value }));
                 Assert.Equal((ulong)(uint)(short)value, LoadShortWithMixedUses(new[] { (short)value }));
+                sbyte byteLocation = (sbyte)value;
+                Assert.Equal((long)(sbyte)value, ExchangeByteAsLong(ref byteLocation));
+                Assert.Equal((sbyte)7, byteLocation);
+                byteLocation = (sbyte)value;
+                Assert.Equal((ulong)(uint)(sbyte)value, ExchangeByteAsUInt(ref byteLocation));
+                Assert.Equal((sbyte)7, byteLocation);
+                byteLocation = (sbyte)value;
+                Assert.Equal((long)(sbyte)value, CompareExchangeByteAsLong(ref byteLocation));
+                Assert.Equal((sbyte)7, byteLocation);
+                byteLocation = (sbyte)value;
+                Assert.Equal((ulong)(uint)(sbyte)value, CompareExchangeByteAsUInt(ref byteLocation));
+                Assert.Equal((sbyte)7, byteLocation);
+                short shortLocation = (short)value;
+                Assert.Equal((long)(short)value, ExchangeShortAsLong(ref shortLocation));
+                Assert.Equal((short)7, shortLocation);
+                shortLocation = (short)value;
+                Assert.Equal((ulong)(uint)(short)value, ExchangeShortAsUInt(ref shortLocation));
+                Assert.Equal((short)7, shortLocation);
+                shortLocation = (short)value;
+                Assert.Equal((long)(short)value, CompareExchangeShortAsLong(ref shortLocation));
+                Assert.Equal((short)7, shortLocation);
+                shortLocation = (short)value;
+                Assert.Equal((ulong)(uint)(short)value, CompareExchangeShortAsUInt(ref shortLocation));
+                Assert.Equal((short)7, shortLocation);
             }
             if (Cast_Short_To_Long(Int16.MaxValue) != 32767)
                 return 0;
@@ -235,13 +260,78 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong LoadShortWithMixedUses(short[] values)
         {
-            // The signed use must not leave sign bits in the unsigned result.
-            // X64: movsx rax, word ptr [
-            // X64: mov qword ptr [{{.*}}], {{r[a-z0-9]+}}
-            // X64: mov eax, eax
+            // The widening uses another register; keep the unsigned result zero-extended.
+            // X64: movsx eax, word ptr [
+            // X64: movsxd [[WIDE:r[a-z0-9]+]], eax
+            // X64: mov qword ptr [{{.*}}], [[WIDE]]
+            // X64-NOT: mov eax, eax
             int value = values[0];
             s_observedLong = value;
             return (uint)value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long ExchangeByteAsLong(ref sbyte location)
+        {
+            // X64: xchg
+            // X64: movsx rax, al
+            // X64-NOT: movsxd
+            // X64-NOT: cdqe
+            return Interlocked.Exchange(ref location, 7);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong ExchangeByteAsUInt(ref sbyte location)
+        {
+            return (uint)Interlocked.Exchange(ref location, 7);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long CompareExchangeByteAsLong(ref sbyte location)
+        {
+            // X64: cmpxchg
+            // X64: movsx rax, al
+            // X64-NOT: movsxd
+            // X64-NOT: cdqe
+            return Interlocked.CompareExchange(ref location, 7, location);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong CompareExchangeByteAsUInt(ref sbyte location)
+        {
+            return (uint)Interlocked.CompareExchange(ref location, 7, location);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long ExchangeShortAsLong(ref short location)
+        {
+            // X64: xchg
+            // X64: movsx rax, ax
+            // X64-NOT: movsxd
+            // X64-NOT: cdqe
+            return Interlocked.Exchange(ref location, 7);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong ExchangeShortAsUInt(ref short location)
+        {
+            return (uint)Interlocked.Exchange(ref location, 7);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long CompareExchangeShortAsLong(ref short location)
+        {
+            // X64: cmpxchg
+            // X64: movsx rax, ax
+            // X64-NOT: movsxd
+            // X64-NOT: cdqe
+            return Interlocked.CompareExchange(ref location, 7, location);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong CompareExchangeShortAsUInt(ref short location)
+        {
+            return (uint)Interlocked.CompareExchange(ref location, 7, location);
         }
     }
 }

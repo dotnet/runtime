@@ -4355,6 +4355,10 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
     if (varTypeIsSmall(node->TypeGet()))
     {
         instruction mov = varTypeIsSigned(node->TypeGet()) ? INS_movsx : INS_movzx;
+        if ((mov == INS_movsx) && genIsSignedWideningUse(node))
+        {
+            size = EA_SET_FLG(size, EA_8BYTE_DST);
+        }
         GetEmitter()->emitIns_Mov(mov, size, targetReg, targetReg, /* canSkip */ false);
     }
 
@@ -4400,6 +4404,10 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     if (varTypeIsSmall(tree->TypeGet()))
     {
         instruction mov = varTypeIsSigned(tree->TypeGet()) ? INS_movsx : INS_movzx;
+        if ((mov == INS_movsx) && genIsSignedWideningUse(tree))
+        {
+            size = EA_SET_FLG(size, EA_8BYTE_DST);
+        }
         GetEmitter()->emitIns_Mov(mov, size, targetReg, REG_RAX, /* canSkip */ false);
     }
     else
@@ -6869,7 +6877,8 @@ bool CodeGen::genIsSignedWideningUse(GenTree* node)
                 followStore = false;
                 continue;
             }
-            return next->OperIs(GT_CAST) && next->TypeIs(TYP_LONG) && !next->AsCast()->IsUnsigned();
+            return next->OperIs(GT_CAST) && next->TypeIs(TYP_LONG) && !next->AsCast()->IsUnsigned() &&
+                   (next->GetRegNum() == node->GetRegNum());
         }
     }
 
