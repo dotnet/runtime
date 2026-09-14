@@ -218,8 +218,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
-    <Compile Include="System\Runtime\CompilerServices\IUnion.cs" />
-    <Compile Include="System\Runtime\CompilerServices\UnionAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IUnion.cs"
+             Link="System\Runtime\CompilerServices\IUnion.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\UnionAttribute.cs"
+             Link="System\Runtime\CompilerServices\UnionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
