@@ -225,6 +225,54 @@ namespace System.Text.Json
 #endif
         }
 
+        public static bool TryLookupUtf8Key<TValue>(
+            this Dictionary<byte[], TValue> dictionary,
+            ReadOnlySpan<byte> utf8Key,
+            [MaybeNullWhen(false)] out TValue result)
+        {
+            Debug.Assert(dictionary.Comparer is ByteArrayOrdinalComparer);
+#if NET
+            Dictionary<byte[], TValue>.AlternateLookup<ReadOnlySpan<byte>> spanLookup =
+                dictionary.GetAlternateLookup<ReadOnlySpan<byte>>();
+
+            return spanLookup.TryGetValue(utf8Key, out result);
+#else
+            return dictionary.TryGetValue(utf8Key.ToArray(), out result);
+#endif
+        }
+
+        /// <summary>Compares byte arrays using ordinal equality.</summary>
+        internal sealed class ByteArrayOrdinalComparer :
+#if NET
+            IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>,
+#endif
+            IEqualityComparer<byte[]>
+        {
+            public static readonly ByteArrayOrdinalComparer Instance = new();
+
+            public bool Equals(byte[]? left, byte[]? right) =>
+                ReferenceEquals(left, right) ||
+                (left is not null && right is not null && left.AsSpan().SequenceEqual(right));
+
+            public int GetHashCode(byte[] value) => ComputeHashCode(value);
+
+#if NET
+            byte[] IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.Create(ReadOnlySpan<byte> span) =>
+                span.ToArray();
+
+            bool IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.Equals(
+                ReadOnlySpan<byte> span,
+                byte[] target) =>
+                span.SequenceEqual(target);
+
+            int IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.GetHashCode(ReadOnlySpan<byte> span) =>
+                ComputeHashCode(span);
+#endif
+
+            private static int ComputeHashCode(ReadOnlySpan<byte> value) =>
+                Marvin.ComputeHash32(value, Marvin.DefaultSeed);
+        }
+
         /// <summary>
         /// Emulates Dictionary(IEnumerable{KeyValuePair}) on netstandard.
         /// </summary>

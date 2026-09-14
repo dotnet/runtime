@@ -3528,7 +3528,7 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
     {
         return emitPrintLabel(id->idAddr()->iiaIGlabel);
     }
-    printf("L_M%03u_", FMT_BB, m_compiler->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+    printf("L_M%03u_" FMT_BB, m_compiler->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
 }
 
 bool emitter::emitDispBranch(unsigned         opcode2,
@@ -4772,7 +4772,7 @@ void emitter::emitDispInsName(
         default:
         {
             printf("CODE: %#x\n", code);
-            printf("MajorOpcode: %d\n", GetMajorOpcode(code));
+            printf("MajorOpcode: %d\n", static_cast<int>(GetMajorOpcode(code)));
             NO_WAY("illegal ins within emitDisInsName!");
         }
     }

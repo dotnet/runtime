@@ -417,13 +417,14 @@ namespace Microsoft.Interop
         private GeneratorDiagnostic.NotSupported? ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
             MarshalDirection elementDirection = MarshallerHelpers.GetMarshalDirection(info, context);
+            string unsupportedReason = marshalInfo.Marshallers.UnsupportedReason ?? "";
             // Marshalling out or return parameter, but no out marshaller is specified
             if (elementDirection == MarshalDirection.UnmanagedToManaged
                 && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.UnmanagedToManagedMode))
             {
                 return new(info)
                 {
-                    NotSupportedDetails = SR.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = SR.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName, unsupportedReason)
                 };
             }
 
@@ -433,7 +434,7 @@ namespace Microsoft.Interop
             {
                 return new(info)
                 {
-                    NotSupportedDetails = SR.Format(SR.BidirectionalMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = SR.Format(SR.BidirectionalMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName, unsupportedReason)
                 };
             }
 
@@ -443,7 +444,7 @@ namespace Microsoft.Interop
             {
                 return new(info)
                 {
-                    NotSupportedDetails = SR.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = SR.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName, unsupportedReason)
                 };
             }
 

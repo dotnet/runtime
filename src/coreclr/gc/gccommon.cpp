@@ -288,8 +288,8 @@ uint64_t GetHighPrecisionTimeStamp()
 {
     if (g_QPFus == 0.0)
     {
-        g_QPFus = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
+        g_QPFus = 1000.0 * 1000.0 / (double)minipal_hires_tick_frequency();
     }
-    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * g_QPFus);
+    return (uint64_t)((double)minipal_hires_ticks() * g_QPFus);
 }
 #endif // !DACCESS_COMPILE

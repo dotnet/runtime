@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using ILCompiler;
+using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 using Internal.TypeSystem;
@@ -389,7 +390,9 @@ namespace Internal.JitInterface
         /// <summary>
         /// Maps a WasmValueType to its single-character signature encoding.
         /// </summary>
-        private static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
+        // internal rather than private so the call-helper generator can encode a single type with the
+        // same table the signature builder below uses (see ILCompiler.PortableCallHelpers.InteropSignature).
+        internal static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
         {
             WasmValueType.I32 => 'i',
             WasmValueType.I64 => 'l',
@@ -409,15 +412,32 @@ namespace Internal.JitInterface
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
+        internal static string DescribeSigChar(char c) => c switch
+        {
+            'v' => "a void result",
+            'i' => "a 32-bit integer",
+            'l' => "a 64-bit integer",
+            'f' => "a 32-bit float",
+            'd' => "a 64-bit float",
+            'V' => "a 128-bit vector",
+            'S' or 'A' => "a struct passed by reference",
+            'T' => "the 'this' argument",
+            'p' => "the portable entry point argument",
+            'a' => "the async continuation argument",
+            'e' => "an empty struct",
+            _ => $"an unrecognized element '{c}'"
+        };
+
         private static int ParseStructSize(string sig, ref int pos)
         {
-            Debug.Assert(sig[pos] == 'S');
-            pos++; // skip 'S'
+            Debug.Assert(sig[pos] is 'S' or 'A');
+            pos++; // skip 'S'/'A'
             int start = pos;
             while (pos < sig.Length && char.IsDigit(sig[pos]))
             {
                 pos++;
             }
+
             return int.Parse(sig.AsSpan(start, pos - start));
         }
 
@@ -496,11 +516,16 @@ namespace Internal.JitInterface
                     parameters.Add(((CompilerTypeSystemContext)context).GetWasmElevatedType(c, elevation));
                     pos += 2;
                 }
-                else if (c == 'S')
+                else if (c is 'S' or 'A')
                 {
+                    bool isAlignedStruct = c == 'A';
                     int structSize = ParseStructSize(sig, ref pos);
-                    TypeDesc cachedStruct = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
-                    Debug.Assert(cachedStruct is not null, $"No cached struct of size {structSize} for parameter in signature '{sig}'");
+                    CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)context;
+                    TypeDesc cachedStruct = isAlignedStruct
+                        ? compilerContext.GetCachedAlignedStructOfSize(structSize)
+                        : compilerContext.GetCachedStructOfSize(structSize);
+                    Debug.Assert(cachedStruct is not null,
+                        $"No cached {(isAlignedStruct ? "aligned " : "")}struct of size {structSize} for parameter in signature '{sig}'");
                     parameters.Add(cachedStruct);
                 }
                 else
@@ -551,10 +576,20 @@ namespace Internal.JitInterface
             return GetSignature(method.Signature, GetLoweringFlags(method));
         }
 
+        public static WasmSignature GetSignature(INodeWithTypeSignature node)
+        {
+            return GetSignature(node.Signature, GetLoweringFlags(node));
+        }
+
+        public static unsafe WasmSignature GetSignature(MethodSignature signature, CORINFO_SIG_INFO* callSig)
+        {
+            return GetSignature(signature, GetLoweringFlags(callSig));
+        }
+
         public static LoweringFlags GetLoweringFlags(MethodDesc method)
         {
             LoweringFlags flags = 0;
-            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg() || method.IsArrayAddressMethod())
             {
                 flags |= LoweringFlags.HasGenericContextArg;
             }
@@ -563,6 +598,44 @@ namespace Internal.JitInterface
                 flags |= LoweringFlags.IsAsyncCall;
             }
             if (method.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
+        public static LoweringFlags GetLoweringFlags(INodeWithTypeSignature node)
+        {
+            LoweringFlags flags = 0;
+            if (node.HasGenericContextArg)
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (node.IsAsyncCall)
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (node.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
+        public static unsafe LoweringFlags GetLoweringFlags(CORINFO_SIG_INFO* callSig)
+        {
+            Debug.Assert(callSig != null);
+
+            LoweringFlags flags = 0;
+            if (callSig->hasTypeArg())
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (callSig->isAsyncCall())
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if ((callSig->callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK) != CorInfoCallConv.CORINFO_CALLCONV_DEFAULT)
             {
                 flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
@@ -582,7 +655,7 @@ namespace Internal.JitInterface
         {
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly) && signature.Flags.HasFlag(MethodSignatureFlags.UnmanagedCallingConvention))
             {
-                flags = flags | LoweringFlags.IsUnmanagedCallersOnly;
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
 
             TypeDesc returnType = signature.ReturnType;
@@ -622,7 +695,8 @@ namespace Internal.JitInterface
                     returnContext.CacheReturnStructBySize(returnType);
                     if (!TryGetMultiSegmentLayout(returnType, out _, out _))
                     {
-                        returnContext.CacheStructBySize(returnType);
+                        int returnAlignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)returnType);
+                        returnContext.CacheStruct(returnType, returnAlignment > 8);
                     }
                 }
             }
@@ -719,9 +793,12 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        sigBuilder.Append('S');
+                        Debug.Assert(paramType is DefType);
+                        int paramAlignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)paramType);
+                        bool requiresAlignedSlot = paramAlignment > 8;
+                        sigBuilder.Append(requiresAlignedSlot ? 'A' : 'S');
                         sigBuilder.Append(paramSize);
-                        ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
+                        ((CompilerTypeSystemContext)paramType.Context).CacheStruct(paramType, requiresAlignedSlot);
                         result.Add(pointerType);
                     }
                 }
@@ -733,11 +810,13 @@ namespace Internal.JitInterface
                 }
             }
 
+#if READYTORUN
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly))
             {
                 result.Add(pointerType); // PE entrypoint parameter (encoded via 'p' suffix)
                 sigBuilder.Append('p');
             }
+#endif
 
             WasmResultType ps = new(result.ToArray());
             WasmResultType ret = returnIsVoid ? new(Array.Empty<WasmValueType>())

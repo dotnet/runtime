@@ -453,6 +453,8 @@ void MorphInitBlockHelper::TryPrimitiveInit()
         if (varTypeIsSIMD(lclVarType))
         {
             m_src = m_compiler->gtNewZeroConNode(lclVarType);
+            m_src->SetMorphed(m_compiler);
+            m_store->Data() = m_src;
         }
         else
         {

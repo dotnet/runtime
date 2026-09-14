@@ -2176,6 +2176,78 @@ namespace System.Tests
             Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cbrt({input}): expected {expected}, got {actual}");
         }
 
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // -Infinity
+        [InlineData(0x31C0000000000000UL, 0x2D60000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL, 0xAD60000000000000UL)] // -0
+        [InlineData(0x31C0000000000001UL, 0x2FA6335E2214CADAUL)] // 1
+        [InlineData(0xB1C0000000000001UL, 0xAFA6335E2214CADAUL)] // -1
+        [InlineData(0x31C00000000000B4UL, 0x2FEB29430A256D21UL)] // 180
+        [InlineData(0x31C000000000005AUL, 0x2FE594A18512B691UL)] // 90
+        [InlineData(0x77FB86F26FC0FFFFUL, 0x5FC6335E2214CAD9UL)] // MaxValue
+        [InlineData(0xF7FB86F26FC0FFFFUL, 0xDFC6335E2214CAD9UL)] // MinValue
+        [InlineData(0x0000000000000001UL, 0x0000000000000000UL)] // Epsilon
+        [InlineData(0x8000000000000001UL, 0x8000000000000000UL)] // -Epsilon
+        [InlineData(0x00038D7EA4C68000UL, 0x00000FDFA94D0207UL)] // MinNormal
+        [InlineData(0x31D3C7CB9E6193D6UL, 0x6C6285FD7E8E7308UL)] // near tie 5567701906985942
+        [InlineData(0x0033C7CB9E6193D6UL, 0x000373CC8CA7D84EUL)] // near tie 5567701906985942 subnormal
+        [InlineData(0x31CBBEE7DBB055BFUL, 0x3194800A5C2EE663UL)] // near tie 3306127776306623
+        [InlineData(0x002BBEE7DBB055BFUL, 0x00020CCDD604B0A3UL)] // near tie 3306127776306623 subnormal
+        [InlineData(0x6C70C06A9B780723UL, 0x31A5B75B526CB460UL)] // near tie 9218763362141987
+        [InlineData(0x6008C06A9B780723UL, 0x0005B75B526CB460UL)] // near tie 9218763362141987 subnormal
+        [InlineData(0x31C702F9912FC653UL, 0x318C3CD2786CBFD9UL)] // near tie 1973595742914131
+        [InlineData(0x002702F9912FC653UL, 0x000139483F3E132FUL)] // near tie 1973595742914131 subnormal
+        [InlineData(0x31C4CD1B075AF51CUL, 0x31886131A50584C7UL)] // near tie 1351415878055196
+        [InlineData(0x0024CD1B075AF51CUL, 0x0000D684F6E6F3AEUL)] // near tie 1351415878055196 subnormal
+        [InlineData(0x31D508ECB38F52F9UL, 0x31A3ABD8BDBA398EUL)] // near tie 5920787228742393
+        [InlineData(0x003508ECB38F52F9UL, 0x0003ABD8BDBA398EUL)] // near tie 5920787228742393 subnormal
+        public static void DegreesToRadiansTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.DegreesToRadians(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // -Infinity
+        [InlineData(0x31C0000000000000UL, 0x2DC0000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL, 0xADC0000000000000UL)] // -0
+        [InlineData(0x31C0000000000001UL, 0x30145B05528029C8UL)] // 1
+        [InlineData(0xB1C0000000000001UL, 0xB0145B05528029C8UL)] // -1
+        [InlineData(0x31C00000000000B4UL, 0x3063A9FBD687B59AUL)] // 180
+        [InlineData(0x31C000000000005AUL, 0x305251EB30A68C01UL)] // 90
+        [InlineData(0x77FB86F26FC0FFFFUL, 0x7800000000000000UL)] // MaxValue
+        [InlineData(0xF7FB86F26FC0FFFFUL, 0xF800000000000000UL)] // MinValue
+        [InlineData(0x0000000000000001UL, 0x0000000000000039UL)] // Epsilon
+        [InlineData(0x8000000000000001UL, 0x8000000000000039UL)] // -Epsilon
+        [InlineData(0x00038D7EA4C68000UL, 0x00345B05528029C8UL)] // MinNormal
+        [InlineData(0x31D3C7CB9E6193D6UL, 0x320B55574E55B3B9UL)] // near tie 5567701906985942
+        [InlineData(0x0033C7CB9E6193D6UL, 0x006B55574E55B3B9UL)] // near tie 5567701906985942 subnormal
+        [InlineData(0x31CBBEE7DBB055BFUL, 0x3206BAD47EA97B66UL)] // near tie 3306127776306623
+        [InlineData(0x002BBEE7DBB055BFUL, 0x0066BAD47EA97B66UL)] // near tie 3306127776306623 subnormal
+        [InlineData(0x6C70C06A9B780723UL, 0x3212C3EAB0629378UL)] // near tie 9218763362141987
+        [InlineData(0x6008C06A9B780723UL, 0x0072C3EAB0629378UL)] // near tie 9218763362141987 subnormal
+        [InlineData(0x31C702F9912FC653UL, 0x32040471E1589F0CUL)] // near tie 1973595742914131
+        [InlineData(0x002702F9912FC653UL, 0x00640471E1589F0CUL)] // near tie 1973595742914131 subnormal
+        [InlineData(0x31C4CD1B075AF51CUL, 0x31FB824198B94A89UL)] // near tie 1351415878055196
+        [InlineData(0x0024CD1B075AF51CUL, 0x005B824198B94A89UL)] // near tie 1351415878055196 subnormal
+        [InlineData(0x31D508ECB38F52F9UL, 0x320C0D55A409DD23UL)] // near tie 5920787228742393
+        [InlineData(0x003508ECB38F52F9UL, 0x006C0D55A409DD23UL)] // near tie 5920787228742393 subnormal
+        public static void RadiansToDegreesTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.RadiansToDegrees(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
         [Theory]
         [InlineData(0x7C00000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL)] // hypot(NaN, +Infinity) = +Infinity
         [InlineData(0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL)] // hypot(+Infinity, NaN) = +Infinity

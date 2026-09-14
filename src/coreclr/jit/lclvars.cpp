@@ -131,7 +131,7 @@ void Compiler::lvaInitTypeRef()
         }
         else
         {
-            printf("Swift compilation returns %s as %d primitive(s) in registers\n",
+            printf("Swift compilation returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -609,6 +609,21 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
 
+        if ((corInfoType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (strip(corInfoType) != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (lvaSecretStubArg != BAD_VAR_NUM)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            lvaSecretStubArg = *curVarNum;
+        }
+
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
         if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
         {
@@ -931,6 +946,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             wellKnownArg = WellKnownArg::RetBuffer;
         }
+        else if (i == lvaSecretStubArg)
+        {
+            wellKnownArg = WellKnownArg::SecretStubParam;
+        }
 #ifdef SWIFT_SUPPORT
         else if (i == lvaSwiftSelfArg)
         {
@@ -977,7 +996,9 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
             CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
             if (clsHnd != NO_CLASS_HANDLE)
             {
-                info.compCompHnd->getWasmLowering(clsHnd);
+                eeRunExtraSuperPmiQueries([&]() {
+                    info.compCompHnd->getWasmLowering(clsHnd);
+                });
             }
         }
 #endif // DEBUG
@@ -1807,7 +1828,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     // (which would result in dependent promotion anyway).
     if ((m_compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function", lclNum);
         return false;
     }
 #endif
@@ -2589,7 +2610,13 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 #ifdef DEBUG
         if (JitConfig.EnableExtraSuperPmiQueries())
         {
+            // makeExtraStructQueries runs real JIT work, so it is not trapped here. It can also set
+            // compFloatingPointUsed, via impNormStructType, GetHfaType, and ClassLayout::Create,
+            // which would let the queries change codegen, so restore that.
+            //
+            const bool savedFloatingPointUsed = compFloatingPointUsed;
             makeExtraStructQueries(layout->GetClassHandle(), 2);
+            compFloatingPointUsed = savedFloatingPointUsed;
         }
 #endif // DEBUG
     }
@@ -2638,7 +2665,8 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
         size_t                   numNodes = ArrLen(nodes);
         info.compCompHnd->getTypeLayout(structHandle, nodes, &numNodes);
     };
-    queryLayout();
+    // Trapped because an AOT compiler rejects this query for an out-of-bubble type.
+    eeRunExtraSuperPmiQueries(queryLayout);
 
     // Bypass fetching instance fields of ref classes for now,
     // as it requires traversing the class hierarchy.
@@ -5718,8 +5746,10 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 #endif
 
 #if defined(WINDOWS_AMD64_ABI)
-    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-    return false;
+    // On Windows AMD64, standard register arguments have caller-reserved stack space.
+    unsigned paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+    int      callerOffset;
+    return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, &callerOffset);
 #else // !WINDOWS_AMD64_ABI
 
     //  A register argument that is not enregistered ends up as
@@ -6683,7 +6713,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
-        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
+        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", static_cast<int>(refCntWtdWidth), " ",
                varTypeName(temp->tdTempType()));
         int offset = temp->tdTempOffs();
         printf(" [%2s%1s0x%02X]\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE, (offset < 0 ? "-" : "+"),
@@ -6954,11 +6984,11 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 }
 
 //-----------------------------------------------------------------------------
-// lvaStressLclFldCB: Convert GT_LCL_VAR's to GT_LCL_FLD's
+// lvaStressLclFldNode: Convert GT_LCL_VAR's to GT_LCL_FLD's
 //
 // Arguments:
-//    pTree -- pointer to tree to possibly convert
-//    data  -- walker data
+//    pTree      -- pointer to tree to possibly convert
+//    bFirstPass -- whether this is the first of the two stress passes
 //
 // Notes:
 //    The stress mode does 2 passes.
@@ -6966,7 +6996,7 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 //    In the first pass we will mark the locals where we CAN't apply the stress mode.
 //    In the second pass we will do the appropriate morphing wherever we've not determined we can't do it.
 //
-Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::lvaStressLclFldNode(GenTree** pTree, bool bFirstPass)
 {
     GenTree* const       tree = *pTree;
     GenTreeLclVarCommon* lcl  = tree->OperIsAnyLocal() ? tree->AsLclVarCommon() : nullptr;
@@ -6976,12 +7006,11 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         return WALK_CONTINUE;
     }
 
-    Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_compiler;
-    bool const       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
-    unsigned const   lclNum     = lcl->GetLclNum();
-    LclVarDsc* const varDsc     = pComp->lvaGetDesc(lclNum);
-    var_types const  lclType    = lcl->TypeGet();
-    var_types const  varType    = varDsc->TypeGet();
+    Compiler* const  pComp   = this;
+    unsigned const   lclNum  = lcl->GetLclNum();
+    LclVarDsc* const varDsc  = pComp->lvaGetDesc(lclNum);
+    var_types const  lclType = lcl->TypeGet();
+    var_types const  varType = varDsc->TypeGet();
 
     if (varDsc->lvNoLclFldStress)
     {
@@ -7160,6 +7189,28 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
 /*****************************************************************************/
 
+class StressLclFldVisitor final : public GenTreeVisitor<StressLclFldVisitor>
+{
+    bool m_bFirstPass;
+
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    StressLclFldVisitor(Compiler* compiler, bool bFirstPass)
+        : GenTreeVisitor<StressLclFldVisitor>(compiler)
+        , m_bFirstPass(bFirstPass)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        return m_compiler->lvaStressLclFldNode(use, m_bFirstPass);
+    }
+};
+
 void Compiler::lvaStressLclFld()
 {
     if (!compStressCompile(STRESS_LCL_FLDS, 5))
@@ -7167,16 +7218,19 @@ void Compiler::lvaStressLclFld()
         return;
     }
 
-    lvaStressLclFldArgs Args;
-    Args.m_compiler   = this;
-    Args.m_bFirstPass = true;
+    // The stress mode does 2 passes; see lvaStressLclFldNode.
+    for (bool bFirstPass : {true, false})
+    {
+        StressLclFldVisitor visitor(this, bFirstPass);
 
-    // Do First pass
-    fgWalkAllTreesPre(lvaStressLclFldCB, &Args);
-
-    // Second pass
-    Args.m_bFirstPass = false;
-    fgWalkAllTreesPre(lvaStressLclFldCB, &Args);
+        for (BasicBlock* const block : Blocks())
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+    }
 }
 
 #endif // DEBUG

@@ -10,6 +10,15 @@
   bump provisions a fresh entry and every clone and git worktree on the machine shares one copy.
 -->
 <Project>
+  <PropertyGroup>
+    <!-- The emsdk package IDs contain the Emscripten version and the RID, so there is no stable ID to track
+         their version by. Use the payload-free Internal package instead, which emsdk versions identically to
+         every package referenced below, so that a VMR build consumes the emsdk it just built.
+         This has to live here rather than in eng/Versions.props: Arcade imports Versions.props before the
+         package version propagation props, so a value derived there would capture the pre-override version. -->
+    <EmsdkPackageVersion>$(MicrosoftNETRuntimeEmscriptenInternalPackageVersion)</EmsdkPackageVersion>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or $(MonoGenerateOffsetsOSGroups.Contains('browser'))">
     <ShouldProvisionEmscripten Condition="'$(EMSDK_PATH)' == '' and !Exists('$(EmscriptenSdkStampFile)')">true</ShouldProvisionEmscripten>
     <EMSDK_PATH Condition="Exists('$(EmscriptenSdkStampFile)') and '$(EMSDK_PATH)' == ''">$(EmscriptenSdkCacheDir.Replace('\', '/'))</EMSDK_PATH>

@@ -4024,6 +4024,20 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             builder.appendSimd(WasmSimdOpcode.v128_bitselect);
             append_simd_store(builder, ip);
             return true;
+        case SimdIntrinsic4.V128_R4_MULTIPLY_ADD_ESTIMATE:
+            builder.local("pLocals");
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            if (runtimeHelpers.featureWasmRelaxedSimd) {
+                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+                builder.appendSimd(WasmSimdOpcode.f32x4_relaxed_madd);
+            } else {
+                builder.appendSimd(WasmSimdOpcode.f32x4_mul);
+                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+                builder.appendSimd(WasmSimdOpcode.f32x4_add);
+            }
+            append_simd_store(builder, ip);
+            return true;
         case SimdIntrinsic4.ShuffleD1: {
             const indices = get_known_constant_value(builder, getArgU16(ip, 4));
             if (typeof (indices) !== "object") {
