@@ -286,6 +286,8 @@ namespace ILCompiler.DependencyAnalysis
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
+        public ISymbolNode WasmFunctionCount { get; } = new WasmFunctionCountNode();
+
         private struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
         {
             public readonly object Target;
@@ -557,6 +559,11 @@ namespace ILCompiler.DependencyAnalysis
             _wasmTypeNodes = new(key =>
             {
                 return new WasmTypeNode(key);
+            });
+
+            _wasmFunctionEntryCache = new(key =>
+            {
+                return new WasmFunctionEntryNode(key.MethodCodeNode, key.Type, key.FuncletIndex);
             });
         }
 
@@ -1296,6 +1303,13 @@ namespace ILCompiler.DependencyAnalysis
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
 
             MetadataManager.AttachToDependencyGraph(graph, this);
+
+            if (Target.IsWasm)
+            {
+                graph.AddRoot(new WebcilDefaultMethodNode(WebcilDefaultMethodKind.GetWebcilSize, this), "Webcil default method is always generated");
+                graph.AddRoot(new WebcilDefaultMethodNode(WebcilDefaultMethodKind.GetWebcilPayload, this), "Webcil default method is always generated");
+                graph.AddRoot(new WebcilDefaultMethodNode(WebcilDefaultMethodKind.FillWebcilTable, this), "Webcil default method is always generated");
+            }
         }
 
         private void Graph_ComputingDependencyPhaseChange(int newPhase)
@@ -1484,6 +1498,11 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<WasmUnboxingStubKey, WasmUnboxingStubNode> _wasmUnboxingStubs;
         private NodeCache<MethodDesc, WasmUnboxingStubTargetNode> _wasmUnboxingStubTargets;
+
+        public WasmTypeNode WasmTypeNode(WasmFuncType type)
+        {
+            return _wasmTypeNodes.GetOrAdd(type);
+        }
 
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {

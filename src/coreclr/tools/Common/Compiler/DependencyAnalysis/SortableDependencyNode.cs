@@ -114,6 +114,11 @@ namespace ILCompiler.DependencyAnalysis
             // Wasm type signatures (need to be emitted some time before the unordered phase)
             //
             WasmTypeNode,
+
+            //
+            // Webcil spec methods need to be emitted first in the code section
+            //
+            WebcilDefaultMethodNode,
         }
 
         public class EmbeddedObjectNodeComparer : IComparer<EmbeddedObjectNode>
