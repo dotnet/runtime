@@ -80,16 +80,11 @@ namespace BINDER_SPACE
 
     HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
                                                   SString &sPlatformResourceRoots,
-                                                  SString &sAppPaths,
-                                                  BOOL     fAcquireLock)
+                                                  SString &sAppPaths)
     {
         HRESULT hr = S_OK;
 
-        CRITSEC_Holder contextLock(fAcquireLock ? GetCriticalSectionCookie() : NULL);
-        if (m_pTrustedPlatformAssemblyMap != nullptr)
-        {
-            GO_WITH_HRESULT(S_OK);
-        }
+        _ASSERTE(m_pTrustedPlatformAssemblyMap == nullptr);
 
         //
         // Parse TrustedPlatformAssemblies
@@ -97,7 +92,6 @@ namespace BINDER_SPACE
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
 
         sTrustedPlatformAssemblies.Normalize();
-
         for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
         {
             SString fileName;
@@ -110,6 +104,10 @@ namespace BINDER_SPACE
             }
 
             const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
+            if (pExistingEntry != nullptr)
+            {
+                continue;
+            }
 
             LPWSTR wszSimpleName = nullptr;
             if (pExistingEntry == nullptr)

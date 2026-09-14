@@ -1333,10 +1333,6 @@ HRESULT RegMeta::_DefineEvent(          // Return hresult.
     IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_Event, EventRec::COL_Name, pEventRec, szUTF8Event));
     IfFailGo(_SetEventProps1(*pmdEvent, dwEventFlags, tkEventType));
 
-    // Add the <Event token, typedef token> to the lookup table
-    if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Event))
-        IfFailGo( m_pStgdb->m_MiniMd.AddEventToLookUpTable(*pmdEvent, td) );
-
     IfFailGo(UpdateENCLog(*pmdEvent));
 
 ErrExit:

@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="NonVoidThrowHelper.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

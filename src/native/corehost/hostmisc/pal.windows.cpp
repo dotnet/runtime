@@ -448,31 +448,6 @@ bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::s
     return true;
 }
 
-bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
-{
-    pal::string_t default_dir;
-    pal::string_t custom_dir;
-    bool dir_found = false;
-    if (pal::get_dotnet_self_registered_dir(&custom_dir))
-    {
-        remove_trailing_dir_separator(&custom_dir);
-        dirs->push_back(custom_dir);
-        dir_found = true;
-    }
-    if (get_default_installation_dir(&default_dir))
-    {
-        remove_trailing_dir_separator(&default_dir);
-
-        // Avoid duplicate global dirs.
-        if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))
-        {
-            dirs->push_back(default_dir);
-            dir_found = true;
-        }
-    }
-    return dir_found;
-}
-
 // To determine the OS version, we are going to use RtlGetVersion API
 // since GetVersion call can be shimmed on Win8.1+.
 typedef LONG (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);

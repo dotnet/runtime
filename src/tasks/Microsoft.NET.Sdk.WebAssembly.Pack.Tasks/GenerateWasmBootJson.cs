@@ -360,7 +360,7 @@ public class GenerateWasmBootJson : Task
                             resourceList = resourceData.modulesAfterConfigLoaded ??= new();
                         }
 
-                        string newTargetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                        string newTargetPath = "../" + targetPath;
                         AddResourceToList(resource, resourceList, newTargetPath);
                     }
 
@@ -469,7 +469,7 @@ public class GenerateWasmBootJson : Task
                 {
                     result.appsettings ??= new();
 
-                    configUrl = "../" + configUrl; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                    configUrl = "../" + configUrl;
                     result.appsettings.Add(configUrl);
                 }
                 else

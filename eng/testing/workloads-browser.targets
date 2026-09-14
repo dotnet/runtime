@@ -54,6 +54,20 @@
       <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
       <!--<WorkloadCombinationsToInstall Include="none" />-->
     </ItemGroup>
+
+    <!-- CoreCLR does not have its own workload; the `wasm-tools` workload carries the WebAssembly
+         SDK and Emscripten packs it needs, and the CoreCLR browser-wasm runtime pack is resolved
+         through KnownRuntimePack. `wasm-experimental` is installed for the WebAssembly templates
+         pack, which the template-based tests need. Only the current band is installed - the
+         previous-version manifests are Mono-only. -->
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+      <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
+                            Variant="latest"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+
+      <WorkloadCombinationsToInstall Include="latest" Variants="latest" />
+    </ItemGroup>
   </Target>
 
   <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,

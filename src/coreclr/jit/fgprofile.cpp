@@ -1859,6 +1859,29 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 }
 
 //------------------------------------------------------------------------
+// UpdateNodeAndAncestorSideEffects: Update side effect flags after modifying a node.
+//
+// Arguments:
+//    compiler  - The compiler instance
+//    node      - The modified node
+//    ancestors - The visitor stack containing the node and its ancestors
+//
+// Notes:
+//    The profile instrumentation phase runs before parent links are available, so side effects
+//    introduced on the modified node must be propagated explicitly through the visitor stack.
+//
+static void UpdateNodeAndAncestorSideEffects(Compiler* compiler, GenTree* node, Compiler::GenTreeStack& ancestors)
+{
+    compiler->gtUpdateNodeSideEffects(node);
+
+    GenTreeFlags const effectFlags = node->gtFlags & GTF_ALL_EFFECT;
+    for (int i = 1; i < ancestors.Height(); i++)
+    {
+        ancestors.Top(i)->gtFlags |= effectFlags;
+    }
+}
+
+//------------------------------------------------------------------------
 // HandleHistogramProbeVisitor: invoke functor on each virtual call or cast-related
 //     helper calls in a tree
 //
@@ -1868,7 +1891,8 @@ class HandleHistogramProbeVisitor final : public GenTreeVisitor<HandleHistogramP
 public:
     enum
     {
-        DoPreOrder = true
+        DoPreOrder   = true,
+        ComputeStack = true
     };
 
     TFunctor& m_functor;
@@ -1886,7 +1910,7 @@ public:
         if (node->IsCall() && (m_compiler->compClassifyGDVProbeType(node->AsCall()) != Compiler::GDVProbeType::None))
         {
             assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
-            m_functor(m_compiler, node->AsCall());
+            m_functor(m_compiler, node->AsCall(), this->m_ancestors);
         }
 
         return Compiler::WALK_CONTINUE;
@@ -1902,7 +1926,8 @@ class ValueHistogramProbeVisitor final : public GenTreeVisitor<ValueHistogramPro
 public:
     enum
     {
-        DoPreOrder = true
+        DoPreOrder   = true,
+        ComputeStack = true
     };
 
     TFunctor& m_functor;
@@ -1923,7 +1948,7 @@ public:
             const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
             if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
             {
-                m_functor(m_compiler, node);
+                m_functor(m_compiler, node, this->m_ancestors);
             }
         }
         return Compiler::WALK_CONTINUE;
@@ -1946,7 +1971,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTreeCall* call)
+    void operator()(Compiler* compiler, GenTreeCall* call, Compiler::GenTreeStack&)
     {
         Compiler::GDVProbeType probeType = compiler->compClassifyGDVProbeType(call);
 
@@ -2009,7 +2034,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTree* call)
+    void operator()(Compiler* compiler, GenTree* call, Compiler::GenTreeStack&)
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
@@ -2046,7 +2071,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTreeCall* call)
+    void operator()(Compiler* compiler, GenTreeCall* call, Compiler::GenTreeStack& ancestors)
     {
         JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
                 call->gtHandleHistogramProfileCandidateInfo->probeIndex,
@@ -2154,6 +2179,7 @@ public:
         // Update the call
         //
         objUse->SetEarlyNode(storeCommaNode);
+        UpdateNodeAndAncestorSideEffects(compiler, call, ancestors);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
@@ -2243,7 +2269,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTree* node)
+    void operator()(Compiler* compiler, GenTree* node, Compiler::GenTreeStack& ancestors)
     {
         if (*m_currentSchemaIndex >= (int)m_schema.size())
         {
@@ -2299,6 +2325,8 @@ public:
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
                                              compiler->gtCloneExpr(lengthLocal));
+        UpdateNodeAndAncestorSideEffects(compiler, node, ancestors);
+
         m_instrCount++;
     }
 };
@@ -2533,42 +2561,71 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool minimalProfiling =
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
-    // In majority of cases, methods marked with [Intrinsic] are imported directly
-    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes...
+    // Intrinsic recognition must not prevent ordinary managed implementations from
+    // benefiting from profiles. Exclude compiler primitives and explicit SIMD APIs,
+    // rather than requiring every managed fallback to be recognized here.
     if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        //... except a few intrinsics that might still need it:
-        bool           shouldBeInstrumented = false;
+        bool           shouldBeInstrumented = true;
         NamedIntrinsic ni                   = lookupNamedIntrinsic(info.compMethodHnd);
         switch (ni)
         {
-            // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
-            // In other cases they have large managed implementations we want to profile.
-            case NI_System_String_Equals:
-            case NI_System_SpanHelpers_Memmove:
-            case NI_System_MemoryExtensions_Equals:
-            case NI_System_MemoryExtensions_SequenceEqual:
-            case NI_System_MemoryExtensions_StartsWith:
-            case NI_System_SpanHelpers_Fill:
-            case NI_System_SpanHelpers_SequenceEqual:
-            case NI_System_SpanHelpers_ClearWithoutReferences:
-
-            // Same here, these are only folded when JIT knows the exact types
-            case NI_System_Type_IsAssignableFrom:
-            case NI_System_Type_IsAssignableTo:
-            case NI_System_Type_op_Equality:
-            case NI_System_Type_op_Inequality:
-                shouldBeInstrumented = true;
+            case NI_System_Runtime_Intrinsics_Intrinsic:
+            case NI_System_Runtime_Intrinsics_PlatformIntrinsic:
+            case NI_IsSupported:
+            case NI_IsHardwareAccelerated:
+            case NI_IsSupported_Type:
+            case NI_Vector_GetCount:
+            case NI_System_GC_KeepAlive:
+            case NI_System_Threading_Thread_FastPollGC:
+            case NI_System_Threading_Interlocked_MemoryBarrier:
+            case NI_System_Threading_Volatile_ReadBarrier:
+            case NI_System_Threading_Volatile_WriteBarrier:
+            case NI_System_StubHelpers_GetStubContext:
+            case NI_System_StubHelpers_NextCallReturnAddress:
+            case NI_System_Activator_AllocatorOf:
+            case NI_System_Activator_DefaultConstructorOf:
+            case NI_Internal_Runtime_MethodTable_Of:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait:
+            case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
+                shouldBeInstrumented = false;
                 break;
 
+            case NI_System_Numerics_Intrinsic:
+            {
+                // Fixed-size numerics are ordinary managed APIs. Only Vector and Vector<T>
+                // belong to the explicit SIMD policy.
+                const char* namespaceName = nullptr;
+                const char* className     = getClassNameFromMetadata(info.compClassHnd, &namespaceName);
+                shouldBeInstrumented      = (strcmp(className, "Vector") != 0) && (strcmp(className, "Vector`1") != 0);
+                break;
+            }
+
             default:
-                // Some Math intrinsics have large managed implementations we want to profile.
-                shouldBeInstrumented = ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
+                assert(ni != NI_Throw_PlatformNotSupportedException);
+#ifdef FEATURE_HW_INTRINSICS
+                if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
+                {
+                    shouldBeInstrumented = false;
+                    break;
+                }
+#endif
+                shouldBeInstrumented = !((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END));
                 break;
         }
 
         if (!shouldBeInstrumented)
         {
+            JITDUMP("Not instrumenting intrinsic excluded by minimal profiling\n");
             fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
             fgValueInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
@@ -2979,8 +3036,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
-                        fgPgoSchema[iSchema].InstrumentationKind, iSchema, fgPgoSchema[iSchema].ILOffset,
-                        fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
+                        static_cast<unsigned>(fgPgoSchema[iSchema].InstrumentationKind), iSchema,
+                        fgPgoSchema[iSchema].ILOffset, fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
                 otherRecords++;
                 break;
         }
@@ -3013,10 +3070,19 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             fgIncorporateBlockCounts();
         }
 
-        // We now always run repair, to get consistent initial counts
+        // Repair retains existing likelihoods. If the counts were discarded,
+        // start over and let the normal heuristics set them.
         //
-        JITDUMP("\nRepairing profile...\n");
-        ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+        if (fgPgoHaveWeights)
+        {
+            JITDUMP("\nRepairing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+        }
+        else
+        {
+            JITDUMP("\nSynthesizing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::ResetAndSynthesize);
+        }
     }
 
 #ifdef DEBUG
@@ -4640,7 +4706,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks, bool dump)
         return false;
     }
 
-    JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
+    JITDUMP("Checking Profile Weights (flags:0x%x)\n", static_cast<unsigned>(checks));
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
@@ -4808,7 +4874,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks, bool dump)
             //
             if (fgFirstBB->bbRefs > 1)
             {
-                JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n");
+                JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n", fgFirstBB->bbNum);
             }
             else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
             {

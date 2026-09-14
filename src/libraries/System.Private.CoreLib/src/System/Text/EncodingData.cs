@@ -55,6 +55,9 @@ namespace System.Text
             "utf-32le" + // 12000
             "utf-7" + // 65000
             "utf-8" + // 65001
+            "utf16" + // 1200
+            "utf32" + // 12000
+            "utf8" + // 65001
             "x-unicode-1-1-utf-7" + // 65000
             "x-unicode-1-1-utf-8" + // 65001
             "x-unicode-2-0-utf-7" + // 65000
@@ -105,11 +108,14 @@ namespace System.Text
             335, // utf-32le (12000)
             343, // utf-7 (65000)
             348, // utf-8 (65001)
-            353, // x-unicode-1-1-utf-7 (65000)
-            372, // x-unicode-1-1-utf-8 (65001)
-            391, // x-unicode-2-0-utf-7 (65000)
-            410, // x-unicode-2-0-utf-8 (65001)
-            429
+            353, // utf16 (1200)
+            358, // utf32 (12000)
+            363, // utf8 (65001)
+            367, // x-unicode-1-1-utf-7 (65000)
+            386, // x-unicode-1-1-utf-8 (65001)
+            405, // x-unicode-2-0-utf-7 (65000)
+            424, // x-unicode-2-0-utf-8 (65001)
+            443
         ];
 
         //
@@ -159,6 +165,9 @@ namespace System.Text
             12000, // utf-32le
             65000, // utf-7
             65001, // utf-8
+            1200, // utf16
+            12000, // utf32
+            65001, // utf8
             65000, // x-unicode-1-1-utf-7
             65001, // x-unicode-1-1-utf-8
             65000, // x-unicode-2-0-utf-7

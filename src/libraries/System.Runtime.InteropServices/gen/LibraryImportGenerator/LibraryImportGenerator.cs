@@ -267,6 +267,7 @@ namespace Microsoft.Interop
             // Create a diagnostics bag that discards all diagnostics.
             // Diagnostics are now reported by the analyzer, not the generator.
             var discardedDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
+            ErrorHandlingInfo? errorHandlingInfo = ErrorHandlingInfoParser.Parse(symbol, environment, discardedDiagnostics);
 
             // Create the stub.
             var signatureContext = SignatureContext.Create(
@@ -274,7 +275,8 @@ namespace Microsoft.Interop
                 DefaultMarshallingInfoParser.Create(environment, discardedDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
                 environment,
                 new CodeEmitOptions(SkipInit: true),
-                typeof(LibraryImportGenerator).Assembly);
+                typeof(LibraryImportGenerator).Assembly,
+                errorHandlingInfo);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
@@ -290,6 +292,7 @@ namespace Microsoft.Interop
                 LibraryImportData.From(libraryImportData),
                 options,
                 environment.EnvironmentFlags);
+
         }
 
         private static MemberDeclarationSyntax GenerateSource(

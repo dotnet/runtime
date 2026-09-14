@@ -215,9 +215,14 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Tasks_ValueTask_1__ctor,
     NI_System_Threading_Tasks_ValueTask_1_AsTask,
 
-    // These two are special marker IDs so that we still get the inlining profitability boost
+    // These are special marker IDs so that we still get the inlining profitability boost.
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
+    NI_System_Runtime_Intrinsics_PlatformIntrinsic,
+
+    // Support-query identities; resolution determines their value for the target.
+    NI_IsSupported,
+    NI_IsHardwareAccelerated,
 
 #if defined(FEATURE_HW_INTRINSICS)
     NI_HW_INTRINSIC_START,

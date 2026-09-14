@@ -142,6 +142,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     Debug.Assert(interceptorInfo is not null);
 
+                    // Only the key-based overload resolves a section; the others bind the configuration itself.
+                    bool resolvesSection = configExpression != Identifier.configuration;
+
                     foreach ((ComplexTypeSpec type, ImmutableEquatableArray<InvocationLocationInfo> locations) in interceptorInfo)
                     {
                         EmitBlankLineIfRequired();
@@ -160,6 +163,31 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 var {{Identifier.typedObj}} = ({{type.TypeRef.FullyQualifiedName}}){{Identifier.instance}};
                                 {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, defaultValueIfNotFound: false, {{binderOptionsArg}});
                                 """);
+                        }
+                        else
+                        {
+                            // There is nothing to bind, but the intercepted call must still perform the argument
+                            // validation, the section lookup and the unsupported-option checks that the
+                            // reflection-based binder performs.
+                            if (configureOptions)
+                            {
+                                // Bind(configuration, instance, configureOptions) creates the options, and so
+                                // invokes the callback, only when the instance is not null.
+                                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, _emitThrowIfNullMethod);
+                                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, _emitThrowIfNullMethod, voidReturn: true);
+                                _writer.WriteLine($"{Identifier.GetBinderOptions}({Identifier.configureOptions});");
+                            }
+                            else
+                            {
+                                EmitCheckForNullArgument(Identifier.configuration, _emitThrowIfNullMethod);
+
+                                if (resolvesSection)
+                                {
+                                    // Bind(configuration, key, instance) resolves the section before it looks at
+                                    // the instance, so the lookup still has to happen.
+                                    _writer.WriteLine($"_ = {configExpression};");
+                                }
+                            }
                         }
 
                         EmitEndBlock();

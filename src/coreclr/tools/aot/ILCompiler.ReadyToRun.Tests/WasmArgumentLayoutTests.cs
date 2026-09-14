@@ -8,9 +8,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
+
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
+using crossgen2::ILCompiler.PortableCallHelpers;
 using crossgen2::Internal.CallingConvention;
 using crossgen2::Internal.JitInterface;
 
@@ -26,8 +31,12 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 /// <summary>
 /// Unit tests for the wasm argument layout crossgen2 computes. These drive the compiler's type
-/// system directly, so they need neither a wasm JIT nor a runtime to execute against.
+/// system directly, so they need neither a wasm JIT nor a runtime to execute against. They do
+/// need a wasm System.Private.CoreLib, though: the type system context they build is always a
+/// wasm one, but the corelib it reads comes from whatever the outer build targets, so on any
+/// other target they would be computing wasm layouts from the wrong assembly.
 /// </summary>
+[ConditionalClass(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
 public class WasmArgumentLayoutTests
 {
     private const string Vector128OfT = "Vector128`1";
@@ -258,6 +267,43 @@ public class WasmArgumentLayoutTests
 
         Assert.Equal(expectedSignature, WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None).SignatureString);
         Assert.Equal(expectedOffsets, GetArgumentOffsets(context, signature));
+    }
+
+    /// <summary>
+    /// Auto-layout structs use the runtime's effective aggregate alignment for argument placement,
+    /// which can be smaller than the alignment crossgen uses while laying out their fields.
+    /// </summary>
+    [Fact]
+    public void AutoLayoutStructUsesRuntimeAggregateAlignment()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        DefType alignedEight = MakeAlignedEightBlob(context, 32);
+        DefType int128 = InstantiateMultiSlotType(context, Int128Type);
+        DefType autoLayout = MakeValueTuple(context, int128, int128);
+
+        Assert.Equal(32, alignedEight.InstanceFieldSize.AsInt);
+        Assert.Equal(8, alignedEight.InstanceFieldAlignment.AsInt);
+        Assert.Equal(32, autoLayout.InstanceFieldSize.AsInt);
+        Assert.Equal(16, autoLayout.InstanceFieldAlignment.AsInt);
+        Assert.Equal(8, CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(autoLayout));
+
+        MethodSignature autoLayoutSignature = MakeProbeSignature(context, autoLayout);
+        MethodSignature alignedEightSignature = MakeProbeSignature(context, alignedEight);
+
+        WasmSignature autoLayoutLowered =
+            WasmLowering.GetSignature(autoLayoutSignature, WasmLowering.LoweringFlags.None);
+        WasmSignature alignedEightLowered =
+            WasmLowering.GetSignature(alignedEightSignature, WasmLowering.LoweringFlags.None);
+
+        Assert.Equal("vlS32ip", autoLayoutLowered.SignatureString);
+        Assert.Equal("vlS32ip", alignedEightLowered.SignatureString);
+        Assert.Equal(new[] { 0, 8, 40 }, GetArgumentOffsets(context, autoLayoutSignature));
+        Assert.Equal(
+            GetArgumentOffsets(context, autoLayoutSignature),
+            GetArgumentOffsets(context, WasmLowering.RaiseSignature(autoLayoutLowered, context)));
+        Assert.Equal(
+            GetArgumentOffsets(context, alignedEightSignature),
+            GetArgumentOffsets(context, WasmLowering.RaiseSignature(alignedEightLowered, context)));
     }
 
     /// <summary>
@@ -506,25 +552,219 @@ public class WasmArgumentLayoutTests
 
 
     /// <summary>
-    /// Configures a type system context the way crossgen2 does for
-    /// <c>--targetarch wasm --targetos browser</c>.
+    /// The generator encodes a type in parameter position with a single token. These are the three
+    /// shapes that encoding exists to tell apart: a multi-field struct, which goes by reference and
+    /// carries its size; a single-field wrapper, which is passed as the field it wraps; and a
+    /// primitive.
     /// </summary>
-    private ReadyToRunCompilerContext CreateWasmContext()
+    [Theory]
+    [InlineData("Guid", "S16")]
+    [InlineData("DateTime", "l")]
+    [InlineData("Int32", "i")]
+    public void PortableCallHelpersGeneratorEncodesTypesTheWayTheCompilerLowersThem(string typeName, string expected)
     {
-        string coreLibPath = new TestPaths(_output).SystemPrivateCoreLibPath;
+        ReadyToRunCompilerContext context = CreateWasmContext();
+
+        Assert.Equal(expected, InteropSignature.GetAbiToken(GetSystemType(context, typeName)));
+    }
+
+    /// <summary>
+    /// A struct that holds a reference lays out through the auto-layout path, which asks the
+    /// compilation group whether the base offset needs aligning. Generation is not a compilation, so
+    /// it has to configure a group itself for that question to have an answer at all.
+    /// </summary>
+    [Fact]
+    public void PortableCallHelpersGeneratorComputesLayoutOfStructsHoldingReferences()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        var type = GetSystemType(context, "RuntimeTypeHandle");
+
+        // If this stops holding, the test no longer covers the auto-layout path it was written for.
+        Assert.True(type.ContainsGCPointers, $"{type} was chosen because it holds a reference");
+
+        // One field the size of the whole struct: lowered to that field, a reference, passed as i32.
+        Assert.Equal("i", InteropSignature.GetAbiToken(type));
+    }
+
+    /// <summary>
+    /// The thunk a method gets is keyed by its lowered signature, so the generator has to encode a
+    /// method exactly as the compiler lowers it. Anything else and the interpreter calls through a
+    /// thunk built for a different shape.
+    /// </summary>
+    [Fact]
+    public void PortableCallHelpersGeneratorEncodesMethodsLikeTheCompiler()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        var method = (EcmaMethod)GetSystemType(context, "DateTime").GetMethod("AddTicks"u8, null);
+
+        string expected = WasmLowering.GetSignature(method.Signature, WasmLowering.LoweringFlags.None).SignatureString;
+        _output.WriteLine($"{method} lowers to '{expected}'");
+
+        Assert.Equal(expected, InteropSignature.GetMethodSignature(method));
+    }
+
+    /// <summary>
+    /// A type has to get the same token at the interop boundary as it does inside a lowered method
+    /// signature, because the runtime looks a thunk up by the signature the compiler produced. The
+    /// two encoders are separate code, so this pins them together for each shape the ABI treats
+    /// differently: multi-segment types passed by value across several slots, structs passed by
+    /// reference, single-field wrappers, and primitives.
+    /// </summary>
+    [Theory]
+    [InlineData("Int128")]
+    [InlineData("UInt128")]
+    [InlineData("Guid")]
+    [InlineData("DateTime")]
+    [InlineData("Int32")]
+    [InlineData("Double")]
+    public void PortableCallHelpersGeneratorEncodesTypesTheSameWayInAndOutOfASignature(string typeName)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc type = GetSystemType(context, typeName);
+
+        string signature = WasmLowering.GetSignature(
+            MakeStaticVoidSignature(context, type),
+            WasmLowering.LoweringFlags.None).SignatureString;
+        _output.WriteLine($"{typeName} lowers to '{signature}' in a signature");
+
+        // 'v' return, then the single parameter, then the 'p' entrypoint suffix.
+        List<string> tokens = InteropSignature.ParseSignatureTokens(signature);
+        Assert.Equal(tokens[1], InteropSignature.GetAbiToken(type));
+    }
+
+    private const string CoreLibSimpleName = "System.Private.CoreLib";
+
+    /// <summary>
+    /// An exported callback resolves its MethodDesc at run time through
+    /// LookupUnmanagedCallersOnlyMethodByName, which matches on the declaring type and the method name
+    /// alone. Overloads are indistinguishable to it, so generation has to reject a name it could not
+    /// resolve rather than emit a wrapper that calls whichever one the walk reaches first.
+    /// </summary>
+    [Theory]
+    // Two exported overloads: the lookup cannot tell them apart.
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "Handle",
+                "[UnmanagedCallersOnly(EntryPoint = \"cb_two\")]", "Handle", true)]
+    // The twin does not have to be exported to be returned by the walk, which only tests the attribute.
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "Handle",
+                "[UnmanagedCallersOnly]", "Handle", true)]
+    // Distinct names resolve unambiguously.
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "HandleOne",
+                "[UnmanagedCallersOnly(EntryPoint = \"cb_two\")]", "HandleTwo", false)]
+    // Nothing is exported, so neither wrapper reaches the name lookup: the runtime hands both their
+    // MethodDesc through the arity-aware g_ReverseThunks key instead.
+    [InlineData("[UnmanagedCallersOnly]", "Handle", "[UnmanagedCallersOnly]", "Handle", false)]
+    public void PortableCallHelpersGeneratorRejectsAnExportItCouldNotResolveByName(
+        string firstAttribute, string firstName, string secondAttribute, string secondName, bool expectRejected)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                {{firstAttribute}}
+                public static int {{firstName}}(int a) => a;
+
+                {{secondAttribute}}
+                public static int {{secondName}}(int a, int b) => a + b;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            if (expectRejected)
+            {
+                Assert.Equal(1, exitCode);
+                Assert.Contains($"declares more than one [UnmanagedCallersOnly] method named '{firstName}'", log.ToString());
+            }
+            else
+            {
+                Assert.Equal(0, exitCode);
+                Assert.DoesNotContain("declares more than one", log.ToString());
+            }
+        }
+        finally
+        {
+            // The type system maps an input assembly with FileShare.Read and never releases it - the
+            // context is not disposable - so on Windows the compiled input cannot be deleted while
+            // this process lives. Cleaning up is best effort rather than a second way to fail.
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
+    /// reads, so the attributes it applies are the ones the type system will resolve.
+    /// </summary>
+    private static string CompileCallbackAssembly(string source, string outputPath)
+    {
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            Path.GetFileNameWithoutExtension(outputPath),
+            new[] { CSharpSyntaxTree.ParseText(source) },
+            new[] { MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath) },
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        EmitResult result = compilation.Emit(outputPath);
+        Assert.True(result.Success,
+            string.Join(Environment.NewLine, result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error)));
+
+        return outputPath;
+    }
+
+    private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
+    {
+        return (EcmaType)context.SystemModule.GetType("System"u8, System.Text.Encoding.UTF8.GetBytes(typeName));
+    }
+
+    /// <summary>
+    /// Configures a type system context the way crossgen2 does for
+    /// <c>--targetarch wasm --targetos browser</c>. Extra input assemblies stand in for the rest of an
+    /// app closure, which a real build always supplies alongside CoreLib.
+    /// </summary>
+    private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
+    {
+        string coreLibPath = TestPaths.SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
 
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
         TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
+        Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase) { { CoreLibSimpleName, coreLibPath } };
+        foreach (string path in extraInputAssemblyPaths)
+        {
+            inputFilePaths.Add(Path.GetFileNameWithoutExtension(path), path);
+        }
+
         // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
         ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
         {
-            InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { "System.Private.CoreLib", coreLibPath } },
+            InputFilePaths = inputFilePaths,
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
         };
 
-        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName("System.Private.CoreLib");
+        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName(CoreLibSimpleName);
         context.SetSystemModule(coreLib);
 
         // The R2R field layout algorithm reaches into the compilation group to decide whether base

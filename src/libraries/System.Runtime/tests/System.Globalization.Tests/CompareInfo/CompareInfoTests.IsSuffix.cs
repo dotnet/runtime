@@ -81,6 +81,7 @@ namespace System.Globalization.Tests
 
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
+            yield return new object[] { s_invariantCompare, "Tests''", "Tests", CompareOptions.IgnoreSymbols, true, 7 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false, 0 };
 
             // NULL character

@@ -101,18 +101,6 @@ EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 
 EXTERN_C FCDECL0(void, JIT_PollGC);
 
-#ifndef JIT_GetGCStaticBase
-#define JIT_GetGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
-
-#ifndef JIT_GetNonGCStaticBase
-#define JIT_GetNonGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
-
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
 #endif
@@ -124,18 +112,6 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable *pMT);
 #endif
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable *pMT);
-
-#ifndef JIT_GetDynamicGCStaticBase
-#define JIT_GetDynamicGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
-
-#ifndef JIT_GetDynamicNonGCStaticBase
-#define JIT_GetDynamicNonGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
 
 #ifndef JIT_GetDynamicGCStaticBaseNoCtor
 #define JIT_GetDynamicGCStaticBaseNoCtor JIT_GetDynamicGCStaticBaseNoCtor_Portable
@@ -160,13 +136,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
 #endif
 
-#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
-EXTERN_C FCDECL1(Object*, RhpNewFast_UP, MethodTable* pMT);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, MethodTable* pMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, MethodTable* pMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString_UP, MethodTable* pMT, INT_PTR stringLength);
-#endif
-
 EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT);
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, MethodTable* pMT);
@@ -180,10 +149,6 @@ EXTERN_C FCDECL0(void, JIT_FailFast);
 
 EXTERN_C void ReversePInvokeBadTransition();
 
-#if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
-// Extra argument for the classification of the checked barriers.
-extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind);
-#else
 // Regular checked write barrier.
 extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
@@ -195,8 +160,6 @@ extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 #elif defined (TARGET_RISCV64)
 #define RhpAssignRef RhpAssignRefRiscV64
 #endif // TARGET_*
-
-#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 
 extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
 extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);

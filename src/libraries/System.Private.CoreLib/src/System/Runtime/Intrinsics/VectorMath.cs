@@ -338,15 +338,126 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        // Computes `value * (head + mid)`, and reports per element whether that resolved the
+        // rounding. See `double.MultiplyWide` for the interval this tests.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TVector DegreesToRadians<TVector, T>(TVector degrees)
-            where TVector : unmanaged, ISimdVector<TVector, T>
-            where T : IFloatingPointIeee754<T>
+        private static TVectorDouble MultiplyWideDouble<TVectorDouble, TVectorUInt64>(TVectorDouble value, double head, double mid, out TVectorUInt64 resolved)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
+            TVectorDouble vhead = Create<TVectorDouble, double>(head);
 
-            return (degrees * TVector.Create(T.Pi)) / TVector.Create(T.CreateTruncating(180));
+            TVectorDouble product = value * vhead;
+            TVectorDouble sum = MultiplyRoundoffDouble<TVectorDouble, TVectorUInt64>(value, head, vhead, product)
+                              + (value * Create<TVectorDouble, double>(mid));
+
+            TVectorDouble bound = TVectorDouble.Abs(product) * Create<TVectorDouble, double>(double.ConversionErrorScale);
+            TVectorDouble result = product + (sum - bound);
+
+            // Handed back as a mask rather than reduced here, so the caller can fold it into the
+            // range test and branch once, and as a `ulong` mask because reducing the same all ones
+            // pattern as `double` is several times more expensive for no difference in meaning.
+            resolved = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Equals(result, product + (sum + bound)));
+            return result;
+        }
+
+        // The vector form of `double.MultiplyRoundoff`, and it has to be that rather than
+        // `MultiplyAddEstimate`: that one is free to evaluate as a separate multiply and add, and
+        // then it returns `product - product`, silently dropping the term the two limb form is
+        // built on. `head` is a constant, so only `value` is split at runtime.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVectorDouble MultiplyRoundoffDouble<TVectorDouble, TVectorUInt64>(TVectorDouble value, double head, TVectorDouble vhead, TVectorDouble product)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+            {
+                return FusedMultiplyAdd<TVectorDouble>(value, vhead, -product);
+            }
+
+            double headHi = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(head) & double.ConversionSplitMask);
+
+            TVectorDouble vheadHi = Create<TVectorDouble, double>(headHi);
+            TVectorDouble vheadLo = Create<TVectorDouble, double>(head - headHi);
+
+            TVectorDouble valueHi = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(
+                Unsafe.BitCast<TVectorDouble, TVectorUInt64>(value) & TVectorUInt64.Create(double.ConversionSplitMask)
+            );
+            TVectorDouble valueLo = value - valueHi;
+
+            return ((((valueHi * vheadHi) - product) + (valueHi * vheadLo)) + (valueLo * vheadHi)) + (valueLo * vheadLo);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVectorDouble DegreesToRadiansDouble<TVectorDouble, TVectorUInt64>(TVectorDouble degrees)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // See `double.DegreesToRadians` for why the constant is carried as a `head + mid + tail`
+            // triple, and `double.DegreesToRadiansMin` and `Max` for the window the two limb form
+            // used here is valid over.
+            //
+            // That window is a range test rather than a pair of compares: bit patterns of
+            // non-negative values increase with magnitude, so subtracting the low end makes one
+            // unsigned compare reject both ends at once, zero and the non-finite values included.
+            // An element outside it, or one the two limb form cannot resolve, sends the whole
+            // vector to the scalar path rather than growing a third limb across it. Both are
+            // elementwise masks, so they reduce to one branch together.
+
+            TVectorUInt64 ux = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Abs(degrees))
+                             - TVectorUInt64.Create(BitConverter.DoubleToUInt64Bits(double.DegreesToRadiansMin));
+
+            TVectorUInt64 window = TVectorUInt64.Create(BitConverter.DoubleToUInt64Bits(double.DegreesToRadiansMax)
+                                                      - BitConverter.DoubleToUInt64Bits(double.DegreesToRadiansMin));
+
+            TVectorDouble result = MultiplyWideDouble<TVectorDouble, TVectorUInt64>(
+                degrees,
+                double.DegreesToRadiansHead,
+                double.DegreesToRadiansMid,
+                out TVectorUInt64 resolved
+            );
+
+            if (TVectorUInt64.EqualsAll(resolved & TVectorUInt64.LessThan(ux, window), TVectorUInt64.AllBitsSet))
+            {
+                return result;
+            }
+
+            return ScalarFallback(degrees);
+
+            static TVectorDouble ScalarFallback(TVectorDouble x)
+            {
+                TVectorDouble result = TVectorDouble.Zero;
+
+                for (int i = 0; i < TVectorDouble.ElementCount; i++)
+                {
+                    double scalar = double.DegreesToRadians(x[i]);
+                    result = result.WithElement(i, scalar);
+                }
+
+                return result;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVectorSingle DegreesToRadiansSingle<TVectorSingle, TVectorDouble>(TVectorSingle degrees)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // See `float.DegreesToRadians` for why widening is correctly rounded here.
+
+            TVectorDouble scale = Create<TVectorDouble, double>(double.DegreesToRadiansHead);
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    Widen<TVectorSingle, TVectorDouble>(degrees) * scale
+                );
+            }
+
+            return Narrow<TVectorDouble, TVectorSingle>(
+                WidenLower<TVectorSingle, TVectorDouble>(degrees) * scale,
+                WidenUpper<TVectorSingle, TVectorDouble>(degrees) * scale
+            );
         }
 
         public static TVectorDouble ExpDouble<TVectorDouble, TVectorUInt64>(TVectorDouble x)
@@ -1681,14 +1792,66 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TVector RadiansToDegrees<TVector, T>(TVector radians)
-            where TVector : unmanaged, ISimdVector<TVector, T>
-            where T : IFloatingPointIeee754<T>
+        public static TVectorDouble RadiansToDegreesDouble<TVectorDouble, TVectorUInt64>(TVectorDouble radians)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
+            // See `DegreesToRadiansDouble` for the shape of this.
 
-            return (radians * TVector.Create(T.CreateTruncating(180))) / TVector.Create(T.Pi);
+            TVectorUInt64 ux = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Abs(radians))
+                             - TVectorUInt64.Create(BitConverter.DoubleToUInt64Bits(double.RadiansToDegreesMin));
+
+            TVectorUInt64 window = TVectorUInt64.Create(BitConverter.DoubleToUInt64Bits(double.RadiansToDegreesMax)
+                                                      - BitConverter.DoubleToUInt64Bits(double.RadiansToDegreesMin));
+
+            TVectorDouble result = MultiplyWideDouble<TVectorDouble, TVectorUInt64>(
+                radians,
+                double.RadiansToDegreesHead,
+                double.RadiansToDegreesMid,
+                out TVectorUInt64 resolved
+            );
+
+            if (TVectorUInt64.EqualsAll(resolved & TVectorUInt64.LessThan(ux, window), TVectorUInt64.AllBitsSet))
+            {
+                return result;
+            }
+
+            return ScalarFallback(radians);
+
+            static TVectorDouble ScalarFallback(TVectorDouble x)
+            {
+                TVectorDouble result = TVectorDouble.Zero;
+
+                for (int i = 0; i < TVectorDouble.ElementCount; i++)
+                {
+                    double scalar = double.RadiansToDegrees(x[i]);
+                    result = result.WithElement(i, scalar);
+                }
+
+                return result;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVectorSingle RadiansToDegreesSingle<TVectorSingle, TVectorDouble>(TVectorSingle radians)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // See `DegreesToRadiansSingle` for the shape of this.
+
+            TVectorDouble scale = Create<TVectorDouble, double>(double.RadiansToDegreesHead);
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    Widen<TVectorSingle, TVectorDouble>(radians) * scale
+                );
+            }
+
+            return Narrow<TVectorDouble, TVectorSingle>(
+                WidenLower<TVectorSingle, TVectorDouble>(radians) * scale,
+                WidenUpper<TVectorSingle, TVectorDouble>(radians) * scale
+            );
         }
 
         public static TVectorDouble RoundDouble<TVectorDouble>(TVectorDouble vector, MidpointRounding mode)
@@ -2509,6 +2672,40 @@ namespace System.Runtime.Intrinsics
             TVectorDouble s = t + (TVectorDouble.One - t - r);
 
             return TVectorDouble.MultiplyAddEstimate(CosSinglePoly(x), x4, s);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVectorDouble FusedMultiplyAdd<TVectorDouble>(TVectorDouble left, TVectorDouble right, TVectorDouble addend)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            Unsafe.SkipInit(out TVectorDouble result);
+
+            if (typeof(TVectorDouble) == typeof(Vector<double>))
+            {
+                result = (TVectorDouble)(object)Vector.FusedMultiplyAdd((Vector<double>)(object)left, (Vector<double>)(object)right, (Vector<double>)(object)addend);
+            }
+            else if (typeof(TVectorDouble) == typeof(Vector64<double>))
+            {
+                result = (TVectorDouble)(object)Vector64.FusedMultiplyAdd((Vector64<double>)(object)left, (Vector64<double>)(object)right, (Vector64<double>)(object)addend);
+            }
+            else if (typeof(TVectorDouble) == typeof(Vector128<double>))
+            {
+                result = (TVectorDouble)(object)Vector128.FusedMultiplyAdd((Vector128<double>)(object)left, (Vector128<double>)(object)right, (Vector128<double>)(object)addend);
+            }
+            else if (typeof(TVectorDouble) == typeof(Vector256<double>))
+            {
+                result = (TVectorDouble)(object)Vector256.FusedMultiplyAdd((Vector256<double>)(object)left, (Vector256<double>)(object)right, (Vector256<double>)(object)addend);
+            }
+            else if (typeof(TVectorDouble) == typeof(Vector512<double>))
+            {
+                result = (TVectorDouble)(object)Vector512.FusedMultiplyAdd((Vector512<double>)(object)left, (Vector512<double>)(object)right, (Vector512<double>)(object)addend);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
