@@ -381,8 +381,8 @@ PCODE decodeBackToBackJump(PCODE pBuffer)
 
     PTR_BYTE pbCode = PTR_BYTE(pBuffer);
 
-    // JMPABS encoding (APX): D5 00 A1 [8 bytes at offset 3-10] 90
-    if (0xD5 == pbCode[0])
+    // JMPABS encoding (APX): D5 00 A1 [8 bytes at offset 3-10]
+    if (0x00 == pbCode[1])
     {
         return *PTR_UINT64(pBuffer + 3);
     }
@@ -463,11 +463,11 @@ void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     CONTRACTL_END;
 
     // JMPABS instruction (APX):    D5 00 A1 xx xx xx xx xx xx xx xx
-    pBufferRW[0]  = 0xD5;  // APX prefix
-    pBufferRW[1]  = 0x00;  // Map select
-    pBufferRW[2]  = 0xA1;  // JMPABS opcode
+    pBufferRW[0]  = 0xD5;
+    pBufferRW[1]  = 0x00;
+    pBufferRW[2]  = 0xA1;
 
-    SET_UNALIGNED_64(&pBufferRW[3], target);  // 64-bit absolute address
+    SET_UNALIGNED_64(&pBufferRW[3], target);
 
     _ASSERTE(DbgIsExecutable(pBufferRX, 11));
 }
