@@ -375,7 +375,7 @@ namespace System.Collections
             int index = 0;
             foreach (int value in values)
             {
-                intSpan[index++] = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
+                intSpan[index++] = ReverseIfBE(value);
             }
             return array;
         }
