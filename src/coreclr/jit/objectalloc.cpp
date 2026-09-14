@@ -2469,8 +2469,9 @@ void ObjectAllocator::UpdateAncestorTypes(
             {
                 assert(tree == parent->AsLclVarCommon()->Data());
 
-                if (retypeFields)
+                if (parent->TypeIs(TYP_STRUCT))
                 {
+                    assert(retypeFields);
                     GenTreeLclFld* const store     = parent->AsLclFld();
                     ClassLayout* const   oldLayout = store->GetLayout();
 
@@ -2479,7 +2480,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                         store->SetLayout(GetRetypedLayout(oldLayout, newLayout));
                     }
                 }
-                else
+                else if (varTypeIsGC(parent->TypeGet()))
                 {
                     UpdateStoreType(parent, newType);
                 }
