@@ -18,7 +18,9 @@ namespace System.Net.Security.Tests
     {
         private readonly ITestOutputHelper _testOutputHelper;
         private static bool IsGssGetNameAttributeSupported =>
-            KerberosExecutor.IsSupported && Capability.IsGssGetNameAttributeSupported();
+            OperatingSystem.IsLinux() &&
+            KerberosExecutor.IsSupported &&
+            Capability.IsGssGetNameAttributeSupported();
 
         public NegotiateAuthenticationKerberosTest(ITestOutputHelper testOutputHelper)
         {
@@ -90,13 +92,7 @@ namespace System.Net.Security.Tests
                 using NegotiateAuthentication serverNegotiateAuthentication = AuthenticateLoopback();
                 var identity = Assert.IsAssignableFrom<ClaimsIdentity>(serverNegotiateAuthentication.RemoteIdentity);
 
-                Claim? primarySid = identity.FindFirst(ClaimTypes.PrimarySid);
-                if (primarySid is null)
-                {
-                    throw new SkipTestException("The GSS mechanism does not expose the Kerberos PAC name attribute.");
-                }
-
-                Assert.Equal($"{DomainSid}-1104", primarySid.Value);
+                Assert.Equal($"{DomainSid}-1104", identity.FindFirst(ClaimTypes.PrimarySid)?.Value);
                 Assert.Equal($"{DomainSid}-513", identity.FindFirst(ClaimTypes.PrimaryGroupSid)?.Value);
                 Assert.Equal(
                     new[] { $"{DomainSid}-513", $"{DomainSid}-1105", "S-1-5-21-111-222-333-1201" },

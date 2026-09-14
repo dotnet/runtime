@@ -56,7 +56,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void Decode_PrimaryGroupAbsentFromGroups_ReturnsPrimaryGroupSid()
+        public void Decode_PrimaryGroupAbsentFromGroups_DoesNotReturnPrimaryGroupSid()
         {
             byte[] logonInfo = Convert.FromHexString(LogonInfoHex);
             byte[] primaryGroup = Convert.FromHexString("0102000004000000");
@@ -68,7 +68,7 @@ namespace System.Net.Security.Tests
             KerberosPacLogonInfo? result = KerberosPacLogonInfo.Decode(logonInfo);
 
             Assert.NotNull(result);
-            Assert.Equal($"{DomainSid}-513", result.PrimaryGroupSid);
+            Assert.Null(result.PrimaryGroupSid);
             Assert.DoesNotContain($"{DomainSid}-513", result.GroupSids);
         }
 

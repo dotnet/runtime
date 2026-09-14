@@ -171,8 +171,6 @@ namespace System.Net.Security
             // report, but the PAC is still well formed.
             if (logonDomainSid is not null)
             {
-                PrimaryGroupSid = FormatRid(logonDomainSid, primaryGroupId);
-
                 if (userId != 0)
                 {
                     UserSid = FormatRid(logonDomainSid, userId);
@@ -186,6 +184,11 @@ namespace System.Net.Security
                         {
                             string groupSid = FormatRid(logonDomainSid, group.RelativeId);
                             GroupSids.Add(groupSid);
+
+                            if (group.RelativeId == primaryGroupId)
+                            {
+                                PrimaryGroupSid = groupSid;
+                            }
                         }
                     }
                 }
