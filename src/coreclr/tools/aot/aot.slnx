@@ -100,4 +100,22 @@
     <BuildType Solution="Checked|*" Project="Debug" />
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
+  <Project Path="../../ILTrim.Core/ILTrim.Core.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="../../ILTrim/ILTrim.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="../../ILVerification/ILVerification.csproj" />
+  <Project Path="../../ILVerify/ILVerify.csproj" />
+  <Project Path="../../r2rdump/R2RDump.csproj">
+    <BuildType Solution="Checked|Any CPU" Project="Release" />
+    <BuildType Solution="Checked|x64" Project="Release" />
+    <BuildType Solution="Checked|x86" Project="Debug" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Platform Solution="Debug|Any CPU" Project="x64" />
+  </Project>
 </Solution>
