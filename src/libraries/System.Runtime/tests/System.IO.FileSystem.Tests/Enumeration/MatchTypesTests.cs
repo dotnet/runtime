@@ -796,12 +796,13 @@ namespace System.IO.Tests.Enumeration
             // If enabled, should match longName1 and longName2; if disabled, might match nothing
             // We verify that we don't get false positives
             Assert.DoesNotContain(shortName.FullName, paths);
-            Assert.DoesNotContain(exactEight.FullName, paths);
 
             // If short names are enabled, we should get matches
             if (paths.Length > 0)
             {
-                Assert.All(paths, p => Assert.Contains(p, new string[] { longName1.FullName, longName2.FullName }));
+                FSAssert.EqualWhenOrdered(
+                    new string[] { longName1.FullName, longName2.FullName },
+                    paths);
             }
 
             // Long* should match long file names by their actual name
