@@ -102,7 +102,7 @@ unsigned emitGetAdjustedSize(instrDesc* id, code_t code) const;
 code_t emitExtractVexPrefix(instruction ins, code_t& code) const;
 code_t emitExtractEvexPrefix(instruction ins, code_t& code) const;
 
-static emitAttr GetDestinationOperandSize(instruction ins, emitAttr size);
+static emitAttr GetDestinationOperandSize(const instrDesc* id, emitAttr size);
 
 unsigned insEncodeReg012(const instrDesc* id, regNumber reg, emitAttr size, code_t* code);
 unsigned insEncodeReg345(const instrDesc* id, regNumber reg, emitAttr size, code_t* code);

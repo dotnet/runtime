@@ -2097,12 +2097,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         }
         else
         {
-#ifdef TARGET_AMD64
-            // Small integer loads produce an int, including its zero upper half.
-            ins = INS_movsx32;
-#else
             ins = INS_movsx;
-#endif
         }
 #elif defined(TARGET_ARMARCH)
         if (!varTypeIsSmall(srcType))

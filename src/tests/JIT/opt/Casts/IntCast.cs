@@ -34,6 +34,8 @@ namespace CodeGenTests
             {
                 Assert.Equal((int)(sbyte)value, NarrowByte(value));
                 Assert.Equal((int)(short)value, NarrowShort(value));
+                Assert.Equal((int)(short)value, NarrowReturnedShort(value));
+                Assert.Equal((long)(short)value, NarrowReturnedShortToLong(value));
                 Assert.Equal((long)(sbyte)value, NarrowByteToLong(value));
                 Assert.Equal((long)(short)value, NarrowShortToLong(value));
                 Assert.Equal((long)(uint)(sbyte)value, NarrowByteToUIntThenLong(value));
@@ -75,6 +77,28 @@ namespace CodeGenTests
         {
             // X64-FULL-LINE: movsx eax, {{[a-z0-9]+}}
             return (short)value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ReturnInt(int value) => value;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int NarrowReturnedShort(int value)
+        {
+            // A call result forces the source into EAX, allowing cwde for an int result.
+            // X64: call
+            // X64: cwde
+            return (short)ReturnInt(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long NarrowReturnedShortToLong(int value)
+        {
+            // cwde would incorrectly clear bits 32-63 for a negative short.
+            // X64: call
+            // X64-NOT: cwde
+            // X64: movsx rax, ax
+            return (short)ReturnInt(value);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

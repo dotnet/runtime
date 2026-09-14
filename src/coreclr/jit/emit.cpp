@@ -1815,6 +1815,13 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
+#ifdef TARGET_XARCH
+    if ((opsz & EA_8BYTE_DST) != 0)
+    {
+        id->idSetMovsx64();
+    }
+#endif
+
     // Amd64: ip-relative addressing is supported even when not generating relocatable AOT code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef TARGET_AMD64

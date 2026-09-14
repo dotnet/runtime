@@ -669,6 +669,9 @@ enum emitAttr : unsigned
                 EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
                 EA_CNS_SEC_RELOC = 0x1000, // Is the offset immediate that should be relocatable
                 EA_CNS_TLSGD_RELOC = 0x2000, // Is the tlsgd constant to pass to tls_get_addr(). Only on linux/x64/NativeAot
+#ifdef TARGET_XARCH
+                EA_8BYTE_DST     = 0x4000, // movsx has a 64-bit destination; EA_SIZE describes its source.
+#endif
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
