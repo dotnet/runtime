@@ -146,15 +146,15 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None             = 0,
-    IsCallArg        = 1,
-    IsRegCallArg     = 2,
-    IsStoredFromCall = 4,
-    IsCallRetBuf     = 8,
+    None               = 0,
+    IsCallArg          = 1,
+    IsRegCallArg       = 2,
+    IsStoredFromCall   = 4,
+    IsCallRetBuf       = 8,
     IsStoreSource      = 16,
     IsStoreDestination = 32,
 #ifdef DEBUG
-    IsReturned         = 64,
+    IsReturned = 64,
 #endif
 };
 
