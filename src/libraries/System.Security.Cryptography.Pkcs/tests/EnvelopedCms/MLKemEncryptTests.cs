@@ -357,7 +357,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             else
             {
                 Assert.True(recipientInfo.UserKeyingMaterial.HasValue);
-                Assert.Equal<byte>(expectedUkm, recipientInfo.UserKeyingMaterial.Value.ToArray());
+                AssertExtensions.SequenceEqual(expectedUkm, recipientInfo.UserKeyingMaterial.Value.Span);
             }
 
             using (MLKem mlKem = MLKem.ImportPkcs8PrivateKey(privateKey))

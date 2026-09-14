@@ -75,7 +75,6 @@ namespace System.Security.Cryptography.Pkcs
         public X509Certificate2 Certificate { get; }
 
 #if NET11_0_OR_GREATER
-        internal bool IsKeyEncapsulation { get; private set; }
         internal ReadOnlyMemory<byte>? KeyEncapsulationUserKeyingMaterial { get; private set; }
 
         /// <summary>
@@ -128,7 +127,6 @@ namespace System.Security.Cryptography.Pkcs
                 throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, keyAlgorithm);
             }
 
-            IsKeyEncapsulation = true;
             KeyEncapsulationUserKeyingMaterial = userKeyingMaterial.ToArray();
         }
 #endif

@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             else
             {
                 Assert.True(actualUserKeyingMaterial.HasValue);
-                Assert.Equal<byte>(expectedUserKeyingMaterial, actualUserKeyingMaterial.Value.ToArray());
+                AssertExtensions.SequenceEqual(expectedUserKeyingMaterial, actualUserKeyingMaterial.Value.Span);
             }
         }
 

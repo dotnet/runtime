@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             else
             {
                 Assert.True(actualUkm.HasValue);
-                Assert.Equal<byte>(expectedUkm, actualUkm.Value.ToArray());
+                AssertExtensions.SequenceEqual(expectedUkm, actualUkm.Value.Span);
             }
         }
 

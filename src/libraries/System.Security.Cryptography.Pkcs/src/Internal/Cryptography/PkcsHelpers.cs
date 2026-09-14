@@ -137,9 +137,8 @@ namespace Internal.Cryptography
                 CmsRecipient recipientCopy;
 
 #if NET11_0_OR_GREATER
-                if (recipient.IsKeyEncapsulation)
+                if (recipient.KeyEncapsulationUserKeyingMaterial.HasValue)
                 {
-                    Debug.Assert(recipient.KeyEncapsulationUserKeyingMaterial.HasValue);
                     recipientCopy = CmsRecipient.CreateForKeyEncapsulation(
                         recipient.RecipientIdentifierType,
                         certCopy,
