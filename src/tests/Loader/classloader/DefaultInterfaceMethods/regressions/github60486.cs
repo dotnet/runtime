@@ -168,7 +168,8 @@ public class Program : ProgramBase<InputData>, TestItf2<InputData>
             int frameCount = 0;
             foreach (System.Diagnostics.StackFrame frame in new System.Diagnostics.StackTrace().GetFrames())
             {
-                if (frame.GetMethod().Name == nameof(ValidateRecursiveCurrentMethod))
+                // NativeAOT can omit reflection metadata for unrelated callers.
+                if (frame.GetMethod()?.Name == nameof(ValidateRecursiveCurrentMethod))
                 {
                     frameCount++;
                 }
