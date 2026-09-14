@@ -2283,8 +2283,7 @@ public sealed unsafe partial class SOSDacImpl
     private bool IsJumpAbs64(TargetPointer pThunk)
         => 0xD5 == _target.Read<byte>(pThunk) &&
            0x00 == _target.Read<byte>(pThunk + 1) &&
-           0xA1 == _target.Read<byte>(pThunk + 2) &&
-           0x90 == _target.Read<byte>(pThunk + 11);
+           0xA1 == _target.Read<byte>(pThunk + 2);
 
     private bool IsJumpMovRax64(TargetPointer pThunk)
         => 0x48 == _target.Read<byte>(pThunk) &&
