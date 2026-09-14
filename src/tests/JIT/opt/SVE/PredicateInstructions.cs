@@ -42,6 +42,9 @@ public class PredicateInstructions
 
             UnzipEvenZipLowMask(vecs, vecs);
             TransposeEvenAndMask(vecs, vecs, vecs);
+            Assert.Equal(Vector.Create<short>(1), AndMaskWithOnes(Vector.Create<short>(3), vecs));
+            VectorAndNot(vecs, vecs);
+            PredicateBitwiseClearFloat(Vector.Create<float>(1), Vector.Create<float>(2));
 
             PredicateCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
             PredicateCastFloatLocalLoad(s_floatValues, 0, s_floatValues.Length);
@@ -192,6 +195,36 @@ public class PredicateInstructions
                     Sve.CreateTrueMaskInt16(),
                     Sve.And(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
                     Sve.CompareLessThan(a, b)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> AndMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // A vector containing ones is not a per-element mask. Ensure this remains a vector AND
+        // so that true lanes contain one rather than all bits set.
+        //ARM64-FULL-LINE: and {{z[0-9]+}}.d, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        return Sve.And(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> VectorAndNot(Vector<short> a, Vector<short> b)
+    {
+        // Verify that ordinary vector AND-NOT expressions still reach AdvSimd BitwiseClear lowering.
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.8h, {{v[0-9]+}}.8h, {{v[0-9]+}}.8h
+        return ~a & b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<float> PredicateBitwiseClearFloat(Vector<float> left, Vector<float> right)
+    {
+        //ARM64-FULL-LINE: {{bic .*}}
+        // {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        Vector<float> firstMask = Sve.CompareLessThan(left, right);
+        Vector<float> secondMask = Sve.ZipLow(
+            Sve.CompareGreaterThan(left, right),
+            Sve.CompareEqual(left, right));
+
+        return firstMask & ~secondMask;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
