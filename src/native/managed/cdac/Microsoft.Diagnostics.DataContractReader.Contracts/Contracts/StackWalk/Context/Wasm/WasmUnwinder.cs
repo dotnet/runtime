@@ -26,6 +26,13 @@ internal interface IWasmR2RInfo
     /// frame size. Returns false when the index does not map to a known R2R function.
     /// </summary>
     bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress);
+
+    /// <summary>
+    /// Reports whether an R2R function table entry is a funclet rather than a method's root
+    /// function (<c>ExecutionManager::IsFuncletFunctionIndex</c>). Returns false when the index
+    /// does not map to a known R2R function.
+    /// </summary>
+    bool TryIsFunclet(uint functionTableIndex, out bool isFunclet);
 }
 
 /// <summary>
@@ -133,11 +140,17 @@ internal sealed class WasmUnwinder
 
     /// <summary>
     /// Advances <paramref name="sp"/> by one R2R frame and produces the caller's virtual IP,
-    /// mirroring <c>WasmUnwindStackFrameCore</c>. Returns false when the R2R walk terminates
-    /// (no R2R frame at <paramref name="sp"/>), in which case <paramref name="sp"/> is set to
-    /// <see cref="TargetPointer.Null"/>.
+    /// mirroring <c>WasmUnwindStackFrameCore</c>. Returns false when the R2R walk cannot advance
+    /// (no R2R frame at <paramref name="sp"/>, missing unwind data, or a zero frame size), in
+    /// which case <paramref name="sp"/> is set to <see cref="TargetPointer.Null"/>. Returns true
+    /// with the caller stack pointer preserved and <paramref name="ip"/> set to
+    /// <see cref="TargetCodePointer.Null"/> when unwinding succeeds but the caller is not
+    /// ReadyToRun code.
     /// </summary>
-    public bool TryUnwindOneFrame(ref TargetPointer sp, out TargetCodePointer ip)
+    public bool TryUnwindOneFrame(
+        ref TargetPointer sp,
+        TargetCodePointer controlPC,
+        out TargetCodePointer ip)
     {
         ip = TargetCodePointer.Null;
         if (!TryGetFramePointer(sp, out TargetPointer frameBase))
@@ -161,17 +174,141 @@ internal sealed class WasmUnwinder
             return false;
         }
 
-        sp = new TargetPointer(frameBase.Value + frameSize);
-        ip = GetVirtualIP(sp);
-        if (ip == TargetCodePointer.Null)
+        bool callerIsNative = false;
+        if (controlPC != TargetCodePointer.Null &&
+            _r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet) &&
+            !isFunclet &&
+            _target.Contracts.ExecutionManager.GetCodeBlockHandle(controlPC) is CodeBlockHandle codeBlock)
         {
-            // The caller is not R2R-generated code (an interpreter transition or the stack top);
-            // the R2R walk is exhausted.
-            sp = TargetPointer.Null;
+            _target.Contracts.ExecutionManager.GetGCInfo(
+                codeBlock,
+                out TargetPointer gcInfoAddress,
+                out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(
+                gcInfoAddress,
+                gcVersion);
+            callerIsNative = _target.Contracts.GCInfo.GetHeader(gcInfoHandle).HasReversePInvokeFrame;
+        }
+
+        sp = new TargetPointer(frameBase.Value + frameSize);
+        ip = callerIsNative ? TargetCodePointer.Null : GetVirtualIP(sp);
+        return true;
+    }
+
+    public bool TryUnwindOneFrame(ref TargetPointer sp, out TargetCodePointer ip)
+        => TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out ip);
+
+    /// <summary>
+    /// Returns the R2R function table entry index recorded in the frame at <paramref name="sp"/>.
+    /// Returns false when there is no R2R frame there.
+    /// </summary>
+    public bool TryGetFunctionIndex(TargetPointer sp, out uint functionIndex)
+    {
+        functionIndex = 0;
+        if (!TryGetFramePointer(sp, out TargetPointer frameBase))
+            return false;
+
+        functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+        return true;
+    }
+
+    /// <summary>
+    /// Advances <paramref name="sp"/> by one R2R frame and returns the caller's stack pointer,
+    /// without requiring the caller to be R2R-generated code. This is the frame-size half of
+    /// <c>WasmUnwindStackFrameCore</c>, which <see cref="TryGetLogicalFramePointer"/> needs in
+    /// order to inspect a synthetic <see cref="TerminateR2RStackWalk"/> frame.
+    /// </summary>
+    private bool TryUnwindToCallerStackPointer(TargetPointer sp, out TargetPointer callerSp)
+    {
+        callerSp = TargetPointer.Null;
+        if (!TryGetFramePointer(sp, out TargetPointer frameBase))
+            return false;
+
+        uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+        if (!_r2rInfo.TryGetUnwindData(functionIndex, out TargetPointer unwindData))
+            return false;
+
+        uint frameSize = DecodeULEB128(unwindData.Value);
+        if (frameSize == 0)
+        {
+            // A zero frame size makes no progress; refuse rather than risk an unbounded walk.
             return false;
         }
 
+        callerSp = new TargetPointer(frameBase.Value + frameSize);
         return true;
+    }
+
+    /// <summary>
+    /// Returns the logical (establishing) frame pointer for the frame at <paramref name="sp"/>,
+    /// mirroring <c>GetWasmFramePointerFromStackPointer</c> in
+    /// <c>src/coreclr/vm/wasm/helpers.cpp</c>.
+    /// </summary>
+    /// <remarks>
+    /// For a method's root function this is simply its own frame base. For a funclet it is the
+    /// frame base of the method that established the frame, because a funclet's WASM frame pointer
+    /// local refers to the fixed portion of its parent's frame rather than its own
+    /// (<c>WasmRegAlloc</c> in <c>src/coreclr/jit/regallocwasm.cpp</c>). Reaching it means
+    /// unwinding out of the funclet, either to its containing function or to the synthetic
+    /// <see cref="TerminateR2RStackWalk"/> frame that <c>CallFuncletWith[out]Throwable</c> pushes,
+    /// which carries the establishing frame pointer beside the marker.
+    /// </remarks>
+    public bool TryGetLogicalFramePointer(TargetPointer sp, out TargetPointer framePointer)
+    {
+        framePointer = TargetPointer.Null;
+
+        // The native original recurses until it reaches a non-funclet frame or the CallFunclet
+        // terminator, relying on the stack being finite. The cDAC reads potentially untrustworthy
+        // memory, so require strictly increasing stack pointers instead: every unwind step must
+        // move toward the caller, which guarantees termination without capping legitimate funclet
+        // nesting depth. The iteration count is a backstop only.
+        const int MaxUnwindSteps = 4096;
+        TargetPointer current = sp;
+
+        for (int i = 0; i < MaxUnwindSteps; i++)
+        {
+            if (!TryGetFramePointer(current, out TargetPointer frameBase))
+                return false;
+
+            uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+
+            // Native ExecutionManager::IsFuncletFunctionIndex returns FALSE when the function
+            // index matches no range section, and GetWasmFramePointerFromStackPointer then treats
+            // the frame as a root function. We deliberately fail instead: an index that belongs to
+            // no R2R range section is not R2R code, so it has no variable debug info to resolve
+            // against, and reporting its raw frame base would be a guess.
+            if (!_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet))
+                return false;
+
+            if (!isFunclet)
+            {
+                framePointer = frameBase;
+                return true;
+            }
+
+            if (!TryUnwindToCallerStackPointer(current, out TargetPointer callerSp))
+                return false;
+
+            if (callerSp.Value <= current.Value)
+            {
+                // No progress toward the caller; refuse rather than risk an unbounded walk.
+                return false;
+            }
+
+            if (_target.Read<uint>(callerSp.Value + FunctionIndexOffset) == TerminateR2RStackWalk)
+            {
+                // The funclet was invoked by the VM through CallFuncletWith[out]Throwable, so
+                // unwinding terminates at that synthetic frame before reaching the method's own
+                // frame. Recover the establishing frame pointer stored beside the marker.
+                framePointer = GetEstablishingFramePointerFromTerminator(callerSp);
+                return true;
+            }
+
+            // The funclet was called by its containing method or funclet; keep walking out.
+            current = callerSp;
+        }
+
+        return false;
     }
 
     // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32. A ULEB128

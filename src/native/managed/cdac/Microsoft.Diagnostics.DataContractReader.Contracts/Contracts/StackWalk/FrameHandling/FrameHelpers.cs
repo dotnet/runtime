@@ -235,6 +235,14 @@ internal sealed class FrameHelpers
             case FrameType.DynamicHelperFrame:
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
                 Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+                if (tb.ReturnAddress == TargetCodePointer.Null &&
+                    _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm &&
+                    tb.StackPointer is TargetPointer stackPointer &&
+                    stackPointer != TargetPointer.Null)
+                {
+                    Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+                    return unwinder.GetVirtualIP(stackPointer);
+                }
                 return tb.ReturnAddress;
 
             // SoftwareExceptionFrame: stored m_ReturnAddress
