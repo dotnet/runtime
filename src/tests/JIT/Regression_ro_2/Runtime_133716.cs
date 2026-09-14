@@ -10,15 +10,13 @@ public class Runtime_133716
     private static S s_value;
 
     [Fact]
-    public static int Main()
+    public static void TestEntryPoint()
     {
         s_value.X = 1;
         Assert.True(TestBoxThis(), nameof(TestBoxThis));
 
         s_value.X = 1;
         Assert.True(TestLdvirtftn(ref s_value), nameof(TestLdvirtftn));
-
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
