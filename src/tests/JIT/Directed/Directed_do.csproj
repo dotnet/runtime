@@ -9,7 +9,6 @@
     <MergedWrapperProjectReference Include="aliasing_retbuf\aliasing_retbuf.csproj" />
     <MergedWrapperProjectReference Include="Convert\out_of_range_fp_to_int_conversions.csproj" />
     <MergedWrapperProjectReference Include="LoopAlignment\LoopsToProcess.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\CopyBetweenByrefs.csproj" />
     <MergedWrapperProjectReference Include="physicalpromotion\CopyBetweenFields.csproj" />
     <MergedWrapperProjectReference Include="physicalpromotion\addressinterference.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn1.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
