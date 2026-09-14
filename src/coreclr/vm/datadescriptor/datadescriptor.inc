@@ -1693,6 +1693,8 @@ CDAC_GLOBAL_STRING(Architecture, loongarch64)
 CDAC_GLOBAL_STRING(Architecture, riscv64)
 #elif defined(TARGET_WASM)
 CDAC_GLOBAL_STRING(Architecture, wasm)
+CDAC_GLOBAL(WasmDebugRegisterTypeShift, T_UINT8, ICorDebugInfo::WASM_REG_TYPE_SHIFT)
+CDAC_GLOBAL(WasmDebugValueTypeCount, T_UINT8, ICorDebugInfo::WASM_VALUE_TYPE_COUNT)
 #else
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
