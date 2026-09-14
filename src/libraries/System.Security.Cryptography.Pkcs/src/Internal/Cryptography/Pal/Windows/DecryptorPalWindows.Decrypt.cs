@@ -33,16 +33,8 @@ namespace Internal.Cryptography.Pal.Windows
 
             Debug.Assert((cert is not null) ^ (privateKey is not EnvelopedCmsKey.None));
 
-            if (privateKey is AsymmetricAlgorithm asymmetricAlgorithm)
+            if (privateKey is RSA key)
             {
-                RSA? key = asymmetricAlgorithm as RSA;
-
-                if (key == null)
-                {
-                    exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
-                    return null;
-                }
-
                 ContentInfo contentInfo = _hCryptMsg.GetContentInfo();
                 byte[]? cek = AnyOS.ManagedPkcsPal.ManagedKeyTransPal.DecryptCekCore(
                     cert,

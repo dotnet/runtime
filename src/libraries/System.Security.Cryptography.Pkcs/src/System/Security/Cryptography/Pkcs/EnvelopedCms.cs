@@ -206,11 +206,15 @@ namespace System.Security.Cryptography.Pkcs
         {
             ArgumentNullException.ThrowIfNull(recipientInfo);
 
-            EnvelopedCmsKey envelopedCmsKey = privateKey is null ?
-                EnvelopedCmsKey.None.Instance :
-                privateKey;
+            if (privateKey is not null and not RSA)
+            {
+                CheckStateForDecryption();
+                throw new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
+            }
 
-            DecryptWithKey(recipientInfo, envelopedCmsKey);
+            DecryptWithKey(
+                recipientInfo,
+                privateKey is RSA rsa ? rsa : EnvelopedCmsKey.None.Instance);
         }
 
         private void DecryptWithKey(RecipientInfo recipientInfo, EnvelopedCmsKey privateKey)

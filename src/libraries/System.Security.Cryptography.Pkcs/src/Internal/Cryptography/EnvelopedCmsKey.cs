@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography
 {
     internal union EnvelopedCmsKey(
-        AsymmetricAlgorithm,
+        RSA,
 #if NET11_0_OR_GREATER
         MLKem,
         CompositeMLKem,

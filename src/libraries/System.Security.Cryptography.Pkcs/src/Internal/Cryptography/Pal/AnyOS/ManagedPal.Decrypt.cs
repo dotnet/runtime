@@ -46,9 +46,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
-                    RSA? key = privateKey is AsymmetricAlgorithm asymmetricAlgorithm ?
-                        asymmetricAlgorithm as RSA :
-                        null;
+                    RSA? key = privateKey is RSA rsa ? rsa : null;
 
                     if (privateKey is not EnvelopedCmsKey.None && key is null)
                     {
