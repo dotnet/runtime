@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         private static RecipientInfoAsn MakeKemRecipientInfo(byte[] cek, CmsRecipient recipient)
         {
-            KemRecipientInfoAsn kemRecipientInfo = MakeKeri(cek, recipient);
+            KemRecipientInfoAsn kemRecipientInfo = MakeKemri(cek, recipient);
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             kemRecipientInfo.Encode(writer);
 
@@ -33,7 +33,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             };
         }
 
-        private static KemRecipientInfoAsn MakeKeri(byte[] cek, CmsRecipient recipient)
+        private static KemRecipientInfoAsn MakeKemri(byte[] cek, CmsRecipient recipient)
         {
             if (cek.Length < ManagedKemRecipientInfoPal.Aes128KeySizeInBytes ||
                 cek.Length % 8 != 0 ||
@@ -42,15 +42,15 @@ namespace Internal.Cryptography.Pal.AnyOS
                 throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey);
             }
 
-            KemRecipientInfoAsn keri = default;
-            keri.Rid = PkcsHelpers.MakeRecipientIdentifier(recipient);
+            KemRecipientInfoAsn kemri = default;
+            kemri.Rid = PkcsHelpers.MakeRecipientIdentifier(recipient);
 
             // KDF and AES-KW algorithm is not user selectable currently. Always use AES-256-KW with SHA-2-384 since it
             // meets all requirements.
-            keri.Kdf = s_hkdfSha384Identifier;
-            keri.Wrap = s_aes256KwIdentifier;
-            keri.KekLength = ManagedKemRecipientInfoPal.Aes256KeySizeInBytes;
-            keri.Ukm = recipient.KeyEncapsulationUserKeyingMaterial;
+            kemri.Kdf = s_hkdfSha384Identifier;
+            kemri.Wrap = s_aes256KwIdentifier;
+            kemri.KekLength = ManagedKemRecipientInfoPal.Aes256KeySizeInBytes;
+            kemri.Ukm = recipient.KeyEncapsulationUserKeyingMaterial;
 
             const int SharedSecretSize = 32;
             Span<byte> sharedSecret = stackalloc byte[SharedSecretSize];
@@ -76,8 +76,8 @@ namespace Internal.Cryptography.Pal.AnyOS
                             Debug.Assert(key.Algorithm.SharedSecretSizeInBytes == SharedSecretSize);
 
                             key.Encapsulate(ciphertext, sharedSecret);
-                            keri.Kemct = ciphertext;
-                            keri.Kem.Algorithm = keyAlgorithm;
+                            kemri.Kemct = ciphertext;
+                            kemri.Kem.Algorithm = keyAlgorithm;
                         }
                         break;
                     default:
@@ -86,11 +86,11 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 State3<ReadOnlySpan<byte>, ReadOnlySpan<byte>, int> encodeState = new(cek, sharedSecret, 0);
                 AsnWriter hkdfInfoWriter = ManagedKemRecipientInfoPal.EncodeKdfInfo(
-                    keri.Wrap,
-                    keri.KekLength,
-                    keri.Ukm);
+                    kemri.Wrap,
+                    kemri.KekLength,
+                    kemri.Ukm);
 
-                keri.EncryptedKey = hkdfInfoWriter.Encode(encodeState, static (state, info) =>
+                kemri.EncryptedKey = hkdfInfoWriter.Encode(encodeState, static (state, info) =>
                 {
                     Span<byte> derivedKey = stackalloc byte[ManagedKemRecipientInfoPal.Aes256KeySizeInBytes];
 
@@ -115,7 +115,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 CryptographicOperations.ZeroMemory(sharedSecret);
             }
 
-            return keri;
+            return kemri;
         }
 
         private sealed class ManagedKemRecipientInfoPal : KemRecipientInfoPal
@@ -133,22 +133,22 @@ namespace Internal.Cryptography.Pal.AnyOS
                 _asn = asn;
             }
 
-            public override byte[] EncryptedKey => _asn.EncryptedKey.ToArray();
+            public override byte[] EncryptedKey => field ??= _asn.EncryptedKey.ToArray();
 
-            public override AlgorithmIdentifier KeyDerivationAlgorithm => ToAlgorithmIdentifier(_asn.Kdf);
+            internal override AlgorithmIdentifier KeyDerivationAlgorithm => field ??= ToAlgorithmIdentifier(_asn.Kdf);
 
-            public override AlgorithmIdentifier KeyEncapsulationAlgorithm => ToAlgorithmIdentifier(_asn.Kem);
+            internal override AlgorithmIdentifier KeyEncapsulationAlgorithm => field ??= ToAlgorithmIdentifier(_asn.Kem);
 
-            public override ReadOnlyMemory<byte> KeyEncapsulationCiphertext => _asn.Kemct;
+            internal override ReadOnlyMemory<byte> KeyEncapsulationCiphertext => _asn.Kemct;
 
-            public override AlgorithmIdentifier KeyEncryptionAlgorithm => ToAlgorithmIdentifier(_asn.Wrap);
+            public override AlgorithmIdentifier KeyEncryptionAlgorithm => field ??= ToAlgorithmIdentifier(_asn.Wrap);
 
-            public override int KeyEncryptionKeyLengthInBytes => _asn.KekLength;
+            internal override int KeyEncryptionKeyLengthInBytes => _asn.KekLength;
 
             public override SubjectIdentifier RecipientIdentifier =>
-                new(_asn.Rid.IssuerAndSerialNumber, _asn.Rid.SubjectKeyIdentifier);
+                field ??= new(_asn.Rid.IssuerAndSerialNumber, _asn.Rid.SubjectKeyIdentifier);
 
-            public override ReadOnlyMemory<byte>? UserKeyingMaterial => _asn.Ukm;
+            internal override ReadOnlyMemory<byte>? UserKeyingMaterial => _asn.Ukm;
 
             public override int Version => _asn.Version;
 
@@ -327,7 +327,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             private static AlgorithmIdentifier ToAlgorithmIdentifier(AlgorithmIdentifierAsn algorithmIdentifier)
             {
-                return new AlgorithmIdentifier(new Oid(algorithmIdentifier.Algorithm))
+                return new AlgorithmIdentifier(new Oid(algorithmIdentifier.Algorithm, null))
                 {
                     Parameters = algorithmIdentifier.Parameters?.ToArray() ?? Array.Empty<byte>(),
                 };

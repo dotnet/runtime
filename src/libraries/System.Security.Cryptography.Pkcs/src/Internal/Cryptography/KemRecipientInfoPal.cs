@@ -8,10 +8,10 @@ namespace Internal.Cryptography
 {
     internal abstract class KemRecipientInfoPal : RecipientInfoPal
     {
-        public abstract AlgorithmIdentifier KeyDerivationAlgorithm { get; }
-        public abstract AlgorithmIdentifier KeyEncapsulationAlgorithm { get; }
-        public abstract ReadOnlyMemory<byte> KeyEncapsulationCiphertext { get; }
-        public abstract int KeyEncryptionKeyLengthInBytes { get; }
-        public abstract ReadOnlyMemory<byte>? UserKeyingMaterial { get; }
+        internal abstract AlgorithmIdentifier KeyDerivationAlgorithm { get; }
+        internal abstract AlgorithmIdentifier KeyEncapsulationAlgorithm { get; }
+        internal abstract ReadOnlyMemory<byte> KeyEncapsulationCiphertext { get; }
+        internal abstract int KeyEncryptionKeyLengthInBytes { get; }
+        internal abstract ReadOnlyMemory<byte>? UserKeyingMaterial { get; }
     }
 }

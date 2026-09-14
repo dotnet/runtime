@@ -137,7 +137,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             // v3 (RFC 3369):
             //   * OriginatorInfo contains v2 attribute certificates (not supported)
             //   * Any PWRI (password) recipients are present (not supported)
-            //   * Any ORI (other) recipients are present (not supported)
+            //   * Any ORI (other) recipients are present
             // v2 (RFC 2630):
             //   * OriginatorInfo is present
             //   * Any RecipientInfo has a non-zero version number
