@@ -4,7 +4,6 @@
 using System;
 using Debug = System.Diagnostics.Debug;
 using System.Runtime.InteropServices.ObjectiveC;
-using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -979,11 +978,6 @@ namespace Internal.TypeSystem.Interop
                 _ => null,
             };
 #pragma warning restore CA1416
-        }
-
-        public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
-        {
-            return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
 
         public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext)

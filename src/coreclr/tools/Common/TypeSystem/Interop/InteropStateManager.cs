@@ -191,7 +191,7 @@ namespace Internal.TypeSystem
             var normalizedSignatureBuilder = new MethodSignatureBuilder(signature);
             normalizedSignatureBuilder.Flags = (signature.Flags & MethodSignatureFlags.Static) | MethodSignatureFlags.UnmanagedCallingConvention;
             normalizedSignatureBuilder.SetEmbeddedSignatureData(signature.GetStandaloneMethodSignatureCallingConventions().EncodeAsEmbeddedSignatureData(moduleContext.Context));
-            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(normalizedSignatureBuilder.ToSignature(), MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext)));
+            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(normalizedSignatureBuilder.ToSignature(), moduleContext.Assembly.IsRuntimeMarshallingEnabled));
         }
 
         private sealed class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>

@@ -40,6 +40,14 @@ namespace ILCompiler
 
             public Utf8Span Name => "System.Private.CompilerGenerated"u8;
 
+            public bool IsRuntimeMarshallingEnabled
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
             public CompilerGeneratedAssembly(TypeSystemContext context)
                 : base(context, null)
             {

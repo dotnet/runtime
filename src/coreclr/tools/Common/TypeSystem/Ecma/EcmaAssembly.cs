@@ -72,6 +72,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public bool IsRuntimeMarshallingEnabled
+        {
+            get
+            {
+                return !HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+            }
+        }
+
         public override string ToString()
         {
             return GetName().Name;

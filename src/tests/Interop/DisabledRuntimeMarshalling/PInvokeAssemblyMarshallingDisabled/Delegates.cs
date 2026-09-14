@@ -32,4 +32,18 @@ public unsafe class DelegatesFromExternalAssembly
         var cb = Marshal.GetDelegateForFunctionPointer<CheckStructWithShortAndBoolWithVariantBoolCallback>(DisabledRuntimeMarshallingNative.GetStructWithShortAndBoolWithVariantBoolCallback());
         Assert.False(cb(new StructWithShortAndBool(s, b), s, b));
     }
+
+    [Fact]
+    public static void StructWithDefaultNonBlittableFields_ReversePInvoke_DoesNotMarshal()
+    {
+        short s = 42;
+        bool b = true;
+        CheckStructWithShortAndBoolCallback del = (structWithShortAndBool, shortVal, boolVal) => structWithShortAndBool.Equals(new StructWithShortAndBool(shortVal, boolVal));
+        unsafe
+        {
+            delegate* unmanaged<StructWithShortAndBool, short, bool, bool> cb = (delegate* unmanaged<StructWithShortAndBool, short, bool, bool>)Marshal.GetFunctionPointerForDelegate(del);
+            Assert.True(cb(new StructWithShortAndBool(s, b), s, b));
+        }
+        GC.KeepAlive(del);
+    }
 }

@@ -450,7 +450,7 @@ namespace Internal.TypeSystem.Interop
                 targetMethod.Signature,
                 targetMethod.GetPInvokeMethodMetadata().Flags,
                 targetMethod.GetParameterMetadata(),
-                MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)targetMethod.OwningType).Module));
+                ((MetadataType)targetMethod.OwningType).Module.Assembly.IsRuntimeMarshallingEnabled);
         }
 
         public static Marshaller[] GetMarshallersForSignature(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
@@ -459,7 +459,7 @@ namespace Internal.TypeSystem.Interop
                 methodSig,
                 new PInvokeFlags(PInvokeAttributes.None),
                 paramMetadata,
-                MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext));
+                moduleContext.Assembly.IsRuntimeMarshallingEnabled);
         }
 
         public static bool IsMarshallingRequired(MethodDesc targetMethod)

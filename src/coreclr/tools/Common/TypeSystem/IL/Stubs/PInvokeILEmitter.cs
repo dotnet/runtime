@@ -56,7 +56,7 @@ namespace Internal.IL.Stubs
                 case DelegateMarshallingMethodThunk delegateMethod:
                     methodSig = delegateMethod.DelegateSignature;
                     direction = delegateMethod.Direction;
-                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(delegateMethod.DelegateType.Module);
+                    runtimeMarshallingEnabled = delegateMethod.DelegateType.Module.Assembly.IsRuntimeMarshallingEnabled;
                     break;
                 case CalliMarshallingMethodThunk calliMethod:
                     methodSig = calliMethod.TargetSignature;
@@ -64,7 +64,7 @@ namespace Internal.IL.Stubs
                     break;
                 default:
                     methodSig = targetMethod.Signature;
-                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)targetMethod.OwningType).Module);
+                    runtimeMarshallingEnabled = ((MetadataType)targetMethod.OwningType).Module.Assembly.IsRuntimeMarshallingEnabled;
                     break;
             }
             int indexOffset = 0;
@@ -269,7 +269,7 @@ namespace Internal.IL.Stubs
             TypeDesc nativeReturnType = _flags.PreserveSig ? _marshallers[0].NativeParameterType : context.GetWellKnownType(WellKnownType.Int32);
             TypeDesc[] nativeParameterTypes = new TypeDesc[isHRSwappedRetVal ? _marshallers.Length : _marshallers.Length - 1];
 
-            bool runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)_targetMethod.OwningType).Module);
+            bool runtimeMarshallingEnabled = ((MetadataType)_targetMethod.OwningType).Module.Assembly.IsRuntimeMarshallingEnabled;
 
             // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
             if (_flags.SetLastError)

@@ -110,7 +110,7 @@ namespace ILCompiler.PortableCallHelpers
                 // Marshaller.IsMarshallingRequired), then raise it to a warning. It stays a message
                 // while it names whole framework assemblies, which ship prebuilt and would fail
                 // builds nobody can fix. Tracked by https://github.com/dotnet/runtime/issues/133190.
-                if (pinvokes.Count != pinvokesFromOtherModules && MarshalHelpers.IsRuntimeMarshallingEnabled(module))
+                if (pinvokes.Count != pinvokesFromOtherModules && module.Assembly.IsRuntimeMarshallingEnabled)
                 {
                     log.InfoHigh("WASM0065",
                         $"'{simpleName}' declares P/Invokes without [assembly: DisableRuntimeMarshalling]; the generated helpers assume its signatures cross to native unmarshalled.");

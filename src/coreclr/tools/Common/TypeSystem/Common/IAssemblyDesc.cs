@@ -22,5 +22,10 @@ namespace Internal.TypeSystem
         /// Gets the simple assembly name
         /// </summary>
         Utf8Span Name { get; }
+
+        /// <summary>
+        /// Gets whether runtime marshalling is enabled for the assembly.
+        /// </summary>
+        bool IsRuntimeMarshallingEnabled { get; }
     }
 }

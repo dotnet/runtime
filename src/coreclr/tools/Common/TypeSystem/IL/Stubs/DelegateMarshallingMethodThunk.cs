@@ -144,7 +144,7 @@ namespace Internal.IL.Stubs
                             unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
 
                         MethodSignature delegateSignature = _invokeMethod.Signature;
-                        if (!MarshalHelpers.IsRuntimeMarshallingEnabled(_delegateType.Module))
+                        if (!_delegateType.Module.Assembly.IsRuntimeMarshallingEnabled)
                         {
                             // When runtime marshalling is disabled, arguments and the return value are passed
                             // through blittably, so the native signature matches the managed signature.

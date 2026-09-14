@@ -53,6 +53,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public Utf8Span Name => System.Text.Encoding.UTF8.GetBytes(_name.Name);
 
+        public bool IsRuntimeMarshallingEnabled => true;
+
         public override IEnumerable<MetadataType> GetAllTypes() => _types;
         public override MetadataType GetGlobalModuleType() => throw new NotImplementedException();
         public AssemblyNameInfo GetName() => _name;

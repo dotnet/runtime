@@ -624,6 +624,14 @@ namespace ILCompiler.IBC
             {
                 public Utf8Span Name => "System.Private.Canon"u8;
 
+                public bool IsRuntimeMarshallingEnabled
+                {
+                    get
+                    {
+                        return true;
+                    }
+                }
+
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
                 }
