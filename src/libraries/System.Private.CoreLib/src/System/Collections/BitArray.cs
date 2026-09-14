@@ -33,7 +33,6 @@ namespace System.Collections
         /// <summary>Buffer size in bytes used for stack allocation.</summary>
         private const int StackBufferSizeInBytes = 256;
 
-
         /// <summary>The array of bytes used to store bits.</summary>
         /// <remarks>
         /// The array is allocated to hold enough bytes to store the specified number of bits, rounded up to the nearest multiple
