@@ -735,7 +735,7 @@ public:
                 continue;
             }
 
-            if (otherAccess.AccessType != TYP_STRUCT)
+            if ((otherAccess.AccessType != TYP_STRUCT) && (otherAccess.Count > otherAccess.CountStoreDestination))
             {
                 primitiveAccessCount++;
                 costVectorCopies &= genTypeSize(otherAccess.AccessType) < TARGET_POINTER_SIZE;

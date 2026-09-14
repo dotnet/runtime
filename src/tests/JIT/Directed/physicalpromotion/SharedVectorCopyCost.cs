@@ -127,6 +127,13 @@ public class SharedVectorCopyCost
     {
         // The four-field destination is eligible for regular promotion. Whole-local
         // copies must credit that endpoint just as they credit physical promotion.
+        // X64: call {{.*}}SharedVectorCopyCost:CheckFields
+        // X64: call {{.*}}SharedVectorCopyCost:CheckFields
+        // X64: call {{.*}}SharedVectorCopyCost:CheckFields
+        // X64: call {{.*}}SharedVectorCopyCost:CheckFields
+        // Keep the source fields promoted instead of copying their stack storage.
+        // X64-NOT: xmmword ptr
+        // X64: ret
         ArrayValue source = CreateArrayValue(input);
         CheckFields(source.A, source.B, source.C, source.D);
         CheckFields(source.A, source.B, source.C, source.D);
