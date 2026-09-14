@@ -15,24 +15,14 @@ bool compare_by_version_ascending_then_hive_depth_descending(const sdk_info &a, 
         return true;
     }
 
-    // With multi-level lookup enabled, it is possible to find two SDKs with
-    // the same version. For that edge case, we make the ordering put SDKs
-    // from farther away (global location) hives earlier than closer ones
-    // (current dotnet exe location). Without this tie-breaker, the ordering
-    // would be non-deterministic.
+    // When global.json specifies custom SDK paths, it is possible to find two
+    // SDKs with the same version in different search locations. Without a
+    // tie-breaker, the ordering would be non-deterministic.
     //
-    // Furthermore,  nearer earlier than farther is so that the MSBuild resolver
-    // can do a linear search from the end of the list to the front to find the
-    // best compatible SDK.
-    //
-    // Example:
-    //    * dotnet dir has version 4.0, 5.0, 6.0
-    //    * global dir has 5.0
-    //    * 6.0 is incompatible with calling msbuild
-    //    * 5.0 is compatible with calling msbuild
-    //
-    // MSBuild should select 5.0 from dotnet dir (matching probe order) in muxer
-    // and not 5.0 from global dir.
+    // Consumers of this list (the MSBuild resolver via hostfxr_get_available_sdks)
+    // scan backwards from the end to find the best compatible SDK, so the entry
+    // that should win has to come last. Search locations are in priority order -
+    // the first match wins - so the lowest hive depth sorts last.
     if (a.version == b.version)
     {
         return a.hive_depth > b.hive_depth;

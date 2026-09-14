@@ -1116,6 +1116,15 @@ public:
                     accessFlags  = ClassifyLocalAccess(lcl, effectiveUser);
                 }
 
+#ifdef DEBUG
+                if ((accessFlags & (AccessKindFlags::IsCallRetBuf | AccessKindFlags::IsStoreDestination)) !=
+                    AccessKindFlags::None)
+                {
+                    assert(!IsInsideQmarkArm() &&
+                           "Stores to physical promotion candidates in QMARK arms must be expanded early");
+                }
+#endif
+
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
                 unsigned   offs = lcl->GetLclOffs();
                 uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
@@ -1352,6 +1361,28 @@ public:
     }
 
 private:
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // IsInsideQmarkArm:
+    //   Check whether the current node is contained in a QMARK arm.
+    //
+    // Returns:
+    //   True if the current node is contained in a QMARK arm.
+    //
+    bool IsInsideQmarkArm()
+    {
+        for (int i = 1; i < m_ancestors.Height(); i++)
+        {
+            if (m_ancestors.Top(i)->OperIs(GT_COLON))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+#endif
+
     //------------------------------------------------------------------------
     // GetOrCreateUses:
     //   Get the uses information for a local. Create it if it does not already exist.

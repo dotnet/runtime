@@ -234,6 +234,13 @@ namespace System.Runtime.InteropServices
 
 namespace System.Runtime.CompilerServices
 {
+    public sealed class InlineArrayAttribute : Attribute
+    {
+        public InlineArrayAttribute(int length)
+        {
+        }
+    }
+
     public sealed class IsByRefLikeAttribute : Attribute
     {
     }

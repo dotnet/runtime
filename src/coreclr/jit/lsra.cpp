@@ -1419,10 +1419,6 @@ PhaseStatus LinearScan::doRegisterAllocation()
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
-#ifdef DEBUG
-    m_compiler->fgDebugCheckLinks();
-#endif
-
     m_compiler->compRegAllocDone = true;
 
     // If edge resolution didn't create new blocks,

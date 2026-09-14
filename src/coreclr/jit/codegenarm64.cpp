@@ -4270,7 +4270,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into x15 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -5128,8 +5128,6 @@ int CodeGenInterface::genTotalFrameSize() const
     // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
     // since we don't use "push" instructions to save them, we don't have to do the
     // save of these varargs register arguments as the first thing in the prolog.
-
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) +
                          m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;

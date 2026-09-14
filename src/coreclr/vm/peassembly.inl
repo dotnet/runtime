@@ -125,7 +125,6 @@ inline void PEAssembly::GetMVID(GUID *pMvid)
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -352,7 +351,7 @@ inline BOOL PEAssembly::IsILOnly()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation|GCViolation);
 
     if (IsReflectionEmit())
         return FALSE;
@@ -689,7 +688,6 @@ inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -809,7 +807,6 @@ inline DWORD PEAssembly::GetFlags()
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END;

@@ -42,12 +42,56 @@ concurrency:
 tools:
   github:
     toolsets: [pull_requests, repos, issues, search]
+    allowed-repos: ["dotnet/runtime"]
     min-integrity: approved
+    approval-labels: ["Known Build Error"]
   edit:
   bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
 
 checkout:
   fetch-depth: 200
+
+# Enumerate metadata separately: the pre-agent CLI proxy does not apply approval labels.
+# Bodies and comments are still read through the agent's integrity-gated GitHub MCP.
+jobs:
+  scanner_kbes:
+    needs: activation
+    if: github.repository == 'dotnet/runtime'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      count: ${{ steps.filter.outputs.count }}
+    steps:
+      - name: Checkout workflow helper
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: .github/workflows/shared/filter-scanner-kbes.sh
+          sparse-checkout-cone-mode: false
+      - name: Filter scanner-authored KBEs (deterministic)
+        id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash .github/workflows/shared/filter-scanner-kbes.sh
+      - name: Upload scanner KBE allowlist
+        uses: actions/upload-artifact@v7
+        with:
+          name: scanner-kbe-candidates
+          path: ${{ runner.temp }}/scanner-kbe-candidates.json
+          if-no-files-found: error
+  agent:
+    needs: scanner_kbes
+    if: needs.scanner_kbes.outputs.count > 0
+
+steps:
+  - name: Download scanner KBE allowlist
+    uses: actions/download-artifact@v8
+    with:
+      name: scanner-kbe-candidates
+      path: /tmp/gh-aw/agent
 
 safe-outputs:
   create-pull-request:
@@ -145,11 +189,11 @@ Read once at start:
 
 ### Step 2 — Enumerate open KBEs
 
-List open KBE issues this workflow is responsible for. Use the `github` MCP `search_issues` (integrity-gated; `[Filtered]` results are skipped — record the count, do not chase them):
+The deterministic `scanner_kbes` job has prepared `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. It selects remediation candidates: only open `dotnet/runtime` issues whose exact `Known Build Error` label, `[ci-scan]` title prefix, and `github-actions[bot]` author were verified through the GitHub API. Select work only from `.candidates[].number`, in ascending creation order. If the candidate file is missing or invalid, report the error and stop; do not fall back to search for other candidates.
 
-- `repo:dotnet/runtime is:issue is:open label:"Known Build Error" in:title "[ci-scan]" sort:created-asc`
+This is a task-selection rule, not an issue-ID restriction on the tools. Search remains available for existing-artifact deduplication and investigation; do not treat issues found during that work as additional remediation candidates. Enforcing candidate IDs at the tool layer would require a larger change and is outside this workflow update.
 
-Do NOT bound this query by `updated:` recency. Older-but-still-open `[ci-scan]` KBEs are exactly the ones at risk of being stranded with no mitigation, so they must remain in scope. `sort:created-asc` walks the oldest open KBEs first; the per-run PR cap (Step 6 / `create-pull-request max`) bounds how many you act on, and the next run continues where this one left off.
+The enumeration paginates all open KBEs without an `updated:` cutoff, so older issues remain in scope. An empty allowlist skips the agent job entirely.
 
 For each result, read the body + latest comments through the `github` MCP (NOT `gh`, so the integrity gate applies). Extract:
 
@@ -157,13 +201,15 @@ For each result, read the body + latest comments through the `github` MCP (NOT `
 - The `Build:` link (AzDO build) and any `First build it occurred` commit/sha.
 - The applied `area-*` label (added by `.github/workflows/labeler-predict-issues.yml`). If no `area-*` label is present yet, record `-> skipped: not yet area-labeled` and let a later run revisit — owner attribution depends on it.
 
+Before deduplication or analysis, confirm that the body read still reports an open issue with the `[ci-scan] ` title prefix, the exact `Known Build Error` label, and author `github-actions[bot]` with account type `Bot`. If any of these checks fail, record `-> skipped: candidate is stale or no longer scanner-authored` and do not act on it.
+
 **Freshness gate.** Skip any KBE created less than 60 minutes ago (`-> skipped: KBE too fresh, defer to next run`). The scanner and labeler run asynchronously; acting before the labeler has attached the `area-*` label produces mis-attributed hand-offs.
 
 ### Step 3 — Existing-artifact dedup (search live GitHub, every KBE)
 
-Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing each visible `Linked KBE:` field, then resolve checks 1–3 against that map. Use the `github` MCP search tools:
+Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing both its `head.ref` branch and each visible `Linked KBE:` field. Every `[ci-fix]` PR MUST use a `ci-fix/<kbe>-...` head branch, making the branch prefix a deterministic, punctuation-free dedup key. Resolve checks 1–3 against that map. Use the `github` MCP search tools:
 
-1. **Open fix PR already exists** — `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
+1. **Open fix PR already exists** — first check the enumerated `[ci-fix]` PR map for any open PR whose `head.ref` starts with `ci-fix/<kbe>-`. This prefix match is authoritative: if found, skip immediately even when title/body search misses. Otherwise fall back to `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
 2. **Merged fix PR exists** — `repo:dotnet/runtime is:pr is:merged "Linked KBE: #<kbe>"`. If found, the KBE is likely already fixed -> `-> skipped: fix PR #<n> already merged; KBE may be stale`.
 3. **Closed-unmerged fix PR within 30d** — `repo:dotnet/runtime is:pr is:closed -is:merged "Linked KBE: #<kbe>" closed:>=<today-30d>`. If found, do NOT re-open the same fix unless you have a clearly different change. Record `-> skipped: prior fix PR #<n> closed without merge within 30d`.
 4. **A human (non-`[ci-fix]`) PR already references the KBE** — `repo:dotnet/runtime is:pr is:open "#<kbe>"`. If a maintainer is already fixing it -> `-> skipped: human PR #<n> already addressing`.
@@ -248,7 +294,7 @@ Once you have a candidate diff, classify it:
 
 #### Step 5.3 — Emit a confident fix PR (Branch FIX)
 
-Branch from `origin/main`. Stage only the files you change with `git add <specific path>` (never `git add -A`); verify with `git diff --name-only --cached`.
+Branch from `origin/main` using a `ci-fix/<kbe>-<slug>-<hash>` head-branch name (numeric KBE id first). Stage only the files you change with `git add <specific path>` (never `git add -A`); verify with `git diff --name-only --cached`.
 
 **Validation contract.** Build-validate the change. For libraries: `dotnet build` the affected test project (and run the single failing test if feasible). Record the exact command and its result. If you ultimately cannot validate within the environment, this is no longer a confident fix — drop to Branch HELP (Step 5.4).
 
@@ -258,7 +304,7 @@ Emit one `create_pull_request` using the Fix-PR template (Templates section). Th
 
 You have a real candidate change but cannot stand fully behind it. Open it anyway so reviewers have something concrete to react to, instead of a bare comment.
 
-Branch from `origin/main`. Stage only the files you change with `git add <specific path>`; verify with `git diff --name-only --cached`. The diff MUST be a genuine attempt at the fix — **never** a test-disable, `[ActiveIssue]`, or csproj exclusion (that is muting, Hard rule 3).
+Branch from `origin/main` using a `ci-fix/<kbe>-<slug>-<hash>` head-branch name (numeric KBE id first). Stage only the files you change with `git add <specific path>`; verify with `git diff --name-only --cached`. The diff MUST be a genuine attempt at the fix — **never** a test-disable, `[ActiveIssue]`, or csproj exclusion (that is muting, Hard rule 3).
 
 Run whatever validation you can and record the exact command + result (including "not run because <reason>"). Emit one `create_pull_request` using the Help-wanted-PR template. The title MUST make the ask visible (e.g. `[ci-fix] Needs review: <short description> (refs #<kbe>)`). The body MUST link the KBE (`Linked KBE: #<n>`), carry `Artifact kind: help`, state exactly what is unverified, and loop in the likely author + area owners under a non-accusatory "Help wanted" heading (Step 6 mention rules apply). Keep it draft.
 

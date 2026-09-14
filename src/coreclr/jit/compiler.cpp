@@ -785,7 +785,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     //
     if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
     {
-        info.compCompHnd->getWasmLowering(clsHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            info.compCompHnd->getWasmLowering(clsHnd);
+        });
     }
 #endif // DEBUG
 #endif // defined(TARGET_WASM)
@@ -1745,48 +1747,6 @@ void Compiler::compDoComponentUnitTestsOnce()
 }
 
 //------------------------------------------------------------------------
-// compGetJitDefaultFill:
-//
-// Return Value:
-//    An unsigned char value used to initialize memory allocated by the JIT.
-//    The default value is taken from DOTNET_JitDefaultFill. If it is not set
-//    the value will be 0xdd. When JitStress is active a random value based
-//    on the method hash is used.
-//
-// Notes:
-//    Note that we can't use small values like zero, because we have some
-//    asserts that can fire for such values.
-//
-// static
-unsigned char Compiler::compGetJitDefaultFill(Compiler* comp)
-{
-    unsigned char defaultFill = (unsigned char)JitConfig.JitDefaultFill();
-
-    if (comp != nullptr && comp->compStressCompile(STRESS_GENERIC_VARN, 50))
-    {
-        unsigned temp;
-        temp = comp->info.compMethodHash();
-        temp = (temp >> 16) ^ temp;
-        temp = (temp >> 8) ^ temp;
-        temp = temp & 0xff;
-        // asserts like this: assert(!IsUninitialized(stkLvl));
-        // mean that small values for defaultFill are problematic
-        // so we make the value larger in that case.
-        if (temp < 0x20)
-        {
-            temp |= 0x80;
-        }
-
-        // Make a misaligned pointer value to reduce probability of getting a valid value and firing
-        // assert(!IsUninitialized(pointer)).
-        temp |= 0x1;
-
-        defaultFill = (unsigned char)temp;
-    }
-
-    return defaultFill;
-}
-
 /*****************************************************************************/
 
 VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
@@ -4341,6 +4301,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
+    activePhaseChecks |= PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED;
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
     // If this is a failed inline attempt, we're done.
@@ -4544,6 +4505,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = true);
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
 #ifdef DEBUG
@@ -4554,8 +4516,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = false);
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    // Global morph restores the strict IR flag invariants.
+    activePhaseChecks &= ~PhaseChecks::CHECK_IR_RELAXED;
 
     auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -4642,10 +4608,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
     // Decide the kind of code we want to generate. Done here, after the second
     // round of empty-EH removal above, so that EH eliminated post-morph doesn't
@@ -4972,6 +4934,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
+    activePhaseChecks |= PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
@@ -5045,6 +5009,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
+    // LSRA may insert nodes without users to model register saves/restores.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     auto regAllocPhase = [this] {
         m_regAlloc->doRegisterAllocation();
     };
@@ -6263,31 +6231,33 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
-        // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)eeGetClassAssemblyName(info.compClassHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)eeGetClassAssemblyName(info.compClassHnd);
 
-        // Fetch class names for the method's generic parameters.
-        //
-        CORINFO_SIG_INFO sig;
-        info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+            // Fetch class names for the method's generic parameters.
+            //
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
 
-        const unsigned classInst = sig.sigInst.classInstCount;
-        if (classInst > 0)
-        {
-            for (unsigned i = 0; i < classInst; i++)
+            const unsigned classInst = sig.sigInst.classInstCount;
+            if (classInst > 0)
             {
-                eeGetClassName(sig.sigInst.classInst[i]);
+                for (unsigned i = 0; i < classInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.classInst[i]);
+                }
             }
-        }
 
-        const unsigned methodInst = sig.sigInst.methInstCount;
-        if (methodInst > 0)
-        {
-            for (unsigned i = 0; i < methodInst; i++)
+            const unsigned methodInst = sig.sigInst.methInstCount;
+            if (methodInst > 0)
             {
-                eeGetClassName(sig.sigInst.methInst[i]);
+                for (unsigned i = 0; i < methodInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.methInst[i]);
+                }
             }
-        }
+        });
     }
 #endif // DEBUG
 
