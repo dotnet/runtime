@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
@@ -119,6 +120,16 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
+            const byte WasmI32 = 0x7F;
+            const byte WasmLocalGet = 0x20;
+            const byte WasmLocalSet = 0x21;
+            const byte WasmLocalTee = 0x22;
+            const byte WasmI32Load = 0x28;
+            const byte WasmI32Const = 0x41;
+            const byte WasmI32Sub = 0x6B;
+            const byte WasmI64 = 0x7E;
+            const int WasmEncodedFrameBase = 2;
+
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
@@ -126,11 +137,184 @@ public class R2RTestSuites
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+            ReadyToRunMethod optimizedTrackedVariables = Assert.Single(methods, method =>
+                method.SignatureString.Contains("OptimizedTrackedVariables", StringComparison.Ordinal));
+            Assert.Equal(new[] { "int", "int" }, optimizedTrackedVariables.LocalSignature);
+            RuntimeFunction optimizedRoot = Assert.Single(optimizedTrackedVariables.RuntimeFunctions);
+            Assert.Equal(5, optimizedRoot.DebugInfo!.VariablesList.Count);
+            Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0x3C,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000001,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 1,
+                    startOffset: 0x0,
+                    endOffset: 0x3C,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000002,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 1,
+                    startOffset: 0x59,
+                    endOffset: 0x74,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000002,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 2,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x2F,
+                    endOffset: 0x51,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000004,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 2,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x59,
+                    endOffset: 0x74,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000004,
+                    data2: 0,
+                    data3: 0));
+            Assert.DoesNotContain(
+                optimizedRoot.DebugInfo.VariablesList,
+                variable => variable.Variable.Type == VariableType.Local && variable.Variable.Index == 1);
+            WebcilImageReader.WasmFunctionInfo optimizedBody = ResolveWasmBody(reader, webcilReader, optimizedRoot);
+            Assert.Equal(new byte[] { WasmI32, WasmI32, WasmI32, WasmI32 }, optimizedBody.ParamTypes);
+            Assert.Equal(new (uint Count, byte ValType)[] { (3, WasmI32) }, optimizedBody.Locals);
+            AssertWasmInstructionPrefix(
+                optimizedBody,
+                [WasmLocalGet, 0, WasmI32Const, 0x10, WasmI32Sub, WasmLocalTee, 0]);
+            ReadyToRunMethod leafFrameLocal = Assert.Single(methods, method =>
+                method.SignatureString.Contains("LeafFrameLocal", StringComparison.Ordinal));
+            Assert.Equal(new[] { "int" }, leafFrameLocal.LocalSignature);
+            RuntimeFunction leafRoot = Assert.Single(leafFrameLocal.RuntimeFunctions);
+            Assert.Equal(3, leafRoot.DebugInfo!.VariablesList.Count);
+            Assert.Single(leafRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0x27,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000001,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(leafRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x27,
+                    endOffset: 0x43,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x1C,
+                    data3: 0));
+            Assert.Single(leafRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x27,
+                    endOffset: 0x43,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x14,
+                    data3: 0));
+            WebcilImageReader.WasmFunctionInfo leafBody = ResolveWasmBody(reader, webcilReader, leafRoot);
+            Assert.Equal(new byte[] { WasmI32, WasmI32, WasmI32 }, leafBody.ParamTypes);
+            Assert.Empty(leafBody.Locals);
+            AssertWasmContainsInstructions(
+                leafBody,
+                [WasmLocalGet, 0, WasmI32Load, 0, 0x14]);
+            ReadyToRunMethod locallocFrameLocal = Assert.Single(methods, method =>
+                method.SignatureString.Contains("LocallocFrameLocal", StringComparison.Ordinal));
+            Assert.Equal(new[] { "int" }, locallocFrameLocal.LocalSignature);
+            RuntimeFunction locallocRoot = Assert.Single(locallocFrameLocal.RuntimeFunctions);
+            Assert.Equal(3, locallocRoot.DebugInfo!.VariablesList.Count);
+            Assert.Single(locallocRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0x41,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000001,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(locallocRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x41,
+                    endOffset: 0x13F,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x1C,
+                    data3: 0));
+            Assert.Single(locallocRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x41,
+                    endOffset: 0x13F,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x14,
+                    data3: 0));
+            WebcilImageReader.WasmFunctionInfo locallocRootBody =
+                ResolveWasmBody(reader, webcilReader, locallocRoot);
+            Assert.Equal(new byte[] { WasmI32, WasmI32, WasmI32 }, locallocRootBody.ParamTypes);
+            Assert.Equal(
+                new (uint Count, byte ValType)[] { (3, WasmI32), (1, WasmI64) },
+                locallocRootBody.Locals);
+            AssertWasmContainsInstructions(
+                locallocRootBody,
+                [WasmLocalGet, 0, WasmLocalSet, 3]);
+            AssertWasmContainsInstructions(
+                locallocRootBody,
+                [WasmLocalGet, 3, WasmI32Load, 0, 0x1C]);
             ReadyToRunMethod addDoubles = Assert.Single(methods, method =>
                 method.SignatureString.Contains("AddDoubles", StringComparison.Ordinal));
             const int WasmRegTypeShift = 29;
             const uint F64WasmValueType = 4;
-            const int WasmEncodedFrameBase = 2;
             List<NativeVarInfo> doubleVariables = addDoubles.RuntimeFunctions
                 .Where(runtimeFunction => runtimeFunction.DebugInfo is not null)
                 .SelectMany(runtimeFunction => runtimeFunction.DebugInfo!.VariablesList)
@@ -211,8 +395,30 @@ public class R2RTestSuites
                 data2: 0,
                 data3: 0));
             // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
-            Assert.True(methods.Exists(method =>
-                method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
+            ReadyToRunMethod sumStaticData = Assert.Single(methods, method =>
+                method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal));
+            RuntimeFunction sumStaticRoot = Assert.Single(sumStaticData.RuntimeFunctions);
+            Assert.Single(sumStaticRoot.DebugInfo!.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0xC1,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000001,
+                    data2: 0,
+                    data3: 0));
+            WebcilImageReader.WasmFunctionInfo sumStaticBody = ResolveWasmBody(reader, webcilReader, sumStaticRoot);
+            Assert.Equal(new byte[] { WasmI32, WasmI32, WasmI32 }, sumStaticBody.ParamTypes);
+            Assert.Equal(new (uint Count, byte ValType)[] { (7, WasmI32) }, sumStaticBody.Locals);
+            AssertWasmInstructionPrefix(
+                sumStaticBody,
+                [WasmLocalGet, 0, WasmI32Const, 0x20, WasmI32Sub, WasmLocalTee, 0]);
+            AssertWasmContainsInstructions(
+                sumStaticBody,
+                [WasmLocalGet, 0, WasmI32Load, 0, 0x14]);
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
             ReadyToRunMethod sumWithFinally = Assert.Single(methods, method =>
                 method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal));
@@ -326,12 +532,12 @@ public class R2RTestSuites
                 slot => slot.StackSlot?.SpOffset == gcMarker.VariableLocation.Data2);
             Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, markerGcSlot.StackSlot.Base);
             Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, markerGcSlot.Flags);
-            Assert.Single(gcLocalAcrossFinally.RuntimeFunctions, runtimeFunction =>
+            RuntimeFunction gcLocalFunclet = Assert.Single(gcLocalAcrossFinally.RuntimeFunctions, runtimeFunction =>
                 runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
 
-            // Wasm frame homes are addressed through the producer's logical frame pointer. The
-            // current wire encoding collapses REG_FPBASE, REG_SPBASE, and REGNUM_AMBIENT_SP to 2,
-            // so the consumer must distinguish FP from SP using the live frame context.
+            // The target reconstructs the absolute logical frame from shadow-stack memory and
+            // unwind data. The debug-info wire encoding separately collapses REG_FPBASE,
+            // REG_SPBASE, and REGNUM_AMBIENT_SP to 2; it does not name a V8 local.
             DebugInfoBoundsEntry collectCall = Assert.Single(
                 gcLocalRoot.DebugInfo.BoundsList,
                 bound => bound.ILOffset == 0x10);
@@ -339,6 +545,210 @@ public class R2RTestSuites
             Assert.Equal(SourceTypes.StackEmpty, collectCall.SourceTypes);
             Assert.True(gcMarker.StartOffset <= collectCall.NativeOffset);
             Assert.True(collectCall.NativeOffset < gcMarker.EndOffset);
+            WebcilImageReader.WasmFunctionInfo gcLocalRootBody =
+                ResolveWasmBody(reader, webcilReader, gcLocalRoot);
+            Assert.Equal(new byte[] { WasmI32, WasmI32, WasmI32 }, gcLocalRootBody.ParamTypes);
+            Assert.Equal(new (uint Count, byte ValType)[] { (2, WasmI32) }, gcLocalRootBody.Locals);
+            AssertWasmContainsInstructions(
+                gcLocalRootBody,
+                [WasmLocalGet, 0, WasmI32Load, 0, 0x24]);
+            WebcilImageReader.WasmFunctionInfo gcLocalFuncletBody =
+                ResolveWasmBody(reader, webcilReader, gcLocalFunclet);
+            Assert.Equal(new byte[] { WasmI32, WasmI32 }, gcLocalFuncletBody.ParamTypes);
+            Assert.Equal(new (uint Count, byte ValType)[] { (1, WasmI32) }, gcLocalFuncletBody.Locals);
+            AssertWasmInstructionPrefix(
+                gcLocalFuncletBody,
+                [WasmLocalGet, 0, WasmI32Const, 0x10, WasmI32Sub, WasmLocalSet, 0]);
+            AssertWasmContainsInstructions(
+                gcLocalFuncletBody,
+                [WasmLocalGet, 1, WasmI32Load, 0, 0x24]);
+            ReadyToRunMethod locallocAcrossFinally = Assert.Single(methods, method =>
+                method.SignatureString.Contains("LocallocAcrossFinally", StringComparison.Ordinal));
+            Assert.Equal(new[] { "int", "int*", "int" }, locallocAcrossFinally.LocalSignature);
+            RuntimeFunction locallocFinallyRoot = Assert.Single(
+                locallocAcrossFinally.RuntimeFunctions,
+                runtimeFunction => runtimeFunction.DebugInfo is not null);
+            Assert.Equal(5, locallocFinallyRoot.DebugInfo!.VariablesList.Count);
+            Assert.Single(locallocFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x0,
+                    endOffset: 0x41,
+                    locationType: VarLocType.VLT_REG,
+                    data1: 0x20000001,
+                    data2: 0,
+                    data3: 0));
+            Assert.Single(locallocFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Parameter,
+                    variableIndex: 0,
+                    startOffset: 0x41,
+                    endOffset: 0x200,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x2C,
+                    data3: 0));
+            Assert.Single(locallocFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x41,
+                    endOffset: 0x200,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x24,
+                    data3: 0));
+            Assert.Single(locallocFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 2,
+                    variableType: VariableType.Local,
+                    variableIndex: 1,
+                    startOffset: 0x41,
+                    endOffset: 0x200,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x20,
+                    data3: 0));
+            Assert.Single(locallocFinallyRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 3,
+                    variableType: VariableType.Local,
+                    variableIndex: 2,
+                    startOffset: 0x41,
+                    endOffset: 0x200,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x1C,
+                    data3: 0));
+            RuntimeFunction locallocFinallyFunclet = Assert.Single(
+                locallocAcrossFinally.RuntimeFunctions,
+                runtimeFunction => runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
+            WebcilImageReader.WasmFunctionInfo locallocFinallyRootBody =
+                ResolveWasmBody(reader, webcilReader, locallocFinallyRoot);
+            Assert.Equal(new byte[] { WasmI32, WasmI32, WasmI32 }, locallocFinallyRootBody.ParamTypes);
+            Assert.Equal(
+                new (uint Count, byte ValType)[] { (3, WasmI32), (1, WasmI64) },
+                locallocFinallyRootBody.Locals);
+            AssertWasmContainsInstructions(
+                locallocFinallyRootBody,
+                [WasmLocalGet, 0, WasmLocalSet, 3]);
+            AssertWasmContainsInstructions(
+                locallocFinallyRootBody,
+                [WasmLocalGet, 3, WasmI32Load, 0, 0x2C]);
+            WebcilImageReader.WasmFunctionInfo locallocFinallyFuncletBody =
+                ResolveWasmBody(reader, webcilReader, locallocFinallyFunclet);
+            Assert.Equal(new byte[] { WasmI32, WasmI32 }, locallocFinallyFuncletBody.ParamTypes);
+            Assert.Equal(
+                new (uint Count, byte ValType)[] { (2, WasmI32), (1, WasmI64) },
+                locallocFinallyFuncletBody.Locals);
+            AssertWasmContainsInstructions(
+                locallocFinallyFuncletBody,
+                [WasmLocalGet, 1, WasmI32Load, 0, 0x18]);
+            ReadyToRunMethod gcSlotIdentity = Assert.Single(methods, method =>
+                method.SignatureString.Contains("GcSlotIdentity", StringComparison.Ordinal));
+            Assert.Equal(
+                new[]
+                {
+                    "Webcil.WasmWebcilModule+GcMarker",
+                    "Webcil.WasmWebcilModule+GcMarker",
+                    "Webcil.WasmWebcilModule+GcMarker",
+                    "int",
+                },
+                gcSlotIdentity.LocalSignature);
+            byte[] gcSlotIdentityIL = GetMethodILBytes(gcSlotIdentity);
+            Assert.Equal(0x57, gcSlotIdentityIL.Length);
+            Assert.Equal(0x1F, gcSlotIdentityIL[0x00]);
+            Assert.Equal(17, gcSlotIdentityIL[0x01]);
+            Assert.Equal(0x0A, gcSlotIdentityIL[0x07]);
+            Assert.Equal(0x1F, gcSlotIdentityIL[0x12]);
+            Assert.Equal(29, gcSlotIdentityIL[0x13]);
+            Assert.Equal(0x0B, gcSlotIdentityIL[0x19]);
+            Assert.Equal(0x14, gcSlotIdentityIL[0x24]);
+            Assert.Equal(0x0C, gcSlotIdentityIL[0x25]);
+            RuntimeFunction gcSlotRoot = Assert.Single(gcSlotIdentity.RuntimeFunctions);
+            Assert.Equal(4, gcSlotRoot.DebugInfo!.VariablesList.Count);
+            // The minopts wasm scope latch opens each synthesized source scope once and closes it
+            // at method end, so these distinct IL locals currently share one exact native range.
+            NativeVarInfo firstMarker = Assert.Single(gcSlotRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 0,
+                    variableType: VariableType.Local,
+                    variableIndex: 0,
+                    startOffset: 0x36,
+                    endOffset: 0x2B1,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x48,
+                    data3: 0));
+            NativeVarInfo secondMarker = Assert.Single(gcSlotRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 1,
+                    variableType: VariableType.Local,
+                    variableIndex: 1,
+                    startOffset: 0x36,
+                    endOffset: 0x2B1,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x44,
+                    data3: 0));
+            NativeVarInfo nullMarker = Assert.Single(gcSlotRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 2,
+                    variableType: VariableType.Local,
+                    variableIndex: 2,
+                    startOffset: 0x36,
+                    endOffset: 0x2B1,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x40,
+                    data3: 0));
+            Assert.Single(gcSlotRoot.DebugInfo.VariablesList, variable =>
+                IsExactVariable(
+                    variable,
+                    variableNumber: 3,
+                    variableType: VariableType.Local,
+                    variableIndex: 3,
+                    startOffset: 0x36,
+                    endOffset: 0x2B1,
+                    locationType: VarLocType.VLT_STK,
+                    data1: WasmEncodedFrameBase,
+                    data2: 0x3C,
+                    data3: 0));
+            Assert.NotEqual(firstMarker.VariableLocation.Data2, secondMarker.VariableLocation.Data2);
+            ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo slotIdentityGcInfo =
+                Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(gcSlotIdentity.GcInfo);
+            Assert.Equal(6u, slotIdentityGcInfo.SlotTable.NumSlots);
+            foreach (NativeVarInfo marker in new[] { firstMarker, secondMarker, nullMarker })
+            {
+                ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot = Assert.Single(
+                    slotIdentityGcInfo.SlotTable.GcSlots,
+                    candidate => candidate.StackSlot?.SpOffset == marker.VariableLocation.Data2);
+                Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+                Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags);
+            }
+            DebugInfoBoundsEntry slotIdentityGcCall = Assert.Single(
+                gcSlotRoot.DebugInfo.BoundsList,
+                bound => bound.ILOffset == 0x2D);
+            Assert.Equal(0x18Cu, slotIdentityGcCall.NativeOffset);
+            Assert.All(
+                new[] { firstMarker, secondMarker, nullMarker },
+                marker =>
+                {
+                    Assert.True(marker.StartOffset <= slotIdentityGcCall.NativeOffset);
+                    Assert.True(slotIdentityGcCall.NativeOffset < marker.EndOffset);
+                });
             // Has a catch clause, so the JIT emits a try_table catch_ref that references the
             // imported restore-context exception tag.
             Assert.True(methods.Exists(method =>
@@ -366,6 +776,52 @@ public class R2RTestSuites
                     && variable.VariableLocation.Data1 == data1
                     && variable.VariableLocation.Data2 == data2
                     && variable.VariableLocation.Data3 == data3;
+
+            static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+                ReadyToRunReader reader,
+                WebcilImageReader webcilReader,
+                RuntimeFunction runtimeFunction)
+            {
+                uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)runtimeFunction.Id);
+                int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+                Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+                WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+                Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+                return body.Value;
+            }
+
+            static byte[] GetMethodILBytes(ReadyToRunMethod method)
+            {
+                MethodDefinition methodDefinition =
+                    method.ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)method.MethodHandle);
+                byte[]? ilBytes = null;
+                method.ComponentReader.GetSectionData(
+                    methodDefinition.RelativeVirtualAddress,
+                    sectionData => ilBytes = MethodBodyBlock.Create(sectionData).GetILBytes());
+                return Assert.IsType<byte[]>(ilBytes);
+            }
+
+            static void AssertWasmInstructionPrefix(
+                WebcilImageReader.WasmFunctionInfo body,
+                ReadOnlySpan<byte> expected)
+            {
+                ReadOnlySpan<byte> instructions =
+                    body.Image.AsSpan(body.InstructionOffset, body.InstructionLength);
+                Assert.True(
+                    instructions.StartsWith(expected),
+                    $"Expected wasm instruction prefix {Convert.ToHexString(expected)}, actual {Convert.ToHexString(instructions[..Math.Min(instructions.Length, expected.Length)])}.");
+            }
+
+            static void AssertWasmContainsInstructions(
+                WebcilImageReader.WasmFunctionInfo body,
+                ReadOnlySpan<byte> expected)
+            {
+                ReadOnlySpan<byte> instructions =
+                    body.Image.AsSpan(body.InstructionOffset, body.InstructionLength);
+                Assert.True(
+                    instructions.IndexOf(expected) >= 0,
+                    $"Expected wasm instruction sequence {Convert.ToHexString(expected)}.");
+            }
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve to the fixed global
