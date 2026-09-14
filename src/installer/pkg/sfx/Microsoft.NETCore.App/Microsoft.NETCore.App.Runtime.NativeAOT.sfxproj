@@ -23,7 +23,6 @@
     <CoreLibProject>$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'nativeaot', 'System.Private.CoreLib', 'src', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <LibrariesRuntimeFlavor>CoreCLR</LibrariesRuntimeFlavor>
     <UseRuntimeManagedProjectReferences>true</UseRuntimeManagedProjectReferences>
-    <UseMibcProjectReference>true</UseMibcProjectReference>
   </PropertyGroup>
 
   <ItemGroup>

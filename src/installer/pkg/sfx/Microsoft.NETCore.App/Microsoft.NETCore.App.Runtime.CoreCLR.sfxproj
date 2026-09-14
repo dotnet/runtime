@@ -52,7 +52,6 @@
     <CoreLibConfiguration>$(CoreCLRConfiguration)</CoreLibConfiguration>
     <LibrariesRuntimeFlavor Condition="'$(LibrariesRuntimeFlavor)' == ''">CoreCLR</LibrariesRuntimeFlavor>
     <UseRuntimeManagedProjectReferences>true</UseRuntimeManagedProjectReferences>
-    <UseMibcProjectReference>true</UseMibcProjectReference>
   </PropertyGroup>
 
   <Target Name="AddCoreCLRRuntimeManagedFiles"
