@@ -4720,9 +4720,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // For OSR, we prefer to tailcall for call counting + potential transition
     // into the actual tier1 version.
     //
+    // The loop transform does not preserve the call's implicit null check.
+    //
     if (opts.compTailCallLoopOpt && canFastTailCall && !opts.IsOSR() && gtIsRecursiveCall(call) &&
-        !lvaReportParamTypeArg() && !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam &&
-        !varTypeIsStruct(call->TypeGet()))
+        !lvaReportParamTypeArg() && !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !call->NeedsNullCheck() &&
+        !hasStructParam && !varTypeIsStruct(call->TypeGet()))
     {
         fastTailCallToLoop = true;
     }
