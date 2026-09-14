@@ -723,8 +723,11 @@ public:
         unsigned countVectorCopies    = 0;
         weight_t countVectorCopiesWtd = 0;
         unsigned primitiveAccessCount = 1;
-        bool     costVectorCopies =
-            (genTypeSize(access.AccessType) < TARGET_POINTER_SIZE) && varTypeIsSIMD(layout->GetRegisterType());
+        // With only field definitions, promotion can propagate their values into the
+        // whole-struct copies and eliminate the local. Do not assume those copies fragment.
+        bool costVectorCopies = (access.Count > access.CountStoreDestination) &&
+                                (genTypeSize(access.AccessType) < TARGET_POINTER_SIZE) &&
+                                varTypeIsSIMD(layout->GetRegisterType());
         for (const Access& otherAccess : m_accesses)
         {
             if (&otherAccess == &access)
@@ -1477,6 +1480,10 @@ private:
         unsigned size          = regPromLcl->GetLayout(m_compiler)->GetSize();
 
         LclVarDsc* regPromDsc = m_compiler->lvaGetDesc(regPromLcl);
+
+        bool isFullCopy = (candidateOffs == 0) && (regPromOffs == 0) &&
+                          (size == m_compiler->lvaGetDesc(candidateLcl)->GetLayout()->GetSize()) &&
+                          (size == regPromDsc->GetLayout()->GetSize());
         for (unsigned fieldLcl = regPromDsc->lvFieldLclStart, i = 0; i < regPromDsc->lvFieldCnt; fieldLcl++, i++)
         {
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(fieldLcl);
@@ -1485,7 +1492,7 @@ private:
             {
                 InduceAccess(aggregates, candidateLcl->GetLclNum(),
                              candidateLcl->GetLclOffs() + (fieldDsc->lvFldOffset - regPromOffs), fieldDsc->lvType,
-                             block);
+                             block, isFullCopy);
             }
         }
     }
@@ -1552,7 +1559,7 @@ private:
                       unsigned          offset,
                       var_types         type,
                       BasicBlock*       block,
-                      bool              isFullCopy = false)
+                      bool              isFullCopy)
     {
         AggregateInfo* agg = aggregates.Lookup(lclNum);
         if (agg != nullptr)

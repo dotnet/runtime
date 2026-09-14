@@ -15,7 +15,7 @@
     <MergedWrapperProjectReference Include="physicalpromotion\mixedpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\physicalpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\readbackbeforeqmark.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
-    <MergedWrapperProjectReference Include="physicalpromotion\SharedVectorCopyCost.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\SharedVectorCopyCost.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
     <MergedWrapperProjectReference Include="tailcall\mutual_recursion.fsproj" />
     <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_do.csproj" />
@@ -87,6 +87,7 @@
     <Compile Include="physicalpromotion\mixedpromotion.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
     <Compile Include="physicalpromotion\physicalpromotion.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
     <Compile Include="physicalpromotion\readbackbeforeqmark.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\SharedVectorCopyCost.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
     <Compile Include="PREFIX\PrimitiveVT\callconv1.cs" />
     <Compile Include="PREFIX\PrimitiveVT\callconv2.cs" />
     <Compile Include="shift\int16.cs" />
