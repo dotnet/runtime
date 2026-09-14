@@ -4,6 +4,8 @@
            Text="Expected RequiresCrossgen2Pack=true before restore." />
   </Target>
   <Target Name="CheckSdkCrossgen2" AfterTargets="_CoreCLRGenerateManagedToNative">
+    <Error Condition="'$(_WasmBuildTestExpectNestedPublish)' != 'true' and '$(_WasmBuildTestExpectNestedPublish)' != 'false'"
+           Text="Expected the test to set _WasmBuildTestExpectNestedPublish to true or false." />
     <Error Condition="'$(_WasmBuildTestExpectNestedPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
            Text="Expected helper generation during nested publish." />
     <Error Condition="'$(PublishReadyToRun)' == 'true'"
