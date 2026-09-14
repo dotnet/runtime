@@ -141,12 +141,6 @@ public class BootJsonData
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public bool? asyncFlushOnExit { get; set; }
-
-    /// <summary>
-    /// internal flags for test instrumentation
-    /// </summary>
-    [DataMember(EmitDefaultValue = false)]
-    public bool? forwardConsole { get; set; }
 }
 
 /// <summary>
@@ -187,6 +181,9 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary runtime { get; set; }
 
+    /// <remarks>
+    /// Removed in .NET 11; kept for compatibility when the .NET 11 SDK builds projects targeting earlier TFMs.
+    /// </remarks>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 
@@ -267,6 +264,7 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    // this field this only for Mono
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
 
@@ -308,12 +306,12 @@ public class AssetsData
     /// <summary>
     /// "assembly" (.dll) resources needed to start MonoVM
     /// </summary>
-    public List<GeneralAsset> coreAssembly { get; set; } = new();
+    public List<WebcilAsset> coreAssembly { get; set; } = new();
 
     /// <summary>
     /// "assembly" (.dll) resources
     /// </summary>
-    public List<GeneralAsset> assembly { get; set; } = new();
+    public List<WebcilAsset> assembly { get; set; } = new();
 
     /// <summary>
     /// "debug" (.pdb) resources needed to start MonoVM
@@ -331,13 +329,13 @@ public class AssetsData
     /// localization (.satellite resx) resources
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public Dictionary<string, List<GeneralAsset>> satelliteResources { get; set; }
+    public Dictionary<string, List<WebcilAsset>> satelliteResources { get; set; }
 
     /// <summary>
     /// Assembly (.dll) resources that are loaded lazily during runtime
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public List<GeneralAsset> lazyAssembly { get; set; }
+    public List<WebcilAsset> lazyAssembly { get; set; }
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
@@ -396,6 +394,26 @@ public class GeneralAsset
     public string hash { get; set; }
     public string resolvedUrl { get; set; }
     public string cache { get; set; }
+}
+
+[DataContract]
+public class WebcilAsset : GeneralAsset
+{
+    /// <summary>
+    /// For ReadyToRun (R2R) webcil-in-wasm images: the number of table entries the module needs.
+    /// When present (non-null) the loader grows the table before instantiation. Only R2R images set
+    /// this; it is omitted for plain (non-R2R) webcil.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public int? tableSize { get; set; }
+
+    /// <summary>
+    /// The size in bytes of the Webcil payload to allocate before instantiation. Emitted for every
+    /// webcil-in-wasm assembly (the loader requires it to avoid parsing the wasm data section), not
+    /// just R2R images. For R2R images it is paired with <see cref="tableSize"/>.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public int? payloadSize { get; set; }
 }
 
 [DataContract]

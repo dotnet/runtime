@@ -296,10 +296,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhHandleTryGetCrossReferenceContext")]
         internal static extern bool RhHandleTryGetCrossReferenceContext(IntPtr handle, out IntPtr context);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsGCBridgeActive")]
-        internal static extern bool RhIsGCBridgeActive();
-
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]

@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
 
         public override void AddReference(string referenceId, object value)
         {
-            Debug.Assert(_referenceIdToObjectMap != null);
+            Debug.Assert(_referenceIdToObjectMap is not null);
 
             if (!_referenceIdToObjectMap.TryAdd(referenceId, value))
             {
@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization
 
         public override string GetReference(object value, out bool alreadyExists)
         {
-            Debug.Assert(_objectToReferenceIdMap != null);
+            Debug.Assert(_objectToReferenceIdMap is not null);
 
             if (_objectToReferenceIdMap.TryGetValue(value, out string? referenceId))
             {
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization
 
         public override object ResolveReference(string referenceId)
         {
-            Debug.Assert(_referenceIdToObjectMap != null);
+            Debug.Assert(_referenceIdToObjectMap is not null);
 
             if (!_referenceIdToObjectMap.TryGetValue(referenceId, out object? value))
             {

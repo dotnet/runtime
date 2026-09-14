@@ -1,6 +1,24 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>E:System.Diagnostics.Process.ErrorDataReceived:[T:System.ComponentModel.BrowsableAttribute]</Target>
@@ -855,6 +873,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.AsyncMethodBuilderAttribute:[T:System.AttributeUsageAttribute]</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
@@ -1000,12 +1024,6 @@
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
     <Target>T:System.Tuple`8``7:notnull</Target>
-    <Left>netstandard2.1/netstandard.dll</Left>
-    <Right>net11.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>

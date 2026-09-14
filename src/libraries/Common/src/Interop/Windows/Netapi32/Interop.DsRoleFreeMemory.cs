@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Netapi32)]
         internal static partial void DsRoleFreeMemory(IntPtr buffer);
     }

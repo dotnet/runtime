@@ -41,7 +41,7 @@ typedef void
 (*event_pipe_component_shutdown_func) (void);
 
 typedef EventPipeSessionID
-(*event_pipe_component_enable_func) (
+(*event_pipe_component_init_session_func) (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfigurationNative *providers,
@@ -64,7 +64,7 @@ typedef EventPipeWaitHandle
 (*event_pipe_component_get_wait_handle_func) (EventPipeSessionID session_id);
 
 typedef void
-(*event_pipe_component_start_streaming_func) (EventPipeSessionID session_id);
+(*event_pipe_component_start_session_func) (EventPipeSessionID session_id);
 
 typedef void
 (*event_pipe_component_write_event_2_func) (
@@ -261,11 +261,11 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_init_func init;
 	event_pipe_component_finish_init_func finish_init;
 	event_pipe_component_shutdown_func shutdown;
-	event_pipe_component_enable_func enable;
+	event_pipe_component_init_session_func init_session;
 	event_pipe_component_disable_func disable;
 	event_pipe_component_get_next_event_func get_next_event;
 	event_pipe_component_get_wait_handle_func get_wait_handle;
-	event_pipe_component_start_streaming_func start_streaming;
+	event_pipe_component_start_session_func start_session;
 	event_pipe_component_write_event_2_func write_event_2;
 	event_pipe_component_add_rundown_execution_checkpoint_func add_rundown_execution_checkpoint;
 	event_pipe_component_add_rundown_execution_checkpoint_2_func add_rundown_execution_checkpoint_2;

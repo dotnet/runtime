@@ -70,18 +70,19 @@ export function SystemJS_ScheduleTimerImpl (shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
+        Module.runtimeKeepalivePop();
     }
     lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }
 
 function mono_wasm_schedule_timer_tick () {
     if (WasmEnableThreads) return;
+    lastScheduledTimeoutId = undefined;
     Module.maybeExit();
     forceThreadMemoryViewRefresh();
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
-    lastScheduledTimeoutId = undefined;
     try {
         cwraps.mono_wasm_execute_timer();
     } catch (ex) {

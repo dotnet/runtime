@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CGrowableSymbolStream))]
 internal sealed partial class CGrowableSymbolStream : IData<CGrowableSymbolStream>
 {
-    [Field] public TargetPointer Buffer { get; }
-    [Field] public uint Size { get; }
+    [Field] public partial TargetPointer Buffer { get; }
+    [Field] public partial uint Size { get; }
 }

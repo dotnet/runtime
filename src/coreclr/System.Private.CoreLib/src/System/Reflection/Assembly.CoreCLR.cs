@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -53,6 +54,7 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
         private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
@@ -74,6 +76,9 @@ namespace System.Reflection
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly GetCallingAssembly()
         {
+            if (!StackTrace.IsSupported)
+                throw new NotSupportedException(SR.NotSupported_StackTraceSupportDisabled);
+
             // LookForMyCallersCaller is not guaranteed to return the correct stack frame
             // because of inlining, tail calls, etc. As a result GetCallingAssembly is not
             // guaranteed to return the correct result. It's also documented as such.
@@ -81,6 +86,7 @@ namespace System.Reflection
             return GetExecutingAssembly(ref stackMark);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
         private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 

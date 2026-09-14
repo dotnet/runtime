@@ -54,7 +54,7 @@ internal sealed class FrameIterator
     /// <summary>
     /// Returns the return address of the current frame, matching native Frame::GetReturnAddress().
     /// </summary>
-    public TargetPointer GetCurrentReturnAddress()
+    public TargetCodePointer GetCurrentReturnAddress()
         => frameHelpers.GetReturnAddress(CurrentFrame);
 
     /// <summary>

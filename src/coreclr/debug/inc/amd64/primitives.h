@@ -70,7 +70,23 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_AMD64_R12,
     REGISTER_AMD64_R13,
     REGISTER_AMD64_R14,
-    REGISTER_AMD64_R15
+    REGISTER_AMD64_R15,
+    REGISTER_AMD64_XMM0,
+    REGISTER_AMD64_XMM1,
+    REGISTER_AMD64_XMM2,
+    REGISTER_AMD64_XMM3,
+    REGISTER_AMD64_XMM4,
+    REGISTER_AMD64_XMM5,
+    REGISTER_AMD64_XMM6,
+    REGISTER_AMD64_XMM7,
+    REGISTER_AMD64_XMM8,
+    REGISTER_AMD64_XMM9,
+    REGISTER_AMD64_XMM10,
+    REGISTER_AMD64_XMM11,
+    REGISTER_AMD64_XMM12,
+    REGISTER_AMD64_XMM13,
+    REGISTER_AMD64_XMM14,
+    REGISTER_AMD64_XMM15
 };
 
 //
@@ -116,7 +132,7 @@ inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip)
     context->Rip = (DWORD64) rip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context)
+inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context)
 {
     CONTRACTL
     {
@@ -127,7 +143,7 @@ inline LPVOID CORDbgGetSP(const DT_CONTEXT * context)
     }
     CONTRACTL_END;
 
-    return (LPVOID)context->Rsp;
+    return (CORDB_ADDRESS)context->Rsp;
 }
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID rsp)
 {

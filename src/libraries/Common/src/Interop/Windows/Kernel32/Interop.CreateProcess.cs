@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateProcessW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CreateProcess(
@@ -57,6 +58,7 @@ internal static partial class Interop
         }
 
         internal const int PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x00020002;
+        internal const int CREATE_BREAKAWAY_FROM_JOB = 0x01000000;
         internal const int EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -66,6 +68,7 @@ internal static partial class Interop
             internal void* lpAttributeList;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool InitializeProcThreadAttributeList(
@@ -74,6 +77,7 @@ internal static partial class Interop
             int dwFlags,
             ref nuint lpSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool UpdateProcThreadAttribute(
@@ -85,6 +89,7 @@ internal static partial class Interop
             void* lpPreviousValue,
             nuint* lpReturnSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial void DeleteProcThreadAttributeList(void* lpAttributeList);
     }

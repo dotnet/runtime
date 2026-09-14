@@ -57,19 +57,18 @@ namespace System.Threading
                 while (!mainTask.IsCompleted)
                 {
                     ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally
             {
                 s_mainTask = null;
             }
-            var exception = mainTask.Exception;
-            if (exception is not null)
-            {
-                throw exception;
-            }
 
-            return mainTask.Result;
+            // The pump loop above guarantees the task is completed, so GetResult() never
+            // reaches the blocking (PNSE-throwing) wait. It propagates with await semantics:
+            // the original exception for faults and TaskCanceledException for cancellation.
+            return mainTask.GetAwaiter().GetResult();
         }
 
         internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
@@ -80,6 +79,7 @@ namespace System.Threading
                 while (!mainTask.IsCompleted)
                 {
                     ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally
@@ -87,11 +87,10 @@ namespace System.Threading
                 s_mainTask = null;
             }
 
-            var exception = mainTask.Exception;
-            if (exception is not null)
-            {
-                throw exception;
-            }
+            // The pump loop above guarantees the task is completed, so GetResult() never
+            // reaches the blocking (PNSE-throwing) wait. It propagates with await semantics:
+            // the original exception for faults and TaskCanceledException for cancellation.
+            mainTask.GetAwaiter().GetResult();
         }
 
         internal static void ScheduleCheck()

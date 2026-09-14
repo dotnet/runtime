@@ -428,12 +428,18 @@ namespace System.Diagnostics
         public Enumerator<ActivityLink> EnumerateLinks() => new Enumerator<ActivityLink>(_links?.First);
 
         /// <summary>
+        /// Enumerate the baggage attached to this Activity object and its ancestors without allocating.
+        /// </summary>
+        /// <returns><see cref="BaggageEnumerator"/>.</returns>
+        internal BaggageEnumerator EnumerateBaggage() => new BaggageEnumerator(this);
+
+        /// <summary>
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
         /// Returns null if that key does not exist.
         /// </summary>
         public string? GetBaggageItem(string key)
         {
-            foreach (KeyValuePair<string, string?> keyValue in Baggage)
+            foreach (KeyValuePair<string, string?> keyValue in EnumerateBaggage())
                 if (key == keyValue.Key)
                     return keyValue.Value;
             return null;
@@ -1600,6 +1606,54 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// Enumerates the baggage stored on this Activity and its ancestors without allocating.
+        /// Mirrors the semantics of the <see cref="Baggage"/> property, which uses an iterator
+        /// (allocating a state machine on every call) to walk the same data.
+        /// </summary>
+        internal struct BaggageEnumerator
+        {
+            // The next Activity (if any) to search for a non-empty baggage list. Always points at an
+            // Activity whose own baggage list has not yet been consumed by this enumerator.
+            private Activity? _activity;
+
+            // The remaining nodes of the baggage list currently being drained.
+            private DiagNode<KeyValuePair<string, string?>>? _next;
+
+            internal BaggageEnumerator(Activity? activity)
+            {
+                _activity = activity;
+                _next = null;
+                Current = default;
+            }
+
+            public KeyValuePair<string, string?> Current { get; private set; }
+
+            public readonly BaggageEnumerator GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                while (_next is null)
+                {
+                    if (_activity is null)
+                    {
+                        return false;
+                    }
+
+                    BaggageLinkedList? baggage = _activity._baggage;
+                    _activity = _activity.Parent;
+                    if (baggage != null)
+                    {
+                        _next = baggage.First;
+                    }
+                }
+
+                Current = _next.Value;
+                _next = _next.Next;
+                return true;
+            }
+        }
+
         private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
             private DiagNode<KeyValuePair<string, string?>>? _first;
@@ -1963,11 +2017,7 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET
             return new ActivityTraceId(Convert.ToHexStringLower(idData));
-#else
-            return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
-#endif
         }
         public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
 
@@ -2046,11 +2096,7 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
-#if NET
             _hexString = Convert.ToHexStringLower(MemoryMarshal.AsBytes(span));
-#else
-            _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
-#endif
         }
 
         /// <summary>
@@ -2131,22 +2177,14 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
-#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
-#else
-            return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
-#endif
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(idData));
-#else
-            return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
-#endif
         }
         public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
 
@@ -2214,11 +2252,7 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
-#if NET
             _hexString = Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
-#else
-            _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
-#endif
         }
 
         /// <summary>

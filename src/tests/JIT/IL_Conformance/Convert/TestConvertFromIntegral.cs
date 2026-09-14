@@ -702,7 +702,7 @@ namespace TestCasts
             GenerateTest<float, short>(-1F, sourceOp, convNoOvf, DontExpectException, -1);
             GenerateTest<float, short>(short.MaxValue, sourceOp, convNoOvf, DontExpectException, short.MaxValue);
             GenerateTest<float, short>(short.MinValue, sourceOp, convNoOvf, DontExpectException, short.MinValue);
-            GenerateTest<float, short>(ushort.MaxValue, sourceOp, convNoOvf, DontExpectException, -1);
+            GenerateTest<float, short>(ushort.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour); // Saturates to short.MaxValue on CoreCLR, truncates on Mono (https://github.com/dotnet/runtime/issues/100368)
             GenerateTest<float, short>(ushort.MinValue, sourceOp, convNoOvf, DontExpectException, byte.MinValue);
             GenerateTest<float, short>(long.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<float, short>(long.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
@@ -977,7 +977,7 @@ namespace TestCasts
             GenerateTest<double, short>(-1, sourceOp, convNoOvf, DontExpectException, -1);
             GenerateTest<double, short>(short.MaxValue, sourceOp, convNoOvf, DontExpectException, short.MaxValue);
             GenerateTest<double, short>(short.MinValue, sourceOp, convNoOvf, DontExpectException, short.MinValue);
-            GenerateTest<double, short>(ushort.MaxValue, sourceOp, convNoOvf, DontExpectException, -1);
+            GenerateTest<double, short>(ushort.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour); // Saturates to short.MaxValue on CoreCLR, truncates on Mono (https://github.com/dotnet/runtime/issues/100368)
             GenerateTest<double, short>(ushort.MinValue, sourceOp, convNoOvf, DontExpectException, byte.MinValue);
             GenerateTest<double, short>(long.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<double, short>(long.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);

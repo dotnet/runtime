@@ -198,13 +198,13 @@
                         '$(IsTestSupportProject)' != 'true' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\ExceptionPolyfills.cs" Link="System\ExceptionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\ExceptionPolyfills.cs" Link="Common\Polyfills\ExceptionPolyfills.cs" />
   </ItemGroup>
 
   <!-- Adds polyfills for Span-related functionality on non-.NETCoreApp builds -->
   <ItemGroup Condition="'$(IncludeSpanPolyfills)' == 'true' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\MemoryExtensionsPolyfills.cs" Link="System\MemoryExtensionsPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\MemoryExtensionsPolyfills.cs" Link="Common\Polyfills\MemoryExtensionsPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="System\StringPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Buffers\SearchValuesPolyfills.cs" Link="System\Buffers\SearchValuesPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\AsciiPolyfills.cs" Link="System\Text\AsciiPolyfills.cs" />

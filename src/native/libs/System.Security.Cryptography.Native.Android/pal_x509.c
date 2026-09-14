@@ -34,6 +34,7 @@ jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, i
     loc[bytes] = make_java_byte_array(env, len);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte*)buf);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -88,6 +89,7 @@ int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
     // InputStream stream = new ByteArrayInputStream(bytes);
     loc[bytes] = make_java_byte_array(env, bufLen);
     (*env)->SetByteArrayRegion(env, loc[bytes], 0, bufLen, (const jbyte*)buf);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -101,6 +103,7 @@ int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jint certCount = (*env)->CallIntMethod(env, loc[certs], g_CollectionSize);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     bool insufficientBuffer = *outLen < certCount;
     *outLen = certCount;
 
@@ -164,6 +167,7 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
     // foreach (Certificate cert in certs)
     //     certList.add(cert);
     loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, certsLen);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     for (int i = 0; i < certsLen; ++i)
     {
         (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, certs[i]);
@@ -213,6 +217,7 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
     // InputStream stream = new ByteArrayInputStream(bytes);
     loc[bytes] = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte*)buf);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 

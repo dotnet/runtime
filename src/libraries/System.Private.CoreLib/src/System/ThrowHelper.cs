@@ -249,12 +249,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRange_RoundingDigits_MathF(string name)
-        {
-            throw new ArgumentOutOfRangeException(name, SR.ArgumentOutOfRange_RoundingDigits_MathF);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_Range<T>(string parameterName, T value, T minInclusive, T maxInclusive)
         {
             throw new ArgumentOutOfRangeException(parameterName, value, SR.Format(SR.ArgumentOutOfRange_Range, minInclusive, maxInclusive));
@@ -1252,6 +1246,8 @@ namespace System
                     return SR.ConcurrentDictionary_ItemKeyIsNull;
                 case ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect:
                     return SR.ConcurrentDictionary_TypeOfValueIncorrect;
+                case ExceptionResource.InvalidOperation_NoElements:
+                    return SR.InvalidOperation_NoElements;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1453,5 +1449,6 @@ namespace System
         InvalidOperation_IncompatibleComparer,
         ConcurrentDictionary_ItemKeyIsNull,
         ConcurrentDictionary_TypeOfValueIncorrect,
+        InvalidOperation_NoElements,
     }
 }

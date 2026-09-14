@@ -24,6 +24,12 @@ namespace System.Text.Json.SourceGeneration
 
         public required ImmutableEquatableArray<TypeRef>? TypeClassifiers { get; init; }
 
+        /// <summary>
+        /// The <c>[Experimental]</c> diagnostic IDs referenced by the options-level converters and type
+        /// classifiers above. These are suppressed in the aggregate source files that emit the options setup.
+        /// </summary>
+        public required ImmutableEquatableArray<string> ExperimentalDiagnosticIds { get; init; }
+
         public required int? DefaultBufferSize { get; init; }
 
         public required JsonIgnoreCondition? DefaultIgnoreCondition { get; init; }
@@ -69,6 +75,8 @@ namespace System.Text.Json.SourceGeneration
         public required int? IndentSize { get; init; }
 
         public required bool? AllowDuplicateProperties { get; init; }
+
+        public required bool? InferClosedTypePolymorphism { get; init; }
 
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);

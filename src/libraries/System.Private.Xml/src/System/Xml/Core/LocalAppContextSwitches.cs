@@ -109,5 +109,15 @@ namespace System.Xml
                 return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.UseLegacyEmptyXmlElementDeserialization", ref s_useLegacyEmptyXmlElementDeserialization);
             }
         }
+
+        private static int s_useLegacyXmlListSeparation;
+        public static bool UseLegacyXmlListSeparation
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.Serialization.UseLegacyXmlListSeparation", ref s_useLegacyXmlListSeparation);
+            }
+        }
     }
 }

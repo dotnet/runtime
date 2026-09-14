@@ -13,6 +13,7 @@
     <Compile Include="WebSocketDeflateTests.cs" />
     <Compile Include="WebSocketExceptionTests.cs" />
     <Compile Include="WebSocketKeepAliveTests.cs" />
+    <Compile Include="WebSocketReceiveErrorMessageTests.cs" />
     <Compile Include="WebSocketReceiveResultTests.cs" />
     <Compile Include="WebSocketStreamTests.cs" />
     <Compile Include="WebSocketTests.cs" />

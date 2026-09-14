@@ -22,6 +22,11 @@ namespace System.Net.Security
         internal const bool CanEncryptEmptyMessage = false;
         internal const bool CanGenerateCustomAlerts = false;
 
+        internal static bool CanGenerateCustomAlertsForContext(SafeDeleteContext? _)
+        {
+            return CanGenerateCustomAlerts;
+        }
+
         public static void VerifyPackageInfo()
         {
         }
@@ -154,7 +159,7 @@ namespace System.Net.Security
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                return default;
+                return new ProtocolToken { Status = status };
             }
             return HandshakeInternal(ref context!, null, out _, sslAuthenticationOptions);
         }

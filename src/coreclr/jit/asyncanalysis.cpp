@@ -38,13 +38,9 @@ public:
 
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
-        // A handler can be reached from any point in the try region.
-        // A local is mutated at handler entry if it was mutated at try
-        // entry or mutated anywhere within the try region.
-        for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
+        for (FlowEdge* pred = m_compiler->BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
         {
-            VarSetOps::UnionD(m_compiler, m_mutatedVarsIn[block->bbNum], m_mutatedVarsIn[tryBlock->bbNum]);
-            VarSetOps::UnionD(m_compiler, m_mutatedVarsIn[block->bbNum], m_mutatedVars[tryBlock->bbNum]);
+            Merge(block, pred->getSourceBlock(), pred->getDupCount());
         }
     }
 

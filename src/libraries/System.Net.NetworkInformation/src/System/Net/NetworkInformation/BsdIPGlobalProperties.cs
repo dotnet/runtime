@@ -10,6 +10,12 @@ namespace System.Net.NetworkInformation
         private unsafe TcpConnectionInformation[] GetTcpConnections(bool listeners)
         {
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
+            if (realCount == -1)
+            {
+                // The platform (e.g. OpenBSD) does not expose the TCP connection table.
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             int infoCount = realCount * 2;
             Interop.Sys.NativeTcpConnectionInformation[] infos = new Interop.Sys.NativeTcpConnectionInformation[infoCount];
             fixed (Interop.Sys.NativeTcpConnectionInformation* infosPtr = infos)
@@ -70,6 +76,12 @@ namespace System.Net.NetworkInformation
         public override unsafe IPEndPoint[] GetActiveUdpListeners()
         {
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
+            if (realCount == -1)
+            {
+                // The platform (e.g. OpenBSD) does not expose the UDP listener table.
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             int infoCount = realCount * 2;
             Interop.Sys.IPEndPointInfo[] infos = new Interop.Sys.IPEndPointInfo[infoCount];
             fixed (Interop.Sys.IPEndPointInfo* infosPtr = infos)

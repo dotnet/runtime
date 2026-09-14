@@ -31,7 +31,9 @@
 #pragma optimize("tg", on)
 #endif
 
+#ifdef FEATURE_VARARGS
 void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ctx);
+#endif // FEATURE_VARARGS
 
 #include "gc_unwind_x86.inl"
 
@@ -967,6 +969,7 @@ void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
     Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
 }
 
+#ifdef FEATURE_VARARGS
 /* report args in 'msig' to the GC.
    'argsStart' is start of the stack-based arguments
    'varArgSig' describes the arguments
@@ -1012,6 +1015,7 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
         }
     }
 }
+#endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 FCIMPL1(void, GCReporting::Register, GCFrame* frame)
@@ -1204,6 +1208,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         return true;
     }
 
+#ifdef FEATURE_VARARGS
     if (gcInfoDecoder.GetIsVarArg())
     {
         MethodDesc* pMD = pCodeInfo->GetMethodDesc();
@@ -1262,6 +1267,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
         promoteVarArgs(prevSP, varArgSig, pCtx);
     }
+#else // !FEATURE_VARARGS
+    _ASSERTE(!gcInfoDecoder.GetIsVarArg());
+#endif // FEATURE_VARARGS
 
     return true;
 
@@ -1716,17 +1724,23 @@ EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletTo
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+#else
+typedef TADDR HandlerFn;
+DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
+DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
+#endif // TARGET_WASM
 
 static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 {
 #ifdef TARGET_ARM
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#elif defined(TARGET_WASM)
+    return (TADDR)ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP((TADDR)pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
 #endif
 }
 
-#endif // TARGET_WASM
 
 // Call catch, finally or filter funclet.
 // Return value:
@@ -1736,15 +1750,25 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
-#ifdef TARGET_WASM
-    _ASSERTE(!"CallFunclet for WASM not implemented yet");
-#else
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
+#ifdef TARGET_WASM
+    TADDR wasmFramePointer = GetFP(pRD->pCurrentContext);
+    _ASSERTE(wasmFramePointer != 0);
+    TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
+    if (throwable != NULL)
+    {
+        dwResult = CallFuncletWithThrowable(handlerFnIndex, wasmFramePointer, OBJECTREFToObject(throwable), pFuncletCallerSP);
+    }
+    else
+    {
+        dwResult = CallFuncletWithoutThrowable(handlerFnIndex, wasmFramePointer, pFuncletCallerSP);
+    }
+#else
     if (isFilterFunclet)
     {
         // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
@@ -1780,7 +1804,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
 
     if (uAbortAddr)
     {
-        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n", dwResumePC, GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n",
+                (void*)dwResumePC, (void*)GetSP(pContext));
 
         // The dwResumePC is passed to the THROW_CONTROL_FOR_THREAD_FUNCTION ASM helper so that
         // it can establish it as its return address and native stack unwinding can work properly.
@@ -1802,7 +1827,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
     }
     else
     {
-        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pContext), GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", (void*)GetIP(pContext),
+                    (void*)GetSP(pContext));
     }
 
     ClrRestoreNonvolatileContext(pContext, targetSSP);

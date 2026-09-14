@@ -221,10 +221,7 @@ namespace System.Net.Security
         [MemberNotNullWhen(true, nameof(_context))]
         private bool IsAuthenticatedCore => _context != null && HandshakeComplete && _exception == null && _remoteOk;
 
-        public override bool IsMutuallyAuthenticated =>
-            IsAuthenticatedCore &&
-            !string.Equals(_context.Package, NegotiationInfoClass.NTLM) && // suppressing for NTLM since SSPI does not return correct value in the context flags.
-            _context.IsMutuallyAuthenticated;
+        public override bool IsMutuallyAuthenticated => IsAuthenticatedCore && _context.IsMutuallyAuthenticated;
 
         public override bool IsEncrypted => IsAuthenticatedCore && _context.IsEncrypted;
 
@@ -702,7 +699,8 @@ namespace System.Net.Security
                         RequiredProtectionLevel = protectionLevel,
                         AllowedImpersonationLevel = impersonationLevel,
                         RequireMutualAuthentication = protectionLevel != ProtectionLevel.None
-                    });
+                    },
+                    enforceMutualAuthentication: false);
             }
         }
 

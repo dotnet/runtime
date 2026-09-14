@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.StubDispatchFrame))]
 internal partial class StubDispatchFrame : IData<StubDispatchFrame>
 {
-    [Field] public TargetPointer MethodDescPtr { get; }
-    [Field] public TargetPointer RepresentativeMTPtr { get; }
-    [Field] public uint RepresentativeSlot { get; }
-    [Field] public TargetPointer Indirection { get; }
+    [Field] public partial TargetPointer MethodDescPtr { get; }
+    [Field] public partial TargetPointer RepresentativeMTPtr { get; }
+    [Field] public partial uint RepresentativeSlot { get; }
+    [Field] public partial TargetPointer Indirection { get; }
 }

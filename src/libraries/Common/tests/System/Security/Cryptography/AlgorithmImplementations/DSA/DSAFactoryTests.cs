@@ -6,10 +6,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public partial class DSAFactoryTests
+    public abstract partial class DSAFactoryTests
     {
+        protected abstract DSAProvider DSAFactory { get; }
+
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-        public static void DSACreateDefault_Equals_SameInstance()
+        public void DSACreateDefault_Equals_SameInstance()
         {
             using DSA dsa = DSAFactory.Create();
             dsa.ImportParameters(DSATestData.GetDSA1024Params());
@@ -17,14 +19,14 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-        public static void DSACreateKeySize_Equals_SameInstance()
+        public void DSACreateKeySize_Equals_SameInstance()
         {
             using DSA dsa = DSAFactory.Create(1024);
             AssertExtensions.TrueExpression(dsa.Equals(dsa));
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-        public static void DsaCreate_Equals_DifferentInstance_FalseForSameKeyMaterial()
+        public void DsaCreate_Equals_DifferentInstance_FalseForSameKeyMaterial()
         {
             using DSA dsa1 = DSAFactory.Create();
             using DSA dsa2 = DSAFactory.Create();
@@ -34,7 +36,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSANotSupported))]
-        public static void DSACreate_NotSupported()
+        public void DSACreate_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => DSAFactory.Create());
             Assert.Throws<PlatformNotSupportedException>(() => DSAFactory.Create(1024));

@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmEnableThreads>true</WasmEnableThreads>
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <WasmNativeStrip>false</WasmNativeStrip>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
+    <WasmFingerprintAssets>false</WasmFingerprintAssets>
   </PropertyGroup>
   <Import Project="..\DefaultBrowserSample.targets" />
 

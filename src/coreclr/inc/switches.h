@@ -119,10 +119,6 @@
 
 #endif // _DEBUG
 
-// MUST NEVER CHECK IN WITH THIS ENABLED.
-// This is just for convenience in doing performance investigations in a checked-out enlistment.
-// #define FEATURE_ENABLE_NO_RANGE_CHECKS
-
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled
 // in Silverlight (just to avoid thinking about whether the extra code space is worthwhile).
@@ -133,12 +129,6 @@
 // statistics. Also see comments on FEATURE_JIT_TIMER.
 #define FEATURE_JIT_METHOD_PERF
 
-
-#ifndef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-// If we're not using assembly write barriers, then this turns on a performance measurement
-// mode that gathers and prints statistics about # of GC write barriers invokes.
-// #define FEATURE_COUNT_GC_WRITE_BARRIERS
-#endif
 
 // Enables a mode in which GC is completely conservative in stacks and registers: all stack slots and registers
 // are treated as potential pinned interior pointers. When enabled, the runtime flag DOTNET_GCCONSERVATIVE

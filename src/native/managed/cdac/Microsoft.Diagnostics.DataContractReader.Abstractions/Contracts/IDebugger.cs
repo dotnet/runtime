@@ -5,7 +5,14 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
+public record struct DebuggerData(bool IsLeftSideInitialized);
+
+public enum HijackKind
+{
+    None,
+    UnhandledException,
+    Other,
+}
 
 public interface IDebugger : IContract
 {
@@ -20,6 +27,9 @@ public interface IDebugger : IContract
     void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC) => throw new NotImplementedException();
     TargetPointer GetDebuggerControlBlockAddress() => throw new NotImplementedException();
     void EnableGCNotificationEvents(bool fEnable) => throw new NotImplementedException();
+    HijackKind GetHijackKind(TargetCodePointer controlPC) => throw new NotImplementedException();
+    byte ReadInstructionByte(TargetPointer address) => throw new NotImplementedException();
+    TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData) => throw new NotImplementedException();
 }
 
 public readonly struct Debugger : IDebugger

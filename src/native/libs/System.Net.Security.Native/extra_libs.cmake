@@ -9,8 +9,7 @@ macro(append_extra_security_libs NativeLibsExtra)
      set(_heimdal_hints)
      if (CLR_CMAKE_TARGET_OPENBSD)
         list(APPEND _heimdal_hints
-            "${CMAKE_SYSROOT}/heimdal/lib"
-            "${CMAKE_SYSROOT}/usr/heimdal/lib")
+            "${CMAKE_SYSROOT}/usr/local/heimdal/lib")
      endif()
 
      if (_heimdal_hints)

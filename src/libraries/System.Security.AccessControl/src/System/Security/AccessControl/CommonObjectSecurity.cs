@@ -1,13 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-** Classes:  Common Object Security class
-**
-**
-===========================================================*/
-
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -20,8 +13,6 @@ namespace System.Security.AccessControl
 {
     public abstract class CommonObjectSecurity : ObjectSecurity
     {
-        #region Constructors
-
         protected CommonObjectSecurity(bool isContainer)
             : base(isContainer, false)
         {
@@ -32,10 +23,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        #endregion
-
-        #region Private Methods
-        // Ported from NDP\clr\src\BCL\System\Security\Principal\SID.cs since we can't access System.Security.Principal.IdentityReference's internals
+        // Ported from desktop code since we can't access System.Security.Principal.IdentityReference's internals.
         private static bool IsValidTargetTypeStatic(Type targetType)
         {
             if (targetType == typeof(NTAccount))
@@ -52,7 +40,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        private AuthorizationRuleCollection GetRules(bool access, bool includeExplicit, bool includeInherited, System.Type targetType)
+        private AuthorizationRuleCollection GetRules(bool access, bool includeExplicit, bool includeInherited, Type targetType)
         {
             ReadLock();
 
@@ -86,9 +74,7 @@ namespace System.Security.AccessControl
 
                 if (acl == null)
                 {
-                    //
                     // The required ACL was not present; return an empty collection.
-                    //
                     return result;
                 }
 
@@ -100,7 +86,6 @@ namespace System.Security.AccessControl
 
                     for (int i = 0; i < acl.Count; i++)
                     {
-                        //
                         // Calling the indexer on a common ACL results in cloning,
                         // (which would not be the case if we were to use the internal RawAcl property)
                         // but also ensures that the resulting order of ACEs is proper
@@ -108,7 +93,6 @@ namespace System.Security.AccessControl
                         // the canonical order could be ascertained just once.
                         // A better way would be to have an internal method that would canonicalize the ACL
                         // and call it once, then use the RawAcl.
-                        //
                         CommonAce? ace = acl[i] as CommonAce;
                         if (AceNeedsTranslation(ace, access, includeExplicit, includeInherited))
                         {
@@ -122,7 +106,6 @@ namespace System.Security.AccessControl
                 int targetIndex = 0;
                 for (int i = 0; i < acl.Count; i++)
                 {
-                    //
                     // Calling the indexer on a common ACL results in cloning,
                     // (which would not be the case if we were to use the internal RawAcl property)
                     // but also ensures that the resulting order of ACEs is proper
@@ -130,8 +113,6 @@ namespace System.Security.AccessControl
                     // the canonical order could be ascertained just once.
                     // A better way would be to have an internal method that would canonicalize the ACL
                     // and call it once, then use the RawAcl.
-                    //
-
                     CommonAce? ace = acl[i] as CommonAce;
                     if (AceNeedsTranslation(ace, access, includeExplicit, includeInherited))
                     {
@@ -185,10 +166,7 @@ namespace System.Security.AccessControl
         {
             if (ace == null)
             {
-                //
                 // Only consider common ACEs
-                //
-
                 return false;
             }
 
@@ -219,9 +197,7 @@ namespace System.Security.AccessControl
             return false;
         }
 
-        //
         // Modifies the DACL
-        //
         protected override bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified)
         {
             ArgumentNullException.ThrowIfNull(rule);
@@ -345,10 +321,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Modifies the SACL
-        //
-
         protected override bool ModifyAudit(AccessControlModification modification, AuditRule rule, out bool modified)
         {
             ArgumentNullException.ThrowIfNull(rule);
@@ -420,14 +393,6 @@ namespace System.Security.AccessControl
                 WriteUnlock();
             }
         }
-
-        #endregion
-
-        #region Protected Methods
-
-        #endregion
-
-        #region Public Methods
 
         protected void AddAccessRule(AccessRule rule)
         {
@@ -624,15 +589,14 @@ namespace System.Security.AccessControl
             }
         }
 
-        public AuthorizationRuleCollection GetAccessRules(bool includeExplicit, bool includeInherited, System.Type targetType)
+        public AuthorizationRuleCollection GetAccessRules(bool includeExplicit, bool includeInherited, Type targetType)
         {
             return GetRules(true, includeExplicit, includeInherited, targetType);
         }
 
-        public AuthorizationRuleCollection GetAuditRules(bool includeExplicit, bool includeInherited, System.Type targetType)
+        public AuthorizationRuleCollection GetAuditRules(bool includeExplicit, bool includeInherited, Type targetType)
         {
             return GetRules(false, includeExplicit, includeInherited, targetType);
         }
-        #endregion
     }
 }

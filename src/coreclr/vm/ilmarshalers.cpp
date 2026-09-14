@@ -1056,15 +1056,14 @@ namespace
 {
     MethodDesc* GetStructMarshalingMethod(BinderMethodID methodId, MethodTable* pMT)
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
             PRECONDITION(CheckPointer(pMT));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
 
@@ -1077,7 +1076,7 @@ namespace
             Instantiation(),
             FALSE);
 
-        RETURN pMD;
+        return pMD;
     }
 }
 
@@ -3462,6 +3461,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 }
 #endif // defined(FEATURE_IJW)
 
+#ifdef FEATURE_VARARGS
 LocalDesc ILArgIteratorMarshaler::GetNativeType()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3517,6 +3517,7 @@ void ILArgIteratorMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     // void MarshalToManagedVaList(va_list va, VARARGS *dataout)
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__MARSHAL_TO_MANAGED_VA_LIST, 2, 0);
 }
+#endif // FEATURE_VARARGS
 
 LocalDesc ILArrayWithOffsetMarshaler::GetNativeType()
 {
@@ -4760,7 +4761,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMa
     pThis->m_pConvertContentsToManagedCode = pConvertToManaged;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4771,7 +4772,10 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeAr
     CONTRACTL_END;
 
     if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
+    {
+        *qcallError = 0;
         return;
+    }
 
     BEGIN_QCALL;
 
@@ -4795,7 +4799,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeAr
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4838,7 +4842,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSaf
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4895,7 +4899,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeA
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4932,12 +4936,15 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSa
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
+    {
+        *qcallError = 0;
         return;
+    }
 
     BEGIN_QCALL;
 
@@ -4982,4 +4989,3 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum); // Store the ICustomMarshaler as our marshaler state
 }
-

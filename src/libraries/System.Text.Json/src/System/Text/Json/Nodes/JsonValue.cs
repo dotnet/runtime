@@ -153,7 +153,7 @@ namespace System.Text.Json.Nodes
 
         internal sealed override void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
-            Debug.Assert(child == null);
+            Debug.Assert(child is null);
 
             Parent?.GetPath(ref path, this);
         }
@@ -161,7 +161,7 @@ namespace System.Text.Json.Nodes
         internal static JsonValue CreateFromTypeInfo<T>(T value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             if (JsonValue<T>.TypeIsSupportedPrimitive &&
                 jsonTypeInfo is { EffectiveConverter.IsInternalConverter: true } &&

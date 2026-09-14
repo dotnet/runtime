@@ -7,11 +7,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ConditionalWeakTableEntry : IData<ConditionalWeakTableEntry>
 {
     [Field("HashCode")]
-    public int HashCode { get; }
+    public partial int HashCode { get; }
 
     [Field("Next")]
-    public int Next { get; }
+    public partial int Next { get; }
 
     [FieldAddress("depHnd")]
-    public TargetPointer DepHndAddress { get; }
+    public partial TargetPointer DepHndAddress { get; }
 }

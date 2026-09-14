@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Globalization;
 using System.Security.Authentication;
 using System.Text;
@@ -158,6 +157,7 @@ namespace System.Net.Security
 
         private const int UInt24Size = 3;
         private const int RandomSize = 32;
+        private const int MaxHostNameLength = 255;
         private const int ProtocolVersionMajorOffset = 0;
         private const int ProtocolVersionMinorOffset = 1;
         private const int ProtocolVersionSize = 2;
@@ -211,7 +211,9 @@ namespace System.Net.Security
             }
             else
             {
+                // unknown format
                 header.Length = -1;
+                return false;
             }
 
             return true;
@@ -231,9 +233,11 @@ namespace System.Net.Security
                 return false;
             }
 
-            // This will not fail since we have enough data.
-            bool gotHeader = TryGetFrameHeader(frame, ref info.Header);
-            Debug.Assert(gotHeader);
+            if (!TryGetFrameHeader(frame, ref info.Header))
+            {
+                // Unknown or malformed frame format.
+                return false;
+            }
 
             info.SupportedVersions = info.Header.Version;
 
@@ -335,7 +339,7 @@ namespace System.Net.Security
                 return CreateProtocolVersionAlert(version);
             }
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-            else if ((int)version > (int)SslProtocols.Tls)
+            else if ((int)version >= (int)SslProtocols.Tls)
 #pragma warning restore SYSLIB0039
             {
                 // Create TLS1.2 alert
@@ -638,7 +642,7 @@ namespace System.Net.Security
             }
 
             invalid = false;
-            return DecodeString(hostName);
+            return hostNameLength <= MaxHostNameLength ? DecodeString(hostName) : null;
         }
 
         private static bool TryGetSupportedVersionsFromExtension(ReadOnlySpan<byte> extensionData, out SslProtocols protocols)

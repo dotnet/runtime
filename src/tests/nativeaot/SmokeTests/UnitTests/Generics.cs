@@ -64,9 +64,11 @@ class Generics
         TestGenericInliningTypeGenericsOnly.Run();
         Test99198Regression.Run();
         Test102259Regression.Run();
+        Test129093Regression.Run();
         Test104913Regression.Run();
         Test105397Regression.Run();
         Test105880Regression.Run();
+        Test130028Regression.Run();
         TestInterfaceGenericCornerCase.Run();
         Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -3789,6 +3791,33 @@ class Generics
         }
     }
 
+    class Test129093Regression
+    {
+        class Gen<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Type Method() => typeof(T);
+        }
+
+        // Inlineable generic method taking the address of a method that needs a generic context.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static unsafe nint GetPtr<U>() => (nint)(delegate*<Type>)&Gen<U>.Method;
+
+        class Caller<X>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static nint Run() => GetPtr<X>();
+        }
+
+        public static unsafe void Run()
+        {
+            if (((delegate*<Type>)Caller<object>.Run())() != typeof(object))
+                throw new Exception();
+            if (((delegate*<Type>)Caller<string>.Run())() != typeof(string))
+                throw new Exception();
+        }
+    }
+
     class Test104913Regression
     {
         interface IFoo
@@ -3865,6 +3894,29 @@ class Generics
         public static void Run()
         {
             Console.WriteLine(new Baz());
+        }
+    }
+
+    class Test130028Regression
+    {
+        public class C
+        {
+            public static Array Create<T>() => new InlineArray65536<T>[1];
+            [InlineArray(65536)] struct InlineArray65536<T> { T field; }
+        }
+
+        public static void Run()
+        {
+            try
+            {
+                typeof(C).GetMethod("Create").MakeGenericMethod(typeof(object)).Invoke(null, []);
+            }
+            catch (TargetInvocationException e) when (e.InnerException is TypeLoadException)
+            {
+                return;
+            }
+
+            throw new Exception();
         }
     }
 

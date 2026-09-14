@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include <runtime_version.h>
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "gcinterface.dac.h"
@@ -11,16 +12,20 @@
 #include "Pal.h"
 #include "holder.h"
 #include "RuntimeInstance.h"
+#include "TypeManager.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
+
+#include "configure.h"
 
 #include <stdint.h>
 #include <stddef.h>
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 GPTR_DECL(StressLog, g_pStressLog);
+GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
 
 // ILC emits a ContractDescriptor named "DotNetManagedContractDescriptor" with
 // managed type layouts. We take its address so datadescriptor.inc can reference

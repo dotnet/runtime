@@ -329,7 +329,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
@@ -432,8 +432,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(block != NULL);
     assert(m_compiler->bbIsFuncletBeg(block));
 
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
-
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -509,8 +507,6 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         printf("*************** In genFuncletEpilog()\n");
     }
 #endif
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     m_compiler->unwindBegEpilog();
 
@@ -612,8 +608,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         printf("*************** In genFnEpilog()\n");
     }
 #endif // DEBUG
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     VarSetOps::Assign(m_compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
     gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
@@ -1003,7 +997,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -1465,7 +1459,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(size->isContained());
 
         // If amount is zero then return null in targetReg
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
@@ -1864,7 +1858,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Check divisorOp first as we can always allow it to be a contained immediate
         if (divisorOp->isContainedIntOrIImmed())
         {
-            ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+            ssize_t intConst = (int)(divisorOp->AsIntCon()->IconValue());
             if (!emitter::isGeneralRegister(divisorReg))
             {
                 tempReg    = internalRegisters.GetSingle(tree);
@@ -2730,7 +2724,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into REG_T4 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -3114,8 +3108,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         if (oper == GT_LE && op2->isContainedIntOrIImmed())
         {
             oper = GT_LT;
-            assert(op2->AsIntCon()->gtIconVal == 0);
-            op2->AsIntCon()->gtIconVal = 1;
+            assert(op2->AsIntCon()->IconValue() == 0);
+            op2->AsIntCon()->SetIconValue(1);
         }
 
         isReversed = (oper == GT_LE || oper == GT_GE);
@@ -3135,7 +3129,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         if (op2->isContainedIntOrIImmed())
         {
             instruction slti = isUnsigned ? INS_sltiu : INS_slti;
-            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->gtIconVal);
+            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->IconValue());
         }
         else
         {
@@ -3146,6 +3140,61 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     if (isReversed)
         emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForSelect: Produce branch-free code for a GT_SELECT node using Zicond.
+//
+//   SELECT(cond, trueVal, falseVal) =>
+//     czero.nez tmp,   falseVal, cond   ; tmp     = (cond != 0) ? 0 : falseVal
+//     czero.eqz dst,   trueVal,  cond   ; dst     = (cond == 0) ? 0 : trueVal
+//     or        dst,   dst,      tmp
+//
+// Degenerate cases (one operand is the zero register) collapse to a single czero.
+//
+// Arguments:
+//    tree - the GT_SELECT node
+//
+void CodeGen::genCodeForSelect(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_SELECT));
+    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond));
+    assert(varTypeIsIntegralOrI(tree));
+
+    GenTreeConditional* sel      = tree->AsConditional();
+    GenTree*            cond     = sel->gtCond;
+    GenTree*            trueVal  = sel->gtOp1;
+    GenTree*            falseVal = sel->gtOp2;
+
+    genConsumeRegs(cond);
+    genConsumeRegs(trueVal);
+    genConsumeRegs(falseVal);
+
+    regNumber targetReg = tree->GetRegNum();
+    regNumber condReg   = cond->GetRegNum();
+    regNumber trueReg   = trueVal->isContained() ? REG_ZERO : trueVal->GetRegNum();
+    regNumber falseReg  = falseVal->isContained() ? REG_ZERO : falseVal->GetRegNum();
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitActualTypeSize(tree);
+
+    if (falseReg == REG_ZERO)
+    {
+        emit->emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, condReg);
+    }
+    else if (trueReg == REG_ZERO)
+    {
+        emit->emitIns_R_R_R(INS_czero_nez, attr, targetReg, falseReg, condReg);
+    }
+    else
+    {
+        regNumber tmpReg = internalRegisters.GetSingle(tree);
+        emit->emitIns_R_R_R(INS_czero_nez, attr, tmpReg, falseReg, condReg);
+        emit->emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, condReg);
+        emit->emitIns_R_R_R(INS_add, attr, targetReg, targetReg, tmpReg);
+    }
 
     genProduceReg(tree);
 }
@@ -3257,8 +3306,6 @@ int CodeGenInterface::genTotalFrameSize() const
     // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
     // since we don't use "push" instructions to save them, we don't have to do the
     // save of these varargs register arguments as the first thing in the prolog.
-
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -3940,6 +3987,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCompare(treeNode->AsOp());
             break;
 
+        case GT_SELECT:
+            genCodeForSelect(treeNode->AsConditional());
+            break;
+
         case GT_JCMP:
             genCodeForJumpCompare(treeNode->AsOpCC());
             break;
@@ -4131,7 +4182,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->getNeedsGSSecurityCookie())
     {
@@ -4223,6 +4274,71 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2IfPresent();
+
+    // Handle integer-domain saturation intrinsics separately; they use branches
+    // and a temporary register rather than the single-instruction pattern below.
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
+        {
+            ssize_t minVal, maxVal;
+            switch (treeNode->gtIntrinsicName)
+            {
+                case NI_PRIMITIVE_SaturateToInt8:
+                    minVal = INT8_MIN;
+                    maxVal = INT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToInt16:
+                    minVal = INT16_MIN;
+                    maxVal = INT16_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt8:
+                    minVal = 0;
+                    maxVal = UINT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    minVal = 0;
+                    maxVal = UINT16_MAX;
+                    break;
+                default:
+                    unreached();
+            }
+
+            genConsumeOperands(treeNode->AsOp());
+            regNumber dst    = treeNode->GetRegNum();
+            regNumber src    = op1->GetRegNum();
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+            emitter*  emit   = GetEmitter();
+
+            // Copy src to dst, normalizing to a sign-extended 32-bit value so the
+            // subsequent full-register bge compares against the (signed) clamp bounds
+            // are well-defined. `sext.w rd, rs` sign-extends bits[31:0] into rd[63:0].
+            emit->emitIns_R_R(INS_sext_w, EA_4BYTE, dst, src);
+
+            // Clamp lower bound: if dst < minVal, dst = minVal.
+            BasicBlock* skipLo = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, minVal);
+            emit->emitIns_J_cond_la(INS_bge, skipLo, dst, tmpReg); // skip if dst >= minVal
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = minVal
+            genDefineTempLabel(skipLo);
+
+            // Clamp upper bound: if dst > maxVal, dst = maxVal.
+            BasicBlock* skipHi = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, maxVal);
+            emit->emitIns_J_cond_la(INS_bge, skipHi, tmpReg, dst); // skip if maxVal >= dst
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = maxVal
+            genDefineTempLabel(skipHi);
+
+            genProduceReg(treeNode);
+            return;
+        }
+
+        default:
+            break;
+    }
 
     emitAttr size = emitActualTypeSize(op1);
     bool     is4  = (size == EA_4BYTE);
@@ -4652,7 +4768,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             }
             else
             {
-                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
                 assert(shiftByImm < immWidth);
                 if (!isR)
                 {
@@ -4684,7 +4800,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             }
             else
             {
-                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
                 if (shiftByImm >= 32 && shiftByImm < 64)
                 {
                     immWidth = 64;
@@ -4716,7 +4832,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             assert(isImmed(tree));
             instruction ins        = genGetInsForOper(tree);
-            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
 
             // should check shiftByImm for riscv64-ins.
             shiftByImm &= (immWidth - 1);
@@ -5394,19 +5510,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the debug information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
@@ -5415,34 +5521,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         params.sigInfo = call->callSig;
     }
-
-    if (call->IsFastTailCall())
-    {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
-
-        // The epilog may use and trash some registers for the GS cookie check.
-        // Make sure we have no non-standard args that may be trash if this is
-        // a tailcall.
-        if (m_compiler->getNeedsGSSecurityCookie())
-        {
-            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
-        }
-
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            for (unsigned i = 0; i < arg.AbiInfo.NumSegments; i++)
-            {
-                const ABIPassingSegment& seg = arg.AbiInfo.Segment(i);
-                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
-                {
-                    JITDUMP("Tail call node:\n");
-                    DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
-                    assert(!"Argument to tailcall may be trashed by epilog");
-                }
-            }
-        }
-    }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
     GenTree* target = getCallTarget(call, &params.methHnd);
 
@@ -5989,7 +6068,7 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 
     assert(shiftBy->IsCnsIntOrI());
 
-    unsigned shamt = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+    unsigned shamt = (unsigned)shiftBy->AsIntCon()->IconValue();
 
     GetEmitter()->emitIns_R_R_I(INS_slli_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), shamt);
 
@@ -6005,7 +6084,7 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     assert(emitter::isValidSimm12(delta));
     GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
@@ -6233,7 +6312,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
  */
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -6360,7 +6439,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
     regMaskTP regsToRestoreMask = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -6470,7 +6549,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->compIsProfilerHookNeeded())
     {

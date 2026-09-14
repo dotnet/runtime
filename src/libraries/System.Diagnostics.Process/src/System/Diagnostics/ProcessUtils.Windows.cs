@@ -110,6 +110,7 @@ namespace System.Diagnostics
                 // Ignore null values for consistency with Environment.SetEnvironmentVariable
                 if (value != null)
                 {
+                    // DictionaryWrapper prevents user-supplied keys and values from containing null characters.
                     result.Append(key).Append('=').Append(value).Append('\0');
                 }
             }

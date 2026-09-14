@@ -430,6 +430,12 @@ C_FUNC(\Name\()_End):
 
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
+#ifdef FEATURE_EMULATED_TLS
+        // Emulated TLS (e.g. OpenBSD, which has no __tls_get_addr): call a C helper instead
+        // of inlining the native thread-local access.
+        call    C_FUNC(GetThreadHelper)
+#else
         INLINE_GET_TLS_VAR t_CurrentThreadInfo
         mov rax, [rax + OFFSETOF__ThreadLocalInfo__m_pThread]
+#endif
 .endm

@@ -338,6 +338,89 @@ PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
     }
 }
 
+static OSStatus PalTlsAlertMessageToSslStatus(PAL_TlsAlertMessage alertMessage)
+{
+    switch (alertMessage)
+    {
+        case PAL_TlsAlertMessage_UnexpectedMessage:
+            return errSSLUnexpectedMessage;
+        case PAL_TlsAlertMessage_BadRecordMac:
+            return errSSLBadRecordMac;
+        case PAL_TlsAlertMessage_DecryptionFailed:
+            return errSSLDecryptionFail;
+        case PAL_TlsAlertMessage_RecordOverflow:
+            return errSSLRecordOverflow;
+        case PAL_TlsAlertMessage_DecompressionFail:
+            return errSSLDecompressFail;
+        case PAL_TlsAlertMessage_HandshakeFailure:
+            return errSSLHandshakeFail;
+        case PAL_TlsAlertMessage_BadCertificate:
+            return errSSLBadCert;
+        case PAL_TlsAlertMessage_UnsupportedCert:
+            return errSSLBadCert;
+        case PAL_TlsAlertMessage_CertificateRevoked:
+            return errSSLXCertChainInvalid;
+        case PAL_TlsAlertMessage_CertificateExpired:
+            return errSSLCertExpired;
+        case PAL_TlsAlertMessage_CertificateUnknown:
+            return errSSLXCertChainInvalid;
+        case PAL_TlsAlertMessage_IllegalParameter:
+            return errSSLIllegalParam;
+        case PAL_TlsAlertMessage_UnknownCA:
+            return errSSLUnknownRootCert;
+        case PAL_TlsAlertMessage_AccessDenied:
+            return errSSLPeerAccessDenied;
+        case PAL_TlsAlertMessage_DecodeError:
+            return errSSLDecodeError;
+        case PAL_TlsAlertMessage_DecryptError:
+            return errSSLPeerDecryptError;
+        case PAL_TlsAlertMessage_ExportRestriction:
+            return errSSLPeerExportRestriction;
+        case PAL_TlsAlertMessage_ProtocolVersion:
+            return errSSLPeerProtocolVersion;
+        case PAL_TlsAlertMessage_InsufficientSecurity:
+            return errSSLPeerInsufficientSecurity;
+        case PAL_TlsAlertMessage_InternalError:
+            return errSSLPeerInternalError;
+        case PAL_TlsAlertMessage_InappropriateFallback:
+            return errSSLInappropriateFallback;
+        case PAL_TlsAlertMessage_UserCanceled:
+            return errSSLPeerUserCancelled;
+        case PAL_TlsAlertMessage_NoRenegotiation:
+            return errSSLPeerNoRenegotiation;
+        case PAL_TlsAlertMessage_MissingExtension:
+            return errSSLMissingExtension;
+        case PAL_TlsAlertMessage_UnsupportedExtension:
+            return errSSLUnsupportedExtension;
+        case PAL_TlsAlertMessage_UnrecognizedName:
+            return errSSLUnrecognizedName;
+        case PAL_TlsAlertMessage_BadCertificateStatusResponse:
+            return errSSLBadCertificateStatusResponse;
+        case PAL_TlsAlertMessage_UnknownPskIdentity:
+            return errSSLUnknownPSKIdentity;
+        case PAL_TlsAlertMessage_CertificateRequired:
+            return errSSLCertificateRequired;
+        default:
+            return errSSLPeerInternalError;
+    }
+}
+
+int32_t AppleCryptoNative_SslSetError(SSLContextRef sslContext, PAL_TlsAlertMessage alertMessage, int32_t* pOSStatus)
+{
+    if (pOSStatus != NULL)
+        *pOSStatus = noErr;
+
+    if (sslContext == NULL || pOSStatus == NULL)
+        return -1;
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    *pOSStatus = SSLSetError(sslContext, PalTlsAlertMessageToSslStatus(alertMessage));
+#pragma clang diagnostic pop
+
+    return *pOSStatus == noErr;
+}
+
 static PAL_TlsIo OSStatusToPAL_TlsIo(OSStatus status)
 {
     switch (status)

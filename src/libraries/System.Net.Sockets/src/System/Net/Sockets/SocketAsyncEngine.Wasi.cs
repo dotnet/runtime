@@ -17,6 +17,10 @@ namespace System.Net.Sockets
     internal sealed unsafe class SocketAsyncEngine
     {
         internal const bool InlineSocketCompletionsEnabled = true;
+
+        // Completions are always inlined on WASI, there is nothing to track.
+        internal static void OnInlineCompletionsOverride() { }
+
         private static readonly SocketAsyncEngine s_engine = new SocketAsyncEngine();
 
         public static bool TryRegisterSocket(IntPtr socketHandle, SocketAsyncContext context, out SocketAsyncEngine? engine, out Interop.Error error)

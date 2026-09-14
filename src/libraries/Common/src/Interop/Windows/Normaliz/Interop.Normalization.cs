@@ -8,9 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Normaliz
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial BOOL IsNormalizedString(NormalizationForm normForm, char* source, int length);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int NormalizeString(
                                         NormalizationForm normForm,

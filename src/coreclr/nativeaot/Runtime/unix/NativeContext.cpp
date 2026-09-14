@@ -460,6 +460,29 @@
 #define MCREG_T6(mc)      ((mc).regs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
 
+#elif defined(__OpenBSD__)
+
+// On OpenBSD, ucontext_t is an alias for struct sigcontext and the registers
+// are stored directly in it; there is no uc_mcontext sub-structure. The mc
+// argument here is the struct sigcontext (i.e. the ucontext) itself.
+#define MCREG_Rip(mc)       ((mc).sc_rip)
+#define MCREG_Rsp(mc)       ((mc).sc_rsp)
+#define MCREG_Rax(mc)       ((mc).sc_rax)
+#define MCREG_Rbx(mc)       ((mc).sc_rbx)
+#define MCREG_Rcx(mc)       ((mc).sc_rcx)
+#define MCREG_Rdx(mc)       ((mc).sc_rdx)
+#define MCREG_Rsi(mc)       ((mc).sc_rsi)
+#define MCREG_Rdi(mc)       ((mc).sc_rdi)
+#define MCREG_Rbp(mc)       ((mc).sc_rbp)
+#define MCREG_R8(mc)        ((mc).sc_r8)
+#define MCREG_R9(mc)        ((mc).sc_r9)
+#define MCREG_R10(mc)       ((mc).sc_r10)
+#define MCREG_R11(mc)       ((mc).sc_r11)
+#define MCREG_R12(mc)       ((mc).sc_r12)
+#define MCREG_R13(mc)       ((mc).sc_r13)
+#define MCREG_R14(mc)       ((mc).sc_r14)
+#define MCREG_R15(mc)       ((mc).sc_r15)
+
 #else
 
 // For FreeBSD, as found in x86/ucontext.h
@@ -526,6 +549,16 @@
 
 #endif // __APPLE__
 
+// Accessors used to obtain the structure holding the machine registers from a
+// ucontext_t. On most platforms the registers live in the uc_mcontext member,
+// but on OpenBSD ucontext_t is an alias for struct sigcontext and the registers
+// are stored directly in it.
+#if defined(__OpenBSD__)
+#define MCONTEXT_FROM_NATIVE(nativeContext) (*(nativeContext))
+#else
+#define MCONTEXT_FROM_NATIVE(nativeContext) ((nativeContext)->uc_mcontext)
+#endif
+
 #if defined(HOST_AMD64)
 #define ASSIGN_CONTROL_REGS \
     ASSIGN_REG(Rip, IP)     \
@@ -540,8 +573,8 @@
     ASSIGN_REG(R15, R15)
 
 #define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg)    \
-    MCREG_Rdi(nativeContext->uc_mcontext) = arg0Reg;  \
-    MCREG_Rsi(nativeContext->uc_mcontext) = arg1Reg;
+    MCREG_Rdi(MCONTEXT_FROM_NATIVE(nativeContext)) = arg0Reg;  \
+    MCREG_Rsi(MCONTEXT_FROM_NATIVE(nativeContext)) = arg1Reg;
 
 #elif defined(HOST_X86)
 #define ASSIGN_CONTROL_REGS \
@@ -662,7 +695,7 @@
 void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palContext)
 {
     ucontext_t *nativeContext = (ucontext_t*)context;
-#define ASSIGN_REG(regNative, regPal) palContext->regPal = MCREG_##regNative(nativeContext->uc_mcontext);
+#define ASSIGN_REG(regNative, regPal) palContext->regPal = MCREG_##regNative(MCONTEXT_FROM_NATIVE(nativeContext));
     ASSIGN_CONTROL_REGS
     ASSIGN_INTEGER_REGS
 #undef ASSIGN_REG
@@ -673,7 +706,7 @@ void RedirectNativeContext(void* context, const PAL_LIMITED_CONTEXT* palContext,
 {
     ucontext_t *nativeContext = (ucontext_t*)context;
 
-#define ASSIGN_REG(regNative, regPal) MCREG_##regNative(nativeContext->uc_mcontext) = palContext->regPal;
+#define ASSIGN_REG(regNative, regPal) MCREG_##regNative(MCONTEXT_FROM_NATIVE(nativeContext)) = palContext->regPal;
     ASSIGN_CONTROL_REGS
 #undef ASSIGN_REG
     ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg);
@@ -694,37 +727,37 @@ uint64_t GetRegisterValueByIndex(void* context, uint32_t index)
     switch (index)
     {
         case 0:
-            return MCREG_Rax(nativeContext->uc_mcontext);
+            return MCREG_Rax(MCONTEXT_FROM_NATIVE(nativeContext));
         case 1:
-            return MCREG_Rcx(nativeContext->uc_mcontext);
+            return MCREG_Rcx(MCONTEXT_FROM_NATIVE(nativeContext));
         case 2:
-            return MCREG_Rdx(nativeContext->uc_mcontext);
+            return MCREG_Rdx(MCONTEXT_FROM_NATIVE(nativeContext));
         case 3:
-            return MCREG_Rbx(nativeContext->uc_mcontext);
+            return MCREG_Rbx(MCONTEXT_FROM_NATIVE(nativeContext));
         case 4:
-            return MCREG_Rsp(nativeContext->uc_mcontext);
+            return MCREG_Rsp(MCONTEXT_FROM_NATIVE(nativeContext));
         case 5:
-            return MCREG_Rbp(nativeContext->uc_mcontext);
+            return MCREG_Rbp(MCONTEXT_FROM_NATIVE(nativeContext));
         case 6:
-            return MCREG_Rsi(nativeContext->uc_mcontext);
+            return MCREG_Rsi(MCONTEXT_FROM_NATIVE(nativeContext));
         case 7:
-            return MCREG_Rdi(nativeContext->uc_mcontext);
+            return MCREG_Rdi(MCONTEXT_FROM_NATIVE(nativeContext));
         case 8:
-            return MCREG_R8(nativeContext->uc_mcontext);
+            return MCREG_R8(MCONTEXT_FROM_NATIVE(nativeContext));
         case 9:
-            return MCREG_R9(nativeContext->uc_mcontext);
+            return MCREG_R9(MCONTEXT_FROM_NATIVE(nativeContext));
         case 10:
-            return MCREG_R10(nativeContext->uc_mcontext);
+            return MCREG_R10(MCONTEXT_FROM_NATIVE(nativeContext));
         case 11:
-            return MCREG_R11(nativeContext->uc_mcontext);
+            return MCREG_R11(MCONTEXT_FROM_NATIVE(nativeContext));
         case 12:
-            return MCREG_R12(nativeContext->uc_mcontext);
+            return MCREG_R12(MCONTEXT_FROM_NATIVE(nativeContext));
         case 13:
-            return MCREG_R13(nativeContext->uc_mcontext);
+            return MCREG_R13(MCONTEXT_FROM_NATIVE(nativeContext));
         case 14:
-            return MCREG_R14(nativeContext->uc_mcontext);
+            return MCREG_R14(MCONTEXT_FROM_NATIVE(nativeContext));
         case 15:
-            return MCREG_R15(nativeContext->uc_mcontext);
+            return MCREG_R15(MCONTEXT_FROM_NATIVE(nativeContext));
     }
 
     ASSERT(false);
@@ -735,7 +768,7 @@ uint64_t GetRegisterValueByIndex(void* context, uint32_t index)
 uint64_t GetPC(void* context)
 {
     ucontext_t *nativeContext = (ucontext_t*)context;
-    return MCREG_Rip(nativeContext->uc_mcontext);
+    return MCREG_Rip(MCONTEXT_FROM_NATIVE(nativeContext));
 }
 
 #endif // HOST_AMD64
@@ -777,23 +810,23 @@ uint64_t GetPC(void* context)
     uint64_t& NATIVE_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
 
 #elif defined(TARGET_AMD64)
-    uint64_t& NATIVE_CONTEXT::Rax(){ return (uint64_t&)MCREG_Rax(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rcx(){ return (uint64_t&)MCREG_Rcx(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rdx(){ return (uint64_t&)MCREG_Rdx(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rbx(){ return (uint64_t&)MCREG_Rbx(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rsp(){ return (uint64_t&)MCREG_Rsp(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rbp(){ return (uint64_t&)MCREG_Rbp(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rsi(){ return (uint64_t&)MCREG_Rsi(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rdi(){ return (uint64_t&)MCREG_Rdi(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R13(){ return (uint64_t&)MCREG_R13(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R14(){ return (uint64_t&)MCREG_R14(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::R15(){ return (uint64_t&)MCREG_R15(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Rip(){ return (uint64_t&)MCREG_Rip(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rax(){ return (uint64_t&)MCREG_Rax(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rcx(){ return (uint64_t&)MCREG_Rcx(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rdx(){ return (uint64_t&)MCREG_Rdx(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rbx(){ return (uint64_t&)MCREG_Rbx(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rsp(){ return (uint64_t&)MCREG_Rsp(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rbp(){ return (uint64_t&)MCREG_Rbp(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rsi(){ return (uint64_t&)MCREG_Rsi(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rdi(){ return (uint64_t&)MCREG_Rdi(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R13(){ return (uint64_t&)MCREG_R13(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R14(){ return (uint64_t&)MCREG_R14(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::R15(){ return (uint64_t&)MCREG_R15(MCONTEXT_FROM_NATIVE(&ctx)); }
+    uint64_t& NATIVE_CONTEXT::Rip(){ return (uint64_t&)MCREG_Rip(MCONTEXT_FROM_NATIVE(&ctx)); }
 
 #elif defined(TARGET_ARM)
     uint64_t& NATIVE_CONTEXT::Pc(){ return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }

@@ -39,16 +39,14 @@ namespace System.Text.Json.Serialization
 
         internal ConverterStrategy ConverterStrategy
         {
-            get => _converterStrategy;
+            get;
             init
             {
                 CanUseDirectReadOrWrite = value == ConverterStrategy.Value && IsInternalConverter;
                 RequiresReadAhead = value == ConverterStrategy.Value;
-                _converterStrategy = value;
+                field = value;
             }
         }
-
-        private ConverterStrategy _converterStrategy;
 
         /// <summary>
         /// Invoked by the base contructor to populate the initial value of the <see cref="ConverterStrategy"/> property.
@@ -176,6 +174,13 @@ namespace System.Text.Json.Serialization
         internal bool IsValueType { get; init; }
 
         /// <summary>
+        /// Indicates whether this converter handles IEEE 754 floating-point types
+        /// (double, float, Half) that may emit anyOf schemas with named floating-point
+        /// literals under AllowNamedFloatingPointLiterals.
+        /// </summary>
+        internal virtual bool IsIeeeFloatingPointConverter => false;
+
+        /// <summary>
         /// Whether the converter is built-in.
         /// </summary>
         internal bool IsInternalConverter { get; init; }
@@ -226,9 +231,8 @@ namespace System.Text.Json.Serialization
 
         /// <summary>
         /// Gets the set of leading JSON value shapes that this converter can read
-        /// for the given <paramref name="numberHandling"/>. Returning <see cref="JsonValueType.None"/> means
-        /// the converter does not advertise its supported values; internal converter callers may
-        /// fall back to a default based on <see cref="ConverterStrategy"/>. Used by union-type dispatch to build a
+        /// for the given <paramref name="numberHandling"/>. The base implementation returns
+        /// <see cref="JsonValueType.Any"/>. Used by union-type dispatch to build a
         /// value-shape-to-case map without re-walking type metadata. Mirrors <see cref="GetSchema"/>.
         /// </summary>
         /// <remarks>
@@ -238,7 +242,7 @@ namespace System.Text.Json.Serialization
         /// generator's union ambiguity diagnostic (SYSLIB1227) agrees with the runtime
         /// union value-shape map.
         /// </remarks>
-        internal virtual JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) => JsonValueType.None;
+        internal virtual JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) => JsonValueType.Any;
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }

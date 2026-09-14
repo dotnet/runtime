@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using Xunit;
 using TestLibrary;
 
+namespace SIMDTests.ShiftOperationsTests;
+
 public class Test
 {
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -6,16 +6,18 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType]
 internal sealed partial class ObjectHandle : IData<ObjectHandle>
 {
-    public TargetPointer Handle { get; private set; } = TargetPointer.Null;
-    public TargetPointer Object { get; private set; } = TargetPointer.Null;
+    [CustomInit(nameof(InitHandle))] public partial TargetPointer Handle { get; }
+    [CustomInit(nameof(InitObject))] public partial TargetPointer Object { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    private partial TargetPointer InitHandle(Target target, TargetPointer address)
     {
-        if (address != TargetPointer.Null)
-        {
-            Handle = target.ReadPointer(address);
-            if (Handle != TargetPointer.Null && target.TryReadPointer(Handle, out TargetPointer obj))
-                Object = obj;
-        }
+        return address != TargetPointer.Null ? target.ReadPointer(address) : TargetPointer.Null;
+    }
+
+    private partial TargetPointer InitObject(Target target, TargetPointer address)
+    {
+        return Handle != TargetPointer.Null && target.TryReadPointer(Handle, out TargetPointer obj)
+            ? obj
+            : TargetPointer.Null;
     }
 }

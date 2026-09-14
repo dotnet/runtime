@@ -57,6 +57,10 @@ public:
 
 public:
 #ifndef DACCESS_COMPILE
+#ifdef TARGET_WASM
+    // One-time initialization of the lock guarding webcil relocation de-duplication.
+    static void Startup();
+#endif // TARGET_WASM
     static PEImageLayout* CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size);
 #ifndef TARGET_UNIX
     static PEImageLayout* CreateFromHMODULE(HMODULE hModule,PEImage* pOwner);

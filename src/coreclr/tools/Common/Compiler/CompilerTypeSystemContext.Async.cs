@@ -21,7 +21,7 @@ namespace ILCompiler
 
     public partial class CompilerTypeSystemContext
     {
-        private sealed class AsyncAwareVirtualMethodResolutionAlgorithm : MetadataVirtualMethodAlgorithm
+        private sealed class AsyncAwareVirtualMethodResolutionAlgorithm : CachingVirtualMethodAlgorithm
         {
             private readonly CompilerTypeSystemContext _context;
 

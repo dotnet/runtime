@@ -29,7 +29,6 @@ struct STRINGHASH : HASHLINK
 
 class CStringPoolHash : public CChainedHash<STRINGHASH>
 {
-    friend class VerifyLayoutsMD;
 public:
     CStringPoolHash(StgPoolReadOnly *pool) : m_Pool(pool)
     {
@@ -69,7 +68,6 @@ typedef STRINGHASH BLOBHASH;
 
 class CBlobPoolHash : public CChainedHash<STRINGHASH>
 {
-    friend class VerifyLayoutsMD;
 public:
     CBlobPoolHash(StgPoolReadOnly *pool) : m_Pool(pool)
     {
@@ -92,7 +90,6 @@ public:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         ULONG       ulSize;
         ulSize = CPackedLen::GetLength(pData);
@@ -116,7 +113,6 @@ struct GUIDHASH : HASHLINK
 
 class CGuidPoolHash : public CChainedHash<GUIDHASH>
 {
-    friend class VerifyLayoutsMD;
 public:
     CGuidPoolHash(StgPoolReadOnly *pool) : m_Pool(pool)
     {

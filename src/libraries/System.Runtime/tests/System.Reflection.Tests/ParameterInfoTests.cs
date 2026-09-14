@@ -320,6 +320,39 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, parameterInfo.DefaultValue);
         }
 
+        [Fact]
+        public void DefaultValue_EnumNestedInGenericTypeOnGenericMethodDefinition()
+        {
+            Action<NestedGenericEnumContainer<int>.NestedEnum> action = MethodWithNestedGenericEnumDefault;
+            ParameterInfo parameterInfo = action.Method.GetGenericMethodDefinition().GetParameters()[0];
+
+            object defaultValue = parameterInfo.DefaultValue;
+            Assert.Equal(parameterInfo.ParameterType.GetEnumUnderlyingType(), defaultValue.GetType());
+            Assert.Equal((byte)0, Convert.ToByte(defaultValue));
+        }
+
+        [Fact]
+        public void EnumAPIs_OnOpenGenericEnumType()
+        {
+            Type openEnumType = typeof(NestedGenericEnumContainer<>.NestedEnum);
+
+            Assert.Equal(typeof(byte), openEnumType.GetEnumUnderlyingType());
+
+            string[] names = openEnumType.GetEnumNames();
+            Assert.Equal(new[] { "Zero", "One" }, names);
+
+            byte[] values = Assert.IsType<byte[]>(openEnumType.GetEnumValuesAsUnderlyingType());
+            Assert.Equal(new byte[] { 0, 1 }, values);
+            Assert.Equal("Zero", openEnumType.GetEnumName((byte)0));
+            Assert.Equal("One", openEnumType.GetEnumName((byte)1));
+
+            Assert.True(openEnumType.IsEnumDefined("Zero"));
+            Assert.False(openEnumType.IsEnumDefined("Two"));
+
+            // GetEnumValues requires Array.CreateInstance which does not support open generic types
+            Assert.Throws<NotSupportedException>(() => openEnumType.GetEnumValues());
+        }
+
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefaultDateTime", 0, null)]
         public void DefaultValue_broken_on_NETFX(Type type, string name, int index, object? expected)
@@ -636,6 +669,17 @@ namespace System.Reflection.Tests
         {
             public void GenericMethod(T t) { }
             public string GenericMethodWithDefault(int i, T t = default(T)) { return "somestring"; }
+        }
+
+        private static void MethodWithNestedGenericEnumDefault<T>(NestedGenericEnumContainer<T>.NestedEnum arg = 0) { }
+
+        private class NestedGenericEnumContainer<T>
+        {
+            public enum NestedEnum : byte
+            {
+                Zero,
+                One
+            }
         }
 
         private class MyAttribute : Attribute

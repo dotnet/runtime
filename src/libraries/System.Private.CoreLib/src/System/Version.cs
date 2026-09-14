@@ -430,7 +430,7 @@ namespace System
         private static bool TryParseComponent<TChar>(ReadOnlySpan<TChar> component, string componentName, bool throwOnFailure, ReadOnlySpan<TChar> originalInput, out int parsedComponent)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out parsedComponent);
+            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out parsedComponent, out _);
 
             if (parseStatus == Number.ParsingStatus.OK && parsedComponent >= 0)
             {

@@ -90,9 +90,15 @@ namespace Microsoft.Interop.JavaScript
         {
             // Create stub function
             MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.SignatureContext.StubReturnType, userDeclaredMethod.Identifier)
-                .AddAttributeLists(stub.SignatureContext.AdditionalAttributes.ToArray())
-                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))))
+                .WithAttributeLists(List(new[]
+                {
+                    AttributeList(SingletonSeparatedList(
+                        Attribute(ParseName(Constants.DebuggerNonUserCodeAttribute)))),
+                    AttributeList(SingletonSeparatedList(
+                        Attribute(ParseName(Constants.SupportedOSPlatformAttribute))
+                            .AddArgumentListArguments(AttributeArgument(LiteralExpression(
+                                SyntaxKind.StringLiteralExpression, Literal(Constants.BrowserPlatform)))))),
+                }))
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.SignatureContext.StubParameters)))
                 .WithBody(stubCode);

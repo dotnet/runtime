@@ -17,6 +17,11 @@ namespace System.Threading.RateLimiting
             return Stopwatch.GetElapsedTime(startTimestamp.Value);
         }
 
+        public static TimeSpan GetElapsedTime(long startTimestamp)
+        {
+            return Stopwatch.GetElapsedTime(startTimestamp);
+        }
+
         public static TimeSpan GetElapsedTime(long startTimestamp, long endTimestamp)
         {
             return Stopwatch.GetElapsedTime(startTimestamp, endTimestamp);

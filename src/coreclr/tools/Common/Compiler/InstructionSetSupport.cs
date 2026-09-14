@@ -95,6 +95,11 @@ namespace ILCompiler
             {
                 return "";
             }
+            else if (architecture is TargetArchitecture.Wasm32)
+            {
+                // TODO-WASM: return the correct intrinsic id once xplat intrinsics are implemented.
+                return "";
+            }
             else
             {
                 throw new InternalCompilerErrorException($"Unknown architecture '{architecture}'");

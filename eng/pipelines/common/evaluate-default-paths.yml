@@ -10,8 +10,6 @@ parameters:
         eng/testing/BrowserVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
-        eng/testing/scenarios/BuildWasiAppsJobsList.txt
-        eng/testing/scenarios/BuildWasmAppsJobsList.txt
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
@@ -81,15 +79,12 @@ parameters:
         eng/testing/performance/*
     ]
 
-    # src/workloads is only used in runtime-official builds
-    # where evaluate-paths is not used
     _always_exclude: [
         eng/pipelines/common/evaluate-default-paths.yml
         '*.md'
         LICENSE.TXT
         PATENTS.TXT
         THIRD-PARTY-NOTICES.TXT
-        src/workloads/*
         src/mono/wasm/sln/*
     ]
 
@@ -230,10 +225,8 @@ jobs:
       - eng/Version.Details.xml
       - eng/Versions.props
       - eng/AcquireWasiSdk.targets
-      - eng/download-wasi-sdk.ps1
-      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsListCoreCLR.txt
+      - eng/AcquireEmscriptenSdk.targets
+      - eng/wasm/*
       - eng/testing/tests.browser.targets
       - eng/testing/tests.was*.targets
       - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
@@ -268,7 +261,6 @@ jobs:
       - src/mono/wasi/build/*
       - src/mono/wasi/runtime/*
       - src/mono/wasi/testassets/*
-      - src/mono/wasi/Wasi.Build.Tests/*
       - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
@@ -312,7 +304,7 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    # Wasm except Wasm.build.Tests, Wasi.build.Tests and debugger
+    # Wasm-specific paths excluding Wasm.Build.Tests, WASI (build/runtime/testassets), and the debugger
     - subset: wasm_specific_except_wbt_dbg
       combined: true
       include:
@@ -321,8 +313,6 @@ jobs:
       # other paths that should also trigger wasm jobs
       - src/mono/*
       exclude:
-      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
@@ -337,7 +327,6 @@ jobs:
       - src/mono/wasi/build/*
       - src/mono/wasi/runtime/*
       - src/mono/wasi/testassets/*
-      - src/mono/wasi/Wasi.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*

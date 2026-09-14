@@ -17,4 +17,9 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' == 'true' AND $(MSBuildProjectName.StartsWith('Avx512'))">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(HWITestsWasmOnly)' == 'true'">
+    <!-- Wasm-specific intrinsics (e.g. PackedSimd) are only supported when targeting the Wasm architecture. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'wasm'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
 </Project>

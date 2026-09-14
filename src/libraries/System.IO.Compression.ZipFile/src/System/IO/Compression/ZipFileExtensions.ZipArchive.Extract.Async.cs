@@ -79,7 +79,25 @@ public static partial class ZipFileExtensions
 
         foreach (ZipArchiveEntry entry in source.Entries)
         {
-            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken).ConfigureAwait(false);
+            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously extracts all of the files in the archive to a directory on the file system using the specified options.
+    /// </summary>
+    public static async Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, ZipExtractionOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(destinationDirectoryName);
+        ArgumentNullException.ThrowIfNull(options);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        foreach (ZipArchiveEntry entry in source.Entries)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, options.OverwriteFiles, options.Password, cancellationToken).ConfigureAwait(false);
         }
     }
 }

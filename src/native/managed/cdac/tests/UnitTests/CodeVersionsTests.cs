@@ -86,19 +86,20 @@ internal static class MockExtensions
     public static void AddModule(this Mock<ILoader> mock, CodeVersionsMockModule module)
     {
         Contracts.ModuleHandle handle = new Contracts.ModuleHandle(module.Address);
+        TargetNUInt flags = new TargetNUInt(0);
         mock.Setup(l => l.GetModuleHandleFromModulePtr(module.Address)).Returns(handle);
-        mock.Setup(l => l.GetLookupTables(handle)).Returns(new ModuleLookupTables() {
-            MethodDefToILCodeVersioningState = module.MethodDefToILCodeVersioningStateAddress,
-        });
-        mock.Setup(l => l.GetModuleLookupMapElement(module.MethodDefToILCodeVersioningStateAddress, It.IsAny<uint>(), out It.Ref<TargetNUInt>.IsAny))
-        .Returns<TargetPointer, uint, TargetNUInt>((table, token, flags) =>
+        mock.Setup(l => l.GetModuleLookupMapElement(
+                handle,
+                ModuleLookupMapKind.MethodDefToILCodeVersioningState,
+                It.IsAny<uint>(),
+                out flags))
+        .Returns<Contracts.ModuleHandle, ModuleLookupMapKind, uint, TargetNUInt>((_, kind, token, _) =>
         {
-            flags = new TargetNUInt(0);
             if (module.MethodDefToILCodeVersioningStateTable.TryGetValue(EcmaMetadataUtils.GetRowId(token), out TargetPointer value))
             {
                 return value;
             }
-            throw new InvalidOperationException($"No token found for 0x{token:x} in table {table}");
+            throw new InvalidOperationException($"No token found for 0x{token:x} in lookup map {kind}");
         });
     }
 
@@ -115,7 +116,7 @@ internal static class MockExtensions
 
     public static void AddMethodTable(this Mock<IRuntimeTypeSystem> mock, MockCodeVersions builder, CodeVersionsMockMethodTable methodTable)
     {
-        TypeHandle handle = new TypeHandle(methodTable.Address);
+        ITypeHandle handle = new TargetTypeHandle(methodTable.Address);
         mock.Setup(r => r.GetTypeHandle(methodTable.Address)).Returns<TargetPointer>(address =>
         {
             // this is not quite accurate on 32 bit architectures, but it's good enough for testing
@@ -140,6 +141,7 @@ public class CodeVersionsTests
             [DataType.NativeCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(builder.NativeCodeVersionNodeLayout),
             [DataType.ILCodeVersioningState] = TargetTestHelpers.CreateTypeInfo(builder.ILCodeVersioningStateLayout),
             [DataType.ILCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(builder.ILCodeVersionNodeLayout),
+            [DataType.InstrumentedILOffsetMapping] = TargetTestHelpers.CreateTypeInfo(builder.InstrumentedILOffsetMappingLayout),
             [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(builder.GCCoverageInfoLayout),
         };
 
@@ -603,6 +605,70 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSource_ReturnsSourceForEnCAndDefault(MockTarget.Architecture arch)
+    {
+        uint methodRowId = 0x25; // arbitrary
+        var builder = new MockCodeVersions(arch);
+        var methodDescAddress = new TargetPointer(0x00aa_aa00);
+        var moduleAddress = new TargetPointer(0x00ca_ca00);
+
+        // Active explicit version is an EnC edit (CodeVersionSource.EnC == 2), apply-count 3.
+        TargetNUInt ilVersionId = new TargetNUInt(2);
+        MockILCodeVersionNode ilVersionNode = builder.AddILCodeVersionNode(
+            ilVersionId.Value,
+            /* kStateActive */ 0x00000002,
+            deoptimized: false,
+            source: (uint)CodeVersionSource.EnC,
+            encVersion: 3);
+        MockILCodeVersioningState versioningState = builder.AddILCodeVersioningState();
+        versioningState.ActiveVersionKind = 1;
+        versioningState.ActiveVersionNode = ilVersionNode.Address;
+        versioningState.ActiveVersionModule = 0;
+        versioningState.ActiveVersionMethodDef = 0;
+        versioningState.FirstVersionNode = ilVersionNode.Address;
+        var module = new CodeVersionsMockModule()
+        {
+            Address = moduleAddress,
+            MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
+            MethodDefToILCodeVersioningStateTable = new Dictionary<uint, TargetPointer>() {
+                { methodRowId, new TargetPointer(versioningState.Address)}
+            },
+        };
+        var methodTable = new CodeVersionsMockMethodTable()
+        {
+            Address = new TargetPointer(0x00ba_ba00),
+            Module = module,
+        };
+
+        var oneMethod = CodeVersionsMockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: TargetPointer.Null);
+        oneMethod.MethodTable = methodTable;
+        oneMethod.RowId = methodRowId;
+
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(arch, builder, mockLoader: mockLoader, mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+        var codeVersions = target.Contracts.CodeVersions;
+        Assert.NotNull(codeVersions);
+
+        // The active explicit version is an EnC edit, so its source is EnC (not ReJIT).
+        ILCodeVersionHandle active = codeVersions.GetActiveILCodeVersion(methodDescAddress);
+        Assert.True(active.IsExplicit);
+        Assert.Equal(CodeVersionSource.EnC, codeVersions.GetSource(active));
+
+        // The synthetic (default) version has no backing node -> Unknown source.
+        List<ILCodeVersionHandle> all = codeVersions.GetILCodeVersions(methodDescAddress).ToList();
+        ILCodeVersionHandle synthetic = all.Find(v => !v.Equals(active));
+        Assert.True(synthetic.IsValid);
+        Assert.False(synthetic.IsExplicit);
+        Assert.Equal(CodeVersionSource.Unknown, codeVersions.GetSource(synthetic));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void IlToNativeToIlCodeVersion_SyntheticAndExplicit(MockTarget.Architecture arch)
     {
         uint methodRowId = 0x25; // arbitrary
@@ -819,5 +885,44 @@ public class CodeVersionsTests
         NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
         OptimizationTier tier = codeVersions.GetOptimizationTier(handle);
         Assert.Equal(OptimizationTier.OptimizationTierUnknown, tier);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetInstrumentedILMap_Explicit(MockTarget.Architecture arch)
+    {
+        MockCodeVersions builder = new(arch);
+
+        const uint expectedCount = 3;
+        TargetPointer expectedEntries = new(0x4321_0000);
+        MockILCodeVersionNode ilVersionNode = builder.AddILCodeVersionNode(versionId: 1, /* kStateActive */ 0x00000002);
+        builder.SetInstrumentedILMap(ilVersionNode, expectedCount, expectedEntries.Value);
+
+        var target = CreateTarget(arch, builder);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        ILCodeVersionHandle handle = ILCodeVersionHandle.CreateExplicit(ilVersionNode.Address);
+        bool result = codeVersions.TryGetInstrumentedILMap(handle, out uint mapEntryCount, out TargetPointer mapEntries);
+
+        Assert.True(result);
+        Assert.Equal(expectedCount, mapEntryCount);
+        Assert.Equal(expectedEntries, mapEntries);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetInstrumentedILMap_Synthetic_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        MockCodeVersions builder = new(arch);
+
+        var target = CreateTarget(arch, builder);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        ILCodeVersionHandle handle = ILCodeVersionHandle.CreateSynthetic(new TargetPointer(0x1a0a_0000), methodDef: 0x06000001);
+        bool result = codeVersions.TryGetInstrumentedILMap(handle, out uint mapEntryCount, out TargetPointer mapEntries);
+
+        Assert.False(result);
+        Assert.Equal(0u, mapEntryCount);
+        Assert.Equal(TargetPointer.Null, mapEntries);
     }
 }

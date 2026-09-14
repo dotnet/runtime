@@ -62,6 +62,22 @@ DS_DEFINE_GETTER_ARRAY_REF(DiagnosticsIpcHeader *, ipc_header, uint8_t *, const 
 DS_DEFINE_GETTER(DiagnosticsIpcHeader *, ipc_header, uint8_t, commandset) // ds_ipc_header_get_commandset
 DS_DEFINE_GETTER(DiagnosticsIpcHeader *, ipc_header, uint8_t, commandid) // ds_ipc_header_get_commandid
 
+// Validates that a payload size fits within the uint16_t message-size field
+// (which must also accommodate the header) and writes the narrowed value to
+// size_out. Returns true on success, false if the payload is too large.
+static
+inline
+bool
+ds_ipc_payload_size_try_narrow (size_t size, uint16_t *size_out)
+{
+	EP_ASSERT (size_out != NULL);
+	EP_ASSERT (size <= UINT16_MAX - sizeof (DiagnosticsIpcHeader));
+	if (size > UINT16_MAX - sizeof (DiagnosticsIpcHeader))
+		return false;
+	*size_out = (uint16_t)size;
+	return true;
+}
+
 /*
 * DiagnosticsIpcMessage
 */

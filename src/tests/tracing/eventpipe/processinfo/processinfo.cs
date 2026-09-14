@@ -92,6 +92,8 @@ namespace Tracing.Tests.ProcessInfoValidation
 
         [ActiveIssue("Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported", TestPlatforms.Browser)]
         [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestEntryPoint()
         {

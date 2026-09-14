@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
 #ifdef WRITE_WATCH
 void hardware_write_watch_api_supported()
 {
@@ -300,12 +308,12 @@ void gc_heap::gc_thread_function ()
                 wait_time = min (wait_time, (uint32_t)(sample.elapsed_between_gcs / 1000 / 3));
                 wait_time = max (wait_time, 1u);
 
-                dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %I64d)", wait_time, sample.elapsed_between_gcs));
+                dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %" PRIu64 ")", wait_time, sample.elapsed_between_gcs));
             }
 #endif //DYNAMIC_HEAP_COUNT
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(wait_on_time_out_p ? wait_time : INFINITE, FALSE);
 #ifdef DYNAMIC_HEAP_COUNT
-            dprintf (9999, ("waiting for ee done res %d (timeout %d, %I64d ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
+            dprintf (9999, ("waiting for ee done res %d (timeout %d, %" PRIu64 " ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
                 wait_result, wait_time, ((GetHighPrecisionTimeStamp() - last_suspended_end_time) / 1000),
                 dynamic_heap_count_data.should_change_heap_count, gradual_decommit_in_progress_p));
 #endif //DYNAMIC_HEAP_COUNT
@@ -406,10 +414,10 @@ void gc_heap::gc_thread_function ()
         }
         else
         {
-            dprintf (9999, ("GC thread %d waiting_for_gc_start(%d)(gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier(&settings.gc_index)));
+            dprintf (9999, ("GC thread %d waiting_for_gc_start(%d)(gc%zd)", heap_number, n_heaps, VolatileLoadWithoutBarrier(&settings.gc_index)));
             gc_start_event.Wait(INFINITE, FALSE);
 #ifdef DYNAMIC_HEAP_COUNT
-            dprintf (9999, ("GC thread %d waiting_done_gc_start(%d-%d)(i: %d)(gc%Id)",
+            dprintf (9999, ("GC thread %d waiting_done_gc_start(%d-%d)(i: %d)(gc%zd)",
                 heap_number, n_heaps, dynamic_heap_count_data.new_n_heaps, dynamic_heap_count_data.init_only_p, VolatileLoadWithoutBarrier (&settings.gc_index)));
 
             if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) &&
@@ -441,10 +449,10 @@ void gc_heap::gc_thread_function ()
                             Interlocked::Increment (&dynamic_heap_count_data.idle_thread_count);
                             add_to_hc_history (hc_record_became_inactive);
 
-                            dprintf (9999, ("GC thread %d wait_on_idle(%d < %d)(gc%Id), total idle %d", heap_number, old_n_heaps, new_n_heaps,
+                            dprintf (9999, ("GC thread %d wait_on_idle(%d < %d)(gc%zd), total idle %d", heap_number, old_n_heaps, new_n_heaps,
                                 VolatileLoadWithoutBarrier (&settings.gc_index), VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_thread_count)));
                             gc_idle_thread_event.Wait (INFINITE, FALSE);
-                            dprintf (9999, ("GC thread %d waking_from_idle(%d)(gc%Id) after doing change", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
+                            dprintf (9999, ("GC thread %d waking_from_idle(%d)(gc%zd) after doing change", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
                         }
                     }
                     else
@@ -457,10 +465,10 @@ void gc_heap::gc_thread_function ()
                 {
                     Interlocked::Increment (&dynamic_heap_count_data.idle_thread_count);
                     add_to_hc_history (hc_record_inactive_waiting);
-                    dprintf (9999, ("GC thread %d wait_on_idle(< max %d)(gc%Id), total  idle %d", heap_number, num_threads_to_wake,
+                    dprintf (9999, ("GC thread %d wait_on_idle(< max %d)(gc%zd), total  idle %d", heap_number, num_threads_to_wake,
                         VolatileLoadWithoutBarrier (&settings.gc_index), VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_thread_count)));
                     gc_idle_thread_event.Wait (INFINITE, FALSE);
-                    dprintf (9999, ("GC thread %d waking_from_idle(%d)(gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
+                    dprintf (9999, ("GC thread %d waking_from_idle(%d)(gc%zd)", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
                 }
 
                 continue;
@@ -915,6 +923,13 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         return E_FAIL;
     }
 #else //USE_REGIONS
+    // Large page emulation mode is not supported on the segments path.
+    // Silently disable large pages when emulation is requested.
+    if (large_pages_emulation_mode_p)
+    {
+        use_large_pages_p = false;
+        large_pages_emulation_mode_p = false;
+    }
     bool separated_poh_p = use_large_pages_p &&
                            heap_hard_limit_oh[soh] &&
                            (GCConfig::GetGCHeapHardLimitPOH() == 0) &&
@@ -1195,7 +1210,7 @@ size_t gc_heap::get_gen0_min_size()
         }
 #endif //DYNAMIC_HEAP_COUNT
 
-        dprintf (1, ("gen0size: %zd * %d = %zd, physical mem: %zd / 6 = %zd",
+        dprintf (1, ("gen0size: %zu * %d = %zu, physical mem: %" PRIu64 " / 6 = %" PRIu64,
                 gen0size, n_heaps, (gen0size * n_heaps),
                 gc_heap::total_physical_mem,
                 gc_heap::total_physical_mem / 6));
@@ -1252,6 +1267,11 @@ size_t gc_heap::get_gen0_min_size()
 
     return gen0size;
 }
+
+#ifndef HOST_64BIT
+// Max size of heap hard limit (2^31) to be able to be aligned and rounded up on power of 2 and not overflow
+const size_t max_heap_hard_limit = (size_t)2 * (size_t)1024 * (size_t)1024 * (size_t)1024;
+#endif //!HOST_64BIT
 
 bool gc_heap::compute_hard_limit_from_heap_limits()
 {
@@ -1574,3 +1594,5 @@ int gc_heap::refresh_memory_limit()
 
     return (int)status;
 }
+
+} // namespace WKS/SVR

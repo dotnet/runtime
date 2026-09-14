@@ -42,7 +42,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pal/debug.h"
 #include "pal_endian.h"
 #include "pal.h"
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <dlfcn.h>
 
@@ -68,7 +67,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #else // HOST_UNIX
 
 #include <windows.h>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <libunwind.h>
 #include "debugmacros.h"

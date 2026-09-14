@@ -10,20 +10,22 @@ namespace System.Net.Http.Metrics
     {
         private readonly SocketsHttpHandlerMetrics _metrics;
         private readonly bool _openConnectionsEnabled;
-        private readonly object _protocolVersionTag;
-        private readonly object _schemeTag;
-        private readonly object _hostTag;
-        private readonly object _portTag;
+        private readonly string _protocolVersionTag;
+        private readonly string _schemeTag;
+        private readonly string _hostTag;
+        private readonly int _portTag;
+        private readonly string? _peerAddressTag;
         private bool _currentlyIdle;
 
-        public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocolVersion, string scheme, string host, int port)
+        public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocolVersion, string scheme, string host, int port, string? peerAddress)
         {
             _metrics = metrics;
             _openConnectionsEnabled = _metrics.OpenConnections.Enabled;
             _protocolVersionTag = protocolVersion;
             _schemeTag = scheme;
             _hostTag = host;
-            _portTag = DiagnosticsHelper.GetBoxedInt32(port);
+            _portTag = port;
+            _peerAddressTag = peerAddress;
         }
 
         // TagList is a huge struct, so we avoid storing it in a field to reduce the amount we allocate on the heap.
@@ -34,37 +36,44 @@ namespace System.Net.Http.Metrics
             tags.Add("network.protocol.version", _protocolVersionTag);
             tags.Add("url.scheme", _schemeTag);
             tags.Add("server.address", _hostTag);
-            tags.Add("server.port", _portTag);
+            tags.Add("server.port", DiagnosticsHelper.GetBoxedInt32(_portTag));
+
+            if (_peerAddressTag is not null)
+            {
+                tags.Add("network.peer.address", _peerAddressTag);
+            }
 
             return tags;
         }
 
-        private static KeyValuePair<string, object?> GetStateTag(bool idle) => new KeyValuePair<string, object?>("http.connection.state", idle ? "idle" : "active");
+        private OpenConnectionsTagKey CreateTagKey(bool idle) =>
+            new OpenConnectionsTagKey(_protocolVersionTag, _schemeTag, _hostTag, _portTag, idle, _peerAddressTag);
 
         public void ConnectionEstablished()
         {
             if (_openConnectionsEnabled)
             {
-                _currentlyIdle = true;
-                TagList tags = GetTags();
-                tags.Add(GetStateTag(idle: true));
-                _metrics.OpenConnections.Add(1, tags);
+                lock (this)
+                {
+                    _currentlyIdle = true;
+                    _metrics.OpenConnectionsTracker.Increment(CreateTagKey(idle: true));
+                }
             }
         }
 
         public void ConnectionClosed(long durationMs)
         {
-            TagList tags = GetTags();
-
             if (_metrics.ConnectionDuration.Enabled)
             {
-                _metrics.ConnectionDuration.Record(durationMs / 1000d, tags);
+                _metrics.ConnectionDuration.Record(durationMs / 1000d, GetTags());
             }
 
             if (_openConnectionsEnabled)
             {
-                tags.Add(GetStateTag(idle: _currentlyIdle));
-                _metrics.OpenConnections.Add(-1, tags);
+                lock (this)
+                {
+                    _metrics.OpenConnectionsTracker.Decrement(CreateTagKey(idle: _currentlyIdle));
+                }
             }
         }
 
@@ -72,12 +81,12 @@ namespace System.Net.Http.Metrics
         {
             if (_openConnectionsEnabled && _currentlyIdle != idle)
             {
-                _currentlyIdle = idle;
-                TagList tags = GetTags();
-                tags.Add(GetStateTag(idle: !idle));
-                _metrics.OpenConnections.Add(-1, tags);
-                tags[tags.Count - 1] = GetStateTag(idle: idle);
-                _metrics.OpenConnections.Add(1, tags);
+                lock (this)
+                {
+                    _currentlyIdle = idle;
+                    _metrics.OpenConnectionsTracker.Decrement(CreateTagKey(idle: !idle));
+                    _metrics.OpenConnectionsTracker.Increment(CreateTagKey(idle: idle));
+                }
             }
         }
     }

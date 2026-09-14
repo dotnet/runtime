@@ -129,7 +129,7 @@ The Crossgen2 JIT tools are used to run Crossgen2 on libraries built during the 
 However, you might find yourself needing to (re)build them because either you made changes to them, or you built CoreCLR in a different way using `build-runtime.sh` instead of the usual default script at the root of the repo. To build these tools, you need to run the `src/coreclr/build-runtime.sh` script, and pass the `-hostarch` flag with the architecture of the host machine, alongside the `-component crosscomponents` flag to specify that you only want to build the cross-targeting tools. Retaking our previous example of building for ARM64 using an x64 Linux machine:
 
 ```bash
-./src/coreclr/build-runtime.sh -arm64 -hostarch x64 -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
+./src/coreclr/build-runtime.sh -arch arm64 -hostarch x64 -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
 
 The output of running this command is placed in `artifacts/bin/coreclr/linux.<target_arch>.<configuration>/<host_arch>`. For our example, it would be `artifacts/bin/coreclr/linux.arm64.Release/x64`.
@@ -137,7 +137,7 @@ The output of running this command is placed in `artifacts/bin/coreclr/linux.<ta
 On Windows, you can build these cross-targeting diagnostic libraries with the `linuxdac` and `alpinedac` subsets from the root `build.cmd` script. That said, you can also use the `build-runtime.cmd` script, like with Linux. These builds also require you to pass the `-os` flag to specify the target OS. For example:
 
 ```cmd
-.\src\coreclr\build-runtime.cmd -arm64 -hostarch x64 -os linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
+.\src\coreclr\build-runtime.cmd -arch arm64 -hostarch x64 -os linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
 
 If you're building the cross-components in powershell, you'll need to wrap `"-DCLR_CROSS_COMPONENTS_BUILD=1"` with single quotes (`'`) to ensure things are escaped correctly for CMD.
@@ -218,7 +218,7 @@ arch=arm64
 ./build.sh clr+libs --cross --arch $arch --os $os --use-bootstrap
 
 # CoreCLR runtime tests.
-src/tests/build.sh -cross -$arch -$os -p:LibrariesConfiguration=Debug --use-bootstrap
+src/tests/build.sh --cross --arch $arch --os $os -p:LibrariesConfiguration=Debug --use-bootstrap
 
 # Libraries tests (produces zipped per-library test archives under artifacts/helix/tests/).
 ./build.sh libs.tests --cross --arch $arch --os $os --use-bootstrap -p:ArchiveTests=true

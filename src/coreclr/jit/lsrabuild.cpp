@@ -2450,6 +2450,19 @@ void LinearScan::buildIntervals()
             currentLoc += 2;
         }
 
+#ifdef TARGET_ARM64
+        if (m_compiler->compUsesUnknownSizeFrame && (block == m_compiler->fgFirstBB))
+        {
+            regMaskTP killed = RBM_NONE;
+            killed.AddRegNumInMask(REG_SCRATCH);
+            killed.AddRegNumInMask(REG_SCRATCH_V);
+            killed.AddRegNumInMask(REG_SCRATCH_P);
+
+            addKillForRegs(killed, currentLoc + 1);
+            currentLoc += 2;
+        }
+#endif
+
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange)
         {
@@ -2482,8 +2495,15 @@ void LinearScan::buildIntervals()
             // The cookie check will kill some registers that it is using.
             // Model this to ensure values that are kept live throughout the
             // method are properly made available.
-            bool isTailCall = block->HasFlag(BBF_HAS_JMP);
-            addKillForRegs(m_compiler->codeGen->genGetGSCookieTempRegs(isTailCall), currentLoc + 1);
+            bool         isTailCall   = block->HasFlag(BBF_HAS_JMP);
+            GenTreeCall* tailCallNode = nullptr;
+            if (isTailCall && block->lastNode()->OperIs(GT_CALL))
+            {
+                tailCallNode = block->lastNode()->AsCall();
+                assert(tailCallNode->IsFastTailCall());
+            }
+
+            addKillForRegs(m_compiler->codeGen->genGetGSCookieTempRegs(isTailCall, tailCallNode), currentLoc + 1);
             currentLoc += 2;
         }
 

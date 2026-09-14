@@ -35,6 +35,12 @@
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
+    <!-- Outerloop wasm/CoreCLR runs the slow [OuterLoop] suites; give each suite a much larger
+         per-suite xharness timeout so a long suite is not killed mid-run (xharness exit code 71).
+         Innerloop keeps the existing 01:30:00 (CoreCLR) / 00:30:00 budgets. Keep this in sync with
+         the per-batch and AzDO job timeouts in src/libraries/sendtohelix-browser.targets and
+         eng/pipelines/libraries/outerloop.yml (suite <= batch <= job). -->
+    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:00:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">00:30:00</WasmXHarnessTestsTimeout>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
@@ -50,13 +56,27 @@
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
+  <Target Name="_RootWasmTestRunnerForTrimming"
+          BeforeTargets="PrepareForILLink"
+          Condition="'$(TestFramework)' == 'xunit' and '$(PublishTrimmed)' == 'true' and '$(EnableAggressiveTrimming)' != 'true'">
+    <ItemGroup>
+      <TrimmerRootAssembly Include="WasmTestRunner" RootMode="all" />
+
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'" />
+
+      <!-- Only root TestUtilities when it is actually in the link set; some trimmed apps don't reference it. -->
+      <_ResolvedTestUtilities Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.FileName)' == 'TestUtilities'" />
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true' and '@(_ResolvedTestUtilities)' != ''" />
+    </ItemGroup>
+  </Target>
+
   <PropertyGroup>
     <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
+  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local' and '$(TargetOS)' != 'wasi'">
     <!--
       When building for BuildAOTTestsOnHelix=true, the BrowserWasmApp.targets are *not* imported, because
       they get instead used by the AOT proxy project on helix.
@@ -67,8 +87,14 @@
 
       So, set those parameters explicitly here.
       -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' != 'false'">WasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' == 'false'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <!-- WasmEnableSIMD is about native codegen, and CoreCLR browser-wasm forces it on, but the CoreCLR
+         interpreter maps every System.Runtime.Intrinsics arch intrinsic except get_IsSupported to
+         PlatformNotSupportedException. Only crossgen'd code can execute them, so without ReadyToRun stubbing
+         IsSupported to true leaves a guarded SIMD path unconditionally reachable and it throws at startup. -->
+    <_WasmIntrinsicsSubstitutions Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' != 'true'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.$(_WasmIntrinsicsSubstitutions).xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>

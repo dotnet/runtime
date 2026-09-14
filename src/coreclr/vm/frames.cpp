@@ -328,16 +328,9 @@ void Frame::Log() {
 
     STRESS_LOG3(LF_STUBS, LL_INFO1000000, "STUBS: In Stub with Frame %p assoc Method %pM FrameType = %pV\n", this, method, *((void**) this));
 
-    char buff[64];
     const char* frameType;
     if (GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame)
         frameType = "PreStub";
-    else if (GetFrameIdentifier() == FrameIdentifier::PInvokeCalliFrame)
-    {
-        sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
-                  DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
-        frameType = buff;
-    }
     else if (GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
         frameType = "StubDispatch";
     else if (GetFrameIdentifier() == FrameIdentifier::ExternalMethodFrame)
@@ -765,6 +758,7 @@ TADDR TransitionFrame::GetAddrOfThis()
     return GetTransitionBlock() + ArgIterator::GetThisOffset();
 }
 
+#ifdef FEATURE_VARARGS
 VASigCookie * TransitionFrame::GetVASigCookie()
 {
 #if defined(TARGET_X86)
@@ -780,6 +774,7 @@ VASigCookie * TransitionFrame::GetVASigCookie()
         *dac_cast<PTR_TADDR>(GetTransitionBlock() + argit.GetVASigCookieOffset()));
 #endif
 }
+#endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 PrestubMethodFrame::PrestubMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
@@ -1185,28 +1180,29 @@ GCFrame::~GCFrame()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;
 
-    // m_pNext is NULL when the frame was already popped from the stack.
-    if (m_Next != NULL)
+    // Normally the destructor performs the pop for a GCPROTECT_BEGIN/END scope, so the frame is
+    // still linked when we get here. If it was already popped explicitly - by PopExplicitFrames
+    // during EH unwind, or by the interpreter's GCReporting::Unregister - then m_pCurThread is
+    // NULL and there is nothing left to do.
+    if (m_pCurThread != NULL)
     {
-        // This is a GCFrame that was not popped.  This is a problem.
-        // We should have popped it before we destruct
         // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
         // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
-        BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
+        Thread *pThread = m_pCurThread;
+        BOOL wasCoop = pThread->PreemptiveGCDisabled();
         if (!wasCoop)
         {
-            m_pCurThread->DisablePreemptiveGC();
+            pThread->DisablePreemptiveGC();
         }
 
         Pop();
 
         if (!wasCoop)
         {
-            m_pCurThread->EnablePreemptiveGC();
+            pThread->EnablePreemptiveGC();
         }
     }
 }
@@ -1233,7 +1229,7 @@ void GCFrame::Push(Thread* pThread)
     // in which the compiler will lay them out in the stack frame.
     // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
-    _ASSERTE(((m_Next == GCFRAME_TOP) ||
+    _ASSERTE(((m_Next == NULL) ||
               (PBYTE(m_Next->GetOSStackLocation()) + (2 * minipal_getpagesize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
@@ -1258,13 +1254,15 @@ void GCFrame::Pop()
     _ASSERTE(m_pCurThread->GetGCFrame() == this && "Popping a GCFrame out of order ?");
 
     m_pCurThread->SetGCFrame(m_Next);
-    m_Next = NULL;
 
 #ifdef _DEBUG
     m_pCurThread->EnableStressHeap();
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 void GCFrame::Remove()
@@ -1280,7 +1278,7 @@ void GCFrame::Remove()
 
     GCFrame *pPrevFrame = NULL;
     GCFrame *pFrame = m_pCurThread->GetGCFrame();
-    while (pFrame != GCFRAME_TOP)
+    while (pFrame != NULL)
     {
         if (pFrame == this)
         {
@@ -1292,8 +1290,6 @@ void GCFrame::Remove()
             {
                 m_pCurThread->SetGCFrame(m_Next);
             }
-
-            m_Next = NULL;
 
 #ifdef _DEBUG
             m_pCurThread->EnableStressHeap();
@@ -1308,6 +1304,9 @@ void GCFrame::Remove()
     }
 
     _ASSERTE_MSG(pFrame != NULL, "GCFrame not found in the current thread's stack");
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 #endif // !DACCESS_COMPILE
@@ -1393,7 +1392,7 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
 
     GCFrame* pGCFrame = GetThread()->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != NULL)
     {
         if (pGCFrame->Protects(ppObjectRef)) {
             d.count++;
@@ -1502,7 +1501,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     //    INSTANCE_CHECK;
     //    NOTHROW;
     //    GC_NOTRIGGER;
-    //    FORBID_FAULT;
     //    MODE_ANY;
     //}
     //CONTRACTL_END
@@ -1524,8 +1522,21 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         return;
     }
 
-    //If not "vararg" calling convention, assume "default" calling convention
-    if (!MetaSig::IsVarArg(callSignature))
+#ifndef FEATURE_VARARGS
+    _ASSERTE(!MetaSig::IsVarArg(callSignature));
+#else // FEATURE_VARARGS
+    if (MetaSig::IsVarArg(callSignature))
+    {
+        VASigCookie *varArgSig = GetVASigCookie();
+
+        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
+        MetaSig msig(varArgSig->signature,
+                     varArgSig->pModule,
+                     &typeContext);
+        PromoteCallerStackHelper (fn, sc, pFunction, &msig);
+    }
+    else // not "vararg" calling convention, assume "default" calling convention
+#endif // FEATURE_VARARGS
     {
         SigTypeContext typeContext(pFunction);
         PCCOR_SIGNATURE pSig;
@@ -1546,16 +1557,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
-    else
-    {
-        VASigCookie *varArgSig = GetVASigCookie();
-
-        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
-        MetaSig msig(varArgSig->signature,
-                     varArgSig->pModule,
-                     &typeContext);
-        PromoteCallerStackHelper (fn, sc, pFunction, &msig);
-    }
 }
 
 void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc,
@@ -1568,7 +1569,6 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
     //    INSTANCE_CHECK;
     //    NOTHROW;
     //    GC_NOTRIGGER;
-    //    FORBID_FAULT;
     //    MODE_ANY;
     //}
     //CONTRACTL_END
@@ -1686,6 +1686,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
             break;
         case GCREFMAP_VASIG_COOKIE:
             {
+#ifdef FEATURE_VARARGS
                 VASigCookie *varArgSig = dac_cast<PTR_VASigCookie>(*ppObj);
 
                 SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
@@ -1693,6 +1694,9 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
                                 varArgSig->pModule,
                                 &typeContext);
                 PromoteCallerStackHelper (fn, sc, NULL, &msig);
+#else // !FEATURE_VARARGS
+                _ASSERTE(!"Unexpected GCREFMAP_VASIG_COOKIE without FEATURE_VARARGS");
+#endif // FEATURE_VARARGS
             }
             break;
         default:
@@ -1701,37 +1705,6 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
         }
     }
 }
-
-void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    LOG((LF_GC, INFO3, "    Promoting CALLI caller Arguments\n" ));
-
-    // get the signature
-    VASigCookie *varArgSig = GetVASigCookie();
-    if (varArgSig->signature.IsEmpty())
-    {
-        return;
-    }
-
-    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
-    MetaSig msig(varArgSig->signature,
-                 varArgSig->pModule,
-                 &typeContext);
-    PromoteCallerStackHelper(fn, sc, NULL, &msig);
-}
-
-#ifndef DACCESS_COMPILE
-PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
-    : FramedMethodFrame(FrameIdentifier::PInvokeCalliFrame, pTransitionBlock, NULL)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pVASigCookie = pVASigCookie;
-    m_pUnmanagedTarget = pUnmanagedTarget;
-}
-#endif // #ifndef DACCESS_COMPILE
 
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected

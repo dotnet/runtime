@@ -12,6 +12,7 @@ internal static partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.NtDll)]
         private static unsafe partial uint NtCreateFile(
             IntPtr* FileHandle,

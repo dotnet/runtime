@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -138,6 +139,65 @@ namespace System.Diagnostics.Tests
                 Assert.NotEqual(0, childHandle.Process.ExitCode);
                 // Use shorter wait time when the process is expected to survive
                 Assert.Equal(enabled, grandchild.WaitForExit(enabled ? WaitInMS : 300));
+            }
+            finally
+            {
+                grandchild.Kill();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KillEntireProcessTree_KillsGrandchild_WhenIntermediateChildHasKillOnParentExit(bool enabled)
+        {
+            // Mimics the scenario: Process A -> Process B (KillOnParentExit) -> Process C
+            // Killing A with entireProcessTree:true should kill C regardless of KillOnParentExit setting.
+            RemoteInvokeOptions parentOptions = new() { CheckExitCode = false };
+            parentOptions.StartInfo.RedirectStandardOutput = true;
+            parentOptions.StartInfo.RedirectStandardInput = true;
+
+            using RemoteInvokeHandle parentHandle = RemoteExecutor.Invoke(
+                (enabledStr) =>
+                {
+                    // This is "Process A". Start "Process B" with KillOnParentExit.
+                    // Process B will start "Process C" and report C's PID.
+                    using Process child = CreateProcess(() =>
+                    {
+                        // This is "Process B". Start "Process C" (long-running, no KillOnParentExit).
+                        using Process grandChild = CreateProcessLong();
+                        grandChild.Start();
+                        Console.WriteLine(grandChild.Id);
+
+                        // Block until killed
+                        Thread.Sleep(Timeout.Infinite);
+                        return RemoteExecutor.SuccessExitCode;
+                    });
+                    child.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
+                    child.StartInfo.RedirectStandardOutput = true;
+                    child.Start();
+
+                    // Read grandchild PID from Process B and forward to test
+                    string grandChildPidStr = child.StandardOutput.ReadLine();
+                    Console.WriteLine(grandChildPidStr);
+
+                    // Block until killed
+                    Thread.Sleep(Timeout.Infinite);
+                },
+                enabled.ToString(),
+                parentOptions);
+
+            int grandChildPid = int.Parse(parentHandle.Process.StandardOutput.ReadLine());
+            using Process grandchild = Process.GetProcessById(grandChildPid);
+
+            try
+            {
+                // Kill Process A with entireProcessTree: true
+                parentHandle.Process.Kill(entireProcessTree: true);
+
+                Assert.True(parentHandle.Process.WaitForExit(WaitInMS));
+                // The grandchild (Process C) should also be killed
+                Assert.True(grandchild.WaitForExit(WaitInMS));
             }
             finally
             {

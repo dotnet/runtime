@@ -36,18 +36,18 @@ void* PortableEntryPoint::GetActualCode(PCODE addr)
     return portableEntryPoint->_pActualCode;
 }
 
-void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
+void PortableEntryPoint::SetActualCode(PCODE addr, void* actualCode)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE_ALL_BUILDS(actualCode != (PCODE)NULL);
+    _ASSERTE_ALL_BUILDS(actualCode != NULL);
 
     // This is a lock free write. The existing value can either be NULL, already set to the same value,
     // or still be an interpreter-preferred temporary/native placeholder while PrefersInterpreterEntryPoint() is set.
-    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode) || portableEntryPoint->PrefersInterpreterEntryPoint());
+    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == actualCode || portableEntryPoint->PrefersInterpreterEntryPoint());
 
-    portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
+    portableEntryPoint->_pActualCode = actualCode;
 
     if (portableEntryPoint->PrefersInterpreterEntryPoint())
     {
@@ -174,7 +174,8 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD);
 
 bool PortableEntryPoint::EnsureCodeForUnmanagedCallersOnly()
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
+
     _ASSERTE(IsValid());
 
     if (HasFlags(_flags, kUnmanagedCallersOnly_Checked | kUnmanagedCallersOnly_Has))

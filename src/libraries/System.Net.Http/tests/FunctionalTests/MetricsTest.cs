@@ -73,6 +73,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
 
+        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags, IPAddress[] validPeerAddresses = null)
+        {
+            string ipString = (string)tags.Single(t => t.Key == "network.peer.address").Value;
+            validPeerAddresses ??= [IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback, IPAddress.IPv6Loopback];
+            IPAddress ip = IPAddress.Parse(ipString);
+            Assert.Contains(ip, validPeerAddresses);
+        }
+
+
         protected static void VerifyRequestDuration(Measurement<double> measurement,
             Uri uri,
             Version? protocolVersion = null,
@@ -118,23 +127,29 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(method, tags.Single(t => t.Key == "http.request.method").Value);
         }
 
-        protected static void VerifyOpenConnections(string actualName, object measurement, KeyValuePair<string, object?>[] tags, long expectedValue, Uri uri, Version? protocolVersion, string state)
+        protected static void VerifyOpenConnections(string actualName, object measurement, KeyValuePair<string, object?>[] tags, long expectedValue, Uri uri, Version? protocolVersion, string state, IPAddress[] validPeerAddresses = null)
         {
             Assert.Equal(InstrumentNames.OpenConnections, actualName);
             Assert.Equal(expectedValue, Assert.IsType<long>(measurement));
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.connection.state", state);
+            VerifyPeerAddress(tags, validPeerAddresses);
         }
 
-        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion)
+        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, IPAddress[] validPeerAddresses = null)
         {
             Assert.Equal(InstrumentNames.ConnectionDuration, instrumentName);
             double value = Assert.IsType<double>(measurement);
 
-            Assert.InRange(value, double.Epsilon, 60);
+            // This flakes for remote requests on CI.
+            if (validPeerAddresses is null)
+            {
+                Assert.InRange(value, double.Epsilon, 60);
+            }
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
+            VerifyPeerAddress(tags, validPeerAddresses);
         }
 
         protected static void VerifyTimeInQueue(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, string method = "GET")
@@ -206,6 +221,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
 
+            public void RecordObservableInstruments() => _meterListener.RecordObservableInstruments();
             public IReadOnlyList<Measurement<T>> GetMeasurements() => _values.ToArray();
             public void Dispose() => _meterListener.Dispose();
         }
@@ -257,6 +273,7 @@ namespace System.Net.Http.Functional.Tests
                 _meterListener.Start();
             }
 
+            public void RecordObservableInstruments() => _meterListener.RecordObservableInstruments();
             public IReadOnlyList<RecordedCounter> GetMeasurements() => _values.ToArray();
             public void Dispose() => _meterListener.Dispose();
         }
@@ -274,24 +291,36 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task ActiveRequests_Success_Recorded()
         {
+            var serverTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var clientTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>(InstrumentNames.ActiveRequests);
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
-                HttpResponseMessage response = await SendAsync(client, request);
+                var requestTask = SendAsync(client, request);
+                await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                recorder.RecordObservableInstruments();
+                clientTcs.SetResult();
+                var response = await requestTask;
                 response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
 
                 Assert.Collection(recorder.GetMeasurements(),
-                    m => VerifyActiveRequests(m, 1, uri),
-                    m => VerifyActiveRequests(m, -1, uri));
+                    m => VerifyActiveRequests(m, 1, uri));
             }, async server =>
             {
-                await server.AcceptConnectionSendResponseAndCloseAsync();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    serverTcs.SetResult();
+                    await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync();
+                });
             });
         }
 
@@ -332,7 +361,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJSOrFirefox))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData("GET", HttpStatusCode.OK)]
         [InlineData("PUT", HttpStatusCode.Created)]
         public Task RequestDuration_Success_Recorded(string method, HttpStatusCode statusCode)
@@ -357,6 +386,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server.")]
         [ConditionalFact]
+        [SkipOnPlatform(TestPlatforms.Browser, "NameResolution (System.Net.Dns) is not supported on Browser")]
         public async Task ExternalServer_DurationMetrics_Recorded()
         {
             if (UseVersion == HttpVersion.Version30)
@@ -371,21 +401,23 @@ namespace System.Net.Http.Functional.Tests
             Uri uri = UseVersion == HttpVersion.Version11
                 ? Test.Common.Configuration.Http.RemoteHttp11Server.EchoUri
                 : Test.Common.Configuration.Http.RemoteHttp2Server.EchoUri;
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync(uri.Host);
+            addresses = addresses.Union(addresses.Select(a => a.MapToIPv6())).ToArray();
 
             using (HttpMessageInvoker client = CreateHttpMessageInvoker())
             {
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                request.Headers.ConnectionClose = true;
                 using HttpResponseMessage response = await SendAsync(client, request);
                 await response.Content.LoadIntoBufferAsync();
+                openConnectionsRecorder.RecordObservableInstruments();
                 await WaitForEnvironmentTicksToAdvance();
             }
 
             VerifyRequestDuration(Assert.Single(requestDurationRecorder.GetMeasurements()), uri, UseVersion, 200, "GET");
             Measurement<double> cd = Assert.Single(connectionDurationRecorder.GetMeasurements());
-            VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion);
+            VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion, addresses);
             Measurement<long> oc = openConnectionsRecorder.GetMeasurements().First();
-            VerifyOpenConnections(InstrumentNames.OpenConnections, oc.Value, oc.Tags.ToArray(), 1, uri, UseVersion, "idle");
+            VerifyOpenConnections(InstrumentNames.OpenConnections, oc.Value, oc.Tags.ToArray(), 1, uri, UseVersion, "idle", addresses);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -434,7 +466,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task RequestDuration_CustomTags_Recorded()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -461,7 +493,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task RequestDuration_MultipleCallbacksPerRequest_AllCalledInOrder()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -578,7 +610,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.Empty)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.ContentLength)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.TransferEncodingChunked)]
@@ -655,6 +687,11 @@ namespace System.Net.Http.Functional.Tests
                 Handler.Credentials = credentialsMode == 1 ? new CredentialCache() : new CustomCredentials();
             }
 
+            var originalServerTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var redirectServerTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var clientTcs1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var clientTcs2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
             return LoopbackServerFactory.CreateServerAsync((originalServer, originalUri) =>
             {
                 return LoopbackServerFactory.CreateServerAsync(async (redirectServer, redirectUri) =>
@@ -664,21 +701,36 @@ namespace System.Net.Http.Functional.Tests
                     using HttpRequestMessage request = new(HttpMethod.Get, originalUri) { Version = UseVersion };
 
                     Task clientTask = SendAsync(client, request);
-                    Task serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri) });
-
+                    var serverTask = originalServer.AcceptConnectionAsync(async connection =>
+                    {
+                        var requestData = await connection.ReadRequestDataAsync();
+                        originalServerTcs.SetResult();
+                        await clientTcs1.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await connection.SendResponseAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri) });
+                    });
+                    await originalServerTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    recorder.RecordObservableInstruments();
+                    clientTcs1.SetResult();
                     await Task.WhenAny(clientTask, serverTask);
                     Assert.False(clientTask.IsCompleted, $"{clientTask.Status}: {clientTask.Exception}");
                     await serverTask;
 
-                    serverTask = redirectServer.HandleRequestAsync();
+                    serverTask = redirectServer.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestDataAsync();
+                        redirectServerTcs.SetResult();
+                        await clientTcs2.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await connection.SendResponseAsync();
+                    });
+                    await redirectServerTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    recorder.RecordObservableInstruments();
+                    clientTcs2.SetResult();
                     await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
                     await clientTask;
 
                     Assert.Collection(recorder.GetMeasurements(),
                         m => VerifyActiveRequests(m, 1, originalUri),
-                        m => VerifyActiveRequests(m, -1, originalUri),
-                        m => VerifyActiveRequests(m, 1, redirectUri),
-                        m => VerifyActiveRequests(m, -1, redirectUri));
+                        m => VerifyActiveRequests(m, 1, redirectUri));
                 });
             });
         }
@@ -702,7 +754,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [PlatformSpecific(~TestPlatforms.Browser)] // BrowserHttpHandler supports only a limited set of methods.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [MemberData(nameof(MethodData))]
         public async Task RequestMetrics_EmitNormalizedMethodTags(string method, string expectedMethodTag)
         {
@@ -733,7 +785,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
-            TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource clientTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource serverTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource clientDisposedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -746,68 +799,40 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
                     Task<HttpResponseMessage> sendAsyncTask = SendAsync(invoker, request);
-                    clientWaitingTcs.SetResult();
-                    using HttpResponseMessage response = await sendAsyncTask;
+                    await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    recorder.RecordObservableInstruments();
+                    clientTcs.SetResult();
+                    HttpResponseMessage response = await sendAsyncTask;
+                    response.Dispose();
 
                     await WaitForEnvironmentTicksToAdvance();
+                    recorder.RecordObservableInstruments();
                 }
-
                 clientDisposedTcs.SetResult();
 
-                Action<RecordedCounter> requestsQueueDuration = m =>
-                    VerifyTimeInQueue(m.InstrumentName, m.Value, m.Tags, uri, UseVersion);
-                Action<RecordedCounter> connectionNoLongerIdle = m =>
-                    VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, -1, uri, UseVersion, "idle");
-                Action<RecordedCounter> connectionIsActive = m =>
-                    VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, UseVersion, "active");
-
-                Action<RecordedCounter> check1 = requestsQueueDuration;
-                Action<RecordedCounter> check2 = connectionNoLongerIdle;
-                Action<RecordedCounter> check3 = connectionIsActive;
-
-                if (UseVersion.Major > 2)
-                {
-                    // With HTTP/3, the idle state change is emitted before RequestsQueueDuration.
-                    check1 = connectionNoLongerIdle;
-                    check2 = connectionIsActive;
-                    check3 = requestsQueueDuration;
-                }
-
-                IReadOnlyList<RecordedCounter> measurements = recorder.GetMeasurements();
-                foreach (RecordedCounter m in measurements)
-                {
-                    _output.WriteLine(m.ToString());
-                }
-
-                Assert.Collection(measurements,
+                Assert.Collection(recorder.GetMeasurements(),
+                    m => VerifyTimeInQueue(m.InstrumentName, m.Value, m.Tags, uri, UseVersion),
                     m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
-                    m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, UseVersion, "idle"),
-                    check1, // requestsQueueDuration, connectionNoLongerIdle, connectionIsActive in the appropriate order.
-                    check2,
-                    check3,
-                    m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, -1, uri, UseVersion, "active"),
-                    m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, UseVersion, "idle"),
-
-                    m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, -1, uri),
+                    m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, UseVersion, "active"),
                     m => VerifyRequestDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, UseVersion, 200),
-                    m => VerifyConnectionDuration(m.InstrumentName, m.Value, m.Tags, uri, UseVersion),
-                    m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, -1, uri, UseVersion, "idle"));
+                    m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, UseVersion, "idle"),
+                    m => VerifyConnectionDuration(m.InstrumentName, m.Value, m.Tags, uri, UseVersion));
             },
             async server =>
             {
-                await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
-                    await connection.SendResponseAsync();
+                    serverTcs.SetResult();
+                    await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync(isFinal: true);
                     await clientDisposedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                 });
             });
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_RequestCancelled_ErrorReasonIsExceptionType()
         {
             TaskCompletionSource clientCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -852,7 +877,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_ConnectionError_LogsExpectedErrorReason()
         {
             if (UseVersion.Major == 3)
@@ -1027,7 +1052,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJSOrFirefox))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1058,7 +1083,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData(400)]
         [InlineData(404)]
         [InlineData(599)]
@@ -1083,7 +1108,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
             using CancellationTokenSource cancelServerCts = new CancellationTokenSource();
@@ -1116,7 +1141,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task DurationHistograms_HaveBucketSizeHints()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1482,6 +1507,9 @@ namespace System.Net.Http.Functional.Tests
         {
             await RemoteExecutor.Invoke(static async Task () =>
             {
+                var serverTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var clientTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
@@ -1489,15 +1517,24 @@ namespace System.Net.Http.Functional.Tests
                     using InstrumentRecorder<long> recorder = new InstrumentRecorder<long>(InstrumentNames.ActiveRequests);
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
 
-                    HttpResponseMessage response = await client.SendAsync(request);
+                    var requestTask = client.SendAsync(request);
+                    await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    recorder.RecordObservableInstruments();
+                    clientTcs.SetResult();
+                    var response = await requestTask;
                     response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
 
                     Assert.Collection(recorder.GetMeasurements(),
-                        m => VerifyActiveRequests(m, 1, uri),
-                        m => VerifyActiveRequests(m, -1, uri));
+                        m => VerifyActiveRequests(m, 1, uri));
                 }, async server =>
                 {
-                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var requestData = await connection.ReadRequestDataAsync();
+                        serverTcs.SetResult();
+                        await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await connection.SendResponseAsync();
+                    });
                 });
             }).DisposeAsync();
         }
@@ -1509,7 +1546,9 @@ namespace System.Net.Http.Functional.Tests
         {
             await RemoteExecutor.Invoke(static async Task () =>
             {
-                TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource clientTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource serverTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource clientDisposedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1520,37 +1559,35 @@ namespace System.Net.Http.Functional.Tests
                     {
                         using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
                         Task<HttpResponseMessage> sendAsyncTask = client.SendAsync(request);
-                        clientWaitingTcs.SetResult();
-                        using HttpResponseMessage response = await sendAsyncTask;
+                        await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        recorder.RecordObservableInstruments();
+                        clientTcs.SetResult();
+                        HttpResponseMessage response = await sendAsyncTask;
+                        response.Dispose();
 
                         await WaitForEnvironmentTicksToAdvance();
+                        recorder.RecordObservableInstruments();
                     }
+                    clientDisposedTcs.SetResult();
 
                     Version version = HttpVersion.Version11;
                     Assert.Collection(recorder.GetMeasurements(),
-                        m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
-                        m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, version, "idle"),
                         m => VerifyTimeInQueue(m.InstrumentName, m.Value, m.Tags, uri, version),
-
-                        m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, -1, uri, version, "idle"),
+                        m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
                         m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, version, "active"),
-                        m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, -1, uri, version, "active"),
-                        m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, version, "idle"),
-
-                        m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, -1, uri),
                         m => VerifyRequestDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, version, 200),
-                        m => VerifyConnectionDuration(m.InstrumentName, m.Value, m.Tags, uri, version),
-                        m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, -1, uri, version, "idle"));
+                        m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, version, "idle"),
+                        m => VerifyConnectionDuration(m.InstrumentName, m.Value, m.Tags, uri, version));
                 },
                 async server =>
                 {
-                    await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync();
+                        serverTcs.SetResult();
+                        await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                         await connection.SendResponseAsync(isFinal: false);
-                        await connection.WaitForCloseAsync(CancellationToken.None);
+                        await clientDisposedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     });
                 });
             }).DisposeAsync();

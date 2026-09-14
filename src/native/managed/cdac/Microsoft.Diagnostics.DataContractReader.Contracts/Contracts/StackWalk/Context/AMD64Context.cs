@@ -45,7 +45,7 @@ internal struct AMD64Context : IPlatformContext
         readonly get => new(Rsp);
         set => Rsp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Rip);
         set => Rip = value.Value;
@@ -63,6 +63,9 @@ internal struct AMD64Context : IPlatformContext
         AMD64Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
     }
+
+    // Clears the x64 hardware trace flag (EFLAGS.TF, bit 0x100).
+    public void UnsetSingleStepFlag() => EFlags &= ~0x100;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

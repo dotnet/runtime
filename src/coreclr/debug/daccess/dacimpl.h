@@ -1417,9 +1417,6 @@ private:
     // Read the DAC table and initialize m_dacGlobals
     HRESULT GetDacGlobalValues();
 
-    // Verify the target mscorwks.dll matches the version expected
-    HRESULT VerifyDlls();
-
     // Check whether a region of memory is fully readable.
     bool IsFullyReadable(TADDR addr, TSIZE_T size);
 
@@ -1442,13 +1439,6 @@ private:
 
     // If true, inconsistencies in the target will cause ASSERTs to be raised in DEBUG builds
     bool m_fEnableTargetConsistencyAsserts;
-
-#ifdef _DEBUG
-protected:
-    // If true, a mscorwks/mscordacwks mismatch will trigger a nice assert dialog
-    bool m_fEnableDllVerificationAsserts;
-private:
-#endif
 
 protected:
     // Populates a DacpJitCodeHeapInfo with proper information about the
@@ -1487,6 +1477,14 @@ public:
                                               DWORD &dwRvaHint,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
+
+    static bool GetMetaDataFileInfoFromModule(Module *pModule,
+                                              DWORD &dwTimeStamp,
+                                              DWORD &dwSize,
+                                              DWORD &dwDataSize,
+                                              DWORD &dwRvaHint,
+                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                              const DWORD cchFilePath);
 };
 
 extern ClrDataAccess* g_dacImpl;

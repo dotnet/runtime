@@ -20,7 +20,6 @@ int CStringPoolHash::Cmp(
 	void		*pItem)					// A hash item which refers to a string.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     LPCSTR p1 = reinterpret_cast<LPCSTR>(pData);
     LPCSTR p2;
@@ -37,7 +36,6 @@ int CBlobPoolHash::Cmp(
     void        *pItem)					// A hash item which refers to a blob.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     ULONG ul1;
     ULONG ul2;
@@ -68,7 +66,6 @@ int CBlobPoolHash::Cmp(
 int CGuidPoolHash::Cmp(const void *pData, void *pItem)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     GUID *p2;
     if (FAILED(m_Pool->GetGuid(reinterpret_cast<GUIDHASH*>(pItem)->iIndex, &p2)))
@@ -93,7 +90,6 @@ void const *CPackedLen::GetData(		// Pointer to data, or 0 on error.
 	ULONG		*pLength)				// Put length here, or -1 on error.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 	BYTE const	*pBytes = reinterpret_cast<BYTE const*>(pData);
 
@@ -133,7 +129,6 @@ HRESULT CPackedLen::SafeGetLength(  // S_OK, or error
     void const **ppDataNext)        // Pointer immediately following encoded length
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (pDataSource == NULL ||
         pDataSourceEnd == NULL ||
@@ -199,7 +194,6 @@ HRESULT CPackedLen::SafeGetData(    // S_OK, or error
     void const **ppData)            // Start of data
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr = S_OK;
 
@@ -235,7 +229,6 @@ HRESULT CPackedLen::SafeGetData(    // S_OK, or error
     void const **ppData)            // Start of data
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     return SafeGetData(pDataSource, (void const *)((BYTE const *)pDataSource + cbDataSource), pcbData, ppData);
 } // CPackedLen::GetLength
@@ -248,7 +241,6 @@ ULONG CPackedLen::GetLength(			// Length or -1 on error.
 	void const	**ppCode)				// Put pointer to bytes here, if not 0.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 	BYTE const	*pBytes = reinterpret_cast<BYTE const*>(pData);
 
@@ -281,7 +273,6 @@ ULONG CPackedLen::GetLength(			// Length or -1 on error.
 	int			*pSizeLen)				// Put size of length here, if not 0.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 	BYTE const	*pBytes = reinterpret_cast<BYTE const*>(pData);
 
@@ -314,7 +305,6 @@ void* CPackedLen::PutLength(			// First byte past length.
 	ULONG		iLen)					// The length.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 	BYTE		*pBytes = reinterpret_cast<BYTE*>(pData);
 

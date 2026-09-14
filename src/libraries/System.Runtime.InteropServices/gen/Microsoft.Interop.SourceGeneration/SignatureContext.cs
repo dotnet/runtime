@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -39,8 +40,7 @@ namespace Microsoft.Interop
             {
                 foreach (TypePositionInfo typeInfo in ElementTypeInformation)
                 {
-                    if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
-                        && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
+                    if (!TypePositionInfo.IsSpecialIndex(typeInfo.ManagedIndex))
                     {
                         yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
                             .WithType(typeInfo.ManagedType.Syntax)
@@ -59,7 +59,18 @@ namespace Microsoft.Interop
             CodeEmitOptions options,
             Assembly generatorInfoAssembly)
         {
-            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env);
+            return Create(method, marshallingInfoParser, env, options, generatorInfoAssembly, errorHandlingInfo: null);
+        }
+
+        public static SignatureContext Create(
+            IMethodSymbol method,
+            MarshallingInfoParser marshallingInfoParser,
+            StubEnvironment env,
+            CodeEmitOptions options,
+            Assembly generatorInfoAssembly,
+            ErrorHandlingInfo? errorHandlingInfo)
+        {
+            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env, errorHandlingInfo);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -101,15 +112,36 @@ namespace Microsoft.Interop
         private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(
             IMethodSymbol method,
             MarshallingInfoParser marshallingInfoParser,
-            StubEnvironment env)
+            StubEnvironment env,
+            ErrorHandlingInfo? errorHandlingInfo)
         {
+            // When the underlying method is a property accessor, bare attributes on the property declaration
+            // (e.g. `[MarshalUsing(typeof(X))] string Prop { get; set; }`) land on the property symbol and
+            // are not otherwise visible to the marshalling pipeline. Fall them through to the accessor's
+            // value surface only -- the getter's return, or the setter's value parameter (the last
+            // parameter, after any indexer index parameters). Index parameters on indexer accessors and the
+            // setter's `void` return are not value surfaces and do not inherit property-level attributes.
+            // Accessor-level attributes win over property-level ones on a per-type basis. Target-scoped
+            // attributes (`[return:]`, `[param:]`, `[get:]`, `[set:]`) are routed by Roslyn onto the
+            // accessor directly and so are already in the accessor's attribute set.
+            ImmutableArray<AttributeData> associatedPropertyAttributes = method.AssociatedSymbol is IPropertySymbol property
+                ? property.GetAttributes()
+                : ImmutableArray<AttributeData>.Empty;
 
-            // Determine parameter and return types
+            // The value parameter on a setter is the last parameter (index parameters precede it on
+            // indexer setters). Getters have no value parameter -- their value surface is the return.
+            int valueParameterIndex = method.MethodKind == MethodKind.PropertySet
+                ? method.Parameters.Length - 1
+                : -1;
+
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                MarshallingInfo marshallingInfo = marshallingInfoParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
+                ImmutableArray<AttributeData> paramAttributes = i == valueParameterIndex
+                    ? MergeAccessorAndPropertyAttributes(param.GetAttributes(), associatedPropertyAttributes)
+                    : param.GetAttributes();
+                MarshallingInfo marshallingInfo = marshallingInfoParser.ParseMarshallingInfo(param.Type, paramAttributes);
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with
                 {
@@ -119,7 +151,10 @@ namespace Microsoft.Interop
                 typeInfos.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingInfoParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
+            ImmutableArray<AttributeData> returnAttributes = method.MethodKind == MethodKind.PropertyGet
+                ? MergeAccessorAndPropertyAttributes(method.GetReturnTypeAttributes(), associatedPropertyAttributes)
+                : method.GetReturnTypeAttributes();
+            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingInfoParser.ParseMarshallingInfo(method.ReturnType, returnAttributes));
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
@@ -128,7 +163,158 @@ namespace Microsoft.Interop
 
             typeInfos.Add(retTypeInfo);
 
+            if (errorHandlingInfo is not null)
+            {
+                ApplyErrorHandlingInfo(typeInfos, errorHandlingInfo);
+            }
+
             return typeInfos.ToImmutable();
+
+            void ApplyErrorHandlingInfo(ImmutableArray<TypePositionInfo>.Builder infos, ErrorHandlingInfo errorInfo)
+            {
+                TypePositionInfo CreateErrorInfo(
+                    int nativeIndex)
+                {
+                    return new TypePositionInfo(errorInfo.ManagedType, errorInfo.MarshallingInfo)
+                    {
+                        InstanceIdentifier = "__error",
+                        RefKind = nativeIndex == TypePositionInfo.ReturnIndex ? RefKind.None : RefKind.Out,
+                        ManagedIndex = TypePositionInfo.ErrorIndex,
+                        NativeIndex = nativeIndex,
+                        IsErrorHandlingPosition = true,
+                    };
+                }
+
+                bool MatchesManagedType(TypePositionInfo info) => info.ManagedType == errorInfo.ManagedType;
+
+                switch (errorInfo.Location)
+                {
+                    case ErrorHandlingLocation.ReturnValue:
+                        int returnIndex = infos.Count - 1;
+                        TypePositionInfo returnInfo = infos[returnIndex];
+                        if (MatchesManagedType(returnInfo))
+                        {
+                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
+                        }
+                        else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
+                        {
+                            infos[returnIndex] = returnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
+                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
+                        }
+                        break;
+
+                    case ErrorHandlingLocation.HiddenReturnValue:
+                        int hiddenReturnIndex = infos.Count - 1;
+                        TypePositionInfo hiddenReturnInfo = infos[hiddenReturnIndex];
+                        if (hiddenReturnInfo.ManagedType == SpecialTypeInfo.Void)
+                        {
+                            infos[hiddenReturnIndex] = hiddenReturnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
+                        }
+                        else
+                        {
+                            // Match the COM ABI transformation: keep the value in the managed return
+                            // position while moving it to a final out parameter in the native signature.
+                            infos[hiddenReturnIndex] = hiddenReturnInfo with
+                            {
+                                RefKind = RefKind.Out,
+                                NativeIndex = method.Parameters.Length,
+                            };
+                        }
+
+                        infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
+                        break;
+
+                    case ErrorHandlingLocation.LastParameter:
+                        TypePositionInfo lastParameter = GetLastManagedParameter(infos);
+                        Debug.Assert(lastParameter is { RefKind: RefKind.Out or RefKind.Ref }
+                            && MatchesManagedType(lastParameter));
+                        infos.Add(CreateErrorInfo(lastParameter.NativeIndex));
+                        break;
+
+                    case ErrorHandlingLocation.HiddenLastParameter:
+                        infos.Add(CreateErrorInfo(method.Parameters.Length));
+                        break;
+
+                }
+
+                static TypePositionInfo GetLastManagedParameter(ImmutableArray<TypePositionInfo>.Builder infos)
+                {
+                    TypePositionInfo? lastParameter = null;
+                    foreach (TypePositionInfo info in infos)
+                    {
+                        if (!TypePositionInfo.IsSpecialIndex(info.ManagedIndex)
+                            && (lastParameter is null || info.ManagedIndex > lastParameter.ManagedIndex))
+                        {
+                            lastParameter = info;
+                        }
+                    }
+
+                    return lastParameter ?? throw new UnreachableException();
+                }
+            }
+        }
+
+        private static ImmutableArray<AttributeData> MergeAccessorAndPropertyAttributes(
+            ImmutableArray<AttributeData> accessorAttributes,
+            ImmutableArray<AttributeData> associatedPropertyAttributes)
+        {
+            if (associatedPropertyAttributes.IsEmpty)
+            {
+                return accessorAttributes;
+            }
+
+            // Accessor-level attributes win over property-level ones at the same dedup key
+            // (attribute type + ElementIndirectionDepth for [MarshalUsing], attribute type alone
+            // otherwise). [MarshalUsing] is the only AllowMultiple = true attribute that flows
+            // through this merge: it can repeat on a single value surface with distinct
+            // ElementIndirectionDepth values to describe marshalling at successive levels of
+            // indirection (the value itself at depth 0, its elements at depth 1, and so on). The
+            // public contract on MarshalUsingAttribute.ElementIndirectionDepth states only one
+            // [MarshalUsing] with a given depth may be provided on a given parameter or return
+            // value, so dedup keys for [MarshalUsing] include the depth -- an accessor-level
+            // [MarshalUsing] overrides only the property-level [MarshalUsing] at the matching
+            // depth, and property-level [MarshalUsing]s at other depths flow through.
+            //
+            // To keep this dedup unambiguous, the COM generator additionally rejects accessor-level
+            // [MarshalUsing] attributes that omit the marshaller type (see
+            // MarshalUsingOnPropertyAccessorMustSpecifyType in GeneratorDiagnostics). That keeps the
+            // partial-split case (e.g., marshaller type on the property and count-only on the
+            // accessor) from silently dropping one side; the user combines the information on a
+            // single attribute or attaches the count-only [MarshalUsing] to the property.
+            HashSet<(string?, int)> accessorAttributeKeys = new();
+            foreach (AttributeData attr in accessorAttributes)
+            {
+                accessorAttributeKeys.Add(GetMergeKey(attr));
+            }
+
+            ImmutableArray<AttributeData>.Builder merged = ImmutableArray.CreateBuilder<AttributeData>(accessorAttributes.Length + associatedPropertyAttributes.Length);
+            merged.AddRange(accessorAttributes);
+            foreach (AttributeData attr in associatedPropertyAttributes)
+            {
+                if (!accessorAttributeKeys.Contains(GetMergeKey(attr)))
+                {
+                    merged.Add(attr);
+                }
+            }
+            return merged.ToImmutable();
+
+            static (string?, int) GetMergeKey(AttributeData attr)
+            {
+                string? attributeName = attr.AttributeClass?.ToDisplayString();
+                int depth = 0;
+                if (attributeName == TypeNames.MarshalUsingAttribute)
+                {
+                    foreach (KeyValuePair<string, TypedConstant> named in attr.NamedArguments)
+                    {
+                        if (named.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionDepth)
+                        {
+                            depth = (int)named.Value.Value!;
+                            break;
+                        }
+                    }
+                }
+                return (attributeName, depth);
+            }
         }
 
         public bool Equals(SignatureContext other)

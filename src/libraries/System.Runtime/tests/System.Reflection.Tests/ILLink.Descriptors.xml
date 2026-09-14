@@ -13,6 +13,7 @@
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Collections.ArrayList" />
   </assembly>
+  <assembly fullname="System.Runtime" />
   <assembly fullname="ForwardedTypesAssembly" />
   <assembly fullname="TestAssembly" />
 </linker>

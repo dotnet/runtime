@@ -120,6 +120,9 @@
   <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
     <value>The destination is too small to hold the encoded value.</value>
   </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-negative value.</value>
+  </data>
   <data name="Cbor_PopMajorTypeMismatch" xml:space="preserve">
     <value>Cannot perform the requested operation, the current major type context is '{0}'.</value>
   </data>
@@ -219,8 +222,14 @@
   <data name="Cbor_Reader_InvalidDecimalEncoding" xml:space="preserve">
     <value>Not a valid tagged decimal encoding.</value>
   </data>
+  <data name="Cbor_Reader_MaximumDepthExceeded" xml:space="preserve">
+    <value>The depth of the CBOR data exceeded the maximum allowed depth of {0}.</value>
+  </data>
   <data name="Cbor_Writer_PayloadIsNotValidCbor" xml:space="preserve">
     <value>Not a valid CBOR value encoding.</value>
+  </data>
+  <data name="Cbor_Writer_MaximumDepthExceeded" xml:space="preserve">
+    <value>Writing the CBOR data item would exceed the maximum allowed depth of {0}.</value>
   </data>
   <data name="Cbor_Writer_IncompleteCborDocument" xml:space="preserve">
     <value>Writer contains an incomplete CBOR document.</value>
