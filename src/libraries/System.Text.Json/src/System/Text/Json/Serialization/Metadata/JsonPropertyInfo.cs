@@ -725,6 +725,12 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == typeof(Int128) ||
                 potentialNumberType == typeof(UInt128) ||
 #endif
+#if NET11_0_OR_GREATER
+                potentialNumberType == typeof(System.Numerics.BFloat16) ||
+                potentialNumberType == typeof(System.Numerics.Decimal32) ||
+                potentialNumberType == typeof(System.Numerics.Decimal64) ||
+                potentialNumberType == typeof(System.Numerics.Decimal128) ||
+#endif
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 

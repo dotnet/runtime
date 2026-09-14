@@ -11,6 +11,8 @@ public interface IStackDataFrameHandle
     StackWalkState State { get; }
     bool IsInterrupted { get; }
     bool HasFaulted { get; }
+    bool IsExceptionFrame { get; }
+    bool IsActiveFrame { get; }
 }
 
 public enum StackWalkState

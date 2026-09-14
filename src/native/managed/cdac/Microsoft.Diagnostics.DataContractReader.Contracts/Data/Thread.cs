@@ -29,22 +29,24 @@ internal sealed partial class Thread : IData<Thread>
     [Field] public partial TargetPointer DebuggerFilterContext { get; }
     [Field] public partial uint InteropDebuggingHijacked { get; }
     [Field] public partial ObjectHandle CurrentCustomDebuggerNotification { get; }
-
-    [DataDescriptorDependency(nameof(RuntimeThreadLocals), "pointer")]
-    public RuntimeThreadLocals? RuntimeThreadLocals { get; private set; }
+    [CustomInit(nameof(InitRuntimeThreadLocals))] public partial RuntimeThreadLocals? RuntimeThreadLocals { get; }
 
     // Descriptor-optional: not present on all platforms.
-    [DataDescriptorDependency(nameof(ThreadHandle), "pointer")]
-    public TargetPointer ThreadHandle { get; private set; }
+    [CustomInit(nameof(InitThreadHandle))] public partial TargetPointer ThreadHandle { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(RuntimeThreadLocals), "pointer")]
+    private partial RuntimeThreadLocals? InitRuntimeThreadLocals(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);
-
         TargetPointer rtlPointer = target.ReadPointerField(address, type, nameof(RuntimeThreadLocals));
-        if (rtlPointer != TargetPointer.Null)
-            RuntimeThreadLocals = target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(rtlPointer);
-
-        ThreadHandle = target.ReadPointerFieldOrNull(address, type, nameof(ThreadHandle));
+        return rtlPointer != TargetPointer.Null
+            ? target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(rtlPointer)
+            : null;
+    }
+    [DataDescriptorDependency(nameof(ThreadHandle), "pointer")]
+    private partial TargetPointer InitThreadHandle(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);
+        return target.ReadPointerFieldOrNull(address, type, nameof(ThreadHandle));
     }
 }

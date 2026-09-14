@@ -152,6 +152,17 @@ int32_t CompressionNative_DeflateEnd(PAL_ZStream* stream)
     return result;
 }
 
+int32_t CompressionNative_DeflateReset(PAL_ZStream* stream)
+{
+    assert(stream != NULL);
+
+    z_stream* zStream = GetCurrentZStream(stream);
+    int32_t result = deflateReset(zStream);
+    TransferStateToPalZStream(zStream, stream);
+
+    return result;
+}
+
 int32_t CompressionNative_InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
 {
     assert(stream != NULL);

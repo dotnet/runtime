@@ -29,6 +29,9 @@ class ReadyToRunCoreInfo
 private:
     PTR_ReadyToRunLoadedImage       m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
+#ifdef TARGET_WASM
+    TADDR                           m_minVirtualIP = 0;
+#endif // TARGET_WASM
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
     friend struct ::cdac_data<ReadyToRunCoreInfo>;
 
@@ -40,6 +43,15 @@ public:
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
     void ForbidProcessMoreILBodyFixups() { m_fForbidLoadILBodyFixups = true; }
     bool IsForbidProcessMoreILBodyFixups() { return m_fForbidLoadILBodyFixups; }
+#ifdef TARGET_WASM
+    bool MinVirtualIPSet() const { return m_minVirtualIP != 0; }
+    void SetMinVirtualIP(TADDR minVirtualIP) { m_minVirtualIP = minVirtualIP; }
+    TADDR GetMinVirtualIP() const
+    {
+        _ASSERTE(MinVirtualIPSet());
+        return m_minVirtualIP;
+    }
+#endif // TARGET_WASM
 
     PTR_ReadyToRunLoadedImage GetImage() const
     {
@@ -223,7 +235,17 @@ public:
 
 #ifdef TARGET_WASM
     DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
-    TADDR GetMinVirtualIP() const { return m_minVirtualIP; }
+    TADDR GetMinVirtualIP() const
+    {
+        _ASSERTE(m_minVirtualIP != 0);
+        return m_minVirtualIP;
+    }
+    PCODE R2RRelativeFunctionIndexToVirtualIP(DWORD r2rFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(r2rFunctionIndex < m_nRuntimeFunctions);
+        return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
+    }
     void RegisterVirtualIPRange(Module* pModule);
 #endif // TARGET_WASM
 
@@ -395,11 +417,13 @@ public:
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool TryGetPrecachedExternalTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
 
     bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
 
+    bool TryGetPrecachedProxyTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
 

@@ -76,6 +76,8 @@ namespace ILLink.Shared.TrimAnalysis
                                     }
                                     else if (TryGetMakeGenericInstantiation(_callingMethod, argumentValues[0], out Instantiation inst, out bool isExact))
                                     {
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, typeInstantiated.Instantiation);
+
                                         if (inst.Length == typeInstantiated.Instantiation.Length)
                                         {
                                             typeInstantiated = ((MetadataType)typeInstantiated).MakeInstantiatedType(inst);
@@ -108,6 +110,7 @@ namespace ILLink.Shared.TrimAnalysis
                                         // constrained to be a reference type.
                                         // MarkType will try to come up with a reference type type loader template.
                                         _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, typeInstantiated.Instantiation);
                                     }
                                 }
                                 else if (value == NullValue.Instance)
@@ -149,6 +152,8 @@ namespace ILLink.Shared.TrimAnalysis
                                     else if (!methodInstantiated.OwningType.IsGenericDefinition
                                         && TryGetMakeGenericInstantiation(_callingMethod, argumentValues[0], out Instantiation inst, out bool isExact))
                                     {
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, methodInstantiated.Instantiation);
+
                                         if (inst.Length == methodInstantiated.Instantiation.Length)
                                         {
                                             methodInstantiated = methodInstantiated.MakeInstantiatedMethod(inst);
@@ -167,6 +172,7 @@ namespace ILLink.Shared.TrimAnalysis
                                     else if (methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
                                     {
                                         // This will always succeed thanks to the runtime type loader
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, methodInstantiated.Instantiation);
                                     }
                                     else
                                     {
@@ -554,6 +560,23 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet((MultiValue)maybeMethodReturnValue, value);
             }
+        }
+
+        private static void AddDependenciesFromConstraintUse(ReflectionMarker marker, Instantiation inst)
+        {
+#if !ILTRIM
+            // Operations like MakeGeneric make use of constraints on the generic type parameter. Make sure
+            // the compiler considers all of the interfaces in constraints used.
+            // We only need to do this with interface constraints since base types are not removed (class constraints are safe).
+            foreach (GenericParameterDesc p in inst)
+            {
+                foreach (TypeDesc constraint in p.TypeConstraints)
+                {
+                    if (constraint.IsInterface)
+                        marker.Dependencies.Add(marker.Factory.ReflectedType(constraint.GetTypeDefinition()), "MakeGeneric used with a constrained type");
+                }
+            }
+#endif
         }
 
         private static bool TryGetMakeGenericInstantiation(

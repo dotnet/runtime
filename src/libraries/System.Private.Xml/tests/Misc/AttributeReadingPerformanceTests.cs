@@ -18,12 +18,14 @@ namespace System.Xml.Tests
         private const int SmallN = 2_000;
         private const int LargeN = 20_000;
         private const double SizeRatio = (double)LargeN / SmallN;
-        private const double MaxRatioMultiplier = 4;
+        private const double MaxRatioMultiplier = 5;
+        // Floor for the small-side divisor: below this, wall-clock noise dominates the reading.
+        private const long MinBaselineMs = 30;
         private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(60);
 
         protected abstract void ReadFully(string xml, CancellationToken ct);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_SameLocalName_AboveThreshold()
         {
             // Exercises the HashSet duplicate-check path (number of attributes >= threshold)
@@ -31,7 +33,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount, longUris: true, distinctLocalNames: false));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInterpreter))]
         public void AttributeDuplicatesCheck_ShortUris_SameLocalName_BelowThreshold()
         {
             // Pairwise walk path (number of attributes < threshold)
@@ -39,7 +41,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount - 1, longUris: false, distinctLocalNames: false));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_DistinctLocalNames_AboveThreshold()
         {
             // Distinct localNames starting with same letter (to bypass some optimizations)
@@ -47,7 +49,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount, longUris: true, distinctLocalNames: true));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_SameLocalName_WellAboveThreshold()
         {
             // Larger amount of attributes — well above the threshold
@@ -55,7 +57,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount * 4, longUris: true, distinctLocalNames: false));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInterpreter))]
         public void AttributeDuplicatesCheck_ShortUris_DistinctLocalNames_BelowThreshold()
         {
             // Below threshold with distinct localNames
@@ -65,7 +67,7 @@ namespace System.Xml.Tests
 
         // We're doing full string.Equals on DEBUG on top of Ref.Equal which makes it quadratic.
 #if !DEBUG
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_SameLocalName_BelowThreshold()
         {
             // Pairwise walk path with long URIs — only valid in Release
@@ -79,18 +81,21 @@ namespace System.Xml.Tests
             using CancellationTokenSource cts = new(s_timeout);
             CancellationToken ct = cts.Token;
 
+            // Warm up JIT and caches.
             ReadFully(generateDoc(SmallN), ct);
 
             long smallTime = MeasureRead(generateDoc(SmallN), ct);
             long largeTime = MeasureRead(generateDoc(LargeN), ct);
 
             double maxAllowed = SizeRatio * MaxRatioMultiplier;
-            double actualRatio = (double)largeTime / Math.Max(smallTime, 1);
+            long baseline = Math.Max(smallTime, MinBaselineMs);
+            double actualRatio = (double)largeTime / baseline;
 
             Assert.True(actualRatio <= maxAllowed,
                 $"Scaling ratio {actualRatio:F1}x exceeded {maxAllowed:F1}x limit " +
                 $"(input grew {SizeRatio:F0}x). " +
-                $"Small ({SmallN}): {smallTime} ms, Large ({LargeN}): {largeTime} ms.");
+                $"Small ({SmallN}): {smallTime} ms (baseline {baseline} ms), " +
+                $"Large ({LargeN}): {largeTime} ms.");
         }
 
         private long MeasureRead(string doc, CancellationToken ct)

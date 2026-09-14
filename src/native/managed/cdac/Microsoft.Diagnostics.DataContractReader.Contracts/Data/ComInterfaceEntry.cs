@@ -8,15 +8,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ComInterfaceEntry))]
 internal sealed partial class ComInterfaceEntry : IData<ComInterfaceEntry>
 {
-    [DataDescriptorDependency(nameof(IID), "nuint")]
-    public Guid IID { get; private set; }
+    [CustomInit(nameof(InitIID))] public partial Guid IID { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(IID), "nuint")]
+    private partial Guid InitIID(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ComInterfaceEntry);
         // IID is a 16-byte GUID
         byte[] iidBytes = new byte[16];
         target.ReadBuffer(address + (ulong)type.Fields[nameof(IID)].Offset, iidBytes);
-        IID = new Guid(iidBytes);
+        return new Guid(iidBytes);
     }
 }

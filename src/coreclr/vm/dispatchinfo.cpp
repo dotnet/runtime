@@ -208,7 +208,6 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
 
         // The member info must have been initialized before this is called.
         PRECONDITION(TRUE == m_bInitialized);
@@ -478,7 +477,6 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(MemberInfoObj != NULL);
         PRECONDITION(CheckPointer(pMemberMap, NULL_OK));
     }
@@ -878,7 +876,6 @@ void DispatchMemberInfo::SetUpDispParamAttributes(int iParam, MarshalInfo* Info)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(Info));
     }
     CONTRACTL_END;
@@ -1027,7 +1024,6 @@ DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID dispID
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1111,7 +1107,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         // there are too many fields in pObjs, here I assume once one of them is
         // protected, the whole structure is protected.
         PRECONDITION(IsProtectedByGCFrame(&pObjs->MemberInfo));
@@ -1648,110 +1643,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
 
-void DispatchInfo::InvokeMemberDebuggerWrapper(
-                                      DispatchMemberInfo*   pDispMemberInfo,
-                                      InvokeObjects*        pObjs,
-                                      int                   NumParams,
-                                      int                   NumArgs,
-                                      int                   NumNamedArgs,
-                                      int&                  NumByrefArgs,
-                                      int&                  iSrcArg,
-                                      DISPID                id,
-                                      DISPPARAMS*           pdp,
-                                      VARIANT*              pVarRes,
-                                      WORD                  wFlags,
-                                      LCID                  lcid,
-                                      DISPID*               pSrcArgNames,
-                                      VARIANT*              pSrcArgs,
-                                      OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle,
-                                      int*                  pManagedMethodParamIndexMap,
-                                      VARIANT**             aByrefArgOleVariant,
-                                      Frame *               pFrame)
-
-{
-    // Use static contracts b/c we have SEH.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    // @todo - we have a PAL_TRY/PAL_EXCEPT here as a general (cross-platform) way to get a 1st-pass
-    // filter. If that's bad perf, we could inline an FS:0 handler for x86-only; and then inline
-    // both this wrapper and the main body.
-
-    struct Param : public NotifyOfCHFFilterWrapperParam
-    {
-        DispatchInfo*         pThis;
-        DispatchMemberInfo*   pDispMemberInfo;
-        InvokeObjects*        pObjs;
-        int                   NumParams;
-        int                   NumArgs;
-        int                   NumNamedArgs;
-        int&                  NumByrefArgs;
-        int&                  iSrcArg;
-        DISPID                id;
-        DISPPARAMS*           pdp;
-        VARIANT*              pVarRes;
-        WORD                  wFlags;
-        LCID                  lcid;
-        DISPID*               pSrcArgNames;
-        VARIANT*              pSrcArgs;
-        OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle;
-        int*                  pManagedMethodParamIndexMap;
-        VARIANT**             aByrefArgOleVariant;
-
-        Param(int& _NumByrefArgs, int& _iSrcArg)
-            : NumByrefArgs(_NumByrefArgs), iSrcArg(_iSrcArg)
-        {}
-    } param(NumByrefArgs, iSrcArg);
-
-    param.pFrame = GetThread()->GetFrame(); // Inherited from NotifyOfCHFFilterWrapperParam
-    param.pThis = this;
-    param.pDispMemberInfo = pDispMemberInfo;
-    param.pObjs = pObjs;
-    param.NumParams = NumParams;
-    param.NumArgs = NumArgs;
-    param.NumNamedArgs = NumNamedArgs;
-    //param.NumByrefArgs = NumByrefArgs;
-    //param.iSrcArg = iSrcArg;
-    param.id = id;
-    param.pdp = pdp;
-    param.pVarRes = pVarRes;
-    param.wFlags = wFlags;
-    param.lcid = lcid;
-    param.pSrcArgNames = pSrcArgNames;
-    param.pSrcArgs = pSrcArgs;
-    param.aByrefStaticArrayBackupObjHandle = aByrefStaticArrayBackupObjHandle;
-    param.pManagedMethodParamIndexMap = pManagedMethodParamIndexMap;
-    param.aByrefArgOleVariant = aByrefArgOleVariant;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        pParam->pThis->InvokeMemberWorker(pParam->pDispMemberInfo,
-                                          pParam->pObjs,
-                                          pParam->NumParams,
-                                          pParam->NumArgs,
-                                          pParam->NumNamedArgs,
-                                          pParam->NumByrefArgs,
-                                          pParam->iSrcArg,
-                                          pParam->id,
-                                          pParam->pdp,
-                                          pParam->pVarRes,
-                                          pParam->wFlags,
-                                          pParam->lcid,
-                                          pParam->pSrcArgNames,
-                                          pParam->pSrcArgs,
-                                          pParam->aByrefStaticArrayBackupObjHandle,
-                                          pParam->pManagedMethodParamIndexMap,
-                                          pParam->aByrefArgOleVariant);
-    }
-    PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(false);
-    }
-    PAL_ENDTRY
-}
-
 // Helper method that invokes the member with the specified DISPID.
 HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr)
 {
@@ -1760,7 +1651,6 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSimpleWrap));
         PRECONDITION(CheckPointer(pdp, NULL_OK));
         PRECONDITION(CheckPointer(pVarRes, NULL_OK));
@@ -1975,31 +1865,25 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // Invoke the method.
         //
 
-        // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
-        // which may swallow managed exceptions.  The debugger needs this in order to send a
-        // CatchHandlerFound (CHF) notification.
-        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
-
         EX_TRY
         {
-            InvokeMemberDebuggerWrapper(pDispMemberInfo,
-                                        &Objs,
-                                        NumParams,
-                                        NumArgs,
-                                        NumNamedArgs,
-                                        NumByrefArgs,
-                                        iSrcArg,
-                                        id,
-                                        pdp,
-                                        pVarRes,
-                                        wFlags,
-                                        lcid,
-                                        pSrcArgNames,
-                                        pSrcArgs,
-                                        aByrefStaticArrayBackupObjHandle,
-                                        pManagedMethodParamIndexMap,
-                                        aByrefArgOleVariant,
-                                        &catchFrame);
+            InvokeMemberWorker(pDispMemberInfo,
+                               &Objs,
+                               NumParams,
+                               NumArgs,
+                               NumNamedArgs,
+                               NumByrefArgs,
+                               iSrcArg,
+                               id,
+                               pdp,
+                               pVarRes,
+                               wFlags,
+                               lcid,
+                               pSrcArgNames,
+                               pSrcArgs,
+                               aByrefStaticArrayBackupObjHandle,
+                               pManagedMethodParamIndexMap,
+                               aByrefArgOleVariant);
         }
         EX_CATCH
         {
@@ -2007,7 +1891,6 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
             RethrowTerminalExceptions();
         }
         EX_END_CATCH
-        catchFrame.Pop();
 
         if (pThrowable != NULL)
         {
@@ -2233,7 +2116,6 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMemberInfo, NULL_OK));
         PRECONDITION(CheckPointer(pSrcArgNames));
         PRECONDITION(pNamedParamArray != NULL);
@@ -2662,7 +2544,6 @@ OBJECTREF DispatchInfo::GetOleAutBinder()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2829,7 +2710,6 @@ ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

@@ -1,0 +1,10 @@
+# dpkg triggers for dotnet-host (https://github.com/dotnet/sdk/issues/55303).
+#
+# Re-run the postinst repair whenever any package installs, upgrades, or removes files under
+# these paths. The host package's bounded Replaces relationship prevents an in-range
+# dotnet-sdk-10.0 package from overwriting the host-owned entries in either install order;
+# this trigger is a backstop that restores them after any transaction that does modify the
+# paths. 'noawait' avoids introducing processing-order constraints between the host and the
+# SDK within a single dpkg transaction.
+interest-noawait /usr/share/dotnet/dnx
+interest-noawait /usr/bin/dnx

@@ -26,7 +26,6 @@ bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out Targe
 | `InteropSyncBlockInfo` | `CCF` | `pointer` | COM class factory pointer; sentinel value 0x1 means previously had a CCF (treat as null) |
 | `InteropSyncBlockInfo` | `CCW` | `pointer` | CCW pointer; sentinel value 0x1 means previously had a CCW (treat as null) |
 | `InteropSyncBlockInfo` | `RCW` | `pointer` | RCW pointer; bit 0 is a lock bit and must be masked off |
-| `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
 | `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
 | `SyncBlock` | `LinkNext` | `pointer` | Head pointer for cleanup list link |
 | `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |

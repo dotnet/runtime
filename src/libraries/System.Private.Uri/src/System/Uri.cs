@@ -3501,6 +3501,15 @@ namespace System
             _string = vsb.ToString();
         }
 
+        private static string EscapeUnescapeIri(scoped ReadOnlySpan<char> prefix, scoped ReadOnlySpan<char> span, bool isQuery)
+        {
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+            IriHelper.EscapeUnescapeIri(ref vsb, span, isQuery);
+            string result = string.Concat(prefix, vsb.AsSpan());
+            vsb.Dispose();
+            return result;
+        }
+
         // verifies the syntax of the scheme part
         // Checks on implicit File: scheme due to simple Dos/Unc path passed
         // returns the start of the next component  position
@@ -3724,10 +3733,7 @@ namespace System
                     // Iri'ze userinfo
                     if (hasUnicode)
                     {
-                        var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                        IriHelper.EscapeUnescapeIri(ref vsb, slice.Slice(0, userInfoLength), isQuery: false);
-                        newHost = string.Concat(newHost, vsb.AsSpan());
-                        vsb.Dispose();
+                        newHost = EscapeUnescapeIri(newHost, slice.Slice(0, userInfoLength), isQuery: false);
                     }
                 }
             }

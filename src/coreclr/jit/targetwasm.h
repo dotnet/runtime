@@ -50,7 +50,9 @@
 // TODO-WASM-CQ: measure if "CSE_CONSTS" is beneficial.
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
 #define LOWER_DECOMPOSE_LONGS    0       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
-#define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
+#define TARGET_MASKS_SHIFTS      1       // Shift and rotate instructions implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         0       // Does not support GT_MULHI, the high bits of an NxN multiply
+#define EMIT_TRACK_STACK_DEPTH   0         // No need to track arg pushes/pops
 #define EMIT_GENERATE_GCINFO     1       // Codegen and emit generate GC info; on WASM this enables stack slot GC info encoding without fixed-register GC tracking
 
 // Since we don't have a fixed register set on WASM, we set most of the following register defines to 'none'-like values.
@@ -154,14 +156,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// GenericPInvokeCalliHelper VASigCookie Parameter
-#define REG_PINVOKE_COOKIE_PARAM          REG_NA
-#define RBM_PINVOKE_COOKIE_PARAM          RBM_NONE
-
-// GenericPInvokeCalliHelper unmanaged target Parameter
-#define REG_PINVOKE_TARGET_PARAM          REG_NA
-#define RBM_PINVOKE_TARGET_PARAM          RBM_NONE
 
 // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
 #define REG_SECRET_STUB_PARAM     REG_NA

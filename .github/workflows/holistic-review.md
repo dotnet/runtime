@@ -77,27 +77,21 @@ pre-agent-steps:
     run: |
       set -euo pipefail
 
-      # These are the agent configuration paths recognized by gh-aw v0.82.6.
+      # These are the agent configuration paths recognized by gh-aw v0.85.4.
       # Re-audit this list whenever the pinned gh-aw compiler version changes.
       trusted_agent_folders=(
         .agents
-        .antigravity
         .claude
         .codex
-        .crush
         .gemini
         .github
-        .opencode
         .pi
       )
       trusted_agent_files=(
-        .crush.json
         AGENTS.md
-        ANTIGRAVITY.md
         CLAUDE.md
         GEMINI.md
         PI.md
-        opencode.jsonc
       )
       trusted_agent_paths=(
         "${trusted_agent_folders[@]}"
@@ -318,7 +312,7 @@ This workflow is dispatched per-PR by the `holistic-review-orchestrator` workflo
 
 ## Step 0: Prepare Workspace
 
-The orchestrator passes the PR's actual base branch and current head commit. Before the agent starts, the workflow checks out that exact commit, removes every agent configuration path recognized by gh-aw v0.82.6, and restores those paths from `main`. Removing the paths first is essential because a Git checkout by itself would leave files added only by the PR behind.
+The orchestrator passes the PR's actual base branch and current head commit. Before the agent starts, the workflow checks out that exact commit, removes every agent configuration path recognized by gh-aw v0.85.4, and restores those paths from `main`. Removing the paths first is essential because a Git checkout by itself would leave files added only by the PR behind.
 
 ```bash
 PR_BASE_REF="$HOLISTIC_REVIEW_BASE_REF"

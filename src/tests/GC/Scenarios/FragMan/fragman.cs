@@ -22,6 +22,7 @@ namespace DefaultNamespace {
         internal FragNode [] CvA_FNodes;
 
         [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

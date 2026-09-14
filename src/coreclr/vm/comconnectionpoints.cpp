@@ -312,7 +312,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
     }
     CONTRACTL_END;
 
-    ComHolderAnyMode<IUnknown> pEventItf;
+    ReleaseHolderAnyMode<IUnknown> pEventItf;
     HRESULT hr;
 
     // Make sure we have a pointer to the interface and not to another IUnknown.
@@ -408,7 +408,6 @@ void ConnectionPoint::SetupEventMethods()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -514,7 +513,6 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pProvMethodDesc));
         PRECONDITION(CheckPointer(pEventMethodDesc));
     }

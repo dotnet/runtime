@@ -989,6 +989,16 @@ void Lowering::LowerModPow2(GenTree* node)
 //
 GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
 {
+    // For !JitUseScalableVectorT, we need to ensure the mask can be encoded as ptrue/pfalse.
+    // For JitUseScalableVectorT, constant masks use the gtSimdScalableMaskVal encoding, so are always valid.
+
+#if defined(DEBUG)
+    if (JitConfig.JitUseScalableVectorT())
+    {
+        return mask->gtNext;
+    }
+#endif // DEBUG
+
     // Try every type until a match is found
 
     if (mask->IsZero())
@@ -1025,7 +1035,7 @@ GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
 
     // Create a vector constant
     GenTreeVecCon* vecCon = m_compiler->gtNewVconNode(TYP_SIMD16);
-    EvaluateSimdCvtMaskToVector<simd16_t>(TYP_BYTE, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
+    EvaluateSimdCvtMaskToVector<simd16_t>(TYP_BYTE, &vecCon->gtSimd16Val, mask->gtSimdMaskVal);
     BlockRange().InsertBefore(mask, vecCon);
 
     // Convert the vector constant to a mask
@@ -1983,7 +1993,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             var_types      selectType   = isMaskOp ? TYP_MASK : Compiler::getSIMDTypeForSize(node->GetSimdSize());
             NamedIntrinsic selectIntrin = isMaskOp ? NI_Sve_ConditionalSelect_Predicates : NI_Sve_ConditionalSelect;
 
-            GenTree* trueMask = m_compiler->gtNewSimdAllTrueMaskNode(node->GetSimdBaseType());
+            GenTree* trueMask = m_compiler->gtNewSimdTrueMaskNode(node->GetSimdBaseType());
             GenTree* falseVal = m_compiler->gtNewZeroConNode(selectType);
             BlockRange().InsertBefore(node, trueMask);
             BlockRange().InsertBefore(node, falseVal);

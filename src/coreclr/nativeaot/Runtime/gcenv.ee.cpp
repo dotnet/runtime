@@ -52,7 +52,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
 }
 
-void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
+void GCToEEInterface::RestartEE(bool /* bUnused */)
 {
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
 
@@ -823,6 +823,15 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 {
 #ifdef FEATURE_JAVAMARSHAL
     JavaMarshalNative::TriggerClientBridgeProcessing(args);
+#endif
+}
+
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+#ifdef FEATURE_JAVAMARSHAL
+    return JavaMarshalNative::IsGCBridgeActive();
+#else
+    return false;
 #endif
 }
 

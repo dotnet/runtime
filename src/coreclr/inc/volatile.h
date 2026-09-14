@@ -100,7 +100,7 @@
 // Please do not use this macro outside of this file.  It is subject to change or removal without
 // notice.
 //
-#define VOLATILE_MEMORY_BARRIER() asm volatile ("" : : : "memory")
+#define VOLATILE_MEMORY_BARRIER() __atomic_signal_fence(__ATOMIC_SEQ_CST)
 #endif // HOST_ARM || HOST_ARM64
 
 #elif (defined(HOST_ARM) || defined(HOST_ARM64)) && _ISO_VOLATILE

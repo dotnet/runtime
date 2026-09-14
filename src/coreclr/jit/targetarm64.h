@@ -42,7 +42,9 @@
 #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
 
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
-#define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
+#define TARGET_MASKS_SHIFTS      1       // Shift and rotate instructions implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         1       // Supports GT_MULHI, the high bits of an NxN multiply
+#define EMIT_TRACK_STACK_DEPTH   1         // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                          // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
 #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
@@ -139,8 +141,10 @@
 #define REG_SHIFT                REG_NA
 #define RBM_SHIFT                RBM_ALLINT
 
-// This is a general scratch register that does not conflict with the argument registers
+// Scratch registers that do not conflict with the argument registers, usually for use in function prolog
 #define REG_SCRATCH              REG_R9
+#define REG_SCRATCH_V            REG_V9
+#define REG_SCRATCH_P            REG_P4
 
 // This is a general register that can be optionally reserved for other purposes during codegen
 #define REG_OPT_RSVD             REG_IP1
@@ -181,14 +185,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// GenericPInvokeCalliHelper VASigCookie Parameter
-#define REG_PINVOKE_COOKIE_PARAM          REG_R15
-#define RBM_PINVOKE_COOKIE_PARAM          RBM_R15
-
-// GenericPInvokeCalliHelper unmanaged target Parameter
-#define REG_PINVOKE_TARGET_PARAM          REG_R12
-#define RBM_PINVOKE_TARGET_PARAM          RBM_R12
 
 // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
 #define REG_SECRET_STUB_PARAM     REG_R12

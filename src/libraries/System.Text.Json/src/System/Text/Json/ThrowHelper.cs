@@ -654,60 +654,10 @@ namespace System.Text.Json
             throw new FormatException { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
+        [DoesNotReturn]
         public static void ThrowFormatException(NumericType numericType)
         {
-            string message = "";
-
-            switch (numericType)
-            {
-                case NumericType.Byte:
-                    message = SR.FormatByte;
-                    break;
-                case NumericType.SByte:
-                    message = SR.FormatSByte;
-                    break;
-                case NumericType.Int16:
-                    message = SR.FormatInt16;
-                    break;
-                case NumericType.Int32:
-                    message = SR.FormatInt32;
-                    break;
-                case NumericType.Int64:
-                    message = SR.FormatInt64;
-                    break;
-                case NumericType.Int128:
-                    message = SR.FormatInt128;
-                    break;
-                case NumericType.UInt16:
-                    message = SR.FormatUInt16;
-                    break;
-                case NumericType.UInt32:
-                    message = SR.FormatUInt32;
-                    break;
-                case NumericType.UInt64:
-                    message = SR.FormatUInt64;
-                    break;
-                case NumericType.UInt128:
-                    message = SR.FormatUInt128;
-                    break;
-                case NumericType.Half:
-                    message = SR.FormatHalf;
-                    break;
-                case NumericType.Single:
-                    message = SR.FormatSingle;
-                    break;
-                case NumericType.Double:
-                    message = SR.FormatDouble;
-                    break;
-                case NumericType.Decimal:
-                    message = SR.FormatDecimal;
-                    break;
-                default:
-                    Debug.Fail($"The NumericType enum value: {numericType} is not part of the switch. Add the appropriate case and exception message.");
-                    break;
-            }
-
-            throw new FormatException(message) { Source = ExceptionSourceValueToRethrowAsJsonException };
+            throw new FormatException(SR.Format(SR.FormatNumericType, numericType)) { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
         [DoesNotReturn]
@@ -824,7 +774,11 @@ namespace System.Text.Json
         Half,
         Single,
         Double,
-        Decimal
+        Decimal,
+        BFloat16,
+        Decimal32,
+        Decimal64,
+        Decimal128
     }
 
     internal enum DataType

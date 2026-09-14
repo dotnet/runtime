@@ -4,9 +4,6 @@
 // Contract.h
 //
 
-// ! I am the owner for issues in the contract *infrastructure*, not for every
-// ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
-// ! CONTRACT_VIOLATION, you will become the new owner of this file.
 //--------------------------------------------------------------------------------
 // CONTRACTS - User Reference
 //
@@ -26,13 +23,6 @@
 //
 //      THROWS          an exception might be thrown out of the function
 //      -or- NOTHROW    an exception will NOT be thrown out of the function
-//
-//
-//
-//      INJECT_FAULT(statement)   function might require its caller to handle an OOM
-//      -or- FAULT_FORBID         function will NOT require its caller to handle an OOM
-//
-//
 //
 //      GC_TRIGGERS             the function can trigger a GC
 //      -or- GC_NOTRIGGER       the function will never trigger a GC provided its
@@ -85,7 +75,7 @@
 //
 //     Static:
 //        LIMITED_METHOD_CONTRACT
-//                           A static contract equivalent to NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY.
+//                           A static contract equivalent to NOTHROW/GC_NOTRIGGER/MODE_ANY.
 //                           Use only for trivial functions that call only functions with LIMITED_METHOD_CONTRACTs
 //                           (as long as there is no cycle that may introduce infinite recursion).
 //
@@ -93,8 +83,6 @@
 //        STATIC_CONTRACT_NOTHROW
 //        STATIC_CONTRACT_GC_TRIGGERS
 //        STATIC_CONTRACT_GCNOTRIGGER
-//        STATIC_CONTRACT_FAULT
-//        STATIC_CONTRACT_FORBID_FAULT
 //                           use to implement statically checkable contracts
 //                           when runtime contracts cannot be used.
 //
@@ -108,7 +96,7 @@
 //
 //   CONTRACT_VIOLATION(violationmask):
 //
-//        A bandaid used to suppress contract assertions. A contract violation
+//        A band-aid used to suppress contract assertions. A contract violation
 //        is always a bug and you're expected to remove it before shipping.
 //        If a violation cannot be fixed immediately, however, it's better
 //        to use this on the offending callsite than to disable a contract entirely.
@@ -118,8 +106,6 @@
 //              ThrowsViolation
 //              GCViolation
 //              ModeViolation
-//              FaultViolation
-//              FaultNotFatal
 //              LoadsTypeViolation
 //              TakesLockViolation
 //
@@ -174,7 +160,6 @@
 //           - THROWS/NOTHROW          defaults to THROWS
 //           - GCTRIGGERS/GCNOTRIGGER  defaults to GCTRIGGERS within the VM directory
 //                                     and to no check otherwise
-//           - INJECT/FORBID_FAULT     defaults to no check
 //           - MODE                    defaults to MODE_ANY
 //
 //        The problem is that defaults don't work well with static contracts.
@@ -184,9 +169,6 @@
 //
 //--------------------------------------------------------------------------------
 
-
-
-
 #ifndef CONTRACT_H_
 #define CONTRACT_H_
 
@@ -194,18 +176,16 @@
 #pragma warning(disable:4189) //local variable is initialized but not referenced
 #endif
 
-
-// We only enable contracts in _DEBUG builds
-#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS) && !defined(JIT_BUILD)
+#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_DATA
 #endif
 
-// Also, we won't enable contracts if this is a DAC build.
-#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
+// The DAC builds reference contract data but not implementation,
+// so we disable contracts for those builds.
+#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(DBI_COMPILE) && !defined(SELF_NO_HOST)
 #define ENABLE_CONTRACTS
 #endif
 
-// Finally, only define the implementation parts of contracts if this isn't a DAC build.
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_IMPL
 #endif
@@ -214,6 +194,8 @@
 #include "clrtypes.h"
 #include "check.h"
 #include "staticcontract.h"
+#include "volatile.h"
+#include "cor.h"
 
 #ifdef ENABLE_CONTRACTS_DATA
 
@@ -348,23 +330,17 @@ public:
 
 
 #define CONTRACT_BITMASK_OK_TO_THROW          0x1 << 0
-#define CONTRACT_BITMASK_FAULT_FORBID         0x1 << 1
-// Unused                                     0x1 << 2
-#define CONTRACT_BITMASK_SOTOLERANT           0x1 << 3
-#define CONTRACT_BITMASK_DEBUGONLY            0x1 << 4
-#define CONTRACT_BITMASK_SONOTMAINLINE        0x1 << 5
-#define CONTRACT_BITMASK_OK_TO_LOCK           0x1 << 6
-#define CONTRACT_BITMASK_OK_TO_RETAKE_LOCK    0x1 << 7
-
+#define CONTRACT_BITMASK_DEBUGONLY            0x1 << 1
+#define CONTRACT_BITMASK_OK_TO_LOCK           0x1 << 2
+#define CONTRACT_BITMASK_OK_TO_RETAKE_LOCK    0x1 << 3
 
 #define CONTRACT_BITMASK_IS_SET(whichbit)    ((m_flags & (whichbit)) != 0)
 #define CONTRACT_BITMASK_SET(whichbit)       (m_flags |= (whichbit))
 #define CONTRACT_BITMASK_RESET(whichbit)     (m_flags &= ~(whichbit))
 #define CONTRACT_BITMASK_UPDATE(whichbit, value)  ((value)?CONTRACT_BITMASK_SET(whichbit):CONTRACT_BITMASK_RESET(whichbit))
 
-struct ClrDebugState
+class ClrDebugState final
 {
-private:
     UINT_PTR              m_flags;
     UINT_PTR             m_violationmask;      // Current CONTRACT_VIOLATIONS in effect
     ContractStackRecord *m_pContractStackTrace;
@@ -384,18 +360,15 @@ public:
         // Default is we're in a THROWS scope. This is not ideal, but there are
                                             //  just too many places that I'd have to go clean up right now
                                             //  (hundreds) in order to make this FALSE by default.
-        // Faults not forbidden (an unfortunate default but
-                                            //  we'd never get this debug infrastructure bootstrapped otherwise.)
         // We start out in SO-tolerant mode and must probe before entering SO-intolerant
         //   any global state updates.
         // Initial mode is non-debug until we say otherwise
         // Everything defaults to mainline
         // By default, GetThread() is perfectly fine to call
         // By default, it's ok to take a lock (or call someone who does)
-        m_flags             = CONTRACT_BITMASK_OK_TO_THROW|
-                              CONTRACT_BITMASK_SOTOLERANT|
-                              CONTRACT_BITMASK_OK_TO_LOCK|
-                              CONTRACT_BITMASK_OK_TO_RETAKE_LOCK;
+        m_flags = CONTRACT_BITMASK_OK_TO_THROW
+                | CONTRACT_BITMASK_OK_TO_LOCK
+                | CONTRACT_BITMASK_OK_TO_RETAKE_LOCK;
 
         m_pContractStackTrace = NULL;       // At top of stack, no contracts in force
         m_GCNoTriggerCount  = 0;
@@ -457,31 +430,6 @@ public:
     {
         CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_OK_TO_THROW);
     }
-    //--//
-
-    BOOL IsFaultForbid()
-    {
-        return CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
-
-    void SetFaultForbid()
-    {
-        CONTRACT_BITMASK_SET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
-    BOOL SetFaultForbid(BOOL value)
-    {
-        BOOL prevState = CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_FAULT_FORBID);
-        CONTRACT_BITMASK_UPDATE(CONTRACT_BITMASK_FAULT_FORBID, value);
-        return prevState;
-    }
-
-    void ResetFaultForbid()
-    {
-        CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
     //--//
     BOOL IsDebugOnly()
     {
@@ -635,7 +583,10 @@ public:
     UINT GetCombinedLockCount();
 };
 
-#endif // ENABLE_CONTRACTS
+// Forward declare.
+ClrDebugState *GetClrDebugState(BOOL fAlloc = TRUE);
+
+#endif // ENABLE_CONTRACTS_DATA
 
 #ifdef ENABLE_CONTRACTS_IMPL
 // Create ClrDebugState.
@@ -643,7 +594,6 @@ public:
 // it should return a pointer to a global static ClrDebugState that indicates
 // that debug assertions should be skipped.
 ClrDebugState *CLRInitDebugState();
-ClrDebugState *GetClrDebugState(BOOL fAlloc = TRUE);
 
 extern thread_local ClrDebugState* t_pClrDebugState;
 
@@ -661,8 +611,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
                      const char *szFile,
                      int   lineNum
                      );
-
-#endif
+#endif // ENABLE_CONTRACTS_IMPL
 
 // This needs to be defined up here b/c it is used by ASSERT_CHECK which is used by the contract impl
 #ifdef _DEBUG
@@ -755,7 +704,7 @@ public:
 #define END_DEBUG_ONLY_CODE
 #define ENTER_DEBUG_ONLY_CODE
 #define LEAVE_DEBUG_ONLY_CODE
-#endif
+#endif // ENABLE_CONTRACTS_IMPL
 
 #else // _DEBUG
 #define DEBUG_ONLY_REGION()
@@ -811,10 +760,10 @@ class BaseContract
         GC_NoTrigger        = 0x00000004,
         GC_Disabled         = 0x00000008,
 
-        FAULT_Mask          = 0x00000030,
-        FAULT_Disabled      = 0x00000000,   // the default
-        FAULT_Inject        = 0x00000010,
-        FAULT_Forbid        = 0x00000020,
+        // Unused          = 0x00000030,
+        // Unused          = 0x00000000,
+        // Unused          = 0x00000010,
+        // Unused          = 0x00000020,
 
         MODE_Mask           = 0x000000C0,
         MODE_Disabled       = 0x00000000,   // the default
@@ -845,7 +794,7 @@ class BaseContract
         LOADS_TYPE_Shift        = 20,           // # of bits to right-shift to get loadstype bits to rightmost position.
         LOADS_TYPE_Disabled     = 0x00000000,   // the default
 
-        ALL_Disabled            = THROWS_Disabled|GC_Disabled|FAULT_Disabled|MODE_Disabled|LOADS_TYPE_Disabled|
+        ALL_Disabled            = THROWS_Disabled|GC_Disabled|MODE_Disabled|LOADS_TYPE_Disabled|
                                   CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
 
     };
@@ -856,11 +805,16 @@ class BaseContract
         Preconditions = 0x02,
     };
 
-
-    NOTHROW_DECL BaseContract() : m_testmask(0), m_pClrDebugState(NULL)
+    BaseContract() noexcept : m_testmask(0), m_pClrDebugState(NULL)
     {
     }
-    NOTHROW_DECL void Restore()
+
+    virtual ~BaseContract() noexcept
+    {
+        Restore();
+    }
+
+    void Restore() noexcept
     {
         // m_pClrDebugState is setup in BaseContract::DoChecks. If an SO happens after the
         // BaseContract object is constructed but before DoChecks is invoked, m_pClrDebugState
@@ -878,14 +832,9 @@ class BaseContract
     void Disable()
     {
     }
-    BOOL CheckFaultInjection();
 
   protected:
     UINT            m_testmask;
-    // Override this function in any derived class to indicate that you have defined a destructor for that class
-    // and that dtor calls Restore()
-    virtual void DestructorDefinedThatCallsRestore() = 0;
-
 
   protected:
     ClrDebugState  *m_pClrDebugState;
@@ -904,17 +853,8 @@ class BaseContract
     static BOOL s_alwaysEnforceContracts;
 };
 
-class Contract: public BaseContract
-{
-   // Have to override this function in any derived class to indicate that a valid destructor is defined for this class
-   virtual void DestructorDefinedThatCallsRestore(){}
-
-   public:
-    NOTHROW_DECL ~Contract()
-    {
-        Restore();
-    }
-};
+class Contract final : public BaseContract
+{ };
 
 #endif // ENABLE_CONTRACTS_IMPL
 
@@ -924,15 +864,13 @@ class Contract: public BaseContract
 // Valid parameters for CONTRACT_VIOLATION macro
 enum ContractViolationBits
 {
-    ThrowsViolation = 0x00000001,  // suppress THROW tags in this scope
-    GCViolation     = 0x00000002,  // suppress GCTRIGGER tags in this scope
-    ModeViolation   = 0x00000004,  // suppress MODE_PREEMP and MODE_COOP tags in this scope
-    FaultViolation  = 0x00000008,  // suppress INJECT_FAULT assertions in this scope
-    FaultNotFatal   = 0x00000010,  // suppress INJECT_FAULT but not fault injection by harness
-    LoadsTypeViolation      = 0x00000040,  // suppress LOADS_TYPE tags in this scope
-    TakesLockViolation      = 0x00000080,  // suppress CAN_TAKE_LOCK tags in this scope
+    ThrowsViolation     = 0x00000001,  // suppress THROW tags in this scope
+    GCViolation         = 0x00000002,  // suppress GCTRIGGER tags in this scope
+    ModeViolation       = 0x00000004,  // suppress MODE_PREEMP and MODE_COOP tags in this scope
+    LoadsTypeViolation  = 0x00000008,  // suppress LOADS_TYPE tags in this scope
+    TakesLockViolation  = 0x00000010,  // suppress CAN_TAKE_LOCK tags in this scope
 
-    //These are not violation bits. We steal some bits out of the violation mask to serve as
+    // These are not violation bits. We steal some bits out of the violation mask to serve as
     // general flag bits.
     CanFreeMe       = 0x00010000,  // If this bit is ON, the ClrDebugState was allocated by
                                    // a version of utilcode that registers an Fls Callback to free
@@ -1011,44 +949,7 @@ static UINT ___testmask;
 
 #endif // __FORCE_NORUNTIME_CONTRACTS__
 
-
-#define CUSTOM_CONTRACT(_contracttype, _returntype)                     \
-        CONTRACTL_SETUP(_contracttype)
-
-#define CUSTOM_CONTRACT_VOID(_contracttype)                             \
-        CONTRACTL_SETUP(_contracttype)
-
-#define CUSTOM_CONTRACTL(_contracttype)                                 \
-        CONTRACTL_SETUP(_contracttype)
-
-// Although this thing only needs to run in the Setup phase, we'll let it
-// run unconditionally. This way, the compiler will see a sequence like this:
-//
-//    THROWS; GC_TRIGGERS; FORBID_FAULT ==>
-//
-//    ___testmask |= constant
-//    ___testmask |= constant
-//    ___testmask |= constant
-//
-// and be able to fold all these into a single constant at runtime.
-//
 #define REQUEST_TEST(thetest, todisable)   (___testmask |= (___CheckMustBeInside_CONTRACT, (___disabled ? (todisable) : (thetest))))
-
-
-#define INJECT_FAULT(_statement)                                                            \
-        do                                                                                  \
-        {                                                                                   \
-            STATIC_CONTRACT_FAULT;                                                          \
-            REQUEST_TEST(Contract::FAULT_Inject, Contract::FAULT_Disabled);                 \
-            if (0)                                                                          \
-        {                                                                                   \
-            _statement;                                                                     \
-            }                                                                               \
-        }                                                                                   \
-        while(0)                                                                            \
-
-
-#define FORBID_FAULT  do { STATIC_CONTRACT_FORBID_FAULT; REQUEST_TEST(Contract::FAULT_Forbid, Contract::FAULT_Disabled); } while(0)
 
 #define THROWS        do { STATIC_CONTRACT_THROWS; REQUEST_TEST(Contract::THROWS_Yes, Contract::THROWS_Disabled); } while(0)
 
@@ -1066,7 +967,6 @@ static UINT ___testmask;
 
 #define DEBUG_ONLY do { STATIC_CONTRACT_DEBUG_ONLY; REQUEST_TEST(Contract::DEBUG_ONLY_Yes, 0);  } while (0)
 
-#ifndef __DISABLE_PREPOST_CONDITIONS__
 #define PRECONDITION_MSG(_expression, _message)                                             \
         do                                                                                  \
         {                                                                                   \
@@ -1091,15 +991,6 @@ static UINT ___testmask;
         NOTHROW;                                                                            \
         if ((___op&Contract::Preconditions) && !___disabled)                                \
             ASSERT_CHECK(CheckPointer(this), NULL, "Instance precheck failure");
-#else // __DISABLE_PREPOST_CONDITIONS__
-
-
-#define PRECONDITION_MSG(_expression, _message)     do { } while(0)
-#define PRECONDITION(_expression)                   do { } while(0)
-#define INSTANCE_CHECK
-#define DESTRUCTOR_CHECK
-
-#endif // __DISABLE_PREPOST_CONDITIONS__
 
 #define UNCHECKED(thecheck)                                                                 \
         do {                                                                                \
@@ -1153,7 +1044,7 @@ static UINT ___testmask;
     {                                                                                       \
         _contracttype ___contract;                                                          \
         STATIC_CONTRACT_LEAF;                                                               \
-        ___contract.DoChecks(Contract::THROWS_No|Contract::GC_NoTrigger|Contract::MODE_Disabled|Contract::FAULT_Disabled);     \
+        ___contract.DoChecks(Contract::THROWS_No|Contract::GC_NoTrigger|Contract::MODE_Disabled);     \
         /* Should add some assertion mechanism to ensure no other contracts are called */   \
     }
 #else
@@ -1179,13 +1070,32 @@ static UINT ___testmask;
         ::GetClrDebugState()->CheckOkayToThrow(__func, __file, __line);                     \
     }
 
-#else // ENABLE_CONTRACTS_IMPL
-#define CUSTOM_CONTRACT(_contracttype, _returntype)         if (0) {  struct YouCannotUseThisHere { int x; };   // This temporary typedef allows retail use of
-#define CUSTOM_CONTRACT_VOID(_contracttype)                 if (0) {  struct YouCannotUseThisHere { int x; };   // FORBIDGC_LOADER_USE_ENABLED
-#define CUSTOM_CONTRACTL(_contracttype)                     if (0) {  struct YouCannotUseThisHere { int x; };   // inside contracts and asserts but nowhere else.
+class Thread;
 
-#define INJECT_FAULT(_statement)
-#define FORBID_FAULT
+class EEContract final : public BaseContract
+{
+private:
+    Thread *m_pThread; // Current thread pointer
+
+public:
+    void Disable();
+    void DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum);
+};
+
+#define MODE_COOPERATIVE     do { STATIC_CONTRACT_MODE_COOPERATIVE; REQUEST_TEST(Contract::MODE_Coop,     Contract::MODE_Disabled); } while(0)
+#define MODE_PREEMPTIVE      do { STATIC_CONTRACT_MODE_PREEMPTIVE; REQUEST_TEST(Contract::MODE_Preempt,  Contract::MODE_Disabled); } while(0)
+#define MODE_ANY             do { STATIC_CONTRACT_MODE_ANY; REQUEST_TEST(Contract::MODE_Disabled, Contract::MODE_Disabled); } while(0)
+#define GC_TRIGGERS          do { STATIC_CONTRACT_GC_TRIGGERS; REQUEST_TEST(Contract::GC_Triggers,   Contract::GC_Disabled); } while(0)
+#define GC_NOTRIGGER         do { STATIC_CONTRACT_GC_NOTRIGGER; REQUEST_TEST(Contract::GC_NoTrigger,  Contract::GC_Disabled); } while(0)
+
+#define CONTRACTL  CONTRACTL_SETUP(EEContract)
+#define LIMITED_METHOD_CONTRACT CUSTOM_LIMITED_METHOD_CONTRACT(EEContract)
+#define WRAPPER_NO_CONTRACT CUSTOM_WRAPPER_NO_CONTRACT(EEContract)
+
+#else // ENABLE_CONTRACTS_IMPL
+
+#define CONTRACTL_SETUP(_contracttype) if (0) {  struct YouCannotUseThisHere { int x; };   // inside contracts and asserts but nowhere else.
+
 #define THROWS
 #define NOTHROW
 #define CAN_TAKE_LOCK
@@ -1223,26 +1133,20 @@ static UINT ___testmask;
         STATIC_CONTRACT_WRAPPER;                                                            \
     }
 
-
-
 #define CONTRACT_THROWS()
 #define CONTRACT_THROWSEX(__func, __file, __line)
 
-#endif  // ENABLE_CONTRACTS_IMPL
-
-
-#define CONTRACT(_returntype)  CUSTOM_CONTRACT(Contract, _returntype)
-#define CONTRACT_VOID  CUSTOM_CONTRACT_VOID(Contract)
-#define CONTRACTL CUSTOM_CONTRACTL(Contract)
-
-// See description near the top of the file
+#define CONTRACTL CONTRACTL_SETUP(Contract)
 #define LIMITED_METHOD_CONTRACT CUSTOM_LIMITED_METHOD_CONTRACT(Contract)
-
 #define WRAPPER_NO_CONTRACT CUSTOM_WRAPPER_NO_CONTRACT(Contract)
 
-// GC_NOTRIGGER allowed but not currently enforced at runtime
-#define GC_NOTRIGGER do { STATIC_CONTRACT_GC_NOTRIGGER; } while(0)
-#define GC_TRIGGERS static_assert(false, "TriggersGC not supported in utilcode contracts")
+#define MODE_COOPERATIVE
+#define MODE_PREEMPTIVE
+#define MODE_ANY
+#define GC_TRIGGERS
+#define GC_NOTRIGGER
+
+#endif  // ENABLE_CONTRACTS_IMPL
 
 #ifdef ENABLE_CONTRACTS_IMPL
 template <UINT_PTR VIOLATION_MASK>
@@ -1267,8 +1171,7 @@ protected:
     // compiler's desire to fold all the Enter and Ctor implementations together.
     FORCEINLINE void EnterInternal(UINT_PTR violationMask)
     {
-        _ASSERTE(0 == (violationMask & ~(ThrowsViolation | GCViolation | ModeViolation | FaultViolation |
-            FaultNotFatal |
+        _ASSERTE(0 == (violationMask & ~(ThrowsViolation | GCViolation | ModeViolation |
             TakesLockViolation | LoadsTypeViolation)) ||
             violationMask == AllViolation);
 
@@ -1365,123 +1268,6 @@ enum PermanentContractViolationReason
 #define CONDITIONAL_CONTRACT_VIOLATION(violationMask, condition)
 #define PERMANENT_CONTRACT_VIOLATION(violationMask, reasonEnum)
 #endif
-
-
-
-#ifdef ENABLE_CONTRACTS_IMPL
-// Holder for setting up a faultforbid region
-class FaultForbidHolder
-{
- public:
-    DEBUG_NOINLINE FaultForbidHolder(BOOL fConditional, BOOL fAlloc, const char *szFunction, const char *szFile, int lineNum)
-    {
-        STATIC_CONTRACT_FORBID_FAULT;
-
-        m_fConditional = fConditional;
-        if (m_fConditional)
-        {
-            m_pClrDebugState = GetClrDebugState(fAlloc);
-
-            //
-            // If we fail to get a debug state, then we must not be allocating and
-            // we simply no-op this holder.
-            //
-            if (m_pClrDebugState == NULL)
-            {
-                _ASSERTE(!fAlloc);
-                m_fConditional = FALSE;
-                return;
-            }
-
-            m_oldClrDebugState = *m_pClrDebugState;
-
-            m_pClrDebugState->ViolationMaskReset( FaultViolation|FaultNotFatal );
-            m_pClrDebugState->SetFaultForbid();
-
-            m_ContractStackRecord.m_szFunction = szFunction;
-            m_ContractStackRecord.m_szFile     = szFile;
-            m_ContractStackRecord.m_lineNum    = lineNum;
-            m_ContractStackRecord.m_testmask   = (Contract::ALL_Disabled & ~((UINT)(Contract::FAULT_Mask))) | Contract::FAULT_Forbid;
-            m_ContractStackRecord.m_construct  = "FAULT_FORBID";
-            m_pClrDebugState->LinkContractStackTrace( &m_ContractStackRecord );
-        }
-    }
-
-    DEBUG_NOINLINE ~FaultForbidHolder()
-    {
-        if (m_fConditional)
-        {
-            *m_pClrDebugState = m_oldClrDebugState;
-        }
-    }
-
- private:
-    ClrDebugState      *m_pClrDebugState;
-    ClrDebugState       m_oldClrDebugState;
-    BOOL m_fConditional;
-    ContractStackRecord m_ContractStackRecord;
-
-};
-#endif  // ENABLE_CONTRACTS_IMPL
-
-
-#ifdef ENABLE_CONTRACTS_IMPL
-
-#define FAULT_FORBID() FaultForbidHolder _ffh(TRUE, TRUE, __FUNCTION__, __FILE__, __LINE__);
-#define FAULT_FORBID_NO_ALLOC() FaultForbidHolder _ffh(TRUE, FALSE, __FUNCTION__, __FILE__, __LINE__);
-#define MAYBE_FAULT_FORBID(cond) FaultForbidHolder _ffh(cond, TRUE, __FUNCTION__, __FILE__, __LINE__);
-#define MAYBE_FAULT_FORBID_NO_ALLOC(cond) FaultForbidHolder _ffh(cond, FALSE, __FUNCTION__, __FILE__, __LINE__);
-
-#else   // ENABLE_CONTRACTS_IMPL
-
-#define FAULT_FORBID() ;
-#define FAULT_FORBID_NO_ALLOC() ;
-#define MAYBE_FAULT_FORBID(cond) ;
-#define MAYBE_FAULT_FORBID_NO_ALLOC(cond) ;
-
-#endif  // ENABLE_CONTRACTS_IMPL
-
-
-#ifdef ENABLE_CONTRACTS_IMPL
-
-inline BOOL AreFaultsForbiddenHelper()
-{
-    STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_NOTHROW;
-
-    ClrDebugState *pClrDebugState = CheckClrDebugState();
-    if (!pClrDebugState)
-    {
-        // By default, faults are not forbidden. Not the most desirable default
-        // but we'd never get this debug infrastructure bootstrapped otherwise.
-        return FALSE;
-    }
-    else
-    {
-        return pClrDebugState->IsFaultForbid() && (!(pClrDebugState->ViolationMask() & (FaultViolation|FaultNotFatal|BadDebugState)));
-    }
-}
-
-#define ARE_FAULTS_FORBIDDEN() AreFaultsForbiddenHelper()
-#else
-
-// If you got an error about ARE_FAULTS_FORBIDDEN being undefined, it's because you tried
-// to use this predicate in a free build outside of a CONTRACT or ASSERT.
-//
-#define ARE_FAULTS_FORBIDDEN() (sizeof(YouCannotUseThisHere) != 0)
-#endif
-
-
-// This allows a fault-forbid region to invoke a non-mandatory allocation, such as for the
-// purpose of growing a lookaside cache (if the allocation fails, the code can abandon the
-// cache growing operation without negative effect.)
-//
-// Although it's implemented using CONTRACT_VIOLATION(), it's not a bug to have this in the code.
-//
-// It *is* a bug to use this to hide a situation where an OOM is genuinely fatal but not handled.
-#define FAULT_NOT_FATAL() CONTRACT_VIOLATION(FaultNotFatal)
-
-
 
 #ifdef ENABLE_CONTRACTS_IMPL
 
@@ -1616,6 +1402,19 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 
 #else // defined(ENABLE_CONTRACTS_IMPL)
 
+#ifdef ENABLE_CONTRACTS_DATA
+inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
+{
+    static ClrDebugState s_ClrDebugState;
+    return &s_ClrDebugState;
+}
+
+inline ClrDebugState *CheckClrDebugState()
+{
+    return GetClrDebugState(FALSE);
+}
+#endif // ENABLE_CONTRACTS_DATA
+
 #define LOCK_TAKEN_MULTIPLE(dbgStateLockType, cEntrances, pvLock)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)
 #define EE_LOCK_TAKEN(pvLock)
@@ -1723,28 +1522,28 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
 // LIMITED_METHOD_DAC_CONTRACT is a shortcut for LIMITED_METHOD_CONTRACT and SUPPORTS_DAC. Usefull for one-line inline functions.
 #define LIMITED_METHOD_DAC_CONTRACT LIMITED_METHOD_CONTRACT; SUPPORTS_DAC
 
+#define EE_THREAD_NOT_REQUIRED
+
 //
-// The default contract is the recommended contract for ordinary code.
-// The ordinary code can throw or trigger GC any time, does not operate
+// The default contract is the recommended contract for ordinary EE code.
+// The ordinary EE code can throw or trigger GC any time, does not operate
 // on raw object refs, etc.
 //
+#define STANDARD_VM_CHECK       \
+    THROWS;                     \
+    GC_TRIGGERS;                \
+    MODE_PREEMPTIVE;
 
-#define STANDARD_VM_CHECK           \
-    THROWS;
-
-#define STANDARD_VM_CONTRACT        \
+#define STANDARD_VM_CONTRACT    \
     CONTRACTL                   \
     {                           \
-        STANDARD_VM_CHECK;          \
+        STANDARD_VM_CHECK;      \
     }                           \
-    CONTRACTL_END;              \
+    CONTRACTL_END;
 
-#define STATIC_STANDARD_VM_CONTRACT         \
+#define STATIC_STANDARD_VM_CONTRACT     \
     STATIC_CONTRACT_THROWS;             \
     STATIC_CONTRACT_GC_TRIGGERS;        \
     STATIC_CONTRACT_MODE_PREEMPTIVE;
-
-#define AFTER_CONTRACTS
-#include "volatile.h"
 
 #endif  // CONTRACT_H_

@@ -431,7 +431,6 @@ namespace Internal.JitInterface
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
-        // unused = 0x04,
         CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
@@ -516,6 +515,8 @@ namespace Internal.JitInterface
         WASM_FUNCTION_INDEX_LEB,             // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
         WASM_TABLE_INDEX_SLEB,               // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
                                                //  i32.const instruction, e.g. taking the address of a function.
+        WASM_TABLE_INDEX_I32,                // Wasm: a function table index stored as a 4-byte little-endian uint32 in the data section,
+                                               //  e.g. recording a function reference in a JIT-emitted constant pool entry.
         WASM_MEMORY_ADDR_LEB,                // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
                                                //  e.g. directly loading from or storing to a C++ global.
         WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
@@ -547,6 +548,7 @@ namespace Internal.JitInterface
         CLASSID_STRING,
         CLASSID_ARGUMENT_HANDLE,
         CLASSID_RUNTIME_TYPE,
+        CLASSID_NUMERICS_VECTORT,
     }
     public enum CorInfoInline
     {
@@ -852,6 +854,7 @@ namespace Internal.JitInterface
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
         CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
         CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80, // can be applied to VALUECLASS to indicate 'needs helper to copy'
+        CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
     };
 
     public struct CORINFO_HELPER_ARG
@@ -970,6 +973,10 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreInlinedFrameContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionWithContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionNoContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionNoContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
     }
@@ -985,6 +992,8 @@ namespace Internal.JitInterface
         public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* imageBase;
         // Table base global (__table_base), added to funclet pointer offsets.
         public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* tableBase;
+        // Runtime-async continuation return value global.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* asyncContinuation;
     }
 
     // Flags passed from JIT to runtime.

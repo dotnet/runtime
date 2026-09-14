@@ -268,6 +268,8 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+            // The Continuation_Wrapper_N method names below are formatted from NameTemplate; diagnostic tooling
+            // depends on these names when classifying async callstack frames.
             private static unsafe Continuation? Continuation_Wrapper_0(Continuation continuation, ref byte resultLoc)
             {
                 return continuation.ResumeInfo->Resume(continuation, ref resultLoc);

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -20,11 +19,10 @@ internal sealed partial class RCW : IData<RCW>
     [Field] public partial TargetPointer CreatorThread { get; }
     [Field] public partial uint RefCount { get; }
     [Field] public partial TargetPointer UnknownPointer { get; }
-    [DataDescriptorDependency(nameof(InterfaceEntries), "pointer")]
-    public IReadOnlyList<Data.InterfaceEntry> InterfaceEntries { get; private set; } = [];
+    [CustomInit(nameof(InitInterfaceEntries))] public partial IReadOnlyList<Data.InterfaceEntry> InterfaceEntries { get; }
 
-    [MemberNotNull(nameof(InterfaceEntries))]
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(InterfaceEntries), "pointer")]
+    private partial IReadOnlyList<Data.InterfaceEntry> InitInterfaceEntries(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RCW);
         TargetPointer interfaceEntriesAddr = address + (ulong)type.Fields[nameof(InterfaceEntries)].Offset;
@@ -39,6 +37,6 @@ internal sealed partial class RCW : IData<RCW>
             entries.Add(target.ProcessedData.GetOrAdd<Data.InterfaceEntry>(entryAddress));
         }
 
-        InterfaceEntries = entries;
+        return entries;
     }
 }

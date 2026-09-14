@@ -461,14 +461,14 @@ namespace System.Net.Http
             {
                 if (_activeRequests.Remove(stream))
                 {
-                    if (ShuttingDown)
-                    {
-                        CheckForShutdown();
-                    }
-
                     if (_activeRequests.Count == 0)
                     {
                         MarkConnectionAsIdle();
+                    }
+
+                    if (ShuttingDown)
+                    {
+                        CheckForShutdown();
                     }
                 }
             }

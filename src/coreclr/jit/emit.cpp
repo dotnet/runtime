@@ -1064,7 +1064,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         // If there's an error during emission, we may want to connect the post-copy address
         // of an instrDesc with the pre-copy address (the one that was originally created).  This
         // printing enables that.
-        printf("copying instruction group from [0x%x..0x%x) to [0x%x..0x%x).\n", dspPtr(emitCurIGfreeBase),
+        printf("copying instruction group from [%p..%p) to [%p..%p).\n", dspPtr(emitCurIGfreeBase),
                dspPtr(emitCurIGfreeBase + sz), dspPtr(id), dspPtr(id + sz));
     }
 #endif
@@ -1890,7 +1890,7 @@ void emitter::emitCheckIGList()
 
         if (currIG->igOffs != currentOffset)
         {
-            printf("IG%02u has offset %08X, expected %08X\n", currIG->GetDisplayId(), currIG->igOffs, currentOffset);
+            printf("IG%02u has offset %08X, expected %08zX\n", currIG->GetDisplayId(), currIG->igOffs, currentOffset);
             assert(!"bad block offset");
         }
 
@@ -1981,7 +1981,7 @@ void emitter::emitCheckIGList()
 
     if (emitTotalCodeSize != 0 && emitTotalCodeSize != currentOffset)
     {
-        printf("Total code size is %08X, expected %08X\n", emitTotalCodeSize, currentOffset);
+        printf("Total code size is %08X, expected %08zX\n", emitTotalCodeSize, currentOffset);
         assert(!"bad total code size");
     }
 
@@ -3907,7 +3907,7 @@ const size_t hexEncodingSize = 19; // 8 bytes (wasm-objdump default) + 1 space.
 void emitter::emitDispInsIndent()
 {
     size_t indent = m_compiler->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
-    printf("%.*s", indent, "                             ");
+    printf("%.*s", static_cast<int>(indent), "                             ");
 }
 //------------------------------------------------------------------------
 // emitDispGCDeltaTitle: Print an appropriately indented title for a GC info delta
@@ -4172,7 +4172,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         printf("\n");
 
-        printf("%*s;   PrevGCVars=%s ", strlen(buff), "",
+        printf("%*s;   PrevGCVars=%s ", static_cast<int>(strlen(buff)), "",
                VarSetOps::ToString(m_compiler, igPh->igPhData->igPhPrevGCrefVars));
         dumpConvertedVarSet(m_compiler, igPh->igPhData->igPhPrevGCrefVars);
         printf(", PrevGCrefRegs=");
@@ -4183,7 +4183,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
         emitDispRegSet(igPh->igPhData->igPhPrevByrefRegs);
         printf("\n");
 
-        printf("%*s;   InitGCVars=%s ", strlen(buff), "",
+        printf("%*s;   InitGCVars=%s ", static_cast<int>(strlen(buff)), "",
                VarSetOps::ToString(m_compiler, igPh->igPhData->igPhInitGCrefVars));
         dumpConvertedVarSet(m_compiler, igPh->igPhData->igPhInitGCrefVars);
         printf(", InitGCrefRegs=");
@@ -4539,7 +4539,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     /* Make sure the instruction descriptor size also matches our expectations */
     if (is != emitSizeOfInsDsc(id))
     {
-        printf("%s at %u: Expected size = %u , actual size = %u\n", emitIfName(id->idInsFmt()),
+        printf("%s at %u: Expected size = %zu , actual size = %zu\n", emitIfName(id->idInsFmt()),
                id->idDebugOnlyInfo()->idNum, is, emitSizeOfInsDsc(id));
         assert(is == emitSizeOfInsDsc(id));
     }
@@ -5354,7 +5354,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -5397,7 +5397,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -5543,8 +5543,8 @@ AGAIN:
 #elif defined(TARGET_RISCV64)
         assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
 #elif defined(TARGET_WASM)
-        // TODO-WASM: likely the whole thing needs to be made unreachable.
-        NYI_WASM("emitJumpDistBind");
+        // We should never call emitJumpDistBind() for wasm, as wasm has no variable-length jumps.
+        unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -5591,7 +5591,7 @@ AGAIN:
 #ifdef DEBUG
         if (EMITVERBOSE)
         {
-            printf("Shrinking jump [%08X/%03u]\n", dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum);
+            printf("Shrinking jump [%p/%03u]\n", dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum);
         }
 #endif
         noway_assert((unsigned short)sizeDif == sizeDif);
@@ -6977,7 +6977,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     AllocMemChunk* dataChunk       = emitDataChunks;
     unsigned*      dataChunkOffset = emitDataChunkOffsets;
 
-    unsigned cumulativeOffset = 0;
     for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++, dataChunkOffset++)
     {
         comp->Metrics.ReadOnlyDataBytes += sec->dsSize;
@@ -6991,8 +6990,10 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
             dataChunk->flags = CORJIT_ALLOCMEM_READONLY_DATA | CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE;
         }
 
-        *dataChunkOffset = cumulativeOffset;
-        cumulativeOffset += sec->dsSize;
+        // The logical offset assigned to each section (see emitDataGenBeg) is what instructions
+        // reference and what emitDataOffsetToPtr maps back to a chunk, so use it here rather than
+        // recomputing a packed offset that would ignore inter-section alignment padding.
+        *dataChunkOffset = sec->dsOffset;
     }
 
     comp->Metrics.AllocatedHotCodeBytes  = emitTotalHotCodeSize;
@@ -7497,7 +7498,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                         if (isJccAffectedIns)
                         {
                             unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
-                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
+                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %zuB boundary "
                                    "...............................\n",
                                    codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
                         }
@@ -7542,7 +7543,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #ifdef DEBUG
         if (m_compiler->opts.disAsm || m_compiler->verbose)
         {
-            printf("\t\t\t\t\t\t;; size=%d bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
+            printf("\t\t\t\t\t\t;; size=%td bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
                    ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
@@ -7664,12 +7665,12 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 
                     if (jmp->idjShort)
                     {
-                        printf("[5] Jump        is at %08X\n", (adr + 1 - emitCodeBlock));
+                        printf("[5] Jump        is at %08zX\n", static_cast<size_t>(adr + 1 - emitCodeBlock));
                         printf("[5] Jump distance is  %02X - %02X = %02X\n", *(BYTE*)adr, adj, *(BYTE*)adr - adj);
                     }
                     else
                     {
-                        printf("[5] Jump        is at %08X\n", (adr + 4 - emitCodeBlock));
+                        printf("[5] Jump        is at %08zX\n", static_cast<size_t>(adr + 4 - emitCodeBlock));
                         printf("[5] Jump distance is  %08X - %02X = %08X\n", *(int*)adr, adj, *(int*)adr - adj);
                     }
                 }
@@ -7690,7 +7691,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #elif defined(TARGET_WASM)
-                    NYI_WASM("Short jump distance adjustment");
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7706,7 +7707,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #elif defined(TARGET_WASM)
-                    NYI_WASM("Jump distance adjustment");
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7879,9 +7880,10 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
 
-    unsigned secOffs = emitConsDsc.dsdOffs;
+    // Keep the logical layout in sync with the per-chunk alignment used by the EE.
+    unsigned secOffs = AlignUp(emitConsDsc.dsdOffs, alignment);
     /* Advance the current offset */
-    emitConsDsc.dsdOffs += size;
+    emitConsDsc.dsdOffs = secOffs + size;
 
     /* Allocate a data section descriptor and add it to the list */
 
@@ -7892,6 +7894,8 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     secDesc->dsSize = size;
 
     secDesc->dsAlignment = alignment;
+
+    secDesc->dsOffset = secOffs;
 
     secDesc->dsDataType = dataType;
 
@@ -7928,13 +7932,13 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 
     UNATIVE_OFFSET emittedSize = numEntries * elemSize;
 
-    /* Get hold of the current offset */
+    /* Get hold of the current offset, aligned for the element size */
 
-    secOffs = emitConsDsc.dsdOffs;
+    secOffs = AlignUp(emitConsDsc.dsdOffs, elemSize);
 
     /* Advance the current offset */
 
-    emitConsDsc.dsdOffs += emittedSize;
+    emitConsDsc.dsdOffs = secOffs + emittedSize;
 
     /* Allocate a data section descriptor and add it to the list */
 
@@ -7945,6 +7949,8 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     secDesc->dsSize = emittedSize;
 
     secDesc->dsAlignment = elemSize;
+
+    secDesc->dsOffset = secOffs;
 
     secDesc->dsDataType = TYP_UNKNOWN;
 
@@ -7975,9 +7981,9 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 //
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
-    UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
     unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
-    emitConsDsc.dsdOffs += emittedSize;
+    UNATIVE_OFFSET secOffs     = AlignUp(emitConsDsc.dsdOffs, TARGET_POINTER_SIZE);
+    emitConsDsc.dsdOffs        = secOffs + emittedSize;
 
     dataSection* secDesc = (dataSection*)emitGetMem(sizeof(dataSection));
     secDesc->dsType      = dataSection::asyncResumeInfo;
@@ -7988,6 +7994,7 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
 
     secDesc->dsSize      = emittedSize;
     secDesc->dsAlignment = TARGET_POINTER_SIZE;
+    secDesc->dsOffset    = secOffs;
     secDesc->dsDataType  = TYP_UNKNOWN;
     secDesc->dsNext      = nullptr;
 
@@ -8074,7 +8081,6 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
 {
     UNATIVE_OFFSET cnum     = INVALID_UNATIVE_OFFSET;
     unsigned       cmpCount = 0;
-    unsigned       curOffs  = 0;
     dataSection*   secDesc  = emitConsDsc.dsdList;
     while (secDesc != nullptr)
     {
@@ -8084,11 +8090,14 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
         // We match the bit pattern, so the dataType can be different
         // Only match constants when the dsType is 'data'
         //
-        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
+        // The existing entry must also satisfy the requested alignment.
+        //
+        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) &&
+            (secDesc->dsAlignment >= alignment))
         {
             if (memcmp(cnsAddr, secDesc->Data(), cnsSize) == 0)
             {
-                cnum = curOffs;
+                cnum = secDesc->dsOffset;
 
                 // We also might want to update the dsDataType
                 //
@@ -8105,7 +8114,6 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
             }
         }
 
-        curOffs += secDesc->dsSize;
         secDesc = secDesc->dsNext;
 
         if (++cmpCount > 64)
@@ -8449,8 +8457,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
     /* Walk and emit the contents of all the data blocks */
 
-    size_t         curOffs = 0;
-    AllocMemChunk* chunk   = chunks;
+    AllocMemChunk* chunk = chunks;
 
     for (dataSection* dsc = sec->dsdList; dsc; dsc = dsc->dsNext, chunk++)
     {
@@ -8461,7 +8468,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
         // absolute label table
         if (dsc->dsType == dataSection::blockAbsoluteAddr)
         {
-            JITDUMP("  section %u, size %u, block absolute addr\n", secNum++, dscSize);
+            JITDUMP("  section %u, size %zu, block absolute addr\n", secNum++, dscSize);
 
             assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
             size_t         numElems = dscSize / TARGET_POINTER_SIZE;
@@ -8488,13 +8495,13 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                     emitRecordRelocation(&(bDstRW[i]), target, CorInfoReloc::DIRECT);
                 }
 
-                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
+                JITDUMP("  " FMT_BB ": 0x%llx\n", block->bbNum, static_cast<unsigned long long>(bDstRW[i]));
             }
         }
         // relative label table
         else if (dsc->dsType == dataSection::blockRelative32)
         {
-            JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
+            JITDUMP("  section %u, size %zu, block relative addr\n", secNum++, dscSize);
 
             size_t    numElems = dscSize / 4;
             unsigned* uDstRW   = (unsigned*)dstRW;
@@ -8515,7 +8522,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
         }
         else if (dsc->dsType == dataSection::asyncResumeInfo)
         {
-            JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
+            JITDUMP("  section %u, size %zu, async resume info\n", secNum++, dscSize);
 
             size_t numElems = dscSize / sizeof(CORINFO_AsyncResumeInfo);
 
@@ -8526,7 +8533,15 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
-                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+#ifdef TARGET_WASM
+                BYTE* target = nullptr; // On WASM if we wanted this to have meaning, we would need a reloc to the
+                                        // virtual ip of the location in the method but we both don't have a reloc to
+                                        // represent that, as well as we don't have modeling for virtual ips which is
+                                        // useful for diagnostic purposes at this time. So simply leave it null for now.
+                                        // This is a diagnostic value, so it is not critical to have it be correct.
+#else
+                BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+#endif
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
 
@@ -8552,7 +8567,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, curOffs);
+                printf("  section %3u, size %2zu, RWD%2zu:\t", secNum++, dscSize, (size_t)dsc->dsOffset);
 
                 for (size_t i = 0; i < dscSize; i++)
                 {
@@ -8578,8 +8593,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
             }
 #endif // DEBUG
         }
-
-        curOffs += dscSize;
     }
 }
 
@@ -8599,8 +8612,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 {
     printf("\n");
 
-    unsigned       offset = 0;
-    AllocMemChunk* chunk  = dataChunks;
+    AllocMemChunk* chunk = dataChunks;
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext, chunk++)
     {
@@ -8613,9 +8625,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, ArrLen(label), "RWD%02u", offset);
+        sprintf_s(label, ArrLen(label), "RWD%02zu", (size_t)data->dsOffset);
         printf(labelFormat, label);
-        offset += data->dsSize;
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {
@@ -8667,7 +8678,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                     }
                     else
                     {
-                        printf("\tdq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+                        printf("\tdq\t%016llXh", static_cast<unsigned long long>(
+                                                     reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs))));
                     }
 #endif // TARGET_64BIT
                 }
@@ -8692,7 +8704,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
             {
                 if (i > 0)
                 {
-                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(CORINFO_AsyncResumeInfo));
+                    sprintf_s(label, ArrLen(label), "RWD%02zu",
+                              static_cast<size_t>(data->dsOffset) + (i * sizeof(CORINFO_AsyncResumeInfo)));
                     printf(labelFormat, label);
                 }
 
@@ -8747,7 +8760,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
                         }
-                        printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->Data()[i]));
+                        printf("\tdd\t%08llXh\t", static_cast<unsigned long long>(
+                                                      (UINT64) * reinterpret_cast<uint32_t*>(&data->Data()[i])));
                         printf("\t; %9.6g",
                                FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->Data()[i])));
                         i += 4;
@@ -8758,7 +8772,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
                         }
-                        printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
+                        printf("\tdq\t%016llXh",
+                               static_cast<unsigned long long>(*reinterpret_cast<uint64_t*>(&data->Data()[i])));
                         printf("\t; %12.9g", *reinterpret_cast<double*>(&data->Data()[i]));
                         i += 8;
                         break;
@@ -8816,12 +8831,14 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                                 {
                                     printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
                                 }
-                                printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
+                                printf("\tdq\t%016llXh",
+                                       static_cast<unsigned long long>(*reinterpret_cast<uint64_t*>(&data->Data()[i])));
                                 for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i + j]));
+                                    printf(", %016llXh", static_cast<unsigned long long>(
+                                                             *reinterpret_cast<uint64_t*>(&data->Data()[i + j])));
                                 }
                                 i += j;
                                 break;
@@ -9335,7 +9352,9 @@ BYTE* emitter::emitDataOffsetToPtr(UNATIVE_OFFSET offset)
     }
 
     assert((min > 0) && (min <= emitNumDataChunks));
-    return emitDataChunks[min - 1].block + (offset - emitDataChunkOffsets[min - 1]);
+    const unsigned chunkIndex = min - 1;
+    assert((offset - emitDataChunkOffsets[chunkIndex]) < emitDataChunks[chunkIndex].size);
+    return emitDataChunks[chunkIndex].block + (offset - emitDataChunkOffsets[chunkIndex]);
 }
 
 /*****************************************************************************

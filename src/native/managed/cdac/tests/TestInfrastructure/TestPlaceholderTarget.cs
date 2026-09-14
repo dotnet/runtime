@@ -604,6 +604,7 @@ public class TestPlaceholderTarget : Target
         private readonly Dictionary<Type, string> _versions = new();
         private readonly Dictionary<Type, IContract> _mocks = new();
         private readonly Dictionary<Type, IContract> _resolved = new();
+        private readonly HashSet<(Type, string)> _unsupportedVersions = new();
         private Target _target = null!;
 
         public void SetTarget(Target target) => _target = target;
@@ -617,10 +618,13 @@ public class TestPlaceholderTarget : Target
         public override void Register<TContract>(string version, Func<Target, TContract> creator)
             => _creators[(typeof(TContract), version)] = t => creator(t);
 
-        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
+        public override void RegisterUnsupported<TContract>(string version)
+            => _unsupportedVersions.Add((typeof(TContract), version));
+
+        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
         {
             contract = default!;
-            failureReason = null;
+            failureException = null;
             if (_resolved.TryGetValue(typeof(TContract), out var cached))
             {
                 contract = (TContract)cached;
@@ -636,7 +640,9 @@ public class TestPlaceholderTarget : Target
             {
                 if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
                 {
-                    failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                    failureException = _unsupportedVersions.Contains((typeof(TContract), version))
+                        ? new ContractObsoleteException(TContract.Name, version)
+                        : new ContractUnrecognizedException(TContract.Name, version);
                     return false;
                 }
 
@@ -644,7 +650,7 @@ public class TestPlaceholderTarget : Target
             }
             else
             {
-                failureReason = $"Contract '{typeof(TContract).Name}' is not supported by the target.";
+                failureException = new ContractMissingException(TContract.Name);
                 return false;
             }
 

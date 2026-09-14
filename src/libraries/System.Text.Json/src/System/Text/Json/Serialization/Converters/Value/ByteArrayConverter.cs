@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String };
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String, ContentEncoding = "base64" };
 
         internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.String;
     }

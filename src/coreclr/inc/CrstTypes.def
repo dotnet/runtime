@@ -505,7 +505,7 @@ Crst MethodDescBackpatchInfoTracker
 End
 
 Crst NativeImageEagerFixups
-    AcquiredBefore UnresolvedClassLock
+    AcquiredBefore PregeneratedStringThunks UnresolvedClassLock
 End
 
 Crst NativeImageLoad

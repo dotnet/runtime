@@ -369,7 +369,7 @@ public class X86Unwinder(Target target)
         TargetPointer savedRegPtr = esp;
 
         // Find out how many callee-saved regs have already been pushed
-        foreach (RegMask regMask in registerOrder)
+        foreach (RegMask regMask in registerOrder.Reverse())
         {
             if (!gcInfo.SavedRegsMask.HasFlag(regMask))
                 continue;
@@ -565,7 +565,7 @@ public class X86Unwinder(Target target)
             {
                 // "and esp,-8"
                 offset = SKIP_ARITH_REG(-8, methodStart, offset);
-                if ((curEBP & 0x04) != 0) pSavedRegs--;
+                if ((curEBP & 0x04) != 0) pSavedRegs -= _pointerSize;
             }
 
             /* Increment "offset" in steps to see which callee-saved
@@ -590,7 +590,7 @@ public class X86Unwinder(Target target)
 
         /* The caller's saved EBP is pointed to by our EBP */
         context.Ebp = (uint)_target.ReadPointer(curEBP);
-        context.Esp = (uint)_target.ReadPointer(curEBP + _pointerSize);
+        context.Esp = curEBP + _pointerSize;
 
         /* Stack pointer points to return address */
         context.Eip = (uint)_target.ReadPointer(context.Esp);
@@ -679,7 +679,7 @@ public class X86Unwinder(Target target)
         Debug.Assert(
             CheckInstrBytePattern((byte)(ReadByteAt(baseAddress + offset) & 0xFD), 0x89, ReadByteAt(baseAddress + offset))
             &&
-            (ReadByteAt(baseAddress + offset) & 0xC0) == 0xC0
+            (ReadByteAt(baseAddress + offset + 1) & 0xC0) == 0xC0
         );
         return offset + 2;
     }
@@ -857,7 +857,7 @@ public class X86Unwinder(Target target)
 
     private static bool CAN_COMPRESS(int val)
     {
-        return ((byte)val) == val;
+        return (sbyte)val == val;
     }
 
     private static void SetRegValue(ref X86Context context, RegMask regMask, TargetPointer value)

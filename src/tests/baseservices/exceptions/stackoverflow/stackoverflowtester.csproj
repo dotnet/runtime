@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, SuperPMICollectIncompatible -->
+    <!-- Needed for CLRTestTargetUnsupported, SuperPMICollectIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser OOP host actions can run crashing child processes and import their results.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <Optimize>false</Optimize>
-    <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Exception handling in this test is incompatible with SuperPMI collection. See https://github.com/dotnet/runtime/issues/108215. -->
     <SuperPMICollectIncompatible>true</SuperPMICollectIncompatible>
     <!-- needs triage -->

@@ -28,7 +28,6 @@ set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
-    DebugHeader.cpp
     MethodTable.cpp
     EHHelpers.cpp
     event.cpp

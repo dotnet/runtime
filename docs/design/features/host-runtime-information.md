@@ -40,6 +40,10 @@ Directory containing the application. This is used for [`AppContext.BaseDirector
 
 [Runtime identifier](https://learn.microsoft.com/dotnet/core/rid-catalog) for the application. This is used for [`RuntimeInformation.RuntimeIdentifier`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.runtimeinformation.runtimeidentifier).
 
+`ARGV0`
+
+The name used to invoke an application host, corresponding to the native process's `argv[0]`. The apphost provides this property for the first element returned by [`Environment.GetCommandLineArgs()`](https://learn.microsoft.com/dotnet/api/system.environment.getcommandlineargs). Muxer-style hosts, including `dotnet` and `corerun`, do not provide this property, preserving the managed application path as the first element.
+
 ### Deps files
 
 `APP_CONTEXT_DEPS_FILES`

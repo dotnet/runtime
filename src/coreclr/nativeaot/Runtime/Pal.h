@@ -235,7 +235,7 @@ void PalSleep(uint32_t milliseconds);
 UInt32_BOOL PalSwitchToThread();
 UInt32_BOOL PalAreShadowStacksEnabled();
 HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule = false);
 
 #ifdef TARGET_UNIX
 typedef int32_t (*PHARDWARE_EXCEPTION_HANDLER)(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);

@@ -268,6 +268,10 @@ PAL_SetLogManagedCallstackForSignalCallback(
 /// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
 /// raw ucontext_t pointer received by the PAL signal handler.
 ///
+/// The PAL serializes concurrent crash diagnostics (this callback and the
+/// out-of-proc createdump path) through a shared gate before invoking the
+/// callback, so implementations do not need to serialize themselves.
+///
 /// Registration is opt-in: if no callback is installed the PAL falls back
 /// to its default crash-dump path (createdump where available). The PAL
 /// itself has no source-level dependency on the in-proc reporter library;
@@ -577,35 +581,6 @@ GetTempPathA(
 #else
 #define GetTempPath GetTempPathA
 #endif
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateSemaphoreExW(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCWSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenSemaphoreW(
-    IN DWORD dwDesiredAccess,
-    IN BOOL bInheritHandle,
-    IN LPCWSTR lpName);
-
-#define CreateSemaphoreEx CreateSemaphoreExW
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseSemaphore(
-         IN HANDLE hSemaphore,
-         IN LONG lReleaseCount,
-         OUT LPLONG lpPreviousCount);
 
 PALIMPORT
 HANDLE
@@ -2675,9 +2650,6 @@ typedef struct _RUNTIME_FUNCTION {
 #define MUTANT_QUERY_STATE        (0x0001)
 #define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
 #define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
-
-#define SEMAPHORE_MODIFY_STATE    (0x0002)
-#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
 
 PALIMPORT
 VOID

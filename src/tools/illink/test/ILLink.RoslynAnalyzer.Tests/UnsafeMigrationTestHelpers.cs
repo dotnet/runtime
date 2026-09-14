@@ -17,7 +17,9 @@ namespace ILLink.RoslynAnalyzer.Tests
     /// </summary>
     internal static class UnsafeMigrationTestHelpers
     {
-        internal static CSharpAnalyzerTest<TAnalyzer, DefaultVerifier> CreateAnalyzerTest<TAnalyzer>(string source)
+        internal static CSharpAnalyzerTest<TAnalyzer, DefaultVerifier> CreateAnalyzerTest<TAnalyzer>(
+            string source,
+            bool updatedMemorySafetyRules = true)
             where TAnalyzer : DiagnosticAnalyzer, new()
         {
             var test = new CSharpAnalyzerTest<TAnalyzer, DefaultVerifier>
@@ -26,13 +28,15 @@ namespace ILLink.RoslynAnalyzer.Tests
                 ReferenceAssemblies = new ReferenceAssemblies(string.Empty),
             };
             test.TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
-            test.SolutionTransforms.Add(SetOptions);
+            test.SolutionTransforms.Add(
+                (solution, projectId) => SetOptions(solution, projectId, updatedMemorySafetyRules));
             return test;
         }
 
         internal static CSharpCodeFixVerifier<TAnalyzer, TCodeFix>.Test CreateCodeFixTest<TAnalyzer, TCodeFix>(
             string source,
-            string fixedSource)
+            string fixedSource,
+            bool updatedMemorySafetyRules = true)
             where TAnalyzer : DiagnosticAnalyzer, new()
             where TCodeFix : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider, new()
         {
@@ -41,12 +45,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                 TestCode = source,
                 FixedCode = fixedSource,
             };
-            test.SolutionTransforms.Add(SetOptions);
+            test.SolutionTransforms.Add(
+                (solution, projectId) => SetOptions(solution, projectId, updatedMemorySafetyRules));
             return test;
         }
 
         internal static CSharpCodeFixVerifier<TAnalyzer, TCodeFix>.Test CreateCodeFixTest<TAnalyzer, TCodeFix>(
-            string source)
+            string source,
+            bool updatedMemorySafetyRules = true)
             where TAnalyzer : DiagnosticAnalyzer, new()
             where TCodeFix : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider, new()
         {
@@ -54,23 +60,32 @@ namespace ILLink.RoslynAnalyzer.Tests
             {
                 TestCode = source,
             };
-            test.SolutionTransforms.Add(SetOptions);
+            test.SolutionTransforms.Add(
+                (solution, projectId) => SetOptions(solution, projectId, updatedMemorySafetyRules));
             return test;
         }
 
-        internal static Solution SetOptions(Solution solution, ProjectId projectId)
+        internal static Solution SetOptions(Solution solution, ProjectId projectId) =>
+            SetOptions(solution, projectId, updatedMemorySafetyRules: true);
+
+        internal static Solution SetOptions(Solution solution, ProjectId projectId, bool updatedMemorySafetyRules)
         {
             var project = solution.GetProject(projectId)!;
             var parseOptions = (CSharpParseOptions)project.ParseOptions!;
-            parseOptions = parseOptions.WithLanguageVersion(LanguageVersion.Preview)
-                .WithFeatures([.. parseOptions.Features, new("updated-memory-safety-rules", "")]);
+            parseOptions = parseOptions.WithLanguageVersion(LanguageVersion.Preview);
+            if (updatedMemorySafetyRules)
+            {
+                parseOptions = parseOptions
+                    .WithFeatures([.. parseOptions.Features, new("updated-memory-safety-rules", "")]);
+            }
 
             var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
             // CS9377 is emitted at a warning level above the test framework's default.
             var diagnosticOptions = compilationOptions.SpecificDiagnosticOptions
                 .SetItems(CSharpVerifierHelper.NullableWarnings)
                 .SetItem(DiagnosticId.UnsafeMemberMissingSafetyDocumentation.AsString(), ReportDiagnostic.Warn)
-                .SetItem(DiagnosticId.PointerSignatureRequiresUnsafe.AsString(), ReportDiagnostic.Warn);
+                .SetItem(DiagnosticId.PointerSignatureRequiresUnsafe.AsString(), ReportDiagnostic.Warn)
+                .SetItem(DiagnosticId.LibraryImportRequiresExplicitSafety.AsString(), ReportDiagnostic.Warn);
             compilationOptions = compilationOptions
                 .WithAllowUnsafe(true)
                 .WithWarningLevel(999)

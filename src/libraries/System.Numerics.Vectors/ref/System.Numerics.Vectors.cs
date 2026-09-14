@@ -251,13 +251,13 @@ namespace System.Numerics
         public static System.Numerics.Vector2 AsVector2(this System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector3 AsVector3(this System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector3 AsVector3(this System.Numerics.Vector4 value) { throw null; }
-        public static System.Numerics.Vector3 AsVector3Unsafe(this System.Numerics.Vector2 value) { throw null; }
+        public unsafe static System.Numerics.Vector3 AsVector3Unsafe(this System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Plane value) { throw null; }
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Quaternion value) { throw null; }
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Vector3 value) { throw null; }
-        public static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector2 value) { throw null; }
-        public static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector3 value) { throw null; }
+        public unsafe static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector2 value) { throw null; }
+        public unsafe static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector<byte> AsVectorByte<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<double> AsVectorDouble<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<short> AsVectorInt16<T>(System.Numerics.Vector<T> value) { throw null; }
@@ -310,7 +310,7 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Create<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Numerics.Vector<T> CreateScalar<T>(T value) { throw null; }
-        public static System.Numerics.Vector<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public unsafe static System.Numerics.Vector<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Numerics.Vector<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Numerics.Vector<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
@@ -409,9 +409,9 @@ namespace System.Numerics
         public static unsafe System.Numerics.Vector<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Numerics.Vector<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-        public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
+        public unsafe static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public unsafe static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
         public static System.Numerics.Vector<double> Log(System.Numerics.Vector<double> vector) { throw null; }
         public static System.Numerics.Vector<float> Log(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<double> Log2(System.Numerics.Vector<double> vector) { throw null; }
@@ -528,18 +528,18 @@ namespace System.Numerics
         public static unsafe void StoreAlignedNonTemporal(this System.Numerics.Vector3 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal(this System.Numerics.Vector4 source, float* destination) { throw null; }
-        public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination) { throw null; }
-        public static void StoreUnsafe(this System.Numerics.Vector2 source, ref float destination) { throw null; }
-        public static void StoreUnsafe(this System.Numerics.Vector3 source, ref float destination) { throw null; }
-        public static void StoreUnsafe(this System.Numerics.Vector4 source, ref float destination) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination) { throw null; }
+        public unsafe static void StoreUnsafe(this System.Numerics.Vector2 source, ref float destination) { throw null; }
+        public unsafe static void StoreUnsafe(this System.Numerics.Vector3 source, ref float destination) { throw null; }
+        public unsafe static void StoreUnsafe(this System.Numerics.Vector4 source, ref float destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination, nuint elementOffset) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe(this System.Numerics.Vector2 source, ref float destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe(this System.Numerics.Vector2 source, ref float destination, nuint elementOffset) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe(this System.Numerics.Vector3 source, ref float destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe(this System.Numerics.Vector3 source, ref float destination, nuint elementOffset) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe(this System.Numerics.Vector4 source, ref float destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe(this System.Numerics.Vector4 source, ref float destination, nuint elementOffset) { throw null; }
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> SubtractSaturate<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static T Sum<T>(System.Numerics.Vector<T> value) { throw null; }
@@ -651,7 +651,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Create(float x, float y) { throw null; }
         public static System.Numerics.Vector2 Create(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector2 CreateScalar(float x) { throw null; }
-        public static System.Numerics.Vector2 CreateScalarUnsafe(float x) { throw null; }
+        public unsafe static System.Numerics.Vector2 CreateScalarUnsafe(float x) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector2 DegreesToRadians(System.Numerics.Vector2 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
@@ -708,9 +708,9 @@ namespace System.Numerics
         public static unsafe System.Numerics.Vector2 LoadAligned(float* source) { throw null; }
         [CLSCompliant(false)]
         public static unsafe System.Numerics.Vector2 LoadAlignedNonTemporal(float* source) { throw null; }
-        public static System.Numerics.Vector2 LoadUnsafe(ref readonly float source) { throw null; }
+        public unsafe static System.Numerics.Vector2 LoadUnsafe(ref readonly float source) { throw null; }
         [CLSCompliant(false)]
-        public static System.Numerics.Vector2 LoadUnsafe(ref readonly float source, nuint elementOffset) { throw null; }
+        public unsafe static System.Numerics.Vector2 LoadUnsafe(ref readonly float source, nuint elementOffset) { throw null; }
         public static System.Numerics.Vector2 Log(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Log2(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Max(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
@@ -819,7 +819,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Create(float x, float y, float z) { throw null; }
         public static System.Numerics.Vector3 Create(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector3 CreateScalar(float x) { throw null; }
-        public static System.Numerics.Vector3 CreateScalarUnsafe(float x) { throw null; }
+        public unsafe static System.Numerics.Vector3 CreateScalarUnsafe(float x) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public static System.Numerics.Vector3 DegreesToRadians(System.Numerics.Vector3 degrees) { throw null; }
@@ -876,9 +876,9 @@ namespace System.Numerics
         public static unsafe System.Numerics.Vector3 LoadAligned(float* source) { throw null; }
         [CLSCompliant(false)]
         public static unsafe System.Numerics.Vector3 LoadAlignedNonTemporal(float* source) { throw null; }
-        public static System.Numerics.Vector3 LoadUnsafe(ref readonly float source) { throw null; }
+        public unsafe static System.Numerics.Vector3 LoadUnsafe(ref readonly float source) { throw null; }
         [CLSCompliant(false)]
-        public static System.Numerics.Vector3 LoadUnsafe(ref readonly float source, nuint elementOffset) { throw null; }
+        public unsafe static System.Numerics.Vector3 LoadUnsafe(ref readonly float source, nuint elementOffset) { throw null; }
         public static System.Numerics.Vector3 Log(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Log2(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Max(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
@@ -989,7 +989,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Create(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Vector4 Create(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector4 CreateScalar(float x) { throw null; }
-        public static System.Numerics.Vector4 CreateScalarUnsafe(float x) { throw null; }
+        public unsafe static System.Numerics.Vector4 CreateScalarUnsafe(float x) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector4 DegreesToRadians(System.Numerics.Vector4 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
@@ -1048,9 +1048,9 @@ namespace System.Numerics
         public static unsafe System.Numerics.Vector4 LoadAligned(float* source) { throw null; }
         [CLSCompliant(false)]
         public static unsafe System.Numerics.Vector4 LoadAlignedNonTemporal(float* source) { throw null; }
-        public static System.Numerics.Vector4 LoadUnsafe(ref readonly float source) { throw null; }
+        public unsafe static System.Numerics.Vector4 LoadUnsafe(ref readonly float source) { throw null; }
         [CLSCompliant(false)]
-        public static System.Numerics.Vector4 LoadUnsafe(ref readonly float source, nuint elementOffset) { throw null; }
+        public unsafe static System.Numerics.Vector4 LoadUnsafe(ref readonly float source, nuint elementOffset) { throw null; }
         public static System.Numerics.Vector4 Max(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 MaxMagnitude(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 MaxMagnitudeNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }

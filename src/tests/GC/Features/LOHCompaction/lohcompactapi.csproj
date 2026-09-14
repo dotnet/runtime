@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for IsLongRunningGCTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Test will timeout on Unix -->
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
   </PropertyGroup>

@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Nodes;
@@ -52,15 +53,21 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<Int128>(42, ExpectedJsonSchema: """{"type":"integer"}""");
             yield return new TestData<Half>((Half)3.141, ExpectedJsonSchema: """{"type":"number"}""");
 #endif
+#if NET11_0_OR_GREATER
+            yield return new TestData<System.Numerics.BFloat16>((System.Numerics.BFloat16)3.141f, ExpectedJsonSchema: """{"type":"number"}""");
+            yield return new TestData<System.Numerics.Decimal32>(System.Numerics.Decimal32.Parse("3.14159", CultureInfo.InvariantCulture), ExpectedJsonSchema: """{"type":"number"}""");
+            yield return new TestData<System.Numerics.Decimal64>(System.Numerics.Decimal64.Parse("3.14159", CultureInfo.InvariantCulture), ExpectedJsonSchema: """{"type":"number"}""");
+            yield return new TestData<System.Numerics.Decimal128>(System.Numerics.Decimal128.Parse("3.14159", CultureInfo.InvariantCulture), ExpectedJsonSchema: """{"type":"number"}""");
+#endif
             yield return new TestData<string>("I am a string", ExpectedJsonSchema: """{"type":["string","null"]}""");
             yield return new TestData<char>('c', ExpectedJsonSchema: """{"type":"string", "minLength":1, "maxLength":1 }""");
             yield return new TestData<byte[]>(
                 Value: [1, 2, 3],
                 AdditionalValues: [[]],
-                ExpectedJsonSchema: """{"type":["string","null"]}""");
+                ExpectedJsonSchema: """{"type":["string","null"],"contentEncoding":"base64"}""");
 
-            yield return new TestData<Memory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string"}""");
-            yield return new TestData<ReadOnlyMemory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string"}""");
+            yield return new TestData<Memory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string","contentEncoding":"base64"}""");
+            yield return new TestData<ReadOnlyMemory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string","contentEncoding":"base64"}""");
             yield return new TestData<DateTime>(
                 Value: new(2024, 06, 06, 21, 39, 42, DateTimeKind.Utc),
                 ExpectedJsonSchema: """{"type":"string","format":"date-time"}""");
@@ -317,6 +324,33 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<Half?>(
                 Value: (Half)1.5,
                 AdditionalValues: [null, Half.NaN, Half.PositiveInfinity, Half.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+#endif
+#if NET11_0_OR_GREATER
+            yield return new TestData<System.Numerics.BFloat16?>(
+                Value: (System.Numerics.BFloat16)1.5f,
+                AdditionalValues: [null, System.Numerics.BFloat16.NaN, System.Numerics.BFloat16.PositiveInfinity, System.Numerics.BFloat16.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
+            yield return new TestData<System.Numerics.Decimal64?>(
+                Value: System.Numerics.Decimal64.Parse("1.5", CultureInfo.InvariantCulture),
+                AdditionalValues: [null, System.Numerics.Decimal64.NaN, System.Numerics.Decimal64.PositiveInfinity, System.Numerics.Decimal64.NegativeInfinity],
                 ExpectedJsonSchema: """
                     {
                         "anyOf": [
@@ -885,7 +919,8 @@ namespace System.Text.Json.Schema.Tests
                         "X7": {"type":["integer","null"], "default": 42 },
                         "X8": {"type":["boolean","null"], "default": true },
                         "X9": {"type":["number","null"], "default": 0 },
-                        "X10": {"enum":["A","B","C", null], "default": "A" }
+                        "X10": {"enum":["A","B","C", null], "default": "A" },
+                        "X11": {"type":"string", "format":"uuid", "default":"00000000-0000-0000-0000-000000000000" }
                     }
                 }
                 """);
@@ -1101,6 +1136,25 @@ namespace System.Text.Json.Schema.Tests
                             }
                         }
                     }
+                """);
+
+            yield return new TestData<PocoWithGetOnlyProperties>(
+                Value: new(),
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object", "null"],
+                    "properties": {
+                        "Values": {
+                            "type": "array",
+                            "items": { "type": ["string", "null"] }
+                        },
+                        "SingleValueGetOnly": { "type": "string" },
+                        "NullableGetOnly": { "type": ["string", "null"] },
+                        "SingleValueGetSet": { "type": "string" },
+                        "NonNullableReadonlyField": { "type": "string" },
+                        "NullableReadonlyField": { "type": ["string", "null"] }
+                    }
+                }
                 """);
 
             yield return new TestData<ClassWithComponentModelAttributes>(
@@ -1539,7 +1593,8 @@ namespace System.Text.Json.Schema.Tests
 
         public class PocoWithOptionalConstructorParams(
             string x1 = "str", int x2 = 42, bool x3 = true, double x4 = 0, StringEnum x5 = StringEnum.A,
-            string? x6 = "str", int? x7 = 42, bool? x8 = true, double? x9 = 0, StringEnum? x10 = StringEnum.A)
+            string? x6 = "str", int? x7 = 42, bool? x8 = true, double? x9 = 0, StringEnum? x10 = StringEnum.A,
+            Guid x11 = default)
         {
             public string X1 { get; } = x1;
             public int X2 { get; } = x2;
@@ -1552,6 +1607,7 @@ namespace System.Text.Json.Schema.Tests
             public bool? X8 { get; } = x8;
             public double? X9 { get; } = x9;
             public StringEnum? X10 { get; } = x10;
+            public Guid X11 { get; } = x11;
         }
 
         // Regression test for https://github.com/dotnet/runtime/issues/92487
@@ -1631,6 +1687,21 @@ namespace System.Text.Json.Schema.Tests
             public DiscriminatedUnion DiscriminatedUnion { get; set; } = new DiscriminatedUnion.Left("value");
             public PocoWithPolymorphism.DerivedPocoNoDiscriminator DerivedValue1 { get; set; } = new() { DerivedValue = "derived" };
             public PocoWithPolymorphism.DerivedPocoStringDiscriminator DerivedValue2 { get; set; } = new() { DerivedValue = "derived" };
+        }
+
+        public sealed class PocoWithGetOnlyProperties
+        {
+            public IEnumerable<string> Values => [];
+            public string SingleValueGetOnly { get; } = "value";
+            public string? NullableGetOnly { get; }
+            public string SingleValueGetSet { get; set; } = "value";
+            [JsonInclude]
+            public readonly string NonNullableReadonlyField = "value";
+
+#pragma warning disable CS0649 // field never assigned to
+            [JsonInclude]
+            public readonly string? NullableReadonlyField;
+#pragma warning restore CS0649
         }
 
         public class ClassWithComponentModelAttributes

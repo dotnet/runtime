@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Library: NOT in the Debuggees/*/*.csproj discovery glob (it lives two
+         levels deep under Lib/), so the harness auto-discovery skips it. It is
+         consumed by the NotYetLoadedArgType debuggee as a compile-time-only
+         reference and staged into a subdirectory the debuggee loads lazily. -->
+    <OutputType>Library</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CS0649</NoWarn>
+  </PropertyGroup>
+</Project>
