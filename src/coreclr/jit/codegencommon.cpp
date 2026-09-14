@@ -3887,12 +3887,6 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (varDsc->lvHasExplicitInit)
-        {
-            varDsc->lvMustInit = 0;
-            continue;
-        }
-
         const bool isTemp      = varDsc->lvIsTemp;
         const bool hasGCPtr    = varDsc->HasGCPtr();
         const bool isTracked   = varDsc->lvTracked;

@@ -5738,18 +5738,8 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 //    basic block successor or until it detects a loop. It keeps track of local nodes it encounters.
 //    When it gets to a store to a local variable or a local field, it checks whether the store
 //    is the first reference to the local (or to the parent of the local field), and, if so,
-//    it may do one of two optimizations:
-//      1. If the following conditions are true:
-//            the local is untracked,
-//            the value to store is 0,
-//            the local is guaranteed to be fully initialized in the prolog,
-//         then the explicit zero initialization is removed.
-//      2. If the following conditions are true:
-//            the store is to a local (and not a field),
-//            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the store,
-//            either the local has no gc pointers or there are no gc-safe points between the prolog and the store,
-//         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
-//         for this local in the prolog.
+//    it may remove the explicit zero initialization if the local is guaranteed to be initialized in the prolog
+//    or by a dominating explicit zero initialization.
 //
 void Compiler::optRemoveRedundantZeroInits()
 {
@@ -5763,9 +5753,7 @@ void Compiler::optRemoveRedundantZeroInits()
     CompAllocator   allocator(getAllocator(CMK_ZeroInit));
     LclVarRefCounts refCounts(allocator);
     BitVecTraits    bitVecTraits(lvaCount, this);
-    BitVec          zeroInitLocals         = BitVecOps::MakeEmpty(&bitVecTraits);
-    bool            hasGCSafePoint         = false;
-    bool            hasImplicitControlFlow = false;
+    BitVec          zeroInitLocals = BitVecOps::MakeEmpty(&bitVecTraits);
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
@@ -5801,16 +5789,12 @@ void Compiler::optRemoveRedundantZeroInits()
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
-        bool            hasEHSuccs         = block->HasPotentialEHSuccs(this);
 
         for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr;)
         {
             Statement* next = stmt->GetNextStmt();
             for (GenTree* const tree : stmt->TreeList())
             {
-                hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
-                hasGCSafePoint |= IsPotentialGCSafePoint(tree);
-
                 switch (tree->gtOper)
                 {
                     case GT_LCL_VAR:
@@ -5911,8 +5895,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         }
 
                         // The local hasn't been referenced before this store.
-                        bool removedExplicitZeroInit = false;
-                        bool isEntire                = !tree->IsPartialLclFld(this);
+                        bool isEntire = !tree->IsPartialLclFld(this);
 
                         if (tree->Data()->IsIntegralConst(0))
                         {
@@ -5937,7 +5920,6 @@ void Compiler::optRemoveRedundantZeroInits()
                                     if (tree == stmt->GetRootNode())
                                     {
                                         fgRemoveStmt(block, stmt);
-                                        removedExplicitZeroInit      = true;
                                         lclDsc->lvSuppressedZeroInit = 1;
 
                                         if (lclDsc->lvTracked)
@@ -5957,25 +5939,6 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        // For async methods we may skip an explicit init through the resumption path
-                        //
-                        if (!removedExplicitZeroInit && isEntire && !compIsAsync() &&
-                            (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->IsLiveInOutOfHandler())))
-                        {
-                            // If compMethodRequiresPInvokeFrame() returns true, lower may later
-                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
-                            assert(s_helperCallProperties.IsNoGC(CORINFO_HELP_INIT_PINVOKE_FRAME));
-
-                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
-                            {
-                                // The local hasn't been used and won't be reported to the gc between
-                                // the prolog and this explicit initialization. Therefore, it doesn't
-                                // require zero initialization in the prolog.
-                                lclDsc->lvHasExplicitInit = 1;
-                                lclNode->gtFlags |= GTF_VAR_EXPLICIT_INIT;
-                                JITDUMP("Marking V%02u as having an explicit init\n", lclNum);
-                            }
-                        }
                         break;
                     }
                     default:
@@ -6068,13 +6031,6 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     if (lastDefDsc->GetBlock() != defDsc->GetBlock())
                     {
                         JITDUMP(" -- no; last def not in the same block\n");
-                        continue;
-                    }
-
-                    if ((store->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
-                    {
-                        // Removing explicit inits is not profitable for primitives and not safe for structs.
-                        JITDUMP(" -- no; 'explicit init'\n");
                         continue;
                     }
 

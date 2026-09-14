@@ -651,10 +651,6 @@ public:
 
     unsigned char lvSuppressedZeroInit : 1; // local needs zero init if we transform tail call to loop
 
-    unsigned char lvHasExplicitInit : 1; // The local is explicitly initialized and doesn't need zero initialization in
-                                         // the prolog. If the local has gc pointers, there are no gc-safe points
-                                         // between the prolog and the explicit initialization.
-
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
 
@@ -7620,7 +7616,6 @@ public:
     bool IsValidLclAddr(unsigned lclNum, unsigned offset);
     bool IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
     bool IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
-    bool IsPotentialGCSafePoint(GenTree* tree) const;
 
 private:
     bool fgNeedReturnSpillTemp();
