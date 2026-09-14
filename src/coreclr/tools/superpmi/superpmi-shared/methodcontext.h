@@ -772,9 +772,14 @@ public:
     void dmpEmbedFieldHandle(DWORDLONG key, DLDL value);
     CORINFO_FIELD_HANDLE repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection);
 
-    void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
-    void dmpCompareTypesForCast(DLDL key, DWORD value);
-    TypeCompareState repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
+    void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
+                                CORINFO_CLASS_HANDLE toClass,
+                                bool                 fromClassIsExact,
+                                TypeCompareState     result);
+    void dmpCompareTypesForCast(Agnostic_CompareTypesForCast key, DWORD value);
+    TypeCompareState repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
+                                            CORINFO_CLASS_HANDLE toClass,
+                                            bool                 fromClassIsExact);
 
     void recCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, TypeCompareState result);
     void dmpCompareTypesForEquality(DLDL key, DWORD value);

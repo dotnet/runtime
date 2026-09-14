@@ -747,10 +747,12 @@ bool MyICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
 
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
-TypeCompareState MyICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+TypeCompareState MyICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
+                                             CORINFO_CLASS_HANDLE toClass,
+                                             bool                 fromClassIsExact)
 {
     jitInstance->mc->cr->AddCall("compareTypesForCast");
-    return jitInstance->mc->repCompareTypesForCast(fromClass, toClass);
+    return jitInstance->mc->repCompareTypesForCast(fromClass, toClass, fromClassIsExact);
 }
 
 // See if types represented by cls1 and cls2 compare equal, not

@@ -4256,12 +4256,45 @@ bool CEEInfo::canCast(
     return result;
 }
 
+static bool isExactTypeHelper(TypeHandle th);
+
+static bool IsOrdinaryClass(TypeHandle type)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (type.IsCanonicalSubtype() || type.IsTypeDesc())
+    {
+        return false;
+    }
+
+#ifdef FEATURE_COMINTEROP
+    if (type.IsComObjectType())
+    {
+        return false;
+    }
+#endif // FEATURE_COMINTEROP
+
+    MethodTable* methodTable = type.AsMethodTable();
+    return !methodTable->IsInterface() && !methodTable->IsArray() && !methodTable->IsDelegate() &&
+           !methodTable->IsValueType() && (methodTable != g_pSZArrayHelperClass);
+}
+
+// The caller has already established that the forward cast cannot succeed.
+static bool IsReverseClassCastImpossible(TypeHandle fromType, TypeHandle toType)
+{
+    STANDARD_VM_CONTRACT;
+
+    return IsOrdinaryClass(fromType) && IsOrdinaryClass(toType) && !toType.CanCastTo(fromType);
+}
+
 /*********************************************************************/
 // See if a cast from fromClass to toClass will succeed, fail, or needs
-// to be resolved at runtime.
+// to be resolved at runtime. fromClassIsExact specifies whether fromClass
+// represents the exact runtime type or an upper bound.
 TypeCompareState CEEInfo::compareTypesForCast(
         CORINFO_CLASS_HANDLE        fromClass,
-        CORINFO_CLASS_HANDLE        toClass)
+        CORINFO_CLASS_HANDLE        toClass,
+        bool                        fromClassIsExact)
 {
     CONTRACTL {
         THROWS;
@@ -4342,6 +4375,12 @@ TypeCompareState CEEInfo::compareTypesForCast(
                 result = TypeCompareState::MustNot;
             }
         }
+    }
+
+    if ((result == TypeCompareState::MustNot) && !fromClassIsExact && !isExactTypeHelper(fromHnd) &&
+        !IsReverseClassCastImpossible(fromHnd, toHnd))
+    {
+        result = TypeCompareState::May;
     }
 
     EE_TO_JIT_TRANSITION();

@@ -906,11 +906,13 @@ bool interceptor_ICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends p
 
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
-TypeCompareState interceptor_ICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+TypeCompareState interceptor_ICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
+                                                       CORINFO_CLASS_HANDLE toClass,
+                                                       bool                 fromClassIsExact)
 {
     mc->cr->AddCall("compareTypesForCast");
-    TypeCompareState temp = original_ICorJitInfo->compareTypesForCast(fromClass, toClass);
-    mc->recCompareTypesForCast(fromClass, toClass, temp);
+    TypeCompareState temp = original_ICorJitInfo->compareTypesForCast(fromClass, toClass, fromClassIsExact);
+    mc->recCompareTypesForCast(fromClass, toClass, fromClassIsExact, temp);
     return temp;
 }
 

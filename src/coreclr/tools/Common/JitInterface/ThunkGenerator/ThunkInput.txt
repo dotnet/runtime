@@ -254,7 +254,7 @@ FUNCTIONS
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
     CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
     bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent)
-    TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+    TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, bool fromClassIsExact)
     TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
     bool isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
     bool isExactType(CORINFO_CLASS_HANDLE cls)

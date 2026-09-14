@@ -2818,10 +2818,13 @@ public:
             ) = 0;
 
     // See if a cast from fromClass to toClass will succeed, fail, or needs
-    // to be resolved at runtime.
+    // to be resolved at runtime. When fromClassIsExact is false, MustNot means
+    // that the cast also fails for every subtype of fromClass. Must applies
+    // to all subtypes in either case.
     virtual TypeCompareState compareTypesForCast(
             CORINFO_CLASS_HANDLE        fromClass,
-            CORINFO_CLASS_HANDLE        toClass
+            CORINFO_CLASS_HANDLE        toClass,
+            bool                        fromClassIsExact = true
             ) = 0;
 
     // See if types represented by cls1 and cls2 compare equal, not

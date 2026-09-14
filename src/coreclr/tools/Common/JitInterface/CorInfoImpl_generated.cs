@@ -284,7 +284,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getTypeForPrimitiveValueClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getTypeForPrimitiveNumericClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte> canCast;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, TypeCompareState> compareTypesForCast;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte, TypeCompareState> compareTypesForCast;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, TypeCompareState> compareTypesForEquality;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte> isMoreSpecificType;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isExactType;
@@ -1564,12 +1564,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static TypeCompareState _compareTypesForCast(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
+        private static TypeCompareState _compareTypesForCast(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass, byte fromClassIsExact)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.compareTypesForCast(fromClass, toClass);
+                return _this.compareTypesForCast(fromClass, toClass, fromClassIsExact != 0);
             }
             catch (Exception ex)
             {
