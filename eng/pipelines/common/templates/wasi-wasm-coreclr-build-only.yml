@@ -16,7 +16,7 @@ jobs:
 # src/tests CoreCLR runtime tests on Helix under wasmtime lives in
 # wasi-wasm-coreclr-runtime-tests.yml (the 'wasi_wasm' Helix queue is
 # already mapped to the ubuntu-26.04-helix-webassembly-amd64 image,
-# which ships wasmtime — see eng/pipelines/libraries/helix-queues-setup.yml).
+# which ships wasmtime — see eng/pipelines/coreclr/templates/helix-queues-setup.yml).
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

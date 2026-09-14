@@ -189,7 +189,6 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
             varIsRegCandidate = false;
         }
-
         if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
@@ -1123,7 +1122,11 @@ void WasmRegAlloc::ResolveReferences()
                     unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
-                    physReg = abiInfo.Segment(0).GetRegister();
+                    regNumber abiReg = abiInfo.Segment(0).GetRegister();
+                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
                 else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
                 {
@@ -1131,7 +1134,11 @@ void WasmRegAlloc::ResolveReferences()
                     const ParameterRegisterLocalMapping* mapping =
                         m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
                     assert(mapping != nullptr);
-                    physReg = mapping->RegisterSegment->GetRegister();
+                    regNumber abiReg = mapping->RegisterSegment->GetRegister();
+                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
             }
             else

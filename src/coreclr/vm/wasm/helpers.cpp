@@ -986,7 +986,7 @@ namespace
             case ConvertType::ToF64:  c = 'd'; break;
             case ConvertType::ToV128: c = 'V'; break;
             default:
-                PORTABILITY_ASSERT("Unknown Wasm value type");
+                _ASSERTE(!"Unknown Wasm value type");
                 c = '?';
                 break;
         }
@@ -1274,7 +1274,7 @@ namespace
         return thunk;
     }
 
-    static void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    static void* ComputePortableEntryPointThunk(MetaSig& sig, const char* prefix, bool wasmCallingConventionOnly = false)
     {
         CONTRACTL
         {
@@ -1299,7 +1299,7 @@ namespace
         char fixedBuffer[64];
         char* keyBuffer = fixedBuffer;
         uint32_t keyBufferLen = sizeof(fixedBuffer);
-        uint32_t needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+        uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
@@ -1307,7 +1307,7 @@ namespace
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
-            needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+            needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
             if (needed == UINT32_MAX || needed >= keyBufferLen)
                 return NULL;
         }
@@ -1584,10 +1584,19 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
     else
     {
-        thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+        thunk = ComputePortableEntryPointThunk(sig, "I");
     }
 
     return thunk;
+}
+
+void* GetVirtualDispatchThunk(MethodDesc *pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!pMD->ContainsGenericVariables());
+
+    MetaSig sig(pMD);
+    return ComputePortableEntryPointThunk(sig, "V", true /* wasmCallingConventionOnly */);
 }
 
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
