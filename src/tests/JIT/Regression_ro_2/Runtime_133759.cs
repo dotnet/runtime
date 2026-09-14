@@ -4,7 +4,7 @@
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Program
+public class Runtime_133759
 {
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static void Test(int seed, long[] dst)
@@ -18,7 +18,7 @@ public class Program
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         long[] actual = new long[10];
         Test(-3, actual);
@@ -37,7 +37,5 @@ public class Program
                 48,
             ],
             actual);
-
-        return 100;
     }
 }
