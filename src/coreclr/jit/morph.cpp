@@ -1728,7 +1728,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
     bool addStubCellArg = true;
 
-#ifdef TARGET_X86
+#if defined(TARGET_WASM)
+    // The portable entrypoint carries enough information to recover the dispatch cell.
+    addStubCellArg = false;
+#elif defined(TARGET_X86)
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
@@ -9650,7 +9653,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (op1Oper == GT_NOT)
                 {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (!varTypeIsIntegral(simdBaseType))
                     {
                         break;
                     }
@@ -9678,14 +9681,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     node = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseType, simdSize)->AsHWIntrinsic();
 
 #if defined(TARGET_XARCH)
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        node->AsHWIntrinsic()->Op(2)->SetMorphed(this);
-                    }
-                    else
-                    {
-                        node->AsHWIntrinsic()->Op(1)->SetMorphed(this);
-                    }
+                    node->Op(1)->SetMorphed(this);
 #endif // TARGET_XARCH
 
                     return fgMorphHWIntrinsicRequired(node);

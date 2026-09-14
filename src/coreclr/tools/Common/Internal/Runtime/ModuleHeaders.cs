@@ -15,7 +15,7 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 28;
+        public const ushort CurrentMajorVersion = 29;
         public const ushort CurrentMinorVersion = 0;
     }
 #if READYTORUN
@@ -84,6 +84,7 @@ namespace Internal.Runtime
         ExternalTypeMaps            = 124, // Added to CoreCLR in V18.3
         ProxyTypeMaps               = 125, // Added to CoreCLR in V18.3
         TypeMapAssemblyTargets      = 126, // Added in V18.3
+        WasmAsyncResumeInfo         = 127, // Added in V29
 
         //
         // NativeAOT ReadyToRun sections

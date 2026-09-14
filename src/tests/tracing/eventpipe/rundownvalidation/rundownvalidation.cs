@@ -97,6 +97,7 @@ namespace Tracing.Tests.RundownValidation
 
             if (result != 100 ||
                 !PlatformDetection.IsCoreCLR ||
+                Utilities.IsCoreClrInterpreter ||
                 !RuntimeFeature.IsDynamicCodeCompiled ||
                 !OperatingSystem.IsWindows() ||
                 !PlatformDetection.Is64BitProcess ||
