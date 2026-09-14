@@ -311,8 +311,10 @@ AggregateInfo* AggregateInfoMap::Lookup(unsigned lclNum)
 
 struct PrimitiveAccess
 {
-    unsigned  Count    = 0;
-    weight_t  CountWtd = 0;
+    unsigned  Count              = 0;
+    weight_t  CountWtd           = 0;
+    unsigned  CountFullCopies    = 0;
+    weight_t  CountFullCopiesWtd = 0;
     unsigned  Offset;
     var_types AccessType;
 
@@ -437,12 +439,13 @@ public:
     //   offs         - The offset being accessed
     //   accessType   - The type of the access
     //   weight       - Weight of the block containing the access
+    //   isFullCopy   - Whether the copy covers both whole locals
     //
     // Remarks:
     //   Induced accesses are accesses that are induced by physical promotion
     //   due to store decompositon. They are always of primitive type.
     //
-    void RecordInducedAccess(unsigned offs, var_types accessType, weight_t weight)
+    void RecordInducedAccess(unsigned offs, var_types accessType, weight_t weight, bool isFullCopy)
     {
         PrimitiveAccess* access = nullptr;
 
@@ -477,6 +480,11 @@ public:
 
         access->Count++;
         access->CountWtd += weight;
+        if (isFullCopy)
+        {
+            access->CountFullCopies++;
+            access->CountFullCopiesWtd += weight;
+        }
     }
 
     //------------------------------------------------------------------------
@@ -512,7 +520,7 @@ public:
                 continue;
             }
 
-            if (!EvaluateReplacement(comp, lclNum, access, 0, 0))
+            if (!EvaluateReplacement(comp, lclNum, access, nullptr))
             {
                 continue;
             }
@@ -601,14 +609,14 @@ public:
             if (access == nullptr)
             {
                 Access fakeAccess(inducedAccess.Offset, inducedAccess.AccessType, nullptr);
-                if (!EvaluateReplacement(comp, lclNum, fakeAccess, inducedAccess.Count, inducedAccess.CountWtd))
+                if (!EvaluateReplacement(comp, lclNum, fakeAccess, &inducedAccess))
                 {
                     continue;
                 }
             }
             else
             {
-                if (!EvaluateReplacement(comp, lclNum, *access, inducedAccess.Count, inducedAccess.CountWtd))
+                if (!EvaluateReplacement(comp, lclNum, *access, &inducedAccess))
                 {
                     continue;
                 }
@@ -661,13 +669,15 @@ public:
     //   comp            - Compiler instance
     //   lclNum          - Local num for this struct local
     //   access          - Access information for the candidate.
-    //   inducedCountWtd - Additional weighted count due to induced accesses.
+    //   inducedAccess   - Additional accesses induced by already selected replacements, or nullptr.
     //
     // Returns:
     //   True if we should promote this access and create a replacement; otherwise false.
     //
-    bool EvaluateReplacement(
-        Compiler* comp, unsigned lclNum, const Access& access, unsigned inducedCount, weight_t inducedCountWtd)
+    bool EvaluateReplacement(Compiler*              comp,
+                             unsigned               lclNum,
+                             const Access&          access,
+                             const PrimitiveAccess* inducedAccess)
     {
         // Verify that this replacement has proper GC ness compared to the
         // layout. While reinterpreting GC fields to integers can be considered
@@ -700,6 +710,9 @@ public:
                 return false;
             }
         }
+
+        unsigned inducedCount    = inducedAccess == nullptr ? 0 : inducedAccess->Count;
+        weight_t inducedCountWtd = inducedAccess == nullptr ? 0 : inducedAccess->CountWtd;
 
         unsigned countOverlappedCallArg        = 0;
         unsigned countOverlappedStoredFromCall = 0;
@@ -866,6 +879,14 @@ public:
         unsigned nativeParts = layout->GetSize() / TARGET_POINTER_SIZE;
         if (costVectorCopies && (primitiveAccessCount > nativeParts))
         {
+            // Matching fields already promoted at the other endpoint have fragmented these copies.
+            // Do not charge for the same decomposition when promoting the induced accesses.
+            if (inducedAccess != nullptr)
+            {
+                assert(inducedAccess->CountFullCopies <= countVectorCopies);
+                countVectorCopies -= inducedAccess->CountFullCopies;
+                countVectorCopiesWtd = max(0.0, countVectorCopiesWtd - inducedAccess->CountFullCopiesWtd);
+            }
             // Amortize the original vector move over its fields.
             weight_t extraMoves = 1 - (weight_t)genTypeSize(access.AccessType) / layout->GetSize();
             costWith += countVectorCopiesWtd * extraMoves * COST_REG_ACCESS_CYCLES;
@@ -1493,6 +1514,9 @@ private:
         AggregateInfo* inducerAgg = aggregates.Lookup(inducer->GetLclNum());
         if (inducerAgg != nullptr)
         {
+            bool isFullCopy = (candOffs == 0) && (inducerOffs == 0) &&
+                              (size == m_compiler->lvaGetDesc(candidate)->GetLayout()->GetSize()) &&
+                              (size == m_compiler->lvaGetDesc(inducer)->GetLayout()->GetSize());
             Replacement* firstRep;
             Replacement* endRep;
             if (inducerAgg->OverlappingReplacements(inducerOffs, size, &firstRep, &endRep))
@@ -1503,7 +1527,7 @@ private:
                         (rep->Offset + genTypeSize(rep->AccessType) <= (inducerOffs + size)))
                     {
                         InduceAccess(aggregates, candidate->GetLclNum(), candOffs + (rep->Offset - inducerOffs),
-                                     rep->AccessType, block);
+                                     rep->AccessType, block, isFullCopy);
                     }
                 }
             }
@@ -1521,8 +1545,14 @@ private:
     //   offset     - Offset at which the induced access starts.
     //   type       - Type of the induced access.
     //   block      - The block with the induced access.
+    //   isFullCopy - Whether the inducing copy covers both whole locals.
     //
-    void InduceAccess(AggregateInfoMap& aggregates, unsigned lclNum, unsigned offset, var_types type, BasicBlock* block)
+    void InduceAccess(AggregateInfoMap& aggregates,
+                      unsigned          lclNum,
+                      unsigned          offset,
+                      var_types         type,
+                      BasicBlock*       block,
+                      bool              isFullCopy = false)
     {
         AggregateInfo* agg = aggregates.Lookup(lclNum);
         if (agg != nullptr)
@@ -1535,7 +1565,7 @@ private:
         }
 
         LocalUses* uses = GetOrCreateUses(lclNum);
-        uses->RecordInducedAccess(offset, type, block->getBBWeight(m_compiler));
+        uses->RecordInducedAccess(offset, type, block->getBBWeight(m_compiler), isFullCopy);
     }
 
     //------------------------------------------------------------------------
@@ -2438,7 +2468,8 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
 //   argNode - The argument node
 //
 // Returns:
-//   True if the argument was replaced; false if write-backs are required.
+//   True if the call argument was replaced with a FIELD_LIST; false if the
+//   argument could not be represented as a FIELD_LIST.
 //
 bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* argNode)
 {
