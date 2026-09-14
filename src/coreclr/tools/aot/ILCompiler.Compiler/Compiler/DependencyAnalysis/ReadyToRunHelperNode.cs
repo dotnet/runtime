@@ -81,8 +81,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
             }
-
-            InitializeWasmSignature(id, target);
         }
 
         protected override bool IsVisibleFromManagedCode => false;
