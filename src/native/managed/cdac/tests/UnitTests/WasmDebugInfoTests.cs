@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -454,6 +455,47 @@ public unsafe class WasmDebugInfoTests
         Assert.False(location.IsRegisterValue);
         Assert.Equal(WasmMockTarget.EstablishingFramePointer + StackOffset, location.AddressOrValue);
         Assert.NotEqual(FuncletFrame + StackOffset, location.AddressOrValue);
+    }
+
+    /// <summary>
+    /// Characterizes the pre-existing <see cref="ClrDataValue"/> behavior that the WASM consumer
+    /// relies on: a symbolic engine local resolves to no native locations, and reads from that
+    /// empty value fail rather than returning a plausible zero.
+    /// </summary>
+    [Fact]
+    public unsafe void ClrDataValue_NoLocations_FailsInsteadOfReturningZero()
+    {
+        Target target = CreateTarget(RuntimeInfoArchitecture.Wasm, is64Bit: false);
+
+        ClrDataValue value = new(
+            target,
+            TargetPointer.Null,
+            flags: (uint)ClrDataValueFlag.IS_PRIMITIVE,
+            typeHandle: null,
+            baseAddress: TargetPointer.Null,
+            locations: [],
+            legacyImpl: null,
+            apiLock: new Lock());
+
+        IXCLRDataValue dataValue = value;
+
+        uint numLocs;
+        Assert.Equal(HResults.S_OK, dataValue.GetNumLocations(&numLocs));
+        Assert.Equal(0u, numLocs);
+
+        // GetBytes must not succeed with a zero-filled buffer.
+        byte[] buffer = new byte[8];
+        uint dataSize;
+        int hr;
+        fixed (byte* pBuffer = buffer)
+        {
+            hr = dataValue.GetBytes((uint)buffer.Length, &dataSize, pBuffer);
+        }
+        Assert.True(hr < 0, $"GetBytes should fail for a value with no locations, got 0x{hr:X8}");
+
+        // GetAddress must not report address 0 as though it were a real address.
+        ClrDataAddress address;
+        Assert.True(dataValue.GetAddress(&address) < 0, "GetAddress should fail for a value with no locations");
     }
 
     /// <summary>
