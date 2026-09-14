@@ -98,20 +98,20 @@ struct Access
     weight_t CountCallArgsWtd       = 0;
     weight_t CountRegCallArgsWtd    = 0;
 
-#ifdef DEBUG
     // Number of times this access is the source of a store.
     unsigned CountStoreSource = 0;
     // Number of times this access is the destination of a store.
     unsigned CountStoreDestination = 0;
-    unsigned CountReturns          = 0;
     // Number of times this is stored by being passed as the retbuf.
     // These stores need a readback
     unsigned CountPassedAsRetbuf = 0;
 
     weight_t CountStoreSourceWtd      = 0;
     weight_t CountStoreDestinationWtd = 0;
-    weight_t CountReturnsWtd          = 0;
     weight_t CountPassedAsRetbufWtd   = 0;
+#ifdef DEBUG
+    unsigned CountReturns    = 0;
+    weight_t CountReturnsWtd = 0;
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
@@ -146,15 +146,15 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None             = 0,
-    IsCallArg        = 1,
-    IsRegCallArg     = 2,
-    IsStoredFromCall = 4,
-    IsCallRetBuf     = 8,
-#ifdef DEBUG
+    None               = 0,
+    IsCallArg          = 1,
+    IsRegCallArg       = 2,
+    IsStoredFromCall   = 4,
+    IsCallRetBuf       = 8,
     IsStoreSource      = 16,
     IsStoreDestination = 32,
-    IsReturned         = 64,
+#ifdef DEBUG
+    IsReturned = 64,
 #endif
 };
 
@@ -402,7 +402,6 @@ public:
             access->CountStoredFromCallWtd += weight;
         }
 
-#ifdef DEBUG
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
         {
             access->CountPassedAsRetbuf++;
@@ -421,6 +420,7 @@ public:
             access->CountStoreDestinationWtd += weight;
         }
 
+#ifdef DEBUG
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
         {
             access->CountReturns++;
@@ -707,12 +707,22 @@ public:
         weight_t countOverlappedCallArgWtd        = 0;
         weight_t countOverlappedStoredFromCallWtd = 0;
 
-        bool overlap = false;
+        unsigned countVectorCopies    = 0;
+        weight_t countVectorCopiesWtd = 0;
+        unsigned primitiveAccessCount = 1;
+        bool     costVectorCopies =
+            (genTypeSize(access.AccessType) < TARGET_POINTER_SIZE) && varTypeIsSIMD(layout->GetRegisterType());
         for (const Access& otherAccess : m_accesses)
         {
             if (&otherAccess == &access)
             {
                 continue;
+            }
+
+            if (otherAccess.AccessType != TYP_STRUCT)
+            {
+                primitiveAccessCount++;
+                costVectorCopies &= genTypeSize(otherAccess.AccessType) < TARGET_POINTER_SIZE;
             }
 
             if (!otherAccess.Overlaps(access.Offset, genTypeSize(access.AccessType)))
@@ -730,6 +740,15 @@ public:
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
             countOverlappedStoredFromCallWtd += otherAccess.CountStoredFromCallWtd;
+
+            if (costVectorCopies && (otherAccess.GetAccessSize() == layout->GetSize()))
+            {
+                // Call-result read-backs are already costed separately.
+                countVectorCopies += otherAccess.CountStoreSource + otherAccess.CountStoreDestination +
+                                     otherAccess.CountPassedAsRetbuf - otherAccess.CountStoredFromCall;
+                countVectorCopiesWtd += otherAccess.CountStoreSourceWtd + otherAccess.CountStoreDestinationWtd +
+                                        otherAccess.CountPassedAsRetbufWtd - otherAccess.CountStoredFromCallWtd;
+            }
 
             if (otherAccess.CountRegCallArgs > 0)
             {
@@ -842,7 +861,18 @@ public:
         costWith += countWriteBacksWtd * writeBackCost;
         sizeWith += countWriteBacks * writeBackSize;
 
-        // Overlapping stores are decomposable so we don't cost them as
+        // Charge for fragmenting vector-sized copies into sub-native fields.
+        // Keep smaller splits and mixed-width copies unpenalized.
+        unsigned nativeParts = layout->GetSize() / TARGET_POINTER_SIZE;
+        if (costVectorCopies && (primitiveAccessCount > nativeParts))
+        {
+            // Amortize the original vector move over its fields.
+            weight_t extraMoves = 1 - (weight_t)genTypeSize(access.AccessType) / layout->GetSize();
+            costWith += countVectorCopiesWtd * extraMoves * COST_REG_ACCESS_CYCLES;
+            sizeWith += countVectorCopies * extraMoves * COST_REG_ACCESS_SIZE;
+        }
+
+        // Other overlapping stores are decomposable so we don't cost them as
         // being more expensive than their unpromoted counterparts (i.e. we
         // don't consider them at all). However, we should do something more
         // clever here, since:
@@ -1526,7 +1556,7 @@ private:
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
         {
-            INDEBUG(flags |= AccessKindFlags::IsStoreDestination);
+            flags |= AccessKindFlags::IsStoreDestination;
 
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
@@ -1565,12 +1595,12 @@ private:
             }
         }
 
-#ifdef DEBUG
         if (user->OperIsStore() && (user->Data()->gtEffectiveVal() == lcl))
         {
             flags |= AccessKindFlags::IsStoreSource;
         }
 
+#ifdef DEBUG
         if (user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
             flags |= AccessKindFlags::IsReturned;
@@ -2408,8 +2438,7 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
 //   argNode - The argument node
 //
 // Returns:
-//   True if the call argument was replaced with a FIELD_LIST; false if the
-//   argument could not be represented as a FIELD_LIST.
+//   True if the argument was replaced; false if write-backs are required.
 //
 bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* argNode)
 {
