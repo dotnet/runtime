@@ -580,8 +580,12 @@ namespace System.IO.Tests.Enumeration
 
             // Test that bar* does NOT match foo files (no false positives)
             win32Paths = GetPaths(testDirectory.FullName, "bar*", new EnumerationOptions { MatchType = MatchType.Win32 });
-            Assert.Equal(4, win32Paths.Length); // bar, bar.b, bar.ba, bar.baz
-            Assert.DoesNotContain(win32Paths, p => p.Contains("foo"));
+            FSAssert.EqualWhenOrdered(new string[] {
+                Path.Combine(testDirectory.FullName, "bar"),
+                Path.Combine(testDirectory.FullName, "bar.b"),
+                Path.Combine(testDirectory.FullName, "bar.ba"),
+                Path.Combine(testDirectory.FullName, "bar.baz")
+            }, win32Paths);
         }
 
         [Fact]
