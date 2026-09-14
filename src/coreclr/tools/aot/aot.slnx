@@ -43,6 +43,13 @@
     <Platform Solution="*|x86" Project="x86" />
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
+  <Project Path="../../../tools/illink/src/ILLink.Shared/ILLink.Shared.shproj" />
+  <Project Path="../../../tools/illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+  </Project>
+  <Project Path="../../../tools/illink/test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+  </Project>
   <Project Path="ILCompiler.Trimming.Tests/ILCompiler.Trimming.Tests.csproj">
     <Platform Solution="*|Any CPU" Project="x64" />
     <Platform Solution="*|x64" Project="x64" />
