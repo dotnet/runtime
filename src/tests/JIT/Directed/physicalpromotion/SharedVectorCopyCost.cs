@@ -210,6 +210,16 @@ public class SharedVectorCopyCost
     {
         // Copy a subrange of the promoted source into a local with no explicit field reads.
         // Its induced fields must still pay for fragmenting the subsequent array copies.
+        // ARM64: SharedVectorCopyCost:CheckFields
+        // ARM64: SharedVectorCopyCost:CheckFields
+        // ARM64: SharedVectorCopyCost:CheckFields
+        // ARM64: ldr q{{[0-9]+}}, [{{fp|sp}}
+        // ARM64: {{stp|str}} q{{[0-9]+}},
+        // ARM64: ret
+        // On x86 these int fields are native-sized and must remain uncharged.
+        // X86: call {{.*}}SharedVectorCopyCost:CheckFields
+        // X86-NOT: xmmword ptr
+        // X86: ret
         // X64: call {{.*}}SharedVectorCopyCost:CheckFields
         // X64: call {{.*}}SharedVectorCopyCost:CheckFields
         // X64: call {{.*}}SharedVectorCopyCost:CheckFields
@@ -271,9 +281,32 @@ public class SharedVectorCopyCost
         destination[7] = source;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InitializeNonzero(int input)
+    {
+        // Nonzero initblk is initialization, not a copy to fragment.
+        // X64-NOT: xmmword ptr
+        // X64: call {{.*}}SharedVectorCopyCost:Fields
+        // X64: ret
+        // X86-NOT: xmmword ptr
+        // X86: call {{.*}}SharedVectorCopyCost:Fields
+        // X86: ret
+        // ARM64-NOT: {{stp|str}} q{{[0-9]+}}
+        // ARM64: SharedVectorCopyCost:Fields
+        // ARM64: ret
+        S value;
+        Unsafe.SkipInit(out value);
+        Unsafe.InitBlockUnaligned(ref Unsafe.As<S, byte>(ref value), 0xAB, (uint)Unsafe.SizeOf<S>());
+        value.A = input;
+        Fields(value.A, value.B, value.C, value.D, value.E);
+        return value.A + value.B + value.C + value.D + value.E;
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {
+        Assert.Equal(unchecked(10 + 2 * (int)0xABABABAB + 2 * (short)0xABAB), InitializeNonzero(10));
+        Assert.Equal(unchecked(-10 + 2 * (int)0xABABABAB + 2 * (short)0xABAB), InitializeNonzero(-10));
         Assert.Equal(61, Copy(10));
         Assert.Equal(-39, Copy(-10));
         Assert.Equal(32769, Copy(32766));

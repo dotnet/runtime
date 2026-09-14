@@ -777,7 +777,7 @@ public:
             }
         }
 
-        if (costVectorCopies)
+        if (costVectorCopies && (countVectorCopies > 0))
         {
             // Count induced-only fields too, without counting an existing scalar read twice.
             for (const PrimitiveAccess& otherInduced : m_inducedAccesses)
@@ -1628,7 +1628,7 @@ private:
         {
             flags |= AccessKindFlags::IsStoreDestination;
 
-            if (lcl->TypeIs(TYP_STRUCT) && lcl->Data()->gtEffectiveVal()->IsIntegralConst())
+            if (lcl->TypeIs(TYP_STRUCT) && lcl->Data()->gtEffectiveVal()->IsInitVal())
             {
                 flags |= AccessKindFlags::IsInit;
             }
