@@ -9,6 +9,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Linq;
 
@@ -1094,6 +1095,46 @@ internal partial class StackWalk_1 : IStackWalk
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return handle.Context.StackPointer;
+    }
+
+    WasmFunctionIdentity IStackWalk.GetWasmFunctionIdentity(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.Wasm)
+            throw new PlatformNotSupportedException("WASM function identity is only available on WASM targets.");
+
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        if (handle.State != StackWalkState.Frameless ||
+            _eman.GetCodeKind(handle.Context.InstructionPointer) != CodeKind.ReadyToRun)
+        {
+            throw new InvalidOperationException(
+                "WASM function identity is only available for ReadyToRun frameless frames.");
+        }
+
+        WasmR2RInfo r2rInfo = new(_target);
+        WasmUnwinder unwinder = new(_target, r2rInfo);
+
+        if (!unwinder.TryGetFunctionIndex(handle.Context.StackPointer, out uint functionTableIndex))
+            throw new InvalidOperationException("The stack frame does not contain a WASM R2R function-table index.");
+
+        if (!r2rInfo.TryGetFunctionIdentity(
+                functionTableIndex,
+                out TargetPointer module,
+                out uint runtimeFunctionIndex,
+                out bool isFunclet))
+        {
+            return new WasmFunctionIdentity
+            {
+                FunctionTableIndex = functionTableIndex,
+            };
+        }
+
+        return new WasmFunctionIdentity
+        {
+            FunctionTableIndex = functionTableIndex,
+            Module = module,
+            RuntimeFunctionIndex = runtimeFunctionIndex,
+            IsFunclet = isFunclet,
+        };
     }
 
     TargetPointer IStackWalk.GetFuncletRootId(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset)

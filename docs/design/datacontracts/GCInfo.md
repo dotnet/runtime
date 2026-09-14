@@ -2,7 +2,7 @@
 
 This contract is for fetching information related to GCInfo associated with native code.
 
-The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
+The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract. WebAssembly uses the common format with identity normalization for code offsets, stack slots, stack-base registers, and stack-area sizes.
 
 ## APIs of contract
 
@@ -91,7 +91,8 @@ public readonly record struct GCInfoHeader(
     uint GSCookieValidRangeEnd,            // End (exclusive) of the GS cookie valid range
     SpecialSlot? PSPSym,                   // PSP sym stack slot, or null if none
     SpecialSlot? GenericsInstContext,      // Generics instantiation context stack slot, or null if none
-    GenericsContextKind GenericsInstContextKind); // Kind of the generics instantiation context
+    GenericsContextKind GenericsInstContextKind, // Kind of the generics instantiation context
+    bool HasReversePInvokeFrame);          // True if unwinding leaves managed code through reverse P/Invoke
 
 // Unified lifetime (live code range) of a GC slot, register or stack.
 public readonly record struct GCSlotLifetime(
@@ -380,9 +381,41 @@ Slots use delta encoding where consecutive entries encode only the difference fr
 | **Stack Slot** | `offset >> 2` | `offset << 2` |
 | **Stack Area Size** | `size >> 2` | `size << 2` |
 
-#### Interpreter (WASM / FEATURE_INTERPRETER)
+#### WebAssembly (WASM32)
 
-The interpreter uses a platform-independent encoding where all normalization and denormalization functions are identity (no transformation). This encoding is used for WASM targets (where `TargetGcInfoEncoding` is `InterpreterGcInfoEncoding`) and on any architecture when `FEATURE_INTERPRETER` is enabled.
+WebAssembly ReadyToRun code uses the native `Wasm32GcInfoEncoding` from
+`src/coreclr/inc/gcinfotypes.h`. Its normalization and denormalization functions are identity
+operations.
+
+| Encoding Base | Value |
+| --- | --- |
+| `GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE` | 6 |
+| `GS_COOKIE_STACK_SLOT_ENCBASE` | 6 |
+| `CODE_LENGTH_ENCBASE` | 6 |
+| `STACK_BASE_REGISTER_ENCBASE` | 3 |
+| `SIZE_OF_STACK_AREA_ENCBASE` | 6 |
+| `SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE` | 3 |
+| `REVERSE_PINVOKE_FRAME_ENCBASE` | 6 |
+| `NUM_REGISTERS_ENCBASE` | 3 |
+| `NUM_STACK_SLOTS_ENCBASE` | 5 |
+| `NUM_UNTRACKED_SLOTS_ENCBASE` | 5 |
+| `NORM_PROLOG_SIZE_ENCBASE` | 4 |
+| `NORM_EPILOG_SIZE_ENCBASE` | 3 |
+| `INTERRUPTIBLE_RANGE_DELTA1_ENCBASE` | 5 |
+| `INTERRUPTIBLE_RANGE_DELTA2_ENCBASE` | 5 |
+| `REGISTER_ENCBASE` | 3 |
+| `REGISTER_DELTA_ENCBASE` | 3 |
+| `STACK_SLOT_ENCBASE` | 6 |
+| `STACK_SLOT_DELTA_ENCBASE` | 4 |
+| `NUM_SAFE_POINTS_ENCBASE` | 4 |
+| `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | 1 |
+
+`HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA` is false. RyuJIT does not keep GC references in WASM
+locals, so any malformed register slot is treated as scratch/volatile.
+
+#### Interpreter (FEATURE_INTERPRETER)
+
+The interpreter uses a platform-independent encoding where all normalization and denormalization functions are identity (no transformation). This encoding is used by interpreted methods regardless of target architecture.
 
 | Encoding Base | Value | Purpose |
 | --- | --- | --- |

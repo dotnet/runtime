@@ -546,7 +546,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             GSCookieValidRangeEnd: gsCookie.HasValue ? _validRangeEnd : 0,
             PSPSym: pspSym,
             GenericsInstContext: genericsInstContext,
-            GenericsInstContextKind: genericsContextKind);
+            GenericsInstContextKind: genericsContextKind,
+            HasReversePInvokeFrame: _reversePInvokeFrameStackSlot != TTraits.NO_REVERSE_PINVOKE_FRAME);
     }
 
     public uint GetCodeLength()
