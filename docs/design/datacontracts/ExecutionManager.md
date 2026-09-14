@@ -44,8 +44,8 @@ public struct CodeBlockHandle
     bool IsGcSafe(TargetCodePointer instructionPointer);
     // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
     JitManagerInfo GetEEJitManagerInfo();
-    // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
-    // and returns information about each code heap.
+    // Walks the linked lists of CodeHeapListNodes for the EEJitManager and, when present,
+    // the InterpreterJitManager, and returns information about each code heap.
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos();
 
     // Get the exception clause info for the code block

@@ -741,6 +741,7 @@
     "DynamicAdaptationMode": "GC heap dynamic adaptation mode. Only available when GCIdentifiers contains dynamic_heap.",
     "EEConfig": "Pointer to the runtime configuration",
     "EEJitManagerAddress": "Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address)",
+    "InterpreterJitManagerAddress": "Address of the global pointer to the InterpreterJitManager instance (read a TargetPointer from this address to obtain the instance address)",
     "ExceptionMethodTable": "A pointer to the address of the System.Exception MethodTable (g_pExceptionClass)",
     "ExecutionManagerCodeRangeMapAddress": "Pointer to the global RangeSectionMap",
     "ExpandMechanismsLength": "The number of elements in the ExpandMechanisms array",
