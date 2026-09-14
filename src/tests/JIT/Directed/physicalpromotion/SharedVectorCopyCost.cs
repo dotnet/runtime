@@ -28,16 +28,51 @@ public class SharedVectorCopyCost
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Consume(S value) { }
 
+    // Six integer arguments exhaust the Unix x64 argument registers.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ConsumeStackArgs(int a, int b, int c, int d, int e, int f, S value) { }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Consume(S value, bool stackArgs)
+    {
+        if (stackArgs)
+        {
+            ConsumeStackArgs(1, 2, 3, 4, 5, 6, value);
+        }
+        else
+        {
+            Consume(value);
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Copy(int input)
     {
         // After the last copy, reuse the promoted fields instead of reloading the shorts.
-        // X64-WINDOWS: call {{.*}}SharedVectorCopyCost:Consume
-        // X64-WINDOWS: call {{.*}}SharedVectorCopyCost:Consume
-        // X64-WINDOWS: call {{.*}}SharedVectorCopyCost:Consume
-        // X64-WINDOWS: call {{.*}}SharedVectorCopyCost:Consume
-        // X64-WINDOWS-NOT: movsx
-        // X64-WINDOWS: ret
+        // X64: call {{.*}}SharedVectorCopyCost:Consume
+        // X64: call {{.*}}SharedVectorCopyCost:Consume
+        // X64: call {{.*}}SharedVectorCopyCost:Consume
+        // X64: call {{.*}}SharedVectorCopyCost:Consume
+        // X64-NOT: movsx
+        // X64: ret
+        return CopyCore(input, false);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CopyStackArgs(int input)
+    {
+        // X64: call {{.*}}SharedVectorCopyCost:ConsumeStackArgs
+        // X64: call {{.*}}SharedVectorCopyCost:ConsumeStackArgs
+        // X64: call {{.*}}SharedVectorCopyCost:ConsumeStackArgs
+        // X64: call {{.*}}SharedVectorCopyCost:ConsumeStackArgs
+        // X64-NOT: movsx
+        // X64: ret
+        return CopyCore(input, true);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int CopyCore(int input, bool stackArgs)
+    {
         S src = Create(input);
         Fields(src.A, src.B, src.C, src.D, src.E);
         Fields(src.A, src.B, src.C, src.D, src.E);
@@ -48,16 +83,16 @@ public class SharedVectorCopyCost
         // fields must not pay the fragmentation cost again.
         S dst = src;
         dst.A++;
-        Consume(dst);
+        Consume(dst, stackArgs);
         dst = src;
         dst.A++;
-        Consume(dst);
+        Consume(dst, stackArgs);
         dst = src;
         dst.A++;
-        Consume(dst);
+        Consume(dst, stackArgs);
         dst = src;
         dst.A++;
-        Consume(dst);
+        Consume(dst, stackArgs);
 
         Fields(dst.A, dst.B, dst.C, dst.D, dst.E);
         return dst.A + dst.B + dst.C + dst.D + dst.E;
@@ -69,5 +104,8 @@ public class SharedVectorCopyCost
         Assert.Equal(61, Copy(10));
         Assert.Equal(-39, Copy(-10));
         Assert.Equal(32769, Copy(32766));
+        Assert.Equal(61, CopyStackArgs(10));
+        Assert.Equal(-39, CopyStackArgs(-10));
+        Assert.Equal(32769, CopyStackArgs(32766));
     }
 }
