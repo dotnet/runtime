@@ -99,7 +99,9 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source,
+                new Options { Machine = Machine.Amd64 });
 
             // Verify .sdata section exists
             var sdataSection = pe.PEHeaders.SectionHeaders.FirstOrDefault(s => s.Name == ".sdata");

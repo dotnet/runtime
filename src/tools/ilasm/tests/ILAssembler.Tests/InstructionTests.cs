@@ -226,7 +226,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void DataLabelReference_FixedUpCorrectly()
         {
-            // Test that .data with a reference to another label (&Label) is patched with the correct RVA
+            // Test that .data with a reference to another label (&Label) is patched with the correct address
             string source = """
                 .assembly test { }
                 .assembly extern mscorlib { }
@@ -257,13 +257,12 @@ namespace ILAssembler.Tests
             Assert.NotEqual(0, targetRva);
             Assert.NotEqual(0, pointerRva);
 
-            // The pointer field should contain the RVA of the target data
+            // The pointer field should contain the address of the target data
             // Read the actual data from the PE at the pointer location
             var pointerSection = pe.GetSectionData(pointerRva);
-            int storedRva = BinaryPrimitives.ReadInt32LittleEndian(pointerSection.GetContent().AsSpan(0, 4));
+            uint storedAddress = BinaryPrimitives.ReadUInt32LittleEndian(pointerSection.GetContent().AsSpan(0, 4));
 
-            // The stored RVA should equal the target's RVA
-            Assert.Equal(targetRva, storedRva);
+            Assert.Equal(pe.PEHeaders.PEHeader!.ImageBase + (uint)targetRva, storedAddress);
 
             // Verify the target data contains the expected value
             var targetSection = pe.GetSectionData(targetRva);
@@ -307,12 +306,13 @@ namespace ILAssembler.Tests
             int ptr2Rva = fields["Ptr2Field"].GetRelativeVirtualAddress();
 
             // Read both pointer values
-            int storedRva1 = BinaryPrimitives.ReadInt32LittleEndian(pe.GetSectionData(ptr1Rva).GetContent().AsSpan(0, 4));
-            int storedRva2 = BinaryPrimitives.ReadInt32LittleEndian(pe.GetSectionData(ptr2Rva).GetContent().AsSpan(0, 4));
+            uint storedAddress1 = BinaryPrimitives.ReadUInt32LittleEndian(pe.GetSectionData(ptr1Rva).GetContent().AsSpan(0, 4));
+            uint storedAddress2 = BinaryPrimitives.ReadUInt32LittleEndian(pe.GetSectionData(ptr2Rva).GetContent().AsSpan(0, 4));
 
             // Both should point to the target
-            Assert.Equal(targetRva, storedRva1);
-            Assert.Equal(targetRva, storedRva2);
+            ulong targetAddress = pe.PEHeaders.PEHeader!.ImageBase + (uint)targetRva;
+            Assert.Equal(targetAddress, storedAddress1);
+            Assert.Equal(targetAddress, storedAddress2);
         }
 
 
