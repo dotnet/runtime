@@ -16,10 +16,10 @@
 
     <OutputPath Condition="$(MSBuildProjectName.StartsWith('System.Private.'))">$(RuntimeBinDir)/aotsdk/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;arm64</Platforms>
+    <Platforms>x64;x86;arm;arm64;armel</Platforms>
 
     <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
-    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
+    <Platform Condition=" '$(Platform)' == 'armel' ">armel</Platform>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
@@ -83,7 +83,7 @@
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <DefineConstants>TARGET_32BIT;TARGET_X86;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+  <PropertyGroup Condition="'$(Platform)' == 'arm' or '$(Platform)' == 'armel'">
     <DefineConstants>TARGET_32BIT;TARGET_ARM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
