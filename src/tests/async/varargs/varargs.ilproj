@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <ItemGroup>
+    <!-- The runtime-async methods are written directly in IL, so the C# helper
+         attribute injected by the directory props is not applicable here. -->
+    <Compile Remove="..\RuntimeAsyncMethodGenerationAttribute.cs" />
+    <Compile Include="$(MSBuildProjectName).il" />
+  </ItemGroup>
+</Project>
