@@ -1373,8 +1373,10 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 // exits. For an inclusive ">=" test this is uLimit + remainder
                 // (which may be uLimit itself). For an exclusive ">" test, if
                 // remainder is 0 then uLimit fails the test, so the lowest
-                // value actually visited is uLimit + uStride instead.
-                const bool     testIsExclusive = (iterInfo->TestOper() == GT_GT);
+                // value actually visited is uLimit + uStride instead. "!=" is
+                // also exclusive in this sense (and only occurs with unit
+                // stride, so remainder is always 0 there).
+                const bool     testIsExclusive = (iterInfo->TestOper() == GT_GT) || (iterInfo->TestOper() == GT_NE);
                 const unsigned lastValue =
                     (testIsExclusive && (remainder == 0)) ? (uLimit + uStride) : (uLimit + remainder);
 

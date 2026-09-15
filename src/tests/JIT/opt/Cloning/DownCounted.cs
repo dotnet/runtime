@@ -153,6 +153,20 @@ public class DownCounted
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGTConstUnsafe(int[] a)
+    {
+        // init=7, limit=0, stride=3: remainder r=1 != 0, so the loop visits
+        // "limit + r" (1) via GT, and limit + r < stride -- must not be
+        // proven safe.
+        int sum = 0;
+        for (uint i = 7; i > 0; i -= 3)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int UnsignedArrayGEUnitStride(int[] a, uint n, uint limit)
     {
         int sum = 0;
@@ -202,6 +216,7 @@ public class DownCounted
         Assert.Equal(11, UnsignedArrayGTConstSafe(a));
         Assert.Equal(18, UnsignedArrayGEConstSafe(a));
         Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGEConstUnsafe(a));
+        Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGTConstUnsafe(a));
         Assert.Equal(28, UnsignedArrayGEUnitStrideConstSafe(a));
     }
 }
