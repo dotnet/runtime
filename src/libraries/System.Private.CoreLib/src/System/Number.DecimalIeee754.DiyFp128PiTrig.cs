@@ -98,18 +98,38 @@ internal static partial class Number
         return result;
     }
 
+    private static DiyFp128 DiyFp128EvaluatePiTrig(in DiyFp128 reduced, bool cosine)
+    {
+        // Decimal reduction already bounds the angle to [0, pi/4], so no radian reduction is needed.
+        DiyFp128 angle = DiyFp128TimesPi(reduced);
+        Span<DiyFp128> results = [default, default];
+        DiyFp128EvaluateRational(angle, cosine ? default : TrigSinCoefficients, 1,
+            cosine ? TrigCosCoefficients : default, 1, TrigSinCosDegree,
+            TrigSkip | (cosine ? TrigCosPolyFlags : TrigSinPolyFlags), results);
+        return results[0];
+    }
+
     /// <summary>Computes <c>sin(pi * x)</c> from its decimal-reduced argument and octant.</summary>
     private static DiyFp128 DiyFp128SinPi(in DiyFp128 reduced, int octant)
     {
         bool useCosine = (octant & 3) is 1 or 2;
-        if (!useCosine && DiyFp128IsZero(reduced))
+        DiyFp128 result;
+
+        if (DiyFp128IsZero(reduced))
         {
-            // sin(pi * n) = +/-0, keeping the sign of x.
-            return reduced;
+            if (!useCosine)
+            {
+                // sin(pi * n) = +/-0, keeping the sign of x.
+                return reduced;
+            }
+
+            result = DiyFp128One;
+        }
+        else
+        {
+            result = DiyFp128EvaluatePiTrig(reduced, useCosine);
         }
 
-        DiyFp128 angle = DiyFp128TimesPi(reduced);
-        DiyFp128 result = useCosine ? DiyFp128Cos(angle) : DiyFp128Sin(angle);
         result._sign = reduced._sign ^ (((octant & 4) != 0) ? UxSignBit : 0u);
         return result;
     }
@@ -117,8 +137,10 @@ internal static partial class Number
     /// <summary>Computes <c>cos(pi * x)</c> from its decimal-reduced argument and octant.</summary>
     private static DiyFp128 DiyFp128CosPi(in DiyFp128 reduced, int octant)
     {
-        DiyFp128 angle = DiyFp128TimesPi(reduced);
-        DiyFp128 result = ((octant & 3) is 1 or 2) ? DiyFp128Sin(angle) : DiyFp128Cos(angle);
+        bool useCosine = (octant & 3) is not (1 or 2);
+        DiyFp128 result = DiyFp128IsZero(reduced)
+            ? (useCosine ? DiyFp128One : new DiyFp128(0, UxZeroExponent, 0, 0))
+            : DiyFp128EvaluatePiTrig(reduced, useCosine);
 
         // cos(pi * (n + 1/2)) is exactly +0; the reduced result is +0 and must not take the odd-integer sign.
         if (DiyFp128IsZero(result))
@@ -133,7 +155,28 @@ internal static partial class Number
     /// <summary>Computes <c>sin(pi * x)</c> and <c>cos(pi * x)</c> from their decimal-reduced argument and octant.</summary>
     private static void DiyFp128SinCosPi(in DiyFp128 reduced, int octant, out DiyFp128 sin, out DiyFp128 cos)
     {
-        sin = DiyFp128SinPi(reduced, octant);
-        cos = DiyFp128CosPi(reduced, octant);
+        if (DiyFp128IsZero(reduced))
+        {
+            sin = reduced;
+            cos = DiyFp128One;
+        }
+        else
+        {
+            DiyFp128 angle = DiyFp128TimesPi(reduced);
+            Span<DiyFp128> results = [default, default];
+            DiyFp128EvaluateRational(angle, TrigSinCoefficients, 1, TrigCosCoefficients, 1, TrigSinCosDegree,
+                TrigSinPolyFlags | TrigCosPolyFlags | TrigNoDivide, results);
+            sin = results[0];
+            cos = results[1];
+        }
+
+        if ((octant & 3) is 1 or 2)
+        {
+            (sin, cos) = (cos, sin);
+        }
+
+        // Integer sine zeros retain the input sign; half-integer cosine zeros are always positive.
+        sin._sign = reduced._sign ^ ((!DiyFp128IsZero(sin) && ((octant & 4) != 0)) ? UxSignBit : 0u);
+        cos._sign = (!DiyFp128IsZero(cos) && (((octant + 2) & 4) != 0)) ? UxSignBit : 0u;
     }
 }

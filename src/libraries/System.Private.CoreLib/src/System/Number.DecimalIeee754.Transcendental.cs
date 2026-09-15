@@ -361,17 +361,24 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log(value));
         }
 
+        return DiyFp128ToDecimal<TDecimal, TValue>(LogDecimalIeee754<TDecimal, TValue>(decoded));
+    }
+
+    private static DiyFp128 LogDecimalIeee754<TDecimal, TValue>(in DecodedDecimalIeee754<TValue> decoded)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
         if (DiyFp128LogNeedsResidual(argument))
         {
             DiyFp128 residual = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
             if (!DiyFp128IsZero(residual))
             {
-                return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Ln1p(residual));
+                return DiyFp128Ln1p(residual);
             }
         }
 
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Ln(argument));
+        return DiyFp128Ln(argument);
     }
 
     /// <summary>Computes <c>log_newBase(x)</c> as <c>log(x) / log(newBase)</c>, mirroring the
@@ -400,19 +407,33 @@ internal static partial class Number
         }
 
         DecodedDecimalIeee754<TValue> decodedX = UnpackDecimalIeee754<TDecimal, TValue>(x);
-        bool xIsOne = !TDecimal.IsInfinity(x) && !TDecimal.IsNegative(x)
-                    && DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(decodedX.UnbiasedExponent, decodedX.Significand);
         bool baseIsZero = !TDecimal.IsInfinity(newBase) && TValue.IsZero(decodedBase.Significand);
         bool baseIsPositiveInfinity = TDecimal.IsInfinity(newBase) && !TDecimal.IsNegative(newBase);
 
-        if (!xIsOne && (baseIsZero || baseIsPositiveInfinity))
+        if (baseIsZero || baseIsPositiveInfinity)
         {
-            return TDecimal.NaNMask;
+            bool xIsOne = !TDecimal.IsInfinity(x) && !TDecimal.IsNegative(x)
+                        && DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(decodedX.UnbiasedExponent, decodedX.Significand);
+            if (!xIsOne)
+            {
+                return TDecimal.NaNMask;
+            }
         }
 
-        TValue logX = LogDecimalIeee754<TDecimal, TValue>(x);
-        TValue logBase = LogDecimalIeee754<TDecimal, TValue>(newBase);
-        return DivideDecimalIeee754<TDecimal, TValue>(logX, logBase);
+        if (DecimalIeee754UsesDouble<TValue>() || TDecimal.IsInfinity(x) || TDecimal.IsInfinity(newBase)
+            || decodedX.Signed || decodedBase.Signed || TValue.IsZero(decodedX.Significand) || baseIsZero)
+        {
+            TValue logX = LogDecimalIeee754<TDecimal, TValue>(x);
+            TValue logBase = LogDecimalIeee754<TDecimal, TValue>(newBase);
+            return DivideDecimalIeee754<TDecimal, TValue>(logX, logBase);
+        }
+
+        // Keep both logarithms and their quotient wide; rounding them to decimal first loses
+        // accuracy even when each logarithm is individually correctly rounded.
+        DiyFp128 numerator = LogDecimalIeee754<TDecimal, TValue>(decodedX);
+        DiyFp128 denominator = LogDecimalIeee754<TDecimal, TValue>(decodedBase);
+        DiyFp128Divide(numerator, denominator, DiyFp128FullPrecision, out DiyFp128 result);
+        return DiyFp128ToDecimal<TDecimal, TValue>(result);
     }
 
     /// <summary>Computes <c>log2(x)</c>.</summary>
@@ -762,7 +783,7 @@ internal static partial class Number
         bool yIsOddInteger = false;
         bool yIsInteger = false;
 
-        if (!yInf)
+        if (!yInf && TDecimal.IsNegative(x))
         {
             yIsInteger = DecimalIeee754IsInteger<TDecimal, TValue>(dy.UnbiasedExponent, dy.Significand, out yIsOddInteger);
         }
@@ -1017,6 +1038,14 @@ internal static partial class Number
             return TDecimal.NaNMask;
         }
 
+        if (n == 1)
+        {
+            // Retain the full-precision result cohort without a binary conversion or approximation.
+            int padding = int.Min(TDecimal.Precision - TDecimal.CountDigits(dx.Significand), dx.UnbiasedExponent - TDecimal.MinAdjustedExponent);
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(
+                dx.Signed, dx.Significand * TDecimal.Power10(padding), dx.UnbiasedExponent - padding);
+        }
+
         if (DecimalIeee754UsesDouble<TValue>())
         {
             double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
@@ -1030,12 +1059,11 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        // The engine evaluates |x|^(1/n) with the reciprocal formed exactly in the binary128 domain;
+        // The engine evaluates |x|^(1/n) with the reciprocal formed in binary128 working precision;
         // a negative base only reaches here with an odd n, so it simply carries the sign. `n` is taken
         // through `long` so `int.MinValue`'s magnitude does not overflow.
-        DiyFp128 one = new DiyFp128(0u, 1, 0x8000_0000_0000_0000, 0);
-        DiyFp128 degree = DecimalToDiyFp128<TDecimal, TValue>(nNegative, 0, TValue.CreateTruncating(long.Abs(n)));
-        DiyFp128Divide(one, degree, DiyFp128FullPrecision, out DiyFp128 exponent);
+        DiyFp128 degree = DiyFp128FromWord(n);
+        DiyFp128Divide(DiyFp128One, degree, DiyFp128FullPrecision, out DiyFp128 exponent);
 
         DiyFp128 baseValue = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
         DiyFp128 baseMinusOne = DiyFp128LogNeedsResidual(baseValue)
@@ -1512,6 +1540,11 @@ internal static partial class Number
         {
             // A half-integer argument is a pole; tanPi returns a signed infinity matching sinPi's sign.
             return (sin._sign != 0) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        if (DiyFp128IsZero(sin))
+        {
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(sin.IsNegative ^ cos.IsNegative, TValue.Zero, 0);
         }
 
         DiyFp128Divide(sin, cos, DiyFp128FullPrecision, out DiyFp128 tangent);

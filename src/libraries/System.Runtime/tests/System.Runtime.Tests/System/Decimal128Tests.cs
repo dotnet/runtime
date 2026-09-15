@@ -2282,6 +2282,7 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // log(NaN, 2) = NaN
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // log(2, NaN) = NaN
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000001UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // log(2, 1) = NaN (base 1)
+        [InlineData(0x303A000000000000UL, 0x00000000000003E8UL, 0x303E000000000000UL, 0x0000000000000005UL, 0xB040000000000000UL, 0x0000000000000000UL)] // log(1.000, 0.5) = -0
         public static void LogNewBaseTest(ulong valueUpper, ulong valueLower, ulong baseUpper, ulong baseLower, ulong expectedUpper, ulong expectedLower)
         {
             Decimal128 result = Decimal128.Log(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(baseUpper, baseLower)));
@@ -2289,14 +2290,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(8.0, 2.0)]
-        [InlineData(100.0, 10.0)]
-        [InlineData(2.5, 3.0)]
-        public static void LogNewBaseAccuracyTest(double input, double newBase)
+        [InlineData("8", "2", "3.000000000000000000000000000000000")]
+        [InlineData("100", "10", "2.000000000000000000000000000000000")]
+        [InlineData("2.5", "3", "0.8340437671464697300975132933358795420083467265341692611822354509568071")]
+        [InlineData("1.000000000000000000000000000000001", "0.9999999999999999999999999999999999", "-9.999999999999999999999999999999994500000000000000000000000000000003575")]
+        public static void LogNewBaseAccuracyTest(string input, string newBase, string oracle)
         {
-            double expected = double.Log(input, newBase);
-            double actual = (double)Decimal128.Log((Decimal128)input, (Decimal128)newBase);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}, {newBase}): expected {expected}, got {actual}");
+            Decimal128 actual = Decimal128.Log(Decimal128.Parse(input, CultureInfo.InvariantCulture),
+                Decimal128.Parse(newBase, CultureInfo.InvariantCulture));
+            Decimal128 expected = Decimal128.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal128, UInt128>(actual),
+                Unsafe.BitCast<Decimal128, UInt128>(expected), recordedUlp: 0, limit: 1);
         }
 
         [Theory]
@@ -2593,6 +2598,9 @@ namespace System.Tests
         [InlineData(0x3040000000000000UL, 0x0000000000000000UL, -5, 0x7800000000000000UL, 0x0000000000000000UL)] // rootn(+0, n < 0) = +Infinity
         [InlineData(0xB040000000000000UL, 0x0000000000000000UL, -5, 0xF800000000000000UL, 0x0000000000000000UL)] // rootn(-0, odd < 0) = -Infinity
         [InlineData(0xB040000000000000UL, 0x0000000000000004UL, 2, 0x7C00000000000000UL, 0x0000000000000000UL)] // rootn(-4, even) = NaN
+        [InlineData(0x3038000000000000UL, 0x0000000000001B58UL, 1, 0x2FFD59206BDFDF06UL, 0x8D497D4600000000UL)] // rootn(0.7000, 1) uses the full-precision cohort
+        [InlineData(0xB038000000000000UL, 0x0000000000001B58UL, 1, 0xAFFD59206BDFDF06UL, 0x8D497D4600000000UL)] // rootn(-0.7000, 1) uses the full-precision cohort
+        [InlineData(0x0040000000000000UL, 0x0000000000000001UL, 1, 0x000004EE2D6D415BUL, 0x85ACEF8100000000UL)] // subnormal padding stops at the minimum quantum
         public static void RootNTest(ulong valueUpper, ulong valueLower, int n, ulong expectedUpper, ulong expectedLower)
         {
             Decimal128 result = Decimal128.RootN(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)), n);

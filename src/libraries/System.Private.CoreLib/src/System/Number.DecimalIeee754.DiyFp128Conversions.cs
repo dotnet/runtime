@@ -49,11 +49,17 @@ internal static partial class Number
     {
         int remaining = int.Abs(power);
         int maxChunk = TDecimal.Precision - 1;
+        int previousChunk = 0;
+        DiyFp128 pow = default;
 
         while (remaining > 0)
         {
             int chunk = int.Min(remaining, maxChunk);
-            DiyFp128 pow = DiyFp128FromUInt128(UInt128.CreateTruncating(TDecimal.Power10(chunk)), 0);
+            if (chunk != previousChunk)
+            {
+                pow = DiyFp128FromUInt128(UInt128.CreateTruncating(TDecimal.Power10(chunk)), 0);
+                previousChunk = chunk;
+            }
 
             if (power > 0)
             {
