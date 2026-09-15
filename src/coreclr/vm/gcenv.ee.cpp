@@ -337,7 +337,15 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 
     // External memory handles are a single global list. Only one server GC thread may update its
     // root slots during relocation.
-    if (sc->thread_number == 0)
+    //
+    // The list can only be mutated while the EE is suspended for a GC or by a thread in cooperative
+    // mode, so it is safe to walk without taking the list's lock during any non-concurrent scan (the
+    // blocking mark/relocate phases, and the final, EE-suspended mark phase of a background GC). It is
+    // not safe to walk during the initial, concurrent mark phase of a background GC, since the EE is
+    // running then and a cooperative-mode thread could add or remove a handle while we are iterating.
+    // Skip the scan in that phase; the subsequent final mark phase, which runs with the EE suspended,
+    // will see the up-to-date list.
+    if (sc->thread_number == 0 && !sc->concurrent)
     {
         ExternalMemoryHandle::GCScanRoots(fn, sc);
     }

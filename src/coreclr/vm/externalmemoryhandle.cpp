@@ -94,8 +94,9 @@ void ExternalMemoryHandle::GCScanRoots(promote_func *fn, ScanContext *sc)
     }
     CONTRACTL_END;
 
-    // Mutations happen in cooperative mode or while the debugger has suspended the EE, so the list
-    // is stable during a GC.
+    // The caller (GCToEEInterface::GcScanRoots) only invokes this outside the concurrent mark phase of
+    // a background GC, so the EE is always suspended for a GC (or, for the DAC, the target process is
+    // stopped) whenever this list is walked, and the list cannot be mutated concurrently with this scan.
     for (ExternalMemoryHandle* handle = s_handles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
     {
         handle->GCScanRoot(fn, sc);
