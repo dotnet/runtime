@@ -179,7 +179,6 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             ISymbolNode helper = factory.ExternFunctionSymbol(s_RhpResolveInterfaceMethod);
-                            expressions.Add(Local.Get(0));
                             expressions.Add(Local.Get(1));
                             expressions.Add(I32.ConstRVA(factory.DispatchCell(targetMethod)));
                             expressions.Add(ControlFlow.ReturnCall(helper));
