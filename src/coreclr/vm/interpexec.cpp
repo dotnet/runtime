@@ -265,6 +265,31 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     return local.result;
 }
 
+NOINLINE
+static void InterpSafepointSlowPath()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    Thread* pThread = GetThread();
+    if (pThread->IsAbortRequested())
+    {
+        CallWithSEHWrapper(
+            [&pThread]() {
+                pThread->HandleThreadAbort();
+                return 0;
+            });
+    }
+
+    // Transition into preemptive mode to allow the GC to suspend us.
+    GCX_PREEMP();
+}
+
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
 void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
@@ -2030,17 +2055,7 @@ SWITCH_OPCODE:
                     pFrame->ip = ip;
                     if (g_TrapReturningThreads)
                     {
-                        Thread *pThread = GetThread();
-                        if (pThread->IsAbortRequested())
-                        {
-                            CallWithSEHWrapper(
-                            [&pThread]() {
-                                pThread->HandleThreadAbort();
-                                return 0;
-                            });
-                        }
-                        // Transition into preemptive mode to allow the GC to suspend us
-                        GCX_PREEMP();
+                        InterpSafepointSlowPath();
                     }
                     ip++;
                     INTOP_NEXT;
@@ -2160,6 +2175,16 @@ SWITCH_OPCODE:
                 }
                 INTOP_CASE(INTOP_BLT_I4)
                     BR_BINOP(int32_t, <);
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLT_I4_IMM)
+                    if (g_TrapReturningThreads)
+                    {
+                        InterpSafepointSlowPath();
+                    }
+                    if (LOCAL_VAR(ip[1], int32_t) < ip[2])
+                        ip += ip[3];
+                    else
+                        ip += 4;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_BLT_I8)
                     BR_BINOP(int64_t, <);
