@@ -64,6 +64,39 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void ChainedIncludesEndingAtEof_ReturnToRootSource()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly test { }
+                #include "level1.il"
+                .class public auto ansi beforefieldinit AfterInclude extends [System.Runtime]System.Object
+                {
+                }
+                """;
+
+            using PEReader pe = CompileWithIncludesAndGetReader(source, new Dictionary<string, string>
+            {
+                ["level1.il"] = """
+                    #include "level2.il"
+                    """,
+                ["level2.il"] = """
+                    .class public auto ansi beforefieldinit IncludedType extends [System.Runtime]System.Object
+                    {
+                    }
+                    """,
+            });
+
+            MetadataReader reader = pe.GetMetadataReader();
+            string[] typeNames = reader.TypeDefinitions
+                .Select(handle => reader.GetString(reader.GetTypeDefinition(handle).Name))
+                .ToArray();
+
+            Assert.Contains("IncludedType", typeNames);
+            Assert.Contains("AfterInclude", typeNames);
+        }
+
+        [Fact]
         public void ConditionalCompilation_EmitsOnlyActiveTypes()
         {
             string source = """
