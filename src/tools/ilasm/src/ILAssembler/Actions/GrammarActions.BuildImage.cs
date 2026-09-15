@@ -242,7 +242,7 @@ namespace ILAssembler
                     ReportError(
                         DiagnosticIds.LabelNotFound,
                         string.Format(DiagnosticMessageTemplates.LabelNotFound, entry.DataLabel),
-                        declaration.Context.id());
+                        declaration.Context);
                     continue;
                 }
 
@@ -258,7 +258,7 @@ namespace ILAssembler
                             entry.DataLabel,
                             availableBytes,
                             requiredBytes),
-                        declaration.Context.id());
+                        declaration.Context);
                     continue;
                 }
 
