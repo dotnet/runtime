@@ -608,16 +608,13 @@ namespace System.Reflection.Tests
         {
             s_sideEffectLog.Clear();
 
-            Type exceptionType = PlatformDetection.IsMonoRuntime ? typeof(InvalidOperationException) :
-                PlatformDetection.IsNativeAot ? typeof(TargetInvocationException) : typeof(CustomAttributeFormatException);
+            Type exceptionType = PlatformDetection.IsMonoRuntime ? typeof(InvalidOperationException) : typeof(CustomAttributeFormatException);
             Exception exception = Assert.Throws(exceptionType,
                 () => typeof(SideEffectTarget).GetCustomAttribute<SideEffectAttribute>());
 
             if (!PlatformDetection.IsMonoRuntime)
             {
-                // CoreCLR adds a format-exception wrapper; NativeAOT propagates the reflection invocation exception.
-                TargetInvocationException invocationException = Assert.IsType<TargetInvocationException>(
-                    PlatformDetection.IsNativeAot ? exception : exception.InnerException);
+                TargetInvocationException invocationException = Assert.IsType<TargetInvocationException>(exception.InnerException);
                 exception = Assert.IsType<InvalidOperationException>(invocationException.InnerException);
             }
             Assert.Equal("second failed", exception.Message);
