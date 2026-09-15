@@ -93,21 +93,23 @@ namespace System.Reflection
                     if (fieldType.IsEnum)
                     {
                         _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
-                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType());
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType(), _addressOrOffset);
                     }
                     else if (fieldType.IsValueType)
                     {
                         _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
-                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType);
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType, _addressOrOffset);
                     }
                     else if (fieldType.IsPointer)
                     {
-                        _fieldAccessType = FieldAccessorType.InstancePointerType;
+                        _fieldAccessType = CanUseFastInstanceFieldAccessor(_addressOrOffset, IntPtr.Size) ?
+                            FieldAccessorType.InstancePointerType :
+                            FieldAccessorType.SlowPath;
                     }
                     else if (fieldType.IsFunctionPointer)
                     {
                         _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
-                        _fieldAccessType = GetIntPtrAccessorTypeForInstance();
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(typeof(IntPtr), _addressOrOffset);
                     }
                     else
                     {
@@ -131,32 +133,39 @@ namespace System.Reflection
                         return Volatile.Read(ref Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)));
 
                     case FieldAccessorType.InstanceValueType:
-                    case FieldAccessorType.InstanceValueTypeSize1:
-                    case FieldAccessorType.InstanceValueTypeSize2:
-                    case FieldAccessorType.InstanceValueTypeSize4:
-                    case FieldAccessorType.InstanceValueTypeSize8:
                         VerifyTarget(obj);
                         Debug.Assert(obj != null);
                         return RuntimeHelpers.Box(
                             _methodTable,
                             ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset));
 
+                    case FieldAccessorType.InstanceValueTypeSize1:
+                    case FieldAccessorType.InstanceValueTypeSize2:
+                    case FieldAccessorType.InstanceValueTypeSize4:
+                    case FieldAccessorType.InstanceValueTypeSize8:
+                        VerifyTarget(obj);
+                        Debug.Assert(obj != null);
+                        return GetBoxedValueVolatile(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset));
+
                     case FieldAccessorType.InstancePointerType:
                         VerifyTarget(obj);
                         Debug.Assert(obj != null);
                         return Pointer.Box(
-                            (void*)Unsafe.As<byte, IntPtr>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
+                            (void*)Volatile.Read(ref Unsafe.As<byte, IntPtr>(
+                                ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset))),
                             _fieldInfo.FieldType);
 
                     case FieldAccessorType.StaticReferenceType:
                         return Volatile.Read(ref Unsafe.As<IntPtr, object>(ref *(IntPtr*)_addressOrOffset));
 
                     case FieldAccessorType.StaticValueType:
+                        return RuntimeHelpers.Box(_methodTable, ref Unsafe.AsRef<byte>(_addressOrOffset.ToPointer()));
+
                     case FieldAccessorType.StaticValueTypeSize1:
                     case FieldAccessorType.StaticValueTypeSize2:
                     case FieldAccessorType.StaticValueTypeSize4:
                     case FieldAccessorType.StaticValueTypeSize8:
-                        return RuntimeHelpers.Box(_methodTable, ref Unsafe.AsRef<byte>(_addressOrOffset.ToPointer()));
+                        return GetBoxedValueVolatile(ref Unsafe.AsRef<byte>(_addressOrOffset.ToPointer()));
 
                     case FieldAccessorType.StaticValueTypeBoxed:
                         // Re-box the value.
@@ -165,8 +174,9 @@ namespace System.Reflection
                             ref Unsafe.As<IntPtr, object>(ref *(IntPtr*)_addressOrOffset).GetRawData());
 
                     case FieldAccessorType.StaticPointerType:
-                        return Pointer.Box((void*)Unsafe.As<byte, IntPtr>(
-                            ref Unsafe.AsRef<byte>(_addressOrOffset.ToPointer())), _fieldInfo.FieldType);
+                        return Pointer.Box(
+                            (void*)Volatile.Read(ref Unsafe.AsRef<IntPtr>(_addressOrOffset.ToPointer())),
+                            _fieldInfo.FieldType);
 
                     case FieldAccessorType.SlowPathUntilClassInitialized:
                         if (!IsStatic())
@@ -330,6 +340,43 @@ namespace System.Reflection
             RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
         }
 
+        private unsafe object? GetBoxedValueVolatile(ref byte address)
+        {
+            switch (_fieldAccessType)
+            {
+                case FieldAccessorType.InstanceValueTypeSize1:
+                case FieldAccessorType.StaticValueTypeSize1:
+                {
+                    byte value = Volatile.Read(ref address);
+                    return RuntimeHelpers.Box(_methodTable, ref value);
+                }
+
+                case FieldAccessorType.InstanceValueTypeSize2:
+                case FieldAccessorType.StaticValueTypeSize2:
+                {
+                    short value = Volatile.Read(ref Unsafe.As<byte, short>(ref address));
+                    return RuntimeHelpers.Box(_methodTable, ref Unsafe.As<short, byte>(ref value));
+                }
+
+                case FieldAccessorType.InstanceValueTypeSize4:
+                case FieldAccessorType.StaticValueTypeSize4:
+                {
+                    int value = Volatile.Read(ref Unsafe.As<byte, int>(ref address));
+                    return RuntimeHelpers.Box(_methodTable, ref Unsafe.As<int, byte>(ref value));
+                }
+
+                case FieldAccessorType.InstanceValueTypeSize8:
+                case FieldAccessorType.StaticValueTypeSize8:
+                {
+                    long value = Volatile.Read(ref Unsafe.As<byte, long>(ref address));
+                    return RuntimeHelpers.Box(_methodTable, ref Unsafe.As<long, byte>(ref value));
+                }
+
+                default:
+                    throw new UnreachableException();
+            }
+        }
+
         private bool IsStatic() => (_fieldInfo.Attributes & FieldAttributes.Static) == FieldAttributes.Static;
 
         private void VerifyStaticField(ref object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
@@ -391,10 +438,10 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Currently we only optimize for primitive types and not all value types. Primitive types support atomic write operations, are
-        /// not boxed by the runtime when stored as a static field, and don't need special nullable, GC or alignment checks.
+        /// Currently we only optimize for primitive types and not all value types. Primitive types support atomic read and write operations when
+        /// naturally aligned, are not boxed by the runtime when stored as a static field, and don't need special nullable or GC checks.
         /// </summary>
-        private static FieldAccessorType GetPrimitiveAccessorTypeForInstance(Type fieldType)
+        private static FieldAccessorType GetPrimitiveAccessorTypeForInstance(Type fieldType, IntPtr fieldOffset)
         {
             FieldAccessorType accessorType = FieldAccessorType.InstanceValueType;
 
@@ -418,7 +465,28 @@ namespace System.Reflection
                 fieldType == typeof(UIntPtr))
                 accessorType = GetIntPtrAccessorTypeForInstance();
 
+            int alignment = accessorType switch
+            {
+                FieldAccessorType.InstanceValueTypeSize2 => 2,
+                FieldAccessorType.InstanceValueTypeSize4 => 4,
+                FieldAccessorType.InstanceValueTypeSize8 => 8,
+                _ => 1,
+            };
+
+            if (!CanUseFastInstanceFieldAccessor(fieldOffset, alignment))
+            {
+                accessorType = FieldAccessorType.SlowPath;
+            }
+
             return accessorType;
+        }
+
+        private static bool CanUseFastInstanceFieldAccessor(IntPtr fieldOffset, int alignment)
+        {
+            // Object data is pointer-aligned. On 32-bit platforms, 8-byte
+            // alignment cannot be established from the field offset alone.
+            return alignment <= IntPtr.Size &&
+                (fieldOffset & (alignment - 1)) == 0;
         }
 
         private static FieldAccessorType GetPrimitiveAccessorTypeForStatic(Type fieldType)
@@ -440,7 +508,9 @@ namespace System.Reflection
             else if (fieldType == typeof(long) ||
                 fieldType == typeof(ulong) ||
                 fieldType == typeof(double))
-                accessorType = FieldAccessorType.StaticValueTypeSize8;
+                accessorType = IntPtr.Size == 8 ?
+                    FieldAccessorType.StaticValueTypeSize8 :
+                    FieldAccessorType.SlowPath;
             else if (fieldType == typeof(IntPtr) ||
                 fieldType == typeof(UIntPtr))
                 accessorType = GetIntPtrAccessorTypeForStatic();

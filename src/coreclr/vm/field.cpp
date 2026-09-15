@@ -297,6 +297,81 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 
 // These routines encapsulate the operation of getting and setting
 // fields.
+#ifndef DACCESS_COMPILE
+// Reflection uses volatile scalar access for naturally aligned primitive fields.
+// Atomicity is whatever VolatileLoad and VolatileStore provide on the target platform.
+// Misaligned fields are copied without atomicity or volatile ordering guarantees.
+void FieldDesc::GetPrimitiveValue(void* pAddress, void* pOutVal, UINT size)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(size == 1 || size == 2 || size == 4 || size == 8);
+
+    if (!IS_ALIGNED(pAddress, size))
+    {
+        memcpyNoGCRefs(pOutVal, pAddress, size);
+        return;
+    }
+
+    switch (size)
+    {
+        case 1:
+            *reinterpret_cast<INT8*>(pOutVal) = VolatileLoad(reinterpret_cast<INT8*>(pAddress));
+            break;
+
+        case 2:
+            *reinterpret_cast<INT16*>(pOutVal) = VolatileLoad(reinterpret_cast<INT16*>(pAddress));
+            break;
+
+        case 4:
+            *reinterpret_cast<INT32*>(pOutVal) = VolatileLoad(reinterpret_cast<INT32*>(pAddress));
+            break;
+
+        case 8:
+            *reinterpret_cast<INT64*>(pOutVal) = VolatileLoad(reinterpret_cast<INT64*>(pAddress));
+            break;
+
+        default:
+            UNREACHABLE();
+    }
+}
+
+void FieldDesc::SetPrimitiveValue(void* pAddress, const void* pInVal, UINT size)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(size == 1 || size == 2 || size == 4 || size == 8);
+
+    if (!IS_ALIGNED(pAddress, size))
+    {
+        memcpyNoGCRefs(pAddress, pInVal, size);
+        return;
+    }
+
+    switch (size)
+    {
+        case 1:
+            VolatileStore(reinterpret_cast<INT8*>(pAddress), *reinterpret_cast<const INT8*>(pInVal));
+            break;
+
+        case 2:
+            VolatileStore(reinterpret_cast<INT16*>(pAddress), *reinterpret_cast<const INT16*>(pInVal));
+            break;
+
+        case 4:
+            VolatileStore(reinterpret_cast<INT32*>(pAddress), *reinterpret_cast<const INT32*>(pInVal));
+            break;
+
+        case 8:
+            VolatileStore(reinterpret_cast<INT64*>(pAddress), *reinterpret_cast<const INT64*>(pInVal));
+            break;
+
+        default:
+            UNREACHABLE();
+    }
+}
+#endif // !DACCESS_COMPILE
+
 void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
 {
     CONTRACTL
@@ -318,6 +393,9 @@ void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
     TADDR pFieldAddress = (TADDR)GetInstanceAddress(o);
     UINT cbSize = GetSize();
 
+#ifndef DACCESS_COMPILE
+    GetPrimitiveValue(reinterpret_cast<void*>(pFieldAddress), pOutVal, cbSize);
+#else
     switch (cbSize)
     {
     case 1:
@@ -340,6 +418,7 @@ void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
         UNREACHABLE();
         break;
     }
+#endif // !DACCESS_COMPILE
 }
 
 #ifndef DACCESS_COMPILE
@@ -393,29 +472,7 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     else
     {
         UINT cbSize = LoadSize();
-
-        switch (cbSize)
-        {
-            case 1:
-                VolatileStore<INT8>((INT8*)pFieldAddress, *(INT8*)pInVal);
-                break;
-
-            case 2:
-                VolatileStore<INT16>((INT16*)pFieldAddress, *(INT16*)pInVal);
-                break;
-
-            case 4:
-                VolatileStore<INT32>((INT32*)pFieldAddress, *(INT32*)pInVal);
-                break;
-
-            case 8:
-                VolatileStore<INT64>((INT64*)pFieldAddress, *(INT64*)pInVal);
-                break;
-
-            default:
-                UNREACHABLE();
-                break;
-        }
+        SetPrimitiveValue(pFieldAddress, pInVal, cbSize);
     }
 }
 #endif // #ifndef DACCESS_COMPILE
