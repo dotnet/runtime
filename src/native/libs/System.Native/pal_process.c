@@ -1177,64 +1177,68 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     syslog((int)(LOG_USER | priority), message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
 {
+    assert(isExited != NULL);
+
+    *isExited = 0;
+
+    siginfo_t siginfo;
+    memset(&siginfo, 0, sizeof(siginfo));
     int32_t result;
-    while (true)
+    while (CheckInterrupted(result = waitid(P_ALL, 0, &siginfo, WEXITED | WNOHANG | WNOWAIT)));
+    if (result == 0)
     {
-        siginfo_t siginfo;
-        memset(&siginfo, 0, sizeof(siginfo));
-        while (CheckInterrupted(result = waitid(P_ALL, 0, &siginfo, WEXITED | WNOHANG | WNOWAIT)));
-        if (result == 0)
+        // When there are no waitable children and WNOHANG is specified,
+        // waitid may return zero with si_pid unchanged.
+        assert(siginfo.si_pid == 0 ||        // no waitable child
+               siginfo.si_signo == SIGCHLD); // waitable child
+
+        if (siginfo.si_pid == 0)
         {
-            // When there are no waitable children and WNOHANG is specified,
-            // waitid may return zero with si_pid unchanged.
-            assert(siginfo.si_pid == 0 ||        // no waitable child
-                   siginfo.si_signo == SIGCHLD); // waitable child
-
-            if (siginfo.si_pid == 0)
-            {
-                // No waitable child.
-                return 0;
-            }
-
-            // We requested WEXITED only, but some platforms (notably macOS) also report
-            // children that have stopped (SIGSTOP) or continued (SIGCONT). Because WNOWAIT
-            // was specified, such a notification is not consumed and would be returned again
-            // on every call, causing the SIGCHLD handler (CheckChildren) to spin indefinitely
-            // while a process tree is temporarily stopped by Process.Kill(entireProcessTree: true).
-            // Only report children that have actually exited.
-            if (siginfo.si_code == CLD_EXITED ||
-                siginfo.si_code == CLD_KILLED ||
-                siginfo.si_code == CLD_DUMPED)
-            {
-                return siginfo.si_pid;
-            }
-
-            // Consume the stopped/continued notification so it isn't observed again, then keep
-            // looking for a child that has exited. This is a no-op on platforms that correctly
-            // honor WEXITED (e.g. Linux), where this branch is never reached.
-            siginfo_t drain;
-            memset(&drain, 0, sizeof(drain));
-            while (CheckInterrupted(result = waitid(P_PID, (id_t)siginfo.si_pid, &drain, WSTOPPED | WCONTINUED | WNOHANG)));
-            if (result != 0)
-            {
-                // Unable to consume the notification (e.g. the child changed state concurrently).
-                // Avoid spinning: report no exited child for now. A real exit will be observed on
-                // a subsequent SIGCHLD.
-                return 0;
-            }
-            continue;
-        }
-        else if (errno == ECHILD)
-        {
-            // The calling process has no existing unwaited-for child processes.
+            // No waitable child.
             return 0;
         }
 
-        // Unexpected error.
-        return result;
+        // We requested WEXITED only, but some platforms (notably macOS) also report children
+        // that have stopped (SIGSTOP) or continued (SIGCONT). This function only peeks (WNOWAIT)
+        // and classifies the notification -- it never consumes it. Whether it is safe to consume
+        // a non-exit notification depends on whether the pid belongs to a process this runtime is
+        // responsible for reaping, which only the managed layer (which tracks that ownership) can
+        // determine. See SystemNative_WaitIdDrainNonExited.
+        *isExited = siginfo.si_code == CLD_EXITED ||
+                    siginfo.si_code == CLD_KILLED ||
+                    siginfo.si_code == CLD_DUMPED;
+        return siginfo.si_pid;
     }
+    else if (errno == ECHILD)
+    {
+        // The calling process has no existing unwaited-for child processes.
+        return 0;
+    }
+
+    // Unexpected error.
+    return result;
+}
+
+int32_t SystemNative_WaitIdDrainNonExited(int32_t pid)
+{
+    // Consumes a pending stopped/continued (non-exit) notification for the given pid so it is not
+    // repeatedly reported by subsequent waitid(WEXITED, WNOWAIT) peeks (see
+    // SystemNative_WaitIdAnyExitedNoHangNoWait). Callers must only invoke this for a pid they are
+    // certain they own the reaping responsibility for (e.g. a process started via Process.Start),
+    // since this permanently discards a status that any other WUNTRACED/WCONTINUED-based waiter
+    // (including unrelated native code in this process) might otherwise need to observe.
+    siginfo_t siginfo;
+    memset(&siginfo, 0, sizeof(siginfo));
+    int32_t result;
+    while (CheckInterrupted(result = waitid(P_PID, (id_t)pid, &siginfo, WSTOPPED | WCONTINUED | WNOHANG)));
+    if (result != 0 && errno == ECHILD)
+    {
+        // The child no longer exists or is no longer waitable this way; nothing to drain.
+        result = 0;
+    }
+    return result;
 }
 
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
@@ -1264,9 +1268,18 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t
             TryConvertSignalCodeToPosixSignal(sig, &posixSignal);
             *terminatingSignal = (int32_t)posixSignal;
         }
+        else if (WIFSTOPPED(status) || WIFCONTINUED(status))
+        {
+            // The child has not exited -- it was merely stopped or continued. This can happen even
+            // without WUNTRACED/WCONTINUED being requested when this process is the child's ptrace
+            // tracer (e.g. via PTRACE_ATTACH): stop/continue transitions of a tracee are always
+            // visible to its tracer's wait calls. Do not misreport this as an exit.
+            result = 0;
+        }
         else
         {
             assert(false);
+            result = 0;
         }
     }
     return result;

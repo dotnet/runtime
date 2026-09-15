@@ -618,24 +618,52 @@ namespace System.Diagnostics
                 int pid;
                 do
                 {
-                    // Find a process that terminated without reaping it yet.
-                    pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait();
+                    // Find a process that has a pending wait notification, without consuming it.
+                    pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait(out bool isExited);
                     if (pid > 0)
                     {
-                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
+                        bool isKnownChild = s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws);
+
+                        if (isExited)
                         {
-                            // Known Process.
-                            if (pws.TryReapChild(configureConsole))
+                            if (isKnownChild)
                             {
-                                pws.ReleaseRef();
+                                // Known Process.
+                                if (pws!.TryReapChild(configureConsole))
+                                {
+                                    pws.ReleaseRef();
+                                }
+                            }
+                            else
+                            {
+                                // unlikely: This is not a managed Process, so we are not responsible for reaping.
+                                // Fall back to checking all Processes.
+                                checkAll = true;
+                                break;
+                            }
+                        }
+                        else if (isKnownChild)
+                        {
+                            // Some platforms (notably macOS) report stopped/continued notifications even
+                            // though only exit notifications (WEXITED) were requested. Since this is a pid
+                            // we are responsible for reaping, it is safe to consume that notification so it
+                            // isn't observed again (which would otherwise spin this loop indefinitely), and
+                            // to keep looking for a real exit that may be hidden behind it.
+                            if (Interop.Sys.WaitIdDrainNonExited(pid) != 0)
+                            {
+                                // Unable to consume the notification (e.g. the child changed state
+                                // concurrently). Avoid spinning: stop looking for more exited children this
+                                // pass. A real exit will be observed on a subsequent SIGCHLD.
+                                pid = 0;
                             }
                         }
                         else
                         {
-                            // unlikely: This is not a managed Process, so we are not responsible for reaping.
-                            // Fall back to checking all Processes.
-                            checkAll = true;
-                            break;
+                            // Non-exit notification for a pid we don't own. Leave it untouched for its actual
+                            // owner (e.g. unrelated native code in this process using WUNTRACED/WCONTINUED) to
+                            // observe, and stop looking for more exited children this pass; a subsequent
+                            // SIGCHLD will retry.
+                            pid = 0;
                         }
                     }
                     else if (pid == 0)
