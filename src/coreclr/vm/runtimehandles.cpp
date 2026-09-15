@@ -1318,6 +1318,38 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     return funcPtr;
 }
 
+extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(
+    MethodDesc* pMethod, QCall::TypeHandle declaringType, QCall::ObjectHandleOnStack target, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    void* result = nullptr;
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    OBJECTREF receiver = nullptr;
+    GCPROTECT_BEGIN(receiver);
+    receiver = target.Get();
+    _ASSERTE(receiver != nullptr);
+    MethodTable* pReceiverMT = receiver->GetMethodTable();
+    {
+        GCX_PREEMP();
+        pMethod->EnsureActive();
+        PCODE callTarget = pMethod->IsVtableMethod()
+            ? pMethod->GetSingleCallableAddrOfVirtualizedCode(&receiver, pReceiverMT, declaringType.AsTypeHandle())
+            : pMethod->GetSingleCallableAddrOfCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Virtual dispatch can return an entrypoint whose R2R-to-interpreter thunk is not prepared yet.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(callTarget);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        result = reinterpret_cast<void*>(callTarget);
+    }
+    GCPROTECT_END();
+
+    END_QCALL;
+    return result;
+}
+
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 {
     CONTRACTL
