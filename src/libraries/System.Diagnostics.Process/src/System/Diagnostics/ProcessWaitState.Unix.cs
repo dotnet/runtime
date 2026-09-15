@@ -614,6 +614,14 @@ namespace System.Diagnostics
             {
                 bool checkAll = false;
 
+                // If checkAll ends up set because we observed a non-exit notification for a pid we know is
+                // not currently exited, we already know for certain that this specific pid should not be
+                // reaped by the fallback full scan below: attempting to do so would call the reaping
+                // waitpid() on it, which -- since it can be a pid this process is also ptrace-tracing (e.g.
+                // via an external tool like ClrMD) -- could consume/steal that non-exit notification from
+                // whoever else needs to observe it. Skip re-checking that specific pid in the scan.
+                int pidToSkip = 0;
+
                 // Check terminated processes.
                 int pid;
                 do
@@ -641,6 +649,7 @@ namespace System.Diagnostics
                             // an exit. Fall back to directly checking our own known children instead,
                             // which makes progress without spinning on or touching this notification.
                             checkAll = true;
+                            pidToSkip = pid;
                             break;
                         }
                     }
@@ -663,6 +672,11 @@ namespace System.Diagnostics
                     List<ProcessWaitState>? additionalToRemove = null;
                     foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
                     {
+                        if (kv.Key == pidToSkip)
+                        {
+                            continue;
+                        }
+
                         ProcessWaitState pws = kv.Value;
                         if (pws.TryReapChild(configureConsole))
                         {
