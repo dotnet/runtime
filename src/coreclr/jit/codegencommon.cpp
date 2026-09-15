@@ -1936,6 +1936,19 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     }
 
     emittedCallReturnInfo->push_back(info);
+
+#ifndef TARGET_WASM
+    if (call->IsAsync())
+    {
+        // Emit a companion entry for the Runtime Async continuation return register. DBI uses it
+        // to distinguish synchronous completion (null continuation) from suspension before
+        // exposing the normal managed return-value register.
+        info.callILOffset =
+            (IL_OFFSET)((uint32_t)info.callILOffset | ICorDebugInfo::CALL_RETURN_ASYNC_CONTINUATION_FLAG);
+        info.returnValueLoc.storeVariableInRegisters(REG_ASYNC_CONTINUATION_RET, REG_NA);
+        emittedCallReturnInfo->push_back(info);
+    }
+#endif
 }
 
 /*****************************************************************************
