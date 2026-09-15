@@ -395,7 +395,7 @@ namespace System.Formats.Tar
                 return copiedData;
             }
 
-            return new SubReadStream(archiveStream, archiveStream.CanSeek ? archiveStream.Position : 0, _size);
+            return new SubReadStream(archiveStream, archiveStream.CanSeek ? archiveStream.Position : 0, _size, validateAvailableLength: archiveStream.CanSeek);
         }
 
         // Attempts to read the fields shared by all formats and stores them in their expected data type.
