@@ -321,7 +321,8 @@ namespace ILAssembler
         {
             string text = token.TokenSource.InputStream.GetText(Interval.Of(token.StartIndex, token.TokenSource.InputStream.Index));
             string msg = "preprocessor syntax error at: '" + GetErrorDisplay(text) + "'";
-            OnPreprocessorSyntaxError?.Invoke(token.TokenSource.SourceName, token.StartIndex, token.StopIndex - token.StartIndex, msg);
+            SourceSpan span = Location.GetSourceSpan(token);
+            OnPreprocessorSyntaxError?.Invoke(token.TokenSource.SourceName, span.Start, span.Length, msg);
         }
 
         private static string GetErrorDisplay(string s)
