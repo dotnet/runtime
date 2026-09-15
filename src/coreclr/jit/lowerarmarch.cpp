@@ -1473,6 +1473,27 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (intrinsicId == NI_Sve_ConversionTrueMask)
+    {
+        GenTree* trueMask = m_compiler->gtNewSimdTrueMaskNode(node->GetSimdBaseType());
+        BlockRange().InsertBefore(node, trueMask);
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(trueMask);
+        }
+        else
+        {
+            trueMask->SetUnusedValue();
+        }
+
+        BlockRange().Remove(node);
+        return LowerNode(trueMask);
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
     bool       isScalar = false;
     genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
