@@ -298,6 +298,7 @@ private:
     bool ReplaceReturnedStructLocal(GenTreeOp* ret, GenTree** use, GenTreeLclVarCommon* value);
     bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* callArg);
     bool CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
+    bool CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
     GenTreeFieldList* CreateFieldListForStructLocal(GenTreeLclVarCommon* value);
     void              ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool              IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
