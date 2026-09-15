@@ -60,7 +60,7 @@ namespace ILAssembler.Tests
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
-            var signature = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1));
+            StandaloneSignature signature = GetLocalSignature(pe, reader, "M");
             Assert.Equal(
                 new[] { "int32[0...,0...]" },
                 signature.DecodeLocalSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
@@ -89,7 +89,7 @@ namespace ILAssembler.Tests
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
-            var signature = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1));
+            StandaloneSignature signature = GetLocalSignature(pe, reader, "M");
 
             Assert.Equal(
                 new[]
@@ -122,11 +122,24 @@ namespace ILAssembler.Tests
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            var signature = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1));
+            StandaloneSignature signature = GetLocalSignature(pe, reader, "M");
             Assert.Equal(
                 new[] { "int32[0...,0...]" },
                 signature.DecodeLocalSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
+        private static StandaloneSignature GetLocalSignature(
+            PEReader pe,
+            MetadataReader reader,
+            string methodName)
+        {
+            MethodDefinition method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == methodName);
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.False(body.LocalSignature.IsNil);
+            return reader.GetStandaloneSignature(body.LocalSignature);
+        }
     }
 }

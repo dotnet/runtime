@@ -82,11 +82,15 @@ namespace ILAssembler
 
         private IToken NextTokenWithoutNestedEof(bool errorOnEof = false)
         {
-            IToken nextToken = CurrentTokenSource.NextToken();
-
-            if (nextToken.Type == CILLexer.Eof)
+            while (true)
             {
-                // Skip the nested file EOF token.
+                IToken nextToken = CurrentTokenSource.NextToken();
+                if (nextToken.Type != CILLexer.Eof)
+                {
+                    return nextToken;
+                }
+
+                // Skip nested file EOF tokens until reaching a parent with more input.
                 // Native ILASM only failed to parse across include file boundaries for the following cases:
                 // - A comment tries to cross the file boundary.
                 // - The included file does not have at least one fully parsable rule.
@@ -96,15 +100,16 @@ namespace ILAssembler
                 {
                     ReportPreprocessorSyntaxError(nextToken);
                 }
+
                 if (_includeSourceStack.Count == 1)
                 {
                     // If we hit EOF of our entry file, return the EOF token.
                     return nextToken;
                 }
+
                 _includeSourceStack.Pop();
-                nextToken = CurrentTokenSource.NextToken();
+                errorOnEof = ActiveIfDefBlocksInCurrentSource != 0;
             }
-            return nextToken;
         }
 
         // Stack of tokens produced by macro expansion re-lexing
