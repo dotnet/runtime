@@ -1365,27 +1365,51 @@ namespace System.Net.Quic.Tests
                     serverOptions.MaxInboundBidirectionalStreams = 1;
                     serverOptions.MaxInboundUnidirectionalStreams = 1;
                     serverOptions.IdleTimeout = TimeSpan.FromSeconds(1);
+                    serverOptions.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
                     return ValueTask.FromResult(serverOptions);
                 }
             };
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
 
-            await using (clientConnection)
-            await using (serverConnection)
+            Task<QuicStream>? acceptTask = null;
+            Task<int>? readTask = null;
+            try
             {
-                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-                await clientStream.WriteAsync(new byte[1]);
-                using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
-                await serverStream.ReadAsync(new byte[1]);
+                await using (clientConnection)
+                await using (serverConnection)
+                {
+                    using CancellationTokenSource setupCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, setupCts.Token);
+                    await clientStream.WriteAsync(new byte[1], setupCts.Token);
+                    using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync(setupCts.Token);
+                    Assert.Equal(1, await serverStream.ReadAsync(new byte[1], setupCts.Token));
 
-                ValueTask<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync();
+                    acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
+                    readTask = serverStream.ReadAsync(new byte[10]).AsTask();
+                    Assert.False(acceptTask.IsCompleted);
+                    Assert.False(readTask.IsCompleted);
 
-                // read attempts should block until idle timeout
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.ReadAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+                    // Protect setup from inactivity, then let the native idle timer terminate the pending operations.
+                    Microsoft.Quic.QUIC_SETTINGS settings = QuicTestCollection.DisableConnectionKeepAlive(serverConnection);
+                    Assert.Equal(0u, settings.KeepAliveIntervalMs);
+                    Assert.Equal(1000ul, settings.IdleTimeoutMs);
 
-                // write and accept should throw as well
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
+                    await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await readTask).WaitAsync(TimeSpan.FromSeconds(10));
+                    await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+                    await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
+                }
+            }
+            finally
+            {
+                // Observe pending-operation faults if setup failed before the assertions.
+                if (readTask?.IsFaulted == true)
+                {
+                    _ = readTask.Exception;
+                }
+                if (acceptTask?.IsFaulted == true)
+                {
+                    _ = acceptTask.Exception;
+                }
             }
         }
 
