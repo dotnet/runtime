@@ -113,7 +113,7 @@ namespace Microsoft.Interop
                     baseSymbol?.ToDisplayString(),
                     syntax,
                     syntax.GetContainingSyntaxContext(),
-                    syntax.GetDeclarationTemplate(),
+                    ContainingTypeUtilities.GetDeclarationHeader(syntax),
                     guid ?? Guid.Empty,
                     interfaceAttributeData.Options,
                     syntax.Identifier.GetLocation())

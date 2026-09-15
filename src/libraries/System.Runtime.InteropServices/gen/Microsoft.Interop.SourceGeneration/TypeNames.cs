@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Interop
 {
     public static class TypeNames
@@ -57,8 +55,6 @@ namespace Microsoft.Interop
 
         public const string System_IntPtr = "System.IntPtr";
 
-        public const string System_Activator = "System.Activator";
-
         public const string System_Exception = "System.Exception";
 
         public const string System_GC = "System.GC";
@@ -67,8 +63,6 @@ namespace Microsoft.Interop
 
         public const string System_Int16 = "System.Int16";
         public const string @short = "short";
-
-        public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
 
         public const string System_Runtime_InteropServices_MarshalAsAttribute = "System.Runtime.InteropServices.MarshalAsAttribute";
 
@@ -93,10 +87,6 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_PointerArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller`2";
 
-        public const string System_Runtime_InteropServices_ArrayMarshaller = "System.Runtime.InteropServices.Marshalling.ArrayMarshaller";
-
-        public const string System_Runtime_InteropServices_PointerArrayMarshaller = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller";
-
         public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
 
         public const string System_Runtime_InteropServices_OutAttribute = "System.Runtime.InteropServices.OutAttribute";
@@ -109,19 +99,13 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute = "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute";
 
-        public const string System_Runtime_CompilerServices_FixedAddressValueTypeAttribute = "System.Runtime.CompilerServices.FixedAddressValueTypeAttribute";
-
         public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
 
         public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
 
-        public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
-
         public const string System_Guid = "System.Guid";
-
-        public const string System_Runtime_CompilerServices_RuntimeHelpers = "System.Runtime.CompilerServices.RuntimeHelpers";
 
         public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
         public const string GeneratedComInterfaceAttribute_ShortName = "GeneratedComInterfaceAttribute";
@@ -132,32 +116,13 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_GuidAttribute = "System.Runtime.InteropServices.GuidAttribute";
 
-        public const string System_Runtime_InteropServices_ComWrappers = "System.Runtime.InteropServices.ComWrappers";
-
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
 
-        public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry = "System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry";
-
-        public const string System_Runtime_InteropServices_NativeMemory = "System.Runtime.InteropServices.NativeMemory";
-
-        public const string StrategyBasedComWrappers = "System.Runtime.InteropServices.Marshalling.StrategyBasedComWrappers";
-
-        public const string IIUnknownInterfaceType = "System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType";
-        public const string IUnknownDerivedAttribute = "System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute";
-        public const string IIUnknownDerivedDetails = "System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails";
-
-        public const string ComWrappersUnwrapper = "System.Runtime.InteropServices.Marshalling.ComWrappersUnwrapper";
         public const string UnmanagedObjectUnwrapperAttribute = "System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapperAttribute`1";
 
-        public const string IUnmanagedObjectUnwrapper = "System.Runtime.InteropServices.Marshalling.IUnmanagedObjectUnwrapper";
         public const string UnmanagedObjectUnwrapper = "System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapper";
 
         public const string GeneratedComClassAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComClassAttribute";
-        public const string ComExposedClassAttribute = "System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute";
-        public const string IComExposedClass = "System.Runtime.InteropServices.Marshalling.IComExposedClass";
-
-        public const string UnreachableException = "System.Diagnostics.UnreachableException";
-
         public const string System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller`1";
 
         public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
@@ -172,30 +137,6 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_NFloat = "System.Runtime.InteropServices.NFloat";
 
-        public const string System_Runtime_InteropServices_LayoutKind = "System.Runtime.InteropServices.LayoutKind";
-
-        public const string CallConvCdeclName = "System.Runtime.CompilerServices.CallConvCdecl";
-        public const string CallConvFastcallName = "System.Runtime.CompilerServices.CallConvFastcall";
-        public const string CallConvStdcallName = "System.Runtime.CompilerServices.CallConvStdcall";
-        public const string CallConvThiscallName = "System.Runtime.CompilerServices.CallConvThiscall";
-        public const string CallConvSuppressGCTransitionName = "System.Runtime.CompilerServices.CallConvSuppressGCTransition";
-        public const string CallConvMemberFunctionName = "System.Runtime.CompilerServices.CallConvMemberFunction";
-
-        public static string CallConv(string callConv)
-        {
-            return GlobalAlias + (callConv switch
-            {
-                "Cdecl" => CallConvCdeclName,
-                "Fastcall" => CallConvFastcallName,
-                "MemberFunction" => CallConvMemberFunctionName,
-                "Stdcall" => CallConvStdcallName,
-                "SuppressGCTransition" => CallConvSuppressGCTransitionName,
-                "Thiscall" => CallConvThiscallName,
-                _ => throw new ArgumentException($"Unexpected CallConv: {callConv}", nameof(callConv))
-            });
-        }
-
-        public const string Nint = "nint";
         public const string ComVariantMarshaller = "System.Runtime.InteropServices.Marshalling.ComVariantMarshaller";
         public const string WasmImportLinkageAttribute = "System.Runtime.InteropServices.WasmImportLinkageAttribute";
     }

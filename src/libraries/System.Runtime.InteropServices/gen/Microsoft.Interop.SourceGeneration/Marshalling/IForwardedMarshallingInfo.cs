@@ -7,6 +7,7 @@ namespace Microsoft.Interop
 {
     internal interface IForwardedMarshallingInfo
     {
+        /// <summary>Creates attribute text without enclosing brackets; the caller supplies <c>[</c> and <c>]</c>.</summary>
         bool TryCreateAttribute([NotNullWhen(true)] out string? attribute);
     }
 }

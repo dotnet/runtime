@@ -353,7 +353,7 @@ namespace Microsoft.Interop
             DeclarationHeader methodSyntaxTemplate = syntax switch
             {
                 MethodDeclarationSyntax methodSyntax => new DeclarationHeader(
-                    CodeWriterHelpers.GetModifiers(methodSyntax.Modifiers)
+                    ContainingTypeUtilities.GetModifiers(methodSyntax.Modifiers)
                         .Where(static modifier => modifier is not ("new" or "partial" or "virtual" or "public" or "private" or "protected" or "internal"))
                         .ToImmutableArray(),
                     "",

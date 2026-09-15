@@ -14,18 +14,12 @@ namespace Microsoft.Interop
 {
     public static class SyntaxExtensions
     {
-        public static DeclarationHeader GetDeclarationTemplate(this TypeDeclarationSyntax declaration)
-            => ContainingTypeUtilities.GetDeclarationHeader(declaration);
-
-        public static DeclarationHeader GetDeclarationTemplate(this MethodDeclarationSyntax declaration)
-            => ContainingTypeUtilities.GetDeclarationHeader(declaration);
-
         public static ContainingSyntaxContext GetContainingSyntaxContext(this MemberDeclarationSyntax memberDeclaration)
         {
             var containingTypes = ImmutableArray.CreateBuilder<DeclarationHeader>();
             foreach (TypeDeclarationSyntax typeDeclaration in ContainingTypeUtilities.EnumerateContainingTypes(memberDeclaration.Parent as TypeDeclarationSyntax))
             {
-                containingTypes.Add(typeDeclaration.GetDeclarationTemplate());
+                containingTypes.Add(ContainingTypeUtilities.GetDeclarationHeader(typeDeclaration));
             }
 
             StringBuilder? containingNamespace = null;

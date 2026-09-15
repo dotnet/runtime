@@ -101,7 +101,7 @@ namespace Microsoft.Interop.JavaScript
             JSImportData jsImportData = ProcessJSImportAttribute(jsImportAttr!) ?? new JSImportData("INVALID_CSHARP_SYNTAX", null);
             var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
             ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
-            DeclarationHeader methodTemplate = originalSyntax.GetDeclarationTemplate();
+            DeclarationHeader methodTemplate = ContainingTypeUtilities.GetDeclarationHeader(originalSyntax);
 
             return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, methodTemplate, locations, jsImportData);
         }

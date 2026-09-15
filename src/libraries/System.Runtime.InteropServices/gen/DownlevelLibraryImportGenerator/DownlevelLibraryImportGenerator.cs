@@ -230,7 +230,7 @@ namespace Microsoft.Interop
 
             ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
-            DeclarationHeader methodSyntaxTemplate = originalSyntax.GetDeclarationTemplate();
+            DeclarationHeader methodSyntaxTemplate = ContainingTypeUtilities.GetDeclarationHeader(originalSyntax);
 
             List<string> additionalAttributes = GenerateForwardedAttributes(defaultDllImportSearchPathsAttribute);
             return new IncrementalStubGenerationContext(

@@ -366,7 +366,7 @@ namespace Microsoft.Interop
             ContainingSyntaxContext containingSyntaxContext = syntax.GetContainingSyntaxContext();
 
             var methodSyntaxTemplate = new DeclarationHeader(
-                CodeWriterHelpers.GetModifiers(syntax.Modifiers)
+                ContainingTypeUtilities.GetModifiers(syntax.Modifiers)
                     .Where(static modifier => modifier is not ("partial" or "virtual" or "public" or "private" or "protected" or "internal"))
                     .ToImmutableArray(),
                 "",

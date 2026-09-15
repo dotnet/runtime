@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using SourceGenerators;
 
 namespace Microsoft.Interop;
 
@@ -26,14 +24,6 @@ public static class CodeWriterHelpers
             || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
             ? "@" + identifier
             : identifier;
-    }
-
-    /// <summary>Extracts modifier text from an input declaration.</summary>
-    /// <param name="modifiers">The modifiers in the input declaration.</param>
-    /// <returns>The modifier keywords without trivia.</returns>
-    public static ImmutableArray<string> GetModifiers(SyntaxTokenList modifiers)
-    {
-        return ContainingTypeUtilities.GetModifiers(modifiers);
     }
 
     /// <summary>Adds a modifier before any trailing ref and partial keywords.</summary>

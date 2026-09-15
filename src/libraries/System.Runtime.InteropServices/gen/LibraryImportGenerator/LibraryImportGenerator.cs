@@ -276,7 +276,7 @@ namespace Microsoft.Interop
 
             ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
-            DeclarationHeader methodSyntaxTemplate = originalSyntax.GetDeclarationTemplate();
+            DeclarationHeader methodSyntaxTemplate = ContainingTypeUtilities.GetDeclarationHeader(originalSyntax);
 
             List<string> additionalAttributes = GenerateForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute, debuggerHiddenAttribute);
             return new IncrementalStubGenerationContext(

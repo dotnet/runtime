@@ -47,7 +47,7 @@ namespace Microsoft.Interop
             return new ComClassInfo(
                 type.ToDisplayString(),
                 syntax.GetContainingSyntaxContext(),
-                syntax.GetDeclarationTemplate(),
+                ContainingTypeUtilities.GetDeclarationHeader(syntax),
                 new(names.ToImmutable()))
             {
                 UseUpdatedMemorySafetyRules = syntax.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules")
