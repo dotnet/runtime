@@ -307,7 +307,7 @@ public class Async2Reflection
         return await GetCurrentMethodTask();
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     [InlineData(0)]
     [InlineData(1)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
@@ -374,7 +374,7 @@ public class Async2Reflection
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
-    [Theory]
+    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     [InlineData(0)]
     [InlineData(1)]
     [MethodImpl(MethodImplOptions.NoInlining)]
