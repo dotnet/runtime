@@ -167,33 +167,6 @@ int CompareHandlesByFreeOrder(uintptr_t p, uintptr_t q)
 }
 
 
-/*
- * ZeroHandles
- *
- * Zeroes the object pointers for an array of handles.
- *
- */
-void ZeroHandles(OBJECTHANDLE *pHandleBase, uint32_t uCount)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // compute our stopping point
-    OBJECTHANDLE *pLastHandle = pHandleBase + uCount;
-
-    // loop over the array, zeroing as we go
-    while (pHandleBase < pLastHandle)
-    {
-        // get the current handle from the array
-        OBJECTHANDLE handle = *pHandleBase;
-
-        // advance to the next handle
-        pHandleBase++;
-
-        // zero the handle's object pointer
-        *(_UNCHECKED_OBJECTREF *)handle = NULL;
-    }
-}
-
 #ifdef _DEBUG
 void CALLBACK DbgCountEnumeratedBlocks(TableSegment *pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo)
 {
@@ -410,65 +383,6 @@ PTR_uintptr_t HandleQuickFetchUserDataPointer(OBJECTHANDLE handle)
 
     // return the result
     return pUserData;
-}
-
-#ifndef DACCESS_COMPILE
-/*
- * HandleQuickSetUserData
- *
- * Stores user data with a handle.
- *
- */
-void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData)
-{
-    WRAPPER_NO_CONTRACT;
-
-    /*
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    */
-
-    // fetch the user data slot for this handle
-    uintptr_t *pUserData = HandleQuickFetchUserDataPointer(handle);
-
-    // is there a slot?
-    if (pUserData)
-    {
-        // yes - store the info
-        *pUserData = lUserData;
-    }
-}
-
-#endif // !DACCESS_COMPILE
-
-/*
- * HandleFetchType
- *
- * Computes the type index for a given handle.
- *
- */
-uint32_t HandleFetchType(OBJECTHANDLE handle)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // get the segment for this handle
-    PTR__TableSegmentHeader pSegment = HandleFetchSegmentPointer(handle);
-
-    // find the offset of this handle into the segment
-    uintptr_t offset = (uintptr_t)handle & HANDLE_SEGMENT_CONTENT_MASK;
-
-    // make sure it is in the handle area and not the header
-    _ASSERTE(offset >= HANDLE_HEADER_SIZE);
-
-    // convert the offset to a handle index
-    uint32_t uHandle = (uint32_t)((offset - HANDLE_HEADER_SIZE) / HANDLE_SIZE);
-
-    // compute the block this handle resides in
-    uint32_t uBlock = uHandle / HANDLE_HANDLES_PER_BLOCK;
-
-    // return the block's type
-    return pSegment->rgBlockType[uBlock];
 }
 
 /*
@@ -2126,91 +2040,6 @@ void TableFreeBulkPreparedHandles(HandleTable *pTable, uint32_t uType, OBJECTHAN
 }
 
 
-/*
- * TableFreeBulkUnpreparedHandlesWorker
- *
- * Frees an array of handles of the specified type by preparing them and calling TableFreeBulkPreparedHandles.
- * Uses the supplied scratch buffer to prepare the handles.
- *
- */
-void TableFreeBulkUnpreparedHandlesWorker(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount,
-                                          OBJECTHANDLE *pScratchBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // copy the handles into the destination buffer
-    memcpy(pScratchBuffer, pHandles, uCount * sizeof(OBJECTHANDLE));
-
-    // sort them for optimal free order
-    QuickSort((uintptr_t *)pScratchBuffer, 0, uCount - 1, CompareHandlesByFreeOrder);
-
-    // make sure the handles are zeroed too
-    ZeroHandles(pScratchBuffer, uCount);
-
-    // prepare and free these handles
-    TableFreeBulkPreparedHandles(pTable, uType, pScratchBuffer, uCount);
-}
-
-
-/*
- * TableFreeBulkUnpreparedHandles
- *
- * Frees an array of handles of the specified type by preparing them and calling
- * TableFreeBulkPreparedHandlesWorker one or more times.
- *
- */
-void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-    }
-    CONTRACTL_END;
-
-    // preparation / free buffer
-    OBJECTHANDLE rgStackHandles[HANDLE_HANDLES_PER_BLOCK];
-    OBJECTHANDLE *pScratchBuffer  = rgStackHandles;
-    OBJECTHANDLE *pLargeScratchBuffer  = NULL;
-    uint32_t     uFreeGranularity = ARRAY_SIZE(rgStackHandles);
-
-    // if there are more handles than we can put on the stack then try to allocate a sorting buffer
-    if (uCount > uFreeGranularity)
-    {
-        // try to allocate a bigger buffer to work in
-        pLargeScratchBuffer = new (nothrow) OBJECTHANDLE[uCount];
-
-        // did we get it?
-        if (pLargeScratchBuffer)
-        {
-            // yes - use this buffer to prepare and free the handles
-            pScratchBuffer   = pLargeScratchBuffer;
-            uFreeGranularity = uCount;
-        }
-    }
-
-    // loop freeing handles until we have freed them all
-    while (uCount)
-    {
-        // decide how many we can process in this iteration
-        if (uFreeGranularity > uCount)
-            uFreeGranularity = uCount;
-
-        // prepare and free these handles
-        TableFreeBulkUnpreparedHandlesWorker(pTable, uType, pHandles, uFreeGranularity, pScratchBuffer);
-
-        // adjust our pointers and move on
-        uCount   -= uFreeGranularity;
-        pHandles += uFreeGranularity;
-    }
-
-    // if we allocated a sorting buffer then free it now
-    if (pLargeScratchBuffer)
-        delete [] pLargeScratchBuffer;
-}
-
 #endif // !DACCESS_COMPILE
 
 /*--------------------------------------------------------------------------*/
-
-

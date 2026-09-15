@@ -7,6 +7,7 @@
 #include "gcinterface.h"
 
 extern "C" IGCHandleManager* g_pGCHandleManager;
+extern "C" IGCHandleStore* g_pGlobalHandleStore;
 
 class GCHandleUtilities
 {
@@ -18,6 +19,15 @@ public:
 
         assert(g_pGCHandleManager != nullptr);
         return g_pGCHandleManager;
+    }
+
+    // Retrieves the global GC handle store.
+    static IGCHandleStore* GetGlobalHandleStore()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        assert(g_pGlobalHandleStore != nullptr);
+        return g_pGlobalHandleStore;
     }
 
 private:

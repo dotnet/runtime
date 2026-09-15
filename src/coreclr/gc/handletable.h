@@ -89,13 +89,7 @@ HHANDLETABLE    HndGetHandleTable(OBJECTHANDLE handle);
 /*
  * write barrier
  */
-void            HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
 void            HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF value);
-
-/*
- * logging an ETW event (for inlined methods)
- */
-void            HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
 
 /*
  * NON-GC handle enumeration
@@ -224,4 +218,3 @@ FORCEINLINE BOOL HndIsNullOrDestroyedHandle(_UNCHECKED_OBJECTREF value)
 #include "handletable.inl"
 
 #endif //_HANDLETABLE_H
-
