@@ -735,7 +735,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 }
                 else
                 {
-                    return v0 << v1;
+                    return v0 << (v1 & 0x1F);
                 }
             case GT_RSH:
                 if (sizeof(T) == 8)
@@ -744,7 +744,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 }
                 else
                 {
-                    return v0 >> v1;
+                    return v0 >> (v1 & 0x1F);
                 }
             case GT_RSZ:
                 if (sizeof(T) == 8)
@@ -753,7 +753,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 }
                 else
                 {
-                    return UINT32(v0) >> v1;
+                    return UINT32(v0) >> (v1 & 0x1F);
                 }
             case GT_ROL:
                 if (sizeof(T) == 8)
@@ -13720,6 +13720,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp;
                     vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+
                     ValueNumPair excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
                     ValueNum newVN = ValueNumStore::NoVN;
