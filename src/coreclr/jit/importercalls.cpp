@@ -4069,7 +4069,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         isReadOnly ? "ReadOnly" : "", eeGetClassName(spanElemHnd), elemSize);
 
                 GenTree* index          = impPopStack().val;
-                GenTree* ptrToSpan      = impPopStack().val;
+                GenTree* ptrToSpan      = impStackTop().val;
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
@@ -4086,8 +4086,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // defined(DEBUG)
 
                 // We need to use both index and ptr-to-span twice, so clone or spill.
+                // Keep ptr-to-span on the stack so it is evaluated before any index spill.
                 index = impCloneExpr(index, &indexClone, CHECK_SPILL_ALL, nullptr DEBUGARG("Span.get_Item index"));
 
+                ptrToSpan = impPopStack().val;
                 if (impIsAddressInLocal(ptrToSpan))
                 {
                     ptrToSpanClone = gtCloneExpr(ptrToSpan);
