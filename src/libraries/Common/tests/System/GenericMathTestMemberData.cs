@@ -733,6 +733,40 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> IntegerClassificationDouble
+        {
+            get
+            {
+                double[] boundaries = [1.0, 2.0, 4_503_599_627_370_496.0, 9_007_199_254_740_992.0];
+                foreach (double boundary in boundaries)
+                {
+                    yield return new object[] { boundary };
+                    yield return new object[] { -boundary };
+                    yield return new object[] { double.BitDecrement(boundary) };
+                    yield return new object[] { -double.BitDecrement(boundary) };
+                    yield return new object[] { double.BitIncrement(boundary) };
+                    yield return new object[] { -double.BitIncrement(boundary) };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> IntegerClassificationSingle
+        {
+            get
+            {
+                float[] boundaries = [1.0f, 2.0f, 8_388_608.0f, 16_777_216.0f];
+                foreach (float boundary in boundaries)
+                {
+                    yield return new object[] { boundary };
+                    yield return new object[] { -boundary };
+                    yield return new object[] { float.BitDecrement(boundary) };
+                    yield return new object[] { -float.BitDecrement(boundary) };
+                    yield return new object[] { float.BitIncrement(boundary) };
+                    yield return new object[] { -float.BitIncrement(boundary) };
+                }
+            }
+        }
+
         public static IEnumerable<object[]> IsTestByte
         {
             get

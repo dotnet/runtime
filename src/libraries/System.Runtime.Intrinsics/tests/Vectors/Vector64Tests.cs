@@ -5218,6 +5218,38 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector64.Create(expectedResult), Vector64.Hypot(Vector64.Create(+y), Vector64.Create(+x)), Vector64.Create(variance));
         }
 
+        private void IntegerClassification<T>(T value)
+            where T : IFloatingPointIeee754<T>
+        {
+            Vector64<T> vector = Vector64<T>.Zero;
+            Vector64<T> integer = Vector64<T>.Zero;
+            Vector64<T> even = Vector64<T>.Zero;
+            Vector64<T> odd = Vector64<T>.Zero;
+            T allBitsSet = Vector64<T>.AllBitsSet.GetElement(0);
+            T two = T.CreateChecked(2);
+
+            for (int i = 0; i < Vector64<T>.Count; i++)
+            {
+                T element = (i % 2 == 0) ? value : T.CreateChecked(i - 1);
+                vector = vector.WithElement(i, element);
+                integer = integer.WithElement(i, (element % T.One == T.Zero) ? allBitsSet : T.Zero);
+                even = even.WithElement(i, (element % two == T.Zero) ? allBitsSet : T.Zero);
+                odd = odd.WithElement(i, (T.Abs(element % two) == T.One) ? allBitsSet : T.Zero);
+            }
+
+            Assert.Equal(integer.AsByte(), Vector64.IsInteger(vector).AsByte());
+            Assert.Equal(even.AsByte(), Vector64.IsEvenInteger(vector).AsByte());
+            Assert.Equal(odd.AsByte(), Vector64.IsOddInteger(vector).AsByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationDoubleTest(double value) => IntegerClassification(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationSingleTest(float value) => IntegerClassification(value);
+
         private void IsEvenInteger<T>(T value)
             where T : INumber<T>
         {
