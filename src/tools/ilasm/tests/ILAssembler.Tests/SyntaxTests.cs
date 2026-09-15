@@ -13,6 +13,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using Antlr4.Runtime;
 using Internal.IL;
 using Xunit;
 using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
@@ -53,6 +54,51 @@ namespace ILAssembler.Tests
             var error = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.LiteralOutOfRange, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Theory]
+        [InlineData("not-a-number", double.MaxValue)]
+        [InlineData("-not-a-number", double.MinValue)]
+        public void InvalidFloatingLiteral_SaturatesWithOriginalSign(string text, double expected)
+        {
+            Type grammarActionsType = typeof(DocumentCompiler).Assembly.GetType(
+                "ILAssembler.GrammarActions",
+                throwOnError: true)!;
+            object actions = Activator.CreateInstance(
+                grammarActionsType,
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                args:
+                [
+                    new Dictionary<string, SourceText>(),
+                    new Options(),
+                    (Func<string, byte[]?>)(_ => throw new InvalidOperationException("Unexpected resource")),
+                ],
+                culture: null)!;
+            MethodInfo parseFloatingLiteral = grammarActionsType.GetMethod(
+                "ParseFloatingLiteral",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var token = new CommonToken(CILLexer.FLOAT64, text);
+
+            Assert.Equal(expected, (double)parseFloatingLiteral.Invoke(actions, [token])!);
+        }
+
+        [Fact]
+        public void SyntheticToken_SourceSpanIsClamped()
+        {
+            var token = new CommonToken(CILLexer.Eof)
+            {
+                StartIndex = -1,
+                StopIndex = -1,
+            };
+            MethodInfo getSourceSpan = typeof(Location).GetMethod(
+                "GetSourceSpan",
+                BindingFlags.Static | BindingFlags.NonPublic)!;
+
+            SourceSpan span = (SourceSpan)getSourceSpan.Invoke(obj: null, [token])!;
+
+            Assert.Equal(0, span.Start);
+            Assert.Equal(0, span.Length);
         }
 
 
