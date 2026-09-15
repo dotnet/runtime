@@ -557,6 +557,25 @@ namespace Internal.JitInterface
 
             return result;
         }
+
+        /// <summary>
+        /// Gets the Wasm-level signature for a given MethodDesc.
+        /// The signature string format is documented in docs/design/coreclr/botr/readytorun-format.md
+        /// (section "Wasm Signature String Encoding").
+        ///
+        /// Parameters for managed Wasm calls have the following layout:
+        /// i32 (SP), loweredParam0, ..., loweredParamN, i32 (PE entrypoint)
+        ///
+        /// For unmanaged callers only (reverse P/Invoke), the layout is simply the native signature
+        /// which is just the lowered parameters+return.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <returns></returns>
+        public static WasmSignature GetSignature(MethodDesc method)
+        {
+            return GetSignature(method.Signature, GetLoweringFlags(method));
+        }
+
         public static WasmSignature GetSignature(INodeWithTypeSignature node)
         {
             return GetSignature(node.Signature, GetLoweringFlags(node));
@@ -565,6 +584,24 @@ namespace Internal.JitInterface
         public static unsafe WasmSignature GetSignature(MethodSignature signature, CORINFO_SIG_INFO* callSig)
         {
             return GetSignature(signature, GetLoweringFlags(callSig));
+        }
+
+        public static LoweringFlags GetLoweringFlags(MethodDesc method)
+        {
+            LoweringFlags flags = 0;
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg() || method.IsArrayAddressMethod())
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (method.IsAsyncCall())
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (method.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
         }
 
         public static LoweringFlags GetLoweringFlags(INodeWithTypeSignature node)

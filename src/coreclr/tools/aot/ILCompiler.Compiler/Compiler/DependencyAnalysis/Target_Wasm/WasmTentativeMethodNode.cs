@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            WasmFuncType signature = WasmLowering.GetSignature(this).FuncType;
+            WasmFuncType signature = WasmLowering.GetSignature(Method).FuncType;
             ISymbolNode target = GetTarget(factory);
 
             encoder.FunctionBody = new WasmFunctionBody(
