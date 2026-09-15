@@ -16,6 +16,7 @@ public static class CoreCLRContracts
     public static void Register(ContractRegistry registry)
     {
         registry.Register<IException>("c1", static t => new Exception_1(t));
+        registry.Register<IExternalMemoryHandles>("c1", static t => new ExternalMemoryHandles_1(t));
         registry.Register<ILoader>("c1", static t => new Loader_1(t));
         registry.Register<IEcmaMetadata>("c1", static t => new EcmaMetadata_1(t));
         registry.Register<IDacStreams>("c1", static t => new DacStreams_1(t));
@@ -117,6 +118,7 @@ public static class CoreCLRContracts
         Validate<IDebugInfo>(registry);
         Validate<IEcmaMetadata>(registry);
         Validate<IException>(registry);
+        Validate<IExternalMemoryHandles>(registry);
         Validate<IExecutionManager>(registry);
         Validate<IFeatureFlags>(registry);
         Validate<IGCInfo>(registry);

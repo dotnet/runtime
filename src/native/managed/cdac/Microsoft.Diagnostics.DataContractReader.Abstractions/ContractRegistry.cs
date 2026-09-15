@@ -18,6 +18,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IException Exception => GetContract<IException>();
     /// <summary>
+    /// Gets an instance of the ExternalMemoryHandles contract for the target.
+    /// </summary>
+    public virtual IExternalMemoryHandles ExternalMemoryHandles => GetContract<IExternalMemoryHandles>();
+    /// <summary>
     /// Gets an instance of the Loader contract for the target.
     /// </summary>
     public virtual ILoader Loader => GetContract<ILoader>();

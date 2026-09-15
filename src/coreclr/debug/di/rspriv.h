@@ -8689,7 +8689,8 @@ public:
                                TargetBuffer                   remoteValue,
                                MemoryRange                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                               ICorDebugValue**               ppValue);
+                               ICorDebugValue**               ppValue,
+                               VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr());
 
     // Create the proper ICDValue instance based on the given element type.
     static void CreateValueByType(CordbAppDomain *               appdomain,
@@ -8698,7 +8699,8 @@ public:
                                   TargetBuffer                   remoteValue,
                                   MemoryRange                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                  ICorDebugValue**               ppValue);
+                                  ICorDebugValue**               ppValue,
+                                  VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr());
 
     // Create the proper ICDValue instance based on the given remote heap object
     static ICorDebugValue* CreateHeapValue(CordbAppDomain* pAppDomain,
@@ -9318,6 +9320,8 @@ public:
                        TargetBuffer                   remoteValue,
                        EnregisteredValueHomeHolder *  ppRemoteRegAddr);
     virtual ~CordbVCObjectValue();
+    virtual void Neuter();
+    virtual void NeuterLeftSideResources();
 
 #ifdef _DEBUG
     virtual const char * DbgGetName() { return "CordbVCObjectValue"; }
@@ -9415,6 +9419,7 @@ public:
 
     // Initializes the Right-Side's representation of a Value Class object.
     HRESULT Init(MemoryRange localValue);
+    void SetExternalMemoryHandle(VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle);
     //HRESULT ResolveValueClass();
     CordbClass *GetClass();
 
@@ -9433,6 +9438,8 @@ private:
 
     // location information
     ValueHome * m_pValueHome;
+
+    VMPTR_DebuggerExternalMemoryHandle m_vmExternalMemoryHandle;
 };
 
 
@@ -10007,8 +10014,10 @@ public:
     // This is an External reference, which keeps the Value from being neutered
     // on a NeuterAtWill sweep.
     RSExtSmartPtr<CordbHandleValue> m_pHandleValue;
+    RSExtSmartPtr<CordbVCObjectValue> m_pValueClassResult;
 
     DebuggerIPCE_ExpandedTypeData m_resultType;
+    VMPTR_DebuggerExternalMemoryHandle m_vmExternalMemoryHandle;
     VMPTR_AppDomain            m_resultAppDomainToken;
 
     // Left-side memory that needs to be freed.

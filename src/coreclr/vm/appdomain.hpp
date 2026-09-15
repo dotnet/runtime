@@ -35,6 +35,8 @@
 
 #include "codeversion.h"
 
+#include "externalmemoryhandle.h"
+
 class SystemDomain;
 class AppDomain;
 class GlobalStringLiteralMap;
