@@ -7,16 +7,6 @@ declaration body or method body is never retained. Rules such as `bytes` stream 
 an accumulator instead of building a subtree at all. The generator emits neither listeners nor
 visitors; parser actions own traversal.
 
-## Public contract
-
-`src/ILAssembler/ref/ILAssembler.csproj` defines the supported compiler API as a custom reference
-assembly, following the same pattern as Mono.Linker. Project references compile against this
-contract by default, while the implementation assembly remains the runtime asset.
-
-ANTLR-generated parser types and the preprocessing/string helpers used by implementation tests are
-intentionally absent from the contract. Tests opt into the implementation assembly with
-`SkipUseReferenceAssembly`.
-
 `GrammarActions` is a single `internal sealed partial class` split across
 `src/ILAssembler/Actions/GrammarActions.*.cs`:
 
@@ -73,9 +63,8 @@ The hand-written `public partial CILParser` semantic model is split by feature:
 | `CILParser.SemanticValues.MethodBodies.cs` | Debug, data, security, exception and instruction values. |
 | `CILParser.SemanticValues.Signatures.cs` | Managed types, signatures, names, owners and member references. |
 
-These types are public because ANTLR emits public rule-context return and local fields. They are
-implementation-only: the explicit reference assembly omits `CILParser`, and its existing CP0001
-suppression covers the nested semantic types as part of that excluded surface.
+These types are public because ANTLR emits public rule-context return and local fields, but they are
+implementation details and are not a supported API contract.
 
 ## Rules for grammar actions
 
