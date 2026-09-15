@@ -213,10 +213,10 @@ variables:
   # Windows x64
   # Latest: Rolling Windows runtime queue
   - name: helix_windows_x64_latest
-    value: Windows.Amd64.Open.rt
+    value: Windows.Amd64.Open
 
   - name: helix_windows_x64_latest_internal
-    value: Windows.Amd64.rt
+    value: Windows.Amd64
 
   # Oldest: Windows 10
   - name: helix_windows_x64_oldest
