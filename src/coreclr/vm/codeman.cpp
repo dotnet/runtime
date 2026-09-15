@@ -1402,13 +1402,7 @@ BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
 
         if (IsFilterHandler(&EHClause))
         {
-#ifdef TARGET_WASM
-            PCODE filterAddress = GetCodeAddressForRelOffset(pCodeInfo->GetMethodToken(), EHClause.FilterOffset);
-            EECodeInfo filterCodeInfo(filterAddress);
-            if (GetFuncletStartAddress(&filterCodeInfo) == funcletStartAddress)
-#else // TARGET_WASM
             if (EHClause.FilterOffset == funcletStartOffset)
-#endif // TARGET_WASM
             {
                 return true;
             }
