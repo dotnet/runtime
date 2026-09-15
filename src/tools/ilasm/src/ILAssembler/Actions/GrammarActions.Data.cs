@@ -15,8 +15,9 @@ internal sealed partial class GrammarActions
     internal CILParser.DataDeclarationBuilder CreateDataDeclaration(
         CILParser.DataDeclContext context)
         => new(
-            context.Parent is not CILParser.MethodDeclContext ||
-            _currentMethod is not null);
+            !IsDeclarationSuppressed &&
+            (context.Parent is not CILParser.MethodDeclContext ||
+             _currentMethod is not null));
 
     internal void EndDataDeclaration(
         CILParser.DataDeclContext context,

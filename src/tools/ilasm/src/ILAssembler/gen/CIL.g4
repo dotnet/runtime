@@ -813,10 +813,10 @@ locals [int InitialSyntaxErrorCount]
 	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 	_localctx.Value = string.Empty;
 }
-@after {Actions.BeginNamespace(_localctx, _localctx.Value, _localctx.InitialSyntaxErrorCount);}
 :
 	'.namespace' name = dottedName {_localctx.Value = $name.Value;}
 ;
+finally {Actions.BeginNamespace(_localctx, _localctx.Value, _localctx.InitialSyntaxErrorCount);}
 
 classHead returns [CILParser.ClassHeaderValue Value]
 locals [int InitialSyntaxErrorCount, CILParser.ClassHeaderBuilder Builder]
@@ -825,7 +825,6 @@ locals [int InitialSyntaxErrorCount, CILParser.ClassHeaderBuilder Builder]
 	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 	_localctx.Value = CILParser.ClassHeaderValue.Error;
 }
-@after {Actions.BeginType(_localctx, _localctx.Value);}
 :
 	'.class'
 	(attribute = classAttr {Actions.AddClassHeaderAttribute(_localctx.Builder, $attribute.Value);})*
@@ -840,6 +839,7 @@ locals [int InitialSyntaxErrorCount, CILParser.ClassHeaderBuilder Builder]
 			$baseType.Value,
 			$interfaces.Value);}
 ;
+finally {Actions.BeginType(_localctx, _localctx.Value);}
 
 
 classAttr returns [CILParser.ClassAttributeValue Value]

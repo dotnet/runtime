@@ -16,7 +16,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelVTableDeclaration(CILParser.VtableDeclContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             MaterializeVTable(context);
         }
@@ -24,7 +24,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelVTableFixupDeclaration(CILParser.VtfixupDeclContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             MaterializeVTableFixup(context);
         }
@@ -35,7 +35,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelFileDeclaration(CILParser.FileDeclContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             _ = MaterializeFileDeclaration(context);
         }
@@ -43,7 +43,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelAssembly(CILParser.AssemblyBlockContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             MaterializeAssemblyDefinition(context);
         }
@@ -51,7 +51,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelAssemblyReference(CILParser.AssemblyRefBlockContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             MaterializeAssemblyReference(context);
         }
@@ -59,7 +59,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelExportedType(CILParser.ExptypeBlockContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             MaterializeExportedType(context);
         }
@@ -67,7 +67,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelManifestResource(CILParser.ManifestResBlockContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             MaterializeManifestResource(context);
         }
@@ -92,6 +92,11 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelModule(string? name, bool hasName, bool isExternal)
     {
+        if (IsDeclarationSuppressed)
+        {
+            return;
+        }
+
         if (!hasName)
         {
             _entityRegistry.Module.Name = null;
@@ -108,7 +113,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelSecurityDeclaration(CILParser.SecDeclContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             EntityRegistry.DeclarativeSecurityAttributeEntity? security =
                 MaterializeSecurityDeclaration(context);
@@ -118,7 +123,8 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelCustomAttribute(CILParser.CustomAttrDeclContext context)
     {
-        if (!context.HasSyntaxError &&
+        if (!IsDeclarationSuppressed &&
+            !context.HasSyntaxError &&
             MaterializeCustomAttributeDeclaration(context) is { } customAttribute)
         {
             customAttribute.Owner ??=
@@ -128,27 +134,42 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelSubsystem(IToken value)
     {
-        _subsystem = (Subsystem)ParseInt32(value);
+        if (!IsDeclarationSuppressed)
+        {
+            _subsystem = (Subsystem)ParseInt32(value);
+        }
     }
 
     internal void ProcessTopLevelCorFlags(IToken value)
     {
-        _corflags = (CorFlags)ParseInt32(value);
+        if (!IsDeclarationSuppressed)
+        {
+            _corflags = (CorFlags)ParseInt32(value);
+        }
     }
 
     internal void ProcessTopLevelAlignment(IToken value)
     {
-        _alignment = ParseInt32(value);
+        if (!IsDeclarationSuppressed)
+        {
+            _alignment = ParseInt32(value);
+        }
     }
 
     internal void ProcessTopLevelImageBase(IToken value)
     {
-        _imageBase = ParseInt64(value);
+        if (!IsDeclarationSuppressed)
+        {
+            _imageBase = ParseInt64(value);
+        }
     }
 
     internal void ProcessTopLevelStackReserve(IToken value)
     {
-        _stackReserve = ParseInt64(value);
+        if (!IsDeclarationSuppressed)
+        {
+            _stackReserve = ParseInt64(value);
+        }
     }
 
     internal void ProcessTopLevelLanguageDirective(CILParser.LanguageDeclContext context)
@@ -156,7 +177,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelTypedef(CILParser.TypedefDeclContext context)
     {
-        if (!context.HasSyntaxError)
+        if (!IsDeclarationSuppressed && !context.HasSyntaxError)
         {
             MaterializeTypedef(context);
         }
@@ -165,7 +186,12 @@ internal sealed partial class GrammarActions
     internal void BeginTopLevelTypeList() => PrepareTopLevelDeclaration();
 
     internal void ProcessTopLevelTypeListEntry(ClassNameValue value)
-        => _ = ResolveClassName(value);
+    {
+        if (!IsDeclarationSuppressed)
+        {
+            _ = ResolveClassName(value);
+        }
+    }
 
     private void PrepareTopLevelDeclaration() => ClearPendingCustomAttributeOwners();
 }

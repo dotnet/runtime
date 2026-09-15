@@ -12,7 +12,7 @@ internal sealed partial class GrammarActions
     internal void BeginMethod(CILParser.MethodHeadContext context, MethodHeaderValue value)
     {
         ResetMethodBodyState();
-        if (!value.IsValid)
+        if (IsDeclarationSuppressed || !value.IsValid)
         {
             return;
         }

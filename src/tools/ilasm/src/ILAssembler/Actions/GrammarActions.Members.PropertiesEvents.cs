@@ -57,7 +57,9 @@ internal sealed partial class GrammarActions
     {
         PrepareClassMember();
         EntityRegistry.PropertyEntity? property = null;
-        if (value.IsValid && _currentTypeDefinition.PeekOrDefault() is { } currentType)
+        if (!IsDeclarationSuppressed &&
+            value.IsValid &&
+            _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             BlobBuilder signature = new();
             signature.WriteByte(
@@ -182,7 +184,9 @@ internal sealed partial class GrammarActions
     {
         PrepareClassMember();
         EntityRegistry.EventEntity? @event = null;
-        if (value.IsValid && _currentTypeDefinition.PeekOrDefault() is { } currentType)
+        if (!IsDeclarationSuppressed &&
+            value.IsValid &&
+            _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             @event = new EntityRegistry.EventEntity(
                 value.Attributes,
