@@ -794,6 +794,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     int64_t constInitX;
     int64_t constLimitX;
+    int64_t iterIncX;
 
     unsigned loopCount;
     int      iterSign;
@@ -847,17 +848,24 @@ bool Compiler::optComputeLoopRep(int        constInit,
             NO_WAY("Bad type");
     }
 
-    // If iterInc is zero we have an infinite loop.
-    if (iterInc == 0)
+    // Normalize subtraction into an additive step before reasoning about loop direction.
+    iterIncX = iterInc;
+    if (iterOper == GT_SUB)
+    {
+        iterIncX = -iterIncX;
+    }
+
+    // If iterIncX is zero we have an infinite loop.
+    if (iterIncX == 0)
     {
         return false;
     }
 
-    iterSign  = (iterInc > 0) ? +1 : -1;
+    iterSign  = (iterIncX > 0) ? +1 : -1;
     loopCount = 0;
 
     // bail if count is based on wrap-around math
-    if (iterInc > 0)
+    if (iterIncX > 0)
     {
         if (constLimitX < constInitX)
         {
@@ -886,12 +894,12 @@ bool Compiler::optComputeLoopRep(int        constInit,
             // If "mod iterInc" is not zero then the limit test will miss and a wrap will occur
             // which is probably not what the end user wanted, but it is legal.
 
-            if (iterInc > 0)
+            if (iterIncX > 0)
             {
                 // Stepping by one, i.e. Mod with 1 is always zero.
-                if (iterInc != 1)
+                if (iterIncX != 1)
                 {
-                    if (((constLimitX - constInitX) % iterInc) != 0)
+                    if (((constLimitX - constInitX) % iterIncX) != 0)
                     {
                         return false;
                     }
@@ -900,9 +908,9 @@ bool Compiler::optComputeLoopRep(int        constInit,
             else
             {
                 // Stepping by -1, i.e. Mod with 1 is always zero.
-                if (iterInc != -1)
+                if (iterIncX != -1)
                 {
-                    if (((constInitX - constLimitX) % (-iterInc)) != 0)
+                    if (((constInitX - constLimitX) % (-iterIncX)) != 0)
                     {
                         return false;
                     }
@@ -912,16 +920,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX != constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -959,16 +964,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX < constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -1006,16 +1008,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX <= constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -1053,16 +1052,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX > constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -1100,16 +1096,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX >= constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {

@@ -224,6 +224,47 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void EmitCode(NodeFactory factory, ref RiscV64.RiscV64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
     }
 
+    public sealed class WasmUnboxingStubTargetNode : DependencyNodeCore<NodeFactory>
+    {
+        private readonly MethodDesc _targetMethod;
+        private readonly WasmSignature _signature;
+        private readonly WasmUnboxingStubNode _stub;
+
+        public WasmUnboxingStubTargetNode(MethodDesc targetMethod, WasmSignature signature, WasmUnboxingStubNode stub)
+        {
+            _targetMethod = targetMethod;
+            _signature = signature;
+            _stub = stub;
+        }
+
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+
+        public override bool HasDynamicDependencies => false;
+
+        public override bool HasConditionalStaticDependencies => false;
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(_stub, "Wasm unboxing stub for target method");
+            dependencies.Add(context.CompiledMethodNode(_targetMethod), "Target method for Wasm unboxing stub");
+            dependencies.Add(context.WasmR2RToInterpreterThunk(WasmLowering.GetSignature(_targetMethod)), "Interpreter fallback for Wasm unboxing target");
+            dependencies.Add(context.WasmInterpreterToR2RThunk(_signature), "Interpreter-to-R2R thunk for Wasm unboxing stub target");
+            return dependencies;
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
+            List<DependencyNodeCore<NodeFactory>> markedNodes,
+            int firstNode,
+            NodeFactory context) => null;
+
+        protected override string GetName(NodeFactory factory) => $"Wasm unboxing stub target for {_targetMethod}";
+    }
+
     public enum UnboxingStubKind
     {
         Normal,

@@ -2802,25 +2802,34 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
     {
         for (Statement* const stmt : block->Statements())
         {
-            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
-            {
-                continue;
-            }
+            // A single statement can contain more than one allocation. Expanding one splits
+            // the statement's tree and leaves the remainder (which may hold further
+            // allocations) in "stmt", so keep rescanning it until nothing is left to expand.
+            //
+            bool expanded = true;
 
-            for (GenTree* const tree : stmt->TreeList())
+            while (expanded)
             {
-                if (!tree->IsCall())
+                expanded = false;
+
+                if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
                 {
-                    continue;
+                    break;
                 }
 
-                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                for (GenTree* const tree : stmt->TreeList())
                 {
-                    // If we expand, we split the statement's tree
-                    // so will be done with this statment.
-                    //
-                    modified = true;
-                    break;
+                    if (!tree->IsCall())
+                    {
+                        continue;
+                    }
+
+                    if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                    {
+                        modified = true;
+                        expanded = true;
+                        break;
+                    }
                 }
             }
         }
