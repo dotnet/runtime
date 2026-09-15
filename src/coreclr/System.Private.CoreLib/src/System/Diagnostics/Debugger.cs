@@ -104,12 +104,15 @@ namespace System.Diagnostics
             MethodBase? method = RuntimeType.GetMethodBase(declaringType, new RuntimeMethodHandleInternal(methodHandle));
             Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
 
-            MethodBaseInvoker invoker = method is RuntimeMethodInfo methodInfo
-                ? methodInfo.Invoker
-                : ((RuntimeConstructorInfo)method!).Invoker;
-
             // Exceptions must reach the native func-eval handler without introducing a managed catch site.
-            invoker.InvokeForDebugger(storage);
+            if (method is RuntimeMethodInfo methodInfo)
+            {
+                methodInfo.Invoker.InvokeForDebugger(storage);
+            }
+            else
+            {
+                ((RuntimeConstructorInfo)method!).InvokeForDebugger(storage);
+            }
         }
     }
 }
