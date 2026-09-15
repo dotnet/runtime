@@ -11999,6 +11999,9 @@ bool Compiler::impWrapTopOfStackInAwait()
             info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(info.compThisArg, TYP_REF);
         GenTree* exitMon = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, lockObject, varAddrNode);
         impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+
+        // The fault handler must not release the monitor again if the await throws.
+        impStoreToTemp(lvaMonAcquired, gtNewZeroConNode(TYP_I_IMPL), CHECK_SPILL_ALL);
     }
 
     if (impFoldAwaitedTopOfStack())

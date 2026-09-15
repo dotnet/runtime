@@ -33,7 +33,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    internal static class CustomAttribute
+    internal static class RuntimeCustomAttribute
     {
         private static Assembly? corlib;
         [ThreadStatic]
@@ -146,14 +146,14 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(obj);
             ArgumentNullException.ThrowIfNull(attributeType);
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
-                && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute) && attributeType != typeof(object))
+                && attributeType != typeof(Attribute) && attributeType != typeof(RuntimeCustomAttribute) && attributeType != typeof(object))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
             if (IsUserCattrProvider(obj))
                 return obj.GetCustomAttributes(attributeType, inherit);
 
             // FIXME: GetCustomAttributesBase doesn't like being passed a null attributeType
-            if (attributeType == typeof(CustomAttribute))
+            if (attributeType == typeof(RuntimeCustomAttribute))
                 attributeType = null!;
             if (attributeType == typeof(Attribute))
                 attributeType = null!;
@@ -308,7 +308,7 @@ namespace System.Reflection
             if (!inherit)
                 return (object[])GetCustomAttributesBase(obj, null, false).Clone();
 
-            return GetCustomAttributes(obj, typeof(CustomAttribute), inherit);
+            return GetCustomAttributes(obj, typeof(RuntimeCustomAttribute), inherit);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -324,7 +324,7 @@ namespace System.Reflection
             if (!inherit)
                 return GetCustomAttributesDataBase(obj, null, false);
 
-            return GetCustomAttributesData(obj, typeof(CustomAttribute), inherit);
+            return GetCustomAttributesData(obj, typeof(RuntimeCustomAttribute), inherit);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesData(ICustomAttributeProvider obj, Type? attributeType, bool inherit)
@@ -332,7 +332,7 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(obj);
             ArgumentNullException.ThrowIfNull(attributeType);
 
-            if (attributeType == typeof(CustomAttribute))
+            if (attributeType == typeof(RuntimeCustomAttribute))
                 attributeType = null;
 
             IList<CustomAttributeData> r;

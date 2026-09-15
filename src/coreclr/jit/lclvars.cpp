@@ -539,6 +539,10 @@ void Compiler::lvaAllocWasmStackPtr()
         LclVarDsc* varDsc              = lvaGetDesc(lvaWasmSpArg);
         varDsc->lvType                 = TYP_I_IMPL;
         varDsc->lvImplicitlyReferenced = 1;
+        // The prolog loads $sp from the __stack_pointer global (see genAllocLclFrame), so this local
+        // is explicitly initialized. Without this the optimizer treats its use-before-def as zero-init
+        // and value-numbers it to 0, folding the shadow-SP argument of outgoing calls to a null base.
+        varDsc->lvHasExplicitInit = 1;
     }
 }
 
