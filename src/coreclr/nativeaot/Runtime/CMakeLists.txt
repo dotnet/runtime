@@ -387,6 +387,10 @@ if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
 endif()
 
+if(CLR_CMAKE_TARGET_UNIX)
+  add_subdirectory(createdump)
+endif()
+
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   # Create an interface library that captures the Runtime's include directories
   # for use by the datadescriptor intermediary compilation.
