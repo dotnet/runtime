@@ -1,152 +1,102 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
 {
-    // Thin wrapper over System.Net.Sockets.Socket accessed via reflection.
+    // Thin wrapper over System.Net.Sockets.Socket without a static assembly reference.
     //
     // System.Net.Sockets depends on System.Net.NameResolution (Socket.Connect(host, port)
     // resolves names through Dns), so NameResolution cannot statically reference the Sockets
     // assembly without introducing a cycle in the shared-framework closure. The managed DNS
-    // stub resolver still needs raw UDP/TCP sockets, so it reaches Socket through reflection;
-    // the assembly is resolved from the shared framework at runtime. SocketException,
+    // stub resolver still needs raw UDP/TCP sockets, so it reaches Socket through type-name
+    // accessors; the assembly is resolved from the shared framework at runtime. SocketException,
     // SocketError and AddressFamily live in System.Net.Primitives and are used directly.
     //
-    // Instance operations are exposed through delegates bound to the underlying Socket so that
-    // exceptions (e.g. SocketException) propagate to callers directly instead of being wrapped
-    // in a TargetInvocationException.
     internal sealed class DnsSocket : IDisposable
     {
-        private sealed class SocketReflection
-        {
-            public ConstructorInfo Constructor = null!;
-            public MethodInfo ConnectAsyncMethod = null!;
-            public MethodInfo SendAsyncMethod = null!;
-            public MethodInfo ReceiveAsyncMethod = null!;
-            public MethodInfo ConnectMethod = null!;
-            public MethodInfo SendMethod = null!;
-            public MethodInfo ReceiveMethod = null!;
-            public MethodInfo BeginConnectMethod = null!;
-            public MethodInfo EndConnectMethod = null!;
-            public MethodInfo DisposeMethod = null!;
-            public MethodInfo SetSendTimeoutMethod = null!;
-            public MethodInfo SetReceiveTimeoutMethod = null!;
-            public object SocketTypeDgram = null!;
-            public object SocketTypeStream = null!;
-            public object ProtocolTypeUdp = null!;
-            public object ProtocolTypeTcp = null!;
-        }
+        private const string SocketTypeName = "System.Net.Sockets.Socket, System.Net.Sockets";
+        private const string SocketTypeEnumName = "System.Net.Sockets.SocketType, System.Net.Sockets";
+        private const string ProtocolTypeEnumName = "System.Net.Sockets.ProtocolType, System.Net.Sockets";
+        private const string SafeSocketHandleTypeName = "System.Net.Sockets.SafeSocketHandle, System.Net.Sockets";
+        private const string SocketFlagsTypeName = "System.Net.Sockets.SocketFlags, System.Net.Sockets";
 
-        private static readonly SocketReflection s_reflection = CreateReflection();
-
-        private delegate int SendSpanDelegate(ReadOnlySpan<byte> buffer);
-        private delegate int ReceiveSpanDelegate(Span<byte> buffer);
-
-        private readonly Func<EndPoint, CancellationToken, ValueTask> _connectAsync;
-        private readonly Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask<int>> _sendAsync;
-        private readonly Func<Memory<byte>, CancellationToken, ValueTask<int>> _receiveAsync;
-        private readonly Action<EndPoint> _connect;
-        private readonly SendSpanDelegate _send;
-        private readonly ReceiveSpanDelegate _receive;
-        private readonly Func<EndPoint, AsyncCallback?, object?, IAsyncResult> _beginConnect;
-        private readonly Action<IAsyncResult> _endConnect;
-        private readonly Action<int> _setSendTimeout;
-        private readonly Action<int> _setReceiveTimeout;
-        private readonly Action _dispose;
-
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties,
-            "System.Net.Sockets.Socket", "System.Net.Sockets")]
-        private static SocketReflection CreateReflection()
-        {
-            Type socketType = Type.GetType("System.Net.Sockets.Socket, System.Net.Sockets", throwOnError: true)!;
-            Type socketTypeEnum = Type.GetType("System.Net.Sockets.SocketType, System.Net.Sockets", throwOnError: true)!;
-            Type protocolTypeEnum = Type.GetType("System.Net.Sockets.ProtocolType, System.Net.Sockets", throwOnError: true)!;
-
-            return new SocketReflection
-            {
-                SocketTypeDgram = Enum.Parse(socketTypeEnum, "Dgram"),
-                SocketTypeStream = Enum.Parse(socketTypeEnum, "Stream"),
-                ProtocolTypeUdp = Enum.Parse(protocolTypeEnum, "Udp"),
-                ProtocolTypeTcp = Enum.Parse(protocolTypeEnum, "Tcp"),
-                Constructor = socketType.GetConstructor(new[] { typeof(AddressFamily), socketTypeEnum, protocolTypeEnum })!,
-                ConnectAsyncMethod = socketType.GetMethod("ConnectAsync", new[] { typeof(EndPoint), typeof(CancellationToken) })!,
-                SendAsyncMethod = socketType.GetMethod("SendAsync", new[] { typeof(ReadOnlyMemory<byte>), typeof(CancellationToken) })!,
-                ReceiveAsyncMethod = socketType.GetMethod("ReceiveAsync", new[] { typeof(Memory<byte>), typeof(CancellationToken) })!,
-                ConnectMethod = socketType.GetMethod("Connect", new[] { typeof(EndPoint) })!,
-                SendMethod = socketType.GetMethod("Send", new[] { typeof(ReadOnlySpan<byte>) })!,
-                ReceiveMethod = socketType.GetMethod("Receive", new[] { typeof(Span<byte>) })!,
-                BeginConnectMethod = socketType.GetMethod("BeginConnect", new[] { typeof(EndPoint), typeof(AsyncCallback), typeof(object) })!,
-                EndConnectMethod = socketType.GetMethod("EndConnect", new[] { typeof(IAsyncResult) })!,
-                DisposeMethod = socketType.GetMethod("Dispose", Type.EmptyTypes)!,
-                SetSendTimeoutMethod = socketType.GetProperty("SendTimeout")!.GetSetMethod()!,
-                SetReceiveTimeoutMethod = socketType.GetProperty("ReceiveTimeout")!.GetSetMethod()!,
-            };
-        }
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private static readonly Type s_socketType = Type.GetType(SocketTypeName, throwOnError: true)!;
+        private static readonly Type s_socketTypeEnum = Type.GetType(SocketTypeEnumName, throwOnError: true)!;
+        private static readonly Type s_protocolTypeEnum = Type.GetType(ProtocolTypeEnumName, throwOnError: true)!;
+        // UnsafeAccessorType cannot represent the SocketType and ProtocolType value-type
+        // parameters without referencing System.Net.Sockets, which would create a cycle.
+        private static readonly ConstructorInfo s_socketConstructor =
+            s_socketType.GetConstructor(new[] { typeof(AddressFamily), s_socketTypeEnum, s_protocolTypeEnum })!;
+        private static readonly object s_socketTypeDgram = Enum.Parse(Type.GetType(SocketTypeEnumName, throwOnError: true)!, "Dgram");
+        private static readonly object s_socketTypeStream = Enum.Parse(Type.GetType(SocketTypeEnumName, throwOnError: true)!, "Stream");
+        private static readonly object s_protocolTypeUdp = Enum.Parse(Type.GetType(ProtocolTypeEnumName, throwOnError: true)!, "Udp");
+        private static readonly object s_protocolTypeTcp = Enum.Parse(Type.GetType(ProtocolTypeEnumName, throwOnError: true)!, "Tcp");
+        private static readonly object s_socketFlagsPeek = Enum.Parse(Type.GetType(SocketFlagsTypeName, throwOnError: true)!, "Peek");
 
         public DnsSocket(AddressFamily addressFamily, bool stream)
         {
-            SocketReflection reflection = s_reflection;
-            object socket;
             try
             {
-                socket = reflection.Constructor.Invoke(new object[]
+                _socket = s_socketConstructor.Invoke(new object[]
                 {
                     addressFamily,
-                    stream ? reflection.SocketTypeStream : reflection.SocketTypeDgram,
-                    stream ? reflection.ProtocolTypeTcp : reflection.ProtocolTypeUdp,
+                    stream ? s_socketTypeStream : s_socketTypeDgram,
+                    stream ? s_protocolTypeTcp : s_protocolTypeUdp,
                 })!;
             }
             catch (TargetInvocationException e) when (e.InnerException is not null)
             {
                 ExceptionDispatchInfo.Throw(e.InnerException);
-                throw; // Unreachable, satisfies definite-assignment.
+                throw;
             }
-
-            _connectAsync = reflection.ConnectAsyncMethod.CreateDelegate<Func<EndPoint, CancellationToken, ValueTask>>(socket);
-            _sendAsync = reflection.SendAsyncMethod.CreateDelegate<Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask<int>>>(socket);
-            _receiveAsync = reflection.ReceiveAsyncMethod.CreateDelegate<Func<Memory<byte>, CancellationToken, ValueTask<int>>>(socket);
-            _connect = reflection.ConnectMethod.CreateDelegate<Action<EndPoint>>(socket);
-            _send = reflection.SendMethod.CreateDelegate<SendSpanDelegate>(socket);
-            _receive = reflection.ReceiveMethod.CreateDelegate<ReceiveSpanDelegate>(socket);
-            _beginConnect = reflection.BeginConnectMethod.CreateDelegate<Func<EndPoint, AsyncCallback?, object?, IAsyncResult>>(socket);
-            _endConnect = reflection.EndConnectMethod.CreateDelegate<Action<IAsyncResult>>(socket);
-            _setSendTimeout = reflection.SetSendTimeoutMethod.CreateDelegate<Action<int>>(socket);
-            _setReceiveTimeout = reflection.SetReceiveTimeoutMethod.CreateDelegate<Action<int>>(socket);
-            _dispose = reflection.DisposeMethod.CreateDelegate<Action>(socket);
         }
 
-        public int SendTimeout { set => _setSendTimeout(value); }
+        public DnsSocket(IntPtr fileDescriptor)
+        {
+            object safeHandle = CreateSafeSocketHandle(fileDescriptor, ownsHandle: false);
+            _socket = CreateSocket(safeHandle);
+        }
 
-        public int ReceiveTimeout { set => _setReceiveTimeout(value); }
+        private readonly object _socket;
+
+        public int SendTimeout { set => SetSendTimeout(_socket, value); }
+
+        public int ReceiveTimeout { set => SetReceiveTimeout(_socket, value); }
 
         public ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken cancellationToken) =>
-            _connectAsync(remoteEndPoint, cancellationToken);
+            ConnectAsync(_socket, remoteEndPoint, cancellationToken);
 
         public ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
-            _sendAsync(buffer, cancellationToken);
+            SendAsync(_socket, buffer, cancellationToken);
 
         public ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
-            _receiveAsync(buffer, cancellationToken);
+            ReceiveAsync(_socket, buffer, cancellationToken);
 
-        public void Connect(EndPoint remoteEndPoint) => _connect(remoteEndPoint);
+        public ValueTask<int> ReceiveAsync(Memory<byte> buffer, bool peek, CancellationToken cancellationToken) =>
+            peek
+                ? ReceiveAsync(_socket, buffer, s_socketFlagsPeek, cancellationToken)
+                : ReceiveAsync(_socket, buffer, cancellationToken);
 
-        public int Send(ReadOnlySpan<byte> buffer) => _send(buffer);
+        public void Connect(EndPoint remoteEndPoint) => Connect(_socket, remoteEndPoint);
 
-        public int Receive(Span<byte> buffer) => _receive(buffer);
+        public int Send(ReadOnlySpan<byte> buffer) => Send(_socket, buffer);
+
+        public int Receive(Span<byte> buffer) => Receive(_socket, buffer);
 
         // Connects synchronously with an explicit timeout so an unreachable TCP endpoint cannot
         // block indefinitely. Throws a timed-out SocketException when the timeout elapses.
         public void ConnectWithTimeout(EndPoint remoteEndPoint, TimeSpan timeout)
         {
-            IAsyncResult asyncResult = _beginConnect(remoteEndPoint, null, null);
+            IAsyncResult asyncResult = BeginConnect(_socket, remoteEndPoint, null, null);
             try
             {
                 if (!asyncResult.AsyncWaitHandle.WaitOne(timeout))
@@ -154,7 +104,7 @@ namespace System.Net
                     Dispose();
                     throw new SocketException((int)SocketError.TimedOut);
                 }
-                _endConnect(asyncResult);
+                EndConnect(_socket, asyncResult);
             }
             finally
             {
@@ -162,6 +112,52 @@ namespace System.Net
             }
         }
 
-        public void Dispose() => _dispose();
+        public void Dispose() => Dispose(_socket);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType(SocketTypeName)]
+        private static extern object CreateSocket([UnsafeAccessorType(SafeSocketHandleTypeName)] object safeHandle);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType(SafeSocketHandleTypeName)]
+        private static extern object CreateSafeSocketHandle(IntPtr handle, bool ownsHandle);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ConnectAsync")]
+        private static extern ValueTask ConnectAsync([UnsafeAccessorType(SocketTypeName)] object socket, EndPoint remoteEndPoint, CancellationToken cancellationToken);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SendAsync")]
+        private static extern ValueTask<int> SendAsync([UnsafeAccessorType(SocketTypeName)] object socket, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReceiveAsync")]
+        private static extern ValueTask<int> ReceiveAsync([UnsafeAccessorType(SocketTypeName)] object socket, Memory<byte> buffer, CancellationToken cancellationToken);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReceiveAsync")]
+        private static extern ValueTask<int> ReceiveAsync([UnsafeAccessorType(SocketTypeName)] object socket, Memory<byte> buffer,
+            [UnsafeAccessorType(SocketFlagsTypeName)] object flags, CancellationToken cancellationToken);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Connect")]
+        private static extern void Connect([UnsafeAccessorType(SocketTypeName)] object socket, EndPoint remoteEndPoint);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Send")]
+        private static extern int Send([UnsafeAccessorType(SocketTypeName)] object socket, ReadOnlySpan<byte> buffer);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Receive")]
+        private static extern int Receive([UnsafeAccessorType(SocketTypeName)] object socket, Span<byte> buffer);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "BeginConnect")]
+        private static extern IAsyncResult BeginConnect([UnsafeAccessorType(SocketTypeName)] object socket, EndPoint remoteEndPoint,
+            AsyncCallback? callback, object? state);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "EndConnect")]
+        private static extern void EndConnect([UnsafeAccessorType(SocketTypeName)] object socket, IAsyncResult asyncResult);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Dispose")]
+        private static extern void Dispose([UnsafeAccessorType(SocketTypeName)] object socket);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_SendTimeout")]
+        private static extern void SetSendTimeout([UnsafeAccessorType(SocketTypeName)] object socket, int value);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_ReceiveTimeout")]
+        private static extern void SetReceiveTimeout([UnsafeAccessorType(SocketTypeName)] object socket, int value);
     }
 }
