@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.Logging;
 
@@ -410,7 +412,10 @@ namespace ILCompiler.Dataflow
                         break;
 
                     case ILOpcode.dup:
-                        currentStack.Push(currentStack.Peek());
+                        if (currentStack.Count == 0)
+                            PushUnknownAndWarnAboutInvalidIL(currentStack, methodIL, offset);
+                        else
+                            currentStack.Push(currentStack.Peek());
                         break;
 
                     case ILOpcode.ldnull:
@@ -472,7 +477,7 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ldftn:
                         {
-                            if (methodIL.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            if (methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is MethodDesc methodOperand)
                             {
                                 HandleMethodTokenAccess(methodIL, offset, methodOperand);
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
@@ -521,19 +526,21 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ldstr:
                         {
-                            StackSlot slot = new StackSlot(new KnownStringValue((string)methodIL.GetObject(reader.ReadILToken())));
+                            StackSlot slot = methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is string value
+                                ? new StackSlot(new KnownStringValue(value))
+                                : new StackSlot();
                             currentStack.Push(slot);
                         }
                         break;
 
                     case ILOpcode.ldtoken:
-                        object obj = methodIL.GetObject(reader.ReadILToken());
+                        object obj = methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull);
                         ScanLdtoken(methodIL, offset, obj, currentStack);
                         break;
 
                     case ILOpcode.ldvirtftn:
                         {
-                            if (methodIL.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            if (methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is MethodDesc methodOperand)
                             {
                                 HandleMethodTokenAccess(methodIL, offset, methodOperand);
                             }
@@ -603,8 +610,15 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.box:
                     case ILOpcode.mkrefany:
-                        HandleTypeTokenAccess(methodIL, offset, (TypeDesc)methodIL.GetObject(reader.ReadILToken()));
+                        TypeDesc? typeOperand = methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as TypeDesc;
                         PopUnknown(currentStack, 1, methodIL, offset);
+                        if (typeOperand is null)
+                        {
+                            PushUnknown(currentStack);
+                            break;
+                        }
+
+                        HandleTypeTokenAccess(methodIL, offset, typeOperand);
                         PushUnknown(currentStack);
                         break;
 
@@ -620,13 +634,29 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldsfld:
                     case ILOpcode.ldflda:
                     case ILOpcode.ldsflda:
-                        ScanLdfld(methodIL, offset, opcode, (FieldDesc)methodIL.GetObject(reader.ReadILToken()), currentStack, ref interproceduralState);
+                        FieldDesc? loadFieldOperand = methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as FieldDesc;
+                        if (loadFieldOperand is null)
+                        {
+                            if (opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda)
+                                PopUnknown(currentStack, 1, methodIL, offset);
+
+                            PushUnknown(currentStack);
+                            break;
+                        }
+
+                        ScanLdfld(methodIL, offset, opcode, loadFieldOperand, currentStack, ref interproceduralState);
                         break;
 
                     case ILOpcode.newarr:
                         {
                             StackSlot count = PopUnknown(currentStack, 1, methodIL, offset);
-                            var arrayElementType = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                            var arrayElementType = methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as TypeDesc;
+                            if (arrayElementType is null)
+                            {
+                                PushUnknown(currentStack);
+                                break;
+                            }
+
                             HandleTypeTokenAccess(methodIL, offset, arrayElementType);
                             currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElementType)));
                         }
@@ -670,7 +700,16 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.stfld:
                     case ILOpcode.stsfld:
-                        ScanStfld(methodIL, offset, opcode, (FieldDesc)methodIL.GetObject(reader.ReadILToken()), currentStack, locals, ref interproceduralState);
+                        FieldDesc? storeFieldOperand = methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as FieldDesc;
+                        if (storeFieldOperand is null)
+                        {
+                            PopUnknown(currentStack, 1, methodIL, offset);
+                            if (opcode == ILOpcode.stfld)
+                                PopUnknown(currentStack, 1, methodIL, offset);
+                            break;
+                        }
+
+                        ScanStfld(methodIL, offset, opcode, storeFieldOperand, currentStack, locals, ref interproceduralState);
                         break;
 
                     case ILOpcode.cpobj:
@@ -737,7 +776,22 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.calli:
                         {
-                            var signature = (MethodSignature)methodIL.GetObject(reader.ReadILToken());
+                            int token = reader.ReadILToken();
+                            var signature = methodIL.GetObject(token, NotFoundBehavior.ReturnNull) as MethodSignature;
+                            if (signature is null)
+                            {
+                                if (!TryGetCallSiteSignature(methodIL, token, out bool isStatic, out int parameterCount, out bool returnsVoid))
+                                {
+                                    currentStack.Clear();
+                                    break;
+                                }
+
+                                PopUnknown(currentStack, parameterCount + (isStatic ? 1 : 2), methodIL, offset);
+                                if (!returnsVoid)
+                                    PushUnknown(currentStack);
+                                break;
+                            }
+
                             if (!signature.IsStatic)
                             {
                                 PopUnknown(currentStack, 1, methodIL, offset);
@@ -760,12 +814,31 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.callvirt:
                     case ILOpcode.newobj:
                         {
-                            MethodDesc methodOperand = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                            int token = reader.ReadILToken();
+                            MethodDesc? methodOperand = methodIL.GetObject(token, NotFoundBehavior.ReturnNull) as MethodDesc;
+                            if (methodOperand is null)
+                            {
+                                if (!TryGetCallSiteSignature(methodIL, token, out bool isStatic, out int parameterCount, out bool returnsVoid))
+                                {
+                                    currentStack.Clear();
+                                    PushUnknown(currentStack);
+                                    break;
+                                }
+
+                                int countToPop = parameterCount + (opcode == ILOpcode.newobj || isStatic ? 0 : 1);
+                                if (countToPop > 0)
+                                    PopUnknown(currentStack, countToPop, methodIL, offset);
+                                if (opcode == ILOpcode.newobj || !returnsVoid)
+                                    PushUnknown(currentStack);
+                                break;
+                            }
+
                             TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             HandleCall(methodIL, opcode, offset, methodOperand, currentStack, locals, ref interproceduralState, curBasicBlock);
                             ValidateNoReferenceToReference(locals, methodIL, offset);
                         }
-                        break;
+
+                                        break;
 
                     case ILOpcode.jmp:
                         // Not generated by mainstream compilers
@@ -800,6 +873,7 @@ namespace ILCompiler.Dataflow
                                 {
                                     WarnAboutInvalidILInMethod(methodIL, offset);
                                 }
+
                             }
                             if (currentStack.Count == 1)
                             {
@@ -855,6 +929,68 @@ namespace ILCompiler.Dataflow
                         reader.Skip(opcode);
                         break;
                 }
+            }
+        }
+
+        private static bool TryGetCallSiteSignature(
+            MethodIL methodIL,
+            int token,
+            out bool isStatic,
+            out int parameterCount,
+            out bool returnsVoid)
+        {
+            isStatic = false;
+            parameterCount = 0;
+            returnsVoid = false;
+
+            if (methodIL.GetMethodILDefinition() is not EcmaMethodIL ecmaMethodIL)
+                return false;
+
+            MetadataReader reader = ecmaMethodIL.Module.MetadataReader;
+            EntityHandle handle = MetadataTokens.EntityHandle(token);
+            BlobHandle signatureHandle;
+
+            try
+            {
+                while (handle.Kind == HandleKind.MethodSpecification)
+                    handle = reader.GetMethodSpecification((MethodSpecificationHandle)handle).Method;
+
+                signatureHandle = handle.Kind switch
+                {
+                    HandleKind.MethodDefinition => reader.GetMethodDefinition((MethodDefinitionHandle)handle).Signature,
+                    HandleKind.MemberReference => reader.GetMemberReference((MemberReferenceHandle)handle).Signature,
+                    HandleKind.StandaloneSignature => reader.GetStandaloneSignature((StandaloneSignatureHandle)handle).Signature,
+                    _ => default,
+                };
+
+                if (signatureHandle.IsNil)
+                    return false;
+
+                BlobReader signatureReader = reader.GetBlobReader(signatureHandle);
+                SignatureHeader header = signatureReader.ReadSignatureHeader();
+                if (header.Kind != SignatureKind.Method)
+                    return false;
+
+                isStatic = !header.IsInstance;
+                if (header.IsGeneric)
+                    _ = signatureReader.ReadCompressedInteger();
+                parameterCount = signatureReader.ReadCompressedInteger();
+
+                SignatureTypeCode returnTypeCode;
+                do
+                {
+                    returnTypeCode = signatureReader.ReadSignatureTypeCode();
+                    if (returnTypeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
+                        _ = signatureReader.ReadTypeHandle();
+                }
+                while (returnTypeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier);
+
+                returnsVoid = returnTypeCode == SignatureTypeCode.Void;
+                return true;
+            }
+            catch (BadImageFormatException)
+            {
+                return false;
             }
         }
 
@@ -983,13 +1119,15 @@ namespace ILCompiler.Dataflow
 
                 HandleMethodTokenAccess(methodIL, offset, method);
             }
-            else
+            else if (operand is FieldDesc field)
             {
-                Debug.Assert(operand is FieldDesc);
-
                 PushUnknown(currentStack);
 
-                HandleFieldTokenAccess(methodIL, offset, (FieldDesc)operand);
+                HandleFieldTokenAccess(methodIL, offset, field);
+            }
+            else
+            {
+                PushUnknown(currentStack);
             }
         }
 

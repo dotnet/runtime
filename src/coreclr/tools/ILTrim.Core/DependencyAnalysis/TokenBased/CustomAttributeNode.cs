@@ -4,17 +4,22 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 using ILCompiler.Dataflow;
 using ILCompiler.Logging;
+using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -78,15 +83,25 @@ namespace ILCompiler.DependencyAnalysis
 
             // Parse the custom attribute value blob and add dependencies from it
             CustomAttributeValue<TypeDesc> decodedValue;
+            bool hasUnresolvedValue = false;
             try
             {
                 decodedValue = customAttribute.DecodeValue(new CustomAttributeTypeProvider(_module));
             }
             catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
             {
-                // Metadata decode failed.
-                _isCorrupted = true;
-                return dependencies;
+                try
+                {
+                    decodedValue = customAttribute.DecodeValue(new CustomAttributeTypeProvider(_module, throwIfTypeNotFound: false));
+                    hasUnresolvedValue = true;
+                }
+                catch (Exception tolerantDecodeException) when (tolerantDecodeException is TypeSystemException or BadImageFormatException)
+                {
+                    // Metadata decode failed.
+                    _isCorrupted = true;
+                    AddConservativeDependenciesFromBlobPrefix(dependencies, factory, customAttribute);
+                    return dependencies;
+                }
             }
 
             foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
@@ -99,19 +114,174 @@ namespace ILCompiler.DependencyAnalysis
             if (constructor is null)
                 return dependencies;
 
+            bool[] unresolvedFixedArguments = GetUnresolvedFixedArguments(customAttribute, constructor, out HashSet<string> unresolvedNamedArguments);
             AddGenericArgumentDataFlowDependencies(ref dependencies, factory, customAttribute.Parent, constructor.OwningType);
+            ProcessConstructorArgumentDataFlow(
+                factory,
+                constructor,
+                decodedValue.FixedArguments,
+                unresolvedFixedArguments,
+                customAttribute.Parent,
+                hasUnresolvedValue);
 
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
                 if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
+                {
                     GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    ProcessPropertyDataFlow(
+                        factory,
+                        constructor.OwningType,
+                        namedArg.Name,
+                        customAttribute.Parent,
+                        unresolvedNamedArguments.Contains(namedArg.Name));
+                }
                 else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
+                {
                     GetDependenciesFromField(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    ProcessFieldDataFlow(
+                        factory,
+                        constructor.OwningType,
+                        namedArg.Name,
+                        customAttribute.Parent,
+                        unresolvedNamedArguments.Contains(namedArg.Name));
+                }
 
                 GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
             }
 
             return dependencies;
+        }
+
+        private void AddConservativeDependenciesFromBlobPrefix(
+            DependencyList dependencies,
+            NodeFactory factory,
+            CustomAttribute customAttribute)
+        {
+            MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
+            if (constructor is null)
+                return;
+
+            try
+            {
+                BlobReader reader = _module.MetadataReader.GetBlobReader(customAttribute.Value);
+                _ = reader.ReadUInt16();
+
+                for (int i = 0; i < constructor.Signature.Length; i++)
+                {
+                    GetFixedArgumentTypeCodes(
+                        constructor.Signature[i],
+                        out SerializationTypeCode valueTypeCode,
+                        out SerializationTypeCode elementValueTypeCode);
+                    AddDependenciesFromSerializedValue(
+                        dependencies,
+                        factory,
+                        ref reader,
+                        valueTypeCode,
+                        elementValueTypeCode);
+                }
+
+                int namedArgumentCount = reader.ReadUInt16();
+                for (int i = 0; i < namedArgumentCount; i++)
+                {
+                    CustomAttributeNamedArgumentKind kind = (CustomAttributeNamedArgumentKind)reader.ReadByte();
+                    SerializationTypeCode valueTypeCode = ReadNamedArgumentType(
+                        ref reader,
+                        out SerializationTypeCode elementValueTypeCode);
+                    string name = reader.ReadSerializedString();
+                    if (kind == CustomAttributeNamedArgumentKind.Property)
+                        GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, name);
+                    else if (kind == CustomAttributeNamedArgumentKind.Field)
+                        GetDependenciesFromField(dependencies, factory, constructor.OwningType, name);
+                    AddDependenciesFromSerializedValue(
+                        dependencies,
+                        factory,
+                        ref reader,
+                        valueTypeCode,
+                        elementValueTypeCode);
+                }
+            }
+            catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
+            {
+                // Preserve the blob and stop once an unresolved value makes the remainder opaque.
+                AddConservativeAttributeMemberDependencies(dependencies, factory, constructor.OwningType);
+            }
+        }
+
+        private static void AddConservativeAttributeMemberDependencies(
+            DependencyList dependencies,
+            NodeFactory factory,
+            TypeDesc attributeType)
+        {
+            if (attributeType.GetTypeDefinition() is not EcmaType ecmaType)
+                return;
+
+            MetadataReader reader = ecmaType.MetadataReader;
+            TypeDefinition typeDef = reader.GetTypeDefinition(ecmaType.Handle);
+            foreach (PropertyDefinitionHandle propertyHandle in typeDef.GetProperties())
+            {
+                PropertyAccessors accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                if (!accessors.Setter.IsNil)
+                    dependencies.Add(factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Setter)), "Custom attribute blob");
+            }
+
+            foreach (FieldDefinitionHandle fieldHandle in typeDef.GetFields())
+                dependencies.Add(factory.ReflectedField(ecmaType.Module.GetField(fieldHandle)), "Custom attribute blob");
+
+            if (attributeType.BaseType is not null)
+                AddConservativeAttributeMemberDependencies(dependencies, factory, attributeType.BaseType);
+        }
+
+        private void AddDependenciesFromSerializedValue(
+            DependencyList dependencies,
+            NodeFactory factory,
+            ref BlobReader reader,
+            SerializationTypeCode valueTypeCode,
+            SerializationTypeCode elementValueTypeCode)
+        {
+            if (valueTypeCode == SerializationTypeCode.Type)
+            {
+                string typeName = reader.ReadSerializedString();
+                if (typeName is not null &&
+                    _module.GetTypeByCustomAttributeTypeName(typeName, throwIfNotFound: false) is TypeDesc type)
+                {
+                    dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
+                }
+
+                return;
+            }
+
+            if (valueTypeCode == SerializationTypeCode.SZArray)
+            {
+                int elementCount = reader.ReadInt32();
+                for (int i = 0; i < elementCount; i++)
+                {
+                    AddDependenciesFromSerializedValue(
+                        dependencies,
+                        factory,
+                        ref reader,
+                        elementValueTypeCode,
+                        default);
+                }
+
+                return;
+            }
+
+            if (valueTypeCode == SerializationTypeCode.TaggedObject)
+            {
+                SerializationTypeCode boxedTypeCode = ReadNamedArgumentType(
+                    ref reader,
+                    out SerializationTypeCode boxedElementValueTypeCode);
+                AddDependenciesFromSerializedValue(
+                    dependencies,
+                    factory,
+                    ref reader,
+                    boxedTypeCode,
+                    boxedElementValueTypeCode);
+                return;
+            }
+
+            _ = SkipSerializedValue(ref reader, valueTypeCode, elementValueTypeCode);
         }
 
         private void AddGenericArgumentDataFlowDependencies(ref DependencyList dependencies, NodeFactory factory, EntityHandle attributeTarget, TypeDesc attributeType)
@@ -181,6 +351,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
         {
+            if (type is null)
+                return;
+
             // Report the type itself (e.g. enum types that need to be kept for boxing)
             dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
 
@@ -199,12 +372,137 @@ namespace ILCompiler.DependencyAnalysis
                         GetDependenciesFromCustomAttributeArgument(dependencies, factory, element.Type, element.Value);
                     }
                 }
+
             }
             else if (value is TypeDesc typeofType)
             {
                 // typeof() - the value is a TypeDesc
                 dependencies.Add(factory.ReflectedType(typeofType), "Custom attribute blob");
             }
+        }
+
+        private bool[] GetUnresolvedFixedArguments(
+            CustomAttribute customAttribute,
+            MethodDesc constructor,
+            out HashSet<string> unresolvedNamedArguments)
+        {
+            bool[] unresolvedFixedArguments = new bool[constructor.Signature.Length];
+            unresolvedNamedArguments = new HashSet<string>();
+            BlobReader reader = _module.MetadataReader.GetBlobReader(customAttribute.Value);
+            _ = reader.ReadUInt16();
+
+            for (int i = 0; i < constructor.Signature.Length; i++)
+            {
+                GetFixedArgumentTypeCodes(
+                    constructor.Signature[i],
+                    out SerializationTypeCode valueTypeCode,
+                    out SerializationTypeCode elementValueTypeCode);
+                unresolvedFixedArguments[i] = SkipSerializedValue(
+                    ref reader,
+                    valueTypeCode,
+                    elementValueTypeCode);
+            }
+
+            int namedArgumentCount = reader.ReadUInt16();
+            for (int i = 0; i < namedArgumentCount; i++)
+            {
+                _ = reader.ReadByte();
+                SerializationTypeCode valueTypeCode = ReadNamedArgumentType(
+                    ref reader,
+                    out SerializationTypeCode elementValueTypeCode);
+                string name = reader.ReadSerializedString();
+                bool unresolvedValue = SkipSerializedValue(ref reader, valueTypeCode, elementValueTypeCode);
+                if (unresolvedValue)
+                    unresolvedNamedArguments.Add(name);
+            }
+
+            return unresolvedFixedArguments;
+        }
+
+        private SerializationTypeCode ReadNamedArgumentType(
+            ref BlobReader reader,
+            out SerializationTypeCode elementValueTypeCode)
+        {
+            elementValueTypeCode = default;
+            SerializationTypeCode valueTypeCode = (SerializationTypeCode)reader.ReadByte();
+            if (valueTypeCode == SerializationTypeCode.SZArray)
+            {
+                elementValueTypeCode = ReadNamedArgumentType(ref reader, out _);
+            }
+            else if (valueTypeCode == SerializationTypeCode.Enum)
+            {
+                string enumName = reader.ReadSerializedString();
+                TypeDesc enumType = enumName is null
+                    ? null
+                    : _module.GetTypeByCustomAttributeTypeName(enumName, throwIfNotFound: false);
+                if (enumType is null)
+                    throw new BadImageFormatException("The underlying type of an unresolved enum is unknown.");
+                valueTypeCode = GetPrimitiveSerializationTypeCode(enumType.UnderlyingType);
+            }
+
+            return valueTypeCode;
+        }
+
+        private bool SkipSerializedValue(
+            ref BlobReader reader,
+            SerializationTypeCode valueTypeCode,
+            SerializationTypeCode elementValueTypeCode)
+        {
+            switch (valueTypeCode)
+            {
+                case SerializationTypeCode.Invalid:
+                    return false;
+                case SerializationTypeCode.Boolean:
+                case SerializationTypeCode.Byte:
+                case SerializationTypeCode.SByte:
+                    reader.ReadByte();
+                    return false;
+                case SerializationTypeCode.Char:
+                case SerializationTypeCode.Int16:
+                case SerializationTypeCode.UInt16:
+                    reader.ReadUInt16();
+                    return false;
+                case SerializationTypeCode.Int32:
+                case SerializationTypeCode.UInt32:
+                case SerializationTypeCode.Single:
+                    reader.ReadUInt32();
+                    return false;
+                case SerializationTypeCode.Int64:
+                case SerializationTypeCode.UInt64:
+                case SerializationTypeCode.Double:
+                    reader.ReadUInt64();
+                    return false;
+                case SerializationTypeCode.String:
+                    reader.ReadSerializedString();
+                    return false;
+                case SerializationTypeCode.Type:
+                    string typeName = reader.ReadSerializedString();
+                    return typeName is not null &&
+                        _module.GetTypeByCustomAttributeTypeName(typeName, throwIfNotFound: false) is null;
+                case SerializationTypeCode.SZArray:
+                    int elementCount = reader.ReadInt32();
+                    bool unresolvedArray = false;
+                    for (int i = 0; i < elementCount; i++)
+                        unresolvedArray |= SkipSerializedValue(ref reader, elementValueTypeCode, default);
+                    return unresolvedArray;
+                case SerializationTypeCode.TaggedObject:
+                    SerializationTypeCode boxedTypeCode = ReadNamedArgumentType(
+                        ref reader,
+                        out SerializationTypeCode boxedElementTypeCode);
+                    return SkipSerializedValue(ref reader, boxedTypeCode, boxedElementTypeCode);
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
+
+        private static bool IsUnresolvedArgument(CustomAttributeTypedArgument<TypeDesc> argument)
+        {
+            return argument.Type is null;
+        }
+
+        private static bool IsUnresolvedArgument(CustomAttributeNamedArgument<TypeDesc> argument)
+        {
+            return argument.Type is null;
         }
 
         private static void GetDependenciesFromPropertySetter(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
@@ -243,6 +541,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.ReflectedField(field), "Custom attribute blob");
             }
+
             else
             {
                 // Check base type
@@ -250,6 +549,106 @@ namespace ILCompiler.DependencyAnalysis
                 if (baseType is not null)
                     GetDependenciesFromField(dependencies, factory, baseType, fieldName);
             }
+        }
+
+        private void ProcessConstructorArgumentDataFlow(
+            NodeFactory factory,
+            MethodDesc constructor,
+            ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arguments,
+            bool[] unresolvedArguments,
+            EntityHandle attributeTarget,
+            bool hasUnresolvedValue)
+        {
+            if (!hasUnresolvedValue)
+                return;
+
+            for (int i = 0; i < constructor.Signature.Length; i++)
+            {
+                if (!unresolvedArguments[i] && !IsUnresolvedArgument(arguments[i]))
+                    continue;
+
+                int parameterIndex = constructor.Signature.IsStatic ? i : i + 1;
+                ParameterProxy parameter = new(constructor, (ParameterIndex)parameterIndex);
+                MethodParameterValue targetValue = factory.FlowAnnotations.GetMethodParameterValue(parameter);
+                if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
+                    continue;
+
+                ProcessUnknownAttributeValue(factory, attributeTarget, targetValue);
+            }
+        }
+
+        private void ProcessPropertyDataFlow(
+            NodeFactory factory,
+            TypeDesc attributeType,
+            string propertyName,
+            EntityHandle attributeTarget,
+            bool isUnresolvedValue)
+        {
+            if (attributeType.GetTypeDefinition() is not EcmaType ecmaType)
+                return;
+
+            MetadataReader reader = ecmaType.MetadataReader;
+            foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(ecmaType.Handle).GetProperties())
+            {
+                PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
+                if (!reader.StringComparer.Equals(property.Name, propertyName))
+                    continue;
+
+                MethodDefinitionHandle setter = property.GetAccessors().Setter;
+                if (!setter.IsNil)
+                {
+                    MethodDesc setterMethod = ecmaType.Module.GetMethod(setter);
+                    MethodParameterValue targetValue = factory.FlowAnnotations.GetMethodParameterValue(
+                        new ParameterProxy(setterMethod, (ParameterIndex)1));
+                    if (isUnresolvedValue && targetValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+                        ProcessUnknownAttributeValue(factory, attributeTarget, targetValue);
+                }
+
+                return;
+            }
+
+            if (attributeType.BaseType is not null)
+                ProcessPropertyDataFlow(factory, attributeType.BaseType, propertyName, attributeTarget, isUnresolvedValue);
+        }
+
+        private void ProcessFieldDataFlow(
+            NodeFactory factory,
+            TypeDesc attributeType,
+            string fieldName,
+            EntityHandle attributeTarget,
+            bool isUnresolvedValue)
+        {
+            FieldDesc field = attributeType.GetField(Encoding.UTF8.GetBytes(fieldName));
+            if (field is not null &&
+                factory.FlowAnnotations.GetFieldValue(field) is ValueWithDynamicallyAccessedMembers targetValue)
+            {
+                if (isUnresolvedValue)
+                    ProcessUnknownAttributeValue(factory, attributeTarget, targetValue);
+                return;
+            }
+
+            if (attributeType.BaseType is not null)
+                ProcessFieldDataFlow(factory, attributeType.BaseType, fieldName, attributeTarget, isUnresolvedValue);
+        }
+
+        private void ProcessUnknownAttributeValue(NodeFactory factory, EntityHandle attributeTarget, ValueWithDynamicallyAccessedMembers targetValue)
+        {
+            if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
+                return;
+
+            TypeSystemEntity originEntity = GetAttributeTargetGenericContext(attributeTarget) ?? _module;
+            var diagnosticContext = new DiagnosticContext(new MessageOrigin(originEntity), diagnosticsEnabled: true, factory.Logger);
+            var reflectionMarker = new ReflectionMarker(
+                factory.Logger,
+                factory,
+                factory.FlowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: false);
+            var action = new RequireDynamicallyAccessedMembersAction(
+                reflectionMarker,
+                diagnosticContext,
+                originEntity);
+            action.Invoke(new MultiValue(UnknownValue.Instance), targetValue);
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
@@ -316,8 +715,9 @@ namespace ILCompiler.DependencyAnalysis
 
             if (rewriteTypeName && s is not null)
             {
-                resolved = _module.GetTypeByCustomAttributeTypeName(s);
-                s = formatter.FormatName(resolved, true);
+                resolved = _module.GetTypeByCustomAttributeTypeName(s, throwIfNotFound: false);
+                if (resolved is not null)
+                    s = formatter.FormatName(resolved, true);
             }
 
             blobBuilder.WriteSerializedString(s);
@@ -381,7 +781,10 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case SerializationTypeCode.Enum:
                     TypeDesc enumType = CopySerializedString(ref valueReader, blobBuilder, rewriteTypeName: true, formatter);
-                    valueTypeCode = GetPrimitiveSerializationTypeCode(enumType.UnderlyingType);
+                    if (enumType is not null)
+                        valueTypeCode = GetPrimitiveSerializationTypeCode(enumType.UnderlyingType);
+                    else
+                        throw new BadImageFormatException("The underlying type of an unresolved enum is unknown.");
                     break;
             }
         }

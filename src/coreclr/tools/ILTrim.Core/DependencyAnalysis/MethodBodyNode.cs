@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -14,8 +15,13 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Logging;
+using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 
 using ReflectionMethodBodyScanner = ILCompiler.Dataflow.ReflectionMethodBodyScanner;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -26,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly EcmaModule _module;
         private readonly MethodDefinitionHandle _methodHandle;
+        private bool _preserveUnmappedTokens;
         DependencyList _dependencies = null;
 
         public MethodBodyNode(EcmaModule module, MethodDefinitionHandle methodHandle)
@@ -34,6 +41,8 @@ namespace ILCompiler.DependencyAnalysis
             _methodHandle = methodHandle;
         }
 
+        public void PreserveUnmappedTokens() => _preserveUnmappedTokens = true;
+
         public override bool StaticDependenciesAreComputed => _dependencies != null;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => _dependencies;
@@ -41,6 +50,7 @@ namespace ILCompiler.DependencyAnalysis
         void INodeWithDeferredDependencies.ComputeDependencies(NodeFactory factory)
         {
             _dependencies = new DependencyList();
+            DependencyList unresolvedMethodDependencies = new DependencyList();
 
             // RVA = 0 is an extern method, such as a DllImport
             int rva = _module.MetadataReader.GetMethodDefinition(_methodHandle).RelativeVirtualAddress;
@@ -68,9 +78,15 @@ namespace ILCompiler.DependencyAnalysis
                 factory.FlowAnnotations, _module.GetMethod(_methodHandle));
 
             ILReader ilReader = new(bodyBlock.GetILBytes());
+            MethodDesc unresolvedGetTypeMethod = null;
+            bool hasUnresolvedFieldValue = false;
             while (ilReader.HasNext)
             {
                 ILOpcode opcode = ilReader.ReadILOpcode();
+                bool unresolvedFieldValueOnStack = hasUnresolvedFieldValue;
+                hasUnresolvedFieldValue = false;
+                MethodDesc getTypeMethodFromPreviousInstruction = unresolvedGetTypeMethod;
+                unresolvedGetTypeMethod = null;
 
                 switch (opcode)
                 {
@@ -108,10 +124,19 @@ namespace ILCompiler.DependencyAnalysis
                         EntityHandle token = MetadataTokens.EntityHandle(ilReader.ReadILToken());
 
                         MethodDesc method;
+                        MethodDefinitionHandle? unresolvedGenericMethod = null;
                         if (opcode == ILOpcode.newobj || opcode == ILOpcode.call || opcode == ILOpcode.callvirt ||
                             opcode == ILOpcode.ldvirtftn || opcode == ILOpcode.ldftn)
                         {
                             method = _module.TryGetMethod(token);
+                            if (method is null && TryGetGenericMethodDefinition(token) is MethodDefinitionHandle genericMethodHandle)
+                            {
+                                unresolvedGenericMethod = genericMethodHandle;
+                                if (opcode != ILOpcode.newobj)
+                                {
+                                    method = _module.GetMethod(genericMethodHandle);
+                                }
+                            }
                         }
                         else
                         {
@@ -160,15 +185,68 @@ namespace ILCompiler.DependencyAnalysis
                             _dependencies.Add(factory.LayoutType(typeDefinition), "Reflected type with sequential or explicit layout");
                         }
 
-                        if (method != null && !requiresMethodBodyScanner)
+                        if (unresolvedGenericMethod is MethodDefinitionHandle methodHandle)
                         {
-                            requiresMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(
-                                factory.FlowAnnotations, method.GetTypicalMethodDefinition());
+                            AddUnresolvedGenericArgumentWarnings(factory, methodHandle);
+                            MethodBodyNode unresolvedMethodBody = factory.MethodBody(_module, methodHandle);
+                            unresolvedMethodBody.PreserveUnmappedTokens();
+                            unresolvedMethodDependencies.Add(
+                                unresolvedMethodBody,
+                                "Fallback target method body of generic member reference");
+                            unresolvedMethodDependencies.Add(
+                                factory.MethodDefinition(_module, methodHandle).PreserveUnresolvedBody(),
+                                "Fallback target method def of generic member reference");
                         }
+
+                        if (method != null)
+                        {
+                            if (unresolvedFieldValueOnStack &&
+                                method.GetName() == "GetType" &&
+                                method.Signature.Length == 0 &&
+                                method.Signature.ReturnType.IsTypeOf("System.Type"))
+                            {
+                                unresolvedGetTypeMethod = method;
+                            }
+                            else if (getTypeMethodFromPreviousInstruction is not null &&
+                                method.Signature.IsStatic &&
+                                method.Signature.Length > 0)
+                            {
+                                MethodParameterValue targetValue = factory.FlowAnnotations.GetMethodParameterValue(
+                                    new ParameterProxy(method, (ParameterIndex)0));
+                                if (targetValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+                                {
+                                    AddUnresolvedGetTypeWarning(factory, getTypeMethodFromPreviousInstruction, targetValue);
+                                }
+                            }
+                            if (!requiresMethodBodyScanner)
+                            {
+                                requiresMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(
+                                    factory.FlowAnnotations, method.GetTypicalMethodDefinition());
+                            }
+                        }
+
                         if (field != null && !requiresMethodBodyScanner)
                         {
-                            requiresMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(
-                                factory.FlowAnnotations, field.GetTypicalFieldDefinition());
+                            try
+                            {
+                                _ = field.FieldType;
+                                requiresMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(
+                                    factory.FlowAnnotations, field.GetTypicalFieldDefinition());
+                            }
+                            catch (TypeSystemException.FileNotFoundException)
+                            {
+                                // An unresolved field type cannot be inspected for dataflow, so retain the body
+                                // and conservatively treat its value as unknown.
+                                requiresMethodBodyScanner = true;
+                                hasUnresolvedFieldValue = true;
+                            }
+                        }
+                        else if (field is null &&
+                            (opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda ||
+                             opcode == ILOpcode.ldsfld || opcode == ILOpcode.ldsflda))
+                        {
+                            requiresMethodBodyScanner = true;
+                            hasUnresolvedFieldValue = true;
                         }
 
                         break;
@@ -185,11 +263,264 @@ namespace ILCompiler.DependencyAnalysis
                 var ecmaMethod = (EcmaMethod)_module.GetMethod(_methodHandle);
                 if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(ecmaMethod))
                 {
-                    var list = ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, factory.FlowAnnotations, factory.Logger,
-                        EcmaMethodIL.Create(ecmaMethod), out _);
-                    _dependencies.AddRange(list);
+                    try
+                    {
+                        var list = ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, factory.FlowAnnotations, factory.Logger,
+                            EcmaMethodIL.Create(ecmaMethod), out _);
+                        _dependencies.AddRange(list);
+                    }
+                    catch (TypeSystemException.FileNotFoundException)
+                    {
+                        // The method's local signature may reference a missing type. The IL prepass above
+                        // still records the metadata dependencies that can be resolved.
+                    }
                 }
             }
+            _dependencies.AddRange(unresolvedMethodDependencies);
+        }
+
+        internal static void AddMetadataDependencies(
+            EcmaModule module,
+            MethodDefinitionHandle methodHandle,
+            NodeFactory factory,
+            DependencyList dependencies)
+        {
+            int rva = module.MetadataReader.GetMethodDefinition(methodHandle).RelativeVirtualAddress;
+            if (rva == 0)
+                return;
+
+            MethodBodyBlock bodyBlock = module.PEReader.GetMethodBody(rva);
+            if (!bodyBlock.LocalSignature.IsNil)
+                dependencies.Add(factory.StandaloneSignature(module, bodyBlock.LocalSignature), "Signatures of local variables");
+
+            foreach (ExceptionRegion exceptionRegion in bodyBlock.ExceptionRegions)
+            {
+                if (exceptionRegion.Kind == ExceptionRegionKind.Catch)
+                    dependencies.Add(factory.GetNodeForTypeToken(module, exceptionRegion.CatchType), "Catch type of exception region");
+            }
+
+            ILReader ilReader = new(bodyBlock.GetILBytes());
+            while (ilReader.HasNext)
+            {
+                ILOpcode opcode = ilReader.ReadILOpcode();
+                switch (opcode)
+                {
+                    case ILOpcode.sizeof_:
+                    case ILOpcode.newarr:
+                    case ILOpcode.stsfld:
+                    case ILOpcode.ldsfld:
+                    case ILOpcode.ldsflda:
+                    case ILOpcode.stfld:
+                    case ILOpcode.ldfld:
+                    case ILOpcode.ldflda:
+                    case ILOpcode.call:
+                    case ILOpcode.calli:
+                    case ILOpcode.callvirt:
+                    case ILOpcode.newobj:
+                    case ILOpcode.ldtoken:
+                    case ILOpcode.ldftn:
+                    case ILOpcode.ldvirtftn:
+                    case ILOpcode.initobj:
+                    case ILOpcode.stelem:
+                    case ILOpcode.ldelem:
+                    case ILOpcode.ldelema:
+                    case ILOpcode.box:
+                    case ILOpcode.unbox:
+                    case ILOpcode.unbox_any:
+                    case ILOpcode.jmp:
+                    case ILOpcode.cpobj:
+                    case ILOpcode.ldobj:
+                    case ILOpcode.castclass:
+                    case ILOpcode.isinst:
+                    case ILOpcode.stobj:
+                    case ILOpcode.refanyval:
+                    case ILOpcode.mkrefany:
+                    case ILOpcode.constrained:
+                        EntityHandle token = MetadataTokens.EntityHandle(ilReader.ReadILToken());
+                        switch (token.Kind)
+                        {
+                            case HandleKind.TypeDefinition:
+                                dependencies.Add(factory.TypeDefinition(module, (TypeDefinitionHandle)token), "Instruction operand");
+                                break;
+                            case HandleKind.TypeReference:
+                                dependencies.Add(factory.TypeReference(module, (TypeReferenceHandle)token), "Instruction operand");
+                                break;
+                            case HandleKind.TypeSpecification:
+                                dependencies.Add(factory.TypeSpecification(module, (TypeSpecificationHandle)token), "Instruction operand");
+                                break;
+                            case HandleKind.MethodDefinition:
+                                dependencies.Add(factory.MethodDefinition(module, (MethodDefinitionHandle)token), "Instruction operand");
+                                break;
+                            case HandleKind.FieldDefinition:
+                                dependencies.Add(factory.FieldDefinition(module, (FieldDefinitionHandle)token), "Instruction operand");
+                                break;
+                            case HandleKind.MemberReference:
+                                dependencies.Add(
+                                    factory.MemberReference(module, (MemberReferenceHandle)token).PreserveUnresolved(),
+                                    "Instruction operand");
+                                break;
+                            case HandleKind.MethodSpecification:
+                                dependencies.Add(factory.MethodSpecification(module, (MethodSpecificationHandle)token), "Instruction operand");
+                                break;
+                            case HandleKind.StandaloneSignature:
+                                dependencies.Add(factory.StandaloneSignature(module, (StandaloneSignatureHandle)token), "Instruction operand");
+                                break;
+                        }
+                        break;
+
+                    default:
+                        ilReader.Skip(opcode);
+                        break;
+                }
+            }
+
+        }
+
+        private MethodDefinitionHandle? TryGetGenericMethodDefinition(EntityHandle token)
+        {
+            MetadataReader reader = _module.MetadataReader;
+            if (token.Kind == HandleKind.MethodSpecification)
+            {
+                MethodSpecification methodSpecification = reader.GetMethodSpecification((MethodSpecificationHandle)token);
+                if (methodSpecification.Method.Kind == HandleKind.MethodDefinition)
+                    return (MethodDefinitionHandle)methodSpecification.Method;
+
+                if (methodSpecification.Method.Kind == HandleKind.MemberReference)
+                    token = methodSpecification.Method;
+                else
+                    return null;
+            }
+
+            if (token.Kind != HandleKind.MemberReference)
+                return null;
+
+            MemberReferenceHandle memberReferenceHandle = (MemberReferenceHandle)token;
+            MemberReference memberReference = reader.GetMemberReference(memberReferenceHandle);
+            if (memberReference.Parent.Kind != HandleKind.TypeSpecification || memberReference.GetKind() != MemberReferenceKind.Method)
+                return null;
+
+            TypeSpecification typeSpec = reader.GetTypeSpecification((TypeSpecificationHandle)memberReference.Parent);
+            BlobReader signature = reader.GetBlobReader(typeSpec.Signature);
+            if (signature.ReadSignatureTypeCode() != SignatureTypeCode.GenericTypeInstance)
+                return null;
+
+            signature.ReadCompressedInteger();
+            EntityHandle typeDefinition = signature.ReadTypeHandle();
+            if (typeDefinition.Kind != HandleKind.TypeDefinition)
+                return null;
+
+            BlobReader memberReferenceSignature = reader.GetBlobReader(memberReference.Signature);
+            SignatureHeader signatureHeader = memberReferenceSignature.ReadSignatureHeader();
+            if (signatureHeader.Kind != SignatureKind.Method)
+                return null;
+
+            int genericParameterCount = signatureHeader.IsGeneric ? memberReferenceSignature.ReadCompressedInteger() : 0;
+
+            int parameterCount = memberReferenceSignature.ReadCompressedInteger();
+            List<MethodDefinitionHandle> candidateMethods = new();
+            List<MethodDefinitionHandle> exactSignatureMatches = new();
+            foreach (MethodDefinitionHandle methodHandle in reader.GetTypeDefinition((TypeDefinitionHandle)typeDefinition).GetMethods())
+            {
+                MethodDefinition methodDefinition = reader.GetMethodDefinition(methodHandle);
+                if (reader.GetString(methodDefinition.Name) != reader.GetString(memberReference.Name) ||
+                    methodDefinition.GetGenericParameters().Count != genericParameterCount)
+                {
+                    continue;
+                }
+
+                BlobReader methodDefinitionSignature = reader.GetBlobReader(methodDefinition.Signature);
+                SignatureHeader methodSignatureHeader = methodDefinitionSignature.ReadSignatureHeader();
+                if (methodSignatureHeader.Kind != SignatureKind.Method)
+                    continue;
+
+                if (methodSignatureHeader.IsGeneric)
+                    methodDefinitionSignature.ReadCompressedInteger();
+
+                if (methodDefinitionSignature.ReadCompressedInteger() != parameterCount)
+                    continue;
+
+                candidateMethods.Add(methodHandle);
+                byte[] methodDefinitionSignatureBytes = reader.GetBlobBytes(methodDefinition.Signature);
+                byte[] memberReferenceSignatureBytes = reader.GetBlobBytes(memberReference.Signature);
+                if (methodDefinitionSignatureBytes.Length != memberReferenceSignatureBytes.Length)
+                    continue;
+
+                bool signaturesMatch = true;
+                for (int i = 0; i < methodDefinitionSignatureBytes.Length; i++)
+                {
+                    if (methodDefinitionSignatureBytes[i] != memberReferenceSignatureBytes[i])
+                    {
+                        signaturesMatch = false;
+                        break;
+                    }
+                }
+
+                if (!signaturesMatch)
+                    continue;
+
+                exactSignatureMatches.Add(methodHandle);
+            }
+
+            return exactSignatureMatches.Count == 1
+                ? exactSignatureMatches[0]
+                : candidateMethods.Count == 1
+                    ? candidateMethods[0]
+                    : null;
+        }
+
+        private void AddUnresolvedGenericArgumentWarnings(NodeFactory factory, MethodDefinitionHandle methodHandle)
+        {
+            MethodDesc method = _module.GetMethod(methodHandle);
+            MethodDesc owningMethod = _module.GetMethod(_methodHandle);
+            var diagnosticContext = new DiagnosticContext(
+                new MessageOrigin(owningMethod),
+                suppressTrimmerDiagnostics: factory.Logger.ShouldSuppressAnalysisWarningsForRequires(
+                    owningMethod,
+                    DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                suppressAotDiagnostics: factory.Logger.ShouldSuppressAnalysisWarningsForRequires(
+                    owningMethod,
+                    DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                suppressSingleFileDiagnostics: factory.Logger.ShouldSuppressAnalysisWarningsForRequires(
+                    owningMethod,
+                    DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                factory.Logger);
+            var reflectionMarker = new ReflectionMarker(
+                factory.Logger,
+                factory,
+                factory.FlowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: false);
+            GenericArgumentDataFlow.ProcessUnresolvedGenericArgumentDataFlow(
+                diagnosticContext,
+                reflectionMarker,
+                method);
+        }
+
+        private void AddUnresolvedGetTypeWarning(
+            NodeFactory factory,
+            MethodDesc getTypeMethod,
+            MethodParameterValue targetValue)
+        {
+            MethodDesc owningMethod = _module.GetMethod(_methodHandle);
+            var diagnosticContext = new DiagnosticContext(
+                new MessageOrigin(owningMethod),
+                diagnosticsEnabled: true,
+                factory.Logger);
+            var reflectionMarker = new ReflectionMarker(
+                factory.Logger,
+                factory,
+                factory.FlowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: false);
+            var action = new RequireDynamicallyAccessedMembersAction(
+                reflectionMarker,
+                diagnosticContext,
+                getTypeMethod);
+            MethodReturnValue sourceValue = factory.FlowAnnotations.GetMethodReturnValue(
+                new MethodProxy(getTypeMethod),
+                isNewObj: false,
+                dynamicallyAccessedMemberTypes: DynamicallyAccessedMemberTypes.None);
+            action.Invoke(new MultiValue(sourceValue), targetValue);
         }
 
         public int Write(ModuleWritingContext writeContext)
@@ -268,7 +599,11 @@ namespace ILCompiler.DependencyAnalysis
                             Debug.Assert(opcode != ILOpcode.prefix1);
                             outputBodyBuilder.WriteByte((byte)opcode);
                         }
-                        outputBodyBuilder.WriteInt32(MetadataTokens.GetToken(writeContext.TokenMap.MapToken(MetadataTokens.EntityHandle(ilReader.ReadILToken()))));
+                        EntityHandle token = MetadataTokens.EntityHandle(ilReader.ReadILToken());
+                        EntityHandle mappedToken = writeContext.TokenMap.MapToken(token);
+                        if (_preserveUnmappedTokens && mappedToken.IsNil)
+                            mappedToken = token;
+                        outputBodyBuilder.WriteInt32(MetadataTokens.GetToken(mappedToken));
                         break;
 
                     case ILOpcode.ldstr:
