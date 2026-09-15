@@ -2198,6 +2198,34 @@ public:
         VMPTR_MethodDesc vmMethod,
         OUT UINT32* pTokenIndex) = 0;
 
+    typedef enum
+    {
+        kArchUnknown = 0,
+        kArchX86,
+        kArchAMD64,
+        kArchArm,
+        kArchArm64,
+        kArchLoongArch64,
+        kArchRiscV64,
+        kArchWasm,
+    } TargetArchitecture;
+
+    typedef enum
+    {
+        kOSUnknown = 0,
+        kOSWindows,
+        kOSUnix,
+    } TargetOperatingSystem;
+
+    struct TargetInfo
+    {
+        TargetArchitecture    arch;
+        TargetOperatingSystem os;
+        ULONG32               pointerSize;
+    };
+
+    // Returns the target's processor architecture, OS family, and pointer size.
+    virtual HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo) = 0;
     // Get the size in bytes of the serialized read-write metadata blob for a module.
     //
     // Arguments:
