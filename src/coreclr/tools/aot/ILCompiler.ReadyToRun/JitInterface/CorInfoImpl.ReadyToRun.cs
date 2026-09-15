@@ -3400,7 +3400,7 @@ namespace Internal.JitInterface
                 }
 
                 if (_compilation.NodeFactory.Target.IsWasm
-                    && !((ReadyToRunCompilerContext)_compilation.TypeSystemContext).IsDirectPInvoke(method))
+                    && !_compilation.CompilationModuleGroup.IsDirectPInvoke(method))
                 {
                     return true;
                 }
