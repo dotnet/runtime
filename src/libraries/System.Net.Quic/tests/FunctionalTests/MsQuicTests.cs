@@ -1401,14 +1401,14 @@ namespace System.Net.Quic.Tests
             }
             finally
             {
-                // Observe pending-operation faults if setup failed before the assertions.
-                if (readTask?.IsFaulted == true)
+                // Observe even delayed faults after disposal without replacing the original failure.
+                if (readTask is not null)
                 {
-                    _ = readTask.Exception;
+                    await ((Task)readTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
                 }
-                if (acceptTask?.IsFaulted == true)
+                if (acceptTask is not null)
                 {
-                    _ = acceptTask.Exception;
+                    await ((Task)acceptTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
                 }
             }
         }

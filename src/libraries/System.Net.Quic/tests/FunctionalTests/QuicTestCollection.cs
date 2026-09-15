@@ -140,18 +140,25 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         {
             handle.DangerousAddRef(ref addedReference);
             QUIC_HANDLE* nativeHandle = (QUIC_HANDLE*)handle.DangerousGetHandle();
+            Assert.NotEqual(0u, ReadSettings().KeepAliveIntervalMs);
+
             QUIC_SETTINGS settings = default;
             settings.IsSet.KeepAliveIntervalMs = 1;
             settings.KeepAliveIntervalMs = 0;
             int status = apiTable->SetParam(nativeHandle, QUIC_PARAM_CONN_SETTINGS, (uint)sizeof(QUIC_SETTINGS), &settings);
             Assert.False(StatusFailed(status), $"Disabling connection keep-alive failed: 0x{status:X8}");
 
-            settings = default;
-            uint length = (uint)sizeof(QUIC_SETTINGS);
-            status = apiTable->GetParam(nativeHandle, QUIC_PARAM_CONN_SETTINGS, &length, &settings);
-            Assert.False(StatusFailed(status), $"Reading connection settings failed: 0x{status:X8}");
-            Assert.True(length >= (uint)Marshal.OffsetOf<QUIC_SETTINGS>(nameof(QUIC_SETTINGS.KeepAliveIntervalMs)) + sizeof(uint));
-            return settings;
+            return ReadSettings();
+
+            QUIC_SETTINGS ReadSettings()
+            {
+                QUIC_SETTINGS currentSettings = default;
+                uint length = (uint)sizeof(QUIC_SETTINGS);
+                int status = apiTable->GetParam(nativeHandle, QUIC_PARAM_CONN_SETTINGS, &length, &currentSettings);
+                Assert.False(StatusFailed(status), $"Reading connection settings failed: 0x{status:X8}");
+                Assert.True(length >= (uint)Marshal.OffsetOf<QUIC_SETTINGS>(nameof(QUIC_SETTINGS.KeepAliveIntervalMs)) + sizeof(uint));
+                return currentSettings;
+            }
         }
         finally
         {
