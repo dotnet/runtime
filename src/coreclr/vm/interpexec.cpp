@@ -330,7 +330,7 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
     {
-        GCX_PREEMP();
+        GCX_PREEMP_REGION_BEGIN();
 #ifdef PROFILING_SUPPORTED
         if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
         {
@@ -344,6 +344,7 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie
             ProfilerUnmanagedToManagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
         }
 #endif
+        GCX_PREEMP_REGION_END();
     }
     inlinedCallFrame.Pop();
 }
@@ -361,12 +362,14 @@ static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
+    CallStubHeader *header;
+
+    GCX_PREEMP_REGION_BEGIN();
 
     CallStubGenerator callStubGenerator;
 
     AllocMemTracker amTracker;
-    CallStubHeader *header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
+    header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
 
     if (target != (PCODE)NULL)
     {
@@ -384,6 +387,8 @@ static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
         header = pMD->GetCalliCookie();
     }
 
+    GCX_PREEMP_REGION_END();
+
     return header;
 }
 
@@ -397,7 +402,9 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
+    MethodDesc *pResult = NULL;
+
+    GCX_PREEMP_REGION_BEGIN();
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(target, ExecutionManager::GetScanFlags());
     if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
@@ -406,12 +413,14 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
         {
             if (((StubPrecode*)target)->GetType() == PRECODE_PINVOKE_IMPORT)
             {
-                return dac_cast<PTR_MethodDesc>(((PInvokeImportPrecode*)target)->GetMethodDesc());
+                pResult = dac_cast<PTR_MethodDesc>(((PInvokeImportPrecode*)target)->GetMethodDesc());
             }
         }
     }
 
-    return NULL;
+    GCX_PREEMP_REGION_END();
+
+    return pResult;
 }
 
 static NOINLINE CallStubHeader *InvokeManagedMethodHelper(MethodDesc *pMD, PCODE target)
@@ -424,8 +433,11 @@ static NOINLINE CallStubHeader *InvokeManagedMethodHelper(MethodDesc *pMD, PCODE
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
-    return UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+    CallStubHeader *pResult;
+    GCX_PREEMP_REGION_BEGIN();
+    pResult = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+    GCX_PREEMP_REGION_END();
+    return pResult;
 }
 
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
@@ -490,8 +502,11 @@ static NOINLINE CallStubHeader *InvokeDelegateInvokeMethodHelper(MethodDesc *pMD
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
-    return UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+    CallStubHeader *pResult;
+    GCX_PREEMP_REGION_BEGIN();
+    pResult = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+    GCX_PREEMP_REGION_END();
+    return pResult;
 }
 
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
@@ -599,7 +614,7 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     {
         return pHeader;
     }
-    GCX_PREEMP();
+    GCX_PREEMP_REGION_BEGIN();
 
     AllocMemTracker amTracker;
     pHeader = callStubGenerator.GenerateCallStub(pInterpMethod->methodHnd, &amTracker, false /* interpreterToNative */);
@@ -614,6 +629,8 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
         // and let the amTracker release the memory of the one we generated.
         pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
     }
+
+    GCX_PREEMP_REGION_END();
 
     return pHeader;
 }
@@ -776,8 +793,11 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
-    GCX_PREEMP();
-    return GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
+    void *pResult;
+    GCX_PREEMP_REGION_BEGIN();
+    pResult = GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
+    GCX_PREEMP_REGION_END();
+    return pResult;
 }
 
 #ifdef DEBUG
@@ -1380,7 +1400,7 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     {
-        GCX_PREEMP();
+        GCX_PREEMP_REGION_BEGIN();
         if (targetMethod->ShouldCallPrestub())
         {
             CallWithSEHWrapper(
@@ -1388,6 +1408,7 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
                     return targetMethod->DoPrestub(nullptr, CallerGCMode::Coop);
                 });
         }
+        GCX_PREEMP_REGION_END();
     }
     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
 
@@ -2040,7 +2061,8 @@ SWITCH_OPCODE:
                             });
                         }
                         // Transition into preemptive mode to allow the GC to suspend us
-                        GCX_PREEMP();
+                        GCX_PREEMP_REGION_BEGIN();
+                        GCX_PREEMP_REGION_END();
                     }
                     ip++;
                     INTOP_NEXT;
@@ -3301,8 +3323,11 @@ SWITCH_OPCODE:
                         // miss, resolve the virtual method and cache it
                         targetMethod = CallWithSEHWrapper(
                             [&pMD, &pThisArg, pObjMT]() {
-                                GCX_PREEMP();
-                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
+                                MethodDesc *pTarget;
+                                GCX_PREEMP_REGION_BEGIN();
+                                pTarget = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
+                                GCX_PREEMP_REGION_END();
+                                return pTarget;
                             });
                         g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
@@ -3474,8 +3499,11 @@ SWITCH_OPCODE:
                             targetMethod = CallWithSEHWrapper(
                                 [&targetMethod, &pThisArg]() {
                                     MethodTable* pMT = (*pThisArg)->GetMethodTable();
-                                    GCX_PREEMP();
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
+                                    MethodDesc *pTarget;
+                                    GCX_PREEMP_REGION_BEGIN();
+                                    pTarget = targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
+                                    GCX_PREEMP_REGION_END();
+                                    return pTarget;
                                 });
                         }
                         else
