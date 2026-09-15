@@ -739,7 +739,7 @@ namespace System.Reflection
                     }
 
                     blob += parser.Consumed;
-                    return constructor.Invoker.InvokeDirectByRef(obj: null, argumentStorage)!;
+                    return constructor.InvokeDirectByRef(argumentStorage);
                 }
                 finally
                 {
