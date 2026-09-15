@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
+    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsImplementationSupported))]
     public sealed class CompositeMLKemImplementationTests : CompositeMLKemTestsBase
     {
         [Theory]
@@ -113,6 +113,23 @@ namespace System.Security.Cryptography.Tests
                             export => AssertExtensions.SequenceEqual(vector.DecapsulationKey, export(decapsKey)));
                     }
                 });
+        }
+
+        protected override void AssertInvalidKeyImportFailure(Action test)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                // Wrapped NTSTATUS
+                const int STATUS_UNSUCCESSFUL = unchecked((int)0xC0000001) | 0x1000000;
+
+                CryptographicException ex = Assert.ThrowsAny<CryptographicException>(test);
+
+                Assert.Equal(STATUS_UNSUCCESSFUL, ex.HResult);
+            }
+            else
+            {
+                base.AssertInvalidKeyImportFailure(test);
+            }
         }
 
         private static void AssertCompositeMLKemIsOnlyPublicAncestor(Func<CompositeMLKem> createKey)

@@ -63,7 +63,6 @@ extern bool g_createdumpDispatchSupported;
 #define MAX_ARGV_ENTRIES 32 
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
-char* g_ppidarg  = nullptr;
 // True when linked-in createdump can re-execute the current process.
 bool g_selfRestartCreatedump = false;
 
@@ -161,7 +160,7 @@ BuildCreateDumpCommandLine(
     bool selfRestart)
 {
     const char* program = selfRestart ? SelfCreateDumpPath : g_szCreateDumpPath;
-    if (program == nullptr || g_ppidarg == nullptr)
+    if (program == nullptr)
     {
         return false;
     }
@@ -227,7 +226,6 @@ BuildCreateDumpCommandLine(
     }
 
     argv[argc++] = "--nativeaot";
-    argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
 
     assert(argc < MAX_ARGV_ENTRIES);
@@ -296,7 +294,7 @@ CreateCrashDump(
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
             close(child_write_pipe);
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
 
         // Only dup the child's stderr if there is error buffer
@@ -315,7 +313,7 @@ CreateCrashDump(
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
             }
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
     }
     else

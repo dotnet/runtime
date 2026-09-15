@@ -646,9 +646,11 @@ namespace System.Formats.Tar
             // Name, if the full path did not fit in the Name byte array.
             if (!string.IsNullOrEmpty(_prefix))
             {
-                // Prefix never has a leading separator, so we add it.
-                // It should always  be a forward slash for compatibility
-                _name = $"{_prefix}/{_name}";
+                // Prefix should not have a trailing separator, but to avoid producing a
+                // synthesized double slash for archives that do include one, only add
+                // the separator when it is not already present.
+                // It should always be a forward slash for compatibility.
+                _name = _prefix.EndsWith('/') ? $"{_prefix}{_name}" : $"{_prefix}/{_name}";
             }
         }
 

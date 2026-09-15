@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using ILCompiler;
+using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 using Internal.TypeSystem;
@@ -575,10 +576,20 @@ namespace Internal.JitInterface
             return GetSignature(method.Signature, GetLoweringFlags(method));
         }
 
+        public static WasmSignature GetSignature(INodeWithTypeSignature node)
+        {
+            return GetSignature(node.Signature, GetLoweringFlags(node));
+        }
+
+        public static unsafe WasmSignature GetSignature(MethodSignature signature, CORINFO_SIG_INFO* callSig)
+        {
+            return GetSignature(signature, GetLoweringFlags(callSig));
+        }
+
         public static LoweringFlags GetLoweringFlags(MethodDesc method)
         {
             LoweringFlags flags = 0;
-            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg() || method.IsArrayAddressMethod())
             {
                 flags |= LoweringFlags.HasGenericContextArg;
             }
@@ -587,6 +598,44 @@ namespace Internal.JitInterface
                 flags |= LoweringFlags.IsAsyncCall;
             }
             if (method.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
+        public static LoweringFlags GetLoweringFlags(INodeWithTypeSignature node)
+        {
+            LoweringFlags flags = 0;
+            if (node.HasGenericContextArg)
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (node.IsAsyncCall)
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (node.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
+        public static unsafe LoweringFlags GetLoweringFlags(CORINFO_SIG_INFO* callSig)
+        {
+            Debug.Assert(callSig != null);
+
+            LoweringFlags flags = 0;
+            if (callSig->hasTypeArg())
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (callSig->isAsyncCall())
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if ((callSig->callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK) != CorInfoCallConv.CORINFO_CALLCONV_DEFAULT)
             {
                 flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
@@ -761,11 +810,13 @@ namespace Internal.JitInterface
                 }
             }
 
+#if READYTORUN
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly))
             {
                 result.Add(pointerType); // PE entrypoint parameter (encoded via 'p' suffix)
                 sigBuilder.Append('p');
             }
+#endif
 
             WasmResultType ps = new(result.ToArray());
             WasmResultType ret = returnIsVoid ? new(Array.Empty<WasmValueType>())

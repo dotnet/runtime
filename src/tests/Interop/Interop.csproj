@@ -4,6 +4,8 @@
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>Debug;Release;Checked</Configurations>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133303 -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</CLRTestTargetUnsupported>
     <HasMergedInTests>true</HasMergedInTests>
