@@ -601,6 +601,11 @@ namespace System.Buffers
         /// Returns <code>false</code> if end of <see cref="ReadOnlySequence{T}"/> was reached otherwise <code>true</code>.
         /// Sets <paramref name="position"/> to the beginning of next segment if <paramref name="advance"/> is set to <code>true</code>.
         /// </summary>
+        /// <remarks>
+        /// When <paramref name="position"/> is at the end of the <see cref="ReadOnlySequence{T}"/> (for example,
+        /// equal to <see cref="End"/>), this method returns <see langword="false"/> and <paramref name="memory"/> is set to
+        /// <see cref="ReadOnlyMemory{T}.Empty"/>, since there is no further segment to return.
+        /// </remarks>
         public bool TryGet(ref SequencePosition position, out ReadOnlyMemory<T> memory, bool advance = true)
         {
             bool result = TryGetBuffer(position, out memory, out SequencePosition next);
