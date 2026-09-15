@@ -9031,6 +9031,7 @@ CordbEval::CordbEval(CordbThread *pThread)
       m_evalDuringException(false)
 {
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
+    m_vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr();
     m_debuggerEvalKey = LSPTR_DEBUGGEREVAL::NullPtr();
 
     m_resultType.elementType = ELEMENT_TYPE_VOID;
@@ -9133,6 +9134,20 @@ HRESULT CordbEval::SendCleanup()
     // Release the cached HandleValue for the result. This may cleanup resources,
     // like our object handle to the func-eval result.
     m_pHandleValue.Clear();
+    m_pValueClassResult.Clear();
+
+    if (!m_vmExternalMemoryHandle.IsNull() && GetProcess()->IsSafeToSendEvents())
+    {
+        DebuggerIPCEvent event;
+        GetProcess()->InitIPCEvent(
+            &event,
+            DB_IPCE_DISPOSE_EXTERNAL_MEMORY_HANDLE,
+            false,
+            m_thread->GetAppDomain()->GetADToken());
+        event.DisposeExternalMemoryHandle.vmExternalMemoryHandle = m_vmExternalMemoryHandle;
+        hr = WORST_HR(hr, GetProcess()->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
+        m_vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr();
+    }
 
 
     return hr;
@@ -10460,16 +10475,35 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
         }
         else
         {
-            TargetBuffer remoteValue(m_resultAddr, CordbValue::GetSizeForType(pType, kBoxed));
+            bool boxed = m_resultType.elementType != ELEMENT_TYPE_VALUETYPE;
+            if (!boxed && m_pValueClassResult != NULL)
+            {
+                CordbVCObjectValue *pValueClassResult = m_pValueClassResult;
+                *ppResult = static_cast<ICorDebugValue *>(
+                    static_cast<ICorDebugObjectValue *>(pValueClassResult));
+                m_pValueClassResult->ExternalAddRef();
+                return S_OK;
+            }
+
+            TargetBuffer remoteValue(m_resultAddr, CordbValue::GetSizeForType(pType, boxed ? kBoxed : kUnboxed));
             // Now that we have the module, go ahead and create the result.
 
             CordbValue::CreateValueByType(pAppDomain,
                                           pType,
-                                          true,
+                                          boxed,
                                           remoteValue,
                                           MemoryRange(NULL, 0),
                                           NULL,
-                                          ppResult);  // throws
+                                          ppResult,
+                                          boxed ? VMPTR_DebuggerExternalMemoryHandle::NullPtr() : m_vmExternalMemoryHandle);  // throws
+
+            if (!boxed)
+            {
+                CordbVCObjectValue *pValueClassResult = static_cast<CordbVCObjectValue *>(
+                    static_cast<ICorDebugObjectValue *>(*ppResult));
+                m_pValueClassResult.Assign(pValueClassResult);
+                m_vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr();
+            }
         }
 
     }

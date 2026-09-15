@@ -1540,7 +1540,7 @@ private:
 public:
 #ifndef DACCESS_COMPILE
     ExternalMemoryHandle* AddExternalMemoryHandle(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags);
-    void RemoveExternalMemoryHandle(ExternalMemoryHandle* handle);
+    void RemoveExternalMemoryHandle(ExternalMemoryHandle* handle DEBUG_ARG(bool isEESuspended = false));
 #endif
     void GCScanExternalMemoryHandles(promote_func *fn, ScanContext *sc);
 

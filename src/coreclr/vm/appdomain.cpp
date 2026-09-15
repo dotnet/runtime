@@ -3816,18 +3816,19 @@ ExternalMemoryHandle* AppDomain::AddExternalMemoryHandle(PTR_MethodTable pMT, PT
     return handle;
 }
 
-void AppDomain::RemoveExternalMemoryHandle(ExternalMemoryHandle* handle)
+void AppDomain::RemoveExternalMemoryHandle(ExternalMemoryHandle* handle DEBUG_ARG(bool isEESuspended))
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_ANY;
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
 
     _ASSERTE(handle != nullptr);
+    _ASSERTE(isEESuspended || (GetThreadNULLOk() != nullptr && GetThread()->PreemptiveGCDisabled()));
 
     bool removed;
     {
@@ -3853,7 +3854,8 @@ void AppDomain::GCScanExternalMemoryHandles(promote_func *fn, ScanContext *sc)
     }
     CONTRACTL_END;
 
-    // Mutations happen in cooperative mode, so the suspended EE makes the list stable during a GC.
+    // Mutations happen in cooperative mode or while the debugger has suspended the EE, so the list
+    // is stable during a GC.
     for (ExternalMemoryHandle* handle = m_externalMemoryHandles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
     {
         handle->GCScanRoot(fn, sc);

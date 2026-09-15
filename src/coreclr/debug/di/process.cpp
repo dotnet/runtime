@@ -5112,6 +5112,7 @@ void CordbProcess::RawDispatchEvent(
             pEval->m_aborted        = !!pEvent->FuncEvalComplete.aborted;
             pEval->m_resultAddr     = pEvent->FuncEvalComplete.resultAddr;
             pEval->m_vmObjectHandle = pEvent->FuncEvalComplete.vmObjectHandle;
+            pEval->m_vmExternalMemoryHandle = pEvent->FuncEvalComplete.vmExternalMemoryHandle;
             pEval->m_resultType     = pEvent->FuncEvalComplete.resultType;
             pEval->m_resultAppDomainToken = pEvent->FuncEvalComplete.vmAppDomain;
 

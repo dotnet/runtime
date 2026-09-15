@@ -145,7 +145,8 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                        TargetBuffer                   remoteValue,
                                        MemoryRange                    localValue,
                                        EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                       ICorDebugValue**               ppValue)
+                                       ICorDebugValue**               ppValue,
+                                       VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle)
 
 {
     HRESULT hr = S_OK;
@@ -166,6 +167,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                                                        ppRemoteRegAddr));
 
         IfFailThrow(pVCValue->Init(localValue));
+        pVCValue->SetExternalMemoryHandle(vmExternalMemoryHandle);
 
         pVCValue->AddRef();
         *ppValue = (ICorDebugValue*)(ICorDebugObjectValue*)pVCValue;
@@ -206,7 +208,8 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                               TargetBuffer                   remoteValue,
                                               MemoryRange                    localValue,
                                               EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                              ICorDebugValue**               ppValue)
+                                              ICorDebugValue**               ppValue,
+                                              VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle)
 {
     INTERNAL_SYNC_API_ENTRY(pAppdomain->GetProcess()); //
 
@@ -249,11 +252,12 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
     case ELEMENT_TYPE_PTR:
     case ELEMENT_TYPE_BYREF:
     case ELEMENT_TYPE_TYPEDBYREF:
+    case ELEMENT_TYPE_VALUETYPE:
     case ELEMENT_TYPE_ARRAY:
     case ELEMENT_TYPE_SZARRAY:
     case ELEMENT_TYPE_FNPTR:
         {
-            CreateVCObjOrRefValue(pAppdomain, pType, boxed, remoteValue, localValue, ppRemoteRegAddr, ppValue); // throws
+            CreateVCObjOrRefValue(pAppdomain, pType, boxed, remoteValue, localValue, ppRemoteRegAddr, ppValue, vmExternalMemoryHandle); // throws
             break;
         }
 
@@ -2922,7 +2926,8 @@ CordbVCObjectValue::CordbVCObjectValue(CordbAppDomain *               pAppdomain
                  false,
                  pAppdomain->GetSweepableExitNeuterList()),
       m_pObjectCopy(NULL),
-      m_pValueHome(NULL)
+      m_pValueHome(NULL),
+      m_vmExternalMemoryHandle(VMPTR_DebuggerExternalMemoryHandle::NullPtr())
 {
     // instantiate the value home
     NewHolder<ValueHome> pHome(NULL);
@@ -2960,6 +2965,39 @@ CordbVCObjectValue::~CordbVCObjectValue()
         m_pValueHome = NULL;
 }
 } // CordbVCObjectValue::~CordbVCObjectValue
+
+void CordbVCObjectValue::SetExternalMemoryHandle(VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle)
+{
+    _ASSERTE(m_vmExternalMemoryHandle.IsNull());
+    m_vmExternalMemoryHandle = vmExternalMemoryHandle;
+}
+
+void CordbVCObjectValue::NeuterLeftSideResources()
+{
+    if (!m_vmExternalMemoryHandle.IsNull() && GetProcess()->IsSafeToSendEvents())
+    {
+        DebuggerIPCEvent event;
+        GetProcess()->InitIPCEvent(
+            &event,
+            DB_IPCE_DISPOSE_EXTERNAL_MEMORY_HANDLE,
+            false,
+            m_appdomain->GetADToken());
+        event.DisposeExternalMemoryHandle.vmExternalMemoryHandle = m_vmExternalMemoryHandle;
+        GetProcess()->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+        m_vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr();
+    }
+
+    RSLockHolder lockHolder(GetProcess()->GetProcessLock());
+    Neuter();
+}
+
+void CordbVCObjectValue::Neuter()
+{
+    BOOL fTargetIsDead = !GetProcess()->IsSafeToSendEvents() || GetProcess()->m_exiting;
+    _ASSERTE(fTargetIsDead || m_vmExternalMemoryHandle.IsNull());
+
+    CordbValue::Neuter();
+}
 
 HRESULT CordbVCObjectValue::QueryInterface(REFIID id, void **pInterface)
 {

@@ -1289,6 +1289,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     memset(m_result, 0, sizeof(m_result));
     m_md = NULL;
     m_resultType = TypeHandle();
+    m_externalMemoryHandle = NULL;
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
@@ -1308,6 +1309,58 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     {
         memcpy(&m_context, pContext, sizeof(m_context));
     }
+}
+
+DebuggerExternalMemoryHandle::DebuggerExternalMemoryHandle(AppDomain *pAppDomain, MethodTable *pMT, BYTE *pMemory)
+    : m_pAppDomain(pAppDomain),
+      m_pHandle(NULL),
+      m_pMemory(pMemory)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    m_pHandle = m_pAppDomain->AddExternalMemoryHandle(pMT, m_pMemory, 0);
+}
+
+DebuggerExternalMemoryHandle::~DebuggerExternalMemoryHandle()
+{
+    WRAPPER_NO_CONTRACT;
+
+    m_pAppDomain->RemoveExternalMemoryHandle(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+    DeleteInteropSafe(m_pMemory);
+}
+
+BYTE *DebuggerEval::CreateExternalMemoryHandle(MethodTable *pMT, SIZE_T size)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(m_externalMemoryHandle == NULL);
+
+    BYTE *pMemory = new (interopsafe) BYTE[size];
+    EX_TRY
+    {
+        m_externalMemoryHandle = new (interopsafe) DebuggerExternalMemoryHandle(
+            AppDomain::GetCurrentDomain(), pMT, pMemory);
+    }
+    EX_CATCH
+    {
+        DeleteInteropSafe(pMemory);
+        EX_RETHROW;
+    }
+    EX_END_CATCH
+
+    return pMemory;
 }
 
 #ifdef _DEBUG
@@ -9821,9 +9874,13 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.funcEvalKey = pDE->m_funcEvalKey;
     ipce->FuncEvalComplete.successful = pDE->m_successful;
     ipce->FuncEvalComplete.aborted = pDE->m_aborted;
-    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(pDE->m_result);
+    void *pResult = pDE->m_externalMemoryHandle != NULL
+        ? static_cast<void *>(pDE->m_externalMemoryHandle->GetMemory())
+        : static_cast<void *>(pDE->m_result);
+    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
+    ipce->FuncEvalComplete.vmExternalMemoryHandle.SetRawPtr(pDE->m_externalMemoryHandle);
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9832,17 +9889,19 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
                                            pDE->m_resultType,
                                            &ipce->FuncEvalComplete.resultType);
 
-    _ASSERTE(ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE);
-
-    // We must adjust the result address to point to the right place
-    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
-        GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
+    if (ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE)
+    {
+        // We must adjust the result address to point to the right place
+        ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
+            GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
+    }
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: returned el %04x resultAddr %p\n",
         static_cast<unsigned>(ipce->FuncEvalComplete.resultType.elementType),
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
-    m_pRCThread->SendIPCEvent();
+    IfFailThrow(m_pRCThread->SendIPCEvent());
+    pDE->m_externalMemoryHandle = NULL;
 
 #endif
 }
@@ -10876,6 +10935,13 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             default:
                 pEvent->hr = E_INVALIDARG;
             }
+            break;
+        }
+
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_HANDLE:
+        {
+            DebuggerExternalMemoryHandle *pHandle = pEvent->DisposeExternalMemoryHandle.vmExternalMemoryHandle.GetRawPtr();
+            DeleteInteropSafe(pHandle);
             break;
         }
 
