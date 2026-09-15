@@ -1340,9 +1340,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
     }
 
-    // We must check that decreasing loops with unsigned control variables can't wrap around.
-    // This applies even for unit stride: an inclusive ">=" test with a limit of 0 still
-    // visits 0 and then underflows on the next decrement.
+    // Decreasing loops with unsigned control variables can wrap around to a huge
+    // value instead of exiting, if the final decrement steps past 0. For example,
+    // "for (uint i = 7; i >= 2; i -= 3)" visits i = 7, 4, then exits (4 - 3 = 1,
+    // and 1 >= 2 is false). But "for (uint i = 7; i >= 1; i -= 3)" visits
+    // i = 7, 4, 1, then wraps: 1 - 3 underflows to UINT_MAX, and UINT_MAX >= 1
+    // is true, so the loop keeps running with i far out of range. This applies
+    // even for unit stride: "i >= 0" is never false for unsigned i.
     if (!isIncreasingLoop && iterInfo->TestTree->IsUnsigned())
     {
         bool provenSafe = false;
@@ -1352,15 +1356,31 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             const int constLimit = iterInfo->ConstLimit();
             if ((constInit >= 0) && (constLimit >= 0) && (constInit >= constLimit))
             {
-                // The last value for which the loop test is still true is
-                // "constLimit + r", where "r" is "(constInit - constLimit) %
-                // stride". That is safe (won't step past 0 on the next
-                // decrement) as long as it is >= stride, unless the test is
-                // the exclusive "GT_GT" and "r" is 0: then the loop never
-                // actually visits "constLimit" (the smallest in-range value
-                // is "constLimit + stride"), so it's safe regardless.
-                const unsigned r = ((unsigned)constInit - (unsigned)constLimit) % (unsigned)stride;
-                if (((r == 0) && (iterInfo->TestOper() == GT_GT)) || ((unsigned)constLimit + r >= (unsigned)stride))
+                // All the values being cast here are non-negative; by
+                // casting, we can add two of them without risking overflow.
+                const unsigned uInit   = (unsigned)constInit;
+                const unsigned uLimit  = (unsigned)constLimit;
+                const unsigned uStride = (unsigned)stride;
+
+                // "remainder" is the difference between the value the IV
+                // would land on -- if the test were inclusive -- and
+                // constLimit, e.g. decrementing from 7 to a limit of 2 by 3
+                // stops at 4 (remainder 4 - 2 == 2); decrementing to a limit
+                // of 1 stops exactly at 1 (remainder 0).
+                const unsigned remainder = (uInit - uLimit) % uStride;
+
+                // "lastValue" is the lowest value of the IV before the loop
+                // exits. For an inclusive ">=" test this is uLimit + remainder
+                // (which may be uLimit itself). For an exclusive ">" test, if
+                // remainder is 0 then uLimit fails the test, so the lowest
+                // value actually visited is uLimit + uStride instead.
+                const bool     testIsExclusive = (iterInfo->TestOper() == GT_GT);
+                const unsigned lastValue =
+                    (testIsExclusive && (remainder == 0)) ? (uLimit + uStride) : (uLimit + remainder);
+
+                // Safe (won't underflow past 0 on the loop's final decrement)
+                // iff the lowest value visited is itself >= stride.
+                if (lastValue >= uStride)
                 {
                     provenSafe = true;
                 }
