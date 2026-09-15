@@ -2970,7 +2970,7 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
     CorElementType retClassET = pDE->m_resultType.GetSignatureCorElementType();
 
     if ((pDE->m_retValueBoxing == Debugger::AllBoxed) ||
-        !RetValueType.IsNull() ||
+        (!RetValueType.IsNull() && !RetValueType.IsByRefLike()) ||
         IsElementTypeSpecial(retClassET))
     {
         LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
