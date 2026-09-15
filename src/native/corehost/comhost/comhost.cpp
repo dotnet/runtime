@@ -13,6 +13,7 @@
 #include <mutex>
 #include <minipal/utils.h>
 #include <coreclr_delegates.h>
+#include <load_context_storage.h>
 
 using comhost::clsid_map_entry;
 using comhost::clsid_map;
@@ -44,7 +45,6 @@ struct com_activation_context
     void **class_factory_dest;
 };
 
-#define ISOLATED_CONTEXT (void*)-1
 using com_delegate_fn = int(STDMETHODCALLTYPE*)(com_activation_context*, void*);
 using com_delegate_no_load_context_fn = int(STDMETHODCALLTYPE*)(com_activation_context*);
 
@@ -89,13 +89,13 @@ namespace
             reinterpret_cast<void**>(delegate));
     }
 
-    int get_com_delegate(hostfxr_delegate_type del_type, pal::string_t *app_path, com_delegates &delegates, void **load_context)
+    int get_com_delegate(hostfxr_delegate_type del_type, pal::string_t *app_path, com_delegates &delegates, load_context_storage &load_context)
     {
         delegates.delegate = nullptr;
         delegates.delegate_no_load_cxt = nullptr;
 
         get_function_pointer_fn get_function_pointer;
-            int status = load_fxr_and_get_delegate(
+        int status = load_fxr_and_get_delegate(
             hostfxr_delegate_type::hdt_get_function_pointer,
             [app_path](const pal::string_t& host_path, pal::string_t* config_path_out)
             {
@@ -113,16 +113,44 @@ namespace
 
                 return StatusCode::Success;
             },
-            [load_context](pal::dll_t fxr, hostfxr_handle context)
+            [&load_context](pal::dll_t fxr, hostfxr_handle context)
             {
-                *load_context = ISOLATED_CONTEXT;
+                constexpr const pal::char_t* default_context_property = _X("System.Runtime.InteropServices.COM.LoadComponentInDefaultContext");
+                constexpr const pal::char_t* identifier_property = _X("System.Runtime.InteropServices.COM.LoadContextIdentifier");
+
                 auto get_runtime_property_value = reinterpret_cast<hostfxr_get_runtime_property_value_fn>(pal::get_symbol(fxr, "hostfxr_get_runtime_property_value"));
-                const pal::char_t* value;
-                if (get_runtime_property_value(context, _X("System.Runtime.InteropServices.COM.LoadComponentInDefaultContext"), &value) == StatusCode::Success
-                    && pal::strcasecmp(value, _X("true")) == 0)
+                const pal::char_t* use_default_context;
+                bool has_default_context_prop = get_runtime_property_value(context, default_context_property, &use_default_context) == StatusCode::Success;
+                const pal::char_t* identifier;
+                bool has_identifier_prop = get_runtime_property_value(context, identifier_property, &identifier) == StatusCode::Success;
+                if (has_default_context_prop && has_identifier_prop)
                 {
-                    *load_context = nullptr; // Default context
+                    trace::error(_X("%s and %s cannot both be set."), default_context_property, identifier_property);
+                    return StatusCode::InvalidConfigFile;
                 }
+
+                if (has_default_context_prop)
+                {
+                    load_context = pal::strcasecmp(use_default_context, _X("true")) == 0
+                        ? load_context_storage::create_default()
+                        : load_context_storage::create_isolated();
+                }
+                else if (has_identifier_prop)
+                {
+                    if (identifier[0] == '\0')
+                    {
+                        trace::error(_X("%s cannot be empty."), identifier_property);
+                        return StatusCode::InvalidConfigFile;
+                    }
+
+                    load_context = load_context_storage::create_named(identifier);
+                }
+                else
+                {
+                    load_context = load_context_storage::create_isolated();
+                }
+
+                return StatusCode::Success;
             },
             reinterpret_cast<void**>(&get_function_pointer),
             false // do not ignore missing config file if there's an active context
@@ -163,7 +191,7 @@ namespace
         // We also need to check for COR_E_MISSINGMEMBER due to a pre-7.0 bug where the HRESULT was not correctly set on
         // MissingMethodException and it ended up with the HRESULT for MissingMemberException
         if ((status == 0x80131513 /*COR_E_MISSINGMETHOD*/ || status == 0x80131512 /*COR_E_MISSINGMEMBER*/)
-            && *load_context == ISOLATED_CONTEXT)
+            && load_context.get() == CORECLR_LOAD_CONTEXT_ISOLATED)
         {
             status = get_com_delegate_no_load_context(del_type, get_function_pointer, &delegates.delegate_no_load_cxt);
         }
@@ -177,7 +205,7 @@ namespace
         int status;
         pal::string_t app_path;
         com_delegates delegates;
-        void* load_context;
+        load_context_storage load_context;
         pal::string_t error;
     };
 
@@ -236,13 +264,13 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
 
         error_writer_scope_t writer_scope(redirected_error_writer);
 
-        s_com_activation.status = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &s_com_activation.app_path, s_com_activation.delegates, &s_com_activation.load_context);
+        s_com_activation.status = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &s_com_activation.app_path, s_com_activation.delegates, s_com_activation.load_context);
         if (s_com_activation.status != StatusCode::Success)
             s_com_activation.error = get_redirected_error_string();
 
         assert(s_com_activation.status != StatusCode::Success
             || s_com_activation.delegates.delegate != nullptr
-            || s_com_activation.load_context == ISOLATED_CONTEXT);
+            || s_com_activation.load_context.get() == CORECLR_LOAD_CONTEXT_ISOLATED);
     });
 
     if (s_com_activation.status != StatusCode::Success)
@@ -265,7 +293,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     };
     if (s_com_activation.delegates.delegate != nullptr)
     {
-        RETURN_IF_FAILED(s_com_activation.delegates.delegate(&cxt, s_com_activation.load_context));
+        RETURN_IF_FAILED(s_com_activation.delegates.delegate(&cxt, s_com_activation.load_context.get()));
     }
     else
     {
@@ -599,9 +627,9 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
     HRESULT hr;
     pal::string_t app_path;
     com_delegates reg;
-    void* load_context;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_register, &app_path, reg, &load_context));
-    assert(reg.delegate != nullptr || load_context == ISOLATED_CONTEXT);
+    load_context_storage load_context;
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_register, &app_path, reg, load_context));
+    assert(reg.delegate != nullptr || load_context.get() == CORECLR_LOAD_CONTEXT_ISOLATED);
 
     com_activation_context cxt
     {
@@ -625,7 +653,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
         cxt.type_name = p.second.type.c_str();
         if (reg.delegate != nullptr)
         {
-            RETURN_IF_FAILED(reg.delegate(&cxt, load_context));
+            RETURN_IF_FAILED(reg.delegate(&cxt, load_context.get()));
         }
         else
         {
@@ -652,9 +680,9 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
     HRESULT hr;
     pal::string_t app_path;
     com_delegates unreg;
-    void* load_context;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_unregister, &app_path, unreg, &load_context));
-    assert(unreg.delegate != nullptr || load_context == ISOLATED_CONTEXT);
+    load_context_storage load_context;
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_unregister, &app_path, unreg, load_context));
+    assert(unreg.delegate != nullptr || load_context.get() == CORECLR_LOAD_CONTEXT_ISOLATED);
 
     com_activation_context cxt
     {
@@ -675,7 +703,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
         cxt.type_name = p.second.type.c_str();
         if (unreg.delegate != nullptr)
         {
-            RETURN_IF_FAILED(unreg.delegate(&cxt, load_context));
+            RETURN_IF_FAILED(unreg.delegate(&cxt, load_context.get()));
         }
         else
         {
