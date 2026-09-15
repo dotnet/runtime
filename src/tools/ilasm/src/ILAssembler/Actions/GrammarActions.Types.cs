@@ -14,6 +14,23 @@ internal sealed partial class GrammarActions
     private readonly Stack<RuleContext> _namespaceOwners = new();
     private readonly Stack<RuleContext> _typeOwners = new();
 
+    // Invalid scopes also retain their owners so nested declarations stay suppressed until the
+    // matching declaration finally block unwinds them.
+    private readonly Stack<RuleContext> _suppressedDeclarationOwners = new();
+
+    private bool IsDeclarationSuppressed => _suppressedDeclarationOwners.Count != 0;
+
+    private bool EnterDeclarationScope(RuleContext owner, bool hasValidHeader)
+    {
+        if (hasValidHeader && !IsDeclarationSuppressed)
+        {
+            return true;
+        }
+
+        _suppressedDeclarationOwners.Push(owner);
+        return false;
+    }
+
     /// <summary>
     /// Releases the namespace, type and method state that a top-level declaration introduced.
     /// </summary>
@@ -39,6 +56,14 @@ internal sealed partial class GrammarActions
         if (ReferenceEquals(_methodOwner, owner))
         {
             EndMethod();
+        }
+
+        if (_suppressedDeclarationOwners.Count > 0 &&
+            ReferenceEquals(_suppressedDeclarationOwners.Peek(), owner))
+        {
+            _suppressedDeclarationOwners.Pop();
+            ClearPendingCustomAttributeOwners();
+            return;
         }
 
         if (_typeOwners.Count > 0 && ReferenceEquals(_typeOwners.Peek(), owner))
@@ -73,6 +98,7 @@ internal sealed partial class GrammarActions
         _currentTypeDefinition.Clear();
         _namespaceOwners.Clear();
         _currentNamespace.Clear();
+        _suppressedDeclarationOwners.Clear();
     }
 
     /// <summary>

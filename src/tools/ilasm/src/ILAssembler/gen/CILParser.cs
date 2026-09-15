@@ -3062,8 +3062,6 @@ public partial class CILParser : Parser {
 			_localctx.name = dottedName();
 			_localctx.Value = _localctx.name.Value;
 			}
-			Context.Stop = TokenStream.LT(-1);
-			Actions.BeginNamespace(_localctx, _localctx.Value, _localctx.InitialSyntaxErrorCount);
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -3071,6 +3069,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
+			Actions.BeginNamespace(_localctx, _localctx.Value, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
@@ -3160,8 +3159,6 @@ public partial class CILParser : Parser {
 						_localctx.baseType.Value,
 						_localctx.interfaces.Value);
 			}
-			Context.Stop = TokenStream.LT(-1);
-			Actions.BeginType(_localctx, _localctx.Value);
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -3169,6 +3166,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
+			Actions.BeginType(_localctx, _localctx.Value);
 			ExitRule();
 		}
 		return _localctx;

@@ -22,6 +22,7 @@ internal sealed partial class GrammarActions
             _currentMethod is null
                 && _typeOwners.Count == 0
                 && _namespaceOwners.Count == 0
+                && _suppressedDeclarationOwners.Count == 0
                 && _scopeStack.Count == 0
                 && _pendingClassMethodOverrides.Count == 0,
             "Nested compiler state must be released by its owning declaration.");

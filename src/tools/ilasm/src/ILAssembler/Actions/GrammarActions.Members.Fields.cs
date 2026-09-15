@@ -67,7 +67,7 @@ internal sealed partial class GrammarActions
         FieldDeclarationValue value)
     {
         _ = context;
-        if (!value.IsValid)
+        if (IsDeclarationSuppressed || !value.IsValid)
         {
             return;
         }

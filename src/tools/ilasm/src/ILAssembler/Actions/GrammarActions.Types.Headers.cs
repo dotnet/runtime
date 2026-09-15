@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Reflection;
 using Antlr4.Runtime;
 
@@ -14,13 +15,16 @@ internal sealed partial class GrammarActions
         string? namespaceName,
         int initialSyntaxErrorCount)
     {
-        if (HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
-            context.exception is not null ||
-            namespaceName is null)
+        if (!EnterDeclarationScope(
+                context.Parent,
+                !HasSyntaxErrorsSince(initialSyntaxErrorCount) &&
+                context.exception is null &&
+                namespaceName is not null))
         {
             return;
         }
 
+        Debug.Assert(namespaceName is not null);
         string? outerNamespace = _currentNamespace.PeekOrDefault();
         _currentNamespace.Push(
             string.IsNullOrEmpty(outerNamespace)
@@ -31,7 +35,7 @@ internal sealed partial class GrammarActions
 
     internal void BeginType(CILParser.ClassHeadContext context, ClassHeaderValue value)
     {
-        if (!value.IsValid)
+        if (!EnterDeclarationScope(context.Parent, value.IsValid))
         {
             return;
         }
@@ -85,8 +89,11 @@ internal sealed partial class GrammarActions
         }
         else
         {
-            typeNamespace =
-                $"{_currentNamespace.PeekOrDefault()}{fullName.Substring(0, lastDot)}";
+            string containingNamespace = fullName.Substring(0, lastDot);
+            string? currentNamespace = _currentNamespace.PeekOrDefault();
+            typeNamespace = string.IsNullOrEmpty(currentNamespace)
+                ? containingNamespace
+                : $"{currentNamespace}.{containingNamespace}";
         }
 
         return (
