@@ -264,11 +264,25 @@ public class OffsetLimit
         Assert.Equal(want, got);
     }
 
+    [ActiveIssue(
+        "https://github.com/dotnet/runtime/issues/134014",
+        typeof(TestLibrary.PlatformDetection),
+        nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+    [Fact]
+    public static void DecGtArrayLengthPlusMaxValueOverflowTest()
+    {
+        AssertArrayLengthPlusMaxValueOverflow(nameof(DecGtArrayLengthPlusMaxValue));
+    }
+
     [Theory]
-    [InlineData(nameof(DecGtArrayLengthPlusMaxValue))]
     [InlineData(nameof(DecGeArrayLengthPlusMaxValue))]
     [InlineData(nameof(DecNeArrayLengthPlusMaxValue))]
     public static void DecArrayLengthPlusMaxValueOverflowTest(string methodName)
+    {
+        AssertArrayLengthPlusMaxValueOverflow(methodName);
+    }
+
+    static void AssertArrayLengthPlusMaxValueOverflow(string methodName)
     {
         int[] a = MakeArray(4);
         int[] limit = MakeArray(4);
