@@ -1316,6 +1316,11 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadExe(bool useShellExecute)
         {
+            if (useShellExecute && PlatformDetection.IsWindowsServer2019 && PlatformDetection.IsWindowsServerCore)
+            {
+                throw new SkipTestException("ShellExecuteEx hangs while activating Windows StateRepository on Server Core 2019.");
+            }
+
             string tempFile = GetTestFilePath() + ".exe";
             File.Create(tempFile).Dispose();
 
