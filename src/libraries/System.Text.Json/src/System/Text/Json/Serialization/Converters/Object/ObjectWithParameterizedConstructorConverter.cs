@@ -48,8 +48,13 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                 {
                     object populatedObject = state.Current.ReturnValue!;
+                    if (IsValueType && jsonTypeInfo.IsSourceGenerated && populatedObject is not StrongBox<T>)
+                    {
+                        populatedObject = new StrongBox<T>((T)populatedObject);
+                    }
+
                     PopulatePropertiesFastPath(populatedObject, jsonTypeInfo, options, ref reader, ref state);
-                    value = (T)populatedObject;
+                    value = (populatedObject is StrongBox<T> box ? box.Value : (T)populatedObject)!;
                     return true;
                 }
 
@@ -63,9 +68,10 @@ namespace System.Text.Json.Serialization.Converters
                 // before calling the constructor which may throw.
                 state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
-                obj = (T)CreateObject(ref state.Current);
+                T createdObj = (T)CreateObject(ref state.Current);
+                obj = IsValueType && jsonTypeInfo.IsSourceGenerated ? new StrongBox<T>(createdObj) : (object)createdObj;
 
-                jsonTypeInfo.OnDeserializing?.Invoke(obj);
+                InvokeOnDeserializing(jsonTypeInfo, obj);
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -165,8 +171,13 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                 {
                     object populatedObject = state.Current.ReturnValue!;
+                    if (IsValueType && jsonTypeInfo.IsSourceGenerated && populatedObject is not StrongBox<T>)
+                    {
+                        populatedObject = new StrongBox<T>((T)populatedObject);
+                        state.Current.ReturnValue = populatedObject;
+                    }
 
-                    jsonTypeInfo.OnDeserializing?.Invoke(populatedObject);
+                    InvokeOnDeserializing(jsonTypeInfo, populatedObject);
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                     state.Current.InitializePropertiesValidationState(jsonTypeInfo);
                     return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
@@ -202,7 +213,8 @@ namespace System.Text.Json.Serialization.Converters
                 // before calling the constructor which may throw.
                 state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
-                obj = (T)CreateObject(ref state.Current);
+                T createdObj = (T)CreateObject(ref state.Current);
+                obj = IsValueType && jsonTypeInfo.IsSourceGenerated ? new StrongBox<T>(createdObj) : (object)createdObj;
 
                 if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                 {
@@ -212,7 +224,7 @@ namespace System.Text.Json.Serialization.Converters
                     state.ReferenceId = null;
                 }
 
-                jsonTypeInfo.OnDeserializing?.Invoke(obj);
+                InvokeOnDeserializing(jsonTypeInfo, obj);
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -271,11 +283,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            InvokeOnDeserialized(jsonTypeInfo, obj);
 
             // Unbox
             Debug.Assert(obj is not null);
-            value = (T)obj;
+            value = (obj is StrongBox<T> slowBox ? slowBox.Value : (T)obj)!;
 
             // Check if we are trying to update the UTF-8 property cache.
             if (state.Current.PropertyRefCacheBuilder is not null)

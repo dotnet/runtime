@@ -1227,5 +1227,115 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(value.Data2, deserialized.Data2);
             Assert.Equal(value.Data3, deserialized.Data3);
         }
+
+        public struct StructWithCallbacks : IJsonOnDeserializing, IJsonOnDeserialized, IJsonOnSerializing, IJsonOnSerialized
+        {
+            public int MyInt { get; set; }
+            public int InitialValue { get; set; }
+            public int OnDeserializingCount { get; set; }
+            public int OnDeserializedCount { get; set; }
+            public int OnSerializingCount { get; set; }
+            public int OnSerializedCount { get; set; }
+
+            public void OnDeserializing()
+            {
+                OnDeserializingCount++;
+            }
+
+            public void OnDeserialized()
+            {
+                Assert.Equal(1, OnDeserializingCount);
+                OnDeserializedCount++;
+            }
+
+            public void OnSerializing()
+            {
+                OnSerializingCount++;
+            }
+
+            public void OnSerialized()
+            {
+                Assert.Equal(1, OnSerializingCount);
+                OnSerializedCount++;
+            }
+        }
+
+        public struct ParameterizedStructWithCallbacks : IJsonOnDeserializing, IJsonOnDeserialized
+        {
+            public int MyInt { get; set; }
+            public int Extra { get; set; }
+            public int OnDeserializingCount { get; set; }
+            public int OnDeserializedCount { get; set; }
+
+            public ParameterizedStructWithCallbacks(int myInt)
+            {
+                MyInt = myInt;
+            }
+
+            public void OnDeserializing()
+            {
+                OnDeserializingCount++;
+            }
+
+            public void OnDeserialized()
+            {
+                Assert.Equal(1, OnDeserializingCount);
+                OnDeserializedCount++;
+            }
+        }
+
+        [JsonSerializable(typeof(StructWithCallbacks))]
+        [JsonSerializable(typeof(ParameterizedStructWithCallbacks))]
+        internal partial class StructWithCallbacksContext : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static void SourceGeneratedStruct_CreateObject_ReturnsBoxedStructInstance()
+        {
+            JsonTypeInfo<StructWithCallbacks> typeInfo = StructWithCallbacksContext.Default.StructWithCallbacks;
+            Assert.NotNull(typeInfo.CreateObject);
+            object instance = typeInfo.CreateObject();
+            Assert.NotNull(instance);
+            Assert.IsType<StructWithCallbacks>(instance);
+        }
+
+        [Fact]
+        public static void SourceGeneratedStruct_CustomizedCreateObject_DeserializesSuccessfully()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = StructWithCallbacksContext.Default.WithAddedModifier(ti =>
+                {
+                    if (ti.Type == typeof(StructWithCallbacks))
+                    {
+                        ti.CreateObject = () => new StructWithCallbacks { InitialValue = 42 };
+                    }
+                })
+            };
+
+            StructWithCallbacks result = JsonSerializer.Deserialize<StructWithCallbacks>("""{"MyInt":1}""", options);
+            Assert.Equal(42, result.InitialValue);
+            Assert.Equal(1, result.MyInt);
+        }
+
+        [Fact]
+        public static void SourceGeneratedStruct_Parameterless_Callbacks_PreserveMutations()
+        {
+            StructWithCallbacks result = JsonSerializer.Deserialize<StructWithCallbacks>("""{"MyInt":10}""", StructWithCallbacksContext.Default.StructWithCallbacks);
+            Assert.Equal(10, result.MyInt);
+            Assert.Equal(1, result.OnDeserializingCount);
+            Assert.Equal(1, result.OnDeserializedCount);
+        }
+
+        [Fact]
+        public static void SourceGeneratedStruct_Parameterized_Callbacks_PreserveMutations()
+        {
+            ParameterizedStructWithCallbacks result = JsonSerializer.Deserialize<ParameterizedStructWithCallbacks>("""{"myInt":10,"Extra":20}""", StructWithCallbacksContext.Default.ParameterizedStructWithCallbacks);
+            Assert.Equal(10, result.MyInt);
+            Assert.Equal(20, result.Extra);
+            Assert.Equal(1, result.OnDeserializingCount);
+            Assert.Equal(1, result.OnDeserializedCount);
+        }
     }
 }
