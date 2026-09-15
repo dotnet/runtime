@@ -13,6 +13,26 @@ private:
     BasicBlock* m_block;
     Statement*  m_statement;
 
+    struct ParameterUse
+    {
+        GenTreeLclVarCommon* Node;
+        BasicBlock*          Block;
+    };
+
+    struct ParameterUses
+    {
+        ArrayStack<ParameterUse> Uses;
+        bool                     HasKills = false;
+        bool                     HasReads = false;
+
+        ParameterUses(CompAllocator allocator)
+            : Uses(allocator)
+        {
+        }
+    };
+
+    ParameterUses** m_parameterUses = nullptr;
+
 public:
     Rationalizer(Compiler* comp);
 
@@ -30,6 +50,11 @@ public:
     virtual PhaseStatus DoPhase() override;
 
 private:
+    void RecordParameterUse(GenTree* node);
+    void ForgetParameterUses(const LIR::ReadOnlyRange& range);
+    void RewriteParameterUses();
+    void RewriteParameterField(BasicBlock* block, GenTreeLclFld* field);
+
     inline LIR::Range& BlockRange() const
     {
         return LIR::AsRange(m_block);
