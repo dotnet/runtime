@@ -195,7 +195,8 @@ BOOL WaitMultipleDuplicateHandleTest_WFMOEx_test1()
     }
     else if (GetLastError() != ERROR_INVALID_PARAMETER)
     {
-        Trace("WaitMultipleDuplicateHandleTest:WaitAll failed: unexpected last error (%x)\n");
+        Trace("WaitMultipleDuplicateHandleTest:WaitAll failed: unexpected last error (%x)\n",
+              GetLastError());
         testResult = FALSE;
     }
 

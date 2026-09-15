@@ -71,7 +71,8 @@ PALTEST(threading_SetEvent_test3_paltest_setevent_test3, "threading/SetEvent/tes
     {
         /* ERROR */
         Fail( "FAIL:SetEvent() call failed on a closed event handle"
-                "but returned an unexpected error result %lu\n" );
+                "but returned an unexpected error result %lu\n",
+                GetLastError() );
     }
     
 

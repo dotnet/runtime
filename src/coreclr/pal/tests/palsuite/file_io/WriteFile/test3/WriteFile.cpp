@@ -47,6 +47,7 @@ BOOL validateResults_WriteFile_test3(const char* szString)
         return FALSE;
     }
 
+    szReadString[dwBytesRead] = '\0';
     if (strcmp(szReadString, szString))
     {
         Trace("read = %s  string = %s", szReadString, szString);

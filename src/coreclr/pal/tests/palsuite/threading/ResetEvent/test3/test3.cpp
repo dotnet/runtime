@@ -72,7 +72,8 @@ PALTEST(threading_ResetEvent_test3_paltest_resetevent_test3, "threading/ResetEve
     {
         /* ERROR */
         Fail( "FAIL:ResetEvent() call failed on a closed event handle "
-                "but returned an unexpected error result %lu\n" );
+                "but returned an unexpected error result %lu\n",
+                GetLastError() );
     }
     
 
