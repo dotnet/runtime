@@ -219,6 +219,7 @@ namespace System.Net.Sockets.Tests
             await tcs.Task;
 
             Assert.Equal(SocketError.Success, saea.SocketError);
+            Assert.Equal(3, saea.BytesTransferred);
             Assert.True(client.Blocking);
 
             // Native blocking mode is only restored once the entire connect, including any
@@ -231,6 +232,7 @@ namespace System.Net.Sockets.Tests
         public async Task ConnectAsync_WithLargeBuffer_PendingSendCompletesBeforeBlockingIsRestored()
         {
             using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.ReceiveBufferSize = 8 * 1024;
             listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             listener.Listen(1);
 
@@ -251,17 +253,12 @@ namespace System.Net.Sockets.Tests
             saea.Completed += (_, _) => tcs.SetResult();
 
             bool completedAsync = client.ConnectAsync(saea);
-            if (!completedAsync)
-            {
-                tcs.SetResult();
-            }
-
-            // Sanity check: the small buffers configured above should have forced this send async.
             Assert.True(completedAsync);
+            Assert.False(tcs.Task.IsCompleted);
+            Assert.True(IsSocketNonBlocking(client));
 
             using var cts = new CancellationTokenSource(TestSettings.PassingTestTimeout);
             using Socket accepted = await listener.AcceptAsync(cts.Token);
-            accepted.ReceiveBufferSize = 8 * 1024;
 
             byte[] readBuffer = new byte[8 * 1024];
             int totalRead = 0;

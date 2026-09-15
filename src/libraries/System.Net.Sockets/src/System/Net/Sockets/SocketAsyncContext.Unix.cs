@@ -651,7 +651,7 @@ namespace System.Net.Sockets
         private sealed class ConnectOperation : BufferMemorySendOperation
         {
             // Set once the underlying connect() has completed successfully and we have
-            // started (possibly across multiple retries) sending any buffered data.
+            // started sending any buffered data, potentially across partial sends.
             private bool _connected;
 
             public ConnectOperation(SocketAsyncContext context) : base(context) { }
@@ -1596,11 +1596,13 @@ namespace System.Net.Sockets
                     // If the buffered send doesn't complete synchronously, its own completion
                     // (whenever that happens) is what determines when the whole connect+send
                     // operation is done, so blocking mode must only be restored at that point.
+                    SafeSocketHandle socket = _socket;
+                    Action<int, Memory<byte>, SocketFlags, SocketError> connectCallback = callback;
                     errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes,
                         (bytesTransferred, sendSocketAddress, flags, sendErrorCode) =>
                         {
-                            _socket.SetBlocking();
-                            callback!(bytesTransferred, sendSocketAddress, flags, sendErrorCode);
+                            socket.SetBlocking();
+                            connectCallback(bytesTransferred, sendSocketAddress, flags, sendErrorCode);
                         }, default);
                 }
 
@@ -1621,10 +1623,7 @@ namespace System.Net.Sockets
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
-                if (operation.ErrorCode == SocketError.Success)
-                {
-                    sentBytes += operation.BytesTransferred;
-                }
+                sentBytes = operation.BytesTransferred;
 
                 // ConnectOperation.DoTryComplete only reports synchronous completion once the
                 // entire connect, including any buffered send, has finished, so it's safe to
