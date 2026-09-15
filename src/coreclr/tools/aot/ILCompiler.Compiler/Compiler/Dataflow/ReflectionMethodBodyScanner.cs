@@ -229,14 +229,21 @@ namespace ILCompiler.Dataflow
         {
             _origin = _origin.WithInstructionOffset(methodIL, offset);
 
-            if (field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
-                field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
-                field.DoesFieldRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
-                TrimAnalysisPatterns.Add(new TrimAnalysisFieldAccessPattern(field, _origin));
+            try
+            {
+                if (field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                    field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
+                    field.DoesFieldRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                    TrimAnalysisPatterns.Add(new TrimAnalysisFieldAccessPattern(field, _origin));
 
-            ProcessGenericArgumentDataFlow(field);
+                ProcessGenericArgumentDataFlow(field);
 
-            return _annotations.GetFieldValue(field);
+                return _annotations.GetFieldValue(field);
+            }
+            catch (TypeSystemException.FileNotFoundException)
+            {
+                return MultiValueLattice.Top;
+            }
         }
 
         private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodIL, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, int? parameterIndex, TypeSystemEntity reason)

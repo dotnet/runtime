@@ -20,10 +20,17 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private MemberReferenceHandle Handle => (MemberReferenceHandle)_handle;
+        private bool _preserveUnresolved;
+
+        internal MemberReferenceNode PreserveUnresolved()
+        {
+            _preserveUnresolved = true;
+            return this;
+        }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            var methodOrFieldDef = _module.GetObject(Handle);
+            var methodOrFieldDef = _module.GetObject(Handle, NotFoundBehavior.ReturnNull);
             MemberReference memberRef = _module.MetadataReader.GetMemberReference(Handle);
 
             DependencyList dependencies = new DependencyList();
@@ -89,7 +96,11 @@ namespace ILCompiler.DependencyAnalysis
                 writeContext.TokenMap,
                 signatureBlob);
 
-            return builder.AddMemberReference(writeContext.TokenMap.MapToken(memberRef.Parent),
+            EntityHandle parent = writeContext.TokenMap.MapToken(memberRef.Parent);
+            if (_preserveUnresolved && parent.IsNil)
+                parent = memberRef.Parent;
+
+            return builder.AddMemberReference(parent,
                 builder.GetOrAddString(reader.GetString(memberRef.Name)),
                 builder.GetOrAddBlob(signatureBlob));
         }
