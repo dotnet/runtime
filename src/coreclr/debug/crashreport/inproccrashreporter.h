@@ -46,6 +46,13 @@ using InProcCrashReportFrameCallback = void (*)(
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
+    // Generic instantiation arguments for this frame's method, pre-formatted by
+    // the VM-side walker as "<classArgs;methodArgs>" (empty/null when the method
+    // is non-generic). Generic instantiations are a runtime construct absent from
+    // metadata, so they cannot be recovered off-device from the token + PDB and
+    // must travel with the frame. Value-type args are exact; reference-type args
+    // collapse to System.__Canon under shared generics.
+    const char* genericArgs,
     void* ctx);
 
 using InProcCrashReportWalkStackCallback = void (*)(
