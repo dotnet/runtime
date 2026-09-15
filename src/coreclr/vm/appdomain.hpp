@@ -1536,17 +1536,6 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
     friend struct cdac_data<AppDomain>;
-
-public:
-#ifndef DACCESS_COMPILE
-    ExternalMemoryHandle* AddExternalMemoryHandle(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags);
-    void RemoveExternalMemoryHandle(ExternalMemoryHandle* handle DEBUG_ARG(bool isEESuspended = false));
-#endif
-    void GCScanExternalMemoryHandles(promote_func *fn, ScanContext *sc);
-
-private:
-    CrstExplicitInit m_externalMemoryHandlesCrst;
-    SListTail<ExternalMemoryHandle> m_externalMemoryHandles;
 };  // class AppDomain
 
 template<>
@@ -1555,7 +1544,6 @@ struct cdac_data<AppDomain>
     static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
     static constexpr size_t AssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::AssemblyList, m_array);
     static constexpr size_t FriendlyName = offsetof(AppDomain, m_friendlyName);
-    static constexpr size_t ExternalMemoryHandles = offsetof(AppDomain, m_externalMemoryHandles) + offsetof(SListTail<ExternalMemoryHandle>, m_pHead);
 };
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;

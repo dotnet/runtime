@@ -1,7 +1,6 @@
 {
   "_fields": {
     "AppDomain.AssemblyList": "Pointer to the list of assemblies in the application domain",
-    "AppDomain.ExternalMemoryHandles": "Pointer to the head of the AppDomain's external memory handle list (SListTail<ExternalMemoryHandle>)",
     "AppDomain.FriendlyName": "Pointer to the application domain's friendly name",
     "AppDomain.RootAssembly": "Pointer to the root assembly",
     "Array.m_NumComponents": "Number of items in the array",
@@ -186,7 +185,7 @@
     "ExternalMemoryHandle.GCFlags": "Non-zero if the handle's memory holds a direct object pointer (interior/GC_CALL_INTERIOR root) rather than the address of an object reference slot",
     "ExternalMemoryHandle.Memory": "Pointer to the external memory tracked by this handle",
     "ExternalMemoryHandle.MethodTable": "Pointer to the MethodTable describing the type of the tracked memory",
-    "ExternalMemoryHandle.Next": "Pointer to the next ExternalMemoryHandle in the owning AppDomain's list",
+    "ExternalMemoryHandle.Next": "Pointer to the next ExternalMemoryHandle in the process-wide list",
     "ExternalMethodFrame.Indirection": "Import slot pointer for GCRefMap resolution via FindReadyToRunModule",
     "FaultingExceptionFrame.TargetContext": "Frame's Target Context",
     "FCallMethodDesc.Size": "Base size for mcFCall classification",
@@ -749,6 +748,7 @@
     "ExceptionMethodTable": "A pointer to the address of the System.Exception MethodTable (g_pExceptionClass)",
     "ExecutionManagerCodeRangeMapAddress": "Pointer to the global RangeSectionMap",
     "ExpandMechanismsLength": "The number of elements in the ExpandMechanisms array",
+    "ExternalMemoryHandles": "Address of the global pointer to the head of the process-wide external memory handle list (read a TargetPointer from this address to obtain the head ExternalMemoryHandle, or null if the list is empty)",
     "FeatureCOMInterop": "Present (nonzero) when COM interop is enabled",
     "FeatureComWrappers": "Present (nonzero) when ComWrappers is enabled",
     "FeatureEHFunclets": "1 if EH funclets are enabled, 0 otherwise",

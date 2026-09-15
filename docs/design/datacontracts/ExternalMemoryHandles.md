@@ -25,12 +25,11 @@ IReadOnlyList<ExternalMemoryHandleRootData> GetRoots(bool resolveInteriorPointer
 
 | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
-| `AppDomain` | `ExternalMemoryHandles` | `pointer` | Pointer to the head of the AppDomain's external memory handle list (SListTail<ExternalMemoryHandle>) |
 | `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
 | `ExternalMemoryHandle` | `GCFlags` | `uint32` | Non-zero if the handle's memory holds a direct object pointer (interior/GC_CALL_INTERIOR root) rather than the address of an object reference slot |
 | `ExternalMemoryHandle` | `Memory` | `pointer` | Pointer to the external memory tracked by this handle |
 | `ExternalMemoryHandle` | `MethodTable` | `pointer` | Pointer to the MethodTable describing the type of the tracked memory |
-| `ExternalMemoryHandle` | `Next` | `pointer` | Pointer to the next ExternalMemoryHandle in the owning AppDomain's list |
+| `ExternalMemoryHandle` | `Next` | `pointer` | Pointer to the next ExternalMemoryHandle in the process-wide list |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
 
@@ -38,7 +37,7 @@ IReadOnlyList<ExternalMemoryHandleRootData> GetRoots(bool resolveInteriorPointer
 
 | Global | Type | Meaning |
 | --- | --- | --- |
-| `AppDomain` | `pointer` | Pointer to the global application domain |
+| `ExternalMemoryHandles` | `pointer` | Address of the global pointer to the head of the process-wide external memory handle list (read a TargetPointer from this address to obtain the head ExternalMemoryHandle, or null if the list is empty) |
 | `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
 
 ### Contracts used
@@ -64,14 +63,11 @@ layout.
 ``` csharp
 IReadOnlyList<ExternalMemoryHandleRootData> IExternalMemoryHandles.GetRoots(bool resolveInteriorPointers)
 {
-    TargetPointer appDomain = // read the AppDomain global
-    if (appDomain == TargetPointer.Null)
-        return [];
+    TargetPointer headPointer = // read the ExternalMemoryHandles global
+    TargetPointer current = // read a pointer from headPointer
 
-    AppDomain domain = // read AppDomain object starting at appDomain
     HashSet<TargetPointer> visited = [];
     List<ExternalMemoryHandleRootData> roots = [];
-    TargetPointer current = domain.ExternalMemoryHandles;
     while (current != TargetPointer.Null)
     {
         if (!visited.Add(current))

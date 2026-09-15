@@ -33,10 +33,24 @@ public:
     // Next pointer for SList linkage.
     PTR_ExternalMemoryHandle m_pNext;
 
+    // The list of external memory handles is process-wide (there is only ever one AppDomain), so it
+    // is kept as a static on ExternalMemoryHandle rather than hanging off AppDomain.
+#ifndef DACCESS_COMPILE
+    static void Init();
+    static ExternalMemoryHandle* Add(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags);
+    static void Remove(ExternalMemoryHandle* handle DEBUG_ARG(bool isEESuspended = false));
+    static void Cleanup();
+#endif
+    static void GCScanRoots(promote_func *fn, ScanContext *sc);
+    static PTR_ExternalMemoryHandle GetHead();
+
 private:
     PTR_MethodTable m_pMT;
     PTR_VOID m_pMemory;
     UINT m_gcFlags;
+
+    static CrstExplicitInit s_crst;
+    static SListTail<ExternalMemoryHandle> s_handles;
 };
 
 template<>
@@ -46,6 +60,7 @@ struct cdac_data<ExternalMemoryHandle>
     static constexpr size_t MethodTable = offsetof(ExternalMemoryHandle, m_pMT);
     static constexpr size_t Memory = offsetof(ExternalMemoryHandle, m_pMemory);
     static constexpr size_t GCFlags = offsetof(ExternalMemoryHandle, m_gcFlags);
+    static constexpr PTR_ExternalMemoryHandle* HandlesHead = &ExternalMemoryHandle::s_handles.m_pHead;
 };
 
 #endif // EXTERNALMEMORYHANDLE_HPP

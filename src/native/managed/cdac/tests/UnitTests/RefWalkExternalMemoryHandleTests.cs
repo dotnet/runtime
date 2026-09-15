@@ -15,8 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 public class ExternalMemoryHandleRootTests
 {
     private static readonly MockTarget.Architecture Arch = new() { IsLittleEndian = true, Is64Bit = true };
-    private static readonly TargetPointer AppDomainAddr = new(0x1000);
-    private const ulong AppDomainStaticSlotAddr = 0x0500;
+    private const ulong ExternalMemoryHandlesHeadSlotAddr = 0x0500;
     private const ulong HandleAddr = 0x1800;
     private const ulong MethodTableAddr = 0x2000;
     private const ulong ObjectSize = 0x100;
@@ -37,16 +36,9 @@ public class ExternalMemoryHandleRootTests
             mockGC.Setup(g => g.GetGCIdentifiers()).Returns([]);
 
         var builder = new TestPlaceholderTarget.Builder(Arch)
-            .AddGlobals(("AppDomain", AppDomainStaticSlotAddr))
+            .AddGlobals((Constants.Globals.ExternalMemoryHandles, ExternalMemoryHandlesHeadSlotAddr))
             .AddTypes(new Dictionary<DataType, Target.TypeInfo>
             {
-                [DataType.AppDomain] = new()
-                {
-                    Fields = new Dictionary<string, Target.FieldInfo>
-                    {
-                        { nameof(Data.AppDomain.ExternalMemoryHandles), new() { Offset = 0, TypeName = DataType.pointer.ToString() } },
-                    }
-                },
                 [DataType.ExternalMemoryHandle] = new()
                 {
                     Fields = new Dictionary<string, Target.FieldInfo>
@@ -66,8 +58,7 @@ public class ExternalMemoryHandleRootTests
             .AddMockContract(mockGC)
             .AddMockContract(rts);
 
-        builder.MemoryBuilder.AddHeapFragment(PointerFragment(AppDomainStaticSlotAddr, AppDomainAddr.Value));
-        builder.MemoryBuilder.AddHeapFragment(PointerFragment(AppDomainAddr.Value, hasHandle ? HandleAddr : 0));
+        builder.MemoryBuilder.AddHeapFragment(PointerFragment(ExternalMemoryHandlesHeadSlotAddr, hasHandle ? HandleAddr : 0));
         if (hasHandle)
             builder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(memory.Value, gcFlags));
 

@@ -1653,10 +1653,7 @@ AppDomain::~AppDomain()
 
     m_AssemblyCache.Clear();
 
-    while (!m_externalMemoryHandles.IsEmpty())
-    {
-        delete m_externalMemoryHandles.RemoveHead();
-    }
+    ExternalMemoryHandle::Cleanup();
 }
 
 //*****************************************************************************
@@ -1681,7 +1678,7 @@ void AppDomain::Init()
     m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
     m_FileLoadLock.Init(CrstAssemblyLoader, CrstFlags(CRST_DEFAULT));
     m_DomainCacheCrst.Init(CrstAppDomainCache);
-    m_externalMemoryHandlesCrst.Init(CrstExternalMemoryHandle, CrstFlags(CRST_UNSAFE_COOPGC | CRST_TAKEN_DURING_SHUTDOWN));
+    ExternalMemoryHandle::Init();
 
     // Has to switch thread to GC_NOTRIGGER while being held
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
@@ -3792,75 +3789,7 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     }
 }
 
-ExternalMemoryHandle* AppDomain::AddExternalMemoryHandle(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pMT != nullptr);
-    _ASSERTE(pMemory != nullptr);
-
-    ExternalMemoryHandle* handle = new ExternalMemoryHandle(pMT, pMemory, gcFlags);
-
-    {
-        CrstHolder lock(&m_externalMemoryHandlesCrst);
-        m_externalMemoryHandles.InsertTail(handle);
-    }
-
-    return handle;
-}
-
-void AppDomain::RemoveExternalMemoryHandle(ExternalMemoryHandle* handle DEBUG_ARG(bool isEESuspended))
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(handle != nullptr);
-    _ASSERTE(isEESuspended || (GetThreadNULLOk() != nullptr && GetThread()->PreemptiveGCDisabled()));
-
-    bool removed;
-    {
-        CrstHolder lock(&m_externalMemoryHandlesCrst);
-        removed = m_externalMemoryHandles.RemoveFirst(handle);
-    }
-
-    _ASSERTE(removed);
-    if (!removed)
-        return;
-
-    delete handle;
-}
-
 #endif // !DACCESS_COMPILE
-
-void AppDomain::GCScanExternalMemoryHandles(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // Mutations happen in cooperative mode or while the debugger has suspended the EE, so the list
-    // is stable during a GC.
-    for (ExternalMemoryHandle* handle = m_externalMemoryHandles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
-    {
-        handle->GCScanRoot(fn, sc);
-    }
-}
 
 //------------------------------------------------------------------------
 PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
@@ -4277,7 +4206,7 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
         pAssembly->EnumMemoryRegions(flags);
     }
 
-    for (ExternalMemoryHandle* handle = m_externalMemoryHandles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
+    for (ExternalMemoryHandle* handle = ExternalMemoryHandle::GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
     {
         DacEnumMemoryRegion(dac_cast<TADDR>(handle), sizeof(ExternalMemoryHandle));
         handle->EnumMemoryRegions(flags);

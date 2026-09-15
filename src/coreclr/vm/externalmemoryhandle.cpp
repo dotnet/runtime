@@ -4,6 +4,111 @@
 #include "externalmemoryhandle.h"
 #include "siginfo.hpp"
 
+CrstExplicitInit ExternalMemoryHandle::s_crst;
+SListTail<ExternalMemoryHandle> ExternalMemoryHandle::s_handles;
+
+#ifndef DACCESS_COMPILE
+
+void ExternalMemoryHandle::Init()
+{
+    STANDARD_VM_CONTRACT;
+
+    s_crst.Init(CrstExternalMemoryHandle, CrstFlags(CRST_UNSAFE_COOPGC | CRST_TAKEN_DURING_SHUTDOWN));
+}
+
+ExternalMemoryHandle* ExternalMemoryHandle::Add(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pMT != nullptr);
+    _ASSERTE(pMemory != nullptr);
+
+    ExternalMemoryHandle* handle = new ExternalMemoryHandle(pMT, pMemory, gcFlags);
+
+    {
+        CrstHolder lock(&s_crst);
+        s_handles.InsertTail(handle);
+    }
+
+    return handle;
+}
+
+void ExternalMemoryHandle::Remove(ExternalMemoryHandle* handle DEBUG_ARG(bool isEESuspended))
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(handle != nullptr);
+    _ASSERTE(isEESuspended || (GetThreadNULLOk() != nullptr && GetThread()->PreemptiveGCDisabled()));
+
+    bool removed;
+    {
+        CrstHolder lock(&s_crst);
+        removed = s_handles.RemoveFirst(handle);
+    }
+
+    _ASSERTE(removed);
+    if (!removed)
+        return;
+
+    delete handle;
+}
+
+void ExternalMemoryHandle::Cleanup()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    while (!s_handles.IsEmpty())
+    {
+        delete s_handles.RemoveHead();
+    }
+}
+
+#endif // !DACCESS_COMPILE
+
+void ExternalMemoryHandle::GCScanRoots(promote_func *fn, ScanContext *sc)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // Mutations happen in cooperative mode or while the debugger has suspended the EE, so the list
+    // is stable during a GC.
+    for (ExternalMemoryHandle* handle = s_handles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
+    {
+        handle->GCScanRoot(fn, sc);
+    }
+}
+
+PTR_ExternalMemoryHandle ExternalMemoryHandle::GetHead()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return s_handles.GetHead();
+}
+
 void ExternalMemoryHandle::GCScanRoot(promote_func *fn, ScanContext *sc)
 {
     CONTRACTL

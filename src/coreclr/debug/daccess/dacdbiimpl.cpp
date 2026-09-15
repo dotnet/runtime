@@ -7871,12 +7871,8 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
 
 HRESULT DacRefWalker::WalkExternalMemoryHandles()
 {
-    AppDomain* appDomain = AppDomain::GetCurrentDomain();
-    if (appDomain == NULL)
-        return S_OK;
-
     ExternalMemoryScanContext context(this);
-    appDomain->GCScanExternalMemoryHandles(ExternalMemoryHandleCallback, &context);
+    ExternalMemoryHandle::GCScanRoots(ExternalMemoryHandleCallback, &context);
     return context.Result;
 }
 

@@ -1311,9 +1311,8 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     }
 }
 
-DebuggerExternalMemoryHandle::DebuggerExternalMemoryHandle(AppDomain *pAppDomain, MethodTable *pMT, BYTE *pMemory)
-    : m_pAppDomain(pAppDomain),
-      m_pHandle(NULL),
+DebuggerExternalMemoryHandle::DebuggerExternalMemoryHandle(MethodTable *pMT, BYTE *pMemory)
+    : m_pHandle(NULL),
       m_pMemory(pMemory)
 {
     CONTRACTL
@@ -1324,14 +1323,14 @@ DebuggerExternalMemoryHandle::DebuggerExternalMemoryHandle(AppDomain *pAppDomain
     }
     CONTRACTL_END;
 
-    m_pHandle = m_pAppDomain->AddExternalMemoryHandle(pMT, m_pMemory, 0);
+    m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
 }
 
 DebuggerExternalMemoryHandle::~DebuggerExternalMemoryHandle()
 {
     WRAPPER_NO_CONTRACT;
 
-    m_pAppDomain->RemoveExternalMemoryHandle(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+    ExternalMemoryHandle::Remove(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
     DeleteInteropSafe(m_pMemory);
 }
 
@@ -1350,8 +1349,7 @@ BYTE *DebuggerEval::CreateExternalMemoryHandle(MethodTable *pMT, SIZE_T size)
     BYTE *pMemory = new (interopsafe) BYTE[size];
     EX_TRY
     {
-        m_externalMemoryHandle = new (interopsafe) DebuggerExternalMemoryHandle(
-            AppDomain::GetCurrentDomain(), pMT, pMemory);
+        m_externalMemoryHandle = new (interopsafe) DebuggerExternalMemoryHandle(pMT, pMemory);
     }
     EX_CATCH
     {

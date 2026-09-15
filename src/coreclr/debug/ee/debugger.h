@@ -3364,7 +3364,7 @@ public:
 class DebuggerExternalMemoryHandle
 {
 public:
-    DebuggerExternalMemoryHandle(AppDomain *pAppDomain, MethodTable *pMT, BYTE *pMemory);
+    DebuggerExternalMemoryHandle(MethodTable *pMT, BYTE *pMemory);
     ~DebuggerExternalMemoryHandle();
 
     BYTE *GetMemory() const
@@ -3373,7 +3373,6 @@ public:
     }
 
 private:
-    AppDomain            *m_pAppDomain;
     ExternalMemoryHandle *m_pHandle;
     BYTE                 *m_pMemory;
 };

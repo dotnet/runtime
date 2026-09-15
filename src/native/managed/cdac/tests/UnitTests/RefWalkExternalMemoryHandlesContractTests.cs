@@ -18,6 +18,7 @@ public class RefWalkExternalMemoryHandlesContractTests
 
     private const ulong AppDomainStaticSlotAddr = 0x0500;
     private const ulong AppDomainAddr = 0x1000;
+    private const ulong ExternalMemoryHandlesHeadSlotAddr = 0x0600;
     private const ulong HandleAddr = 0x2000;
     private const ulong MethodTableAddr = 0x9000;
     private const ulong MemoryAddr = 0x9500;
@@ -32,15 +33,10 @@ public class RefWalkExternalMemoryHandlesContractTests
 
         var targetBuilder = new TestPlaceholderTarget.Builder(Arch)
             .AddGlobals(("AppDomain", AppDomainStaticSlotAddr))
+            .AddGlobals((Constants.Globals.ExternalMemoryHandles, ExternalMemoryHandlesHeadSlotAddr))
             .AddTypes(new Dictionary<DataType, Target.TypeInfo>
             {
-                [DataType.AppDomain] = new()
-                {
-                    Fields = new Dictionary<string, Target.FieldInfo>
-                    {
-                        { nameof(Data.AppDomain.ExternalMemoryHandles), new() { Offset = 0, TypeName = DataType.pointer.ToString() } },
-                    }
-                },
+                [DataType.AppDomain] = new(),
                 [DataType.ExternalMemoryHandle] = new()
                 {
                     Fields = new Dictionary<string, Target.FieldInfo>
@@ -64,11 +60,11 @@ public class RefWalkExternalMemoryHandlesContractTests
             .AddMockContract(mockGC)
             .AddMockContract(rts);
 
-        // AppDomain* static slot -> the AppDomain instance
+        // AppDomain* static slot -> the AppDomain instance (used by ILoader.GetAppDomain for vmDomain)
         targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, AppDomainStaticSlotAddr, AppDomainAddr));
 
-        // AppDomain.ExternalMemoryHandles -> a single handle
-        targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, AppDomainAddr, HandleAddr));
+        // ExternalMemoryHandles global slot -> a single handle
+        targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, ExternalMemoryHandlesHeadSlotAddr, HandleAddr));
 
         // Handle: Next -> null, MethodTable, Memory, GCFlags=0 (ordinary reference-type root)
         targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, HandleAddr, 0, MethodTableAddr, MemoryAddr, 0));

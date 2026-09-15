@@ -25,15 +25,10 @@ internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
     IReadOnlyList<ExternalMemoryHandleRootData> IExternalMemoryHandles.GetRoots(bool resolveInteriorPointers)
     {
         List<ExternalMemoryHandleRootData> roots = [];
-        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
-        if (appDomain == TargetPointer.Null)
-            return roots;
-
-        Data.AppDomain domain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomain);
+        TargetPointer headPointer = _target.ReadGlobalPointer(Constants.Globals.ExternalMemoryHandles);
+        TargetPointer current = _target.ReadPointer(headPointer);
 
         HashSet<TargetPointer> visited = [];
-        TargetPointer current = domain.ExternalMemoryHandles;
         while (current != TargetPointer.Null)
         {
             if (!visited.Add(current))

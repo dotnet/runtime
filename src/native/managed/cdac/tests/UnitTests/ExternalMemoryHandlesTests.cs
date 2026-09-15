@@ -14,8 +14,7 @@ public class ExternalMemoryHandlesTests
 {
     private static readonly MockTarget.Architecture Arch = new() { IsLittleEndian = true, Is64Bit = true };
 
-    private const ulong AppDomainStaticSlotAddr = 0x0500;
-    private const ulong AppDomainAddr = 0x1000;
+    private const ulong ExternalMemoryHandlesHeadSlotAddr = 0x0500;
     private const ulong Handle1Addr = 0x2000;
     private const ulong Handle2Addr = 0x2100;
     private const ulong MethodTable1Addr = 0x9000;
@@ -23,7 +22,7 @@ public class ExternalMemoryHandlesTests
     private const ulong Memory1Addr = 0x9500;
     private const ulong Memory2Addr = 0x9600;
 
-    private static TestPlaceholderTarget CreateTarget(bool hasAppDomain = true)
+    private static TestPlaceholderTarget CreateTarget(bool hasHandles = true)
     {
         TargetTestHelpers helpers = new(Arch);
         int ptrSize = helpers.PointerSize;
@@ -37,17 +36,10 @@ public class ExternalMemoryHandlesTests
         var gc = new Mock<IGC>();
 
         var targetBuilder = new TestPlaceholderTarget.Builder(Arch)
-            .AddGlobals(("AppDomain", AppDomainStaticSlotAddr))
+            .AddGlobals((Constants.Globals.ExternalMemoryHandles, ExternalMemoryHandlesHeadSlotAddr))
             .AddGlobals((nameof(Constants.Globals.ObjectToMethodTableUnmask), 0ul))
             .AddTypes(new Dictionary<DataType, Target.TypeInfo>
             {
-                [DataType.AppDomain] = new()
-                {
-                    Fields = new Dictionary<string, Target.FieldInfo>
-                    {
-                        { nameof(Data.AppDomain.ExternalMemoryHandles), new() { Offset = 0, TypeName = DataType.pointer.ToString() } },
-                    }
-                },
                 [DataType.ExternalMemoryHandle] = new()
                 {
                     Fields = new Dictionary<string, Target.FieldInfo>
@@ -66,11 +58,8 @@ public class ExternalMemoryHandlesTests
             .AddMockContract(gc)
             .AddMockContract(rts);
 
-        // AppDomain* static slot -> the AppDomain instance
-        targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, AppDomainStaticSlotAddr, hasAppDomain ? AppDomainAddr : 0));
-
-        // AppDomain.ExternalMemoryHandles -> Handle1
-        targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, AppDomainAddr, Handle1Addr));
+        // ExternalMemoryHandles global slot -> head of the list (or null when empty)
+        targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, ExternalMemoryHandlesHeadSlotAddr, hasHandles ? Handle1Addr : 0));
 
         // Handle1: Next -> Handle2, MethodTable1, Memory1, GCFlags=0
         targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, Handle1Addr, Handle2Addr, MethodTable1Addr, Memory1Addr, 0));
@@ -117,9 +106,9 @@ public class ExternalMemoryHandlesTests
     }
 
     [Fact]
-    public void GetRoots_NullAppDomain_ReturnsEmpty()
+    public void GetRoots_NoHandles_ReturnsEmpty()
     {
-        TestPlaceholderTarget target = CreateTarget(hasAppDomain: false);
+        TestPlaceholderTarget target = CreateTarget(hasHandles: false);
         IExternalMemoryHandles externalMemoryHandles = target.Contracts.ExternalMemoryHandles;
 
         IReadOnlyList<ExternalMemoryHandleRootData> roots = externalMemoryHandles.GetRoots(resolveInteriorPointers: true);
