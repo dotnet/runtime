@@ -33,8 +33,6 @@ public:
     // Next pointer for SList linkage.
     PTR_ExternalMemoryHandle m_pNext;
 
-    // The list of external memory handles is process-wide (there is only ever one AppDomain), so it
-    // is kept as a static on ExternalMemoryHandle rather than hanging off AppDomain.
 #ifndef DACCESS_COMPILE
     static void Init();
     static ExternalMemoryHandle* Add(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags);
