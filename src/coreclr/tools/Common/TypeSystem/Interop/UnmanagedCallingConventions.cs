@@ -94,6 +94,10 @@ namespace Internal.TypeSystem
 
         public static UnmanagedCallingConventions GetUnmanagedCallersOnlyMethodCallingConventions(this MethodDesc method)
         {
+            // Generic methods and types are invalid here, but must not crash the compiler
+            // when reading the attribute from an instantiated method.
+            method = method.GetTypicalMethodDefinition();
+
             Debug.Assert(method.IsUnmanagedCallersOnly);
             CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)method).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
             return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute, method.Context) & ~UnmanagedCallingConventions.IsSuppressGcTransition;
