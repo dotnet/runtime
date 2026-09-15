@@ -881,7 +881,7 @@ namespace ILAssembler
                         ? FindTypeDefinition(null, typeReference.Namespace, typeReference.Name)
                         : null;
 
-                case ModuleEntity or ModuleReferenceEntity:
+                case ModuleEntity:
                     return FindTypeDefinition(null, typeReference.Namespace, typeReference.Name);
 
                 default:
@@ -1916,6 +1916,8 @@ namespace ILAssembler
             // ClassLayout table fields
             public int? PackingSize { get; set; }
             public int? ClassSize { get; set; }
+            public bool HasExplicitPackingSize { get; set; }
+            public bool HasExplicitClassSize { get; set; }
         }
 
         public sealed class TypeReferenceEntity(EntityBase resolutionScope, string @namespace, string name) : TypeEntity, IHasReflectionNotation

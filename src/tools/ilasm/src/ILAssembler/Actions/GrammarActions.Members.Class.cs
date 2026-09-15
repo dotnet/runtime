@@ -79,6 +79,7 @@ internal sealed partial class GrammarActions
             _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             currentType.ClassSize = ParseInt32(token);
+            currentType.HasExplicitClassSize = true;
         }
     }
 
@@ -88,6 +89,7 @@ internal sealed partial class GrammarActions
             _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             currentType.PackingSize = ParseInt32(token);
+            currentType.HasExplicitPackingSize = true;
         }
     }
 

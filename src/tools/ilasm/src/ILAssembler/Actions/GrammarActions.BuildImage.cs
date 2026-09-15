@@ -48,6 +48,7 @@ namespace ILAssembler
                 ValidateDataLabelFixups();
             ImmutableArray<ValidatedExport> validatedExports =
                 ValidateExports(validatedVTableAssociations, machine);
+            PseudoCustomAttributes.Lower(_entityRegistry, _diagnostics);
 
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
@@ -60,7 +61,6 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            PseudoCustomAttributes.Lower(_entityRegistry, _diagnostics);
             Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
             // MetadataRootBuilder only supports module-wide validation suppression, which is
             // required because wrapped GenericParam numbers intentionally violate table ordering.
