@@ -5452,11 +5452,16 @@ protected:
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
                                         CORINFO_SIG_INFO*     sig
-                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
-                                        bool                  mustExpand);
+                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint));
     GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
+    // Use exact dependencies for ISA choices that change native shuffle results.
+    bool compShuffleDependsOn(CORINFO_InstructionSet isa, bool isNonDeterministic) const
+    {
+        return isNonDeterministic ? compExactlyDependsOn(isa, true) : compOpportunisticallyDependsOn(isa);
+    }
+
     bool IsValidForShuffle(GenTree* indices,
                            unsigned simdSize,
                            var_types simdBaseType,
@@ -5471,7 +5476,7 @@ protected:
                             bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
+    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -10978,10 +10983,10 @@ public:
     }
 
     // Answer the question: Is a particular ISA supported for explicit hardware intrinsics?
-    bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa) const
+    bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
         // Report intent to use the ISA to the EE
-        compExactlyDependsOn(isa);
+        compExactlyDependsOn(isa, preserveNegativeDependency);
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
