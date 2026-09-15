@@ -56,6 +56,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private readonly ImmutableHashSet<CaptureId> _deconstructionLValueFlowCaptures;
 
+        private readonly ImmutableHashSet<CaptureId> _conditionalDeconstructionFlowCaptures;
+
+        private readonly Dictionary<CaptureId, ImmutableArray<ITupleOperation>> _tupleFlowCaptureSources = new();
+
+        private CaptureId? _tupleFlowCaptureId;
+
+        private ImmutableArray<int> _tupleFlowCapturePath;
+
+        private ITupleOperation? _tupleFlowCaptureOperation;
+
         public InterproceduralState<TValue, TValueLattice> InterproceduralState;
 
         private bool IsLValueFlowCapture(CaptureId captureId)
@@ -80,12 +90,56 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             _semanticModel = cfg.OriginalOperation.SemanticModel ??
                 compilation.GetSemanticModel(cfg.OriginalOperation.Syntax.SyntaxTree);
             this.lValueFlowCaptures = lValueFlowCaptures;
-            _deconstructionLValueFlowCaptures = cfg
+            ImmutableArray<IFlowCaptureReferenceOperation> flowCaptureReferences = cfg
                 .DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference)
+                .ToImmutableArray();
+            _deconstructionLValueFlowCaptures = flowCaptureReferences
                 .Where(reference => reference.IsInLeftOfDeconstructionAssignment(out _))
                 .Select(reference => reference.Id)
                 .ToImmutableHashSet();
+            _conditionalDeconstructionFlowCaptures = flowCaptureReferences
+                .Where(reference =>
+                    reference.Syntax is ConditionalExpressionSyntax &&
+                    reference.Parent is IDeconstructionAssignmentOperation deconstruction &&
+                    UnwrapDeconstructionSource(deconstruction.Value) == reference)
+                .Select(reference => reference.Id)
+                .ToImmutableHashSet();
             InterproceduralState = interproceduralState;
+        }
+
+        public override TValue DefaultVisit(
+            IOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (_tupleFlowCaptureId is not CaptureId captureId ||
+                operation is not ITupleOperation tuple ||
+                operation != _tupleFlowCaptureOperation)
+            {
+                return base.DefaultVisit(operation, state);
+            }
+
+            for (int i = 0; i < tuple.Elements.Length; i++)
+            {
+                ImmutableArray<int> elementPath = _tupleFlowCapturePath.Add(i);
+                ImmutableArray<int> previousPath = _tupleFlowCapturePath;
+                ITupleOperation? previousOperation = _tupleFlowCaptureOperation;
+                _tupleFlowCapturePath = elementPath;
+                _tupleFlowCaptureOperation = UnwrapDeconstructionSource(tuple.Elements[i]) as ITupleOperation;
+                TValue elementValue;
+                try
+                {
+                    elementValue = Visit(tuple.Elements[i], state);
+                }
+                finally
+                {
+                    _tupleFlowCapturePath = previousPath;
+                    _tupleFlowCaptureOperation = previousOperation;
+                }
+
+                state.Set(new LocalKey(captureId, elementPath), elementValue);
+            }
+
+            return TopValue;
         }
 
         public abstract void ApplyCondition(TConditionValue condition, ref LocalStateAndContext<TValue, TContext> localContextState);
@@ -641,6 +695,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             IOperation source = UnwrapDeconstructionSource(operation.Value);
             bool sourceValueIsKnown = source is not ITupleOperation;
             TValue sourceValue = sourceValueIsKnown ? Visit(source, state) : TopValue;
+            TupleFlowCapture sourceTupleCapture = default;
+            if (source is IFlowCaptureReferenceOperation { Syntax: ConditionalExpressionSyntax } flowCaptureReference &&
+                _conditionalDeconstructionFlowCaptures.Contains(flowCaptureReference.Id))
+            {
+                ImmutableArray<ITupleOperation> tupleSources = GetTupleFlowCaptureSources(flowCaptureReference.Id);
+                if (!tupleSources.IsDefaultOrEmpty)
+                    sourceTupleCapture = new TupleFlowCapture(flowCaptureReference.Id, tupleSources);
+            }
 
             // Deconstruction evaluates all source values before assigning any target. Keeping these
             // phases separate is required for assignments such as (first, second) = (second, first).
@@ -652,7 +714,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 sourceValueIsKnown,
                 deconstructionInfo,
                 operation,
-                state);
+                state,
+                sourceTupleCapture);
             if (deconstructionValue.DoesNotReturn)
             {
                 state.Current = LocalStateAndContextLattice.Top;
@@ -708,6 +771,58 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             public static DeconstructionValue NonReturning => new(isInvalid: false, doesNotReturn: true);
         }
 
+        private readonly struct TupleFlowCapture
+        {
+            private readonly CaptureId _captureId;
+
+            private readonly ImmutableArray<int> _path;
+
+            private readonly ImmutableArray<ITupleOperation> _sources;
+
+            public bool HasValue => !_sources.IsDefaultOrEmpty;
+
+            public TupleFlowCapture(CaptureId captureId, ImmutableArray<ITupleOperation> sources)
+                : this(captureId, ImmutableArray<int>.Empty, sources)
+            {
+            }
+
+            private TupleFlowCapture(
+                CaptureId captureId,
+                ImmutableArray<int> path,
+                ImmutableArray<ITupleOperation> sources)
+            {
+                _captureId = captureId;
+                _path = path;
+                _sources = sources;
+            }
+
+            public LocalKey GetElementKey(int index)
+            {
+                Debug.Assert(HasValue);
+                return new LocalKey(_captureId, _path.Add(index));
+            }
+
+            public TupleFlowCapture GetNested(int index)
+            {
+                if (!HasValue)
+                    return default;
+
+                var nestedSources = ImmutableArray.CreateBuilder<ITupleOperation>(_sources.Length);
+                foreach (ITupleOperation source in _sources)
+                {
+                    if ((uint)index >= (uint)source.Elements.Length ||
+                        UnwrapDeconstructionSource(source.Elements[index]) is not ITupleOperation nestedSource)
+                    {
+                        return default;
+                    }
+
+                    nestedSources.Add(nestedSource);
+                }
+
+                return new TupleFlowCapture(_captureId, _path.Add(index), nestedSources.MoveToImmutable());
+            }
+        }
+
         private DeconstructionValue EvaluateDeconstruction(
             IOperation target,
             IOperation? source,
@@ -716,7 +831,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             bool sourceValueIsKnown,
             DeconstructionInfo deconstructionInfo,
             IDeconstructionAssignmentOperation operation,
-            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            TupleFlowCapture sourceTupleCapture)
         {
             target = UnwrapDeconstructionTarget(target);
 
@@ -798,7 +914,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         sourceValueIsKnown: true,
                         deconstructionInfo.Nested[i],
                         operation,
-                        state);
+                        state,
+                        sourceTupleCapture: default);
                     if (nestedValue.DoesNotReturn)
                         return DeconstructionValue.NonReturning;
                     nestedValues.Add(nestedValue);
@@ -822,7 +939,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         sourceValueIsKnown: false,
                         deconstructionInfo.Nested[i],
                         operation,
-                        state);
+                        state,
+                        sourceTupleCapture: default);
                     if (nestedValue.DoesNotReturn)
                         return DeconstructionValue.NonReturning;
                     nestedValues.Add(nestedValue);
@@ -842,21 +960,52 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             for (int i = 0; i < targetTuple.Elements.Length; i++)
             {
                 IFieldSymbol tupleElement = tupleType.TupleElements[i];
+                // Roslyn distributes a top-level conditional deconstruction into its tuple branches.
+                // Use the values captured for each element instead of synthesizing tuple field reads.
+                TValue tupleElementValue = sourceTupleCapture.HasValue
+                    ? state.Get(sourceTupleCapture.GetElementKey(i))
+                    : GetTupleElementValue(tupleElement);
                 DeconstructionValue tupleValue = EvaluateDeconstruction(
                     targetTuple.Elements[i],
                     source: null,
                     tupleElement.Type,
-                    GetTupleElementValue(tupleElement),
+                    tupleElementValue,
                     sourceValueIsKnown: true,
                     deconstructionInfo.Nested[i],
                     operation,
-                    state);
+                    state,
+                    sourceTupleCapture.GetNested(i));
                 if (tupleValue.DoesNotReturn)
                     return DeconstructionValue.NonReturning;
                 tupleValues.Add(tupleValue);
             }
 
             return new DeconstructionValue(tupleValues.MoveToImmutable());
+        }
+
+        private ImmutableArray<ITupleOperation> GetTupleFlowCaptureSources(CaptureId captureId)
+        {
+            if (_tupleFlowCaptureSources.TryGetValue(captureId, out ImmutableArray<ITupleOperation> sources))
+                return sources;
+
+            var builder = ImmutableArray.CreateBuilder<ITupleOperation>();
+            foreach (IFlowCaptureOperation flowCapture in ControlFlowGraph.DescendantOperations<IFlowCaptureOperation>(OperationKind.FlowCapture))
+            {
+                if (!flowCapture.Id.Equals(captureId))
+                    continue;
+
+                if (UnwrapDeconstructionSource(flowCapture.Value) is not ITupleOperation tupleSource)
+                {
+                    _tupleFlowCaptureSources.Add(captureId, default);
+                    return default;
+                }
+
+                builder.Add(tupleSource);
+            }
+
+            sources = builder.Count == 0 ? default : builder.ToImmutable();
+            _tupleFlowCaptureSources.Add(captureId, sources);
+            return sources;
         }
 
         private void AssignDeconstruction(
@@ -1182,11 +1331,39 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
                 else
                 {
-                    capturedValue = Visit(operation.Value, state);
+                    capturedValue = VisitFlowCaptureValue(operation, state);
                 }
 
                 state.Set(new LocalKey(operation.Id), capturedValue);
                 return capturedValue;
+            }
+        }
+
+        private TValue VisitFlowCaptureValue(
+            IFlowCaptureOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (!_conditionalDeconstructionFlowCaptures.Contains(operation.Id) ||
+                UnwrapDeconstructionSource(operation.Value) is not ITupleOperation)
+            {
+                return Visit(operation.Value, state);
+            }
+
+            CaptureId? previousCaptureId = _tupleFlowCaptureId;
+            ImmutableArray<int> previousPath = _tupleFlowCapturePath;
+            ITupleOperation? previousOperation = _tupleFlowCaptureOperation;
+            _tupleFlowCaptureId = operation.Id;
+            _tupleFlowCapturePath = ImmutableArray<int>.Empty;
+            _tupleFlowCaptureOperation = (ITupleOperation)UnwrapDeconstructionSource(operation.Value);
+            try
+            {
+                return Visit(operation.Value, state);
+            }
+            finally
+            {
+                _tupleFlowCaptureId = previousCaptureId;
+                _tupleFlowCapturePath = previousPath;
+                _tupleFlowCaptureOperation = previousOperation;
             }
         }
 
