@@ -31,9 +31,10 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
-  model: claude-opus-4.8
   env:
     COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
+
+model: gpt-5.6-terra
 
 concurrency:
   group: "ci-failure-fix"
@@ -365,6 +366,10 @@ Every `create_pull_request` and `add_comment` safe-output call MUST also provide
 
 Do not paste this JSON into the body. `safe-outputs.data` validates it and appends it after sanitization as a `Structured data:` fenced JSON block. New readers use that block as the machine-readable identity; the visible block remains the legacy fallback.
 
+In every `## Evidence` section, render each Azure DevOps build ID as a Markdown link
+to that build, never as a bare number. Use the build URL from the KBE when available;
+otherwise use `https://dev.azure.com/dnceng-public/public/_build/results?buildId=<id>`.
+
 ## Templates
 
 ### Template: Fix-PR body (Branch FIX — confident)
@@ -388,8 +393,8 @@ Linked KBE: #<n>
 - Why the failing test/log validates this fix: <one or two sentences>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Suspected regressing change: <dotnet/runtime#<n> | none identified>
 
 ---
@@ -425,8 +430,8 @@ Linked KBE: #<n>
 - Result: <passed | failed | not run>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Suspected regressing change: <dotnet/runtime#<n> | none identified with sufficient confidence>
 
 ## Help wanted
@@ -453,8 +458,8 @@ This Known Build Error has no producible automated code change (reason: <JIT/GC 
 <what fails, the failing log line, the source location, and the most likely cause>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Possible related PR: <dotnet/runtime#<n> | none identified with sufficient confidence>
 
 ## Suggested reviewers / area contacts

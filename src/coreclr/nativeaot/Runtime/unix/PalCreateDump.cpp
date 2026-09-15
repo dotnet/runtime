@@ -254,7 +254,7 @@ CreateCrashDump(
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
             close(child_write_pipe);
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
 
         // Only dup the child's stderr if there is error buffer
@@ -273,7 +273,7 @@ CreateCrashDump(
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
             }
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
     }
     else
