@@ -111,9 +111,81 @@ public class Runtime_133718
         Assert.Equal(value, StoreToLocal(value, field));
     }
 
+    [Theory]
+    [InlineData(Operation.StoreUnsafe)]
+    [InlineData(Operation.StoreUnsafeOffset)]
+    [InlineData(Operation.StoreAligned)]
+    [InlineData(Operation.StoreAlignedNonTemporal)]
+    public static void StoreValueNullCheckBeforeOffset(Operation operation)
+    {
+        Assert.Throws<NullReferenceException>(() => StoreWithSharedObject(null, Array.Empty<nuint>(), operation));
+        Assert.Throws<IndexOutOfRangeException>(() => StoreWithSharedObject(new VectorObject(), Array.Empty<nuint>(), operation));
+    }
+
+    [Theory]
+    [InlineData(Operation.CreateSequence)]
+    [InlineData(Operation.MultiplyInt32)]
+    public static void ArithmeticValueNullCheckBeforeOffset(Operation operation)
+    {
+        Assert.Throws<NullReferenceException>(() => ArithmeticWithSharedObject(null, Array.Empty<nuint>(), operation));
+        Assert.Throws<IndexOutOfRangeException>(() => ArithmeticWithSharedObject(new VectorObject(), Array.Empty<nuint>(), operation));
+    }
+
     private struct VectorHolder
     {
         public Vector128<int> Value;
+    }
+
+    private sealed class VectorObject
+    {
+        public Vector128<int> Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector128<int> ArithmeticWithSharedObject(VectorObject holder, nuint[] offsets, Operation operation) =>
+        operation switch
+        {
+            Operation.CreateSequence => Vector128.CreateSequence(
+                Vector128.LoadUnsafe(ref Unsafe.As<Vector128<int>, int>(ref holder.Value), offsets[0]).ToScalar(),
+                holder.Value.ToScalar()),
+            Operation.MultiplyInt32 =>
+                Vector128.LoadUnsafe(ref Unsafe.As<Vector128<int>, int>(ref holder.Value), offsets[0]).ToScalar() * holder.Value,
+            _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+        };
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static unsafe void StoreWithSharedObject(VectorObject holder, nuint[] offsets, Operation operation)
+    {
+        // The store address must not establish that holder is non-null before morphing the value.
+        switch (operation)
+        {
+            case Operation.StoreUnsafe:
+                Vector128.StoreUnsafe(
+                    Vector128.LoadUnsafe(ref Unsafe.As<Vector128<int>, int>(ref holder.Value), offsets[0]),
+                    ref Unsafe.As<Vector128<int>, int>(ref holder.Value));
+                break;
+
+            case Operation.StoreUnsafeOffset:
+                Vector128.StoreUnsafe(
+                    Vector128.LoadUnsafe(ref Unsafe.As<Vector128<int>, int>(ref holder.Value), offsets[0]),
+                    ref Unsafe.As<Vector128<int>, int>(ref holder.Value), 0);
+                break;
+
+            case Operation.StoreAligned:
+                Vector128.StoreAligned(
+                    Vector128.LoadUnsafe(ref Unsafe.As<Vector128<int>, int>(ref holder.Value), offsets[0]),
+                    (int*)Unsafe.AsPointer(ref holder.Value));
+                break;
+
+            case Operation.StoreAlignedNonTemporal:
+                Vector128.StoreAlignedNonTemporal(
+                    Vector128.LoadUnsafe(ref Unsafe.As<Vector128<int>, int>(ref holder.Value), offsets[0]),
+                    (int*)Unsafe.AsPointer(ref holder.Value));
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(operation));
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]

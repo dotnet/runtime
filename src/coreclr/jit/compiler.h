@@ -4047,6 +4047,8 @@ public:
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
+    void gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp);
+
     // Given an address expression, compute its costs and addressing mode opportunities,
     // and mark addressing mode candidates as GTF_DONT_CSE.
     // TODO-Throughput - Consider actually instantiating these early, to avoid

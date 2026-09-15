@@ -5497,6 +5497,29 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 }
 
 //------------------------------------------------------------------------
+// gtPrepareOperandsForReordering: Preserve firstOp's evaluation before secondOp when
+//    constructing a tree that uses secondOp before firstOp.
+//
+// Arguments:
+//    firstOp  - [in, out] The operand that must be evaluated first
+//    secondOp - [in, out] The operand that will occur first in the resulting tree
+//
+// Notes:
+//    Morph does not consistently honor GTF_REVERSE_OPS, so capture firstOp in a temp
+//    at the start of secondOp. Invariant operands need no sequencing, and LIR already
+//    has an explicit execution order.
+//
+void Compiler::gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp)
+{
+    if ((fgNodeThreading != NodeThreading::LIR) && !impIsInvariant(*firstOp) && !impIsInvariant(*secondOp))
+    {
+        TempInfo temp = fgMakeTemp(*firstOp);
+        *firstOp      = temp.load;
+        *secondOp     = gtNewOperNode(GT_COMMA, (*secondOp)->TypeGet(), temp.store, *secondOp);
+    }
+}
+
+//------------------------------------------------------------------------
 // Given an address expression, compute its costs and addressing mode opportunities,
 // and mark addressing mode candidates as GTF_DONT_CSE.
 //
@@ -10581,6 +10604,11 @@ GenTree* Compiler::gtNewStoreValueNode(
 {
     assert((type != TYP_STRUCT) || (layout != nullptr));
 
+    if (reverseOps)
+    {
+        gtPrepareOperandsForReordering(&value, &addr);
+    }
+
     if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
@@ -10599,11 +10627,6 @@ GenTree* Compiler::gtNewStoreValueNode(
     else
     {
         store = gtNewStoreIndNode(type, addr, value, indirFlags);
-    }
-
-    if (reverseOps)
-    {
-        store->SetReverseOp();
     }
 
     return store;
@@ -23560,7 +23583,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
     if (needsReverseOps)
     {
-        // In HIR, preserve the original evaluation order on the resulting binary node.
+        gtPrepareOperandsForReordering(&op1, &op2);
         std::swap(op1, op2);
     }
 
@@ -23590,12 +23613,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             std::swap(op1, op2);
 #endif // TARGET_XARCH
         }
-        GenTree* result = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
-        if (needsReverseOps && !isLIR)
-        {
-            result->SetReverseOp();
-        }
-        return result;
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
     }
 
     switch (op)
@@ -23960,10 +23978,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 // lower = op1.GetElement(0) * op2.GetElement(0)
                 GenTree* lowerMul = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
-                if (needsReverseOps && !isLIR)
-                {
-                    lowerMul->SetReverseOp();
-                }
 
                 if (op2ToDup == nullptr)
                 {
@@ -25311,11 +25325,11 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
         }
         else
         {
+            gtPrepareOperandsForReordering(&op1, &op2);
             GenTree* indices = gtNewSimdGetIndicesNode(type, simdBaseType, simdSize);
             result           = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseType, simdSize);
             GenTree* start   = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
             result           = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseType, simdSize);
-            result->SetReverseOp();
             return result;
         }
     }
@@ -25473,6 +25487,7 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
     }
     else
     {
+        gtPrepareOperandsForReordering(&op1, &op2);
         GenTree* indices = gtNewSimdGetIndicesNode(type, simdBaseType, simdSize);
         result           = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseType, simdSize);
     }
@@ -25481,10 +25496,6 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
     {
         GenTree* start = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
         result         = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseType, simdSize);
-#if !defined(TARGET_WASM)
-        // Evaluate start before step without changing the arithmetic operand order.
-        result->SetReverseOp();
-#endif // !TARGET_WASM
     }
 
     return result;
@@ -30142,13 +30153,12 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(
         intrinsic = NI_X86Base_StoreAligned;
     }
 
-    GenTreeHWIntrinsic* store = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
     if (reverseOps)
     {
-        store->SetReverseOp();
+        gtPrepareOperandsForReordering(&op2, &op1);
     }
 
-    return store;
+    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_ARM64) || defined(TARGET_WASM)
     // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
@@ -30201,13 +30211,12 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(
         intrinsic = NI_X86Base_StoreAlignedNonTemporal;
     }
 
-    GenTreeHWIntrinsic* store = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
     if (reverseOps)
     {
-        store->SetReverseOp();
+        gtPrepareOperandsForReordering(&op2, &op1);
     }
 
-    return store;
+    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_ARM64) || defined(TARGET_WASM)
     // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling

@@ -3886,7 +3886,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
 #if defined(TARGET_WASM)
-            // WASM cannot use reverse operand evaluation for the final addition.
             impSpillSideEffect(true, stackState.esStackDepth -
                                          2 DEBUGARG("Spilling op1 side effects for vector CreateSequence"));
 #endif // TARGET_WASM
@@ -4968,13 +4967,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
-            bool reverseOps = true;
-
-#if defined(TARGET_WASM)
-            // WASM requires address-first operands in the final store.
             impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-            reverseOps = false;
-#endif // TARGET_WASM
 
             op2 = impPopStack().val;
 
@@ -4986,7 +4979,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize, reverseOps);
+            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5005,12 +4998,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
-            bool reverseOps = true;
-
-#if defined(TARGET_WASM)
             impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-            reverseOps = false;
-#endif // TARGET_WASM
 
             op2 = impPopStack().val;
 
@@ -5022,7 +5010,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize, reverseOps);
+            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5030,15 +5018,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(retType == TYP_VOID);
 
-            bool reverseOps = true;
-
             if (sig->numArgs == 3)
             {
-#if defined(TARGET_WASM)
                 impSpillSideEffect(true,
                                    stackState.esStackDepth - 3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-                reverseOps = false;
-#endif // TARGET_WASM
 
                 op3 = impPopStack().val;
             }
@@ -5046,11 +5029,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(sig->numArgs == 2);
 
-#if defined(TARGET_WASM)
                 impSpillSideEffect(true,
                                    stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-                reverseOps = false;
-#endif // TARGET_WASM
             }
 
             op2 = impPopStack().val;
@@ -5070,7 +5050,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize, reverseOps);
+            retNode = gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
