@@ -761,7 +761,9 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 #else  // !TARGET_ARM
-    if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
+    // Keep offset + size strictly below INT32_MAX, as required by unrolled block codegen.
+    ClrSafeInt<int> endOffset = ClrSafeInt<int>(offset) + ClrSafeInt<int>(size);
+    if (endOffset.IsOverflow() || (endOffset.Value() == INT32_MAX))
     {
         return;
     }
