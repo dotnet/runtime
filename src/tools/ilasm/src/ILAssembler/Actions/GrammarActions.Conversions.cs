@@ -29,7 +29,7 @@ namespace ILAssembler
         private readonly IReadOnlyDictionary<string, SourceText> _documents;
         private readonly Options _options;
         private readonly MetadataBuilder _metadataBuilder = new();
-        private readonly Func<string, byte[]> _resourceLocator;
+        private readonly Func<string, byte[]?> _resourceLocator;
 
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
@@ -49,7 +49,7 @@ namespace ILAssembler
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _vtableEntryDirectiveContexts = new();
 
-        internal GrammarActions(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]> resourceLocator)
+        internal GrammarActions(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]?> resourceLocator)
         {
             _documents = documents;
             _options = options;
