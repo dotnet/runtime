@@ -380,6 +380,9 @@ namespace System.Net.Security
                 // populated with the same instance.
                 ok = SslStream.VerifyRemoteCertificateCore(
                     this,
+                    // The external certificate is being (re)validated after the handshake, so the
+                    // resumption shortcut in VerifyRemoteCertificateCore must not apply here.
+                    isInitialHandshake: false,
                     _options,
                     _securityContext,
                     ref _remoteCertificate,
@@ -389,6 +392,7 @@ namespace System.Net.Security
                     trust: null,
                     ref alertToken,
                     ref sslPolicyErrors,
+                    out _,
                     out _);
             }
             finally
