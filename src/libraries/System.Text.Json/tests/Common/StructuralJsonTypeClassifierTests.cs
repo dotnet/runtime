@@ -270,6 +270,29 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("42", 42)]
+        [InlineData("\"42\"", "42")]
+        [InlineData("\"hello\"", "hello")]
+        public async Task StructuralClassifier_UsesSuppliedTypeInfoNumberHandling(string json, object expectedValue)
+        {
+            foreach (Type unionType in new[] { typeof(NumericStringUnion), typeof(NullableNumericStringUnion) })
+            {
+                JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+                {
+                    TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+                };
+
+                JsonTypeInfo typeInfo = Serializer.GetTypeInfo(unionType, options, mutable: true);
+                Assert.False(typeInfo.IsReadOnly);
+                typeInfo.NumberHandling = JsonNumberHandling.Strict;
+
+                object value = await Serializer.DeserializeWrapper(json, typeInfo);
+                Assert.Equal(expectedValue, ((IUnion)value).Value);
+                Assert.True(typeInfo.IsReadOnly);
+            }
+        }
+
+        [Theory]
         [InlineData(typeof(PolymorphicOrStringUnion), nameof(PolyAnimal))]
         [InlineData(typeof(PolymorphicCollectionOrStringUnion), nameof(PolymorphicIntList))]
         [InlineData(typeof(CaseSensitiveDiscriminatorUnion), nameof(LowercaseDiscriminatorBase))]

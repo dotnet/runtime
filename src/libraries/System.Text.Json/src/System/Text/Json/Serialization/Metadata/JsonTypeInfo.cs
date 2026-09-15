@@ -1096,7 +1096,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(UnionCases.Count > 0);
                 ctx = new JsonTypeClassifierContext(
                     JsonTypeClassifierKind.Union,
-                    Type,
+                    this,
                     new List<JsonUnionCaseInfo>(UnionCases),
                     Array.Empty<JsonDerivedType>(),
                     typeDiscriminatorPropertyName: null);
@@ -1108,7 +1108,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 ctx = new JsonTypeClassifierContext(
                     JsonTypeClassifierKind.PolymorphicType,
-                    Type,
+                    this,
                     Array.Empty<JsonUnionCaseInfo>(),
                     new List<JsonDerivedType>(polymorphismOptions.DerivedTypes),
                     polymorphismOptions.TypeDiscriminatorPropertyName);
