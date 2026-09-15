@@ -4264,38 +4264,13 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             goto Exit;
         }
 
-        if (doingFuncletUnwind &&
-            (pThis->GetNextExInfo() != NULL) &&
-            (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD))
+        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
         {
-            if (pThis->GetNextExInfo()->m_passNumber == 1)
-            {
-                bool isWasmR2RFilterBoundary = false;
-#ifdef TARGET_WASM
-                isWasmR2RFilterBoundary =
-                    ExecutionManager::IsVirtualIP(preUnwindControlPC) &&
-                    IsFilterHandler(&pThis->GetNextExInfo()->m_CurrentClause);
-#endif // TARGET_WASM
-                if (!isWasmR2RFilterBoundary)
-                {
-                    _ASSERTE_MSG(FALSE, "did not expect to collide with a 1st-pass ExInfo during an EH stackwalk");
-                    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-                }
-
-                // Wasm R2R stack walking does not expose the native marker between a filter funclet
-                // and its VM caller. Propagate the exception back to the caller that swallows it.
-                *pfIsExceptionIntercepted = FALSE;
-                if (fUnwoundReversePInvoke != NULL)
-                {
-                    *fUnwoundReversePInvoke = TRUE;
-                }
-                goto Exit;
-            }
-
             // Detected collided unwind
-            if (pThis->GetNextExInfo()->m_idxCurClause == 0xFFFFFFFF)
+            if ((pThis->GetNextExInfo()->m_passNumber == 1) ||
+                (pThis->GetNextExInfo()->m_idxCurClause == 0xFFFFFFFF))
             {
-                _ASSERTE_MSG(FALSE, "did not expect to collide with an ExInfo that has no current clause during an EH stackwalk");
+                _ASSERTE_MSG(FALSE, "did not expect to collide with a 1st-pass ExInfo during a EH stackwalk");
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
             }
             else
