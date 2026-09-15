@@ -5064,7 +5064,7 @@ namespace Internal.JitInterface
         InstructionSetFlags _actualInstructionSetSupported;
         InstructionSetFlags _actualInstructionSetUnsupported;
 
-        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
         {
             instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
 
@@ -5130,7 +5130,7 @@ namespace Internal.JitInterface
             return supportEnabled;
         }
 #else
-        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
         {
             instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
 

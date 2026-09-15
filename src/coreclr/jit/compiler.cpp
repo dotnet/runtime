@@ -1974,7 +1974,7 @@ bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool suppor
 {
     const char* isaString = InstructionSetToString(isa);
     JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
-    return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    return info.compCompHnd->notifyInstructionSetUsage(isa, supported, false);
 }
 
 #ifdef PROFILING_SUPPORTED
