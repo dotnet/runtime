@@ -11,12 +11,46 @@ using System.Text;
 
 namespace System.Reflection
 {
+    internal readonly struct QCustomAttributeList(RuntimeModule module, int metadataToken)
+    {
+        public RuntimeModule Module { get; } = module;
+        public int MetadataToken { get; } = metadataToken;
+
+        public QCustomAttributeList(RuntimeType target)
+            : this(target.GetRuntimeModule(), target.MetadataToken) { }
+
+        public QCustomAttributeList(RuntimeFieldInfo target)
+            : this(target.GetRuntimeModule(), target.MetadataToken) { }
+
+        public QCustomAttributeList(RuntimeMethodInfo target)
+            : this(target.GetRuntimeModule(), target.MetadataToken) { }
+
+        public QCustomAttributeList(RuntimeConstructorInfo target)
+            : this(target.GetRuntimeModule(), target.MetadataToken) { }
+
+        public QCustomAttributeList(RuntimeEventInfo target)
+            : this(target.GetRuntimeModule(), target.MetadataToken) { }
+
+        public QCustomAttributeList(RuntimePropertyInfo target)
+            : this(target.GetRuntimeModule(), target.MetadataToken) { }
+
+        public QCustomAttributeList(RuntimeModule target)
+            : this(target, target.MetadataToken) { }
+
+        public QCustomAttributeList(RuntimeAssembly target)
+            : this((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target)) { }
+
+        public QCustomAttributeList(RuntimeParameterInfo target)
+            : this(target.GetRuntimeModule()!, target.MetadataToken) { }
+    }
+
     internal sealed partial class RuntimeCustomAttributeData : CustomAttributeData
     {
         #region Private Static Methods
-        private static IList<CustomAttributeData> GetCustomAttributes(RuntimeModule module, int tkTarget)
+        private static IList<CustomAttributeData> GetCustomAttributes(QCustomAttributeList attributeList)
         {
-            CustomAttributeRecord[] records = GetCustomAttributeRecords(module, tkTarget);
+            RuntimeModule module = attributeList.Module;
+            CustomAttributeRecord[] records = GetCustomAttributeRecords(module, attributeList.MetadataToken);
             if (records.Length == 0)
             {
                 return Array.Empty<CustomAttributeData>();
@@ -340,18 +374,20 @@ namespace System.Reflection
     {
         internal static bool IsAttributeDefined(RuntimeModule decoratedModule, int decoratedMetadataToken, int attributeCtorToken)
         {
-            return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, null, attributeCtorToken, false);
+            return IsCustomAttributeDefined(new QCustomAttributeList(decoratedModule, decoratedMetadataToken), null, attributeCtorToken: attributeCtorToken);
         }
 
         internal static bool IsCustomAttributeDefined(
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType? attributeFilterType)
         {
-            return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, attributeFilterType, 0, false);
+            return IsCustomAttributeDefined(new QCustomAttributeList(decoratedModule, decoratedMetadataToken), attributeFilterType);
         }
 
         private static bool IsCustomAttributeDefined(
-            RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType? attributeFilterType, int attributeCtorToken, bool mustBeInheritable)
+            QCustomAttributeList customAttributes, RuntimeType? attributeFilterType, bool mustBeInheritable = false, int attributeCtorToken = 0)
         {
+            RuntimeModule decoratedModule = customAttributes.Module;
+            int decoratedMetadataToken = customAttributes.MetadataToken;
             MetadataImport scope = decoratedModule.MetadataImport;
 
             scope.EnumCustomAttributes(decoratedMetadataToken, out MetadataEnumResult attributeTokens);
@@ -408,11 +444,13 @@ namespace System.Reflection
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
         private static void AddCustomAttributes(
             ref ListBuilder<object> attributes,
-            RuntimeModule decoratedModule, int decoratedMetadataToken,
+            QCustomAttributeList customAttributes,
             RuntimeType? attributeFilterType, bool mustBeInheritable,
             // The derivedAttributes list must be passed by value so that it is not modified with the discovered attributes
             ListBuilder<object> derivedAttributes)
         {
+            RuntimeModule decoratedModule = customAttributes.Module;
+            int decoratedMetadataToken = customAttributes.MetadataToken;
             CustomAttributeRecord[] car = RuntimeCustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
 
             if (attributeFilterType is null && car.Length == 0)

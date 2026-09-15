@@ -34,11 +34,7 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
@@ -48,11 +44,7 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
@@ -62,11 +54,7 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
@@ -76,33 +64,21 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeEventInfo target)
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimePropertyInfo target)
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeModule target)
@@ -112,11 +88,7 @@ namespace System.Reflection
             if (target.IsResource())
                 return new List<CustomAttributeData>();
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target, target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeAssembly target)
@@ -125,11 +97,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target));
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
@@ -137,11 +105,7 @@ namespace System.Reflection
             Debug.Assert(target is not null);
 
             ListBuilder<Attribute> pcas = default;
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule()!, target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
         }
@@ -925,11 +889,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(type, caType))
                 return true;
 
-#if NATIVEAOT
-            if (IsCustomAttributeDefined(type.GetMetadataReader(), type.GetCustomAttributeHandles(), caType))
-#else
-            if (IsCustomAttributeDefined(type.GetRuntimeModule(), type.MetadataToken, caType))
-#endif
+            if (IsCustomAttributeDefined(new QCustomAttributeList(type), caType))
                 return true;
 
             if (!inherit)
@@ -939,11 +899,7 @@ namespace System.Reflection
 
             while (type is not null)
             {
-#if NATIVEAOT
-                if (IsCustomAttributeDefined(type.GetMetadataReader(), type.GetCustomAttributeHandles(), caType, inherit))
-#else
-                if (IsCustomAttributeDefined(type.GetRuntimeModule(), type.MetadataToken, caType, 0, inherit))
-#endif
+                if (IsCustomAttributeDefined(new QCustomAttributeList(type), caType, inherit))
                     return true;
 
                 type = (type.BaseType as RuntimeType)!;
@@ -960,11 +916,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(method, caType))
                 return true;
 
-#if NATIVEAOT
-            if (IsCustomAttributeDefined(method.GetMetadataReader(), method.GetCustomAttributeHandles(), caType))
-#else
-            if (IsCustomAttributeDefined(method.GetRuntimeModule(), method.MetadataToken, caType))
-#endif
+            if (IsCustomAttributeDefined(new QCustomAttributeList(method), caType))
                 return true;
 
             if (!inherit)
@@ -974,11 +926,7 @@ namespace System.Reflection
 
             while (method is not null)
             {
-#if NATIVEAOT
-                if (IsCustomAttributeDefined(method.GetMetadataReader(), method.GetCustomAttributeHandles(), caType, inherit))
-#else
-                if (IsCustomAttributeDefined(method.GetRuntimeModule(), method.MetadataToken, caType, 0, inherit))
-#endif
+                if (IsCustomAttributeDefined(new QCustomAttributeList(method), caType, inherit))
                     return true;
 
                 method = method.GetParentDefinition()!;
@@ -994,11 +942,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeConstructorInfo
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(ctor.GetMetadataReader(), ctor.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(ctor.GetRuntimeModule(), ctor.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(ctor), caType);
         }
 
         internal static bool IsDefined(RuntimePropertyInfo property, RuntimeType caType)
@@ -1008,11 +952,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimePropertyInfo
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(property.GetMetadataReader(), property.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(property.GetRuntimeModule(), property.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(property), caType);
         }
 
         internal static bool IsDefined(RuntimeEventInfo e, RuntimeType caType)
@@ -1022,11 +962,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeEventInfo
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(e.GetMetadataReader(), e.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(e.GetRuntimeModule(), e.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(e), caType);
         }
 
         internal static bool IsDefined(RuntimeFieldInfo field, RuntimeType caType)
@@ -1037,11 +973,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(field, caType))
                 return true;
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(field.GetMetadataReader(), field.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(field.GetRuntimeModule(), field.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(field), caType);
         }
 
         internal static bool IsDefined(RuntimeParameterInfo parameter, RuntimeType caType)
@@ -1052,11 +984,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(parameter, caType))
                 return true;
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(parameter.GetMetadataReader(), parameter.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(parameter.GetRuntimeModule()!, parameter.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(parameter), caType);
         }
 
         internal static bool IsDefined(RuntimeAssembly assembly, RuntimeType caType)
@@ -1065,11 +993,7 @@ namespace System.Reflection
             Debug.Assert(caType is not null);
 
             // No pseudo attributes for RuntimeAssembly
-#if NATIVEAOT
-            return IsCustomAttributeDefined(assembly.GetMetadataReader(), assembly.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined((assembly.ManifestModule as RuntimeModule)!, RuntimeAssembly.GetToken(assembly), caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(assembly), caType);
         }
 
         internal static bool IsDefined(RuntimeModule module, RuntimeType caType)
@@ -1079,11 +1003,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeModule
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(module.GetMetadataReader(), module.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(module, module.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(module), caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeType type, RuntimeType caType, bool inherit)
@@ -1105,11 +1025,7 @@ namespace System.Reflection
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
-#if NATIVEAOT
-                object[] attributes = GetCustomAttributes(type.GetMetadataReader(), type.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, pcas.Count, caType);
-#endif
+                object[] attributes = GetCustomAttributes(new QCustomAttributeList(type), pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
                 return attributes;
             }
@@ -1122,11 +1038,7 @@ namespace System.Reflection
 
             do
             {
-#if NATIVEAOT
-                AddCustomAttributes(ref result, type.GetMetadataReader(), type.GetCustomAttributeHandles(), caType, mustBeInheritable, result);
-#else
-                AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, mustBeInheritable, result);
-#endif
+                AddCustomAttributes(ref result, new QCustomAttributeList(type), caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 type = (type.BaseType as RuntimeType)!;
             } while (type != (RuntimeType)typeof(object) && type != null);
@@ -1155,11 +1067,7 @@ namespace System.Reflection
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
-#if NATIVEAOT
-                object[] attributes = GetCustomAttributes(method.GetMetadataReader(), method.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, pcas.Count, caType);
-#endif
+                object[] attributes = GetCustomAttributes(new QCustomAttributeList(method), pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
                 return attributes;
             }
@@ -1172,11 +1080,7 @@ namespace System.Reflection
 
             while (method != null)
             {
-#if NATIVEAOT
-                AddCustomAttributes(ref result, method.GetMetadataReader(), method.GetCustomAttributeHandles(), caType, mustBeInheritable, result);
-#else
-                AddCustomAttributes(ref result, method.GetRuntimeModule(), method.MetadataToken, caType, mustBeInheritable, result);
-#endif
+                AddCustomAttributes(ref result, new QCustomAttributeList(method), caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 method = method.GetParentDefinition()!;
             }
@@ -1196,11 +1100,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeConstructorInfo
 
-#if NATIVEAOT
-            return GetCustomAttributes(ctor.GetMetadataReader(), ctor.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(ctor.GetRuntimeModule(), ctor.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(ctor), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimePropertyInfo property, RuntimeType caType)
@@ -1210,11 +1110,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimePropertyInfo
 
-#if NATIVEAOT
-            return GetCustomAttributes(property.GetMetadataReader(), property.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(property.GetRuntimeModule(), property.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(property), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeEventInfo e, RuntimeType caType)
@@ -1224,11 +1120,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeEventInfo
 
-#if NATIVEAOT
-            return GetCustomAttributes(e.GetMetadataReader(), e.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(e.GetRuntimeModule(), e.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(e), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType)
@@ -1238,11 +1130,7 @@ namespace System.Reflection
 
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(field, caType, ref pcas);
-#if NATIVEAOT
-            object[] attributes = GetCustomAttributes(field.GetMetadataReader(), field.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-            object[] attributes = GetCustomAttributes(field.GetRuntimeModule(), field.MetadataToken, pcas.Count, caType);
-#endif
+            object[] attributes = GetCustomAttributes(new QCustomAttributeList(field), pcas.Count, caType);
             if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
             return attributes;
         }
@@ -1254,11 +1142,7 @@ namespace System.Reflection
 
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(parameter, caType, ref pcas);
-#if NATIVEAOT
-            object[] attributes = GetCustomAttributes(parameter.GetMetadataReader(), parameter.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-            object[] attributes = GetCustomAttributes(parameter.GetRuntimeModule()!, parameter.MetadataToken, pcas.Count, caType);
-#endif
+            object[] attributes = GetCustomAttributes(new QCustomAttributeList(parameter), pcas.Count, caType);
             if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
             return attributes;
         }
@@ -1270,12 +1154,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-#if NATIVEAOT
-            return GetCustomAttributes(assembly.GetMetadataReader(), assembly.GetCustomAttributeHandles(), 0, caType);
-#else
-            int assemblyToken = RuntimeAssembly.GetToken(assembly);
-            return GetCustomAttributes((assembly.ManifestModule as RuntimeModule)!, assemblyToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(assembly), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeModule module, RuntimeType caType)
@@ -1285,28 +1164,16 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeModule
 
-#if NATIVEAOT
-            return GetCustomAttributes(module.GetMetadataReader(), module.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(module, module.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(module), 0, caType);
         }
 
         private static object[] GetCustomAttributes(
-#if NATIVEAOT
-            MetadataReader? reader, CustomAttributeHandleCollection customAttributeHandles,
-#else
-            RuntimeModule decoratedModule, int decoratedMetadataToken,
-#endif
+            QCustomAttributeList customAttributes,
             int pcaCount, RuntimeType attributeFilterType)
         {
             ListBuilder<object> attributes = default;
 
-#if NATIVEAOT
-            AddCustomAttributes(ref attributes, reader, customAttributeHandles, attributeFilterType, false, default);
-#else
-            AddCustomAttributes(ref attributes, decoratedModule, decoratedMetadataToken, attributeFilterType, false, default);
-#endif
+            AddCustomAttributes(ref attributes, customAttributes, attributeFilterType, false, default);
 
             object[] result = CreateAttributeArrayHelper(attributeFilterType, attributes.Count + pcaCount);
             for (int i = 0; i < attributes.Count; i++)
