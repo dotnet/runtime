@@ -77,6 +77,13 @@ event_pipe_stub_create_provider (
 	EventPipeCallback callback_func,
 	void *callback_data);
 
+static EventPipeProvider *
+event_pipe_stub_create_provider_2 (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	void *callback_data,
+	bool callback_data_includes_generation);
+
 static void
 event_pipe_stub_delete_provider (EventPipeProvider *provider);
 
@@ -240,6 +247,7 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_add_rundown_execution_checkpoint_2,
 	&event_pipe_stub_convert_100ns_ticks_to_timestamp_t,
 	&event_pipe_stub_create_provider,
+	&event_pipe_stub_create_provider_2,
 	&event_pipe_stub_delete_provider,
 	&event_pipe_stub_get_provider,
 	&event_pipe_stub_provider_add_event,
@@ -361,6 +369,16 @@ event_pipe_stub_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
 	void *callback_data)
+{
+	return (EventPipeProvider *)_max_event_pipe_type_size;
+}
+
+static EventPipeProvider *
+event_pipe_stub_create_provider_2 (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	void *callback_data,
+	bool callback_data_includes_generation)
 {
 	return (EventPipeProvider *)_max_event_pipe_type_size;
 }
