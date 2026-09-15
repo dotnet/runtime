@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -71,6 +71,9 @@
 // R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
 // R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
 //     R2R 29 is not backward compatible with 28.x or earlier.
+// R2R Version 29.1 adds the READYTORUN_FLAG_SKIP_ACCESS_VALIDATION flag, set when crossgen2 has proven that every
+//                  typeref/memberref/methodspec/typespec referenced from every method body in the module is
+//                  accessible to its caller, allowing the runtime to skip the equivalent JIT-time access checks.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -111,6 +114,9 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_IL_BODIES          = 0x00000200,   // IL method bodies have been stripped from the image
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
+    READYTORUN_FLAG_SKIP_ACCESS_VALIDATION      = 0x00001000,   // Runtime should trust that every typeref/memberref/methodspec/typespec referenced
+                                                                 // from a method body in this module is accessible to its caller, and skip the
+                                                                 // corresponding JIT-time access checks
 };
 
 enum class ReadyToRunSectionType : uint32_t

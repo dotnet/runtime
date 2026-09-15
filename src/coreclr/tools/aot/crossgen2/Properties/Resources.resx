@@ -436,7 +436,7 @@
     <value>.NET Crossgen2 Compiler</value>
   </data>
   <data name="TypeValidation" xml:space="preserve">
-    <value>Configure the runtime's behavior around validating the correctness of types defined in assemblies compiled via crossgen2</value>
+    <value>Configure the runtime's behavior around validating the correctness of types, and the accessibility of typerefs/memberrefs/methodspecs/typespecs referenced from method bodies, defined in assemblies compiled via crossgen2</value>
   </data>
   <data name="GenericCycleBreadthCutoff" xml:space="preserve">
     <value>Total number of occurrences of potentially cyclic generic types within a generic type to cut off</value>

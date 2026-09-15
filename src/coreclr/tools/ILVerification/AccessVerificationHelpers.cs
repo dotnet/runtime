@@ -190,6 +190,25 @@ namespace ILVerify
 
         private static bool CanAccessFamily(TypeDesc currentType, TypeDesc targetTypeDef, TypeDesc instanceType)
         {
+            if (targetTypeDef.IsInterface)
+            {
+                // Protected interface members (only reachable today via "protected static abstract" members,
+                // called through a generic type parameter constrained to the interface) are family-accessible
+                // to any type that implements *some* instantiation of the same interface type definition. The
+                // instantiation argument is intentionally not compared, mirroring the runtime's
+                // ClassLoader::CanAccessFamily bIsInterface branch (clsload.cpp), which only loosely checks
+                // that the current type implements the same generic interface.
+                foreach (DefType implementedInterface in currentType.RuntimeInterfaces)
+                {
+                    if (implementedInterface.GetTypeDefinition() == targetTypeDef)
+                        return true;
+                }
+
+                // Fall through to the class-based checks below (e.g. the generic-parameter
+                // CanCastTo case), rather than failing closed, in case currentType reaches the
+                // interface through some path not captured by RuntimeInterfaces.
+            }
+
             // if instanceType is generics and inherit from targetTypeDef members of targetTypeDef are accessible
             if (instanceType.IsGenericParameter)
             {

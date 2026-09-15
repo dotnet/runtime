@@ -264,6 +264,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
+            if (_nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipAccessValidation;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -280,7 +284,8 @@ namespace ILCompiler
                 _imageBase,
                 automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
-                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
+                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff,
+                associatedModuleForAccessValidation: automaticTypeValidation ? singleModule : null
                 );
 
             factory.CompositeImageSettings = _compositeImageSettings;
