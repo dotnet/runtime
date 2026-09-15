@@ -77,13 +77,17 @@
       <BuildArgs>$(BuildArgs) -cmakeargs -DCLR_CMAKE_CXX_ABI_LIBRARY=$(CxxAbiLibrary)</BuildArgs>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(CMakeArgs)' != ''">
+      <_UserCMakeArgs Include="$([MSBuild]::Unescape($(CMakeArgs.Trim().Replace(' ', ';'))))" />
+    </ItemGroup>
+
     <PropertyGroup>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) -configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
       <BuildArgs Condition="'$(KeepNativeSymbols)' != 'false'">$(BuildArgs) -keepnativesymbols</BuildArgs>
       <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) -cross</BuildArgs>
       <BuildArgs Condition="'$(CppCompilerAndLinker)' != ''">$(BuildArgs) $(CppCompilerAndLinker)</BuildArgs>
-      <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) -cmakeargs "$(CMakeArgs)"</BuildArgs>
+      <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) @(_UserCMakeArgs->'-cmakeargs &quot;%(Identity)&quot;', ' ')</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' != 'true'">$(BuildArgs) -ninja false</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>

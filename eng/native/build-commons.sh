@@ -49,7 +49,7 @@ check_prereqs()
 build_native()
 {
     if [[ ! -e "$__RepoRootDir/artifacts/obj/_version.c" ]]; then
-        eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+        "$__RepoRootDir/eng/native/version/copy_version_files.sh"
     fi
 
     targetOS="$1"
@@ -57,8 +57,9 @@ build_native()
     cmakeDir="$3"
     intermediatesDir="$4"
     target="$5"
-    cmakeArgs="$6"
-    message="$7"
+    message="$6"
+    shift 6
+    cmakeArgs=("$@")
 
     # When sccache is enabled, use it as the compiler launcher.
     # On macOS, CMake wraps PCH includes with -Xarch_<arch> which sccache
@@ -69,7 +70,7 @@ build_native()
         if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
             __sccacheLauncher="$__RepoRootDir/eng/native/sccache-xarch-wrapper.sh"
         fi
-        cmakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=$__sccacheLauncher -DCMAKE_CXX_COMPILER_LAUNCHER=$__sccacheLauncher $cmakeArgs"
+        cmakeArgs=("-DCMAKE_C_COMPILER_LAUNCHER=$__sccacheLauncher" "-DCMAKE_CXX_COMPILER_LAUNCHER=$__sccacheLauncher" "${cmakeArgs[@]}")
     fi
 
     # All set to commence the build
@@ -91,9 +92,9 @@ build_native()
 
     if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
         if [[ "$hostArch" == x64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=x86_64 "${cmakeArgs[@]}")
         elif [[ "$hostArch" == arm64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 "${cmakeArgs[@]}")
         else
             echo "Error: Unknown OSX architecture $hostArch."
             exit 1
@@ -101,14 +102,14 @@ build_native()
     fi
 
     if [[ "$targetOS" == maccatalyst ]]; then
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+        cmakeArgs=(-C "$__RepoRootDir/eng/native/tryrun_ios_tvos.cmake" "${cmakeArgs[@]}")
 
         # Intentionally do not set CMAKE_OSX_DEPLOYMENT_TARGET for maccatalyst here:
         # - CMake interprets CMAKE_OSX_DEPLOYMENT_TARGET as a macOS minimum version
         #   instead of MacCatalyst, causing newer clang to reject it as invalid.
         # - The effective Catalyst minimum version is enforced via the
         #   -target *-apple-ios<version>-macabi flag in eng/native/configurecompiler.cmake
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
+        cmakeArgs=(-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst "${cmakeArgs[@]}")
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
@@ -119,72 +120,72 @@ build_native()
             exit 1
         fi
 
-        cmakeArgs="-DANDROID_BUILD=1 -C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
-        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-${ANDROID_API_LEVEL} -DANDROID_NATIVE_API_LEVEL=${ANDROID_API_LEVEL} $cmakeArgs"
+        cmakeArgs=(-DANDROID_BUILD=1 -C "$__RepoRootDir/eng/native/tryrun.cmake" "${cmakeArgs[@]}")
+        cmakeArgs=("-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake" "-DANDROID_PLATFORM=android-${ANDROID_API_LEVEL}" "-DANDROID_NATIVE_API_LEVEL=${ANDROID_API_LEVEL}" "${cmakeArgs[@]}")
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
         __Compiler="default"
 
         if [[ "$hostArch" == x64 ]]; then
-            cmakeArgs="-DANDROID_ABI=x86_64 $cmakeArgs"
+            cmakeArgs=(-DANDROID_ABI=x86_64 "${cmakeArgs[@]}")
         elif [[ "$hostArch" == x86 ]]; then
-            cmakeArgs="-DANDROID_ABI=x86 $cmakeArgs"
+            cmakeArgs=(-DANDROID_ABI=x86 "${cmakeArgs[@]}")
         elif [[ "$hostArch" == arm64 ]]; then
-            cmakeArgs="-DANDROID_ABI=arm64-v8a $cmakeArgs"
+            cmakeArgs=(-DANDROID_ABI=arm64-v8a "${cmakeArgs[@]}")
         elif [[ "$hostArch" == arm ]]; then
-            cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
+            cmakeArgs=(-DANDROID_ABI=armeabi-v7a "${cmakeArgs[@]}")
         else
             echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
     elif [[ "$targetOS" == iossimulator ]]; then
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+        cmakeArgs=(-C "$__RepoRootDir/eng/native/tryrun_ios_tvos.cmake" "${cmakeArgs[@]}")
 
         # set default iOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs=(-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 "${cmakeArgs[@]}")
         if [[ "$__TargetArch" == x64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=x86_64 "${cmakeArgs[@]}")
         elif [[ "$__TargetArch" == arm64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 "${cmakeArgs[@]}")
         else
             echo "Error: Unknown iOS Simulator architecture $__TargetArch."
             exit 1
         fi
     elif [[ "$targetOS" == ios ]]; then
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+        cmakeArgs=(-C "$__RepoRootDir/eng/native/tryrun_ios_tvos.cmake" "${cmakeArgs[@]}")
 
         # set default iOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs=(-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 "${cmakeArgs[@]}")
         if [[ "$__TargetArch" == arm64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 "${cmakeArgs[@]}")
         else
             echo "Error: Unknown iOS architecture $__TargetArch."
             exit 1
         fi
     elif [[ "$targetOS" == tvossimulator ]]; then
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+        cmakeArgs=(-C "$__RepoRootDir/eng/native/tryrun_ios_tvos.cmake" "${cmakeArgs[@]}")
 
         # set default tvOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs=(-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 "${cmakeArgs[@]}")
         if [[ "$__TargetArch" == x64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=x86_64 "${cmakeArgs[@]}")
         elif [[ "$__TargetArch" == arm64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 "${cmakeArgs[@]}")
         else
             echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
             exit 1
         fi
     elif [[ "$targetOS" == tvos ]]; then
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+        cmakeArgs=(-C "$__RepoRootDir/eng/native/tryrun_ios_tvos.cmake" "${cmakeArgs[@]}")
 
         # set default tvOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs=(-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 "${cmakeArgs[@]}")
         if [[ "$__TargetArch" == arm64 ]]; then
-            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+            cmakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 "${cmakeArgs[@]}")
         else
             echo "Error: Unknown tvOS architecture $__TargetArch."
             exit 1
@@ -204,9 +205,8 @@ build_native()
             scan_build=scan-build
         fi
 
-        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $hostArch $targetOS $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
-        echo "Invoking $nextCommand"
-        eval $nextCommand
+        echo "Invoking \"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $hostArch $targetOS $__Compiler $__BuildType \"$generator\" $scan_build ${cmakeArgs[*]}"
+        "$__RepoRootDir/eng/native/gen-buildsys.sh" "$cmakeDir" "$intermediatesDir" "$hostArch" "$targetOS" "$__Compiler" "$__BuildType" "$generator" $scan_build ${cmakeArgs[@]+"${cmakeArgs[@]}"}
 
         local exit_code="$?"
         if [[ "$exit_code" != 0  ]]; then
@@ -389,7 +389,7 @@ while :; do
 
         cmakeargs|-cmakeargs)
             if [[ -n "$2" ]]; then
-                __CMakeArgs="$2 $__CMakeArgs"
+                __CMakeArgs=("$2" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
                 shift
             else
                 echo "ERROR: 'cmakeargs' requires a non-empty option argument"
@@ -416,17 +416,17 @@ while :; do
             ;;
 
         keepnativesymbols|-keepnativesymbols)
-            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
+            __CMakeArgs=(${__CMakeArgs[@]+"${__CMakeArgs[@]}"} -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true)
             ;;
 
         -fsanitize)
-            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_ENABLE_SANITIZERS=$2"
+            __CMakeArgs=(${__CMakeArgs[@]+"${__CMakeArgs[@]}"} "-DCLR_CMAKE_ENABLE_SANITIZERS=$2")
             EnableNativeSanitizers=$2
             shift
             ;;
         -fsanitize=*)
             sanitizers="${lowerI/#-fsanitize=/}" # -fsanitize=address => address
-            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_ENABLE_SANITIZERS=$sanitizers"
+            __CMakeArgs=(${__CMakeArgs[@]+"${__CMakeArgs[@]}"} "-DCLR_CMAKE_ENABLE_SANITIZERS=$sanitizers")
             EnableNativeSanitizers=$sanitizers
             ;;
 
@@ -597,7 +597,7 @@ elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
 else
-    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+    __CMakeArgs=("-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 fi
 
 # Configure environment if we are doing a cross compile.

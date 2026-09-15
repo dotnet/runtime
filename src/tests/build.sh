@@ -60,7 +60,7 @@ build_Tests()
 
     if [[ "$__SkipNative" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
         "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
-        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs" "CoreCLR test component"
+        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"}
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -370,7 +370,7 @@ __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
 __VerboseBuild=0
-__CMakeArgs=""
+__CMakeArgs=()
 __Priority=0
 __Mono=0
 __MonoAot=0
@@ -391,10 +391,10 @@ fi
 
 if [[ $__Mono -eq 1 ]]; then
     __RuntimeFlavor="mono"
-    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono $__CMakeArgs"
+    __CMakeArgs=(-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 else
     __RuntimeFlavor="coreclr"
-    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR $__CMakeArgs"
+    __CMakeArgs=(-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 fi
 
 # Get the number of processors available to the scheduler
