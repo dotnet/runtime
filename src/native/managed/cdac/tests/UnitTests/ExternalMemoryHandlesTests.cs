@@ -34,9 +34,11 @@ public class ExternalMemoryHandlesTests
         rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTable2Addr))).Returns(typeHandle2);
         rts.Setup(r => r.IsValueType(typeHandle1)).Returns(false);
         rts.Setup(r => r.IsValueType(typeHandle2)).Returns(false);
+        var gc = new Mock<IGC>();
 
         var targetBuilder = new TestPlaceholderTarget.Builder(Arch)
             .AddGlobals(("AppDomain", AppDomainStaticSlotAddr))
+            .AddGlobals((nameof(Constants.Globals.ObjectToMethodTableUnmask), 0ul))
             .AddTypes(new Dictionary<DataType, Target.TypeInfo>
             {
                 [DataType.AppDomain] = new()
@@ -56,8 +58,12 @@ public class ExternalMemoryHandlesTests
                         { nameof(Data.ExternalMemoryHandle.GCFlags), new() { Offset = 3 * ptrSize, TypeName = DataType.uint32.ToString() } },
                     }
                 },
+                [DataType.Object] = TargetTestHelpers.CreateTypeInfo(MockObjectData.CreateLayout(Arch)),
+                [DataType.Array] = TargetTestHelpers.CreateTypeInfo(MockArrayObjectData.CreateLayout(Arch)),
+                [DataType.String] = TargetTestHelpers.CreateTypeInfo(MockStringObjectData.CreateLayout(Arch)),
             })
             .AddContract<IExternalMemoryHandles>(version: "c1")
+            .AddMockContract(gc)
             .AddMockContract(rts);
 
         // AppDomain* static slot -> the AppDomain instance

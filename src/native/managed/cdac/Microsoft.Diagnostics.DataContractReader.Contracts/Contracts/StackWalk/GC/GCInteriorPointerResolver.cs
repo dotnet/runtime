@@ -20,9 +20,14 @@ public sealed class GCInteriorPointerResolver
     private readonly byte _objectToMethodTableUnmask;
 
     public GCInteriorPointerResolver(Target target)
+        : this(target, target.Contracts.GC, target.Contracts.RuntimeTypeSystem)
     {
-        _gc = target.Contracts.GC;
-        _rts = target.Contracts.RuntimeTypeSystem;
+    }
+
+    internal GCInteriorPointerResolver(Target target, IGC gc, IRuntimeTypeSystem rts)
+    {
+        _gc = gc;
+        _rts = rts;
         _cache = new LinearReadCache(target);
         _numComponentsOffsetArray = (uint)Data.Array.GetNumComponentsOffset(target);
         _numComponentsOffsetString = (uint)Data.String.GetStringLengthOffset(target);

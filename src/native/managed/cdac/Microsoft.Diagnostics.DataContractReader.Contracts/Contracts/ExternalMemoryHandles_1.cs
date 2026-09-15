@@ -7,13 +7,19 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct ExternalMemoryHandles_1 : IExternalMemoryHandles
+internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
 {
     private readonly Target _target;
+    private readonly IGC _gc;
+    private readonly IRuntimeTypeSystem _rts;
+    private readonly GCInteriorPointerResolver _interiorPointerResolver;
 
     internal ExternalMemoryHandles_1(Target target)
     {
         _target = target;
+        _gc = target.Contracts.GC;
+        _rts = target.Contracts.RuntimeTypeSystem;
+        _interiorPointerResolver = new GCInteriorPointerResolver(target, _gc, _rts);
     }
 
     IReadOnlyList<ExternalMemoryHandleRootData> IExternalMemoryHandles.GetRoots(bool resolveInteriorPointers)
@@ -25,8 +31,6 @@ internal readonly struct ExternalMemoryHandles_1 : IExternalMemoryHandles
             return roots;
 
         Data.AppDomain domain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomain);
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        GCInteriorPointerResolver? interiorPointerResolver = null;
 
         HashSet<TargetPointer> visited = [];
         TargetPointer current = domain.ExternalMemoryHandles;
@@ -36,15 +40,15 @@ internal readonly struct ExternalMemoryHandles_1 : IExternalMemoryHandles
                 throw new InvalidOperationException("ExternalMemoryHandle list is cyclic.");
 
             Data.ExternalMemoryHandle handle = _target.ProcessedData.GetOrAdd<Data.ExternalMemoryHandle>(current);
-            ITypeHandle typeHandle = rts.GetTypeHandle(handle.MethodTable);
+            ITypeHandle typeHandle = _rts.GetTypeHandle(handle.MethodTable);
 
-            if (rts.IsValueType(typeHandle))
+            if (_rts.IsValueType(typeHandle))
             {
-                AddValueTypeRoots(roots, rts, typeHandle, handle.Memory, resolveInteriorPointers, ref interiorPointerResolver);
+                AddValueTypeRoots(roots, typeHandle, handle.Memory, resolveInteriorPointers);
             }
             else if (handle.GCFlags != 0)
             {
-                AddInteriorRoot(roots, handle.Memory, resolveInteriorPointers, ref interiorPointerResolver);
+                AddInteriorRoot(roots, handle.Memory, resolveInteriorPointers);
             }
             else
             {
@@ -59,23 +63,21 @@ internal readonly struct ExternalMemoryHandles_1 : IExternalMemoryHandles
 
     private void AddValueTypeRoots(
         List<ExternalMemoryHandleRootData> roots,
-        IRuntimeTypeSystem rts,
         ITypeHandle typeHandle,
         TargetPointer memory,
-        bool resolveInteriorPointers,
-        ref GCInteriorPointerResolver? interiorPointerResolver)
+        bool resolveInteriorPointers)
     {
         ulong pointerSize = (ulong)_target.PointerSize;
 
-        if (rts.IsByRefLike(typeHandle))
+        if (_rts.IsByRefLike(typeHandle))
         {
-            foreach (ulong slotAddress in EnumerateByRefLikeInteriorSlots(rts, typeHandle, memory.Value, (uint)_target.PointerSize))
-                AddInteriorRoot(roots, new TargetPointer(slotAddress), resolveInteriorPointers, ref interiorPointerResolver);
+            foreach (ulong slotAddress in EnumerateByRefLikeInteriorSlots(_rts, typeHandle, memory.Value, (uint)_target.PointerSize))
+                AddInteriorRoot(roots, new TargetPointer(slotAddress), resolveInteriorPointers);
         }
 
-        if (rts.ContainsGCPointers(typeHandle))
+        if (_rts.ContainsGCPointers(typeHandle))
         {
-            foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(typeHandle))
+            foreach ((uint seriesOffset, uint seriesSize) in _rts.GetGCDescSeries(typeHandle))
             {
                 // GCDesc series offsets include the boxed object's MethodTable pointer.
                 ulong fieldStart = memory.Value + seriesOffset - pointerSize;
@@ -88,8 +90,7 @@ internal readonly struct ExternalMemoryHandles_1 : IExternalMemoryHandles
     private void AddInteriorRoot(
         List<ExternalMemoryHandleRootData> roots,
         TargetPointer slotAddress,
-        bool resolveInteriorPointers,
-        ref GCInteriorPointerResolver? interiorPointerResolver)
+        bool resolveInteriorPointers)
     {
         TargetPointer obj = _target.ReadPointer(slotAddress.Value);
         if (obj == TargetPointer.Null || obj.Value == ulong.MaxValue)
@@ -97,8 +98,7 @@ internal readonly struct ExternalMemoryHandles_1 : IExternalMemoryHandles
 
         if (resolveInteriorPointers)
         {
-            interiorPointerResolver ??= new GCInteriorPointerResolver(_target);
-            obj = interiorPointerResolver.Resolve(obj);
+            obj = _interiorPointerResolver.Resolve(obj);
             if (obj == TargetPointer.Null)
                 return;
         }
