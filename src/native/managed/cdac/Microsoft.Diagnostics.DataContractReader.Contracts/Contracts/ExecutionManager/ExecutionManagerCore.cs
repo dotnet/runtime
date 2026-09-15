@@ -199,8 +199,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer virtualIPRangeListAddress,
             TargetCodePointer virtualIP)
         {
-            const int MaxVirtualIPRangeNodes = 1024;
-
             if (virtualIPRangeListAddress == TargetPointer.Null)
                 return new RangeSection();
 
@@ -209,9 +207,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
                 TargetPointer current = target.ReadPointer(virtualIPRangeListAddress);
                 HashSet<TargetPointer> visited = new();
                 Data.RangeSection? matchingRange = null;
-                int count = 0;
-
-                while (current != TargetPointer.Null && count < MaxVirtualIPRangeNodes)
+                while (current != TargetPointer.Null)
                 {
                     if (!visited.Add(current))
                         return new RangeSection();
@@ -227,32 +223,30 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
                         return new RangeSection();
                     }
 
-                    Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(range.R2RModule);
-                    if (module.ReadyToRunInfo == TargetPointer.Null)
-                        return new RangeSection();
-
-                    Data.ReadyToRunInfo r2rInfo = target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
-                    if (r2rInfo.MinVirtualIP is not TargetPointer minVirtualIP
-                        || minVirtualIP != range.RangeBegin
-                        || r2rInfo.LoadedImageBase == TargetPointer.Null)
-                    {
-                        return new RangeSection();
-                    }
-
                     if (range.RangeBegin <= virtualIP.Value && virtualIP.Value < range.RangeEndOpen)
                     {
                         if (matchingRange is not null)
                             return new RangeSection();
 
+                        // Registration publishes the node before setting MinVirtualIP. Only
+                        // the candidate module must be initialized for this lookup to succeed.
+                        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(range.R2RModule);
+                        if (module.ReadyToRunInfo == TargetPointer.Null)
+                            return new RangeSection();
+
+                        Data.ReadyToRunInfo r2rInfo = target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
+                        if (r2rInfo.MinVirtualIP is not TargetPointer minVirtualIP
+                            || minVirtualIP != range.RangeBegin
+                            || r2rInfo.LoadedImageBase == TargetPointer.Null)
+                        {
+                            return new RangeSection();
+                        }
+
                         matchingRange = range;
                     }
 
                     current = node.Next;
-                    count++;
                 }
-
-                if (current != TargetPointer.Null)
-                    return new RangeSection();
 
                 return matchingRange is null ? new RangeSection() : new RangeSection(matchingRange);
             }

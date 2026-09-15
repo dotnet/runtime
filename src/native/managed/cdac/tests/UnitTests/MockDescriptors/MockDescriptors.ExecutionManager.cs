@@ -441,25 +441,35 @@ internal sealed class MockReadyToRunInfo : TypedView
     private const string NumImportSectionsFieldName = "NumImportSections";
     private const string MinVirtualIPFieldName = "MinVirtualIP";
 
-    public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
-        => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
+    public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride, bool isWasm = false)
+    {
+        SequentialLayoutBuilder builder = new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
             .AddPointerField(ReadyToRunHeaderFieldName)
             .AddPointerField(CompositeInfoFieldName)
             .AddUInt32Field(NumRuntimeFunctionsFieldName)
-            .AddPointerField(RuntimeFunctionsFieldName)
-            .AddUInt32Field(NumHotColdMapFieldName)
-            .AddPointerField(HotColdMapFieldName)
-            .AddPointerField(DelayLoadMethodCallThunksFieldName)
+            .AddPointerField(RuntimeFunctionsFieldName);
+        if (!isWasm)
+        {
+            builder.AddUInt32Field(NumHotColdMapFieldName)
+                .AddPointerField(HotColdMapFieldName)
+                .AddPointerField(DelayLoadMethodCallThunksFieldName);
+        }
+        builder
             .AddPointerField(DebugInfoSectionFieldName)
             .AddPointerField(ExceptionInfoSectionFieldName)
             .AddPointerField(ImportSectionsFieldName)
             .AddUInt32Field(NumImportSectionsFieldName)
             .AddField(EntryPointToMethodDescMapFieldName, hashMapStride)
             .AddPointerField(LoadedImageBaseFieldName)
-            .AddPointerField(CompositeFieldName)
-            // WASM-only: base virtual IP for the module's ReadyToRun functions (nullable field).
-            .AddPointerField(MinVirtualIPFieldName)
-            .Build<MockReadyToRunInfo>();
+            .AddPointerField(CompositeFieldName);
+        if (isWasm)
+        {
+            builder.AddPointerField(MinVirtualIPFieldName);
+        }
+        return builder.Build<MockReadyToRunInfo>();
+    }
+
+    public bool HasHotColdMap => Array.Exists(Layout.Fields, static f => f.Name == NumHotColdMapFieldName);
 
     public ulong CompositeInfo
     {
@@ -501,6 +511,18 @@ internal sealed class MockReadyToRunInfo : TypedView
     {
         get => ReadPointerField(ExceptionInfoSectionFieldName);
         set => WritePointerField(ExceptionInfoSectionFieldName, value);
+    }
+
+    public ulong DebugInfoSection
+    {
+        get => ReadPointerField(DebugInfoSectionFieldName);
+        set => WritePointerField(DebugInfoSectionFieldName, value);
+    }
+
+    public ulong Composite
+    {
+        get => ReadPointerField(CompositeFieldName);
+        set => WritePointerField(CompositeFieldName, value);
     }
 
     public ulong DelayLoadMethodCallThunks
@@ -738,18 +760,18 @@ internal sealed class MockExecutionManagerBuilder
     private readonly int _rangeSectionMapMaxSetBit;
     private ulong _virtualIPRangeListGlobalAddress;
 
-    internal MockExecutionManagerBuilder(string version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0)
-        : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
+    internal MockExecutionManagerBuilder(string version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0, bool isWasm = false)
+        : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps, isWasm)
     {
     }
 
-    internal MockExecutionManagerBuilder(string version, MockMemorySpace.Builder builder, AllocationRange allocationRange, ulong allCodeHeaps = 0)
+    internal MockExecutionManagerBuilder(string version, MockMemorySpace.Builder builder, AllocationRange allocationRange, ulong allCodeHeaps = 0, bool isWasm = false)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         Version = version;
         Builder = builder;
-        _runtimeFunctions = new MockRuntimeFunctionsBuilder(builder);
+        _runtimeFunctions = new MockRuntimeFunctionsBuilder(builder, includeEndAddress: !isWasm);
         _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
         _nibbleMapAllocator = Builder.CreateAllocator(allocationRange.NibbleMapStart, allocationRange.NibbleMapEnd);
         _allocator = Builder.CreateAllocator(allocationRange.ExecutionManagerStart, allocationRange.ExecutionManagerEnd);
@@ -774,7 +796,7 @@ internal sealed class MockExecutionManagerBuilder
         HostCodeHeapLayout = MockHostCodeHeap.CreateLayout(architecture);
         RealCodeHeaderLayout = MockRealCodeHeader.CreateLayout(architecture);
         InterpreterRealCodeHeaderLayout = MockInterpreterRealCodeHeader.CreateLayout(architecture);
-        ReadyToRunInfoLayout = MockReadyToRunInfo.CreateLayout(architecture, hashMapStride);
+        ReadyToRunInfoLayout = MockReadyToRunInfo.CreateLayout(architecture, hashMapStride, isWasm);
         ReadyToRunHeaderLayout = MockReadyToRunHeader.CreateLayout(architecture);
         EEJitManagerLayout = MockEEJitManager.CreateLayout(architecture);
         DynamicFunctionTableLayout = MockDynamicFunctionTable.CreateLayout(architecture);
@@ -1087,8 +1109,15 @@ internal sealed class MockExecutionManagerBuilder
         readyToRunInfo.CompositeInfo = readyToRunInfo.Address;
         readyToRunInfo.NumRuntimeFunctions = checked((uint)runtimeFunctions.Length);
         readyToRunInfo.RuntimeFunctions = runtimeFunctionsAddress;
-        readyToRunInfo.NumHotColdMap = checked((uint)hotColdMap.Length);
-        readyToRunInfo.HotColdMap = hotColdMapAddress;
+        if (readyToRunInfo.HasHotColdMap)
+        {
+            readyToRunInfo.NumHotColdMap = checked((uint)hotColdMap.Length);
+            readyToRunInfo.HotColdMap = hotColdMapAddress;
+        }
+        else if (hotColdMap.Length != 0)
+        {
+            throw new InvalidOperationException("Hot/cold code is not supported by this target.");
+        }
         return readyToRunInfo;
     }
 
@@ -1116,6 +1145,14 @@ internal sealed class MockExecutionManagerBuilder
         imageDataDir.VirtualAddress = thunkRva;
         imageDataDir.Size = thunkSize;
         readyToRunInfo.DelayLoadMethodCallThunks = imageDataDir.Address;
+    }
+
+    public void SetDebugInfoSection(MockReadyToRunInfo readyToRunInfo, uint rva, uint size)
+    {
+        MockImageDataDirectory directory = AllocateAndCreate(ImageDataDirectoryLayout, "DebugInfoSection");
+        directory.VirtualAddress = rva;
+        directory.Size = size;
+        readyToRunInfo.DebugInfoSection = directory.Address;
     }
 
     public MockLoaderModule AddReadyToRunModule(ulong readyToRunInfoAddress)

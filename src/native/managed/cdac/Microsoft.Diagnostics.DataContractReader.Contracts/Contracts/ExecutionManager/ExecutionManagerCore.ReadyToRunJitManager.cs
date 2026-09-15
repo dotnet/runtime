@@ -56,7 +56,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
 
             // Take hot/cold splitting into account for the relative offset
-            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
             {
                 Debug.Assert(coldFunctionIndex < r2rInfo.NumRuntimeFunctions);
                 Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
@@ -94,7 +94,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer codeBase, out uint index))
                 return;
 
-            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint coldStartIdx, out uint coldEndIdx))
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint coldStartIdx, out uint coldEndIdx))
             {
                 Data.RuntimeFunction coldStartFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldStartIdx);
                 Data.RuntimeFunction coldEndFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldEndIdx);
@@ -245,7 +245,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         private uint AdjustRuntimeFunctionIndexForHotCold(Data.ReadyToRunInfo r2rInfo, uint index)
         {
             // Look up index in hot/cold map - if the function is in the cold part, get the index of the hot part.
-            index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index);
+            index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index);
             Debug.Assert(index < r2rInfo.NumRuntimeFunctions);
             return index;
         }

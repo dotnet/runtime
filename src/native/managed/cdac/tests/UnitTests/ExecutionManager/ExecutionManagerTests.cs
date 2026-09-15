@@ -57,18 +57,21 @@ public class ExecutionManagerTests
     internal static Target CreateTarget(
         MockExecutionManagerBuilder emBuilder,
         RuntimeInfoOperatingSystem operatingSystem = RuntimeInfoOperatingSystem.Windows,
-        RuntimeInfoArchitecture? targetArchitecture = null)
+        RuntimeInfoArchitecture? targetArchitecture = null,
+        Action<TestPlaceholderTarget.Builder>? configureTarget = null)
         => CreateTarget(
             emBuilder,
             operatingSystem,
             targetArchitecture,
-            []);
+            [],
+            configureTarget);
 
     private static Target CreateTarget(
         MockExecutionManagerBuilder emBuilder,
         RuntimeInfoOperatingSystem operatingSystem,
         RuntimeInfoArchitecture? targetArchitecture,
-        (string Name, ulong Value)[] additionalGlobals)
+        (string Name, ulong Value)[] additionalGlobals,
+        Action<TestPlaceholderTarget.Builder>? configureTarget = null)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         RuntimeInfoArchitecture architecture = targetArchitecture ?? (arch.Is64Bit
@@ -78,15 +81,16 @@ public class ExecutionManagerTests
         runtimeInfo.Setup(r => r.GetTargetOperatingSystem()).Returns(operatingSystem);
         runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(architecture);
 
-        return new TestPlaceholderTarget.Builder(arch)
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch)
             .UseReader(emBuilder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(emBuilder))
             .AddGlobals(emBuilder.Globals)
             .AddGlobals(additionalGlobals)
             .AddContract<IExecutionManager>(version: emBuilder.Version)
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>())
-            .AddMockContract(runtimeInfo)
-            .Build();
+            .AddMockContract(runtimeInfo);
+        configureTarget?.Invoke(targetBuilder);
+        return targetBuilder.Build();
     }
 
     private static IExecutionManager CreateExecutionManagerContract(
@@ -96,7 +100,8 @@ public class ExecutionManagerTests
         ulong allCodeHeaps = 0,
         RuntimeInfoArchitecture? targetArchitecture = null)
     {
-        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange, allCodeHeaps);
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange, allCodeHeaps,
+            isWasm: targetArchitecture == RuntimeInfoArchitecture.Wasm);
         configure?.Invoke(emBuilder);
         Target target = CreateTarget(emBuilder, RuntimeInfoOperatingSystem.Windows, targetArchitecture);
         return target.Contracts.ExecutionManager;
@@ -355,6 +360,10 @@ public class ExecutionManagerTests
                 r2rInfo.LoadedImageBase = LoadedImageBase;
                 runtimeFunctionsAddress = r2rInfo.RuntimeFunctions;
                 runtimeFunctionSize = emBuilder.RuntimeFunctionLayout.Size;
+                Assert.Equal(8, runtimeFunctionSize);
+                Assert.DoesNotContain(emBuilder.RuntimeFunctionLayout.Fields, field => field.Name == "EndAddress");
+                Assert.DoesNotContain(emBuilder.ReadyToRunInfoLayout.Fields,
+                    field => field.Name is "NumHotColdMap" or "HotColdMap" or "DelayLoadMethodCallThunks");
 
                 MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
                 hashMapBuilder.PopulatePtrMap(
@@ -395,7 +404,8 @@ public class ExecutionManagerTests
         MockExecutionManagerBuilder emBuilder = new(
             "c1",
             wasmArch,
-            MockExecutionManagerBuilder.DefaultAllocationRange);
+            MockExecutionManagerBuilder.DefaultAllocationRange,
+            isWasm: true);
         MockExecutionManagerBuilder.JittedCodeRange virtualIPRange =
             emBuilder.AllocateJittedCodeRange(VirtualIPRangeStart, 0x400);
         MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([FunctionBeginAddress], []);
@@ -418,10 +428,16 @@ public class ExecutionManagerTests
         MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
         _ = emBuilder.AddVirtualIPRangeSection(virtualIPRange, JitManagerAddress, r2rModule.Address);
 
+        IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
+        Mock<IGCInfo> gcInfoContract = new(MockBehavior.Strict);
+        gcInfoContract.Setup(c => c.DecodePlatformSpecificGCInfo(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), 5))
+            .Returns(gcInfoHandle);
+        gcInfoContract.Setup(c => c.GetCodeLength(gcInfoHandle)).Returns(32u);
         Target target = CreateTarget(
             emBuilder,
             RuntimeInfoOperatingSystem.Windows,
-            RuntimeInfoArchitecture.Wasm);
+            RuntimeInfoArchitecture.Wasm,
+            targetBuilder => targetBuilder.AddMockContract(gcInfoContract));
         IExecutionManager em = target.Contracts.ExecutionManager;
         CodeBlockHandle? handle =
             em.GetCodeBlockHandle(new TargetCodePointer(VirtualIPRangeStart + FunctionBeginAddress));
@@ -431,6 +447,10 @@ public class ExecutionManagerTests
         Assert.Equal(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), gcInfo);
         Assert.Equal(5u, gcVersion);
         Assert.Equal(ExpectedGCInfoByte, target.Read<byte>(gcInfo));
+        em.GetMethodRegionInfo(handle.Value, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
+        Assert.Equal(32u, hotSize);
+        Assert.Equal(TargetPointer.Null, coldStart);
+        Assert.Equal(0u, coldSize);
     }
 
     [Fact]
@@ -477,6 +497,114 @@ public class ExecutionManagerTests
         Assert.Equal(CodeKind.Unknown, em.GetCodeKind(new TargetCodePointer(SecondRangeStart + RangeSize)));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetDebugInfoAndExceptionClauses_R2R_WasmUsesLoadedImageBase(bool funclet)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong VirtualIPRangeStart = 0x8001_0001;
+        const uint RootBeginAddress = 0x100;
+        const uint FuncletBeginAddress = 0x120;
+        const uint LoadedImageBase = 0x0090_0000;
+        const uint DebugInfoRva = 0x80;
+        const ulong MethodDescAddress = 0x0101_aaa0;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        const byte ExpectedDebugInfoByte = 0xa5;
+
+        MockExecutionManagerBuilder emBuilder = new(
+            "c1", wasmArch, MockExecutionManagerBuilder.DefaultAllocationRange, isWasm: true);
+        var range = emBuilder.AllocateJittedCodeRange(VirtualIPRangeStart, 0x400);
+        MockReadyToRunInfo info = emBuilder.AddReadyToRunInfo([0x80, RootBeginAddress, 0x8000_0000 | FuncletBeginAddress], []);
+        info.MinVirtualIP = VirtualIPRangeStart;
+        info.LoadedImageBase = LoadedImageBase;
+        new MockHashMapBuilder(emBuilder.Builder).PopulatePtrMap(
+            info.EntryPointToMethodDescMapAddress, [(VirtualIPRangeStart + RootBeginAddress, MethodDescAddress)]);
+        MockLoaderModule module = emBuilder.AddReadyToRunModule(info.Address);
+        emBuilder.AddVirtualIPRangeSection(range, JitManagerAddress, module.Address);
+        emBuilder.SetDebugInfoSection(info, DebugInfoRva, 5);
+        emBuilder.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = LoadedImageBase + DebugInfoRva,
+            // NativeArray: three entries, one-byte block offset, leaf for index 1, no lookback.
+            Data = [0x18, 0x01, 0x08, 0x00, ExpectedDebugInfoByte],
+            Name = "WASM debug info",
+        });
+        Dictionary<DataType, Target.TypeInfo> exceptionTypes =
+            AddWasmExceptionInfo(emBuilder, info, LoadedImageBase, RootBeginAddress);
+
+        MethodDescHandle methodHandle = new(new TargetPointer(MethodDescAddress));
+        TargetPointer methodTable = new(0x0102_0000);
+        ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
+        Mock<IRuntimeTypeSystem> rts = new(MockBehavior.Strict);
+        rts.Setup(r => r.GetMethodDescHandle(new TargetPointer(MethodDescAddress))).Returns(methodHandle);
+        rts.Setup(r => r.GetMethodTable(methodHandle)).Returns(methodTable);
+        rts.Setup(r => r.GetTypeHandle(methodTable)).Returns(typeHandle);
+        rts.Setup(r => r.GetModule(typeHandle)).Returns(new TargetPointer(module.Address));
+        Target target = CreateTarget(emBuilder, RuntimeInfoOperatingSystem.Windows, RuntimeInfoArchitecture.Wasm,
+            targetBuilder => targetBuilder.AddTypes(exceptionTypes).AddMockContract(rts));
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        CodeBlockHandle? handle = em.GetCodeBlockHandle(
+            new TargetCodePointer(VirtualIPRangeStart + (funclet ? FuncletBeginAddress : RootBeginAddress)));
+        Assert.NotNull(handle);
+        TargetPointer debugInfo = em.GetDebugInfo(handle.Value, out bool hasFlagByte);
+        Assert.False(hasFlagByte);
+        Assert.Equal(new TargetPointer(LoadedImageBase + DebugInfoRva + 4), debugInfo);
+        Assert.Equal(ExpectedDebugInfoByte, target.Read<byte>(debugInfo));
+        ExceptionClauseInfo clause = Assert.Single(em.GetExceptionClauses(handle.Value));
+        Assert.Equal(ExceptionClauseInfo.ExceptionClauseFlags.Finally, clause.ClauseType);
+        Assert.Equal(2u, clause.TryStartPC);
+        Assert.Equal(16u, clause.TryEndPC);
+        Assert.Equal(FuncletBeginAddress - RootBeginAddress, clause.HandlerStartPC);
+        Assert.Equal(48u, clause.HandlerEndPC);
+        Assert.Null(clause.ClassToken);
+        Assert.Null(clause.FilterOffset);
+    }
+
+    private static Dictionary<DataType, Target.TypeInfo> AddWasmExceptionInfo(
+        MockExecutionManagerBuilder emBuilder, MockReadyToRunInfo info, uint imageBase, uint methodRva)
+    {
+        const uint CoreInfoRva = 0x200;
+        const uint CoreHeaderRva = 0x210;
+        const uint ExceptionTableRva = 0x300;
+        const uint ClauseRva = 0x340;
+        const uint ClauseSize = 24;
+        Dictionary<DataType, Target.TypeInfo> types = [];
+        info.Composite = imageBase + CoreInfoRva;
+        AddWords(imageBase + CoreInfoRva, DataType.ReadyToRunCoreInfo,
+            [new("Header", DataType.pointer)], [imageBase + CoreHeaderRva]);
+        AddWords(imageBase + CoreHeaderRva, DataType.ReadyToRunCoreHeader,
+            [new("NumberOfSections", DataType.uint32)], [1]);
+        AddWords(imageBase + CoreHeaderRva + 4, DataType.ReadyToRunSection,
+            [new("Type", DataType.uint32), new("Section", DataType.ImageDataDirectory, 8)],
+            [104, ExceptionTableRva, 16]);
+        AddWords(imageBase + ExceptionTableRva, DataType.ExceptionLookupTableEntry,
+            [new("MethodStartRVA", DataType.uint32), new("ExceptionInfoRVA", DataType.uint32)],
+            [methodRva, ClauseRva, uint.MaxValue, ClauseRva + ClauseSize]);
+        AddWords(imageBase + ClauseRva, DataType.R2RExceptionClause,
+            [new("Flags", DataType.uint32), new("TryStartPC", DataType.uint32), new("TryEndPC", DataType.uint32),
+             new("HandlerStartPC", DataType.uint32), new("HandlerEndPC", DataType.uint32), new("ClassToken", DataType.uint32)],
+            [2, 2, 16, 32, 48, 0]);
+        return types;
+
+        void AddWords(uint address, DataType type, TargetTestHelpers.Field[] fields, uint[] words)
+        {
+            TargetTestHelpers helpers = emBuilder.Builder.TargetTestHelpers;
+            var layout = helpers.LayoutFields(TargetTestHelpers.FieldLayout.Packed, fields);
+            types[type] = new Target.TypeInfo { Fields = layout.Fields, Size = layout.Stride };
+            byte[] data = new byte[words.Length * sizeof(uint)];
+            for (int i = 0; i < words.Length; i++)
+                helpers.Write(data.AsSpan(i * sizeof(uint), sizeof(uint)), words[i]);
+            emBuilder.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Address = address,
+                Data = data,
+                Name = type.ToString(),
+            });
+        }
+    }
+
     [Fact]
     public void GetCodeKind_R2R_WasmVirtualIPMissingFromList_DoesNotUseRangeSectionMap()
     {
@@ -515,7 +643,6 @@ public class ExecutionManagerTests
     [InlineData("inverted-range")]
     [InlineData("null-module")]
     [InlineData("overlap")]
-    [InlineData("excessive-nodes")]
     public void GetCodeKind_R2R_WasmVirtualIPCorruptList_FailsClosed(string corruption)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
@@ -574,36 +701,6 @@ public class ExecutionManagerTests
                         _ = emBuilder.AddVirtualIPRangeSection(virtualIPRange, JitManagerAddress, r2rModule.Address, first.Address);
                         break;
                     }
-                    case "excessive-nodes":
-                    {
-                        MockVirtualIPRangeSection matchingTail =
-                            emBuilder.AddVirtualIPRangeSection(
-                                virtualIPRange,
-                                JitManagerAddress,
-                                r2rModule.Address,
-                                registerAsHead: false);
-                        ulong head = matchingTail.Address;
-                        for (int i = 0; i < 1024; i++)
-                        {
-                            ulong rangeStart = 0x8003_0001ul + ((ulong)i * VirtualIPRangeSize);
-                            MockExecutionManagerBuilder.JittedCodeRange excessiveRange =
-                                emBuilder.AllocateJittedCodeRange(rangeStart, VirtualIPRangeSize);
-                            MockReadyToRunInfo excessiveInfo = emBuilder.AddReadyToRunInfo([0], []);
-                            excessiveInfo.MinVirtualIP = rangeStart;
-                            excessiveInfo.LoadedImageBase = 0x00a0_0000ul + ((ulong)i * VirtualIPRangeSize);
-                            MockLoaderModule excessiveModule = emBuilder.AddReadyToRunModule(excessiveInfo.Address);
-                            MockVirtualIPRangeSection node =
-                                emBuilder.AddVirtualIPRangeSection(
-                                    excessiveRange,
-                                    JitManagerAddress,
-                                    excessiveModule.Address,
-                                    head,
-                                    registerAsHead: false);
-                            head = node.Address;
-                        }
-                        emBuilder.SetVirtualIPRangeListHead(head);
-                        break;
-                    }
                     default:
                         throw new InvalidOperationException(corruption);
                 }
@@ -612,6 +709,95 @@ public class ExecutionManagerTests
 
         Assert.Null(em.GetCodeBlockHandle(new TargetCodePointer(ProbeVirtualIP)));
         Assert.Equal(CodeKind.Unknown, em.GetCodeKind(new TargetCodePointer(ProbeVirtualIP)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetMethodDesc_R2R_WasmVirtualIPUnrelatedRegistration(bool registrationComplete)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong InitializedRangeStart = 0x8001_0001;
+        const ulong PendingRangeStart = 0x8002_0001;
+        const ulong MethodDescAddress = 0x0101_aaa0;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        ulong initializedModule = 0;
+
+        IExecutionManager em = CreateExecutionManagerContract("c1", wasmArch, emBuilder =>
+        {
+            var initializedRange = emBuilder.AllocateJittedCodeRange(InitializedRangeStart, 0x200);
+            MockReadyToRunInfo initializedInfo = emBuilder.AddReadyToRunInfo([0], []);
+            initializedInfo.MinVirtualIP = InitializedRangeStart;
+            initializedInfo.LoadedImageBase = 0x0090_0000;
+            new MockHashMapBuilder(emBuilder.Builder).PopulatePtrMap(
+                initializedInfo.EntryPointToMethodDescMapAddress, [(InitializedRangeStart, MethodDescAddress)]);
+            initializedModule = emBuilder.AddReadyToRunModule(initializedInfo.Address).Address;
+            MockVirtualIPRangeSection tail = emBuilder.AddVirtualIPRangeSection(
+                initializedRange, JitManagerAddress, initializedModule, registerAsHead: false);
+
+            var pendingRange = emBuilder.AllocateJittedCodeRange(PendingRangeStart, 0x200);
+            MockReadyToRunInfo pendingInfo = emBuilder.AddReadyToRunInfo([0], []);
+            pendingInfo.MinVirtualIP = registrationComplete ? PendingRangeStart : 0;
+            pendingInfo.LoadedImageBase = 0x00a0_0000;
+            MockLoaderModule pendingModule = emBuilder.AddReadyToRunModule(pendingInfo.Address);
+            emBuilder.AddVirtualIPRangeSection(pendingRange, JitManagerAddress, pendingModule.Address, tail.Address);
+        }, targetArchitecture: RuntimeInfoArchitecture.Wasm);
+
+        CodeBlockHandle? handle = em.GetCodeBlockHandle(new TargetCodePointer(InitializedRangeStart));
+        Assert.NotNull(handle);
+        Assert.Equal(new TargetPointer(MethodDescAddress), em.GetMethodDesc(handle.Value));
+        Assert.Equal(new TargetPointer(initializedModule), em.FindReadyToRunModule(new TargetPointer(InitializedRangeStart)));
+        Assert.Equal(registrationComplete ? CodeKind.ReadyToRun : CodeKind.Unknown,
+            em.GetCodeKind(new TargetCodePointer(PendingRangeStart)));
+    }
+
+    [Theory]
+    [InlineData(1024, false)]
+    [InlineData(1025, false)]
+    [InlineData(2, true)]
+    [InlineData(1025, true)]
+    public void FindReadyToRunModule_WasmVirtualIPLongList(int count, bool cycle)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong FirstRangeStart = 0x8001_0001;
+        const uint RangeSize = 0x200;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        ulong firstModule = 0;
+        ulong lastModule = 0;
+
+        IExecutionManager em = CreateExecutionManagerContract("c1", wasmArch, emBuilder =>
+        {
+            ulong head = 0;
+            MockVirtualIPRangeSection? tail = null;
+            for (int i = 0; i < count; i++)
+            {
+                ulong rangeStart = FirstRangeStart + (ulong)i * RangeSize;
+                var range = emBuilder.AllocateJittedCodeRange(rangeStart, RangeSize);
+                MockReadyToRunInfo info = emBuilder.AddReadyToRunInfo([0], []);
+                info.MinVirtualIP = rangeStart;
+                info.LoadedImageBase = 0x0090_0000 + (ulong)i * RangeSize;
+                MockLoaderModule module = emBuilder.AddReadyToRunModule(info.Address);
+                MockVirtualIPRangeSection node = emBuilder.AddVirtualIPRangeSection(
+                    range, JitManagerAddress, module.Address, head, registerAsHead: false);
+                head = node.Address;
+                if (i == 0)
+                {
+                    tail = node;
+                    firstModule = module.Address;
+                }
+                lastModule = module.Address;
+            }
+            if (cycle)
+                tail!.Next = head;
+            emBuilder.SetVirtualIPRangeListHead(head);
+        }, targetArchitecture: RuntimeInfoArchitecture.Wasm);
+
+        Assert.Equal(new TargetPointer(cycle ? 0 : lastModule),
+            em.FindReadyToRunModule(new TargetPointer(FirstRangeStart + (ulong)(count - 1) * RangeSize)));
+        Assert.Equal(new TargetPointer(cycle ? 0 : firstModule),
+            em.FindReadyToRunModule(new TargetPointer(FirstRangeStart)));
+        Assert.Equal(TargetPointer.Null,
+            em.FindReadyToRunModule(new TargetPointer(FirstRangeStart + (ulong)count * RangeSize)));
     }
 
     [Fact]

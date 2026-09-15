@@ -159,9 +159,18 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 
 WebAssembly ReadyToRun code uses encoded virtual IPs rather than linear-memory code addresses.
 These ranges are registered in `VirtualIPRangeList`, not the range section map. A virtual-IP
-lookup walks that bounded intrusive list before consulting the range section map. Invalid,
-cyclic, excessive, or ambiguous lists fail closed, and an encoded virtual IP that is absent from
-the list does not fall through to the real-address map.
+lookup walks the intrusive list with cycle detection and no fixed node-count limit. Invalid
+range structures, cycles, or multiple ranges containing the requested IP fail closed, and an
+encoded virtual IP that is absent from the list does not fall through to the real-address map.
+Module and ReadyToRun metadata are validated only for a range containing the requested IP.
+In particular, registration publishes a range before assigning its module's `MinVirtualIP`;
+an unrelated range in that state must not prevent lookup of already initialized modules.
+
+ReadyToRun hot/cold mapping is optional: targets built without `FEATURE_COLD_R2R_CODE`,
+including WebAssembly, omit `NumHotColdMap` and `HotColdMap`. An absent count is treated as
+zero for method-index adjustment, relative-offset calculation, and method-region queries,
+without reading the absent map. WebAssembly also omits `DelayLoadMethodCallThunks`;
+virtual-IP ranges bypass native thunk classification.
 
 <!-- BEGIN GENERATED: usage contract=ExecutionManager version=c1 -->
 ### Data descriptors used
@@ -234,12 +243,12 @@ the list does not fall through to the real-address map.
 | `ReadyToRunInfo` | `Composite` | `pointer` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
 | `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `DebugInfoSection` | `pointer` | Pointer to an `ImageDataDirectory` for the debug info |
-| `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
+| `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks; absent on WebAssembly |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
-| `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
+| `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers; present only with `FEATURE_COLD_R2R_CODE` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
-| `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap` |
+| `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap`; absent without `FEATURE_COLD_R2R_CODE`, meaning no hot/cold mapping |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
 | `ReadyToRunInfo` | `ReadyToRunHeader` | `pointer` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
