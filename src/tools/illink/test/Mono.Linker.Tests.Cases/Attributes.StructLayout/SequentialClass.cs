@@ -54,6 +54,31 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
         public int used;
     }
 
+    [Kept]
+    [StructLayout(LayoutKind.Sequential)]
+    class SequentialLayoutGrandBase
+    {
+        [Kept]
+        public int never_used_grandbase;
+    }
+
+    [Kept]
+    [KeptBaseType(typeof(SequentialLayoutGrandBase))]
+    class AutoLayoutIntermediate : SequentialLayoutGrandBase
+    {
+        public int removed_auto_field;
+    }
+
+    [Kept]
+    [StructLayout(LayoutKind.Sequential)]
+    [KeptBaseType(typeof(AutoLayoutIntermediate))]
+    class SequentialLayoutThroughAutoIntermediate : AutoLayoutIntermediate
+    {
+        [Kept]
+        public int used;
+    }
+
+    [RemovedMemberInAssembly("test.exe", typeof(AutoLayoutIntermediate), "removed_auto_field")]
     public class SequentialClass
     {
         [Kept]
@@ -61,6 +86,9 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
 
         [Kept]
         static UnallocatedButWithSingleFieldUsedSequentialClassData _otherField;
+
+        [Kept]
+        static SequentialLayoutThroughAutoIntermediate _layoutThroughAutoIntermediate;
 
         public static void Main()
         {
@@ -76,6 +104,11 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
             if (string.Empty.Length > 0)
             {
                 _otherField.used = 123;
+            }
+
+            if (string.Empty.Length > 0)
+            {
+                _layoutThroughAutoIntermediate.used = 123;
             }
         }
     }
