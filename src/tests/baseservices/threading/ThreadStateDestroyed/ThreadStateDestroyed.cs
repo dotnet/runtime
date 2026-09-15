@@ -105,7 +105,7 @@ public static unsafe class ThreadStateDestroyed
             return Fail;
         }
 
-        if (!TestLibrary.CoreClrConfigurationDetection.IsReleaseRuntime && !output.Contains(ExpectedMessage))
+        if ((!OperatingSystem.IsWindows() || !TestLibrary.CoreClrConfigurationDetection.IsReleaseRuntime) && !output.Contains(ExpectedMessage))
         {
             Console.WriteLine($"The subprocess terminated for some other reason. Expected to find: {ExpectedMessage}");
             return Fail;
