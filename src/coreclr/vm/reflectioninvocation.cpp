@@ -463,7 +463,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     GCStress<cfg_any>::MaybeTrigger();
 
-    ProtectValueClassFrame *pProtectValueClassFrame = NULL;
+    GCFrame *pValueClassGCFrame = NULL;
     ValueClassInfo *pValueClasses = NULL;
 
     // if we have the magic Value Class return, we need to allocate that class
@@ -634,8 +634,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     if (pValueClasses != NULL)
     {
-        pProtectValueClassFrame = new (_alloca (sizeof (ProtectValueClassFrame)))
-            ProtectValueClassFrame(pThread, pValueClasses);
+        pValueClassGCFrame = new (_alloca (sizeof (GCFrame))) GCFrame(pThread, &pValueClasses);
     }
 
     // Call the method
@@ -722,8 +721,8 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(retTH, &callDescrData.returnValue);
     }
 
-    if (pProtectValueClassFrame != NULL)
-        pProtectValueClassFrame->Pop(pThread);
+    if (pValueClassGCFrame != NULL)
+        pValueClassGCFrame->Pop();
 
     }
 

@@ -1166,9 +1166,34 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcF
     m_pCurThread    = NULL;
 #endif // _DEBUG
 
-    m_pObjRefs      = pObjRefs;
-    m_numObjRefs    = numObjRefs;
-    m_gcFlags       = gcFlags;
+    m_pointers.m_pObjRefs = pObjRefs;
+    m_numObjRefs          = numObjRefs;
+    m_gcFlags             = gcFlags;
+
+    Push(pThread);
+}
+
+GCFrame::GCFrame(Thread *pThread, ValueClassInfo **ppValueClasses)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(pThread != NULL);
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_INTERPRETER
+    m_osStackLocation = this;
+#endif
+#ifdef _DEBUG
+    m_Next       = NULL;
+    m_pCurThread = NULL;
+#endif
+    m_pointers.m_ppValueClasses = ppValueClasses;
+    m_numObjRefs                = 0;
+    m_gcFlags                   = GCFRAME_FLAG_VALUECLASS;
 
     Push(pThread);
 }
@@ -1257,8 +1282,11 @@ void GCFrame::Pop()
 
 #ifdef _DEBUG
     m_pCurThread->EnableStressHeap();
-    for(UINT i = 0; i < m_numObjRefs; i++)
-        Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
+    if ((m_gcFlags & GCFRAME_FLAG_VALUECLASS) == 0)
+    {
+        for(UINT i = 0; i < m_numObjRefs; i++)
+            Thread::ObjectRefNew(&m_pointers.m_pObjRefs[i]);       // Unprotect them
+    }
 #endif
 
     // The frame is no longer linked on the thread's GCFrame chain.
@@ -1293,8 +1321,11 @@ void GCFrame::Remove()
 
 #ifdef _DEBUG
             m_pCurThread->EnableStressHeap();
-            for(UINT i = 0; i < m_numObjRefs; i++)
-                Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
+            if ((m_gcFlags & GCFRAME_FLAG_VALUECLASS) == 0)
+            {
+                for(UINT i = 0; i < m_numObjRefs; i++)
+                    Thread::ObjectRefNew(&m_pointers.m_pObjRefs[i]);       // Unprotect them
+            }
 #endif
             break;
         }
@@ -1322,11 +1353,23 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
-    PTR_PTR_Object pRefs = dac_cast<PTR_PTR_Object>(m_pObjRefs);
+    if ((m_gcFlags & GCFRAME_FLAG_VALUECLASS) != 0)
+    {
+        ValueClassInfo *pVCInfo = *m_pointers.m_ppValueClasses;
+        while (pVCInfo != NULL)
+        {
+            _ASSERTE(pVCInfo->pMT->IsValueType());
+            ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
+            pVCInfo = pVCInfo->pNext;
+        }
+        return;
+    }
+
+    PTR_PTR_Object pRefs = dac_cast<PTR_PTR_Object>(m_pointers.m_pObjRefs);
 
     for (UINT i = 0; i < m_numObjRefs; i++)
     {
-        auto fromAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i]);
+        auto fromAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pointers.m_pObjRefs[i]);
         if (m_gcFlags != 0)
         {
             _ASSERTE(m_gcFlags & GC_CALL_INTERIOR);
@@ -1337,7 +1380,7 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
             (*fn)(pRefs + i, sc, 0);
         }
 
-        auto toAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i]);
+        auto toAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pointers.m_pObjRefs[i]);
         LOG((LF_GC, INFO3, "GC Protection Frame promoted" FMT_ADDR "to" FMT_ADDR "\n",
             DBG_ADDR(fromAddress), DBG_ADDR(toAddress)));
     }
@@ -1467,24 +1510,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 }
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
-
-void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ValueClassInfo *pVCInfo = m_pVCInfo;
-    while (pVCInfo != NULL)
-    {
-        _ASSERTE(pVCInfo->pMT->IsValueType());
-        ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
-        pVCInfo = pVCInfo->pNext;
-    }
-}
 
 //
 // Promote Caller Stack

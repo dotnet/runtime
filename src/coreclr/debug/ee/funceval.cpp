@@ -3535,7 +3535,8 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     INT64 *pBufferForArgsArray = (INT64*)_alloca(cbAllocSize);
     memset(pBufferForArgsArray, 0, cbAllocSize);
 
-    ProtectValueClassFrame protectValueClassFrame;
+    ValueClassInfo *pValueClasses = NULL;
+    GCFrame valueClassGCFrame(GetThread(), &pValueClasses);
 
     //
     // Initialize our tracking array
@@ -3577,7 +3578,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
             pMaybeInteriorPtrArray,
             pByRefMaybeInteriorPtrArray,
             pBufferForArgsArray,
-            protectValueClassFrame.GetValueClassInfoList()
+            &pValueClasses
             DEBUG_ARG(pDataLocationArray)
             );
     }
@@ -3592,9 +3593,9 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
     EX_END_CATCH
 
-    protectValueClassFrame.Pop();
+    valueClassGCFrame.Pop();
 
-    CleanUpTemporaryVariables(protectValueClassFrame.GetValueClassInfoList());
+    CleanUpTemporaryVariables(&pValueClasses);
 
     GCPROTECT_END();    // pByRefMaybeInteriorPtrArray
     GCPROTECT_END();    // pMaybeInteriorPtrArray

@@ -65,13 +65,26 @@ struct ExInfo
     volatile void*          m_notifyDebuggerSP;
 };
 
+struct ValueClassInfo
+{
+    ValueClassInfo* m_pNext;
+    MethodTable* m_pMethodTable;
+    void* m_pData;
+};
+
 struct GCFrameRegistration
 {
+    static const uint32_t GCFRAME_FLAG_VALUECLASS = 0x80000000;
+
     Thread* m_pThread;
     GCFrameRegistration* m_pNext;
-    void** m_pObjRefs;
+    union
+    {
+        void** m_pObjRefs;
+        ValueClassInfo** m_ppValueClasses;
+    };
     uint32_t m_numObjRefs;
-    int m_MaybeInterior;
+    uint32_t m_gcFlags;
 };
 
 struct InlinedThreadStaticRoot

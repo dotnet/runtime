@@ -239,6 +239,9 @@ public:
     bool IsValueType()
         { return GetElementType() < ElementType_Class; }
 
+    bool IsByRefLike()
+        { return (m_uFlags & IsByRefLikeFlag) && !HasComponentSize(); }
+
     bool HasFinalizer()
     {
         return (m_uFlags & HasFinalizerFlag) != 0;
