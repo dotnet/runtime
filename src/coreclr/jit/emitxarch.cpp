@@ -12290,6 +12290,10 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
             case INS_roundps:
             case INS_roundsd:
             case INS_roundss:
+            case INS_vextractf32x4:
+            case INS_vextracti32x4:
+            case INS_vinsertf32x4:
+            case INS_vinserti32x4:
             {
                 // These instructions have pseudo-names, but still need to display the immediate
                 break;
@@ -12375,6 +12379,53 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
     }
 
     emitDispCommentForHandle(cnsVal.cnsVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
+}
+
+//------------------------------------------------------------------------
+// GetNarrowedDstAttr: Get the size to display for the destination of an
+// instruction that writes fewer bytes than it reads, such as the packed
+// double to single converts.
+//
+// Arguments:
+//    ins     - the instruction
+//    srcAttr - the size of the source operand
+//
+// Return Value:
+//    The size of the destination, or srcAttr when the two match.
+//
+static emitAttr GetNarrowedDstAttr(instruction ins, emitAttr srcAttr)
+{
+    switch (ins)
+    {
+        case INS_cvtpd2dq:
+        case INS_cvtpd2ps:
+        case INS_cvttpd2dq:
+        case INS_vcvtdq2ph:
+        case INS_vcvtneps2bf16:
+        case INS_vcvtpd2udq:
+        case INS_vcvtps2phx:
+        case INS_vcvtqq2ps:
+        case INS_vcvttpd2dqs:
+        case INS_vcvttpd2udq:
+        case INS_vcvttpd2udqs:
+        case INS_vcvtudq2ph:
+        case INS_vcvtuqq2ps:
+        {
+            return std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(srcAttr) / 2));
+        }
+
+        case INS_vcvtpd2ph:
+        case INS_vcvtqq2ph:
+        case INS_vcvtuqq2ph:
+        {
+            return std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(srcAttr) / 4));
+        }
+
+        default:
+        {
+            return srcAttr;
+        }
+    }
 }
 
 //--------------------------------------------------------------------
@@ -12509,6 +12560,13 @@ void emitter::emitDispIns(
         }
     }
 
+    // A GC type implies a pointer-sized operand, but the emitter narrows the recorded size when it
+    // drops REX.W (`xor reg, reg`), so the registers must be named at the size actually encoded.
+    if (EA_SIZE(attr) != id->idOpSize())
+    {
+        attr = id->idOpSize();
+    }
+
     /* Now see what instruction format we've got */
 
     // First print the implicit register usage
@@ -12593,15 +12651,24 @@ void emitter::emitDispIns(
             }
             else
 #endif
-                if (ins == INS_movsx || ins == INS_movzx)
+                if (ins == INS_movsx)
             {
                 attr = EA_PTRSIZE;
+            }
+            else if (ins == INS_movzx)
+            {
+                // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                attr = EA_4BYTE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
                 // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
                 attr = EA_4BYTE;
+            }
+            else
+            {
+                attr = GetNarrowedDstAttr(ins, attr);
             }
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
@@ -12861,15 +12928,24 @@ void emitter::emitDispIns(
             }
             else
 #endif
-                if (ins == INS_movsx || ins == INS_movzx)
+                if (ins == INS_movsx)
             {
                 attr = EA_PTRSIZE;
+            }
+            else if (ins == INS_movzx)
+            {
+                // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                attr = EA_4BYTE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
                 // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
                 attr = EA_4BYTE;
+            }
+            else
+            {
+                attr = GetNarrowedDstAttr(ins, attr);
             }
 
             printf("%s", emitRegName(id->idReg1(), attr));
@@ -13016,6 +13092,8 @@ void emitter::emitDispIns(
             {
                 switch (ins)
                 {
+                    case INS_movmskpd:
+                    case INS_movmskps:
                     case INS_pmovmskb:
                     {
                         assert(!id->idIsEvexAaaContextSet());
@@ -13033,9 +13111,15 @@ void emitter::emitDispIns(
 #endif // TARGET_AMD64
 
                     case INS_movsx:
-                    case INS_movzx:
                     {
                         tgtAttr = EA_PTRSIZE;
+                        break;
+                    }
+
+                    case INS_movzx:
+                    {
+                        // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                        tgtAttr = EA_4BYTE;
                         break;
                     }
 
@@ -13112,6 +13196,8 @@ void emitter::emitDispIns(
 
                 default:
                 {
+                    tgtAttr = GetNarrowedDstAttr(ins, attr);
+
                     switch (ins)
                     {
                         case INS_cvtsi2ss32:
@@ -13121,6 +13207,24 @@ void emitter::emitDispIns(
                         {
                             assert(!id->idIsEvexAaaContextSet());
                             tgtAttr = EA_16BYTE;
+                            srcAttr = EA_ATTR(GetInputSizeInBytes(id));
+                            break;
+                        }
+
+                        case INS_movd32:
+                        case INS_movd64:
+                        {
+                            // Moves between a general purpose register and the low element of a vector
+                            if (isGeneralRegister(id->idReg1()))
+                            {
+                                tgtAttr = EA_ATTR(GetInputSizeInBytes(id));
+                                srcAttr = EA_16BYTE;
+                            }
+                            else
+                            {
+                                tgtAttr = EA_16BYTE;
+                                srcAttr = EA_ATTR(GetInputSizeInBytes(id));
+                            }
                             break;
                         }
 
@@ -13168,29 +13272,17 @@ void emitter::emitDispIns(
                             break;
                         }
 
-                        case INS_cvtpd2dq:
-                        case INS_cvtpd2ps:
-                        case INS_cvttpd2dq:
-                        case INS_vcvtdq2ph:
-                        case INS_vcvtneps2bf16:
-                        case INS_vcvtpd2udq:
-                        case INS_vcvtps2phx:
-                        case INS_vcvtqq2ps:
-                        case INS_vcvttpd2dqs:
-                        case INS_vcvttpd2udq:
-                        case INS_vcvttpd2udqs:
-                        case INS_vcvtudq2ph:
-                        case INS_vcvtuqq2ps:
+                        case INS_vbroadcastf32x2:
+                        case INS_vbroadcasti32x2:
+                        case INS_vbroadcastsd:
+                        case INS_vbroadcastss:
+                        case INS_vpbroadcastb:
+                        case INS_vpbroadcastd:
+                        case INS_vpbroadcastq:
+                        case INS_vpbroadcastw:
                         {
-                            tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 2));
-                            break;
-                        }
-
-                        case INS_vcvtpd2ph:
-                        case INS_vcvtqq2ph:
-                        case INS_vcvtuqq2ph:
-                        {
-                            tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 4));
+                            // The source is the low element of a vector, so it is always xmm
+                            srcAttr = EA_16BYTE;
                             break;
                         }
 
@@ -13227,16 +13319,45 @@ void emitter::emitDispIns(
                 std::swap(reg2, reg3);
             }
 
-            emitAttr attr3 = attr;
+            emitAttr attr12 = attr;
+            emitAttr attr3  = attr;
+
             if ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0)
             {
                 // Shift instructions take xmm for the 3rd operand regardless of instruction size.
                 attr3 = EA_16BYTE;
             }
+            else
+            {
+                switch (ins)
+                {
+                    case INS_cvtsi2sd32:
+                    case INS_cvtsi2sd64:
+                    case INS_cvtsi2ss32:
+                    case INS_cvtsi2ss64:
+                    case INS_vcvtsi2sh32:
+                    case INS_vcvtsi2sh64:
+                    case INS_vcvtusi2sd32:
+                    case INS_vcvtusi2sd64:
+                    case INS_vcvtusi2sh32:
+                    case INS_vcvtusi2sh64:
+                    case INS_vcvtusi2ss32:
+                    case INS_vcvtusi2ss64:
+                    {
+                        // The 3rd operand is the general purpose register being converted
+                        attr12 = EA_16BYTE;
+                        attr3  = EA_ATTR(GetInputSizeInBytes(id));
+                        break;
+                    }
 
-            printf("%s", emitRegName(id->idReg1(), attr));
+                    default:
+                        break;
+                }
+            }
+
+            printf("%s", emitRegName(id->idReg1(), attr12));
             emitDispEmbMasking(id);
-            printf(", %s, ", emitRegName(reg2, attr));
+            printf(", %s, ", emitRegName(reg2, attr12));
             printf("%s", emitRegName(reg3, attr3));
             emitDispEmbRounding(id);
             break;
@@ -13427,9 +13548,14 @@ void emitter::emitDispIns(
         case IF_RWR_MRD:
         case IF_RRW_MRD:
         {
-            if (ins == INS_movsx || ins == INS_movzx)
+            if (ins == INS_movsx)
             {
                 attr = EA_PTRSIZE;
+            }
+            else if (ins == INS_movzx)
+            {
+                // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                attr = EA_4BYTE;
             }
 #ifdef TARGET_AMD64
             else if (ins == INS_movsxd)
@@ -13442,6 +13568,10 @@ void emitter::emitDispIns(
                 // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
                 attr = EA_4BYTE;
+            }
+            else
+            {
+                attr = GetNarrowedDstAttr(ins, attr);
             }
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
