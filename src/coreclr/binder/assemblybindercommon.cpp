@@ -13,6 +13,7 @@
 
 #include "common.h"
 #include "assemblybindercommon.hpp"
+#include "hostinformation.h"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
@@ -897,11 +898,21 @@ namespace BINDER_SPACE
             // Is assembly on TPA list?
             SimpleNameToFileNameMap * tpaMap = pApplicationContext->GetTpaList();
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
+            SString fileName;
             if (pTpaEntry != nullptr)
             {
-                _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
-                SString fileName(pTpaEntry->m_wszILFileName);
+                if (pTpaEntry->m_wszILFileName != nullptr)
+                {
+                    fileName.Set(pTpaEntry->m_wszILFileName);
+                }
+                else
+                {
+                    HostInformation::ResolveAssemblyToPath(pTpaEntry->m_wszSimpleName, fileName);
+                }
+            }
 
+            if (!fileName.IsEmpty())
+            {
                 ReleaseHolder<Assembly> pAssembly;
                 SString getAssemblyDiag;
                 hr = GetAssembly(fileName,
@@ -1349,5 +1360,3 @@ BOOL AssemblyBinderCommon::IsValidArchitecture(PEKIND kArchitecture)
 
 #endif // !defined(DACCESS_COMPILE)
 };
-
-
