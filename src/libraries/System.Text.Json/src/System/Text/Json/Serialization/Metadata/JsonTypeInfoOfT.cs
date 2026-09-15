@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -112,6 +113,15 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     propertyInfo.AssociatedParameter = null;
                 }
+            }
+        }
+
+        internal void SetCreateObjectForSourceGen(Func<T> objectCreator)
+        {
+            if (Converter.SupportsCreateObjectDelegate && !Converter.ConstructorIsParameterized)
+            {
+                _typedCreateObject = objectCreator;
+                _createObject = () => new StrongBox<T>(objectCreator());
             }
         }
 

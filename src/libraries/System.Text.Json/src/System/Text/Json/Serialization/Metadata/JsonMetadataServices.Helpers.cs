@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -15,6 +16,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo<T> CreateCore<T>(JsonConverter converter, JsonSerializerOptions options)
         {
             var typeInfo = new JsonTypeInfo<T>(converter, options);
+            typeInfo.IsSourceGenerated = true;
             PopulatePolymorphismMetadata(typeInfo, polymorphismOptions: null, typeClassifierFactory: null);
             typeInfo.MapInterfaceTypesToCallbacks();
 
@@ -31,6 +33,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonConverter<T> converter = GetConverter(objectInfo);
             var typeInfo = new JsonTypeInfo<T>(converter, options);
+            typeInfo.IsSourceGenerated = true;
             if (objectInfo.ObjectWithParameterizedConstructorCreator is not null)
             {
                 // NB parameter metadata must be populated *before* property metadata
@@ -40,7 +43,15 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                typeInfo.SetCreateObjectIfCompatible(objectInfo.ObjectCreator);
+                if (typeof(T).IsValueType && objectInfo.ObjectCreator is { } objectCreator)
+                {
+                    typeInfo.SetCreateObjectForSourceGen(objectCreator);
+                }
+                else
+                {
+                    typeInfo.SetCreateObjectIfCompatible(objectInfo.ObjectCreator);
+                }
+
                 typeInfo.CreateObjectForExtensionDataProperty = ((JsonTypeInfo)typeInfo).CreateObject;
             }
 
@@ -84,6 +95,7 @@ namespace System.Text.Json.Serialization.Metadata
                 : converter;
 
             JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
+            typeInfo.IsSourceGenerated = true;
 
             typeInfo.KeyTypeInfo = collectionInfo.KeyInfo;
             typeInfo.ElementTypeInfo = collectionInfo.ElementInfo;

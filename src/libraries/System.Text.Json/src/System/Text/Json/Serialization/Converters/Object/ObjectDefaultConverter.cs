@@ -40,7 +40,9 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                 {
-                    obj = state.Current.ReturnValue!;
+                    obj = IsValueType && jsonTypeInfo.IsSourceGenerated && state.Current.ReturnValue is not StrongBox<T>
+                        ? new StrongBox<T>((T)state.Current.ReturnValue!)
+                        : state.Current.ReturnValue!;
                 }
                 else
                 {
@@ -54,7 +56,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 PopulatePropertiesFastPath(obj, jsonTypeInfo, options, ref reader, ref state);
                 Debug.Assert(obj is not null);
-                value = (T)obj;
+                value = obj is StrongBox<T> fastBox ? fastBox.Value : (T)obj;
                 return true;
             }
             else
@@ -116,7 +118,9 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                     {
-                        obj = state.Current.ReturnValue!;
+                        obj = IsValueType && jsonTypeInfo.IsSourceGenerated && state.Current.ReturnValue is not StrongBox<T>
+                            ? new StrongBox<T>((T)state.Current.ReturnValue!)
+                            : state.Current.ReturnValue!;
                     }
                     else
                     {
@@ -136,7 +140,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.ReferenceId = null;
                     }
 
-                    jsonTypeInfo.OnDeserializing?.Invoke(obj);
+                    jsonTypeInfo.OnDeserializing?.Invoke(obj is StrongBox<T> deserializingBox ? deserializingBox.Value : obj);
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
@@ -256,12 +260,12 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            jsonTypeInfo.OnDeserialized?.Invoke(obj is StrongBox<T> deserializedBox ? deserializedBox.Value : obj);
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Unbox
             Debug.Assert(obj is not null);
-            value = (T)obj;
+            value = obj is StrongBox<T> slowBox ? slowBox.Value : (T)obj;
 
             // Check if we are trying to update the UTF-8 property cache.
             if (state.Current.PropertyRefCacheBuilder is not null)
@@ -276,7 +280,7 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
-            jsonTypeInfo.OnDeserializing?.Invoke(obj);
+            jsonTypeInfo.OnDeserializing?.Invoke(obj is StrongBox<T> deserializingBox ? deserializingBox.Value : obj);
             state.Current.InitializePropertiesValidationState(jsonTypeInfo);
 
             // Process all properties.
@@ -309,7 +313,7 @@ namespace System.Text.Json.Serialization.Converters
                 ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
             }
 
-            jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            jsonTypeInfo.OnDeserialized?.Invoke(obj is StrongBox<T> deserializedBox ? deserializedBox.Value : obj);
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Check if we are trying to update the UTF-8 property cache.

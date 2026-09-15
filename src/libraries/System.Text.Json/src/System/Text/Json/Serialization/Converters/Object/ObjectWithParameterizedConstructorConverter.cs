@@ -63,9 +63,10 @@ namespace System.Text.Json.Serialization.Converters
                 // before calling the constructor which may throw.
                 state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
-                obj = (T)CreateObject(ref state.Current);
+                T createdObj = (T)CreateObject(ref state.Current);
+                obj = IsValueType && jsonTypeInfo.IsSourceGenerated && argumentState.FoundPropertyCount > 0 ? new StrongBox<T>(createdObj) : (object)createdObj;
 
-                jsonTypeInfo.OnDeserializing?.Invoke(obj);
+                jsonTypeInfo.OnDeserializing?.Invoke(createdObj);
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -202,7 +203,8 @@ namespace System.Text.Json.Serialization.Converters
                 // before calling the constructor which may throw.
                 state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
-                obj = (T)CreateObject(ref state.Current);
+                T createdObj = (T)CreateObject(ref state.Current);
+                obj = IsValueType && jsonTypeInfo.IsSourceGenerated && argumentState.FoundPropertyCount > 0 ? new StrongBox<T>(createdObj) : (object)createdObj;
 
                 if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                 {
@@ -212,7 +214,7 @@ namespace System.Text.Json.Serialization.Converters
                     state.ReferenceId = null;
                 }
 
-                jsonTypeInfo.OnDeserializing?.Invoke(obj);
+                jsonTypeInfo.OnDeserializing?.Invoke(createdObj);
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -271,11 +273,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            jsonTypeInfo.OnDeserialized?.Invoke(obj is StrongBox<T> deserializedBox ? deserializedBox.Value : obj);
 
             // Unbox
             Debug.Assert(obj is not null);
-            value = (T)obj;
+            value = obj is StrongBox<T> slowBox ? slowBox.Value : (T)obj;
 
             // Check if we are trying to update the UTF-8 property cache.
             if (state.Current.PropertyRefCacheBuilder is not null)
