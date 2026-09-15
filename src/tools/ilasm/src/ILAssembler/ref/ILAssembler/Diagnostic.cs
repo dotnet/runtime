@@ -14,14 +14,22 @@ namespace ILAssembler
         public const string ByteArrayTooShort = "ILA0016";
         public const string DeprecatedCustomMarshaller = "ILA0025";
         public const string DeprecatedNativeType = "ILA0024";
+        public const string DuplicateExportOrdinal = "ILA0044";
         public const string DuplicateMethod = "ILA0030";
+        public const string ExportOrdinalRangeTooLarge = "ILA0037";
         public const string ExportedTypeNotFound = "ILA0015";
         public const string FileNotFound = "ILA0013";
         public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
         public const string GenericParameterIndexOutOfRange = "ILA0027";
         public const string GenericParameterNotFound = "ILA0011";
+        public const string InsufficientVTableData = "ILA0040";
+        public const string InvalidExportOrdinal = "ILA0036";
         public const string InvalidMetadataToken = "ILA0012";
         public const string InvalidPInvokeSignature = "ILA0022";
+        public const string InvalidVTableEntry = "ILA0043";
+        public const string InvalidVTableExport = "ILA0039";
+        public const string InvalidVTableSlotCount = "ILA0038";
+        public const string InvalidVTableWidth = "ILA0042";
         public const string KeyFileError = "ILA0032";
         public const string LabelNotFound = "ILA0017";
         public const string LiteralOutOfRange = "ILA0001";
@@ -40,6 +48,7 @@ namespace ILAssembler
         public const string TypedefNotFound = "ILA0020";
         public const string UnknownGenericParameter = "ILA0028";
         public const string UnsealedValueType = "ILA0002";
+        public const string UnsupportedNativeExportMachine = "ILA0041";
         public const string UnsupportedSecurityDeclaration = "ILA0026";
         public const string UnsupportedTlsData = "ILA0034";
     }
