@@ -27,8 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             TypeSystemContext context = id switch
             {
                 ReadyToRunHelperId.DelegateCtor => ((DelegateCreationInfo)target).DelegateType.Context,
-                ReadyToRunHelperId.ResolveVirtualFunction => ((MethodDesc)target).Context,
-                _ => ((TypeDesc)target).Context,
+                _ => ((TypeSystemEntity)target).Context,
             };
 
             TypeDesc nativeIntType = context.GetWellKnownType(WellKnownType.IntPtr);
@@ -36,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 ReadyToRunHelperId.DelegateCtor => [nativeIntType, nativeIntType],
                 ReadyToRunHelperId.ResolveVirtualFunction => [nativeIntType],
-                _ => Array.Empty<TypeDesc>(),
+                _ => [],
             };
             TypeDesc returnType = id == ReadyToRunHelperId.DelegateCtor ?
                 context.GetWellKnownType(WellKnownType.Void) : nativeIntType;
