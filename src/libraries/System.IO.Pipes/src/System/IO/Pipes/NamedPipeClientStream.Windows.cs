@@ -208,7 +208,7 @@ namespace System.IO.Pipes
             IdentityReference? remoteOwnerSid = accessControl.GetOwner(typeof(SecurityIdentifier));
             using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
             {
-                SecurityIdentifier? currentUserSid = currentIdentity.Owner;
+                SecurityIdentifier? currentUserSid = currentIdentity.User;
                 if (remoteOwnerSid != currentUserSid)
                 {
                     State = PipeState.Closed;
