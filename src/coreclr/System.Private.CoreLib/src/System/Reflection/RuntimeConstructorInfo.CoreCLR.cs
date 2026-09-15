@@ -41,7 +41,7 @@ namespace System.Reflection
             }
         }
 
-        internal MethodBaseInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -66,6 +66,9 @@ namespace System.Reflection
         #endregion
 
         #region NonPublic Methods
+        internal unsafe object InvokeDirectByRef(IntPtr* arguments) =>
+            Invoker.InvokeDirectByRef(obj: null, arguments)!;
+
         internal override bool CacheEquals(object? o) =>
             o is RuntimeConstructorInfo m && m.m_handle == m_handle &&
             ReferenceEquals(m_declaringType, m.m_declaringType);
