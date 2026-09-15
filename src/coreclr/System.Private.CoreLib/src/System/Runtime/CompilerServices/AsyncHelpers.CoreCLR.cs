@@ -957,6 +957,7 @@ namespace System.Runtime.CompilerServices
                 AsyncDispatcherInfo asyncDispatcherInfo;
                 asyncDispatcherInfo.Next = refDispatcherInfo;
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
+                asyncDispatcherInfo.CurrentTask = this;
                 refDispatcherInfo = &asyncDispatcherInfo;
 
                 while (true)
