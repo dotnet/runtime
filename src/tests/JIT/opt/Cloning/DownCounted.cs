@@ -152,6 +152,30 @@ public class DownCounted
         return sum;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGEUnitStride(int[] a, uint n, uint limit)
+    {
+        int sum = 0;
+        for (uint i = n; i >= limit; i--)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGEUnitStrideConstSafe(int[] a)
+    {
+        // init=7, limit=1, stride=1: limit >= stride, so the last visited
+        // value (limit) can't underflow on the next decrement.
+        int sum = 0;
+        for (uint i = 7; i >= 1; i--)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
     [Fact]
     public static void UnsignedUnderflowTest()
     {
@@ -161,11 +185,13 @@ public class DownCounted
         Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGE(a, 7, 1));
         Assert.Throws<IndexOutOfRangeException>(() => UnsignedSpanGT(a, 7, 0));
         Assert.Throws<IndexOutOfRangeException>(() => UnsignedSpanGE(a, 7, 1));
+        Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGEUnitStride(a, 7, 0));
 
         Assert.Equal(11, UnsignedArrayGT(a, 7, 1));
         Assert.Equal(11, UnsignedArrayGE(a, 7, 2));
         Assert.Equal(11, UnsignedSpanGT(a, 7, 1));
         Assert.Equal(11, UnsignedSpanGE(a, 7, 2));
+        Assert.Equal(28, UnsignedArrayGEUnitStride(a, 7, 1));
     }
 
     [Fact]
@@ -176,5 +202,6 @@ public class DownCounted
         Assert.Equal(11, UnsignedArrayGTConstSafe(a));
         Assert.Equal(18, UnsignedArrayGEConstSafe(a));
         Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGEConstUnsafe(a));
+        Assert.Equal(28, UnsignedArrayGEUnitStrideConstSafe(a));
     }
 }

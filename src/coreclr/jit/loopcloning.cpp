@@ -1341,7 +1341,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
 
     // We must check that decreasing loops with unsigned control variables can't wrap around.
-    if (!isIncreasingLoop && (stride != 1) && iterInfo->TestTree->IsUnsigned())
+    // This applies even for unit stride: an inclusive ">=" test with a limit of 0 still
+    // visits 0 and then underflows on the next decrement.
+    if (!isIncreasingLoop && iterInfo->TestTree->IsUnsigned())
     {
         bool provenSafe = false;
         if (iterInfo->HasConstInit && iterInfo->HasConstLimit)
