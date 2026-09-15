@@ -263,6 +263,34 @@ PAL_SetLogManagedCallstackForSignalCallback(
     IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
 
 /// <summary>
+/// Retrieves platform-specific properties for a fatal native hardware exception.
+/// The context and any returned pointers are valid only for the duration of the
+/// fatal-error callback.
+/// </summary>
+typedef int32_t (*PFATALERRORPLATFORMPROPERTYGETTER)(
+    LPVOID context,
+    int32_t property,
+    const void** value);
+
+/// <summary>
+/// Callback invoked for a fatal native hardware exception that was not handled by the
+/// runtime's normal exception dispatch. exceptionInfo is optional and contains the
+/// runtime exception records when they are available.
+/// </summary>
+typedef VOID (*PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK)(
+    DWORD exceptionCode,
+    LPVOID faultAddress,
+    struct _EXCEPTION_POINTERS* exceptionInfo,
+    PFATALERRORPLATFORMPROPERTYGETTER getPlatformProperty,
+    LPVOID context);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetFatalErrorHandlerForNativeExceptionCallback(
+    IN PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK callback);
+
+/// <summary>
 /// Callback invoked from the fatal-signal path to write an in-proc crash
 /// report. The callback runs inside the signal handler and must therefore
 /// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the

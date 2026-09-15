@@ -29,6 +29,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/virtual.h"
 #include "pal/map.hpp"
 #include "pal/environ.h"
+#include <public/fatal_error_handling.h>
 
 #include <minipal/debugger.h>
 #include <minipal/utils.h>
@@ -52,6 +53,49 @@ mach_port_t s_ExceptionPort;
 static DWORD s_PalInitializeFlags = 0;
 
 static const char * PAL_MACH_EXCEPTION_MODE = "PAL_MachExceptionMode";
+
+struct MachFatalErrorContext
+{
+    void* ThreadState;
+};
+
+static int32_t GetMachFatalErrorProperty(void* context, int32_t property, const void** value)
+{
+    if (property != FEP_MachExceptionInfo)
+    {
+        return 0;
+    }
+
+    MachFatalErrorContext* fatalErrorContext = static_cast<MachFatalErrorContext*>(context);
+    *value = fatalErrorContext->ThreadState;
+    return 1;
+}
+
+static bool IsFatalHardwareExceptionForFatalErrorHandler(DWORD exceptionCode)
+{
+    switch (exceptionCode)
+    {
+        case EXCEPTION_ACCESS_VIOLATION:
+        case EXCEPTION_IN_PAGE_ERROR:
+        case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+        case EXCEPTION_ILLEGAL_INSTRUCTION:
+        case EXCEPTION_PRIV_INSTRUCTION:
+        case EXCEPTION_DATATYPE_MISALIGNMENT:
+        case EXCEPTION_INT_DIVIDE_BY_ZERO:
+        case EXCEPTION_INT_OVERFLOW:
+        case EXCEPTION_FLT_DENORMAL_OPERAND:
+        case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+        case EXCEPTION_FLT_INEXACT_RESULT:
+        case EXCEPTION_FLT_INVALID_OPERATION:
+        case EXCEPTION_FLT_OVERFLOW:
+        case EXCEPTION_FLT_STACK_CHECK:
+        case EXCEPTION_FLT_UNDERFLOW:
+            return true;
+
+        default:
+            return false;
+    }
+}
 
 // This struct is used to track the threads that need to have an exception forwarded
 // to the next thread level port in the chain (if exists). An entry is added by the
@@ -429,6 +473,29 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
     CPalThread *pThread = InternalGetCurrentThread();
 
     PAL_DispatchExceptionInner(pContext, pExRecord);
+
+    if (IsFatalHardwareExceptionForFatalErrorHandler(pExRecord->ExceptionCode))
+    {
+#if defined(HOST_AMD64)
+        void* pMachThreadState = &pMachExceptionInfo->ThreadState.uts.ts64;
+#elif defined(HOST_ARM64)
+        void* pMachThreadState = &pMachExceptionInfo->ThreadState;
+#else
+#error Unexpected architecture
+#endif
+
+        MachFatalErrorContext fatalErrorContext = { pMachThreadState };
+        PROCInvokeFatalErrorHandlerForNativeException(
+            pExRecord->ExceptionCode,
+            pExRecord->ExceptionAddress,
+            nullptr,
+            GetMachFatalErrorProperty,
+            &fatalErrorContext);
+    }
+
+    // Forwarding the original exception is required for the process to terminate.
+    // CoreCLR performs no additional crash reporting on this Mach path after the callback,
+    // so processing continues through the pre-runtime exception chain.
 
     // Send the forward request to the exception thread to process
     MachMessage sSendMessage;

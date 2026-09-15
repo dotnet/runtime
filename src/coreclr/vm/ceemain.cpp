@@ -716,6 +716,7 @@ void EEStartupHelper()
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
+        PAL_SetFatalErrorHandlerForNativeExceptionCallback(EEPolicy::HandleFatalErrorForNativeException);
 #endif // TARGET_UNIX
 
 #if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)

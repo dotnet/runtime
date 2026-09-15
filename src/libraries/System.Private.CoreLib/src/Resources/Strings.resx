@@ -2617,6 +2617,9 @@
   <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
     <value>A resolver is already set for the assembly.</value>
   </data>
+  <data name="InvalidOperation_CannotRegisterSecondFatalErrorHandler" xml:space="preserve">
+    <value>A handler for fatal errors is already set.</value>
+  </data>
   <data name="InvalidOperation_CannotRegisterSecondHandler" xml:space="preserve">
     <value>A handler for unhandled exceptions is already set.</value>
   </data>
