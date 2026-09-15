@@ -83,6 +83,18 @@ namespace System.Threading
             // blocking forever in io_uring_enter when there is nothing outstanding to wait for.
             private static int s_inFlightCount;
 
+            // Gates the "wake a worker so it can become the driver" call in TrySubmit (see its comment)
+            // to at most once per "no driver currently active" window, instead of once per submitting
+            // thread. Without this, a burst of concurrent TrySubmit calls that all observe s_isDriving
+            // == 0 (e.g. under high concurrency, before any of them has had a chance to actually win the
+            // CAS and start driving) would each separately call MaybeAddWorkingWorker, which can wake (or
+            // even create) multiple worker threads even though only one of them will ever succeed in
+            // becoming the driver - the rest just burn a wake/park cycle for nothing. Reset back to 0 as
+            // soon as any worker thread visits TryBecomeDriverAndDrive while an operation is in flight
+            // (whether or not that thread goes on to win the s_isDriving CAS), so the gate can never get
+            // stuck at 1 - the next round of submissions remains free to request a fresh wake if needed.
+            private static int s_driverWakeRequested;
+
             static IoUringThreadPool()
             {
                 (s_isEnabled, s_ringHandle) = DetermineIsEnabledAndCreateRing();
@@ -171,7 +183,13 @@ namespace System.Threading
                     // permanent hang. Explicitly wake (or create) a worker so it loops back to the top of
                     // its dispatch loop and gets a chance to become the driver. This mirrors exactly what
                     // enqueuing an ordinary Thread Pool work item already does to guarantee a worker runs.
-                    if (Volatile.Read(ref s_isDriving) == 0)
+                    //
+                    // The s_driverWakeRequested CAS ensures only the first submitter to notice "no driver
+                    // active" in a given window actually pays for the wake; concurrent submitters piling
+                    // in behind it (common under high concurrency) skip this, since one wake is enough to
+                    // get some thread circling back to attempt the CAS in TryBecomeDriverAndDrive.
+                    if (Volatile.Read(ref s_isDriving) == 0 &&
+                        Interlocked.CompareExchange(ref s_driverWakeRequested, 1, 0) == 0)
                     {
                         WorkerThread.MaybeAddWorkingWorker(ThreadPoolInstance);
                     }
@@ -204,6 +222,16 @@ namespace System.Threading
                     // Nothing to wait for; avoid parking forever in io_uring_enter.
                     return false;
                 }
+
+                // Clear the wake-request gate as soon as any thread visits here to check on driving,
+                // regardless of whether it goes on to win the CAS below. This guarantees the gate can
+                // never get stuck at 1 forever - e.g. if the thread that was woken specifically to
+                // request this ends up losing the race to another thread that was already cycling
+                // through its own dispatch loop and grabs s_isDriving first. As long as at least one
+                // worker thread visits this method while an operation is in flight (which happens on
+                // every dispatch-loop iteration of every worker), the next round of submissions remains
+                // free to request a fresh wake if one is still needed.
+                Volatile.Write(ref s_driverWakeRequested, 0);
 
                 if (Interlocked.CompareExchange(ref s_isDriving, 1, 0) != 0)
                 {
