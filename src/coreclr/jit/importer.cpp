@@ -14841,11 +14841,8 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     }
 
     // Stores to caller locals are observable by try and filter regions protecting the call site.
-    BasicBlock* const callSiteBlock = impInlineInfo->iciBlock;
-    const bool        localStoresAreVisible =
-        callSiteBlock->hasTryIndex() ||
-        (callSiteBlock->hasHndIndex() && impInlineInfo->InlinerCompiler->bbInFilterBBRange(callSiteBlock));
-    auto hasVisibleSideEffects = [localStoresAreVisible](GenTreeFlags flags) {
+    const bool localStoresAreVisible = impInlineInfo->iciBlock->HasPotentialEHSuccs(impInlineRoot());
+    auto       hasVisibleSideEffects = [localStoresAreVisible](GenTreeFlags flags) {
         return GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) || (localStoresAreVisible && ((flags & GTF_ASG) != 0));
     };
 

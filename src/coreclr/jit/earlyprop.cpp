@@ -507,10 +507,10 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 {
     // Check all nodes between the GT_NULLCHECK and the indirection to see
     // if any nodes have unsafe side effects.
-    bool isInsideTryOrFilter = compCurBB->hasTryIndex() || (compCurBB->hasHndIndex() && bbInFilterBBRange(compCurBB));
-    bool canRemoveNullCheck  = true;
-    const unsigned maxNodesWalked = 50;
-    unsigned       nodesWalked    = 0;
+    bool           isInsideTryOrFilter = compCurBB->HasPotentialEHSuccs(this);
+    bool           canRemoveNullCheck  = true;
+    const unsigned maxNodesWalked      = 50;
+    unsigned       nodesWalked         = 0;
 
     // First walk the nodes in the statement containing the GT_NULLCHECK in forward execution order
     // until we get to the indirection or process the statement root.
