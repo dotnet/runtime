@@ -47,6 +47,91 @@ RhpNewFast_RarePath:
 LEAF_END RhpNewFast, _TEXT
 
 
+ifdef FEATURE_2XPTR_ALIGNMENT
+
+g_pFreeObjectMethodTable TEXTEQU <?g_pFreeObjectMethodTable@@3PEAVMethodTable@@EA>
+EXTERN g_pFreeObjectMethodTable : QWORD
+
+;; Shared code for RhpNewFastAlign2xPtr and RhpNewFastMisalign. The object reference is placed at
+;; alloc_ptr, so for a reference type (Align2xPtr) it must land on a 2 * DATA_ALIGNMENT boundary and
+;; for a boxed value type (Misalign) it must be biased by DATA_ALIGNMENT so the payload lands on the
+;; boundary. When the allocation context is not already in the required phase we allocate an extra
+;; MIN_OBJECT_SIZE and prepend a dummy free object to flip it (MIN_OBJECT_SIZE mod 2 * DATA_ALIGNMENT
+;; == DATA_ALIGNMENT).
+;;  RCX == MethodTable
+NEW_ALIGN_FAST MACRO Variation
+
+        ;; rdx = ee_alloc_context pointer, TRASHES rax
+        INLINE_GET_ALLOC_CONTEXT_BASE rdx, rax
+
+        mov         r8d, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
+        mov         rax, [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         r9, [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
+        sub         r9, rax
+
+        ;; rax: alloc_ptr, rcx: MethodTable, rdx: ee_alloc_context, r8: base size, r9: available size
+        test        rax, 0Fh                    ; (2 * DATA_ALIGNMENT) - 1
+IFIDNI <&Variation>, <Align2xPtr>
+        jz          AlignFast_InPhase&Variation
+ELSE
+        jnz         AlignFast_InPhase&Variation
+ENDIF
+
+        ;; Wrong phase: allocate an extra MIN_OBJECT_SIZE for a leading dummy free object.
+        add         r8, ASM_MIN_OBJECT_SIZE
+        cmp         r8, r9
+        ja          AlignFast_RarePath&Variation
+
+        add         r8, rax
+        mov         [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r8
+
+        ;; Initialize the leading dummy free object (a zero-length free-object array).
+        mov         r8, g_pFreeObjectMethodTable
+        mov         [rax + OFFSETOF__Object__m_pEEType], r8
+        mov         dword ptr [rax + OFFSETOF__Array__m_Length], 0
+
+        ;; The real object follows and is now in the required phase.
+        add         rax, ASM_MIN_OBJECT_SIZE
+        mov         [rax + OFFSETOF__Object__m_pEEType], rcx
+        ret
+
+AlignFast_InPhase&Variation:
+        cmp         r8, r9
+        ja          AlignFast_RarePath&Variation
+
+        add         r8, rax
+        mov         [rax + OFFSETOF__Object__m_pEEType], rcx
+        mov         [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r8
+        ret
+
+AlignFast_RarePath&Variation:
+IFIDNI <&Variation>, <Align2xPtr>
+        mov         edx, GC_ALLOC_ALIGN_2XPTR
+ELSE
+        mov         edx, GC_ALLOC_ALIGN_2XPTR OR GC_ALLOC_ALIGN_2XPTR_BIAS
+ENDIF
+        jmp         RhpNewObject
+ENDM
+
+
+;; Allocate a non-array, non-finalizable reference type whose object reference lands on a
+;; 2 * DATA_ALIGNMENT boundary.
+;;  RCX == MethodTable
+LEAF_ENTRY RhpNewFastAlign2xPtr, _TEXT
+        NEW_ALIGN_FAST Align2xPtr
+LEAF_END RhpNewFastAlign2xPtr, _TEXT
+
+
+;; Allocate (box) a value type biased so the payload following the header lands on a
+;; 2 * DATA_ALIGNMENT boundary.
+;;  RCX == MethodTable
+LEAF_ENTRY RhpNewFastMisalign, _TEXT
+        NEW_ALIGN_FAST Misalign
+LEAF_END RhpNewFastMisalign, _TEXT
+
+endif ; FEATURE_2XPTR_ALIGNMENT
+
+
 ;; Allocate non-array object with finalizer
 ;;  RCX == MethodTable
 LEAF_ENTRY RhpNewFinalizable, _TEXT
