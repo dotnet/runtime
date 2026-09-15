@@ -220,11 +220,29 @@ static void AppendSecretStubArgumentToMethodDescSignature(MethodDesc* pStubMD)
     IfFailThrow(sigParser.GetData(&numArgs));
     stubSigBuilder.AppendData(numArgs + 1);
 
-    PCCOR_SIGNATURE pRemainingSig = sigParser.GetPtr();
+    // Keep the secret argument before the vararg sentinel so it is a fixed parameter.
+    PCCOR_SIGNATURE pReturnTypeAndFixedArgs = sigParser.GetPtr();
+    IfFailThrow(sigParser.SkipExactlyOne());
+    for (uint32_t i = 0; i < numArgs; i++)
+    {
+        BYTE elementType;
+        IfFailThrow(sigParser.PeekByte(&elementType));
+        if (elementType == ELEMENT_TYPE_SENTINEL)
+        {
+            break;
+        }
+
+        IfFailThrow(sigParser.SkipExactlyOne());
+    }
+
+    PCCOR_SIGNATURE pSentinelAndOptionalArgs = sigParser.GetPtr();
     stubSigBuilder.AppendBlob(
-        (PVOID)pRemainingSig,
-        cbInternalSig - static_cast<DWORD>(pRemainingSig - pInternalSig));
+        (PVOID)pReturnTypeAndFixedArgs,
+        static_cast<DWORD>(pSentinelAndOptionalArgs - pReturnTypeAndFixedArgs));
     AppendSecretStubArgument(&stubSigBuilder);
+    stubSigBuilder.AppendBlob(
+        (PVOID)pSentinelAndOptionalArgs,
+        cbInternalSig - static_cast<DWORD>(pSentinelAndOptionalArgs - pInternalSig));
 
     DWORD cbStubSig;
     PCCOR_SIGNATURE pTemporaryStubSig =
