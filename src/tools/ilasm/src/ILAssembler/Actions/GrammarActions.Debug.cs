@@ -217,6 +217,7 @@ internal sealed partial class GrammarActions
     }
 
     private bool CanApplySharedDirective(ParserRuleContext context)
-        => context.Parent is not CILParser.MethodDeclContext || _currentMethod is not null;
+        => !IsDeclarationSuppressed &&
+            (context.Parent is not CILParser.MethodDeclContext || _currentMethod is not null);
 
 }

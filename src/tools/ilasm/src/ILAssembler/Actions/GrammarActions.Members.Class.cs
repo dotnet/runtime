@@ -23,9 +23,10 @@ internal sealed partial class GrammarActions
         BlobBuilder BodySignature,
         IToken Location);
 
-    private void PrepareClassMember()
+    private bool PrepareClassMember()
     {
         _pendingClassCustomAttributeOwner = null;
+        return !IsDeclarationSuppressed;
     }
 
     internal void ProcessClassDataDeclaration(CILParser.DataDeclContext context)
@@ -36,8 +37,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessClassSecurityDeclaration(CILParser.SecDeclContext context)
     {
-        PrepareClassMember();
-        if (context.HasSyntaxError)
+        if (!PrepareClassMember() || context.HasSyntaxError)
         {
             return;
         }
@@ -60,7 +60,7 @@ internal sealed partial class GrammarActions
 
     internal void ProcessClassCustomAttribute(CILParser.CustomAttrDeclContext context)
     {
-        if (context.HasSyntaxError)
+        if (IsDeclarationSuppressed || context.HasSyntaxError)
         {
             return;
         }
@@ -75,8 +75,8 @@ internal sealed partial class GrammarActions
 
     internal void SetClassSize(IToken token)
     {
-        PrepareClassMember();
-        if (_currentTypeDefinition.PeekOrDefault() is { } currentType)
+        if (PrepareClassMember() &&
+            _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             currentType.ClassSize = ParseInt32(token);
         }
@@ -84,8 +84,8 @@ internal sealed partial class GrammarActions
 
     internal void SetClassPackingSize(IToken token)
     {
-        PrepareClassMember();
-        if (_currentTypeDefinition.PeekOrDefault() is { } currentType)
+        if (PrepareClassMember() &&
+            _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             currentType.PackingSize = ParseInt32(token);
         }
@@ -115,7 +115,11 @@ internal sealed partial class GrammarActions
         string bodyName,
         ImmutableArray<SignatureArgumentValue> bodyArguments)
     {
-        PrepareClassMember();
+        if (!PrepareClassMember())
+        {
+            return;
+        }
+
         AddClassMethodOverrideCore(
             context,
             bodyCallingConvention,
@@ -147,7 +151,11 @@ internal sealed partial class GrammarActions
         int bodyArity,
         ImmutableArray<SignatureArgumentValue> bodyArguments)
     {
-        PrepareClassMember();
+        if (!PrepareClassMember())
+        {
+            return;
+        }
+
         AddClassMethodOverrideCore(
             context,
             declarationCallingConvention,
@@ -326,7 +334,11 @@ internal sealed partial class GrammarActions
         CILParser.ClassDeclContext context,
         IToken index)
     {
-        PrepareClassMember();
+        if (!PrepareClassMember())
+        {
+            return BeginClassGenericDirective(null);
+        }
+
         return BeginClassGenericDirective(
             FindClassGenericParameter(context, ParseInt32(index)));
     }
@@ -334,7 +346,11 @@ internal sealed partial class GrammarActions
     internal CILParser.CustomAttributeOwnerValue BeginClassGenericParameterDirective(
         string name)
     {
-        PrepareClassMember();
+        if (!PrepareClassMember())
+        {
+            return BeginClassGenericDirective(null);
+        }
+
         return BeginClassGenericDirective(FindClassGenericParameter(name));
     }
 
@@ -343,7 +359,11 @@ internal sealed partial class GrammarActions
         IToken index,
         TypeSpecificationValue constraintType)
     {
-        PrepareClassMember();
+        if (!PrepareClassMember())
+        {
+            return BeginClassGenericDirective(null);
+        }
+
         return BeginClassGenericDirective(
             FindOrCreateClassGenericConstraint(
                 FindClassGenericParameter(context, ParseInt32(index)),
@@ -354,7 +374,11 @@ internal sealed partial class GrammarActions
         string name,
         TypeSpecificationValue constraintType)
     {
-        PrepareClassMember();
+        if (!PrepareClassMember())
+        {
+            return BeginClassGenericDirective(null);
+        }
+
         return BeginClassGenericDirective(
             FindOrCreateClassGenericConstraint(
                 FindClassGenericParameter(name),
@@ -455,8 +479,8 @@ internal sealed partial class GrammarActions
         TypeSpecificationValue interfaceType,
         CILParser.CustomDescrContext attribute)
     {
-        PrepareClassMember();
-        if (attribute.HasSyntaxError ||
+        if (!PrepareClassMember() ||
+            attribute.HasSyntaxError ||
             _currentTypeDefinition.PeekOrDefault() is not { } currentType)
         {
             return;
