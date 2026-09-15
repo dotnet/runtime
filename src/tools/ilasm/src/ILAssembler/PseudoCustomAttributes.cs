@@ -132,10 +132,4 @@ internal static partial class PseudoCustomAttributes
             DiagnosticIds.PseudoCustomAttributeRepeatedArgument,
             string.Format(DiagnosticMessageTemplates.PseudoCustomAttributeRepeatedArgument, AttributeName, argumentName));
     }
-
-
-
-
-
-
 }

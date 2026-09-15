@@ -867,6 +867,20 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void PseudoCustomAttribute_DllImportExplicitZeroCallingConventionDoesNotDefaultToWinApi()
+        {
+            string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
+                + "53 55 30 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E "
+                + "11 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E 00 00 00 00 )";
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            var reader = pe.GetMetadataReader();
+            MethodImport import = GetMethod(reader, "Native").GetImport();
+
+            Assert.Equal(default, import.Attributes & MethodImportAttributes.CallingConventionMask);
+        }
+
+        [Fact]
         public void PseudoCustomAttribute_DllImport_EmptyModuleName_ReportsInvalidValue()
         {
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
@@ -1033,6 +1047,76 @@ namespace ILAssembler.Tests
             var setterValue = reader.GetParameter(GetMethod(reader, "set_Value").GetParameters()
                 .Single(handle => reader.GetParameter(handle).SequenceNumber == 1));
             Assert.Equal([(byte)UnmanagedType.Bool], reader.GetBlobBytes(setterValue.GetMarshallingDescriptor()));
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAs_OnPropertyHandlesGenericSetterSignature()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void set_Value<T, U>(int32 'value') cil managed
+                    {
+                        ret
+                    }
+                    .property int32 Value()
+                    {
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int16) = ( 01 00 02 00 00 00 )
+                        .set void Test::set_Value<[2]>(int32)
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var setterValue = reader.GetParameter(GetMethod(reader, "set_Value").GetParameters()
+                .Single(handle => reader.GetParameter(handle).SequenceNumber == 1));
+
+            Assert.Equal([(byte)UnmanagedType.Bool], reader.GetBlobBytes(setterValue.GetMarshallingDescriptor()));
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAsNegativeSizeParamIndexReportsInvalidValue()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32[] value) cil managed
+                    {
+                        .param [1]
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int32) = ( 01 00 2A 00 00 00 01 00 53 06 0E 53 69 7A 65 50 61 72 61 6D 49 6E 64 65 78 FF FF )
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostic = Assert.Single(diagnostics);
+
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAsNegativeByValTStrSizeReportsInvalidBlob()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public sequential ansi sealed Test extends [mscorlib]System.ValueType
+                {
+                    .field public string Value
+                    .custom (field string Test::Value) instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int32) = ( 01 00 17 00 00 00 01 00 53 08 09 53 69 7A 65 43 6F 6E 73 74 FF FF FF FF )
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostic = Assert.Single(diagnostics);
+
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
         }
 
         [Fact]

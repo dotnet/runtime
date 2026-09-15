@@ -153,7 +153,12 @@ internal static partial class PseudoCustomAttributes
             var reader = new BlobReader(signaturePointer, signatureBytes.Length);
             try
             {
-                _ = reader.ReadByte();
+                var header = new SignatureHeader(reader.ReadByte());
+                if (header.IsGeneric && !reader.TryReadCompressedInteger(out _))
+                {
+                    return false;
+                }
+
                 return reader.TryReadCompressedInteger(out count);
             }
             catch (BadImageFormatException)
