@@ -34,7 +34,7 @@ extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     result = GetAppDomain()->CreateDependentHandle(target.Get(), dependent.Get());
 
     END_QCALL;
@@ -130,7 +130,7 @@ extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHAN
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     DestroyDependentHandle(handle);
 
     END_QCALL;

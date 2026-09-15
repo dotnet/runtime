@@ -300,7 +300,7 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF pException = (OBJECTREF)exception.Get();
     _ASSERTE(pException != NULL);
@@ -329,7 +329,7 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -879,7 +879,7 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     Thread * pThread = GetThread();
     AppDomain * pAppDomain = AppDomain::GetCurrentDomain();

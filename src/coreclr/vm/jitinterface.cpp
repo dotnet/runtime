@@ -611,7 +611,7 @@ int CEEInfo::getStringLiteral (
 
     if (IsDynamicScope(moduleHnd))
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         STRINGREF strRef = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK);
         if (strRef != NULL)
         {
@@ -663,7 +663,7 @@ size_t CEEInfo::printObjectDescription (
 
     JIT_TO_EE_TRANSITION();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     OBJECTREF obj = getObjectFromJitHandle(handle);
     StackSString stackStr;
 
@@ -1485,7 +1485,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 if (!pFieldMT->IsClassInitedOrPreinited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
 
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
 
                 _ASSERT(!pFieldMT->Collectible());
                 // Field address is expected to be pinned so we don't need to protect it from GC here
@@ -1653,7 +1653,7 @@ int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 
     _ASSERT(objHnd != NULL);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF obj = getObjectFromJitHandle(objHnd);
 
@@ -3708,7 +3708,7 @@ bool CEEInfo::getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_
     }
     else
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         pMT->EnsureStaticDataAllocated();
         addr->addr = isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer();
         addr->accessType = IAT_VALUE;
@@ -6054,7 +6054,7 @@ CORINFO_OBJECT_HANDLE CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd
     TypeHandle typeHnd(clsHnd);
     if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         // ManagedClassObject is frozen here
         pointer = (CORINFO_OBJECT_HANDLE)OBJECTREFToObject(typeHnd.GetManagedClassObject());
         _ASSERT(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment((Object*)pointer));
@@ -6081,7 +6081,7 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
 
     JIT_TO_EE_TRANSITION();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     OBJECTREF obj = getObjectFromJitHandle(objHandle);
     MethodTable* type = obj->GetMethodTable();
 
@@ -6121,7 +6121,7 @@ bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* valu
 
     JIT_TO_EE_TRANSITION();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     OBJECTREF objRef = getObjectFromJitHandle(obj);
     MethodTable* type = objRef->GetMethodTable();
     if (type->IsString())
@@ -6154,7 +6154,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 
     JIT_TO_EE_TRANSITION();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     OBJECTREF obj = getObjectFromJitHandle(objHandle);
     handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
 
@@ -11008,7 +11008,7 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 
     bool success = true;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     EX_TRY
     {
@@ -12828,7 +12828,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
             // there is no point in returning a chunk of a gc handle
             if ((valueOffset == 0) && (sizeof(CORINFO_OBJECT_HANDLE) <= (UINT)bufferSize) && !field->IsRVA())
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
 
                 result = getStaticObjRefContent(field->GetStaticOBJECTREF(), buffer, ignoreMovableObjects);
             }
@@ -12883,7 +12883,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                 // ...unless we're interested in that GC slot's value itself
                                 if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize) && ptr[i] == TYPE_GC_REF)
                                 {
-                                    GCX_COOP();
+                                    GCX_COOP_FROM_PREEMP();
 
                                     size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
 
@@ -12907,7 +12907,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                 {
                     _ASSERT(!result);
                     result = true;
-                    GCX_COOP();
+                    GCX_COOP_FROM_PREEMP();
                     size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
                     _ASSERT(baseAddr != 0);
                     memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
@@ -12938,7 +12938,7 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
 
     JIT_TO_EE_TRANSITION();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     OBJECTREF objRef = getObjectFromJitHandle(handle);
     _ASSERTE(objRef != NULL);
 
@@ -13003,7 +13003,7 @@ CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HA
             // class construction.
             pEnclosingMT->EnsureStaticDataAllocated();
 
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
 
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             VALIDATEOBJECTREF(fieldObj);

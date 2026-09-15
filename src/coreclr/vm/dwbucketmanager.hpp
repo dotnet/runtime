@@ -726,7 +726,7 @@ void BaseBucketParamsManager::GetExceptionName(_Out_writes_(maxLength) WCHAR* ta
     if (m_tore.GetType() != TypeOfReportedError::StackOverflowException)
     {
         // At this point we have to switch to cooperative mode, because we need an OBJECTREF.
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         OBJECTREF throwable = GetRealExceptionObject();
 

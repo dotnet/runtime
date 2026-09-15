@@ -1199,7 +1199,7 @@ namespace
             LOG((LF_ENC, LL_INFO100, "CreateAllEnCStaticFields: Must add pCanonFD:%p\n", pCanonFD));
 
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
                 PTR_FieldDesc pNewFD;
                 HRESULT hr = EEClass::AddField(pMT, canonTok, &pNewFD);
                 if (FAILED(hr))

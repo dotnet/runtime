@@ -326,7 +326,7 @@ extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack re
 
     pMT->CheckRunClassInitThrowing();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     if (gcStatic)
     {
         refHandle.Set(pMT->GetGCThreadStaticsBasePointer());
@@ -350,7 +350,7 @@ extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandl
     MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
     pMT->CheckRunClassInitThrowing();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     if (gcStatic)
     {
         refHandle.Set(pMT->GetGCThreadStaticsBasePointer());
@@ -481,7 +481,7 @@ extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     result = ObjIsInstanceOfCore(OBJECTREFToObject(objOnStack.Get()), TypeHandle::FromPtr(type), throwCastException);
 
@@ -697,7 +697,7 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
 #endif
     }
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     OBJECTREF objRef = obj.Get();
     GCPROTECT_BEGIN(objRef);
 

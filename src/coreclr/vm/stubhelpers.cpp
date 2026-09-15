@@ -314,7 +314,7 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     IUnknown *pIntf = NULL;
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF objRef = pSrc.Get();
     GCPROTECT_BEGIN(objRef);
@@ -356,7 +356,7 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnS
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF pSrc = pSrcUNSAFE.Get();
     GCPROTECT_BEGIN(pSrc);
@@ -381,7 +381,7 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall:
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF retVal = NULL;
     GCPROTECT_BEGIN(retVal);
@@ -407,7 +407,7 @@ extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectH
     // We're going to be making some COM calls, better initialize COM.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF pObj = pObjUNSAFE.Get();
     GCPROTECT_BEGIN(pObj);
@@ -430,7 +430,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
     // We're going to be making some COM calls, better initialize COM.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF pObj = NULL;
     GCPROTECT_BEGIN(pObj);
@@ -450,7 +450,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_GetObjectForComCallableWrapperIUnkn
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     retObject.Set(ComCallWrapper::GetWrapperFromIP(unk)->GetObjectRef());
 
@@ -561,7 +561,7 @@ extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack 
     BEGIN_QCALL;
 
 #ifdef VERIFY_HEAP
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     StackSString errorString;
     EX_TRY
@@ -599,7 +599,7 @@ extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pM
     BEGIN_QCALL;
 
 #ifdef VERIFY_HEAP
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // We cannot validate byrefs at this point as code:GCHeap.GetContainingObject could potentially race
     // with allocations on other threads. We'll just remember this byref along with the interop MD and
@@ -682,7 +682,7 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     g_pDebugger->MulticastTraceNextStep((DELEGATEREF)(element.Get()), count);
 

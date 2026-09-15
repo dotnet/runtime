@@ -276,7 +276,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int thr
 
     if (pNewThread->HasThreadState(Thread::TS_FailStarted))
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         result = FALSE;
         exception.Set(pNewThread->GetExceptionDuringStartup());
@@ -293,7 +293,7 @@ extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack th
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     THREADBASEREF threadRef = NULL;
     GCPROTECT_BEGIN(threadRef)
@@ -334,7 +334,7 @@ extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnSta
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     thread.Set(GetThread()->GetExposedObject());
 
     END_QCALL;
@@ -369,7 +369,7 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, 
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     THREADBASEREF threadRef = NULL;
     GCPROTECT_BEGIN(threadRef)
@@ -442,7 +442,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnS
 
     Thread* thread = NULL;
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         THREADBASEREF threadRef = (THREADBASEREF)t.Get();
         if (threadRef == NULL)
             COMPlusThrow(kNullReferenceException, W("NullReference_This"));
@@ -472,7 +472,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnS
 
     Thread* thread = NULL;
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         THREADBASEREF threadRef = (THREADBASEREF)t.Get();
         if (threadRef == NULL)
             COMPlusThrow(kNullReferenceException, W("NullReference_This"));
@@ -713,7 +713,7 @@ extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF throwable;
     if (status == QCallOutOfMemoryException)
@@ -872,7 +872,7 @@ extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandle
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     PTR_SyncBlock pSyncBlock = obj.Get()->GetSyncBlock();
 

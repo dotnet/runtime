@@ -197,7 +197,7 @@ void Assembly::Init(AllocMemTracker *pamTracker)
         // We should have the content loaded at this time. There will be no other attempt to associate memory.
         _ASSERTE(start != NULL);
 
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
     }
 
@@ -335,7 +335,7 @@ Assembly * Assembly::Create(
 #ifdef PROFILING_SUPPORTED
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         (&g_profControlBlock)->AssemblyLoadStarted((AssemblyID)(Assembly *) pAssembly);
         END_PROFILER_CALLBACK();
     }
@@ -351,7 +351,7 @@ Assembly * Assembly::Create(
     {
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID)(Assembly *) pAssembly,
                                                                     GET_EXCEPTION()->GetHR());
             END_PROFILER_CALLBACK();

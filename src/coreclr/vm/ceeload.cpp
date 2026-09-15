@@ -151,7 +151,7 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
 #ifdef PROFILING_SUPPORTED
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         (&g_profControlBlock)->ModuleLoadStarted((ModuleID) this);
         END_PROFILER_CALLBACK();
     }
@@ -318,7 +318,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
             {
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
                 (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
             }
             END_PROFILER_CALLBACK();
@@ -2281,7 +2281,7 @@ STRINGREF* ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
     InitializeStringData(token, &strData, &qb);
 #endif // !!BIGENDIAN
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     LoaderAllocator* pLoaderAllocator = this->GetLoaderAllocator();
     return pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 }

@@ -283,7 +283,7 @@ namespace
         //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
         //        The custom assembly context a chance to load the unmanaged dll.
 
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         // Get the pointer to the managed assembly load context
         INT_PTR ptrAssemblyLoadContext = pCurrentBinder->GetAssemblyLoadContext();
@@ -314,7 +314,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         OBJECTREF assemblyRef = NULL;
 
@@ -353,7 +353,7 @@ namespace
         Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
         NATIVE_LIBRARY_HANDLE handle = NULL;
 
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         OBJECTREF assemblyRef = NULL;
 
