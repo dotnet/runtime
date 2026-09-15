@@ -1090,9 +1090,19 @@ size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
             }
         }
 
-        // Not even the smallest candidate could be probed, so the probing itself does not work
-        // in this environment (e.g. mmap is blocked). Report the failure to the caller.
         assert(maxAddress != 0);
+
+        if (maxAddress == 0)
+        {
+            // Not even the smallest candidate could be probed, so the probing itself does not work
+            // in this environment (e.g. mmap is blocked). Fall back to the platform constants.
+#if defined(TARGET_RISCV64)
+            maxAddress = (1ull << 38); // 256GB
+#else
+            maxAddress = (1ull << 47); // 128TB (ARM64 / LOONGARCH64 approximation)
+#endif
+        }
+
         s_maxAddress = maxAddress;
     }
     return s_maxAddress;
