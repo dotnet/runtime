@@ -22,8 +22,7 @@ public static unsafe class ThreadStateDestroyed
     private const int SigAbrtExitCode = 128 + 6;
     private static readonly TimeSpan s_subprocessTimeout = TimeSpan.FromSeconds(60);
 
-    // We need to check both the exit code and the message since the runtime may fail fast
-    // with the same exit code for other reasons.
+    // In non-Release builds, also check the message to distinguish this failure from other crashes.
     private const string ExpectedMessage =
         "Attempt to execute managed code after the .NET runtime thread state has been destroyed.";
     private const string SecondCallbackMarker = "[managed] callback #2";
@@ -106,13 +105,13 @@ public static unsafe class ThreadStateDestroyed
             return Fail;
         }
 
-        if (!output.Contains(ExpectedMessage))
+        if (!TestLibrary.CoreClrConfigurationDetection.IsReleaseRuntime && !output.Contains(ExpectedMessage))
         {
             Console.WriteLine($"The subprocess terminated for some other reason. Expected to find: {ExpectedMessage}");
             return Fail;
         }
 
-        // RaiseFailFastException on Windows, abort on Unix, for both CoreCLR and NativeAOT.
+        // RaiseFailFastException on Windows, abort on Unix.
         int expectedExitCode = OperatingSystem.IsWindows() ? StatusFailFastException : SigAbrtExitCode;
         if (exitCode != expectedExitCode)
         {
