@@ -2704,7 +2704,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     if (op2->OperIs(GT_MUL) && op2->isContained())
     {
         // In the future, we might consider enabling this for floating-point "unsafe" math.
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         // These operations cannot set flags
         assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
@@ -2742,7 +2742,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_LSH, GT_RSH, GT_RSZ) && op2->isContained())
     {
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2801,6 +2801,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_ROR) && op2->isContained())
     {
+        // ROR is only contained under AND/OR/XOR parents, which are never TYP_BYREF.
         assert(varTypeIsIntegral(tree));
 
         GenTree* a = op1;
@@ -2843,7 +2844,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_CAST) && op2->isContained())
     {
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         GenTree* a = op1;
         GenTree* b = op2->AsCast()->CastOp();

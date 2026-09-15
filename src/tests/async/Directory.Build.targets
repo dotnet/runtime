@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <!-- disable building for configurations that do not yet support runtime async. -->
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' or '$(TargetArchitecture)' == 'wasm'">true</DisableProjectBuild>
+    <!-- Mono does not support runtime async. Wasm tests must explicitly opt in after avoiding unsupported operations such as Task.Yield. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' or ('$(TargetArchitecture)' == 'wasm' and '$(EnableRuntimeAsyncOnWasm)' != 'true')">true</DisableProjectBuild>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>
