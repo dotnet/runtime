@@ -12,4 +12,6 @@ internal sealed partial class AppDomain : IData<AppDomain>
     public partial TargetPointer AssemblyList { get; }
 
     [Field] public partial TargetPointer FriendlyName { get; }
+
+    [Field] public partial TargetPointer ExternalMemoryHandles { get; }
 }

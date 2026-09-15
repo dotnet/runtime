@@ -13,7 +13,7 @@ void ExternalMemoryHandle::GCScanRoot(promote_func *fn, ScanContext *sc)
     }
     CONTRACTL_END;
 
-    auto fromAddress = m_pMemory;
+    PTR_VOID fromAddress = m_pMemory;
     if (m_pMT->IsValueType())
     {
         ReportPointersFromValueType(fn, sc, m_pMT, m_pMemory);
@@ -30,8 +30,23 @@ void ExternalMemoryHandle::GCScanRoot(promote_func *fn, ScanContext *sc)
             (*fn)((PTR_PTR_Object)m_pMemory, sc, 0);
         }
 
-        auto toAddress = m_pMemory;
+        PTR_VOID toAddress = m_pMemory;
         LOG((LF_GC, INFO3, "External Memory Handle promoted" FMT_ADDR "to" FMT_ADDR "\n",
             DBG_ADDR(fromAddress), DBG_ADDR(toAddress)));
     }
 }
+
+#ifdef DACCESS_COMPILE
+
+void ExternalMemoryHandle::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+
+    m_pMT.EnumMem();
+    m_pMT->EnumMemoryRegions(flags);
+
+    TSIZE_T size = m_pMT->IsValueType() ? m_pMT->GetNumInstanceFieldBytes() : TARGET_POINTER_SIZE;
+    DacEnumMemoryRegion(m_pMemory.GetAddr(), size);
+}
+
+#endif // DACCESS_COMPILE

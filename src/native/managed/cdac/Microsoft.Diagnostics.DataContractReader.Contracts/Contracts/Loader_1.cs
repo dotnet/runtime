@@ -163,6 +163,8 @@ internal readonly struct Loader_1 : ILoader
         return appDomain;
     }
 
+    IReadOnlyList<ExternalMemoryHandleRootData> ILoader.GetExternalMemoryHandleRoots(bool resolveInteriorPointers) => [];
+
     TargetPointer ILoader.GetModule(ModuleHandle handle)
     {
         return handle.Address;

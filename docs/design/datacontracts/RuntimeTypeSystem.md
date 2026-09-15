@@ -79,6 +79,10 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool ContainsGCPointers(ITypeHandle typeHandle);
     // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
     public virtual bool IsByRefLike(ITypeHandle typeHandle);
+    // True if the type is a compiler-generated inline array buffer type (EEClass::IsInlineArray):
+    // its single declared instance field is repeated across the whole GetNumInstanceFieldBytes
+    // span, one element per (field size) bytes, rather than declared once per element.
+    public virtual bool IsInlineArray(ITypeHandle typeHandle);
     // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
     // to 4, 8, or 16. Returns false otherwise (including on targets that don't
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
@@ -561,7 +565,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
-| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read |
+| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read. Bit `0x10000` (`VMFLAG_INLINE_ARRAY`) indicates the type is a compiler-generated inline array buffer whose single declared instance field is repeated across the whole array |
 | `EEClassLayoutInfo` | `AlignmentRequirement` | `uint8` | Largest alignment requirement of all members of the type |
 | `EEClassLayoutInfo` | `Flags` | `uint8` | Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable |
 | `EEClassLayoutInfo` | `LayoutType` | `uint8` | Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4) |
@@ -825,6 +829,8 @@ static class RuntimeTypeSystem_1_Helpers
     public bool ContainsGCPointers(ITypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool IsByRefLike(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+
+    public bool IsInlineArray(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && GetClassData(typeHandle).IsInlineArray;
 
     // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. Pseudocode:
     //

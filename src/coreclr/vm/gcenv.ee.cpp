@@ -335,7 +335,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
         }
     }
 
-    if (::GetAppDomain())
+    // External memory handles are a single global list. Only one server GC thread may update its
+    // root slots during relocation.
+    if (sc->thread_number == 0 && ::GetAppDomain())
     {
         ::GetAppDomain()->GCScanExternalMemoryHandles(fn, sc);
     }

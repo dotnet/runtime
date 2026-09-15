@@ -139,4 +139,25 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
 
         Assert.Equal(expected, refs.Count);
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void WalkRefs_ExternalMemoryHandles_ContributeNothing_WhenAppDomainHasNone(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+        IGC gc = Target.Contracts.GC;
+
+        // The GCRoots debuggee does not create any ExternalMemoryHandle instances, so requesting
+        // the strong handle mask (which also drives external-memory-handle scanning, matching
+        // native DacRefWalker::Init) must report exactly the strong GC handles and nothing more.
+        Assert.Empty(loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true));
+
+        List<DacGcReference> refs = WalkAllRefs(dbi, walkStacks: false, handleWalkMask: CorGCReferenceType.CorHandleStrong);
+
+        HashSet<ulong> expectedHandles = gc.GetHandles([HandleType.Strong]).Select(h => h.Handle.Value).ToHashSet();
+        HashSet<ulong> walkedHandles = refs.Select(r => r.pObject).ToHashSet();
+        Assert.Equal(expectedHandles, walkedHandles);
+    }
 }

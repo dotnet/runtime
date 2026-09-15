@@ -39,6 +39,13 @@ internal sealed class RefWalk : IEnum<DacGcReference>
                 yield return reference;
         }
 
+        // External memory handles are strong roots, but are stored independently of the GC handle table.
+        if (_handleWalkMask.HasFlag(CorGCReferenceType.CorHandleStrong))
+        {
+            foreach (DacGcReference reference in WalkExternalMemoryHandles())
+                yield return reference;
+        }
+
         if (_walkStacks)
         {
             foreach (DacGcReference reference in WalkStacks())
@@ -68,8 +75,7 @@ internal sealed class RefWalk : IEnum<DacGcReference>
 
     private HandleType[] GetRequestedHandleTypes()
     {
-        // Mirror native DacRefWalker::GetHandleWalkerMask: translate the CorGCReferenceType bits
-        // in the mask into the handle types consumed by IGC.GetHandles.
+        // Translate the CorGCReferenceType bits into the handle types consumed by IGC.GetHandles.
         List<HandleType> types = new();
         if (_handleWalkMask.HasFlag(CorGCReferenceType.CorHandleStrong))
             types.Add(HandleType.Strong);
@@ -123,6 +129,29 @@ internal sealed class RefWalk : IEnum<DacGcReference>
             default:
                 dwType = 0;
                 return false;
+        }
+    }
+
+    // Walks the external memory handles registered with the current AppDomain.
+    private IEnumerable<DacGcReference> WalkExternalMemoryHandles()
+    {
+        ILoader loader = _target.Contracts.Loader;
+
+        foreach (ExternalMemoryHandleRootData root in loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true))
+        {
+            DacGcReference reference = new()
+            {
+                vmDomain = _appDomain.Value,
+                dwType = CorGCReferenceType.CorHandleStrong,
+                i64ExtraData = 0,
+            };
+
+            if (root.IsInteriorPointer || root.Address == TargetPointer.Null)
+                reference.pObject = root.Object.Value | 1;
+            else
+                reference.objHnd = root.Address.Value;
+
+            yield return reference;
         }
     }
 

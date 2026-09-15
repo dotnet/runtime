@@ -7792,7 +7792,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
 
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
-      mResolvePointers(resolvePointers), mHandleWalker(NULL)
+      mResolvePointers(resolvePointers), mHandleWalker(NULL), mExternalMemoryHandleIndex(0),
+      mExternalMemoryHeapInitialized(false)
 {
 }
 
@@ -7815,6 +7816,11 @@ HRESULT DacRefWalker::Init()
     if (mWalkStacks && SUCCEEDED(hr))
     {
         hr = NextThread();
+    }
+
+    if ((mHandleMask & CorHandleStrong) && SUCCEEDED(hr))
+    {
+        hr = WalkExternalMemoryHandles();
     }
 
     return hr;
@@ -7863,6 +7869,78 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     return result;
 }
 
+HRESULT DacRefWalker::WalkExternalMemoryHandles()
+{
+    AppDomain* appDomain = AppDomain::GetCurrentDomain();
+    if (appDomain == NULL)
+        return S_OK;
+
+    ExternalMemoryScanContext context(this);
+    appDomain->GCScanExternalMemoryHandles(ExternalMemoryHandleCallback, &context);
+    return context.Result;
+}
+
+void DacRefWalker::ExternalMemoryHandleCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
+{
+    ExternalMemoryScanContext* context = static_cast<ExternalMemoryScanContext*>(sc);
+    DacRefWalker* walker = context->Walker;
+
+    DacGcReference data = {};
+    data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
+    data.dwType = CorHandleStrong;
+    data.i64ExtraData = 0;
+
+    if (flags & GC_CALL_INTERIOR)
+    {
+        CLRDATA_ADDRESS object = walker->ReadPointer(ppObj.GetAddr());
+        if (object == 0 || object == (CLRDATA_ADDRESS)~0)
+            return;
+
+        if (walker->mResolvePointers)
+        {
+            if (!walker->mExternalMemoryHeapInitialized)
+            {
+                HRESULT hr = walker->mExternalMemoryHeap.Init();
+                if (FAILED(hr))
+                {
+                    context->Result = hr;
+                    return;
+                }
+
+                walker->mExternalMemoryHeapInitialized = true;
+            }
+
+            CORDB_ADDRESS resolvedObject = 0;
+            HRESULT hr = walker->mExternalMemoryHeap.ListNearObjects((CORDB_ADDRESS)object, NULL, &resolvedObject, NULL);
+            if (FAILED(hr))
+                return;
+
+            object = TO_CDADDR(resolvedObject);
+        }
+
+        data.pObject = CLRDATA_ADDRESS_TO_TADDR(object) | 1;
+    }
+    else
+    {
+        data.objHnd.SetDacTargetPtr(ppObj.GetAddr());
+    }
+
+    if (!walker->mExternalMemoryHandles.Add(data))
+        context->Result = E_OUTOFMEMORY;
+}
+
+CLRDATA_ADDRESS DacRefWalker::ReadPointer(TADDR address)
+{
+    ULONG32 bytesRead = 0;
+    TADDR result = 0;
+    HRESULT hr = mDac->m_pTarget->ReadVirtual(address, (BYTE*)&result, sizeof(TADDR), &bytesRead);
+
+    if (FAILED(hr) || bytesRead != sizeof(TADDR))
+        return (CLRDATA_ADDRESS)~0;
+
+    return TO_CDADDR(result);
+}
+
 
 
 HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched)
@@ -7885,6 +7963,11 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
             if (FAILED(hr))
                 return hr;
         }
+    }
+
+    while (total < celt && mExternalMemoryHandleIndex < mExternalMemoryHandles.GetCount())
+    {
+        roots[total++] = mExternalMemoryHandles.Get(mExternalMemoryHandleIndex++);
     }
 
     while (total < celt && mStackWalker)

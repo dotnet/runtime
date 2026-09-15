@@ -17,6 +17,7 @@ public static class CoreCLRContracts
     {
         registry.Register<IException>("c1", static t => new Exception_1(t));
         registry.Register<ILoader>("c1", static t => new Loader_1(t));
+        registry.Register<ILoader>("c2", static t => new Loader_2(t));
         registry.Register<IEcmaMetadata>("c1", static t => new EcmaMetadata_1(t));
         registry.Register<IDacStreams>("c1", static t => new DacStreams_1(t));
         registry.Register<ICodeVersions>("c1", static t => new CodeVersions_1(t));
