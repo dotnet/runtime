@@ -1,25 +1,59 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
 {
-    public static unsafe partial class TensorPrimitives
+    public static partial class TensorPrimitives
     {
+        /// <summary>The operations an IndexOfMin/Max-style search needs from its ordering.</summary>
+        /// <remarks>
+        /// <see cref="Compare(T, T)"/> returns whether <c>x</c> should replace <c>y</c>: strictly better, or an equal value the
+        /// operator orders by sign (-0 before +0 and the like). <see cref="Reduce(T, T)"/> and <see cref="Aggregate(Vector128{T})"/>
+        /// must return an element that <see cref="Compare(T, T)"/> ranks no worse than any input, and for floating-point types must
+        /// propagate NaN, so that a block containing a NaN reduces to NaN.
+        /// </remarks>
         private interface IIndexOfMinMaxOperator<T>
         {
             static abstract T Aggregate(Vector128<T> value);
             static abstract T Aggregate(Vector256<T> value);
             static abstract T Aggregate(Vector512<T> value);
+            static abstract T Reduce(T x, T y);
+            static abstract Vector128<T> Reduce(Vector128<T> x, Vector128<T> y);
+            static abstract Vector256<T> Reduce(Vector256<T> x, Vector256<T> y);
+            static abstract Vector512<T> Reduce(Vector512<T> x, Vector512<T> y);
             static abstract bool Compare(T x, T y);
             static abstract Vector128<T> Compare(Vector128<T> x, Vector128<T> y);
             static abstract Vector256<T> Compare(Vector256<T> x, Vector256<T> y);
             static abstract Vector512<T> Compare(Vector512<T> x, Vector512<T> y);
         }
 
+        /// <summary>Number of vectors per block in the block-reduction search (256 ints per block at 256 bits).</summary>
+        private const int BlockVectors = 32;
+
+        /// <summary>
+        /// Finds the index of the best element of <paramref name="x"/> under <typeparamref name="TOperator"/>, or -1 for an empty span,
+        /// with a two-pass block reduction: pass 1 reduces every block to its best element with a pure vector loop (one load and one
+        /// <see cref="IIndexOfMinMaxOperator{T}.Reduce(Vector256{T}, Vector256{T})"/> per vector, no index tracking and no blends) and
+        /// remembers the first block whose best beats the running result; pass 2 scans only that block for the first element the result
+        /// does not beat.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The reduction is what makes this run at memory bandwidth regardless of the input pattern; an index-vector loop needs a compare
+        /// and two selects per element. Indices never live in vector lanes, so element sizes need no special handling.
+        /// </para>
+        /// <para>
+        /// Ties: within a block, the reduction picks some tied-best element and the scan then returns the earliest element it does not beat,
+        /// which is the earliest tied-best element; across blocks the strict <see cref="IIndexOfMinMaxOperator{T}.Compare(T, T)"/> keeps the
+        /// earliest block. For floating-point types a block containing a NaN reduces to NaN (the reductions propagate it), and the index of
+        /// the first NaN of that block is returned, which is the first NaN overall because earlier blocks contained none.
+        /// </para>
+        /// </remarks>
         private static int IndexOfMinMaxCore<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
@@ -30,26 +64,17 @@ namespace System.Numerics.Tensors
 
             if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
             {
-                return sizeof(T) == 8 ? IndexOfMinMaxVectorized512Size4Plus<T, TOperator, ulong>(x) :
-                    sizeof(T) == 4 ? IndexOfMinMaxVectorized512Size4Plus<T, TOperator, uint>(x) :
-                    sizeof(T) == 2 ? IndexOfMinMaxVectorized512Size2<T, TOperator>(x) :
-                    IndexOfMinMaxVectorized512Size1<T, TOperator>(x);
+                return IndexOfMinMaxBlocks512<T, TOperator>(x);
             }
 
             if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
             {
-                return sizeof(T) == 8 ? IndexOfMinMaxVectorized256Size4Plus<T, TOperator, ulong>(x) :
-                    sizeof(T) == 4 ? IndexOfMinMaxVectorized256Size4Plus<T, TOperator, uint>(x) :
-                    sizeof(T) == 2 ? IndexOfMinMaxVectorized256Size2<T, TOperator>(x) :
-                    IndexOfMinMaxVectorized256Size1<T, TOperator>(x);
+                return IndexOfMinMaxBlocks256<T, TOperator>(x);
             }
 
             if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && x.Length >= Vector128<T>.Count)
             {
-                return sizeof(T) == 8 ? IndexOfMinMaxVectorized128Size4Plus<T, TOperator, ulong>(x) :
-                    sizeof(T) == 4 ? IndexOfMinMaxVectorized128Size4Plus<T, TOperator, uint>(x) :
-                    sizeof(T) == 2 ? IndexOfMinMaxVectorized128Size2<T, TOperator>(x) :
-                    IndexOfMinMaxVectorized128Size1<T, TOperator>(x);
+                return IndexOfMinMaxBlocks128<T, TOperator>(x);
             }
 
             return IndexOfMinMaxFallback<T, TOperator>(x);
@@ -82,697 +107,461 @@ namespace System.Numerics.Tensors
             return resultIndex;
         }
 
-        private static int IndexOfMinMaxVectorized128Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
-            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T> where TInt : IBinaryInteger<TInt>
+        /// <summary>See <see cref="IndexOfMinMaxCore{T, TOperator}(ReadOnlySpan{T})"/>.</summary>
+        private static int IndexOfMinMaxBlocks128<T, TOperator>(ReadOnlySpan<T> x)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 4 || sizeof(T) == 8);
-            Debug.Assert(typeof(TInt) == typeof(uint) || typeof(TInt) == typeof(ulong));
-            Debug.Assert(sizeof(TInt) == sizeof(T));
+            Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector128<T>.Count);
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector128<T> result = Vector128.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            int blockSize = BlockVectors * Vector128<T>.Count;
+            int length = x.Length;
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+
+            // Pass 1: reduce every block to its best element; the first block whose best beats the running result wins ties.
+            T result = xRef;
+            int resultBlock = -1;
+            for (int i = 0; i < length; i += blockSize)
             {
-                Vector128<T> nanMask = Vector128.IsNaN(result);
+                int blockLength = Math.Min(blockSize, length - i);
+                T blockResult = BlockReduce128<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength);
+
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    if (T.IsNaN(blockResult))
+                    {
+                        return i + IndexOfFirstNaN128(ref Unsafe.Add(ref xRef, i), blockLength);
+                    }
+                }
+
+                if (resultBlock < 0 || TOperator.Compare(blockResult, result))
+                {
+                    result = blockResult;
+                    resultBlock = i;
+                }
+            }
+
+            // Pass 2: the first element of the winning block that the result does not beat, i.e. the first tied-best element.
+            return resultBlock + IndexOfFirstNotBeaten128<T, TOperator>(ref Unsafe.Add(ref xRef, resultBlock), Math.Min(blockSize, length - resultBlock), result);
+        }
+
+        /// <summary>Reduces <paramref name="length"/> elements starting at <paramref name="xRef"/> to their best element (no bounds checks).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T BlockReduce128<T, TOperator>(ref T xRef, int length)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            Debug.Assert(length >= 1);
+
+            nuint count = (nuint)Vector128<T>.Count;
+            nuint end = (nuint)length;
+            T result;
+            nuint i;
+
+            if (end >= 2 * count)
+            {
+                // Two independent accumulators so that consecutive reductions do not serialize on one register.
+                Vector128<T> acc1 = Vector128.LoadUnsafe(ref xRef);
+                Vector128<T> acc2 = Vector128.LoadUnsafe(ref xRef, count);
+                nuint last = end - 2 * count;
+                for (i = 2 * count; i <= last; i += 2 * count)
+                {
+                    acc1 = TOperator.Reduce(acc1, Vector128.LoadUnsafe(ref xRef, i));
+                    acc2 = TOperator.Reduce(acc2, Vector128.LoadUnsafe(ref xRef, i + count));
+                }
+
+                if (i + count <= end)
+                {
+                    acc1 = TOperator.Reduce(acc1, Vector128.LoadUnsafe(ref xRef, i));
+                    i += count;
+                }
+
+                result = TOperator.Aggregate(TOperator.Reduce(acc1, acc2));
+            }
+            else if (end >= count)
+            {
+                result = TOperator.Aggregate(Vector128.LoadUnsafe(ref xRef));
+                i = count;
+            }
+            else
+            {
+                result = xRef;
+                i = 1;
+            }
+
+            for (; i < end; i++)
+            {
+                result = TOperator.Reduce(result, Unsafe.Add(ref xRef, i));
+            }
+
+            return result;
+        }
+
+        /// <summary>Index of the first NaN among <paramref name="length"/> elements starting at <paramref name="xRef"/>; there must be one.</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)] // cold: called at most once per search; keeps the caller within the inlining budget
+        private static int IndexOfFirstNaN128<T>(ref T xRef, int length)
+            where T : INumber<T>
+        {
+            int count = Vector128<T>.Count;
+            int i = 0;
+
+            for (; i + count <= length; i += count)
+            {
+                Vector128<T> nanMask = Vector128.IsNaN(Vector128.LoadUnsafe(ref xRef, (nuint)i));
                 if (nanMask != Vector128<T>.Zero)
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    return i + IndexOfFirstMatch(nanMask);
                 }
             }
 
-            // Initialize indices.
-            Vector128<TInt> indexIncrement = Vector128.Create(TInt.CreateTruncating(Vector128<TInt>.Count));
-            Vector128<TInt> resultIndex = Vector128<TInt>.Indices;
-            Vector128<TInt> currentIndex = resultIndex + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector128<T>.Count);
-
-            while (!span.IsEmpty)
+            for (; i < length; i++)
             {
-                Vector128<T> current;
-                if (span.Length >= Vector128<T>.Count)
+                if (T.IsNaN(Unsafe.Add(ref xRef, i)))
                 {
-                    current = Vector128.Create(span);
-                    span = span.Slice(Vector128<T>.Count);
+                    return i;
                 }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector128<T>.Count;
-                    current = Vector128.Create(x.Slice(start));
-                    currentIndex = Vector128.Create(TInt.CreateTruncating(start)) + Vector128<TInt>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    Vector128<T> nanMask = Vector128.IsNaN(current);
-                    if (nanMask != Vector128<T>.Zero)
-                    {
-                        return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
-                    }
-                }
-
-                // Get mask for which lanes that should have result updated.
-                Vector128<T> mask = TOperator.Compare(current, result);
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex = ElementWiseSelect(mask.As<T, TInt>(), currentIndex, resultIndex);
-                currentIndex += indexIncrement;
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector128<TInt> aggMask = ~Vector128.Equals(result.As<T, TInt>(), Vector128.Create(aggResult).As<T, TInt>());
-                Vector128<TInt> aggIndex = resultIndex | aggMask;
-                return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
-            }
+            Debug.Fail("A NaN was expected in the block.");
+            return -1;
         }
 
-        private static int IndexOfMinMaxVectorized128Size2<T, TOperator>(ReadOnlySpan<T> x)
+        /// <summary>
+        /// Index of the first element among <paramref name="length"/> elements starting at <paramref name="xRef"/> that
+        /// <paramref name="value"/> does not beat under <typeparamref name="TOperator"/>; <paramref name="value"/> must be the
+        /// block's best element, so this is the first element tied with it (equal, or an equal-magnitude tie the operator does not order).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per search; keeps the caller within the inlining budget
+        private static int IndexOfFirstNotBeaten128<T, TOperator>(ref T xRef, int length, T value)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 2);
+            int count = Vector128<T>.Count;
+            Vector128<T> best = Vector128.Create(value);
+            int i = 0;
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector128<T> result = Vector128.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            for (; i + count <= length; i += count)
             {
-                Vector128<T> nanMask = Vector128.IsNaN(result);
-                if (nanMask != Vector128<T>.Zero)
+                var bits = (~TOperator.Compare(best, Vector128.LoadUnsafe(ref xRef, (nuint)i))).ExtractMostSignificantBits();
+                if (bits != 0)
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    return i + BitOperations.TrailingZeroCount(bits);
                 }
             }
 
-            // Initialize indices.
-            Vector128<uint> indexIncrement = Vector128.Create((uint)Vector128<uint>.Count);
-            Vector128<uint> resultIndex1 = Vector128<uint>.Indices;
-            Vector128<uint> resultIndex2 = resultIndex1 + indexIncrement;
-            Vector128<uint> currentIndex = resultIndex2 + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector128<T>.Count);
-
-            while (!span.IsEmpty)
+            for (; i < length; i++)
             {
-                Vector128<T> current;
-                if (span.Length >= Vector128<T>.Count)
+                if (!TOperator.Compare(value, Unsafe.Add(ref xRef, i)))
                 {
-                    current = Vector128.Create(span);
-                    span = span.Slice(Vector128<T>.Count);
+                    return i;
                 }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector128<T>.Count;
-                    current = Vector128.Create(x.Slice(start));
-                    currentIndex = Vector128.Create((uint)start) + Vector128<uint>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    Vector128<T> nanMask = Vector128.IsNaN(current);
-                    if (nanMask != Vector128<T>.Zero)
-                    {
-                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
-                    }
-                }
-
-                // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                Vector128<T> mask = TOperator.Compare(current, result);
-                (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(mask.AsInt16());
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex1 = ElementWiseSelect(mask1.AsUInt32(), currentIndex, resultIndex1);
-                currentIndex += indexIncrement;
-                resultIndex2 = ElementWiseSelect(mask2.AsUInt32(), currentIndex, resultIndex2);
-                currentIndex += indexIncrement;
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector128<short> aggMask = ~Vector128.Equals(result.AsInt16(), Vector128.Create(aggResult).AsInt16());
-
-                (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(aggMask);
-                Vector128<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
-
-                return (int)HorizontalAggregate<uint, MinOperator<uint>>(aggIndex);
-            }
+            Debug.Fail("The block's best element was expected in the block.");
+            return -1;
         }
 
-        private static int IndexOfMinMaxVectorized128Size1<T, TOperator>(ReadOnlySpan<T> x)
+        /// <summary>See <see cref="IndexOfMinMaxCore{T, TOperator}(ReadOnlySpan{T})"/>.</summary>
+        private static int IndexOfMinMaxBlocks256<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 1);
+            Debug.Assert(Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector256<T>.Count);
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector128<T> result = Vector128.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            int blockSize = BlockVectors * Vector256<T>.Count;
+            int length = x.Length;
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+
+            // Pass 1: reduce every block to its best element; the first block whose best beats the running result wins ties.
+            T result = xRef;
+            int resultBlock = -1;
+            for (int i = 0; i < length; i += blockSize)
             {
-                Vector128<T> nanMask = Vector128.IsNaN(result);
-                if (nanMask != Vector128<T>.Zero)
-                {
-                    return IndexOfFirstMatch(nanMask);
-                }
-            }
+                int blockLength = Math.Min(blockSize, length - i);
+                T blockResult = BlockReduce256<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength);
 
-            // Initialize indices.
-            Vector128<uint> indexIncrement = Vector128.Create((uint)Vector128<uint>.Count);
-            Vector128<uint> resultIndex1 = Vector128<uint>.Indices;
-            Vector128<uint> resultIndex2 = resultIndex1 + indexIncrement;
-            Vector128<uint> resultIndex3 = resultIndex2 + indexIncrement;
-            Vector128<uint> resultIndex4 = resultIndex3 + indexIncrement;
-            Vector128<uint> currentIndex = resultIndex4 + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector128<T>.Count);
-
-            while (!span.IsEmpty)
-            {
-                Vector128<T> current;
-                if (span.Length >= Vector128<T>.Count)
-                {
-                    current = Vector128.Create(span);
-                    span = span.Slice(Vector128<T>.Count);
-                }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector128<T>.Count;
-                    current = Vector128.Create(x.Slice(start));
-                    currentIndex = Vector128.Create((uint)start) + Vector128<uint>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector128<T> nanMask = Vector128.IsNaN(current);
-                    if (nanMask != Vector128<T>.Zero)
+                    if (T.IsNaN(blockResult))
                     {
-                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                        return i + IndexOfFirstNaN256(ref Unsafe.Add(ref xRef, i), blockLength);
                     }
                 }
 
-                // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                Vector128<T> mask = TOperator.Compare(current, result);
-                (Vector128<short> lowerMask, Vector128<short> upperMask) = Vector128.Widen(mask.AsSByte());
-                (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(lowerMask);
-                (Vector128<int> mask3, Vector128<int> mask4) = Vector128.Widen(upperMask);
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex1 = ElementWiseSelect(mask1.AsUInt32(), currentIndex, resultIndex1);
-                currentIndex += indexIncrement;
-                resultIndex2 = ElementWiseSelect(mask2.AsUInt32(), currentIndex, resultIndex2);
-                currentIndex += indexIncrement;
-                resultIndex3 = ElementWiseSelect(mask3.AsUInt32(), currentIndex, resultIndex3);
-                currentIndex += indexIncrement;
-                resultIndex4 = ElementWiseSelect(mask4.AsUInt32(), currentIndex, resultIndex4);
-                currentIndex += indexIncrement;
+                if (resultBlock < 0 || TOperator.Compare(blockResult, result))
+                {
+                    result = blockResult;
+                    resultBlock = i;
+                }
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector128<sbyte> aggMask = ~Vector128.Equals(result.AsSByte(), Vector128.Create(aggResult).AsSByte());
-
-                (Vector128<short> lowerMask, Vector128<short> upperMask) = Vector128.Widen(aggMask);
-                (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(lowerMask);
-                (Vector128<int> mask3, Vector128<int> mask4) = Vector128.Widen(upperMask);
-                Vector128<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex3 | mask3.AsUInt32());
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex4 | mask4.AsUInt32());
-
-                return (int)HorizontalAggregate<uint, MinOperator<uint>>(aggIndex);
-            }
+            // Pass 2: the first element of the winning block that the result does not beat, i.e. the first tied-best element.
+            return resultBlock + IndexOfFirstNotBeaten256<T, TOperator>(ref Unsafe.Add(ref xRef, resultBlock), Math.Min(blockSize, length - resultBlock), result);
         }
 
-        private static int IndexOfMinMaxVectorized256Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
-            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T> where TInt : IBinaryInteger<TInt>
+        /// <summary>Reduces <paramref name="length"/> elements starting at <paramref name="xRef"/> to their best element (no bounds checks).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T BlockReduce256<T, TOperator>(ref T xRef, int length)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 4 || sizeof(T) == 8);
-            Debug.Assert(typeof(TInt) == typeof(uint) || typeof(TInt) == typeof(ulong));
-            Debug.Assert(sizeof(TInt) == sizeof(T));
+            Debug.Assert(length >= 1);
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector256<T> result = Vector256.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            nuint count = (nuint)Vector256<T>.Count;
+            nuint end = (nuint)length;
+            T result;
+            nuint i;
+
+            if (end >= 2 * count)
             {
-                Vector256<T> nanMask = Vector256.IsNaN(result);
+                // Two independent accumulators so that consecutive reductions do not serialize on one register.
+                Vector256<T> acc1 = Vector256.LoadUnsafe(ref xRef);
+                Vector256<T> acc2 = Vector256.LoadUnsafe(ref xRef, count);
+                nuint last = end - 2 * count;
+                for (i = 2 * count; i <= last; i += 2 * count)
+                {
+                    acc1 = TOperator.Reduce(acc1, Vector256.LoadUnsafe(ref xRef, i));
+                    acc2 = TOperator.Reduce(acc2, Vector256.LoadUnsafe(ref xRef, i + count));
+                }
+
+                if (i + count <= end)
+                {
+                    acc1 = TOperator.Reduce(acc1, Vector256.LoadUnsafe(ref xRef, i));
+                    i += count;
+                }
+
+                result = TOperator.Aggregate(TOperator.Reduce(acc1, acc2));
+            }
+            else if (end >= count)
+            {
+                result = TOperator.Aggregate(Vector256.LoadUnsafe(ref xRef));
+                i = count;
+            }
+            else
+            {
+                result = xRef;
+                i = 1;
+            }
+
+            for (; i < end; i++)
+            {
+                result = TOperator.Reduce(result, Unsafe.Add(ref xRef, i));
+            }
+
+            return result;
+        }
+
+        /// <summary>Index of the first NaN among <paramref name="length"/> elements starting at <paramref name="xRef"/>; there must be one.</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)] // cold: called at most once per search; keeps the caller within the inlining budget
+        private static int IndexOfFirstNaN256<T>(ref T xRef, int length)
+            where T : INumber<T>
+        {
+            int count = Vector256<T>.Count;
+            int i = 0;
+
+            for (; i + count <= length; i += count)
+            {
+                Vector256<T> nanMask = Vector256.IsNaN(Vector256.LoadUnsafe(ref xRef, (nuint)i));
                 if (nanMask != Vector256<T>.Zero)
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    return i + IndexOfFirstMatch(nanMask);
                 }
             }
 
-            // Initialize indices.
-            Vector256<TInt> indexIncrement = Vector256.Create(TInt.CreateTruncating(Vector256<TInt>.Count));
-            Vector256<TInt> resultIndex = Vector256<TInt>.Indices;
-            Vector256<TInt> currentIndex = resultIndex + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector256<T>.Count);
-
-            while (!span.IsEmpty)
+            for (; i < length; i++)
             {
-                Vector256<T> current;
-                if (span.Length >= Vector256<T>.Count)
+                if (T.IsNaN(Unsafe.Add(ref xRef, i)))
                 {
-                    current = Vector256.Create(span);
-                    span = span.Slice(Vector256<T>.Count);
+                    return i;
                 }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector256<T>.Count;
-                    current = Vector256.Create(x.Slice(start));
-                    currentIndex = Vector256.Create(TInt.CreateTruncating(start)) + Vector256<TInt>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    Vector256<T> nanMask = Vector256.IsNaN(current);
-                    if (nanMask != Vector256<T>.Zero)
-                    {
-                        return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
-                    }
-                }
-
-                // Get mask for which lanes that should have result updated.
-                Vector256<T> mask = TOperator.Compare(current, result);
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex = ElementWiseSelect(mask.As<T, TInt>(), currentIndex, resultIndex);
-                currentIndex += indexIncrement;
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector256<TInt> aggMask = ~Vector256.Equals(result.As<T, TInt>(), Vector256.Create(aggResult).As<T, TInt>());
-                Vector256<TInt> aggIndex = resultIndex | aggMask;
-                return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
-            }
+            Debug.Fail("A NaN was expected in the block.");
+            return -1;
         }
 
-        private static int IndexOfMinMaxVectorized256Size2<T, TOperator>(ReadOnlySpan<T> x)
+        /// <summary>
+        /// Index of the first element among <paramref name="length"/> elements starting at <paramref name="xRef"/> that
+        /// <paramref name="value"/> does not beat under <typeparamref name="TOperator"/>; <paramref name="value"/> must be the
+        /// block's best element, so this is the first element tied with it (equal, or an equal-magnitude tie the operator does not order).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per search; keeps the caller within the inlining budget
+        private static int IndexOfFirstNotBeaten256<T, TOperator>(ref T xRef, int length, T value)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 2);
+            int count = Vector256<T>.Count;
+            Vector256<T> best = Vector256.Create(value);
+            int i = 0;
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector256<T> result = Vector256.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            for (; i + count <= length; i += count)
             {
-                Vector256<T> nanMask = Vector256.IsNaN(result);
-                if (nanMask != Vector256<T>.Zero)
+                var bits = (~TOperator.Compare(best, Vector256.LoadUnsafe(ref xRef, (nuint)i))).ExtractMostSignificantBits();
+                if (bits != 0)
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    return i + BitOperations.TrailingZeroCount(bits);
                 }
             }
 
-            // Initialize indices.
-            Vector256<uint> indexIncrement = Vector256.Create((uint)Vector256<uint>.Count);
-            Vector256<uint> resultIndex1 = Vector256<uint>.Indices;
-            Vector256<uint> resultIndex2 = resultIndex1 + indexIncrement;
-            Vector256<uint> currentIndex = resultIndex2 + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector256<T>.Count);
-
-            while (!span.IsEmpty)
+            for (; i < length; i++)
             {
-                Vector256<T> current;
-                if (span.Length >= Vector256<T>.Count)
+                if (!TOperator.Compare(value, Unsafe.Add(ref xRef, i)))
                 {
-                    current = Vector256.Create(span);
-                    span = span.Slice(Vector256<T>.Count);
+                    return i;
                 }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector256<T>.Count;
-                    current = Vector256.Create(x.Slice(start));
-                    currentIndex = Vector256.Create((uint)start) + Vector256<uint>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    Vector256<T> nanMask = Vector256.IsNaN(current);
-                    if (nanMask != Vector256<T>.Zero)
-                    {
-                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
-                    }
-                }
-
-                // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                Vector256<T> mask = TOperator.Compare(current, result);
-                (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(mask.AsInt16());
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex1 = ElementWiseSelect(mask1.AsUInt32(), currentIndex, resultIndex1);
-                currentIndex += indexIncrement;
-                resultIndex2 = ElementWiseSelect(mask2.AsUInt32(), currentIndex, resultIndex2);
-                currentIndex += indexIncrement;
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector256<short> aggMask = ~Vector256.Equals(result.AsInt16(), Vector256.Create(aggResult).AsInt16());
-
-                (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(aggMask);
-                Vector256<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
-
-                return (int)HorizontalAggregate<uint, MinOperator<uint>>(aggIndex);
-            }
+            Debug.Fail("The block's best element was expected in the block.");
+            return -1;
         }
 
-        private static int IndexOfMinMaxVectorized256Size1<T, TOperator>(ReadOnlySpan<T> x)
+        /// <summary>See <see cref="IndexOfMinMaxCore{T, TOperator}(ReadOnlySpan{T})"/>.</summary>
+        private static int IndexOfMinMaxBlocks512<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 1);
+            Debug.Assert(Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector512<T>.Count);
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector256<T> result = Vector256.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            int blockSize = BlockVectors * Vector512<T>.Count;
+            int length = x.Length;
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+
+            // Pass 1: reduce every block to its best element; the first block whose best beats the running result wins ties.
+            T result = xRef;
+            int resultBlock = -1;
+            for (int i = 0; i < length; i += blockSize)
             {
-                Vector256<T> nanMask = Vector256.IsNaN(result);
-                if (nanMask != Vector256<T>.Zero)
-                {
-                    return IndexOfFirstMatch(nanMask);
-                }
-            }
+                int blockLength = Math.Min(blockSize, length - i);
+                T blockResult = BlockReduce512<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength);
 
-            // Initialize indices.
-            Vector256<uint> indexIncrement = Vector256.Create((uint)Vector256<uint>.Count);
-            Vector256<uint> resultIndex1 = Vector256<uint>.Indices;
-            Vector256<uint> resultIndex2 = resultIndex1 + indexIncrement;
-            Vector256<uint> resultIndex3 = resultIndex2 + indexIncrement;
-            Vector256<uint> resultIndex4 = resultIndex3 + indexIncrement;
-            Vector256<uint> currentIndex = resultIndex4 + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector256<T>.Count);
-
-            while (!span.IsEmpty)
-            {
-                Vector256<T> current;
-                if (span.Length >= Vector256<T>.Count)
-                {
-                    current = Vector256.Create(span);
-                    span = span.Slice(Vector256<T>.Count);
-                }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector256<T>.Count;
-                    current = Vector256.Create(x.Slice(start));
-                    currentIndex = Vector256.Create((uint)start) + Vector256<uint>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector256<T> nanMask = Vector256.IsNaN(current);
-                    if (nanMask != Vector256<T>.Zero)
+                    if (T.IsNaN(blockResult))
                     {
-                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
+                        return i + IndexOfFirstNaN512(ref Unsafe.Add(ref xRef, i), blockLength);
                     }
                 }
 
-                // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                Vector256<T> mask = TOperator.Compare(current, result);
-                (Vector256<short> lowerMask, Vector256<short> upperMask) = Vector256.Widen(mask.AsSByte());
-                (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(lowerMask);
-                (Vector256<int> mask3, Vector256<int> mask4) = Vector256.Widen(upperMask);
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex1 = ElementWiseSelect(mask1.AsUInt32(), currentIndex, resultIndex1);
-                currentIndex += indexIncrement;
-                resultIndex2 = ElementWiseSelect(mask2.AsUInt32(), currentIndex, resultIndex2);
-                currentIndex += indexIncrement;
-                resultIndex3 = ElementWiseSelect(mask3.AsUInt32(), currentIndex, resultIndex3);
-                currentIndex += indexIncrement;
-                resultIndex4 = ElementWiseSelect(mask4.AsUInt32(), currentIndex, resultIndex4);
-                currentIndex += indexIncrement;
+                if (resultBlock < 0 || TOperator.Compare(blockResult, result))
+                {
+                    result = blockResult;
+                    resultBlock = i;
+                }
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector256<sbyte> aggMask = ~Vector256.Equals(result.AsSByte(), Vector256.Create(aggResult).AsSByte());
-
-                (Vector256<short> lowerMask, Vector256<short> upperMask) = Vector256.Widen(aggMask);
-                (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(lowerMask);
-                (Vector256<int> mask3, Vector256<int> mask4) = Vector256.Widen(upperMask);
-                Vector256<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex3 | mask3.AsUInt32());
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex4 | mask4.AsUInt32());
-
-                return (int)HorizontalAggregate<uint, MinOperator<uint>>(aggIndex);
-            }
+            // Pass 2: the first element of the winning block that the result does not beat, i.e. the first tied-best element.
+            return resultBlock + IndexOfFirstNotBeaten512<T, TOperator>(ref Unsafe.Add(ref xRef, resultBlock), Math.Min(blockSize, length - resultBlock), result);
         }
 
-        private static int IndexOfMinMaxVectorized512Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
-            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T> where TInt : IBinaryInteger<TInt>
+        /// <summary>Reduces <paramref name="length"/> elements starting at <paramref name="xRef"/> to their best element (no bounds checks).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T BlockReduce512<T, TOperator>(ref T xRef, int length)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 4 || sizeof(T) == 8);
-            Debug.Assert(typeof(TInt) == typeof(uint) || typeof(TInt) == typeof(ulong));
-            Debug.Assert(sizeof(TInt) == sizeof(T));
+            Debug.Assert(length >= 1);
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector512<T> result = Vector512.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            nuint count = (nuint)Vector512<T>.Count;
+            nuint end = (nuint)length;
+            T result;
+            nuint i;
+
+            if (end >= 2 * count)
             {
-                Vector512<T> nanMask = Vector512.IsNaN(result);
+                // Two independent accumulators so that consecutive reductions do not serialize on one register.
+                Vector512<T> acc1 = Vector512.LoadUnsafe(ref xRef);
+                Vector512<T> acc2 = Vector512.LoadUnsafe(ref xRef, count);
+                nuint last = end - 2 * count;
+                for (i = 2 * count; i <= last; i += 2 * count)
+                {
+                    acc1 = TOperator.Reduce(acc1, Vector512.LoadUnsafe(ref xRef, i));
+                    acc2 = TOperator.Reduce(acc2, Vector512.LoadUnsafe(ref xRef, i + count));
+                }
+
+                if (i + count <= end)
+                {
+                    acc1 = TOperator.Reduce(acc1, Vector512.LoadUnsafe(ref xRef, i));
+                    i += count;
+                }
+
+                result = TOperator.Aggregate(TOperator.Reduce(acc1, acc2));
+            }
+            else if (end >= count)
+            {
+                result = TOperator.Aggregate(Vector512.LoadUnsafe(ref xRef));
+                i = count;
+            }
+            else
+            {
+                result = xRef;
+                i = 1;
+            }
+
+            for (; i < end; i++)
+            {
+                result = TOperator.Reduce(result, Unsafe.Add(ref xRef, i));
+            }
+
+            return result;
+        }
+
+        /// <summary>Index of the first NaN among <paramref name="length"/> elements starting at <paramref name="xRef"/>; there must be one.</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)] // cold: called at most once per search; keeps the caller within the inlining budget
+        private static int IndexOfFirstNaN512<T>(ref T xRef, int length)
+            where T : INumber<T>
+        {
+            int count = Vector512<T>.Count;
+            int i = 0;
+
+            for (; i + count <= length; i += count)
+            {
+                Vector512<T> nanMask = Vector512.IsNaN(Vector512.LoadUnsafe(ref xRef, (nuint)i));
                 if (nanMask != Vector512<T>.Zero)
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    return i + IndexOfFirstMatch(nanMask);
                 }
             }
 
-            // Initialize indices.
-            Vector512<TInt> indexIncrement = Vector512.Create(TInt.CreateTruncating(Vector512<TInt>.Count));
-            Vector512<TInt> resultIndex = Vector512<TInt>.Indices;
-            Vector512<TInt> currentIndex = resultIndex + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector512<T>.Count);
-
-            while (!span.IsEmpty)
+            for (; i < length; i++)
             {
-                Vector512<T> current;
-                if (span.Length >= Vector512<T>.Count)
+                if (T.IsNaN(Unsafe.Add(ref xRef, i)))
                 {
-                    current = Vector512.Create(span);
-                    span = span.Slice(Vector512<T>.Count);
+                    return i;
                 }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector512<T>.Count;
-                    current = Vector512.Create(x.Slice(start));
-                    currentIndex = Vector512.Create(TInt.CreateTruncating(start)) + Vector512<TInt>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    Vector512<T> nanMask = Vector512.IsNaN(current);
-                    if (nanMask != Vector512<T>.Zero)
-                    {
-                        return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
-                    }
-                }
-
-                // Get mask for which lanes that should have result updated.
-                Vector512<T> mask = TOperator.Compare(current, result);
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex = ElementWiseSelect(mask.As<T, TInt>(), currentIndex, resultIndex);
-                currentIndex += indexIncrement;
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector512<TInt> aggMask = ~Vector512.Equals(result.As<T, TInt>(), Vector512.Create(aggResult).As<T, TInt>());
-                Vector512<TInt> aggIndex = resultIndex | aggMask;
-                return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
-            }
+            Debug.Fail("A NaN was expected in the block.");
+            return -1;
         }
 
-        private static int IndexOfMinMaxVectorized512Size2<T, TOperator>(ReadOnlySpan<T> x)
+        /// <summary>
+        /// Index of the first element among <paramref name="length"/> elements starting at <paramref name="xRef"/> that
+        /// <paramref name="value"/> does not beat under <typeparamref name="TOperator"/>; <paramref name="value"/> must be the
+        /// block's best element, so this is the first element tied with it (equal, or an equal-magnitude tie the operator does not order).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per search; keeps the caller within the inlining budget
+        private static int IndexOfFirstNotBeaten512<T, TOperator>(ref T xRef, int length, T value)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
-            Debug.Assert(sizeof(T) == 2);
+            int count = Vector512<T>.Count;
+            Vector512<T> best = Vector512.Create(value);
+            int i = 0;
 
-            // Initialize result by reading first vector and quick return if possible.
-            Vector512<T> result = Vector512.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            for (; i + count <= length; i += count)
             {
-                Vector512<T> nanMask = Vector512.IsNaN(result);
-                if (nanMask != Vector512<T>.Zero)
+                var bits = (~TOperator.Compare(best, Vector512.LoadUnsafe(ref xRef, (nuint)i))).ExtractMostSignificantBits();
+                if (bits != 0)
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    return i + BitOperations.TrailingZeroCount(bits);
                 }
             }
 
-            // Initialize indices.
-            Vector512<uint> indexIncrement = Vector512.Create((uint)Vector512<uint>.Count);
-            Vector512<uint> resultIndex1 = Vector512<uint>.Indices;
-            Vector512<uint> resultIndex2 = resultIndex1 + indexIncrement;
-            Vector512<uint> currentIndex = resultIndex2 + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector512<T>.Count);
-
-            while (!span.IsEmpty)
+            for (; i < length; i++)
             {
-                Vector512<T> current;
-                if (span.Length >= Vector512<T>.Count)
+                if (!TOperator.Compare(value, Unsafe.Add(ref xRef, i)))
                 {
-                    current = Vector512.Create(span);
-                    span = span.Slice(Vector512<T>.Count);
+                    return i;
                 }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector512<T>.Count;
-                    current = Vector512.Create(x.Slice(start));
-                    currentIndex = Vector512.Create((uint)start) + Vector512<uint>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    Vector512<T> nanMask = Vector512.IsNaN(current);
-                    if (nanMask != Vector512<T>.Zero)
-                    {
-                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
-                    }
-                }
-
-                // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                Vector512<T> mask = TOperator.Compare(current, result);
-                (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(mask.AsInt16());
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex1 = ElementWiseSelect(mask1.AsUInt32(), currentIndex, resultIndex1);
-                currentIndex += indexIncrement;
-                resultIndex2 = ElementWiseSelect(mask2.AsUInt32(), currentIndex, resultIndex2);
-                currentIndex += indexIncrement;
             }
 
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector512<short> aggMask = ~Vector512.Equals(result.AsInt16(), Vector512.Create(aggResult).AsInt16());
-
-                (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(aggMask);
-                Vector512<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
-
-                return (int)HorizontalAggregate<uint, MinOperator<uint>>(aggIndex);
-            }
+            Debug.Fail("The block's best element was expected in the block.");
+            return -1;
         }
 
-        private static int IndexOfMinMaxVectorized512Size1<T, TOperator>(ReadOnlySpan<T> x)
-            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
-        {
-            Debug.Assert(sizeof(T) == 1);
-
-            // Initialize result by reading first vector and quick return if possible.
-            Vector512<T> result = Vector512.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-            {
-                Vector512<T> nanMask = Vector512.IsNaN(result);
-                if (nanMask != Vector512<T>.Zero)
-                {
-                    return IndexOfFirstMatch(nanMask);
-                }
-            }
-
-            // Initialize indices.
-            Vector512<uint> indexIncrement = Vector512.Create((uint)Vector512<uint>.Count);
-            Vector512<uint> resultIndex1 = Vector512<uint>.Indices;
-            Vector512<uint> resultIndex2 = resultIndex1 + indexIncrement;
-            Vector512<uint> resultIndex3 = resultIndex2 + indexIncrement;
-            Vector512<uint> resultIndex4 = resultIndex3 + indexIncrement;
-            Vector512<uint> currentIndex = resultIndex4 + indexIncrement;
-            ReadOnlySpan<T> span = x.Slice(Vector512<T>.Count);
-
-            while (!span.IsEmpty)
-            {
-                Vector512<T> current;
-                if (span.Length >= Vector512<T>.Count)
-                {
-                    current = Vector512.Create(span);
-                    span = span.Slice(Vector512<T>.Count);
-                }
-                else
-                {
-                    // Process a final back-shifted to cover remaining elements in x in one vector.
-                    int start = x.Length - Vector512<T>.Count;
-                    current = Vector512.Create(x.Slice(start));
-                    currentIndex = Vector512.Create((uint)start) + Vector512<uint>.Indices;
-                    span = ReadOnlySpan<T>.Empty;
-                }
-
-                // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    Vector512<T> nanMask = Vector512.IsNaN(current);
-                    if (nanMask != Vector512<T>.Zero)
-                    {
-                        return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
-                    }
-                }
-
-                // Get mask for which lanes that should have result updated, also widen it for updating the indices.
-                Vector512<T> mask = TOperator.Compare(current, result);
-                (Vector512<short> lowerMask, Vector512<short> upperMask) = Vector512.Widen(mask.AsSByte());
-                (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(lowerMask);
-                (Vector512<int> mask3, Vector512<int> mask4) = Vector512.Widen(upperMask);
-
-                // Update result and indices.
-                result = ElementWiseSelect(mask, current, result);
-                resultIndex1 = ElementWiseSelect(mask1.AsUInt32(), currentIndex, resultIndex1);
-                currentIndex += indexIncrement;
-                resultIndex2 = ElementWiseSelect(mask2.AsUInt32(), currentIndex, resultIndex2);
-                currentIndex += indexIncrement;
-                resultIndex3 = ElementWiseSelect(mask3.AsUInt32(), currentIndex, resultIndex3);
-                currentIndex += indexIncrement;
-                resultIndex4 = ElementWiseSelect(mask4.AsUInt32(), currentIndex, resultIndex4);
-                currentIndex += indexIncrement;
-            }
-
-            {
-                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
-                T aggResult = TOperator.Aggregate(result);
-                Vector512<sbyte> aggMask = ~Vector512.Equals(result.AsSByte(), Vector512.Create(aggResult).AsSByte());
-
-                (Vector512<short> lowerMask, Vector512<short> upperMask) = Vector512.Widen(aggMask);
-                (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(lowerMask);
-                (Vector512<int> mask3, Vector512<int> mask4) = Vector512.Widen(upperMask);
-                Vector512<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex3 | mask3.AsUInt32());
-                aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex4 | mask4.AsUInt32());
-
-                return (int)HorizontalAggregate<uint, MinOperator<uint>>(aggIndex);
-            }
-        }
     }
 }
