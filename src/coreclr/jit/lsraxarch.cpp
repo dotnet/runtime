@@ -655,7 +655,7 @@ int LinearScan::BuildNode(GenTree* tree)
             internalDef = buildInternalIntRegisterDefForNode(tree);
 #else  // !TARGET_64BIT
             assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
-            switch (tree->AsIndexAddr()->gtElemSize)
+            switch (tree->AsIndexAddr()->GetElemSize())
             {
                 case 1:
                 case 2:

@@ -3324,6 +3324,16 @@ inline unsigned genTreeHashAdd(unsigned old, void* add)
     return genTreeHashAdd(old, (unsigned)(size_t)add);
 }
 
+inline unsigned genTreeHashAdd(unsigned old, ValueSize add)
+{
+    static_assert(sizeof(ValueSize) == sizeof(uint64_t));
+    uint64_t data = *reinterpret_cast<uint64_t*>(&add);
+    unsigned hash = old;
+    hash          = genTreeHashAdd(hash, (unsigned)data);
+    hash          = genTreeHashAdd(hash, (unsigned)(data >> sizeof(unsigned)));
+    return hash;
+}
+
 /*****************************************************************************
  *
  *  Given an arbitrary expression tree, compute a hash value for it.
@@ -9258,6 +9268,35 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     assert(genActualType(type) == type);
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
+
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// gtNewVectorLengthNode: Create a node that produces the Vector<T> length in bytes.
+//
+// Arguments:
+//    type -- The integral result type.
+//
+// Return Value:
+//    A node that produces the Vector<T> length in bytes.
+//
+GenTree* Compiler::gtNewVectorTSizeNode(var_types type)
+{
+    assert(varTypeIsIntegral(type));
+    assert(genActualType(type) == type);
+
+    uint32_t vectorLength = getCompileTimeVectorTByteLength();
+
+#ifdef TARGET_ARM64
+    if (vectorLength == SIZE_UNKNOWN)
+    {
+        GenTree* pattern = gtNewIconNode(SVE_PATTERN_ALL);
+        return gtNewScalarHWIntrinsicNode(type, pattern, NI_Sve_Count8BitElements);
+    }
+#endif
+
+    return gtNewIconNode(vectorLength, type);
+}
+#endif
 
 GenTreeIntCon* Compiler::gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type)
 {
@@ -22024,18 +22063,32 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
         return;
     }
 
-    unsigned elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
-                                                        : genTypeSize(GetElemType());
-
-    assert(FitsIn<target_ssize_t>(elemSizeUn));
-    target_ssize_t elemSize         = static_cast<target_ssize_t>(elemSizeUn);
+    ValueSize      elemValueSize    = (GetElemType() == TYP_STRUCT)
+                                          ? ValueSize(comp->typGetObjLayout(GetElemClassHandle())->GetSize())
+                                          : ValueSize::FromJitType(GetElemType());
     target_ssize_t constIndexOffset = offset - firstElemOffset;
+
+    ValueNumStore* vnStore = comp->GetValueNumStore();
+
+    if (!elemValueSize.IsExact())
+    {
+        if (inxVN == ValueNumStore::NoVN)
+        {
+            *pInxVN = vnStore->VNForPtrSizeIntCon(constIndexOffset);
+        }
+        else
+        {
+            *pInxVN = inxVN;
+        }
+        return;
+    }
+
+    assert(FitsIn<target_ssize_t>(elemValueSize.GetExact()));
+    target_ssize_t elemSize = static_cast<target_ssize_t>(elemValueSize.GetExact());
 
     // This should be divisible by the element size...
     assert((constIndexOffset % elemSize) == 0);
     target_ssize_t constIndex = constIndexOffset / elemSize;
-
-    ValueNumStore* vnStore = comp->GetValueNumStore();
 
     if (inxVN == ValueNumStore::NoVN)
     {
