@@ -1373,12 +1373,15 @@ namespace System.Net.Quic.Tests
 
             Task<QuicStream>? acceptTask = null;
             Task<int>? readTask = null;
+            Task? assertionTask = null;
             try
             {
                 await using (clientConnection)
                 await using (serverConnection)
                 {
                     using CancellationTokenSource setupCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    // Exercise setup inactivity longer than the configured idle timeout.
+                    await Task.Delay(TimeSpan.FromSeconds(3), setupCts.Token);
                     using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, setupCts.Token);
                     await clientStream.WriteAsync(new byte[1], setupCts.Token);
                     using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync(setupCts.Token);
@@ -1394,9 +1397,12 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(0u, settings.KeepAliveIntervalMs);
                     Assert.Equal(1000ul, settings.IdleTimeoutMs);
 
-                    await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await readTask).WaitAsync(TimeSpan.FromSeconds(10));
-                    await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
-                    await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
+                    assertionTask = AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await readTask);
+                    await assertionTask.WaitAsync(TimeSpan.FromSeconds(10));
+                    assertionTask = AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10]));
+                    await assertionTask.WaitAsync(TimeSpan.FromSeconds(10));
+                    assertionTask = AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask);
+                    await assertionTask.WaitAsync(TimeSpan.FromSeconds(10));
                 }
             }
             finally
@@ -1409,6 +1415,10 @@ namespace System.Net.Quic.Tests
                 if (acceptTask is not null)
                 {
                     await ((Task)acceptTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                }
+                if (assertionTask is not null)
+                {
+                    await assertionTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
                 }
             }
         }
