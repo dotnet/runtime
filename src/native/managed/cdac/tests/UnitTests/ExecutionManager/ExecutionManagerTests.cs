@@ -852,6 +852,46 @@ public class ExecutionManagerTests
     }
 
     [Theory]
+    [InlineData(65_536, true)]
+    [InlineData(65_537, false)]
+    public void FindReadyToRunModule_WasmVirtualIPTraversalBudget(int count, bool withinBudget)
+    {
+        const int NodeBudget = 65_536;
+        const ulong FirstRangeStart = 0x8001_0001;
+        const uint RangeSize = 0x200;
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        var allocationRange = MockExecutionManagerBuilder.DefaultAllocationRange with
+        {
+            ExecutionManagerStart = 0x0100_0000,
+            ExecutionManagerEnd = 0x0400_0000,
+        };
+        MockExecutionManagerBuilder emBuilder = new("c1", wasmArch, allocationRange, isWasm: true);
+        (ulong nodes, ulong firstModule, ulong lastModule) =
+            emBuilder.AddVirtualIPRangeSectionArray(count, FirstRangeStart, RangeSize, 0x000b_ff00);
+        int nodeSize = emBuilder.VirtualIPRangeSectionLayout.Size;
+        int highestNodeRead = -1;
+        MockMemorySpace.MemoryContext memory = emBuilder.Builder.GetMemoryContext();
+        Target target = CreateTarget(emBuilder, RuntimeInfoOperatingSystem.Windows, RuntimeInfoArchitecture.Wasm,
+            targetBuilder => targetBuilder.UseReader((address, buffer) =>
+            {
+                if (address >= nodes && address < nodes + (ulong)(count * nodeSize))
+                    highestNodeRead = Math.Max(highestNodeRead, (int)((address - nodes) / (ulong)nodeSize));
+                return memory.ReadFromTarget(address, buffer);
+            }));
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        TargetPointer firstResult = em.FindReadyToRunModule(new TargetPointer(FirstRangeStart));
+        Assert.Equal(NodeBudget - 1, highestNodeRead);
+        Assert.Equal(new TargetPointer(withinBudget ? firstModule : 0), firstResult);
+        Assert.Equal(new TargetPointer(withinBudget ? lastModule : 0),
+            em.FindReadyToRunModule(new TargetPointer(FirstRangeStart + (ulong)(count - 1) * RangeSize)));
+        Assert.Equal(NodeBudget - 1, highestNodeRead);
+        Assert.Equal(withinBudget ? CodeKind.ReadyToRun : CodeKind.Unknown,
+            em.GetCodeKind(new TargetCodePointer(FirstRangeStart)));
+        Assert.Equal(NodeBudget - 1, highestNodeRead);
+    }
+
+    [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetMethodDesc_R2R_MultipleRuntimeFunctions(string version, MockTarget.Architecture arch)
     {

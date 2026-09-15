@@ -1155,6 +1155,39 @@ internal sealed class MockExecutionManagerBuilder
         readyToRunInfo.DebugInfoSection = directory.Address;
     }
 
+    public (ulong NodesAddress, ulong FirstModule, ulong LastModule) AddVirtualIPRangeSectionArray(
+        int count, ulong rangeStart, uint rangeSize, ulong jitManager)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(count, 2);
+        MockMemorySpace.HeapFragment nodes = _allocator.Allocate(
+            checked((ulong)count * (ulong)VirtualIPRangeSectionLayout.Size), "VirtualIPRangeSections");
+        MockReadyToRunInfo firstInfo = AddReadyToRunInfo([0], []);
+        firstInfo.MinVirtualIP = rangeStart;
+        firstInfo.LoadedImageBase = 0x1000_0000;
+        MockLoaderModule firstModule = AddReadyToRunModule(firstInfo.Address);
+        MockReadyToRunInfo lastInfo = AddReadyToRunInfo([0], []);
+        lastInfo.MinVirtualIP = rangeStart + (ulong)(count - 1) * rangeSize;
+        lastInfo.LoadedImageBase = 0x2000_0000;
+        MockLoaderModule lastModule = AddReadyToRunModule(lastInfo.Address);
+        for (int i = 0; i < count; i++)
+        {
+            ulong nodeAddress = nodes.Address + (ulong)(i * VirtualIPRangeSectionLayout.Size);
+            Memory<byte> nodeMemory = nodes.Data.AsMemory(i * VirtualIPRangeSectionLayout.Size, VirtualIPRangeSectionLayout.Size);
+            MockVirtualIPRangeSection node = VirtualIPRangeSectionLayout.Create(nodeMemory, nodeAddress);
+            MockRangeSection range = RangeSectionLayout.Create(
+                nodeMemory.Slice(0, RangeSectionLayout.Size), node.RangeSectionAddress);
+            range.RangeBegin = rangeStart + (ulong)i * rangeSize;
+            range.RangeEndOpen = range.RangeBegin + rangeSize;
+            range.JitManager = jitManager;
+            // Only the head and tail are queried; unrelated ranges need no distinct module metadata.
+            range.R2RModule = i + 1 == count ? lastModule.Address : firstModule.Address;
+            range.Flags = VirtualIPRangeSectionFlag;
+            node.Next = i + 1 == count ? 0 : nodeAddress + (ulong)VirtualIPRangeSectionLayout.Size;
+        }
+        SetVirtualIPRangeListHead(nodes.Address);
+        return (nodes.Address, firstModule.Address, lastModule.Address);
+    }
+
     public MockLoaderModule AddReadyToRunModule(ulong readyToRunInfoAddress)
     {
         MockLoaderModule module = AllocateAndCreate(ModuleLayout, "R2R Module");

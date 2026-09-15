@@ -159,7 +159,14 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 
 WebAssembly ReadyToRun code uses encoded virtual IPs rather than linear-memory code addresses.
 These ranges are registered in `VirtualIPRangeList`, not the range section map. A virtual-IP
-lookup walks the intrusive list with cycle detection and no fixed node-count limit. Invalid
+lookup walks the intrusive list with cycle detection and a per-lookup budget of 65,536 nodes.
+The budget bounds traversal work and visited-set growth for corrupt chains of distinct nodes;
+it is a reader resource policy, not a native registration limit or proof of corruption.
+It provides 64 times the headroom of the original 1,024-node budget while remaining finite.
+Exactly 65,536 nodes may be traversed successfully. If the last permitted node has a non-null
+`Next`, lookup fails closed before dereferencing that next node, even if a matching range has
+already been found. This intentionally rejects longer lists, including otherwise valid ones.
+Traversal continues after a match to detect ambiguity within the budget. Invalid
 range structures, cycles, or multiple ranges containing the requested IP fail closed, and an
 encoded virtual IP that is absent from the list does not fall through to the real-address map.
 Module and ReadyToRun metadata are validated only for a range containing the requested IP.

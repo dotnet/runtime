@@ -199,6 +199,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer virtualIPRangeListAddress,
             TargetCodePointer virtualIP)
         {
+            // Reader resource budget, not a limit imposed by native range registration.
+            const int MaxVirtualIPRangeNodes = 65_536;
+
             if (virtualIPRangeListAddress == TargetPointer.Null)
                 return new RangeSection();
 
@@ -209,7 +212,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
                 Data.RangeSection? matchingRange = null;
                 while (current != TargetPointer.Null)
                 {
-                    if (!visited.Add(current))
+                    if (visited.Count == MaxVirtualIPRangeNodes || !visited.Add(current))
                         return new RangeSection();
 
                     Data.VirtualIPRangeSection node = target.ProcessedData.GetOrAdd<Data.VirtualIPRangeSection>(current);
