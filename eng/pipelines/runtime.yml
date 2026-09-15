@@ -50,6 +50,8 @@ pr:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -63,11 +65,22 @@ extends:
           - template: /eng/pipelines/common/evaluate-default-paths.yml
 
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
 
       #
       # Build CoreCLR verticals where we don't run host tests
       #
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -552,6 +565,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testBuildArgs: nativeaot tree nativeaot
                   liveLibrariesBuildConfig: Release
@@ -591,6 +605,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;JIT/HardwareIntrinsics;" /p:BuildNativeAotFrameworkObjects=true'
                   liveLibrariesBuildConfig: Release
@@ -635,6 +650,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
                   liveLibrariesBuildConfig: Release
@@ -674,6 +690,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
@@ -818,6 +835,7 @@ extends:
       #
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
@@ -828,6 +846,7 @@ extends:
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
@@ -838,6 +857,7 @@ extends:
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - browser_wasm
           nameSuffix: _EAT
@@ -849,6 +869,7 @@ extends:
       # AOT Library tests
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - browser_wasm
             - browser_wasm_win
@@ -884,6 +905,7 @@ extends:
       # Browser Wasm.Build.Tests
       - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - browser_wasm
             - browser_wasm_win
@@ -893,6 +915,7 @@ extends:
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
@@ -942,6 +965,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
                   condition: >-
@@ -984,6 +1008,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   condition: >-
@@ -1074,6 +1099,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
@@ -1117,6 +1143,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
                   condition: >-
@@ -1239,6 +1266,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NET481_$(_BuildConfig)
                   extraHelixArguments: /p:BuildTargetFramework=net481
@@ -1296,6 +1324,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
             condition:
               or(
@@ -1328,6 +1357,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
             condition:
               or(
@@ -1366,6 +1396,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
@@ -1402,6 +1433,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
@@ -1440,6 +1472,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
@@ -1478,6 +1511,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
@@ -1517,6 +1551,7 @@ extends:
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: innerloop
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
@@ -1539,6 +1574,7 @@ extends:
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: innerloop
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
             unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
@@ -1559,6 +1595,7 @@ extends:
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: innerloop
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
             unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
@@ -1581,6 +1618,7 @@ extends:
           - windows_x86
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             isOfficialBuild: false
             testScope: innerloop
             liveRuntimeBuildConfig: release
@@ -1607,6 +1645,7 @@ extends:
           - linux_musl_x64
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             isOfficialBuild: false
             testScope: innerloop
             liveRuntimeBuildConfig: release
@@ -1648,6 +1687,7 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testScope: innerloop
             liveRuntimeBuildConfig: checked
             unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
@@ -1674,6 +1714,7 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testScope: innerloop
             liveRuntimeBuildConfig: checked
             unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
@@ -1694,6 +1735,7 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testScope: innerloop
             liveRuntimeBuildConfig: checked
             unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
@@ -1728,6 +1770,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Interpreter_$(_BuildConfig)
                   interpreter: true
@@ -1760,6 +1803,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Minijit_$(_BuildConfig)
             condition: >-

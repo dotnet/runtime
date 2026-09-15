@@ -23,6 +23,7 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetCodeAnalysisPackageVersion>10.0.0-beta.26461.103</MicrosoftDotNetCodeAnalysisPackageVersion>
     <MicrosoftDotNetGenAPIPackageVersion>10.0.0-beta.26461.103</MicrosoftDotNetGenAPIPackageVersion>
     <MicrosoftDotNetGenFacadesPackageVersion>10.0.0-beta.26461.103</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetHelixJobMonitorPackageVersion>10.0.0-beta.26461.103</MicrosoftDotNetHelixJobMonitorPackageVersion>
     <MicrosoftDotNetHelixSdkPackageVersion>10.0.0-beta.26461.103</MicrosoftDotNetHelixSdkPackageVersion>
     <MicrosoftDotNetPackageTestingPackageVersion>10.0.0-beta.26461.103</MicrosoftDotNetPackageTestingPackageVersion>
     <MicrosoftDotNetRemoteExecutorPackageVersion>10.0.0-beta.26461.103</MicrosoftDotNetRemoteExecutorPackageVersion>
@@ -138,6 +139,7 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetCodeAnalysisVersion>$(MicrosoftDotNetCodeAnalysisPackageVersion)</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>$(MicrosoftDotNetGenAPIPackageVersion)</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>$(MicrosoftDotNetGenFacadesPackageVersion)</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetHelixJobMonitorVersion>$(MicrosoftDotNetHelixJobMonitorPackageVersion)</MicrosoftDotNetHelixJobMonitorVersion>
     <MicrosoftDotNetHelixSdkVersion>$(MicrosoftDotNetHelixSdkPackageVersion)</MicrosoftDotNetHelixSdkVersion>
     <MicrosoftDotNetPackageTestingVersion>$(MicrosoftDotNetPackageTestingPackageVersion)</MicrosoftDotNetPackageTestingVersion>
     <MicrosoftDotNetRemoteExecutorVersion>$(MicrosoftDotNetRemoteExecutorPackageVersion)</MicrosoftDotNetRemoteExecutorVersion>
