@@ -2026,52 +2026,102 @@ static InterpThreadContext* GetInterpThreadContext()
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe);
 #endif
 
-extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+FORCEINLINE static void* ExecuteInterpretedMethodBody(
+    TransitionBlock* pTransitionBlock,
+    TADDR byteCodeAddr,
+    void* retBuff,
+    InterpThreadContext* threadContext,
+    int8_t* sp)
 {
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
-    InterpThreadContext *threadContext = GetInterpThreadContext();
-    int8_t *sp = threadContext->pStackPointer;
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
 
-    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(pTransitionBlock);
+
+    frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+    frames.interpMethodContextFrame.pStack = sp;
+    frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frames.interpreterFrame);
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+
+    ArgumentRegisters *pArgumentRegisters = (ArgumentRegisters*)(((uint8_t*)pTransitionBlock) + TransitionBlock::GetOffsetOfArgumentRegisters());
+
+#if defined(TARGET_AMD64)
+    pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_ARM64)
+    pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_ARM)
+    pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_WASM)
+    // Wasm has no async-continuation-return register; write the value to the
+    // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
+    // R2R caller reads after the call. The transition-block register area is
+    // unused on wasm.
+    RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
+#else
+    #error Unsupported architecture
+#endif
+
+    frames.interpreterFrame.Pop();
+
+    return frames.interpMethodContextFrame.pRetVal;
+}
+
+NOINLINE static void* ExecuteInterpretedMethodFromUnmanaged(
+    TransitionBlock* pTransitionBlock,
+    InterpByteCodeStart* pInterpreterCode,
+    void* retBuff,
+    InterpThreadContext* threadContext,
+    int8_t* sp)
+{
+    Thread* thread = GetThreadNULLOk();
+    if (thread == NULL)
+        CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+    // Verify the current thread isn't in COOP mode.
+    if (thread->PreemptiveGCDisabled())
+        ReversePInvokeBadTransition();
+
 #if defined(PROFILING_SUPPORTED)
     MethodDesc* methodDescToReportAsTransition = nullptr;
 #endif
 
-    if (pInterpreterCode->Method->unmanagedCallersOnly)
-    {
-        Thread* thread = GetThreadNULLOk();
-        if (thread == NULL)
-            CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
-
-        // Verify the current thread isn't in COOP mode.
-        if (thread->PreemptiveGCDisabled())
-            ReversePInvokeBadTransition();
-
 #ifdef PROFILING_SUPPORTED
-        if (CORProfilerTrackTransitions())
-        {
-            methodDescToReportAsTransition = pInterpreterCode->Method->methodHnd;
+    if (CORProfilerTrackTransitions())
+    {
+        methodDescToReportAsTransition = pInterpreterCode->Method->methodHnd;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
-            void* thunkDataMaybe = nullptr;
-            if (pInterpreterCode->Method->publishSecretStubParam)
-                thunkDataMaybe = GetMostRecentUMEntryThunkDataNonDestructive();
-            if (thunkDataMaybe != NULL)
-            {
-                methodDescToReportAsTransition = ((UMEntryThunkData*)thunkDataMaybe)->GetMethod();
-            }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-            ProfilerUnmanagedToManagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_CALL);
+        void* thunkDataMaybe = nullptr;
+        if (pInterpreterCode->Method->publishSecretStubParam)
+            thunkDataMaybe = GetMostRecentUMEntryThunkDataNonDestructive();
+        if (thunkDataMaybe != NULL)
+        {
+            methodDescToReportAsTransition = ((UMEntryThunkData*)thunkDataMaybe)->GetMethod();
         }
-#endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        ProfilerUnmanagedToManagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_CALL);
     }
+#endif
 
     void* retVal;
     {
-        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
+        GCX_COOP();
 
 #ifdef DEBUGGING_SUPPORTED
-        if (pInterpreterCode->Method->unmanagedCallersOnly && g_TrapReturningThreads && CORDebuggerTraceCall())
+        if (g_TrapReturningThreads && CORDebuggerTraceCall())
         {
             void* thunkDataMaybe = nullptr;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -2082,51 +2132,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         }
 #endif // DEBUGGING_SUPPORTED
 
-        // This construct ensures that the InterpreterFrame is always stored at a higher address than the
-        // InterpMethodContextFrame. This is important for the stack walking code.
-        struct Frames
-        {
-            InterpMethodContextFrame interpMethodContextFrame = {0};
-            InterpreterFrame interpreterFrame;
-
-            Frames(TransitionBlock* pTransitionBlock)
-            : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
-            {
-            }
-        }
-        frames(pTransitionBlock);
-
-        frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
-        frames.interpMethodContextFrame.pStack = sp;
-        frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
-
-        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frames.interpreterFrame);
-        InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
-        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
-
-        ArgumentRegisters *pArgumentRegisters = (ArgumentRegisters*)(((uint8_t*)pTransitionBlock) + TransitionBlock::GetOffsetOfArgumentRegisters());
-
-#if defined(TARGET_AMD64)
-        pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_ARM64)
-        pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_ARM)
-        pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-        pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_WASM)
-        // Wasm has no async-continuation-return register; write the value to the
-        // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
-        // R2R caller reads after the call. The transition-block register area is
-        // unused on wasm.
-        RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
-    #else
-        #error Unsupported architecture
-#endif
-
-        frames.interpreterFrame.Pop();
-
-        retVal = frames.interpMethodContextFrame.pRetVal;
+        retVal = ExecuteInterpretedMethodBody(pTransitionBlock, (TADDR)pInterpreterCode, retBuff, threadContext, sp);
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -2137,6 +2143,23 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 #endif
 
     return retVal;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = GetInterpThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
+
+    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+    if (pInterpreterCode->Method->unmanagedCallersOnly)
+    {
+        return ExecuteInterpretedMethodFromUnmanaged(
+            pTransitionBlock, pInterpreterCode, retBuff, threadContext, sp);
+    }
+
+    return ExecuteInterpretedMethodBody(pTransitionBlock, byteCodeAddr, retBuff, threadContext, sp);
 }
 
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
