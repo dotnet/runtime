@@ -72,9 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies ??= new DependencyList();
 
-WasmTypeNode wasmTypeNode = wasmCodeNode is IMethodCodeNodeWithTypeSignature methodCodeNode
-    ? factory.WasmTypeNode(methodCodeNode.Method)
-    : factory.WasmTypeNode(wasmCodeNode);
+                WasmTypeNode wasmTypeNode = factory.WasmTypeNode(wasmCodeNode);
                 dependencies.Add(wasmTypeNode, "Wasm Code Nodes Require Signature");
             }
 
