@@ -162,7 +162,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstEventStore
     0,          // CrstException
     0,          // CrstExecutableAllocatorLock
-    -1,         // CrstExternalMemoryHandle
+    0,          // CrstExternalMemoryHandle
     3,          // CrstFCall
     -1,         // CrstFrozenObjectHeap
     6,          // CrstFuncPtrStubs

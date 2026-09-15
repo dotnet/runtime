@@ -189,7 +189,6 @@ Crst ExecutableAllocatorLock
 End
 
 Crst ExternalMemoryHandle
-    Unordered
 End
 
 Crst FCall
