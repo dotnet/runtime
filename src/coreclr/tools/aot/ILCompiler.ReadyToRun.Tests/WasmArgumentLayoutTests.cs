@@ -714,6 +714,74 @@ public class WasmArgumentLayoutTests
         }
     }
 
+    [Theory]
+    [InlineData("Missing", "", false)]
+    [InlineData("System.Native", "libSystem.Native", true)]
+    [InlineData("libSystem.Native", "libSystem.Native", true)]
+    [InlineData("libSystem.Native", "System.Native", false)]
+    [InlineData("QCall", "", true)]
+    [InlineData("*", "", true)]
+    public void PInvokeIsDirectOnlyForConfiguredModules(string module, string configuredModule, bool expected)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public static class Imports
+            {
+                [DllImport("{{module}}")]
+                public static extern void Invoke();
+            }
+            """;
+
+        string[] configuredModules = configuredModule.Length == 0 ? [] : [configuredModule];
+        WithCompiledPInvoke(source, configuredModules, (compilationGroup, method) =>
+            Assert.Equal(expected, compilationGroup.IsDirectPInvoke(method)));
+    }
+
+    [Fact]
+    public void WasmImportLinkagePInvokeIsDirectWithoutConfiguredModule()
+    {
+        const string Source = """
+            using System.Runtime.InteropServices;
+
+            public static class Imports
+            {
+                [DllImport("host", EntryPoint = "invoke")]
+                [WasmImportLinkage]
+                public static extern void Invoke();
+            }
+            """;
+
+        WithCompiledPInvoke(Source, [], (compilationGroup, method) => Assert.True(compilationGroup.IsDirectPInvoke(method)));
+    }
+
+    private void WithCompiledPInvoke(string source, IEnumerable<string> directPInvokeModules, Action<ReadyToRunCompilationModuleGroupBase, EcmaMethod> action)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            const string AssemblyName = "PInvokePolicy";
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, AssemblyName + ".dll"));
+            ReadyToRunCompilerContext context = CreateWasmContext(directPInvokeModules, out ReadyToRunCompilationModuleGroupBase compilationGroup, inputAssembly);
+            EcmaModule module = context.GetModuleForSimpleName(AssemblyName);
+            EcmaMethod method = (EcmaMethod)module.GetType(ReadOnlySpan<byte>.Empty, "Imports"u8).GetMethod("Invoke"u8, null);
+
+            action(compilationGroup, method);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
     /// <summary>
     /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
     /// reads, so the attributes it applies are the ones the type system will resolve.
@@ -745,6 +813,14 @@ public class WasmArgumentLayoutTests
     /// </summary>
     private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
     {
+        return CreateWasmContext([], out _, extraInputAssemblyPaths);
+    }
+
+    private ReadyToRunCompilerContext CreateWasmContext(
+        IEnumerable<string> directPInvokeModules,
+        out ReadyToRunCompilationModuleGroupBase compilationGroup,
+        params string[] extraInputAssemblyPaths)
+    {
         string coreLibPath = TestPaths.SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
 
@@ -769,7 +845,7 @@ public class WasmArgumentLayoutTests
 
         // The R2R field layout algorithm reaches into the compilation group to decide whether base
         // offsets need aligning, so a context without one throws before computing any layout.
-        context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
+        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
         {
             Context = context,
             IsInputBubble = true,
@@ -777,7 +853,9 @@ public class WasmArgumentLayoutTests
             VersionBubbleModuleSet = new ModuleDesc[] { coreLib },
             CrossModuleInlineable = Array.Empty<ModuleDesc>(),
             InstructionSetSupport = instructionSetSupport,
-        }));
+            DirectPInvokeModules = directPInvokeModules,
+        });
+        context.SetCompilationGroup(compilationGroup);
 
         return context;
     }

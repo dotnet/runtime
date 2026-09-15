@@ -485,6 +485,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
+                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;

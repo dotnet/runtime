@@ -1,4 +1,30 @@
 <Project>
+  <Import Project="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', '..', 'coreclr', 'vm', 'wasm', 'WasmPInvokeModules.props'))" />
+
+  <Target Name="_WasiConfigureReadyToRunPInvokes"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_WasiReadyToRunPInvokeModule Remove="@(_WasiReadyToRunPInvokeModule)" />
+      <_WasiReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))" />
+      <_WasiReadyToRunPInvokeModule Remove="libSystem.Globalization.Native"
+                                     Condition="'$(InvariantGlobalization)' == 'true'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_WasiReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasiReadyToRunPInvokeManifest>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasiReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasiReadyToRunPInvokeManifest)'))" />
+    <WriteLinesToFile File="$(_WasiReadyToRunPInvokeManifest)"
+                      Lines="@(_WasiReadyToRunPInvokeModule)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasiReadyToRunPInvokeManifest)" />
+      <FileWrites Include="$(_WasiReadyToRunPInvokeManifest)" />
+    </ItemGroup>
+  </Target>
+
   <!--
     CoreCLR-WASI app-builder targets. Sibling of Mono's WasiApp.targets, mirroring the
     browser split (BrowserWasmApp.targets vs BrowserWasmApp.CoreCLR.targets).
@@ -154,9 +180,8 @@
     <ItemGroup>
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
 
-      <_WasiPInvokeModules Include="libSystem.Native" />
-      <_WasiPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasiPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasiPInvokeModules Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))" />
+      <_WasiPInvokeModules Remove="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
     <FilterManagedAssemblies Assemblies="@(_WasiBundledFile)">

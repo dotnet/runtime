@@ -1,4 +1,10 @@
 <Project>
+  <PropertyGroup>
+    <_WasmPInvokeModulesProps Condition="Exists('$(MSBuildThisFileDirectory)WasmPInvokeModules.props')">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</_WasmPInvokeModulesProps>
+    <_WasmPInvokeModulesProps Condition="'$(_WasmPInvokeModulesProps)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', '..', 'coreclr', 'vm', 'wasm', 'WasmPInvokeModules.props'))</_WasmPInvokeModulesProps>
+  </PropertyGroup>
+  <Import Project="$(_WasmPInvokeModulesProps)" />
+
   <!--
     CoreCLR WASM native re-link targets.
 
@@ -176,6 +182,40 @@
   </ItemGroup>
 
   <!-- ======================== Entry Points ======================== -->
+
+  <Target Name="_WasmConfigureReadyToRunPInvokes"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_WasmReadyToRunPInvokeModule Remove="@(_WasmReadyToRunPInvokeModule)" />
+      <_WasmReadyToRunNativeLibrary Remove="@(_WasmReadyToRunNativeLibrary)" />
+      <_WasmReadyToRunNativeLibrary Include="@(NativeLibrary->Exists())" />
+      <_WasmReadyToRunPInvokeModule Include="%(NativeFileReference.FileName)"
+                                     Condition="'%(NativeFileReference.ScanForPInvokes)' != 'false' and
+                                                ('%(NativeFileReference.Extension)' == '.a' or
+                                                 '%(NativeFileReference.Extension)' == '.o' or
+                                                 '%(NativeFileReference.Extension)' == '.c' or
+                                                 '%(NativeFileReference.Extension)' == '.cpp')" />
+      <_WasmReadyToRunPInvokeModule Include="%(_WasmReadyToRunNativeLibrary.FileName)"
+                                     Condition="'%(_WasmReadyToRunNativeLibrary.ScanForPInvokes)' != 'false'" />
+      <_WasmReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))" />
+      <_WasmReadyToRunPInvokeModule Remove="libSystem.Globalization.Native"
+                                     Condition="'$(InvariantGlobalization)' == 'true'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_WasmReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasmReadyToRunPInvokeManifest>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunPInvokeManifest)'))" />
+    <WriteLinesToFile File="$(_WasmReadyToRunPInvokeManifest)"
+                      Lines="@(_WasmReadyToRunPInvokeModule)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunPInvokeManifest)" />
+      <FileWrites Include="$(_WasmReadyToRunPInvokeManifest)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Auto-enable native relink based on project configuration. Mirrors the semantics of
        the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets): a property whose
@@ -664,11 +704,8 @@
     <ItemGroup>
       <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
       <_WasmPInvokeModules Include="%(_WasmSourceFileToCompile.FileName)" Condition="'%(_WasmSourceFileToCompile.ScanForPInvokes)' != 'false'" />
-      <_WasmPInvokeModules Include="libSystem.Native" />
-      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_WasmPInvokeModules Include="libSystem.Native.Browser" />
-      <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+      <_WasmPInvokeModules Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))" />
+      <_WasmPInvokeModules Remove="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
     <!-- Managed assemblies to scan. An app bundle legitimately carries native payloads named .dll -
