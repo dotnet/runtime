@@ -4272,7 +4272,9 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             {
                 bool isWasmR2RFilterBoundary = false;
 #ifdef TARGET_WASM
-                isWasmR2RFilterBoundary = ExecutionManager::IsVirtualIP(preUnwindControlPC);
+                isWasmR2RFilterBoundary =
+                    ExecutionManager::IsVirtualIP(preUnwindControlPC) &&
+                    IsFilterHandler(&pThis->GetNextExInfo()->m_CurrentClause);
 #endif // TARGET_WASM
                 if (!isWasmR2RFilterBoundary)
                 {
