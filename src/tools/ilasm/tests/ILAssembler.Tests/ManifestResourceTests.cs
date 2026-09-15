@@ -115,7 +115,7 @@ namespace ILAssembler.Tests
                 resourceLocator: alias =>
                 {
                     Assert.Equal("MissingAlias", alias);
-                    return null!;
+                    return null;
                 });
 
             var strictDiagnostic = Assert.Single(strictDiagnostics.Where(d => d.Id == DiagnosticIds.FileNotFound));
@@ -129,7 +129,7 @@ namespace ILAssembler.Tests
                 resourceLocator: alias =>
                 {
                     Assert.Equal("MissingAlias", alias);
-                    return null!;
+                    return null;
                 });
 
             var tolerantDiagnostic = Assert.Single(tolerantDiagnostics.Where(d => d.Id == DiagnosticIds.FileNotFound));
@@ -220,7 +220,7 @@ namespace ILAssembler.Tests
             string source,
             Options options,
             Func<string, SourceText>? includedDocumentLoader = null,
-            Func<string, byte[]>? resourceLocator = null)
+            Func<string, byte[]?>? resourceLocator = null)
         {
             return CompileAndGetImageBytes(
                 ImmutableArray.Create(new SourceText(source, "test.il")),
@@ -233,7 +233,7 @@ namespace ILAssembler.Tests
             ImmutableArray<SourceText> documents,
             Options options,
             Func<string, SourceText>? includedDocumentLoader = null,
-            Func<string, byte[]>? resourceLocator = null)
+            Func<string, byte[]?>? resourceLocator = null)
         {
             var compiler = new DocumentCompiler();
             var (diagnostics, image) = compiler.Compile(

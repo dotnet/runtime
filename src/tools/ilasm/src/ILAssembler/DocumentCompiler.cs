@@ -10,12 +10,12 @@ using Antlr4.Runtime;
 namespace ILAssembler;
 public sealed class DocumentCompiler
 {
-    public (ImmutableArray<Diagnostic>, CompilationResult?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+    public (ImmutableArray<Diagnostic>, CompilationResult?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]?> resourceLocator, Options options)
     {
         return Compile([document], includedDocumentLoader, resourceLocator, options);
     }
 
-    public (ImmutableArray<Diagnostic>, CompilationResult?) Compile(ImmutableArray<SourceText> documents, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+    public (ImmutableArray<Diagnostic>, CompilationResult?) Compile(ImmutableArray<SourceText> documents, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]?> resourceLocator, Options options)
     {
         Dictionary<string, SourceText> loadedDocuments = new();
         ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
@@ -25,7 +25,7 @@ public sealed class DocumentCompiler
 
         foreach (var document in documents)
         {
-            loadedDocuments[document.Path!] = document;
+            loadedDocuments[document.Path] = document;
 
             StringCharStream inputSource = new(document.Text, document.Path);
             CILLexer lexer = new(inputSource);
@@ -33,7 +33,7 @@ public sealed class DocumentCompiler
             {
                 SourceText includedDocument = includedDocumentLoader(path);
                 StringCharStream includedSource = new(includedDocument.Text, includedDocument.Path);
-                loadedDocuments[includedDocument.Path!] = includedDocument;
+                loadedDocuments[includedDocument.Path] = includedDocument;
                 return new CILLexer(includedSource);
             }, text => new CILLexer(new StringCharStream(text)), definedVariables);
 
@@ -106,8 +106,11 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
     public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
     {
         _recordSyntaxError();
-        var sourceName = offendingSymbol?.TokenSource?.SourceName ?? "";
-        var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex + 1);
+        string sourceName =
+            offendingSymbol?.TokenSource?.InputStream?.SourceName ??
+            offendingSymbol?.TokenSource?.SourceName ??
+            string.Empty;
+        SourceSpan span = Location.GetSourceSpan(offendingSymbol);
         if (_loadedDocuments.TryGetValue(sourceName, out var sourceText))
         {
             _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Error, $"line {line}:{charPositionInLine} {msg}", new Location(span, sourceText)));

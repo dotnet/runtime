@@ -58,7 +58,7 @@ namespace ILAssembler
             bool neg = text.StartsWith('-');
             if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double result))
             {
-                result = neg ? double.MaxValue : double.MinValue;
+                result = neg ? double.MinValue : double.MaxValue;
             }
 
             return result;

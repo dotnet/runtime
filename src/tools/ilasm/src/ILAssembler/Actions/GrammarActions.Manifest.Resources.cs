@@ -71,7 +71,7 @@ internal sealed partial class GrammarActions
         if (implementation is null)
         {
             offset = (uint)_manifestResources.Count;
-            byte[] resourceData = _resourceLocator(header.Alias);
+            byte[]? resourceData = _resourceLocator(header.Alias);
             if (resourceData is null)
             {
                 ReportError(
