@@ -143,20 +143,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
-            if (node.HasGenericContextArg)
-            {
-                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-            }
-            if (node.IsAsyncCall)
-            {
-                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-            }
-            if (node.IsUnmanagedCallersOnly)
-            {
-                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-            }
-            WriteSignatureIndexForFunction(node.Signature, flags, node);
+            WriteSignatureIndexForFunction(node);
             RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
             if (node is INodeWithFunclets nodeWithFunclets)
             {
@@ -201,12 +188,9 @@ namespace ILCompiler.ObjectWriter
             section.WriteEntry(writer, signatureIndex);
         }
 
-        private void WriteSignatureIndexForFunction(
-            MethodSignature managedSignature,
-            WasmLowering.LoweringFlags flags,
-            ISymbolNode node)
+        private void WriteSignatureIndexForFunction(INodeWithTypeSignature node)
         {
-            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags).FuncType;
+            WasmFuncType signature = WasmLowering.GetSignature(node).FuncType;
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_wasmSymbolManager.TryGetSymbol(key, out WasmSymbol signatureSymbol))
             {

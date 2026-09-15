@@ -16,6 +16,11 @@
 .assembly ASSEMBLY_NAME {}
 
 .class public auto ansi Test_throwinfilter extends [mscorlib] System.Object {
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+    string('https://github.com/dotnet/runtime/issues/133468')
+    type([TestLibrary]TestLibrary.PlatformDetection)
+    string[1] ('IsWasmReadyToRun')
+}
 .method public static int32 main() {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

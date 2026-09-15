@@ -1267,6 +1267,36 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 }
 
 //-------------------------------------------------------------
+// fgLeadsToEmptyBlockCycle:
+//    Check whether a chain of empty unconditional blocks reaches a cycle.
+//
+// Arguments:
+//    block - start of the chain
+//
+// Returns: true if the chain reaches a cycle of empty unconditional blocks
+//
+// Notes:
+//    Redirecting a branch into such a cycle would indefinitely rotate its target.
+//
+bool Compiler::fgLeadsToEmptyBlockCycle(BasicBlock* block)
+{
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visited = BitVecOps::MakeEmpty(&traits);
+
+    while (block->isEmpty() && block->KindIs(BBJ_ALWAYS))
+    {
+        if (!BitVecOps::TryAddElemD(&traits, visited, block->bbNum))
+        {
+            return true;
+        }
+
+        block = block->GetTarget();
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------
 // fgOptimizeBranchToEmptyUnconditional:
 //    Optimize a jump to an empty block which ends in an unconditional branch.
 //
@@ -1278,40 +1308,11 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 //
 bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest)
 {
-    bool optimizeJump = true;
-
     assert(bDest->isEmpty());
     assert(bDest->KindIs(BBJ_ALWAYS));
 
-    BasicBlock* const bDestTarget = bDest->GetTarget();
-
-    // Don't redirect 'block' into a cycle of empty unconditional blocks. The next invocation
-    // would redirect it again, indefinitely rotating its target around the cycle.
-    BasicBlock* slow = bDest;
-    BasicBlock* fast = bDest;
-    while (true)
-    {
-        if (!slow->isEmpty() || !slow->KindIs(BBJ_ALWAYS) || !fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
-        {
-            break;
-        }
-
-        slow = slow->GetTarget();
-        fast = fast->GetTarget();
-
-        if (!fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
-        {
-            break;
-        }
-
-        fast = fast->GetTarget();
-
-        if (slow == fast)
-        {
-            optimizeJump = false;
-            break;
-        }
-    }
+    BasicBlock* const bDestTarget  = bDest->GetTarget();
+    bool              optimizeJump = !fgLeadsToEmptyBlockCycle(bDest);
 
     // We do not optimize jumps between two different try regions.
     // However jumping to a block that is not in any try region is OK
@@ -1636,7 +1637,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         // Do we have a JUMP to an empty unconditional JUMP block?
         if (bDest->isEmpty() && bDest->KindIs(BBJ_ALWAYS) && !bDest->TargetIs(bDest)) // special case for self jumps
         {
-            bool optimizeJump = true;
+            bool optimizeJump = !fgLeadsToEmptyBlockCycle(bDest);
 
             // We do not optimize jumps between two different try regions.
             // However jumping to a block that is not in any try region is OK
@@ -1711,8 +1712,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
     noway_assert(switchTree->TypeIs(TYP_VOID));
 
-    // At this point all of the case jump targets have been updated such
-    // that none of them go to block that is an empty unconditional block
+    // At this point all of the case jump targets have been updated where possible.
     // Now check for two trivial switch jumps.
     //
     if (block->GetSwitchTargets()->GetSuccCount() == 1)
@@ -5298,11 +5298,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     fgUnlinkStmt(predBlock, stmt);
 
-                    if (predBlock->isEmpty())
-                    {
-                        tryRemoveAndFixFlow(predBlock, commSucc);
-                    }
-
                     // Add one of the matching stmts to block, and
                     // update its flags.
                     //
@@ -5310,6 +5305,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     {
                         fgInsertStmtAtBeg(commSucc, stmt);
                         commSucc->CopyFlags(predBlock, BBF_COPY_PROPAGATE);
+                    }
+
+                    if (predBlock->isEmpty())
+                    {
+                        tryRemoveAndFixFlow(predBlock, commSucc);
                     }
 
                     madeChanges = true;
@@ -5363,20 +5363,24 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     // From most to least preferable.
                     //
-                    if (isNoSplit && isFallThrough)
+                    if (predBlock == commSucc)
                     {
                         return 0;
                     }
-                    if (isNoSplit)
+                    if (isNoSplit && isFallThrough)
                     {
                         return 1;
                     }
-                    if (isFallThrough)
+                    if (isNoSplit)
                     {
                         return 2;
                     }
+                    if (isFallThrough)
+                    {
+                        return 3;
+                    }
 
-                    return 3;
+                    return 4;
                 };
 
                 unsigned const rank = getRank();

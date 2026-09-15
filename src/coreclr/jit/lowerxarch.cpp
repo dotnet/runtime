@@ -1313,6 +1313,12 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
             continue;
         }
 
+        if (isScalar && (i == 1))
+        {
+            // Scalar FMA copies the upper elements of its first operand, including any vector negation.
+            continue;
+        }
+
         if (!arg->OperIsHWIntrinsic())
         {
             continue;
@@ -1424,21 +1430,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         size_t   numArgs = node->GetOperandCount();
         GenTree* lastOp  = node->Op(numArgs);
-        uint8_t  mode    = 0xFF;
 
         if (lastOp->IsCnsIntOrI())
         {
             // Mark the constant as contained since it's specially encoded
             MakeSrcContained(node, lastOp);
-
-            mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
         }
 
-        if ((mode & 0x03) != 0x00)
-        {
-            // Embedded rounding only works for register-to-register operations, so skip containment
-            return node->gtNext;
-        }
+        // Codegen consumes the rounding operand. The remaining lowering and containment
+        // expect the ordinary operand count, even when the rounding mode is implicit.
+        return node->gtNext;
     }
 
     bool       isScalar = false;
@@ -3793,7 +3794,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         case NI_X86Base_CompareNotGreaterThan:
                         case NI_AVX_CompareNotGreaterThan:
                         {
-                            cndId = NI_AVX512_CompareGreaterThanMask;
+                            cndId = NI_AVX512_CompareNotGreaterThanMask;
                             break;
                         }
 
@@ -5582,7 +5583,11 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+    // CreateScalarUnsafe elision can leave scalar-typed operands here, but Dot still needs a
+    // vector multiply. Avoid the scalar-broadcast semantics of gtNewSimdBinOpNode.
+    NamedIntrinsic multiply = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(m_compiler, GT_MUL, op1, op2, simdBaseType,
+                                                                           simdSize, /* isScalar */ false);
+    tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseType, simdSize);
     BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
 
