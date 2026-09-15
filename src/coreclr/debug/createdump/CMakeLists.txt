@@ -10,6 +10,8 @@ endif(CLR_CMAKE_HOST_OSX)
 remove_definitions(-DUNICODE)
 remove_definitions(-D_UNICODE)
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../cdaclite ${CMAKE_CURRENT_BINARY_DIR}/cdaclite)
+
 if(CLR_CMAKE_HOST_WIN32)
 
     set(CREATEDUMP_SOURCES
@@ -33,6 +35,7 @@ if(CLR_CMAKE_HOST_WIN32)
         dbghelp.lib
         ws2_32.lib
         ntdll.lib
+        cdaclite
     )
 
 else(CLR_CMAKE_HOST_WIN32)
@@ -87,7 +90,7 @@ else()
         ${CREATEDUMP_SOURCES}
     )
 endif(CLR_CMAKE_HOST_OSX)
-target_link_libraries(createdump_static PRIVATE minipal)
+target_link_libraries(createdump_static PRIVATE minipal cdaclite)
 
     add_executable_clr(createdump
         main.cpp

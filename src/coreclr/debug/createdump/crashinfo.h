@@ -51,8 +51,9 @@ private:
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
     void* m_dacModule;                              // dac module pointer when loaded
-    ICLRDataEnumMemoryRegions* m_pClrDataEnumRegions; // dac enumerate memory interface instance
+    ICLRDataEnumMemoryRegions* m_pClrDataEnumRegions; // legacy DAC enumerate memory interface instance
     IXCLRDataProcess* m_pClrDataProcess;            // dac process interface instance
+    bool m_useCdacLite;                             // use statically linked contract-based enumeration
     AppModelType m_appModel;                        // Normal, single-file or native AOT app.
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     pid_t m_crashThread;                            // crashing thread id or 0 if none
