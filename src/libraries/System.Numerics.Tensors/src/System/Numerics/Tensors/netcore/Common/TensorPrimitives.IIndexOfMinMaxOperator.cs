@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
 {
-    public static partial class TensorPrimitives
+    public static unsafe partial class TensorPrimitives
     {
         /// <summary>The operations an IndexOfMin/Max-style search needs from its ordering.</summary>
         /// <remarks>
@@ -107,12 +107,33 @@ namespace System.Numerics.Tensors
             return resultIndex;
         }
 
+        /// <summary>
+        /// Debug-only contract check for <see cref="IIndexOfMinMaxOperator{T}"/>: no element among the first <paramref name="length"/>
+        /// elements at <paramref name="xRef"/> beats <paramref name="value"/> under <typeparamref name="TOperator"/>, and none is NaN
+        /// (a NaN would have had to propagate into <paramref name="value"/>).
+        /// </summary>
+        private static bool NoElementBeats<T, TOperator>(ref T xRef, int length, T value)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            for (int i = 0; i < length; i++)
+            {
+                T element = Unsafe.Add(ref xRef, i);
+                if (T.IsNaN(element) || TOperator.Compare(element, value))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>See <see cref="IndexOfMinMaxCore{T, TOperator}(ReadOnlySpan{T})"/>.</summary>
         private static int IndexOfMinMaxBlocks128<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported);
             Debug.Assert(x.Length >= Vector128<T>.Count);
+            Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
 
             int blockSize = BlockVectors * Vector128<T>.Count;
             int length = x.Length;
@@ -134,12 +155,17 @@ namespace System.Numerics.Tensors
                     }
                 }
 
+                Debug.Assert(NoElementBeats<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength, blockResult),
+                    "Reduce/Aggregate must return an element no other element of the block beats under Compare, and must propagate NaN.");
+
                 if (resultBlock < 0 || TOperator.Compare(blockResult, result))
                 {
                     result = blockResult;
                     resultBlock = i;
                 }
             }
+
+            Debug.Assert(resultBlock >= 0);
 
             // Pass 2: the first element of the winning block that the result does not beat, i.e. the first tied-best element.
             return resultBlock + IndexOfFirstNotBeaten128<T, TOperator>(ref Unsafe.Add(ref xRef, resultBlock), Math.Min(blockSize, length - resultBlock), result);
@@ -265,6 +291,7 @@ namespace System.Numerics.Tensors
         {
             Debug.Assert(Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported);
             Debug.Assert(x.Length >= Vector256<T>.Count);
+            Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
 
             int blockSize = BlockVectors * Vector256<T>.Count;
             int length = x.Length;
@@ -286,12 +313,17 @@ namespace System.Numerics.Tensors
                     }
                 }
 
+                Debug.Assert(NoElementBeats<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength, blockResult),
+                    "Reduce/Aggregate must return an element no other element of the block beats under Compare, and must propagate NaN.");
+
                 if (resultBlock < 0 || TOperator.Compare(blockResult, result))
                 {
                     result = blockResult;
                     resultBlock = i;
                 }
             }
+
+            Debug.Assert(resultBlock >= 0);
 
             // Pass 2: the first element of the winning block that the result does not beat, i.e. the first tied-best element.
             return resultBlock + IndexOfFirstNotBeaten256<T, TOperator>(ref Unsafe.Add(ref xRef, resultBlock), Math.Min(blockSize, length - resultBlock), result);
@@ -417,6 +449,7 @@ namespace System.Numerics.Tensors
         {
             Debug.Assert(Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported);
             Debug.Assert(x.Length >= Vector512<T>.Count);
+            Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
 
             int blockSize = BlockVectors * Vector512<T>.Count;
             int length = x.Length;
@@ -438,12 +471,17 @@ namespace System.Numerics.Tensors
                     }
                 }
 
+                Debug.Assert(NoElementBeats<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength, blockResult),
+                    "Reduce/Aggregate must return an element no other element of the block beats under Compare, and must propagate NaN.");
+
                 if (resultBlock < 0 || TOperator.Compare(blockResult, result))
                 {
                     result = blockResult;
                     resultBlock = i;
                 }
             }
+
+            Debug.Assert(resultBlock >= 0);
 
             // Pass 2: the first element of the winning block that the result does not beat, i.e. the first tied-best element.
             return resultBlock + IndexOfFirstNotBeaten512<T, TOperator>(ref Unsafe.Add(ref xRef, resultBlock), Math.Min(blockSize, length - resultBlock), result);
