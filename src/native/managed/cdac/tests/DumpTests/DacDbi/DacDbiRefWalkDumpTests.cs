@@ -146,13 +146,13 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
-        ILoader loader = Target.Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = Target.Contracts.ExternalMemoryHandles;
         IGC gc = Target.Contracts.GC;
 
         // The GCRoots debuggee does not create any ExternalMemoryHandle instances, so requesting
         // the strong handle mask (which also drives external-memory-handle scanning, matching
         // native DacRefWalker::Init) must report exactly the strong GC handles and nothing more.
-        Assert.Empty(loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true));
+        Assert.Empty(externalMemoryHandles.GetRoots(resolveInteriorPointers: true));
 
         List<DacGcReference> refs = WalkAllRefs(dbi, walkStacks: false, handleWalkMask: CorGCReferenceType.CorHandleStrong);
 

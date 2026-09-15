@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public class LoaderExternalMemoryHandleTests
+public class ExternalMemoryHandlesTests
 {
     private static readonly MockTarget.Architecture Arch = new() { IsLittleEndian = true, Is64Bit = true };
 
@@ -23,7 +23,7 @@ public class LoaderExternalMemoryHandleTests
     private const ulong Memory1Addr = 0x9500;
     private const ulong Memory2Addr = 0x9600;
 
-    private static TestPlaceholderTarget CreateTarget(string version, bool hasAppDomain = true)
+    private static TestPlaceholderTarget CreateTarget(bool hasAppDomain = true)
     {
         TargetTestHelpers helpers = new(Arch);
         int ptrSize = helpers.PointerSize;
@@ -57,7 +57,7 @@ public class LoaderExternalMemoryHandleTests
                     }
                 },
             })
-            .AddContract<ILoader>(version: version)
+            .AddContract<IExternalMemoryHandles>(version: "c1")
             .AddMockContract(rts);
 
         // AppDomain* static slot -> the AppDomain instance
@@ -95,12 +95,12 @@ public class LoaderExternalMemoryHandleTests
     }
 
     [Fact]
-    public void GetExternalMemoryHandleRoots_WalksChain()
+    public void GetRoots_WalksChain()
     {
-        TestPlaceholderTarget target = CreateTarget("c2");
-        ILoader loader = target.Contracts.Loader;
+        TestPlaceholderTarget target = CreateTarget();
+        IExternalMemoryHandles externalMemoryHandles = target.Contracts.ExternalMemoryHandles;
 
-        IReadOnlyList<ExternalMemoryHandleRootData> roots = loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: false);
+        IReadOnlyList<ExternalMemoryHandleRootData> roots = externalMemoryHandles.GetRoots(resolveInteriorPointers: false);
 
         Assert.Equal(2, roots.Count);
         Assert.False(roots[0].IsInteriorPointer);
@@ -111,30 +111,12 @@ public class LoaderExternalMemoryHandleTests
     }
 
     [Fact]
-    public void GetExternalMemoryHandleRoots_Version1_AlwaysEmpty()
+    public void GetRoots_NullAppDomain_ReturnsEmpty()
     {
-        // Loader_1 must ignore the native ExternalMemoryHandle list entirely and report an empty
-        // sequence, even though the exact same backing memory (with a populated, valid chain) is
-        // present as it would be for Loader_2. Only contract version c2 enumerates real handles.
-        TestPlaceholderTarget target = CreateTarget("c1");
-        ILoader loader = target.Contracts.Loader;
+        TestPlaceholderTarget target = CreateTarget(hasAppDomain: false);
+        IExternalMemoryHandles externalMemoryHandles = target.Contracts.ExternalMemoryHandles;
 
-        IReadOnlyList<ExternalMemoryHandleRootData> roots = loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true);
-
-        Assert.Empty(roots);
-    }
-
-    [Theory]
-    [InlineData("c1")]
-    [InlineData("c2")]
-    public void GetExternalMemoryHandleRoots_NullAppDomain_ReturnsEmpty(string version)
-    {
-        // GetExternalMemoryHandleRoots must return an empty sequence rather than throw, for both
-        // Loader_1 (always empty) and Loader_2 (nothing to enumerate from a null AppDomain).
-        TestPlaceholderTarget target = CreateTarget(version, hasAppDomain: false);
-        ILoader loader = target.Contracts.Loader;
-
-        IReadOnlyList<ExternalMemoryHandleRootData> roots = loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true);
+        IReadOnlyList<ExternalMemoryHandleRootData> roots = externalMemoryHandles.GetRoots(resolveInteriorPointers: true);
 
         Assert.Empty(roots);
     }

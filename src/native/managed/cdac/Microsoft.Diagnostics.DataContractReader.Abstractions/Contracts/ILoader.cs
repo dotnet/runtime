@@ -84,13 +84,6 @@ public enum ModuleLookupMapKind
 
 public readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
 
-public sealed class ExternalMemoryHandleRootData
-{
-    public bool IsInteriorPointer { get; init; }
-    public TargetPointer Address { get; init; }
-    public TargetPointer Object { get; init; }
-}
-
 public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
@@ -101,7 +94,6 @@ public interface ILoader : IContract
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     string GetAppDomainFriendlyName() => throw new NotImplementedException();
     TargetPointer GetAppDomain() => throw new NotImplementedException();
-    IReadOnlyList<ExternalMemoryHandleRootData> GetExternalMemoryHandleRoots(bool resolveInteriorPointers) => throw new NotImplementedException();
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();

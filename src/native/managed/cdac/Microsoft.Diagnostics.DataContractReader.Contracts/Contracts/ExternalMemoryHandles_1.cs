@@ -7,21 +7,20 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct Loader_2 : ILoader
+internal readonly struct ExternalMemoryHandles_1 : IExternalMemoryHandles
 {
     private readonly Target _target;
-    private readonly Loader_1 _v1;
 
-    internal Loader_2(Target target)
+    internal ExternalMemoryHandles_1(Target target)
     {
         _target = target;
-        _v1 = new Loader_1(target);
     }
 
-    IReadOnlyList<ExternalMemoryHandleRootData> ILoader.GetExternalMemoryHandleRoots(bool resolveInteriorPointers)
+    IReadOnlyList<ExternalMemoryHandleRootData> IExternalMemoryHandles.GetRoots(bool resolveInteriorPointers)
     {
         List<ExternalMemoryHandleRootData> roots = [];
-        TargetPointer appDomain = ((ILoader)_v1).GetAppDomain();
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
         if (appDomain == TargetPointer.Null)
             return roots;
 
@@ -29,15 +28,12 @@ internal readonly struct Loader_2 : ILoader
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         GCInteriorPointerResolver? interiorPointerResolver = null;
 
-        HashSet<TargetPointer> visited = new();
+        HashSet<TargetPointer> visited = [];
         TargetPointer current = domain.ExternalMemoryHandles;
         while (current != TargetPointer.Null)
         {
             if (!visited.Add(current))
-            {
-                // Defend against a corrupted/cyclic list rather than looping forever.
                 throw new InvalidOperationException("ExternalMemoryHandle list is cyclic.");
-            }
 
             Data.ExternalMemoryHandle handle = _target.ProcessedData.GetOrAdd<Data.ExternalMemoryHandle>(current);
             ITypeHandle typeHandle = rts.GetTypeHandle(handle.MethodTable);
@@ -174,49 +170,4 @@ internal readonly struct Loader_2 : ILoader
                 yield return slot;
         }
     }
-
-    ModuleHandle ILoader.GetModuleHandleFromModulePtr(TargetPointer modulePointer) => ((ILoader)_v1).GetModuleHandleFromModulePtr(modulePointer);
-    ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer) => ((ILoader)_v1).GetModuleHandleFromAssemblyPtr(assemblyPointer);
-    IEnumerable<ModuleHandle> ILoader.GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => ((ILoader)_v1).GetModuleHandles(appDomain, iterationFlags);
-    TargetPointer ILoader.GetRootAssembly() => ((ILoader)_v1).GetRootAssembly();
-    string ILoader.GetAppDomainFriendlyName() => ((ILoader)_v1).GetAppDomainFriendlyName();
-    TargetPointer ILoader.GetAppDomain() => ((ILoader)_v1).GetAppDomain();
-    TargetPointer ILoader.GetModule(ModuleHandle handle) => ((ILoader)_v1).GetModule(handle);
-    TargetPointer ILoader.GetAssembly(ModuleHandle handle) => ((ILoader)_v1).GetAssembly(handle);
-    TargetPointer ILoader.GetPEAssembly(ModuleHandle handle) => ((ILoader)_v1).GetPEAssembly(handle);
-    bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => ((ILoader)_v1).TryGetLoadedImageContents(handle, out baseAddress, out size, out imageFlags);
-    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva) => ((ILoader)_v1).GetILAddr(peAssemblyPtr, rva);
-    TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => ((ILoader)_v1).GetFieldAddressFromRva(peAssemblyPtr, rva);
-    bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => ((ILoader)_v1).TryGetSymbolStream(handle, out buffer, out size);
-    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle) => ((ILoader)_v1).GetAvailableTypeParams(handle);
-    IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle) => ((ILoader)_v1).GetInstantiatedMethods(handle);
-    bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle) => ((ILoader)_v1).IsProbeExtensionResultValid(handle);
-    ModuleFlags ILoader.GetFlags(ModuleHandle handle) => ((ILoader)_v1).GetFlags(handle);
-    bool ILoader.IsReadyToRun(ModuleHandle handle) => ((ILoader)_v1).IsReadyToRun(handle);
-    string ILoader.GetSimpleName(ModuleHandle handle) => ((ILoader)_v1).GetSimpleName(handle);
-    string ILoader.GetPath(ModuleHandle handle) => ((ILoader)_v1).GetPath(handle);
-    string ILoader.GetFileName(ModuleHandle handle) => ((ILoader)_v1).GetFileName(handle);
-    bool ILoader.GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize) => ((ILoader)_v1).GetFileHeadersInfo(handle, out timeStamp, out imageSize);
-    TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle) => ((ILoader)_v1).GetLoaderAllocator(handle);
-    TargetPointer ILoader.GetILBase(ModuleHandle handle) => ((ILoader)_v1).GetILBase(handle);
-    TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle) => ((ILoader)_v1).GetAssemblyLoadContext(handle);
-    TargetPointer ILoader.GetModuleLookupMapBase(ModuleHandle module, ModuleLookupMapKind kind) => ((ILoader)_v1).GetModuleLookupMapBase(module, kind);
-    TargetPointer ILoader.GetModuleLookupMapElement(ModuleHandle module, ModuleLookupMapKind kind, uint token, out TargetNUInt flags) => ((ILoader)_v1).GetModuleLookupMapElement(module, kind, token, out flags);
-    TargetPointer ILoader.LookupMemberRefAsMethod(ModuleHandle handle, uint token) => ((ILoader)_v1).LookupMemberRefAsMethod(handle, token);
-    IEnumerable<(TargetPointer Value, uint Token)> ILoader.EnumerateModuleLookupMap(ModuleHandle module, ModuleLookupMapKind kind) => ((ILoader)_v1).EnumerateModuleLookupMap(module, kind);
-    bool ILoader.IsCollectible(ModuleHandle handle) => ((ILoader)_v1).IsCollectible(handle);
-    bool ILoader.IsDynamic(ModuleHandle handle) => ((ILoader)_v1).IsDynamic(handle);
-    bool ILoader.IsModuleMapped(ModuleHandle handle) => ((ILoader)_v1).IsModuleMapped(handle);
-    bool ILoader.IsAssemblyLoaded(ModuleHandle handle) => ((ILoader)_v1).IsAssemblyLoaded(handle);
-    TargetPointer ILoader.GetGlobalLoaderAllocator() => ((ILoader)_v1).GetGlobalLoaderAllocator();
-    TargetPointer ILoader.GetSystemAssembly() => ((ILoader)_v1).GetSystemAssembly();
-    TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => ((ILoader)_v1).GetHighFrequencyHeap(loaderAllocatorPointer);
-    TargetPointer ILoader.GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => ((ILoader)_v1).GetLowFrequencyHeap(loaderAllocatorPointer);
-    TargetPointer ILoader.GetILHeader(ModuleHandle handle, uint token) => ((ILoader)_v1).GetILHeader(handle, token);
-    TargetPointer ILoader.GetObjectHandle(TargetPointer loaderAllocatorPointer) => ((ILoader)_v1).GetObjectHandle(loaderAllocatorPointer);
-    TargetPointer ILoader.GetDynamicIL(ModuleHandle handle, uint token) => ((ILoader)_v1).GetDynamicIL(handle, token);
-    IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap) => ((ILoader)_v1).EnumerateLoaderHeapBlocks(loaderHeap);
-    IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => ((ILoader)_v1).GetLoaderAllocatorHeaps(loaderAllocatorPointer);
-    DebuggerAssemblyControlFlags ILoader.GetDebuggerInfoBits(ModuleHandle handle) => ((ILoader)_v1).GetDebuggerInfoBits(handle);
-    void ILoader.SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits) => ((ILoader)_v1).SetDebuggerInfoBits(handle, newBits);
 }

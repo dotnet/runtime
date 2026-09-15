@@ -401,6 +401,7 @@ public unsafe partial class TargetTests
             ["EcmaMetadata"] = "c1",
             ["Exception"] = "c1",
             ["ExecutionManager"] = "c1",
+            ["ExternalMemoryHandles"] = "c1",
             ["FeatureFlags"] = "c1",
             ["GC"] = "c1",
             ["GCInfo"] = "c1",

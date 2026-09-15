@@ -23,13 +23,13 @@ public sealed class ContractUsageGraphTests
     [
         [
             nameof(ICodeVersions),
-            nameof(IEcmaMetadata),
             nameof(IExecutionManager),
-            nameof(IGC),
-            nameof(ILoader),
-            nameof(IObject),
             nameof(IRuntimeTypeSystem),
             nameof(ISignature),
+        ],
+        [
+            nameof(IEcmaMetadata),
+            nameof(ILoader),
         ],
     ];
 

@@ -62,7 +62,7 @@ public class ExternalMemoryHandleRootTests
                 [DataType.String] = TargetTestHelpers.CreateTypeInfo(MockStringObjectData.CreateLayout(Arch)),
             })
             .AddGlobals((nameof(Constants.Globals.ObjectToMethodTableUnmask), 0ul))
-            .AddContract<ILoader>(version: "c2")
+            .AddContract<IExternalMemoryHandles>(version: "c1")
             .AddMockContract(mockGC)
             .AddMockContract(rts);
 
@@ -140,9 +140,9 @@ public class ExternalMemoryHandleRootTests
         rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTableAddr))).Returns(typeHandle);
         rts.Setup(r => r.IsValueType(typeHandle)).Returns(false);
 
-        ILoader loader = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts).Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts).Contracts.ExternalMemoryHandles;
 
-        ExternalMemoryHandleRootData root = Assert.Single(loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true));
+        ExternalMemoryHandleRootData root = Assert.Single(externalMemoryHandles.GetRoots(resolveInteriorPointers: true));
         Assert.False(root.IsInteriorPointer);
         Assert.Equal(new TargetPointer(MemoryAddr), root.Address);
         Assert.Equal(TargetPointer.Null, root.Object);
@@ -162,9 +162,9 @@ public class ExternalMemoryHandleRootTests
         List<MockMemorySpace.HeapFragment> fragments = [PointerFragment(MemoryAddr, ObjectAddr)];
         SetupResolvableObjects(gc, rts, fragments, ObjectAddr);
 
-        ILoader loader = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 1, rts, fragments, gc).Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 1, rts, fragments, gc).Contracts.ExternalMemoryHandles;
 
-        ExternalMemoryHandleRootData root = Assert.Single(loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true));
+        ExternalMemoryHandleRootData root = Assert.Single(externalMemoryHandles.GetRoots(resolveInteriorPointers: true));
         Assert.True(root.IsInteriorPointer);
         Assert.Equal(new TargetPointer(MemoryAddr), root.Address);
         Assert.Equal(new TargetPointer(ObjectAddr), root.Object);
@@ -180,13 +180,13 @@ public class ExternalMemoryHandleRootTests
         rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTableAddr))).Returns(typeHandle);
         rts.Setup(r => r.IsValueType(typeHandle)).Returns(false);
 
-        ILoader loader = CreateTarget(
+        IExternalMemoryHandles externalMemoryHandles = CreateTarget(
             new TargetPointer(MemoryAddr),
             gcFlags: 1,
             rts,
-            [PointerFragment(MemoryAddr, ObjectAddr)]).Contracts.Loader;
+            [PointerFragment(MemoryAddr, ObjectAddr)]).Contracts.ExternalMemoryHandles;
 
-        Assert.Empty(loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true));
+        Assert.Empty(externalMemoryHandles.GetRoots(resolveInteriorPointers: true));
     }
 
     [Fact]
@@ -201,9 +201,9 @@ public class ExternalMemoryHandleRootTests
         rts.Setup(r => r.ContainsGCPointers(typeHandle)).Returns(true);
         rts.Setup(r => r.GetGCDescSeries(typeHandle, 0u)).Returns([(16u, 16u)]);
 
-        ILoader loader = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts).Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts).Contracts.ExternalMemoryHandles;
 
-        IReadOnlyList<ExternalMemoryHandleRootData> roots = loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true);
+        IReadOnlyList<ExternalMemoryHandleRootData> roots = externalMemoryHandles.GetRoots(resolveInteriorPointers: true);
         Assert.Equal([MemoryAddr + 8, MemoryAddr + 16], roots.Select(r => r.Address.Value).ToArray());
         Assert.All(roots, r => Assert.False(r.IsInteriorPointer));
     }
@@ -230,9 +230,9 @@ public class ExternalMemoryHandleRootTests
         List<MockMemorySpace.HeapFragment> fragments = [PointerFragment(MemoryAddr, ObjectAddr)];
         SetupResolvableObjects(gc, rts, fragments, ObjectAddr);
 
-        ILoader loader = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts, fragments, gc).Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts, fragments, gc).Contracts.ExternalMemoryHandles;
 
-        ExternalMemoryHandleRootData root = Assert.Single(loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true));
+        ExternalMemoryHandleRootData root = Assert.Single(externalMemoryHandles.GetRoots(resolveInteriorPointers: true));
         Assert.True(root.IsInteriorPointer);
         Assert.Equal(new TargetPointer(ObjectAddr), root.Object);
     }
@@ -263,9 +263,9 @@ public class ExternalMemoryHandleRootTests
         var gc = new Mock<IGC>();
         SetupResolvableObjects(gc, rts, fragments, objectAddresses);
 
-        ILoader loader = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts, fragments, gc).Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = CreateTarget(new TargetPointer(MemoryAddr), gcFlags: 0, rts, fragments, gc).Contracts.ExternalMemoryHandles;
 
-        IReadOnlyList<ExternalMemoryHandleRootData> roots = loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true);
+        IReadOnlyList<ExternalMemoryHandleRootData> roots = externalMemoryHandles.GetRoots(resolveInteriorPointers: true);
         Assert.Equal(objectAddresses, roots.Select(r => r.Object.Value).ToArray());
         Assert.All(roots, r => Assert.True(r.IsInteriorPointer));
     }
@@ -274,9 +274,9 @@ public class ExternalMemoryHandleRootTests
     public void NoExternalMemoryHandles_YieldsNoRoots()
     {
         var rts = new Mock<IRuntimeTypeSystem>(MockBehavior.Strict);
-        ILoader loader = CreateTarget(TargetPointer.Null, gcFlags: 0, rts, hasHandle: false).Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = CreateTarget(TargetPointer.Null, gcFlags: 0, rts, hasHandle: false).Contracts.ExternalMemoryHandles;
 
-        Assert.Empty(loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true));
+        Assert.Empty(externalMemoryHandles.GetRoots(resolveInteriorPointers: true));
     }
 }
 
@@ -292,7 +292,8 @@ public class RefWalkExternalMemoryHandleTests
         TargetPointer interiorObject = new(0x3000);
         var loader = new Mock<ILoader>();
         loader.Setup(l => l.GetAppDomain()).Returns(appDomain);
-        loader.Setup(l => l.GetExternalMemoryHandleRoots(true)).Returns(
+        var externalMemoryHandles = new Mock<IExternalMemoryHandles>();
+        externalMemoryHandles.Setup(c => c.GetRoots(true)).Returns(
         [
             new ExternalMemoryHandleRootData { Address = ordinarySlot },
             new ExternalMemoryHandleRootData { IsInteriorPointer = true, Object = interiorObject },
@@ -302,6 +303,7 @@ public class RefWalkExternalMemoryHandleTests
         gc.Setup(g => g.GetSupportedHandleTypes()).Returns([]);
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(Arch)
             .AddMockContract(loader)
+            .AddMockContract(externalMemoryHandles)
             .AddMockContract(gc)
             .Build();
 

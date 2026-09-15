@@ -135,9 +135,9 @@ internal sealed class RefWalk : IEnum<DacGcReference>
     // Walks the external memory handles registered with the current AppDomain.
     private IEnumerable<DacGcReference> WalkExternalMemoryHandles()
     {
-        ILoader loader = _target.Contracts.Loader;
+        IExternalMemoryHandles externalMemoryHandles = _target.Contracts.ExternalMemoryHandles;
 
-        foreach (ExternalMemoryHandleRootData root in loader.GetExternalMemoryHandleRoots(resolveInteriorPointers: true))
+        foreach (ExternalMemoryHandleRootData root in externalMemoryHandles.GetRoots(resolveInteriorPointers: true))
         {
             DacGcReference reference = new()
             {

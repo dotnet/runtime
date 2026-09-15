@@ -57,13 +57,6 @@ enum ModuleLookupMapKind
 
 readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
 
-sealed class ExternalMemoryHandleRootData
-{
-    bool IsInteriorPointer { get; init; }
-    TargetPointer Address { get; init; }
-    TargetPointer Object { get; init; }
-}
-
 enum LoaderAllocatorHeapType
 {
     Unknown,
@@ -86,7 +79,6 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 TargetPointer GetRootAssembly();
 string GetAppDomainFriendlyName();
 TargetPointer GetAppDomain();
-IReadOnlyList<ExternalMemoryHandleRootData> GetExternalMemoryHandleRoots(bool resolveInteriorPointers);
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -258,36 +250,6 @@ enum ClrModifiableAssemblies : uint
 | `EcmaMetadata` |
 | `SHash` |
 <!-- END GENERATED: usage contract=Loader version=c1 -->
-
-## Version 2 dependency changes from Version 1
-
-<!-- BEGIN GENERATED: usage contract=Loader version=c2 diff-from=c1 -->
-### Data descriptor changes from `c1`
-
-| Change | Data Descriptor | Field | Type | Meaning |
-| --- | --- | --- | --- | --- |
-| Added | `AppDomain` | `ExternalMemoryHandles` | `pointer` | Pointer to the head of the AppDomain's external memory handle list (SListTail<ExternalMemoryHandle>) |
-| Added | `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
-| Added | `ExternalMemoryHandle` | `GCFlags` | `uint32` | Non-zero if the handle's memory holds a direct object pointer (interior/GC_CALL_INTERIOR root) rather than the address of an object reference slot |
-| Added | `ExternalMemoryHandle` | `Memory` | `pointer` | Pointer to the external memory tracked by this handle |
-| Added | `ExternalMemoryHandle` | `MethodTable` | `pointer` | Pointer to the MethodTable describing the type of the tracked memory |
-| Added | `ExternalMemoryHandle` | `Next` | `pointer` | Pointer to the next ExternalMemoryHandle in the owning AppDomain's list |
-| Added | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
-| Added | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
-
-### Global variable changes from `c1`
-
-| Change | Global | Type | Meaning |
-| --- | --- | --- | --- |
-| Added | `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
-
-### Contract dependency changes from `c1`
-
-| Change | Contract Name |
-| --- | --- |
-| Added | `GC` |
-| Added | `RuntimeTypeSystem` |
-<!-- END GENERATED: usage contract=Loader version=c2 diff-from=c1 -->
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
@@ -1086,59 +1048,5 @@ IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loa
             target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */));
         block = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
     }
-}
-```
-
-## Version 2
-
-Version 2 adds support for scanning an AppDomain's ExternalMemoryHandle list and returning the
-resulting GC roots. GetExternalMemoryHandleRoots is part of the shared ILoader API surface (available
-since Version 1), but Version 1's implementation always returns an empty list; only Version 2 walks
-the real list. All other APIs behave identically to Version 1.
-
-Each returned root identifies either an ordinary object-reference slot through Address, or an
-interior root through IsInteriorPointer and Object. When resolveInteriorPointers is true, Object is
-the containing managed object; null, invalid, or unresolvable interior pointers are omitted. When it
-is false, Object is the raw pointer read from Address.
-
-For reference-type handles, a zero GCFlags value produces an ordinary root at the handle's Memory
-address and a non-zero value produces an interior root. For value-type handles, the implementation
-reports ordinary object-reference fields described by the type's GCDesc and recursively finds
-ELEMENT_TYPE_BYREF fields in byref-like value types, including every element of an inline array.
-GCDesc offsets are adjusted from boxed-object layout to the unboxed external-memory layout.
-
-``` csharp
-IReadOnlyList<ExternalMemoryHandleRootData> ILoader.GetExternalMemoryHandleRoots(bool resolveInteriorPointers)
-{
-    TargetPointer appDomain = GetAppDomain();
-    if (appDomain == TargetPointer.Null)
-        return [];
-
-    AppDomain domain = // read AppDomain object starting at appDomain
-    HashSet<TargetPointer> visited = [];
-    List<ExternalMemoryHandleRootData> roots = [];
-    TargetPointer current = domain.ExternalMemoryHandles;
-    while (current != TargetPointer.Null)
-    {
-        if (!visited.Add(current))
-            throw new InvalidOperationException(); // defend against a corrupted/cyclic list
-
-        ExternalMemoryHandle handle = // read ExternalMemoryHandle object starting at current
-        TypeHandle type = // get the RuntimeTypeSystem handle for handle.MethodTable
-        if (type.IsValueType)
-        {
-            // Add GCDesc object-reference slots and recursively discovered byref-like interior roots.
-        }
-        else if (handle.GCFlags != 0)
-        {
-            // Read the pointer from handle.Memory and optionally resolve it to its containing object.
-        }
-        else
-        {
-            roots.Add(new ExternalMemoryHandleRootData { Address = handle.Memory });
-        }
-        current = handle.Next;
-    }
-    return roots;
 }
 ```

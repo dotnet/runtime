@@ -12,14 +12,7 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// End-to-end tests confirming that RefWalk's external-memory-handle scanning is driven entirely
-/// by which Loader contract version is registered: Loader contract version c1 (Loader_1) always
-/// contributes zero external-memory-handle roots, while version c2 (Loader_2) walks the real
-/// AppDomain::m_externalMemoryHandles chain, using the actual (non-mocked) Loader contract
-/// implementations rather than a mocked ILoader.
-/// </summary>
-public class RefWalkLoaderContractVersionTests
+public class RefWalkExternalMemoryHandlesContractTests
 {
     private static readonly MockTarget.Architecture Arch = new() { IsLittleEndian = true, Is64Bit = true };
 
@@ -29,7 +22,7 @@ public class RefWalkLoaderContractVersionTests
     private const ulong MethodTableAddr = 0x9000;
     private const ulong MemoryAddr = 0x9500;
 
-    private static TestPlaceholderTarget CreateTarget(string loaderVersion, Mock<IRuntimeTypeSystem> rts)
+    private static TestPlaceholderTarget CreateTarget(Mock<IRuntimeTypeSystem> rts)
     {
         TargetTestHelpers helpers = new(Arch);
         int ptrSize = helpers.PointerSize;
@@ -66,7 +59,8 @@ public class RefWalkLoaderContractVersionTests
                 [DataType.String] = TargetTestHelpers.CreateTypeInfo(MockStringObjectData.CreateLayout(Arch)),
             })
             .AddGlobals((nameof(Constants.Globals.ObjectToMethodTableUnmask), 0ul))
-            .AddContract<ILoader>(version: loaderVersion)
+            .AddContract<ILoader>(version: "c1")
+            .AddContract<IExternalMemoryHandles>(version: "c1")
             .AddMockContract(mockGC)
             .AddMockContract(rts);
 
@@ -110,29 +104,14 @@ public class RefWalkLoaderContractVersionTests
     }
 
     [Fact]
-    public void LoaderVersion1_ContributesNoExternalMemoryHandleRoots()
+    public void ExternalMemoryHandlesContract_ContributesRoot()
     {
-        // Loader_1 (contract version c1) has no external-memory-handle support: RefWalk must not
-        // surface any roots for the handle even though it is present in the target's memory.
-        var rts = new Mock<IRuntimeTypeSystem>(MockBehavior.Strict);
-        TestPlaceholderTarget target = CreateTarget("c1", rts);
-
-        List<DacGcReference> refs = Walk(target);
-
-        Assert.Empty(refs);
-    }
-
-    [Fact]
-    public void LoaderVersion2_ContributesExternalMemoryHandleRoot()
-    {
-        // Loader_2 (contract version c2) walks the real AppDomain::m_externalMemoryHandles chain;
-        // RefWalk must report the resulting handle as a CorHandleStrong root.
         var rts = new Mock<IRuntimeTypeSystem>(MockBehavior.Strict);
         ITypeHandle typeHandle = new TargetTypeHandle(new TargetPointer(MethodTableAddr));
         rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTableAddr))).Returns(typeHandle);
         rts.Setup(r => r.IsValueType(typeHandle)).Returns(false);
 
-        TestPlaceholderTarget target = CreateTarget("c2", rts);
+        TestPlaceholderTarget target = CreateTarget(rts);
 
         List<DacGcReference> refs = Walk(target);
 
