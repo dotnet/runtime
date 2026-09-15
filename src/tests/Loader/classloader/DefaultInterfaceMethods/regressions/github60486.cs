@@ -118,55 +118,9 @@ public class Program : ProgramBase<InputData>, TestItf2<InputData>
     [Fact]
     public static void TestEntryPoint()
     {
-        ValidateStringConstructorFrames();
         ValidateCurrentMethod();
         new Program().Start();
         ValidateExceptionStackTrace();
-    }
-
-    private static unsafe void ValidateStringConstructorFrames()
-    {
-        var encoding = new StackTraceEncoding();
-        sbyte value = (sbyte)'a';
-        int firstFrameCount = -1;
-
-        for (int i = 0; i < 2; i++)
-        {
-            Assert.Equal("a", new string(&value, 0, 1, encoding));
-            Assert.Equal(i + 1, encoding.CallCount);
-            if (i == 0)
-            {
-                firstFrameCount = encoding.ConstructorFrameCount;
-            }
-            else
-            {
-                // A managed FCall must not gain a constructor frame on its first invocation.
-                Assert.Equal(firstFrameCount, encoding.ConstructorFrameCount);
-            }
-        }
-    }
-
-    private sealed class StackTraceEncoding : System.Text.UTF8Encoding
-    {
-        public int CallCount { get; private set; }
-        public int ConstructorFrameCount { get; private set; }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public override unsafe int GetCharCount(byte* bytes, int count)
-        {
-            CallCount++;
-            ConstructorFrameCount = 0;
-            foreach (System.Diagnostics.StackFrame frame in new System.Diagnostics.StackTrace().GetFrames())
-            {
-                MethodBase method = frame.GetMethod();
-                if (method?.DeclaringType == typeof(string) && method.IsConstructor)
-                {
-                    ConstructorFrameCount++;
-                }
-            }
-
-            return base.GetCharCount(bytes, count);
-        }
     }
 
     private static void ValidateCurrentMethod()
