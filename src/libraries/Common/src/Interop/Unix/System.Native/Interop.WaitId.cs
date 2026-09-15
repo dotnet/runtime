@@ -20,23 +20,10 @@ internal static partial class Interop
         /// 3) on error, -1 is returned
         /// </returns>
         /// <remarks>
-        /// This never consumes the observed notification. A non-exit notification should only be drained via
-        /// <see cref="WaitIdDrainNonExited"/> once the managed caller has confirmed it owns the pid's reaping
-        /// responsibility (e.g. it is a process started via Process.Start), since draining it could otherwise
-        /// hide the notification from an unrelated WUNTRACED/WCONTINUED-based waiter.
+        /// This never consumes the observed notification (it always uses WNOWAIT), so it is always safe to
+        /// call regardless of which pid it turns out to be.
         /// </remarks>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitIdAnyExitedNoHangNoWait", SetLastError = true)]
         internal static partial int WaitIdAnyExitedNoHangNoWait([MarshalAs(UnmanagedType.Bool)] out bool isExited);
-
-        /// <summary>
-        /// Consumes a pending stopped/continued (non-exit) notification for the specified pid so it is no
-        /// longer reported by <see cref="WaitIdAnyExitedNoHangNoWait"/>.
-        /// </summary>
-        /// <remarks>
-        /// Only call this for a pid the caller is certain it owns the reaping responsibility for.
-        /// </remarks>
-        /// <returns>0 on success (including when there was nothing to drain), -1 on error.</returns>
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitIdDrainNonExited", SetLastError = true)]
-        internal static partial int WaitIdDrainNonExited(int pid);
     }
 }

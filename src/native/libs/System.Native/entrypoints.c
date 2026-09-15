@@ -222,7 +222,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetSid)
     DllImportEntry(SystemNative_SysLog)
     DllImportEntry(SystemNative_WaitIdAnyExitedNoHangNoWait)
-    DllImportEntry(SystemNative_WaitIdDrainNonExited)
     DllImportEntry(SystemNative_WaitPidExitedNoHang)
     DllImportEntry(SystemNative_PathConf)
     DllImportEntry(SystemNative_GetPriority)

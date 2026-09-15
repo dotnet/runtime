@@ -1183,6 +1183,7 @@ namespace System.Diagnostics.Tests
             for (int iteration = 0; iteration < Iterations; iteration++)
             {
                 var roots = new Process[TreeCount];
+                var grandChildren = new Process[TreeCount];
                 for (int i = 0; i < TreeCount; i++)
                 {
                     // Each direct child spawns a grandchild and then blocks forever, producing a
@@ -1190,15 +1191,22 @@ namespace System.Diagnostics.Tests
                     Process root = CreateProcess(() =>
                     {
                         using Process grandChild = Process.Start("/bin/sleep", "1000");
+                        Console.WriteLine(grandChild.Id);
                         Thread.Sleep(Timeout.Infinite);
                         return RemoteExecutor.SuccessExitCode;
                     });
+                    root.StartInfo.RedirectStandardOutput = true;
                     root.Start();
                     roots[i] = root;
                 }
 
-                // Give the grandchildren time to start so the trees are fully formed.
-                Thread.Sleep(500);
+                for (int i = 0; i < TreeCount; i++)
+                {
+                    // Obtain a Process instance for the grandchild before killing the tree, to avoid
+                    // PID reuse issues.
+                    int grandChildPid = int.Parse(roots[i].StandardOutput.ReadLine());
+                    grandChildren[i] = Process.GetProcessById(grandChildPid);
+                }
 
                 var tasks = new Task[TreeCount];
                 for (int i = 0; i < TreeCount; i++)
@@ -1210,9 +1218,11 @@ namespace System.Diagnostics.Tests
                 bool completed = Task.WaitAll(tasks, TimeSpan.FromSeconds(60));
                 Assert.True(completed, $"Kill(entireProcessTree: true) hung on iteration {iteration}.");
 
-                foreach (Process root in roots)
+                for (int i = 0; i < TreeCount; i++)
                 {
-                    Assert.True(root.WaitForExit(WaitInMS));
+                    Assert.True(roots[i].WaitForExit(WaitInMS));
+                    Assert.True(grandChildren[i].WaitForExit(WaitInMS), $"Grandchild {grandChildren[i].Id} was not killed on iteration {iteration}.");
+                    grandChildren[i].Dispose();
                 }
             }
         }

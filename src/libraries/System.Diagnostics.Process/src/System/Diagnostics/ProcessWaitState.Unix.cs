@@ -622,48 +622,26 @@ namespace System.Diagnostics
                     pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait(out bool isExited);
                     if (pid > 0)
                     {
-                        bool isKnownChild = s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws);
-
-                        if (isExited)
+                        if (isExited && s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
                         {
-                            if (isKnownChild)
+                            // Known Process that has actually exited.
+                            if (pws.TryReapChild(configureConsole))
                             {
-                                // Known Process.
-                                if (pws!.TryReapChild(configureConsole))
-                                {
-                                    pws.ReleaseRef();
-                                }
-                            }
-                            else
-                            {
-                                // unlikely: This is not a managed Process, so we are not responsible for reaping.
-                                // Fall back to checking all Processes.
-                                checkAll = true;
-                                break;
-                            }
-                        }
-                        else if (isKnownChild)
-                        {
-                            // Some platforms (notably macOS) report stopped/continued notifications even
-                            // though only exit notifications (WEXITED) were requested. Since this is a pid
-                            // we are responsible for reaping, it is safe to consume that notification so it
-                            // isn't observed again (which would otherwise spin this loop indefinitely), and
-                            // to keep looking for a real exit that may be hidden behind it.
-                            if (Interop.Sys.WaitIdDrainNonExited(pid) != 0)
-                            {
-                                // Unable to consume the notification (e.g. the child changed state
-                                // concurrently). Avoid spinning: stop looking for more exited children this
-                                // pass. A real exit will be observed on a subsequent SIGCHLD.
-                                pid = 0;
+                                pws.ReleaseRef();
                             }
                         }
                         else
                         {
-                            // Non-exit notification for a pid we don't own. Leave it untouched for its actual
-                            // owner (e.g. unrelated native code in this process using WUNTRACED/WCONTINUED) to
-                            // observe, and stop looking for more exited children this pass; a subsequent
-                            // SIGCHLD will retry.
-                            pid = 0;
+                            // Either this pid is not one we're responsible for reaping, or (on some
+                            // platforms, e.g. macOS, or for a ptrace-traced child on Linux) the
+                            // notification isn't actually an exit even though only exit notifications
+                            // (WEXITED) were requested. In both cases we must not consume/act on this
+                            // specific notification: it may belong to something else in this process
+                            // (e.g. an external debugger tracing the same pid), and it may not even be
+                            // an exit. Fall back to directly checking our own known children instead,
+                            // which makes progress without spinning on or touching this notification.
+                            checkAll = true;
+                            break;
                         }
                     }
                     else if (pid == 0)

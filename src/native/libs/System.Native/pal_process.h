@@ -182,26 +182,12 @@ PALEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message,
  * 2) if no children are waitable, 0 is returned and isExited is set to 0.
  * 3) on error, -1 is returned.
  *
- * This function never consumes the notification it observes (it always uses WNOWAIT). Whether it is
- * safe to consume a non-exit notification depends on whether the pid belongs to a process this
- * runtime is responsible for reaping -- a decision only the managed layer can make. Callers that
- * determine they own the pid and want to stop observing a stale non-exit notification should call
- * SystemNative_WaitIdDrainNonExited.
+ * This function never consumes the notification it observes (it always uses WNOWAIT), so it is
+ * always safe to call regardless of which pid it turns out to be: callers that get back a non-exit
+ * notification (or a pid they don't recognize) can fall back to checking their own known children
+ * directly (e.g. via SystemNative_WaitPidExitedNoHang) without touching this notification at all.
  */
 PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited);
-
-/**
- * Consumes (reaps) a pending stopped/continued (non-exit) notification for the specified pid so it
- * is no longer reported by SystemNative_WaitIdAnyExitedNoHangNoWait.
- *
- * Callers must only invoke this for a pid they are certain they own the reaping responsibility for
- * (e.g. a process started via Process.Start), since this permanently discards a status that any
- * other WUNTRACED/WCONTINUED-based waiter (including unrelated native code in this process) might
- * otherwise need to observe.
- *
- * Returns 0 on success (including when there was nothing to drain), -1 on error.
- */
-PALEXPORT int32_t SystemNative_WaitIdDrainNonExited(int32_t pid);
 
 /**
  * Reaps a terminated child.

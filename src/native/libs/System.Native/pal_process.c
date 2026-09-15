@@ -1201,11 +1201,11 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
         }
 
         // We requested WEXITED only, but some platforms (notably macOS) also report children
-        // that have stopped (SIGSTOP) or continued (SIGCONT). This function only peeks (WNOWAIT)
-        // and classifies the notification -- it never consumes it. Whether it is safe to consume
-        // a non-exit notification depends on whether the pid belongs to a process this runtime is
-        // responsible for reaping, which only the managed layer (which tracks that ownership) can
-        // determine. See SystemNative_WaitIdDrainNonExited.
+        // that have stopped (SIGSTOP) or continued (SIGCONT), and on Linux a ptrace-traced child's
+        // stop/continue transitions are always visible to its tracer regardless of requested
+        // classes. This function only peeks (WNOWAIT) and classifies the notification -- it never
+        // consumes it, so callers can safely fall back to checking their own known children
+        // directly without risking interference with an unrelated waiter for this pid.
         *isExited = siginfo.si_code == CLD_EXITED ||
                     siginfo.si_code == CLD_KILLED ||
                     siginfo.si_code == CLD_DUMPED;
@@ -1218,26 +1218,6 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
     }
 
     // Unexpected error.
-    return result;
-}
-
-int32_t SystemNative_WaitIdDrainNonExited(int32_t pid)
-{
-    // Consumes a pending stopped/continued (non-exit) notification for the given pid so it is not
-    // repeatedly reported by subsequent waitid(WEXITED, WNOWAIT) peeks (see
-    // SystemNative_WaitIdAnyExitedNoHangNoWait). Callers must only invoke this for a pid they are
-    // certain they own the reaping responsibility for (e.g. a process started via Process.Start),
-    // since this permanently discards a status that any other WUNTRACED/WCONTINUED-based waiter
-    // (including unrelated native code in this process) might otherwise need to observe.
-    siginfo_t siginfo;
-    memset(&siginfo, 0, sizeof(siginfo));
-    int32_t result;
-    while (CheckInterrupted(result = waitid(P_PID, (id_t)pid, &siginfo, WSTOPPED | WCONTINUED | WNOHANG)));
-    if (result != 0 && errno == ECHILD)
-    {
-        // The child no longer exists or is no longer waitable this way; nothing to drain.
-        result = 0;
-    }
     return result;
 }
 
