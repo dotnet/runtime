@@ -3822,9 +3822,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            impSpillSideEffect(true, stackState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for vector CreateAlternatingSequence"));
-
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -3864,9 +3861,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            impSpillSideEffect(true, stackState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for vector CreateGeometricSequence"));
-
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -3904,8 +3898,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
+#if defined(TARGET_WASM)
             impSpillSideEffect(true, stackState.esStackDepth -
                                          2 DEBUGARG("Spilling op1 side effects for vector CreateSequence"));
+#endif // TARGET_WASM
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -4996,7 +4992,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5027,7 +5023,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5067,7 +5063,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5636,8 +5632,17 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                impSpillSideEffect(true, stackState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+
+                // These paths in gtNewSimdBinOpNode consume each operand once in HIR.
+                bool isDirectDivision = varTypeIsInt(simdBaseType) &&
+                                        (((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                                         ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512)));
+
+                if (!isDirectDivision)
+                {
+                    impSpillSideEffect(true, stackState.esStackDepth -
+                                                 2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+                }
 #else
                 // We can't trivially handle division for integral types using SIMD
                 break;
