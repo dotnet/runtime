@@ -31,6 +31,14 @@ namespace System.Numerics.Tensors
             public static T Aggregate(Vector128<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
             public static T Aggregate(Vector256<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
             public static T Aggregate(Vector512<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static T Reduce(T x, T y) => MaxMagnitudeOperator<T>.Invoke(x, y);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<T> Reduce(Vector128<T> x, Vector128<T> y) => MaxMagnitudeOperator<T>.Invoke(x, y);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<T> Reduce(Vector256<T> x, Vector256<T> y) => MaxMagnitudeOperator<T>.Invoke(x, y);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<T> Reduce(Vector512<T> x, Vector512<T> y) => MaxMagnitudeOperator<T>.Invoke(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool Compare(T x, T y)

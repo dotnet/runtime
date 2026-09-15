@@ -1356,6 +1356,173 @@ namespace System.Numerics.Tensors.Tests
             x.Span[size.Value - 1] = ConvertFromSingle(0);
             Assert.Equal(size.Value - 1, IndexOfMin(x));
         }
+
+        // Lengths that span several 256-element blocks of the block-minimum implementation (Helpers.TensorLengths stops at 256).
+        private static readonly int[] s_indexOfMinLongLengths = [255, 256, 257, 511, 512, 513, 1023, 1024, 1025, 2047, 2048, 2049, 4097, 65539];
+
+        private static IEnumerable<int> IndexOfMinLongPositions(int tensorLength) =>
+            new[] { 0, 1, 255, 256, 257, 511, 512, 513, tensorLength / 2, tensorLength - 2, tensorLength - 1 }.Where(i => i < tensorLength).Distinct();
+
+        [Fact]
+        public void IndexOfMin_LongLengths()
+        {
+            Assert.All(s_indexOfMinLongLengths, tensorLength =>
+            {
+                foreach (int expected in IndexOfMinLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x[expected] = Enumerable.Min(MemoryMarshal.ToEnumerable<T>(x.Memory));
+                    int actual = IndexOfMin(x.Span);
+                    Assert.True(actual == expected || (actual < expected && x[actual].Equals(x[expected])), $"{tensorLength} {actual} {expected}");
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMin_LongLengths_FirstOccurrenceReturned()
+        {
+            Assert.All(s_indexOfMinLongLengths, tensorLength =>
+            {
+                foreach (int expected in IndexOfMinLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(1));
+                    x[expected] = ConvertFromSingle(0);
+                    x[tensorLength - 1] = ConvertFromSingle(0);
+                    Assert.Equal(expected, IndexOfMin(x.Span));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMin_LongLengths_FirstNaNReturned()
+        {
+            if (!IsFloatingPoint) return;
+
+            Assert.All(s_indexOfMinLongLengths, tensorLength =>
+            {
+                foreach (int expected in IndexOfMinLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(1));
+                    x[0] = ConvertFromSingle(-1); // a smaller value in an earlier block must not beat the NaN
+                    x[expected] = ConvertFromSingle(float.NaN);
+                    x[tensorLength - 1] = ConvertFromSingle(float.NaN);
+                    Assert.Equal(expected, IndexOfMin(x.Span));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMin_LongLengths_Negative0LesserThanPositive0()
+        {
+            if (!IsFloatingPoint) return;
+
+            Assert.All(s_indexOfMinLongLengths, tensorLength =>
+            {
+                foreach (int expected in IndexOfMinLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(Zero);
+                    x[expected] = NegativeZero;
+                    x[tensorLength - 1] = NegativeZero;
+                    Assert.Equal(expected, IndexOfMin(x.Span));
+                }
+            });
+        }
+
+        // The same multi-block coverage for the other three searches that share the block-reduction core.
+        [Fact]
+        public void IndexOfMax_LongLengths_FirstOccurrenceReturned() =>
+            AssertLongLengths(1, 2, IndexOfMax);
+
+        [Fact]
+        public void IndexOfMinMagnitude_LongLengths_FirstOccurrenceReturned() =>
+            AssertLongLengths(2, 1, IndexOfMinMagnitude);
+
+        [Fact]
+        public void IndexOfMaxMagnitude_LongLengths_FirstOccurrenceReturned() =>
+            AssertLongLengths(1, 2, IndexOfMaxMagnitude);
+
+        [Fact]
+        public void IndexOfMax_LongLengths_FirstNaNReturned()
+        {
+            if (!IsFloatingPoint) return;
+            AssertLongLengthsNaN(1, 2, IndexOfMax); // a larger value in an earlier block must not beat the NaN
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_LongLengths_FirstNaNReturned()
+        {
+            if (!IsFloatingPoint) return;
+            AssertLongLengthsNaN(2, 1, IndexOfMinMagnitude);
+        }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_LongLengths_FirstNaNReturned()
+        {
+            if (!IsFloatingPoint) return;
+            AssertLongLengthsNaN(1, 2, IndexOfMaxMagnitude);
+        }
+
+        [Fact]
+        public void IndexOfMax_LongLengths_Positive0GreaterThanNegative0()
+        {
+            if (!IsFloatingPoint) return;
+            AssertLongLengthsValues(NegativeZero, Zero, IndexOfMax);
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_LongLengths_Negative0LesserThanPositive0()
+        {
+            if (!IsFloatingPoint) return;
+            AssertLongLengthsValues(Zero, NegativeZero, IndexOfMinMagnitude);
+        }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_LongLengths_Positive0GreaterThanNegative0()
+        {
+            if (!IsFloatingPoint) return;
+            AssertLongLengthsValues(NegativeZero, Zero, IndexOfMaxMagnitude);
+        }
+
+        private delegate int IndexOfSearch(ReadOnlySpan<T> x);
+
+        private void AssertLongLengths(float fill, float best, IndexOfSearch search) =>
+            AssertLongLengthsValues(ConvertFromSingle(fill), ConvertFromSingle(best), search);
+
+        /// <summary>Fills with <paramref name="fill"/>, places <paramref name="best"/> at the expected index and at the end; the expected index must win.</summary>
+        private void AssertLongLengthsValues(T fill, T best, IndexOfSearch search)
+        {
+            Assert.All(s_indexOfMinLongLengths, tensorLength =>
+            {
+                foreach (int expected in IndexOfMinLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(fill);
+                    x[expected] = best;
+                    x[tensorLength - 1] = best;
+                    Assert.Equal(expected, search(x.Span));
+                }
+            });
+        }
+
+        /// <summary>Fills with <paramref name="fill"/>, puts <paramref name="better"/> first and NaN at the expected index and at the end; the first NaN must win.</summary>
+        private void AssertLongLengthsNaN(float fill, float better, IndexOfSearch search)
+        {
+            Assert.All(s_indexOfMinLongLengths, tensorLength =>
+            {
+                foreach (int expected in IndexOfMinLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(fill));
+                    x[0] = ConvertFromSingle(better);
+                    x[expected] = ConvertFromSingle(float.NaN);
+                    x[tensorLength - 1] = ConvertFromSingle(float.NaN);
+                    Assert.Equal(expected, search(x.Span));
+                }
+            });
+        }
         #endregion
 
         #region IndexOfMinMagnitude
