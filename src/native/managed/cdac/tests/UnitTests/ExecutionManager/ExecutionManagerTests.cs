@@ -498,9 +498,10 @@ public class ExecutionManagerTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void GetDebugInfoAndExceptionClauses_R2R_WasmUsesLoadedImageBase(bool funclet)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void GetDebugInfoAndExceptionClauses_R2R_WasmUsesLoadedImageBase(bool funclet, bool filter)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
         const ulong VirtualIPRangeStart = 0x8001_0001;
@@ -531,7 +532,13 @@ public class ExecutionManagerTests
             Name = "WASM debug info",
         });
         Dictionary<DataType, Target.TypeInfo> exceptionTypes =
-            AddWasmExceptionInfo(emBuilder, info, LoadedImageBase, RootBeginAddress);
+            AddWasmExceptionInfo(
+                emBuilder,
+                info,
+                LoadedImageBase,
+                RootBeginAddress,
+                filter,
+                FuncletBeginAddress - RootBeginAddress);
 
         MethodDescHandle methodHandle = new(new TargetPointer(MethodDescAddress));
         TargetPointer methodTable = new(0x0102_0000);
@@ -553,17 +560,25 @@ public class ExecutionManagerTests
         Assert.Equal(new TargetPointer(LoadedImageBase + DebugInfoRva + 4), debugInfo);
         Assert.Equal(ExpectedDebugInfoByte, target.Read<byte>(debugInfo));
         ExceptionClauseInfo clause = Assert.Single(em.GetExceptionClauses(handle.Value));
-        Assert.Equal(ExceptionClauseInfo.ExceptionClauseFlags.Finally, clause.ClauseType);
+        Assert.Equal(
+            filter ? ExceptionClauseInfo.ExceptionClauseFlags.Filter : ExceptionClauseInfo.ExceptionClauseFlags.Finally,
+            clause.ClauseType);
         Assert.Equal(2u, clause.TryStartPC);
         Assert.Equal(16u, clause.TryEndPC);
-        Assert.Equal(FuncletBeginAddress - RootBeginAddress, clause.HandlerStartPC);
-        Assert.Equal(48u, clause.HandlerEndPC);
+        Assert.Equal(filter ? 48u : FuncletBeginAddress - RootBeginAddress, clause.HandlerStartPC);
+        Assert.Equal(filter ? 64u : 48u, clause.HandlerEndPC);
         Assert.Null(clause.ClassToken);
-        Assert.Null(clause.FilterOffset);
+        Assert.Equal(filter ? FuncletBeginAddress - RootBeginAddress : null, clause.FilterOffset);
+        Assert.Equal(filter, em.IsFilterFunclet(handle.Value));
     }
 
     private static Dictionary<DataType, Target.TypeInfo> AddWasmExceptionInfo(
-        MockExecutionManagerBuilder emBuilder, MockReadyToRunInfo info, uint imageBase, uint methodRva)
+        MockExecutionManagerBuilder emBuilder,
+        MockReadyToRunInfo info,
+        uint imageBase,
+        uint methodRva,
+        bool filter,
+        uint funcletOffset)
     {
         const uint CoreInfoRva = 0x200;
         const uint CoreHeaderRva = 0x210;
@@ -585,7 +600,9 @@ public class ExecutionManagerTests
         AddWords(imageBase + ClauseRva, DataType.R2RExceptionClause,
             [new("Flags", DataType.uint32), new("TryStartPC", DataType.uint32), new("TryEndPC", DataType.uint32),
              new("HandlerStartPC", DataType.uint32), new("HandlerEndPC", DataType.uint32), new("ClassToken", DataType.uint32)],
-            [2, 2, 16, 32, 48, 0]);
+            filter
+                ? [1, 2, 16, 48, 64, funcletOffset]
+                : [2, 2, 16, funcletOffset, 48, 0]);
         return types;
 
         void AddWords(uint address, DataType type, TargetTestHelpers.Field[] fields, uint[] words)
