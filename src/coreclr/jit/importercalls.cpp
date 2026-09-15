@@ -9780,6 +9780,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MaxNative:
         case NI_System_Math_Min:
         case NI_System_Math_MinNative:
+        case NI_System_Math_MultiplyAddEstimate:
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
         case NI_System_Math_Truncate:
@@ -11235,11 +11238,6 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
     var_types callType = JITtype2varType(callJitType);
     assert(varTypeIsFloating(callType));
 
-    if (BlockNonDeterministicIntrinsics(mustExpand))
-    {
-        return nullptr;
-    }
-
     if (IsIntrinsicImplementedByUserCall(intrinsicName))
     {
         return nullptr;
@@ -11260,7 +11258,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             assert(sig->numArgs == 3);
 
 #if defined(TARGET_XARCH)
-            if (compExactlyDependsOn(InstructionSet_AVX2))
+            if (compExactlyDependsOn(InstructionSet_AVX2, true))
             {
                 simdType    = TYP_SIMD16;
                 intrinsicId = NI_AVX2_MultiplyAddScalar;
@@ -11290,7 +11288,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             assert(sig->numArgs == 1);
 
 #if defined(TARGET_XARCH)
-            if (compExactlyDependsOn(InstructionSet_AVX512))
+            if (compExactlyDependsOn(InstructionSet_AVX512, true))
             {
                 simdType    = TYP_SIMD16;
                 intrinsicId = NI_AVX512_Reciprocal14Scalar;
@@ -11315,7 +11313,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             assert(sig->numArgs == 1);
 
 #if defined(TARGET_XARCH)
-            if (compExactlyDependsOn(InstructionSet_AVX512))
+            if (compExactlyDependsOn(InstructionSet_AVX512, true))
             {
                 simdType    = TYP_SIMD16;
                 intrinsicId = NI_AVX512_ReciprocalSqrt14Scalar;
