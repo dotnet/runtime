@@ -167,6 +167,11 @@ namespace ILCompiler
                                 break;
                         }
                     }
+
+                    if (impl == null)
+                    {
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    }
                 }
             }
             else

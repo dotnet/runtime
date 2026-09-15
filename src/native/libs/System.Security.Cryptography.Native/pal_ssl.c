@@ -517,6 +517,17 @@ void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl)
 int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
 {
     ERR_clear_error();
+    // this peek ensures that the SSL handshake state machine starts processing
+    // renegotiation and post-handshake client cert requests (mirrors
+    // CryptoNative_SslHandshake; this entry point drives socket-bound sessions
+    // where OpenSSL owns the fd)
+    // SSL_peek can perform I/O on the fd and mutate errno; save/restore it so the
+    // last error reported to managed code (SetLastError=true) reflects the
+    // SSL_do_handshake attempt rather than the peek.
+    int peekErrno = errno;
+    SSL_peek(ssl, NULL, 0);
+    errno = peekErrno;
+
     int32_t ret = SSL_do_handshake(ssl);
     // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
     int savedErrno = errno;
@@ -556,7 +567,12 @@ int32_t CryptoNative_SslHandshake(
 
     // this peek ensures that the SSL handshake state machine starts processing
     // renegotiation and post-handshake client cert requests
+    // Guard errno the same way CryptoNative_SslDoHandshake does: this shim is also
+    // P/Invoked with SetLastError=true, so save/restore errno around SSL_peek so the
+    // last error reflects the SSL_do_handshake attempt rather than the peek.
+    int peekErrno = errno;
     SSL_peek(ssl, NULL, 0);
+    errno = peekErrno;
 
     int32_t result = SSL_do_handshake(ssl);
     *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
@@ -946,35 +962,6 @@ int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, cons
     if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
     {
         ret &= SSL_CTX_set_ciphersuites(ctx, cipherSuites);
-    }
-#else
-    (void)cipherSuites;
-#endif
-
-    return ret;
-}
-
-int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites)
-{
-    ERR_clear_error();
-
-    int32_t ret = true;
-
-    // for < TLS 1.3
-    if (cipherList != NULL)
-    {
-        ret &= SSL_set_cipher_list(ssl, cipherList);
-        if (!ret)
-        {
-            return ret;
-        }
-    }
-
-    // for TLS 1.3
-#if HAVE_OPENSSL_SET_CIPHERSUITES
-    if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
-    {
-        ret &= SSL_set_ciphersuites(ssl, cipherSuites);
     }
 #else
     (void)cipherSuites;

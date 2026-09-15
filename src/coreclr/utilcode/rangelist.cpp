@@ -60,7 +60,6 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
 
@@ -129,7 +128,6 @@ void RangeList::RemoveRangesWorker(void *id)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -187,7 +185,6 @@ BOOL RangeList::IsInRangeWorker(TADDR address)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        FORBID_FAULT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END

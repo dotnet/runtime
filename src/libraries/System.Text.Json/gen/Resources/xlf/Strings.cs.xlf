@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedMessageFormat">
         <source>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</source>
-        <target state="new">Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</target>
+        <target state="translated">Zadaný typ '{0}' není podporovaným odvozeným typem pro polymorfní typ '{1}'. Odvozené typy musí být přiřaditelné základnímu typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedTitle">
         <source>Derived type is not a supported polymorphic derived type.</source>
-        <target state="new">Derived type is not a supported polymorphic derived type.</target>
+        <target state="translated">Odvozený typ není podporovaným polymorfním odvozeným typem.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
@@ -64,42 +64,42 @@
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionMessageFormat">
         <source>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</source>
-        <target state="new">The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</target>
+        <target state="translated">Diskriminátor typu '{0}' je pro polymorfní typ '{1}' zadaný více než jednou. Odvozené typy musí odpovídat jedinečným diskriminátorům.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionTitle">
         <source>Derived types produce a duplicate type discriminator.</source>
-        <target state="new">Derived types produce a duplicate type discriminator.</target>
+        <target state="translated">Odvozené typy vytvářejí duplicitní diskriminátor typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</target>
+        <target state="translated">Typ {0} povoluje JsonPolymorphicAttribute.InferClosedTypePolymorphism, ale nejedná se o uzavřený typ, takže nelze odvodit žádné odvozené typy. Deklarujte typ closed nebo zaregistrujte jeho odvozené typy pomocí JsonDerivedTypeAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeTitle">
         <source>Inferred closed type polymorphism is enabled on a type that is not a closed type.</source>
-        <target state="new">Inferred closed type polymorphism is enabled on a type that is not a closed type.</target>
+        <target state="translated">Odvozený polymorfismus uzavřeného typu je povolený u typu, který není uzavřeným typem.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</target>
+        <target state="translated">Typ „{0}“ povoluje JsonPolymorphicAttribute.InferClosedTypePolymorphism, ale také deklaruje JsonDerivedTypeAttribute. Explicitní registrace nahrazují odvozování, takže pouze odvozené typy deklarované explicitně jsou serializovány polymorfně.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle">
         <source>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</source>
-        <target state="new">Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</target>
+        <target state="translated">Odvozený polymorfismus uzavřeného typu nemá žádný vliv na typ, který explicitně registruje odvozené typy.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
         <source>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</source>
-        <target state="new">The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</target>
+        <target state="translated">Odvozený typ '{0}' je méně přístupný než polymorfní základní typ '{1}'. Odvozené typy musí být alespoň stejně přístupné jako základní typ.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleTitle">
         <source>Inferred derived type is less accessible than the polymorphic base type.</source>
-        <target state="new">Inferred derived type is less accessible than the polymorphic base type.</target>
+        <target state="translated">Odvozený typ je méně přístupný než polymorfní základní typ.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

@@ -168,6 +168,11 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 {
 }
 
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    return false;
+}
+
 bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     Thread* pThread = ::GetThread();

@@ -826,4 +826,13 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 #endif
 }
 
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+#ifdef FEATURE_JAVAMARSHAL
+    return JavaMarshalNative::IsGCBridgeActive();
+#else
+    return false;
+#endif
+}
+
 #endif // !DACCESS_COMPILE

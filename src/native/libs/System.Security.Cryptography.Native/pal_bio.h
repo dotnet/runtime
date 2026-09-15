@@ -49,13 +49,6 @@ Shims the BIO_get_mem_data method.
 PALEXPORT int32_t CryptoNative_GetMemoryBioSize(BIO* bio);
 
 /*
-Shims the BIO_ctrl_pending method.
-
-Returns the number of pending characters in the BIOs read and write buffers.
-*/
-PALEXPORT int32_t CryptoNative_BioCtrlPending(BIO* bio);
-
-/*
 Creates a new BIO using the managed-span BIO_METHOD that operates on
 caller-supplied buffer windows (with a heap spill on write overflow).
 */
@@ -134,4 +127,3 @@ Returns:
   -1  = error (invalid args).
 */
 PALEXPORT int32_t CryptoNative_BioGetReplayPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen);
-

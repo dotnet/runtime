@@ -1061,7 +1061,7 @@ interp_compute_pruned_ssa_liveness (TransformData *td)
 			mono_bitset_foreach_bit (bb->live_in_set, i, td->renamable_vars_size) {
 				g_print (" %d", td->renamable_vars [i].var_index);
 			}
-			g_print (" }\n\tLIVE_OUT = {", bb->index);
+			g_print (" }\n\tLIVE_OUT = {");
 			mono_bitset_foreach_bit (bb->live_out_set, i, td->renamable_vars_size) {
 				g_print (" %d", td->renamable_vars [i].var_index);
 			}

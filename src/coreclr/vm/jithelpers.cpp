@@ -245,7 +245,7 @@ HCIMPLEND
 #include <optdefault.h>
 
 // Helper for the managed InitClass implementations
-extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
+extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -318,7 +318,7 @@ __declspec(selectany)
 #endif // _MSC_VER
 PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
-extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -339,7 +339,7 @@ extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack re
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -473,9 +473,10 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack)
+extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
+
     BOOL result = FALSE;
 
     BEGIN_QCALL;
@@ -502,7 +503,7 @@ HCIMPL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* ob
 }
 HCIMPLEND
 
-extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType)
+extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -600,7 +601,7 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
     return result;
 }
 
-extern "C" void* QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+extern "C" void* QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -675,7 +676,8 @@ void FlushVirtualFunctionPointerCaches()
 // slow helper to call from the fast one
 extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
                                                        EnregisteredTypeHandle classHnd,
-                                                       MethodDesc* pStaticMD)
+                                                       MethodDesc* pStaticMD,
+                                                       QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1133,12 +1135,15 @@ NOINLINE void JIT_PInvokeEndRarePath()
         // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
         // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
         // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
-        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
-        // will work correctly.
+        // and DisablePreemptiveGC around the exception dispatch handlers.
         thread->EnablePreemptiveGC();
-        BEGIN_QCALL;
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame())
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER
         thread->HandleThreadAbort();
-        END_QCALL;
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
         thread->DisablePreemptiveGC();
     }
 
@@ -1162,7 +1167,7 @@ void JIT_RareDisableHelperWorker()
 void JIT_RareDisableHelper()
 #endif
 {
-    // We do this here (before we enter the BEGIN_QCALL macro), because the following scenario
+    // We do this before installing the exception handlers because of the following scenario.
     // We are in the process of doing an inlined pinvoke.  Since we are in preemtive
     // mode, the thread is allowed to continue.  The thread continues and gets a context
     // switch just after it has cleared the preemptive mode bit but before it gets
@@ -1194,12 +1199,15 @@ void JIT_RareDisableHelper()
         // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
         // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
         // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
-        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
-        // will work correctly.
+        // and DisablePreemptiveGC around the exception dispatch handlers.
         thread->EnablePreemptiveGC();
-        BEGIN_QCALL;
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame())
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER
         thread->HandleThreadAbort();
-        END_QCALL;
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
         thread->DisablePreemptiveGC();
     }
 }
@@ -1339,7 +1347,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
     if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
     {
         LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+                ppId, (void*)ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
 
         goto DONE;
     }
@@ -1364,7 +1372,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
         if ((ppId < lowId) || (ppId > highId))
         {
             LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+                    ppId, (void*)ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
             goto DONE;
         }
 #endif
@@ -1401,7 +1409,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
         const int hitLogLevel = (hitCount == 1) ? LL_INFO10 : LL_INFO1000;
 
         LOG((LF_TIEREDCOMPILATION, hitLogLevel, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
-            ppId, ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
+            ppId, (void*)ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
 
         // Defer, if we haven't yet reached the limit
         if (hitCount < hitLimit)
@@ -1413,7 +1421,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
         LONG oldFlags = ppInfo->m_flags;
         if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
             goto DONE;
         }
 
@@ -1422,7 +1430,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
         if (!triggerTransition)
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
             goto DONE;
         }
 
@@ -1460,7 +1468,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
             //
             // We want to expose bugs in the jitted code
             // for OSR methods, so we stick with synchronous creation.
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, (void*)ip, hitCount));
 
             // Invoke the helper to build the OSR method
             osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
@@ -1470,7 +1478,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
             {
                 // Unexpected, but not fatal
                 STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointOptimizationPolicy: patchpoint (0x%p) OSR method creation failed,"
-                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", (void*)ip, pMD, ilOffset);
 
                 InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
             }
@@ -1510,7 +1518,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
     if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
     {
         LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+                ppId, (void*)ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
@@ -1540,7 +1548,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
             {
                 LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                        ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+                    ppId, (void*)ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
             }
 
@@ -1549,7 +1557,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             LONG oldFlags = ppInfo->m_flags;
             if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
             {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
                 __SwitchToThread(0, backoffs++);
                 continue;
             }
@@ -1561,7 +1569,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
             if (!triggerTransition)
             {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
                 __SwitchToThread(0, backoffs++);
                 continue;
             }
@@ -1573,7 +1581,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             //
             // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
             //
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, (void*)ip));
             PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
 
             // If that failed, mark the patchpoint as invalid.
@@ -1582,7 +1590,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             if (newMethodCode == (PCODE)NULL)
             {
                 STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointRequiredPolicy: patchpoint (0x%p) OSR method creation failed,"
-                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", (void*)ip, pMD, ilOffset);
                 InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
                 break;
@@ -1693,7 +1701,7 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
     // code at the patchpoint handles the actual SP/FP setup and jump.
     {
         const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
-        LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
+        LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, (void*)ip, (void*)osrMethodCode));
     }
 
  DONE:

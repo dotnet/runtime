@@ -183,6 +183,9 @@
   <data name="net_ftp_response_invalid_format" xml:space="preserve">
     <value>The response string '{0}' has invalid format.</value>
   </data>
+  <data name="net_ftp_response_too_large" xml:space="preserve">
+    <value>The FTP response exceeded the maximum allowed length of {0} characters.</value>
+  </data>
   <data name="net_ftp_server_failed_passive" xml:space="preserve">
     <value>The server failed the passive mode request with status response ({0}).</value>
   </data>

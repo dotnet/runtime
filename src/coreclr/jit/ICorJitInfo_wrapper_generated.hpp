@@ -1426,16 +1426,6 @@ void WrapICorJitInfo::getAddressOfPInvokeTarget(
     API_LEAVE(getAddressOfPInvokeTarget);
 }
 
-void* WrapICorJitInfo::GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection)
-{
-    API_ENTER(GetCookieForPInvokeCalliSig);
-    void* temp = wrapHnd->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-    API_LEAVE(GetCookieForPInvokeCalliSig);
-    return temp;
-}
-
 void* WrapICorJitInfo::GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig)
 {

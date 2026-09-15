@@ -4,6 +4,8 @@
 
 //Testing small for loops (less than 5)
 
+namespace JitTest_Directed_UnrollLoop_loop4;
+
 using System;
 using Xunit;
 
@@ -420,7 +422,6 @@ public class SmallLoop1
         }
     }
 }
-
 
 
 

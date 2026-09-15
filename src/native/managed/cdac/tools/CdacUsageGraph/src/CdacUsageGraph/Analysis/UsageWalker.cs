@@ -107,6 +107,10 @@ internal sealed class UsageWalker
         }
 
         IMethodSymbol callee = inv.TargetMethod;
+        if (_symbols.IsGeneratedLayoutSet(callee.ContainingType))
+            return;
+        if (TryHandleContractLookup(callee, label, subst))
+            return;
         if (TryHandleDataDescriptorDependencies(callee, label, subst))
             return;
         if (TryHandleStaticReference(callee, label))
@@ -151,6 +155,30 @@ internal sealed class UsageWalker
                 label,
                 subst);
         }
+    }
+
+    private bool TryHandleContractLookup(
+        IMethodSymbol method,
+        ContractVersion label,
+        Dictionary<ITypeParameterSymbol, ITypeSymbol> subst)
+    {
+        if (!_symbols.IsContractRegistry(method.ContainingType) ||
+            method.TypeArguments.Length != 1 ||
+            method.Name is not CdacSymbols.GetContractMethodName and
+                not CdacSymbols.TryGetContractMethodName)
+        {
+            return false;
+        }
+
+        ITypeSymbol contractType = GenericDispatch.Resolve(method.TypeArguments[0], subst);
+        if (contractType is not INamedTypeSymbol contractInterface ||
+            !_symbols.IsContract(contractInterface))
+        {
+            return false;
+        }
+
+        _collector.RecordContractUsed(label, new ContractInterface(contractInterface.Name));
+        return true;
     }
 
     private bool TryHandleDataDescriptorDependencies(

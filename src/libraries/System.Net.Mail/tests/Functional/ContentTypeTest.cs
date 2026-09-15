@@ -150,6 +150,41 @@ namespace System.Net.Mime.Tests
             Assert.Empty(ct.Parameters);
         }
 
+        [Theory]
+        [InlineData("=?utf-8?B?Y2Fmw6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("=?utf-8?b?Y2Fmw6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("Report =?utf-8?B?Y2Fmw6kudHh0?=", "Report caf\u00e9.txt")]
+        [InlineData("Report =?utf-99?B?Y2Fmw6kudHh0?=", "Report =?utf-99?B?Y2Fmw6kudHh0?=")]
+        [InlineData("Report =?utf-7?B?Y2Fmw6kudHh0?=", "Report =?utf-7?B?Y2Fmw6kudHh0?=")]
+        public static void Name_EncodedWords_AreDecoded(string value, string expected)
+        {
+            var ct = new ContentType($"application/octet-stream; name=\"{value}\"");
+
+            Assert.Equal(expected, ct.Name);
+        }
+
+        [Fact]
+        public static void ToString_EncodedWordWithinInvalidParameterValue_DoesNotBypassEncoding()
+        {
+            var ct = new ContentType();
+            ct.Name = "report\r\nX-Test: injected =?utf-8?B?YQ?=";
+
+            string value = ct.ToString();
+
+            Assert.DoesNotContain("\r\nX-Test:", value, StringComparison.Ordinal);
+            Assert.Contains("=?utf-8?B?", value, StringComparison.Ordinal);
+            Assert.Equal("report\r\nX-Test: injected =?utf-8?B?YQ?=", new ContentType(value).Name);
+        }
+
+        [Fact]
+        public static void ToString_EntireEncodedWordParameter_IsPassedThrough()
+        {
+            var ct = new ContentType();
+            ct.Name = "=?utf-8?B?Y2Fmw6kudHh0?=";
+
+            Assert.Equal("application/octet-stream; name=\"=?utf-8?B?Y2Fmw6kudHh0?=\"", ct.ToString());
+        }
+
         [Fact]
         public static void MediaType_Set_InvalidArgs_Throws()
         {

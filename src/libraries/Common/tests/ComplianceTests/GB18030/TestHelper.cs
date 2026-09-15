@@ -4,15 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Globalization.Tests;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Xunit;
 
 namespace GB18030.Tests;
 
-public static class TestHelper
+// The CharUnicodeInfo-derived test data lives in TestHelper.CharUnicodeInfo.cs so that only the
+// projects exercising it have to take on CharUnicodeInfoTestData.cs and the UnicodeData.txt resource.
+public static partial class TestHelper
 {
     // New Code Points in existing ranges
     internal static IEnumerable<int> CjkNewCodePoints { get; } = CreateRange(0x9FF0, 0x9FFF);
@@ -26,25 +26,6 @@ public static class TestHelper
     internal static IEnumerable<int> CjkExtensionI { get; } = CreateRange(0x2EBF0, 0x2EE5D);
 
     private static IEnumerable<int> CreateRange(int first, int last) => Enumerable.Range(first, last - first + 1);
-
-    private static IEnumerable<CharUnicodeInfoTestCase> s_gb18030CharUnicodeInfo { get; } = GetGB18030CharUnicodeInfo();
-    private static IEnumerable<CharUnicodeInfoTestCase> GetGB18030CharUnicodeInfo()
-    {
-        const int CodePointsTotal = 9793; // Make sure a Unicode version downgrade doesn't make us lose coverage.
-
-        var ret = CharUnicodeInfoTestData.TestCases.Where(tc => IsInGB18030Range(tc.CodePoint)).ToArray();
-        Assert.Equal(CodePointsTotal, ret.Length);
-        return ret;
-
-        static bool IsInGB18030Range(int codePoint)
-            => (codePoint >= 0x9FF0 && codePoint <= 0x9FFF) ||
-            (codePoint >= 0x4DB6 && codePoint <= 0x4DBF) ||
-            (codePoint >= 0x2A6D7 && codePoint <= 0x2A6DF) ||
-            (codePoint >= 0x2B735 && codePoint <= 0x2B739) ||
-            (codePoint >= 0x30000 && codePoint <= 0x3134A) ||
-            (codePoint >= 0x31350 && codePoint <= 0x323AF) ||
-            (codePoint >= 0x2EBF0 && codePoint <= 0x2EE5D);
-    }
 
     internal static CultureInfo[] Cultures { get; } = [
         CultureInfo.CurrentCulture,
@@ -107,9 +88,10 @@ public static class TestHelper
             if (s_gb18030Encoding is null)
             {
 #if !NETFRAMEWORK
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-#endif
+                s_gb18030Encoding = CodePagesEncodingProvider.Instance.GetEncoding("gb18030");
+#else
                 s_gb18030Encoding = Encoding.GetEncoding("gb18030");
+#endif
             }
 
             return s_gb18030Encoding;
@@ -151,7 +133,6 @@ public static class TestHelper
     public static IEnumerable<object[]> EncodedMemberData { get; } = s_encodedTestData.Select(data => new object[] { data }).ToArray();
     public static IEnumerable<object[]> DecodedMemberData { get; } = DecodedTestData.Select(data => new object[] { data }).ToArray();
     public static IEnumerable<object[]> NonExceedingPathNameMaxDecodedMemberData { get; } = NonExceedingPathNameMaxDecodedTestData.Select(data => new object[] { data }).ToArray();
-    public static IEnumerable<object[]> GB18030CharUnicodeInfoMemberData { get; } = s_gb18030CharUnicodeInfo.Select(data => new object[] { data }).ToArray();
 
     private static IEnumerable<byte[]> GetTestData()
     {

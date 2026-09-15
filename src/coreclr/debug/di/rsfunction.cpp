@@ -812,7 +812,7 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
                 }
             }
 
-            LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: looking for IL code, version 0x%x\n", currentEnCVersion));
+            LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: looking for IL code, version 0x%zx\n", currentEnCVersion));
 
             LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: not found, creating...\n"));
             if(codeInfo.pAddress == 0)
