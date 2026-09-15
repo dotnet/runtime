@@ -17,27 +17,27 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodSignature _signature;
 
-        public MethodSignature Signature => _signature ??= InitializeWasmSignature(Id, Target);
+        public MethodSignature Signature => _signature ??= InitializeWasmSignature();
         public bool IsUnmanagedCallersOnly => false;
         public bool IsAsyncCall => false;
         public bool HasGenericContextArg => false;
 
-        private static MethodSignature InitializeWasmSignature(ReadyToRunHelperId id, object target)
+        private MethodSignature InitializeWasmSignature()
         {
-            TypeSystemContext context = id switch
+            TypeSystemContext context = Id switch
             {
-                ReadyToRunHelperId.DelegateCtor => ((DelegateCreationInfo)target).DelegateType.Context,
-                _ => ((TypeSystemEntity)target).Context,
+                ReadyToRunHelperId.DelegateCtor => ((DelegateCreationInfo)Target).DelegateType.Context,
+                _ => ((TypeSystemEntity)Target).Context,
             };
 
             TypeDesc nativeIntType = context.GetWellKnownType(WellKnownType.IntPtr);
-            TypeDesc[] parameters = id switch
+            TypeDesc[] parameters = Id switch
             {
                 ReadyToRunHelperId.DelegateCtor => [nativeIntType, nativeIntType],
                 ReadyToRunHelperId.ResolveVirtualFunction => [nativeIntType],
                 _ => [],
             };
-            TypeDesc returnType = id == ReadyToRunHelperId.DelegateCtor ?
+            TypeDesc returnType = Id == ReadyToRunHelperId.DelegateCtor ?
                 context.GetWellKnownType(WellKnownType.Void) : nativeIntType;
 
             return new MethodSignature(MethodSignatureFlags.Static, genericParameterCount: 0, returnType, parameters);
