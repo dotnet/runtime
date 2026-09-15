@@ -19,8 +19,8 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 26
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MAJOR_VERSION 29
+#define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -67,6 +67,10 @@
 // R2R Version 25 renames runtime async infrastructure members, makes thunk-used members NonVersionable, and frees up a flag in CorInfoContinuationFlags
 // R2R Version 26 changes ARM64 NativeVarInfo register encoding to include V0-V31
 // R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
+// R2R Version 27 redefines READYTORUN_FIXUP_DeclaringTypeHandle to be encoded as a method signature instead of a pair of type signatures
+// R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
+// R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
+//     R2R 29 is not backward compatible with 28.x or earlier.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -138,6 +142,7 @@ enum class ReadyToRunSectionType : uint32_t
     ExternalTypeMaps            = 124, // Added in V18.3
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
+    WasmAsyncResumeInfo         = 127, // Added in V29
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -303,7 +308,7 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_Check_FieldOffset          = 0x2B,
 
     READYTORUN_FIXUP_DelegateCtor               = 0x2C, /* optimized delegate ctor */
-    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D,
+    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D, /* Type which declares the method described by the (method) signature */
 
     READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target (indirect) of an inlined pinvoke */
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */

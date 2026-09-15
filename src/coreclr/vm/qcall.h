@@ -36,12 +36,13 @@
 // QCall example - managed part (do not replicate the comments into your actual QCall implementation):
 // ---------------------------------------------------------------------------------------------------
 //
-// class Foo {
+// class Foo
+// {
 //
-//  // All QCalls should have the following DllImport and SuppressUnmanagedCodeSecurity attributes
-//  [DllImport(JitHelpers.QCall, EntryPoint = "FooNative_Bar", CharSet = CharSet.Unicode)]
-//  // QCalls should always be static extern.
-//  private static extern bool Bar(int flags, string inString, StringHandleOnStack retString);
+//  // All QCalls that use BEGIN_QCALL must use the hidden last parameter error handler.
+//  [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+//  [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FooNative_Bar", StringMarshalling = StringMarshalling.Utf16)]
+//  private static partial bool Bar(int flags, string inString, StringHandleOnStack retString);
 //
 //  // Many QCalls have a thin managed wrapper around them to expose them to the world in more meaningful way.
 //  public string Bar(int flags)
@@ -50,7 +51,7 @@
 //
 //      // The strings are returned from QCalls by taking address
 //      // of a local variable using JitHelpers.GetStringHandleOnStack method
-//      if (!Bar(flags, this.Id, JitHelpers.GetStringHandleOnStack(ref retString)))
+//      if (!Bar(flags, this.Id, StringHandleOnStack.Create(ref retString)))
 //          FatalError();
 //
 //      return retString;
@@ -65,7 +66,8 @@
 // The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
 // For example: DllImportEntry(FooNative_Bar)
 //
-// extern "C" BOOL QCALLTYPE FooNative_Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
+// extern "C" BOOL QCALLTYPE FooNative_Bar(
+//     int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 // {
 //      // All QCalls should have QCALL_CONTRACT. It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
 //      QCALL_CONTRACT;
@@ -76,8 +78,6 @@
 //      //     PRECONDITION(wszString != NULL);
 //      // } CONTRACTL_END;
 //
-//      // The only line between QCALL_CONTRACT and BEGIN_QCALL
-//      // should be the return value declaration if there is one.
 //      BOOL retVal = FALSE;
 //
 //      // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary to make the exception handling work.
@@ -110,13 +110,12 @@
 #endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
+    *qcallError = 0;                     \
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame()) \
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER \
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER
+    INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER
 
 #define END_QCALL                         \
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER \
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER \
+    UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
 
 #define QCALL_CHECK             \

@@ -19,6 +19,7 @@
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)eng/native.wasm.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\coreclr_compat.h" TargetPath="Sdk" />
 
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
@@ -34,6 +35,7 @@
     </ItemGroup>
 
     <Error Text="Could not find WasmAppHost files in $(WasmAppHostDir)" Condition="@(_WasmAppHostFiles->Count()) == 0" />
+
   </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

@@ -1319,13 +1319,13 @@ namespace System.Text.Json.Tests
             switch (encoding)
             {
                 case StringValueEncodingType.Utf16:
-                    writer.WriteStringValue(MemoryMarshal.Cast<T, char>(value));
+                    writer.WriteStringValue(unsafe(MemoryMarshal.Cast<T, char>(value)));
                     break;
                 case StringValueEncodingType.Utf8:
-                    writer.WriteStringValue(MemoryMarshal.Cast<T, byte>(value));
+                    writer.WriteStringValue(unsafe(MemoryMarshal.Cast<T, byte>(value)));
                     break;
                 case StringValueEncodingType.Base64:
-                    writer.WriteBase64StringValue(MemoryMarshal.Cast<T, byte>(value));
+                    writer.WriteBase64StringValue(unsafe(MemoryMarshal.Cast<T, byte>(value)));
                     break;
                 default:
                     Assert.Fail($"Encoding {encoding} not valid.");
@@ -1341,13 +1341,13 @@ namespace System.Text.Json.Tests
             switch (encoding)
             {
                 case StringValueEncodingType.Utf16:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value), isFinal);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, char>(value)), isFinal);
                     break;
                 case StringValueEncodingType.Utf8:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value), isFinal);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, byte>(value)), isFinal);
                     break;
                 case StringValueEncodingType.Base64:
-                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value), isFinal);
+                    writer.WriteBase64StringSegment(unsafe(MemoryMarshal.Cast<T, byte>(value)), isFinal);
                     break;
                 default:
                     Assert.Fail($"Encoding {encoding} not valid.");
@@ -1363,13 +1363,13 @@ namespace System.Text.Json.Tests
             switch (encoding)
             {
                 case StringValueEncodingType.Utf16:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value), true);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, char>(value)), true);
                     break;
                 case StringValueEncodingType.Utf8:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value), true);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, byte>(value)), true);
                     break;
                 case StringValueEncodingType.Base64:
-                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value), true);
+                    writer.WriteBase64StringSegment(unsafe(MemoryMarshal.Cast<T, byte>(value)), true);
                     break;
                 default:
                     Assert.Fail($"Encoding {encoding} not valid.");
@@ -1386,16 +1386,16 @@ namespace System.Text.Json.Tests
             switch (encoding)
             {
                 case StringValueEncodingType.Utf16:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value1), false);
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value2), true);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, char>(value1)), false);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, char>(value2)), true);
                     break;
                 case StringValueEncodingType.Utf8:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value1), false);
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value2), true);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, byte>(value1)), false);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, byte>(value2)), true);
                     break;
                 case StringValueEncodingType.Base64:
-                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value1), false);
-                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value2), true);
+                    writer.WriteBase64StringSegment(unsafe(MemoryMarshal.Cast<T, byte>(value1)), false);
+                    writer.WriteBase64StringSegment(unsafe(MemoryMarshal.Cast<T, byte>(value2)), true);
                     break;
                 default:
                     Assert.Fail($"Encoding {encoding} not valid.");
@@ -1412,19 +1412,19 @@ namespace System.Text.Json.Tests
             switch (encoding)
             {
                 case StringValueEncodingType.Utf16:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value1), false);
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value2), false);
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value3), true);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, char>(value1)), false);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, char>(value2)), false);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, char>(value3)), true);
                     break;
                 case StringValueEncodingType.Utf8:
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value1), false);
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value2), false);
-                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value3), true);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, byte>(value1)), false);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, byte>(value2)), false);
+                    writer.WriteStringValueSegment(unsafe(MemoryMarshal.Cast<T, byte>(value3)), true);
                     break;
                 case StringValueEncodingType.Base64:
-                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value1), false);
-                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value2), false);
-                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value3), true);
+                    writer.WriteBase64StringSegment(unsafe(MemoryMarshal.Cast<T, byte>(value1)), false);
+                    writer.WriteBase64StringSegment(unsafe(MemoryMarshal.Cast<T, byte>(value2)), false);
+                    writer.WriteBase64StringSegment(unsafe(MemoryMarshal.Cast<T, byte>(value3)), true);
                     break;
                 default:
                     Assert.Fail($"Encoding {encoding} not valid.");

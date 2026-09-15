@@ -555,7 +555,7 @@ namespace System
             TValue leadingDigit = decoded.Significand / scale;
             uint msd = uint.CreateTruncating(leadingDigit);
 
-            int exponentContinuationBits = (Unsafe.SizeOf<TValue>() * 8) - 6 - TDecimal.NumberBitsSignificand;
+            int exponentContinuationBits = (sizeof(TValue) * 8) - 6 - TDecimal.NumberBitsSignificand;
             uint exponentHigh = biasedExponent >> exponentContinuationBits;
             uint exponentLow = biasedExponent & ((1u << exponentContinuationBits) - 1);
 
@@ -598,7 +598,7 @@ namespace System
                 return (dpdBits & (TDecimal.SignMask | TDecimal.SNaNMask)) | payload;
             }
 
-            int exponentContinuationBits = (Unsafe.SizeOf<TValue>() * 8) - 6 - TDecimal.NumberBitsSignificand;
+            int exponentContinuationBits = (sizeof(TValue) * 8) - 6 - TDecimal.NumberBitsSignificand;
             uint combination = uint.CreateTruncating(dpdBits >> (TDecimal.NumberBitsSignificand + exponentContinuationBits)) & 0x1F;
             uint exponentLow = uint.CreateTruncating(dpdBits >> TDecimal.NumberBitsSignificand) & ((1u << exponentContinuationBits) - 1);
 
