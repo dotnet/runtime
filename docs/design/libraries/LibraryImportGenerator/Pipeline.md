@@ -8,7 +8,30 @@ The P/Invoke source generator is responsible for finding all methods marked with
 1. [Generate the corresponding P/Invoke](#pinvoke)
 1. Add the generated source to the compilation.
 
-The pipeline uses the Roslyn [Syntax APIs](https://learn.microsoft.com/dotnet/api/microsoft.codeanalysis.csharp.syntax) to create the generated code. This imposes some structure for the marshalling generators and allows for easier inspection or modification (if desired) of the generated code.
+## Text emission
+
+The interop generators share their text-emission infrastructure in
+`src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration`.
+Input analysis extracts type names, attributes, containing declarations, and marshalling
+information into value models. Emission operates on these models, not on syntax trees.
+`ContainingSyntaxContext` stores syntax-independent `DeclarationHeader` values shared
+with the JSON source generator. `ContainingTypeUtilities` in
+`src/libraries/Common/src/SourceGenerators` supplies containing-type traversal and
+declaration formatting; interop retains source-spelled names and type-parameter attributes,
+while JSON uses symbol-formatted names and requires every containing type to be partial.
+`GeneratedParameter` and `GeneratedMethodSignature` describe signatures, and
+`IndentedTextWriter` writes statements and scoped blocks with deterministic line endings.
+
+Marshallers write each marshalling stage to a writer. The stub generators compose those
+stages while preserving pinning scopes, exception handling, and resource-cleanup order.
+Callers that need local functions own the body block, call `GenerateStubStatements`,
+and emit the local function declarations themselves.
+The pin stage writes `fixed` headers; the caller supplies the enclosed block. Close all
+writer block scopes before obtaining their text with `ToString()`. Literal values must be
+escaped with `CodeWriterHelpers.StringLiteral`, rather than interpolated as C# source.
+
+Roslyn syntax APIs remain appropriate for inspecting input declarations and implementing
+code fixes. They should not be used to construct, parse, or normalize generated output.
 
 ## Symbol and metadata processing
 
@@ -58,7 +81,7 @@ The marshalling generators are responsible for generating the code for each [sta
 
 ## Stub code generation
 
-Generation of the stub code happens in stages. The marshalling generator for each parameter and return is called to generate code for each stage of the stub. The statements and syntax provided by each marshalling generator for each stage combine to form the full stub implementation.
+Generation of the stub code happens in stages. The marshalling generator for each parameter and return is called to generate code for each stage of the stub. The text written by each marshalling generator for each stage combines to form the full stub implementation.
 
 The stub code generator itself will handle some initial setup and variable declarations:
 - Assign `out` parameters to `default`
@@ -74,7 +97,7 @@ The stub code generator itself will handle some initial setup and variable decla
     - Call `Generate` on the marshalling generator for every parameter
 1. `Pin`: data pinning in preparation for calling the generated P/Invoke
     - Call `Generate` on the marshalling generator for every parameter
-    - Ignore any statements that are not `fixed` statements
+    - Write only `fixed` headers; the stub code generator supplies the enclosed block
 1. `PinnedMarshal`: conversion of managed to native data
     - Call `Generate` on the marshalling generator for every parameter
 1. `Invoke`: call to the generated P/Invoke
@@ -181,7 +204,7 @@ Clearing the system error in step 1 is necessary because the native method may n
 
 ## P/Invoke
 
-The P/Invoke called by the stub is created based on the user's original declaration of the stub. The signature is generated using the syntax returned by `AsNativeType` and `AsParameter` of the marshalling generators for the return and parameters. Any marshalling attributes on the return and parameters of the managed method - [`MarshalAsAttribute`][MarshalAsAttribute], [`InAttribute`][InAttribute], [`OutAttribute`][OutAttribute] - are dropped.
+The P/Invoke called by the stub is created based on the user's original declaration of the stub. The native return type and parameter models supplied by the marshalling generators form a `GeneratedMethodSignature`, which is written directly as source text. Any marshalling attributes on the return and parameters of the managed method - [`MarshalAsAttribute`][MarshalAsAttribute], [`InAttribute`][InAttribute], [`OutAttribute`][OutAttribute] - are dropped.
 
 The fields of the [`DllImportAttribute`][DllImportAttribute] are set based on the fields of `LibraryImportAttribute` as follows:
 
