@@ -80,6 +80,8 @@ namespace System
 
         public static TSelf ReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned) => TSelf.ReadLittleEndian(source, isUnsigned);
 
+        public static TSelf ReverseBits(TSelf value) => TSelf.ReverseBits(value);
+
         public static TSelf RotateLeft(TSelf value, int rotateAmount) => TSelf.RotateLeft(value, rotateAmount);
 
         public static TSelf RotateRight(TSelf value, int rotateAmount) => TSelf.RotateRight(value, rotateAmount);
