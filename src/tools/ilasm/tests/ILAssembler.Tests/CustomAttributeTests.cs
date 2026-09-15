@@ -1083,7 +1083,23 @@ namespace ILAssembler.Tests
             reader.GetTypeDefinition(reader.TypeDefinitions
                 .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test"));
 
-        public static TheoryData<string, TypeAttributes> PseudoAttributeTypeFlagData => new()
+        private static (ImmutableArray<Diagnostic> Diagnostics, ImmutableArray<byte> Image)
+            CompileErrorTolerant(string source)
+        {
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { ErrorTolerant = true });
+
+            Assert.NotNull(result);
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            return (diagnostics, image.ToImmutableArray());
+        }
+
+        public static TheoryData<string, TypeAttributes> PseudoAttributeTypeFlagData { get; } = new()
         {
             { "System.Runtime.InteropServices.ComImportAttribute", TypeAttributes.Import },
             { "System.SerializableAttribute", TypeAttributes.Serializable },
@@ -1190,6 +1206,59 @@ namespace ILAssembler.Tests
             Assert.Equal(4, layout.PackingSize);
             Assert.Equal(16, layout.Size);
             Assert.Empty(testType.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_LaterStructLayoutAttributeOverwritesEarlierAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed Test extends [mscorlib]System.ValueType
+                {
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 00 00 00 00 02 00 53 08 04 50 61 63 6B 04 00 00 00 53 08 04 53 69 7A 65 10 00 00 00 )
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 02 00 00 00 02 00 53 08 04 50 61 63 6B 08 00 00 00 53 08 04 53 69 7A 65 20 00 00 00 )
+                    .field public int32 Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var testType = GetTestType(reader);
+            var layout = testType.GetLayout();
+
+            Assert.Equal(TypeAttributes.ExplicitLayout, testType.Attributes & TypeAttributes.LayoutMask);
+            Assert.Equal(8, layout.PackingSize);
+            Assert.Equal(32, layout.Size);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_InvalidStructLayoutDoesNotPartiallyOverwriteEarlierAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed Test extends [mscorlib]System.ValueType
+                {
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 00 00 00 00 03 00 53 08 04 50 61 63 6B 04 00 00 00 53 08 04 53 69 7A 65 10 00 00 00 53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 07 43 68 61 72 53 65 74 03 00 00 00 )
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 02 00 00 00 02 00 53 08 04 50 61 63 6B 08 00 00 00 53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 07 43 68 61 72 53 65 74 01 00 00 00 )
+                    .field public int32 Value
+                }
+                """;
+
+            var (diagnostics, image) = CompileErrorTolerant(source);
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+
+            using var pe = new PEReader(image);
+            var reader = pe.GetMetadataReader();
+            var testType = GetTestType(reader);
+            var layout = testType.GetLayout();
+
+            Assert.Equal(TypeAttributes.SequentialLayout, testType.Attributes & TypeAttributes.LayoutMask);
+            Assert.Equal(TypeAttributes.UnicodeClass, testType.Attributes & TypeAttributes.StringFormatMask);
+            Assert.Equal(4, layout.PackingSize);
+            Assert.Equal(16, layout.Size);
         }
 
         [Fact]
@@ -1303,6 +1372,32 @@ namespace ILAssembler.Tests
 
             Assert.Equal(4, layout.PackingSize);
             Assert.Equal(32, layout.Size);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_ModuleScopedOwnerDoesNotResolveToCurrentModule()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .module extern Other.netmodule
+                .class public auto ansi Contoso.External extends [mscorlib]System.Object
+                {
+                }
+                .custom (class [.module Other.netmodule]Contoso.External) instance void [mscorlib]System.SerializableAttribute::.ctor() = ( 01 00 00 00 )
+                """;
+
+            var (diagnostics, image) = CompileErrorTolerant(source);
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, diagnostic.Id);
+
+            using var pe = new PEReader(image);
+            var reader = pe.GetMetadataReader();
+            var localType = reader.GetTypeDefinition(reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "External"));
+
+            Assert.Equal(default, localType.Attributes & TypeAttributes.Serializable);
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.CustomAttribute));
         }
 
         [Fact]
