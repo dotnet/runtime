@@ -59,9 +59,8 @@ extends:
       jobs:
       - template: /eng/common/core-templates/job/helix-job-monitor.yml
         parameters:
-          helixAccessToken: ${{ iif(eq(variables['System.TeamProject'], 'internal'), '$(HelixApiAccessToken)', '') }}
-          # Cap monitoring at six hours even though slow jobs can run longer.
-          timeoutInMinutes: 360
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
           allowNoHelixJobs: true
 
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
