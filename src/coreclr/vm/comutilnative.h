@@ -230,6 +230,11 @@ extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCR
 
 extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation, QCallExceptionStatus* qcallError);
 
+extern "C" BOOL QCALLTYPE GCInterface_IsGCPauseReportingSupported(QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE GCInterface_ConfigureGCPauseReporting(BOOL enabled, QCallExceptionStatus* qcallError);
+extern "C" int QCALLTYPE GCInterface_DrainGCPauseRecords(GCPauseRecord* records, int capacity, uint64_t* dropped, uint32_t* remaining, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE GCInterface_WaitForGCPauseRecords(int millisecondsTimeout, QCallExceptionStatus* qcallError);
+
 //
 // EnvironmentNative
 //
