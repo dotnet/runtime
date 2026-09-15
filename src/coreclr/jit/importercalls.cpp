@@ -9224,7 +9224,14 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
         for (uint8_t candidateId = 0; candidateId < call->GetInlineCandidatesCount(); candidateId++)
         {
-            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
+            InlineCandidateInfo*  gdvCandidate = call->GetGDVCandidateInfo(candidateId);
+            CORINFO_METHOD_HANDLE callee       = gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod;
+            if (callee == nullptr)
+            {
+                callee = gdvCandidate->guardedMethodHandle;
+            }
+
+            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV", false, callee);
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, &inlineResult);
