@@ -151,6 +151,15 @@ namespace ILCompiler.DependencyAnalysis
                             _ => throw new InvalidOperationException(token.Kind.ToString()),
                         }, "Instruction operand");
 
+                        if (opcode == ILOpcode.ldtoken &&
+                            _module.GetObject(token) is TypeDesc type &&
+                            type.GetTypeDefinition() is EcmaType typeDefinition &&
+                            !typeDefinition.IsValueType &&
+                            LayoutTypeNode.IsLayoutType(typeDefinition))
+                        {
+                            _dependencies.Add(factory.LayoutType(typeDefinition), "Reflected type with sequential or explicit layout");
+                        }
+
                         if (method != null && !requiresMethodBodyScanner)
                         {
                             requiresMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(
