@@ -277,6 +277,36 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 }
 
                 Assert.Equal(content, cms.ContentInfo.Content);
+
+                using (X509Certificate2 privateRsaCert = TestCertificates.RSAKeyTransfer1.TryGetCertificateWithPrivateKey())
+                {
+                    if (privateRsaCert is null)
+                    {
+                        return;
+                    }
+
+                    cms = new EnvelopedCms();
+                    cms.Decode(encoded);
+                    keyTransRecipientInfo = null;
+
+                    foreach (RecipientInfo recipientInfo in cms.RecipientInfos)
+                    {
+                        if (recipientInfo is KeyTransRecipientInfo keyTrans)
+                        {
+                            keyTransRecipientInfo = keyTrans;
+                            break;
+                        }
+                    }
+
+                    Assert.NotNull(keyTransRecipientInfo);
+
+                    using (RSA privateKey = privateRsaCert.GetRSAPrivateKey())
+                    {
+                        cms.Decrypt(keyTransRecipientInfo, privateKey);
+                    }
+                }
+
+                Assert.Equal(content, cms.ContentInfo.Content);
             }
         }
 
