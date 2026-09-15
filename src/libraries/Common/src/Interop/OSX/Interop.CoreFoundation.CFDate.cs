@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -20,17 +19,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial SafeCFDateHandle CFDateCreate(IntPtr zero, CFAbsoluteTime at);
 
-        internal static SafeCFDateHandle CFDateCreate(DateTime date)
+        internal static SafeCFDateHandle CFDateCreate(DateTimeOffset date)
         {
-            Debug.Assert(
-                date.Kind != DateTimeKind.Unspecified,
-                "DateTimeKind.Unspecified should be specified to Local or UTC by the caller");
-
-            // UTC stays unchanged, Local is changed.
-            // Unspecified gets treated as Local (which may or may not be desired).
-            DateTime utcDate = date.ToUniversalTime();
-
-            double epochDeltaSeconds = (utcDate - s_cfDateEpoch).TotalSeconds;
+            double epochDeltaSeconds = (date.UtcDateTime - s_cfDateEpoch).TotalSeconds;
 
             SafeCFDateHandle cfDate = CFDateCreate(IntPtr.Zero, epochDeltaSeconds);
 
