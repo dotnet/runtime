@@ -115,7 +115,7 @@ internal sealed partial class GrammarActions
             switch (declaration)
             {
                 case ManifestResourceCustomAttributeDirectiveValue customAttribute:
-                    if (MaterializeCustomAttributeDeclaration(customAttribute.Value) is { } attribute)
+                    if (MaterializeCustomAttributeDeclaration(customAttribute.Value, customAttribute.Location) is { } attribute)
                     {
                         customAttributes.Add(attribute);
                     }
