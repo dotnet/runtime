@@ -20,10 +20,6 @@ class UnmanagedCallersOnlyAssociatedSourceType
 
     public static unsafe int Run()
     {
-        // ActiveIssue: https://github.com/dotnet/runtime/issues/129366
-        if (OperatingSystem.IsAndroid())
-            return 100;
-
         GC.KeepAlive(new UsedSource());
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateDynamicSource))!.MakeGenericMethod([GetDynamicAtom()]).Invoke(null, []);
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateDynamicSourceArray))!.MakeGenericMethod([GetDynamicAtom()]).Invoke(null, []);
@@ -31,7 +27,7 @@ class UnmanagedCallersOnlyAssociatedSourceType
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateTripleArray))!.MakeGenericMethod([typeof(UsedAsElementOnly2)]).Invoke(null, []);
         GC.KeepAlive(typeof(StructUsedAsElementOnly));
 
-        IntPtr programHandle = NativeLibrary.GetMainProgramHandle();
+        IntPtr programHandle = GetExportOwnerHandle();
 
         AssertExportReturns(programHandle, UnconditionalExport, 1);
         AssertExportReturns(programHandle, UsedSourceExport, 2);
@@ -44,6 +40,16 @@ class UnmanagedCallersOnlyAssociatedSourceType
         AssertNoExport(programHandle, StructUsedAsElementOnlyArrayExport);
 
         return 100;
+    }
+
+    private static IntPtr GetExportOwnerHandle()
+    {
+        if (!OperatingSystem.IsAndroid())
+            return NativeLibrary.GetMainProgramHandle();
+
+        Assembly assembly = typeof(UnmanagedCallersOnlyAssociatedSourceType).Assembly;
+        string libraryName = assembly.GetName().Name!;
+        return NativeLibrary.Load(libraryName, assembly, searchPath: null);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
