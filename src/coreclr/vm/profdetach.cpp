@@ -22,7 +22,7 @@
 
 // Class static member variables
 CQuickArrayList<ProfilerDetachInfo> ProfilingAPIDetach::s_profilerDetachInfos;
-CLREvent                            ProfilingAPIDetach::s_eventDetachWorkAvailable;
+CLREventStatic                      ProfilingAPIDetach::s_eventDetachWorkAvailable;
 Volatile<BOOL>                      ProfilingAPIDetach::s_profilerDetachThreadCreated;
 
 // ---------------------------------------------------------------------------------------
