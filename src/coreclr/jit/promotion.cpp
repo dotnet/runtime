@@ -297,7 +297,11 @@ void AggregateInfoMap::Add(AggregateInfo* agg)
 //
 AggregateInfo* AggregateInfoMap::Lookup(unsigned lclNum)
 {
-    assert(lclNum < m_numLocals);
+    // Temporaries introduced while replacing uses were not promotion candidates.
+    if (lclNum >= m_numLocals)
+    {
+        return nullptr;
+    }
     unsigned index = m_lclNumToAggregateIndex[lclNum];
 
     if (index == UINT_MAX)
@@ -2141,9 +2145,10 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
                         continue;
                     }
 
-                    if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()))
+                    if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()) ||
+                        m_replacer->CanCopyCallArgFromReplacements(call, &arg, node->AsLclVarCommon()))
                     {
-                        // Register arg that can be decomposed into FIELD_LIST.
+                        // The argument can be sourced directly from replacements.
                         continue;
                     }
 
@@ -2399,8 +2404,8 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
 
 //------------------------------------------------------------------------
 // ReplaceCallArgWithFieldList:
-//   Handle a call that may pass a struct local with replacements as the
-//   retbuf.
+//   Source a struct argument from its replacements, either as a FIELD_LIST
+//   or by materializing the outgoing copy before global morph.
 //
 // Parameters:
 //   call    - The call
@@ -2408,8 +2413,7 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
 //   argNode - The argument node
 //
 // Returns:
-//   True if the call argument was replaced with a FIELD_LIST; false if the
-//   argument could not be represented as a FIELD_LIST.
+//   True if the argument was replaced; false if write-backs are required.
 //
 bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* argNode)
 {
@@ -2422,6 +2426,23 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
 
     if (!CanReplaceCallArgWithFieldListOfReplacements(call, callArg, argNode))
     {
+        if (CanCopyCallArgFromReplacements(call, callArg, argNode))
+        {
+            // Materialize the outgoing copy while the replacement values are
+            // available. Global morph can pass this temporary at its last use
+            // instead of making another copy from synchronized source storage.
+            unsigned temp = m_compiler->lvaGrabTemp(true DEBUGARG("Decomposed struct argument"));
+            m_compiler->lvaSetStruct(temp, argNode->GetLayout(m_compiler), false);
+            GenTree* copy = m_compiler->gtNewStoreLclVarNode(temp, argNode);
+            HandleStructStore(&copy, nullptr);
+            GenTree* value = m_compiler->gtNewLclvNode(temp, TYP_STRUCT);
+            value->gtFlags |= GTF_VAR_DEATH;
+            Statement* copyStmt = m_compiler->fgNewStmtFromTree(copy);
+            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, copyStmt);
+            *use          = value;
+            m_madeChanges = true;
+            return true;
+        }
         return false;
     }
 
@@ -2434,6 +2455,48 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
     *use          = fieldList;
     m_madeChanges = true;
     return true;
+}
+
+//------------------------------------------------------------------------
+// CanCopyCallArgFromReplacements:
+//   Check whether to materialize an outgoing by-value argument before morph.
+//   Limit this to a standalone direct call with one argument, a dirty non-GC
+//   whole-local source, and a remainder needing at most one primitive copy.
+//   A dying source can already be passed without copying.
+//
+bool ReplaceVisitor::CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl)
+{
+#if FEATURE_IMPLICIT_BYREFS && !defined(UNIX_AMD64_ABI)
+    if (!lcl->OperIs(GT_LCL_VAR) || !callArg->AbiInfo.IsPassedByReference() || (call->gtArgs.CountArgs() != 1) ||
+        (call->gtCallType != CT_USER_FUNC) || (call != m_currentStmt->GetRootNode()) || (callArg->GetNode() != lcl) ||
+        call->IsTailCall() || lcl->GetLayout(m_compiler)->HasGCPtr() ||
+        m_currentBlock->HasPotentialEHSuccs(m_compiler) || IsPromotedStructLocalDying(lcl))
+    {
+        return false;
+    }
+
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+    // Whole-local arguments can reuse the remainder computed during promotion.
+    unsigned remainderSize = agg->UnpromotedMax - agg->UnpromotedMin;
+    bool canCopyRemainder  = (remainderSize == 0) || (isPow2(remainderSize) && (remainderSize <= TARGET_POINTER_SIZE));
+#ifdef FEATURE_SIMD
+    canCopyRemainder |= (remainderSize == 16) && (m_compiler->getPreferredVectorByteLength() >= 16);
+#endif
+    if (canCopyRemainder)
+    {
+        for (const Replacement& rep : agg->Replacements)
+        {
+            if (rep.NeedsWriteBack)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+#else
+    // The temporary requires fgMarkImplicitByRefCopyOmissionCandidates to avoid another outgoing copy.
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
