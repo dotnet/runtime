@@ -613,7 +613,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 BwEwHQYJYIZIAWUDBAEqBBBHF8mZUKv1MnkeqhxpXN1KgBB3KH22OastHUzab9ADNivv
                 """;
 
-            AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            KemRecipientInfo recipientInfo = AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            Assert.NotEmpty(recipientInfo.KeyEncapsulationAlgorithm.Parameters);
         }
 
         [Fact]
@@ -638,7 +639,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 BwEwHQYJYIZIAWUDBAEqBBBHF8mZUKv1MnkeqhxpXN1KgBB3KH22OastHUzab9ADNivv
                 """;
 
-            AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            KemRecipientInfo recipientInfo = AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            Assert.NotEmpty(recipientInfo.KeyDerivationAlgorithm.Parameters);
         }
 
         [Fact]
@@ -663,7 +665,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 BwEwHQYJYIZIAWUDBAEqBBBHF8mZUKv1MnkeqhxpXN1KgBB3KH22OastHUzab9ADNivv
                 """;
 
-            AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            KemRecipientInfo recipientInfo = AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            Assert.NotEmpty(recipientInfo.KeyEncryptionAlgorithm.Parameters);
         }
 
         [Fact]
@@ -692,17 +695,15 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        public static void DecryptKemAlgorithmDoesNotMatchPrivateKey()
+        public static void DecryptKemAlgorithmDoesNotMatchPrivateKeyAlgorithm()
         {
             AssertInvalidDocument(KemTestDocuments.MlKem768, MLKemAlgorithm.MLKem512);
         }
 
-        private static void AssertInvalidDocument(string document, MLKemAlgorithm algorithm)
-        {
+        private static KemRecipientInfo AssertInvalidDocument(string document, MLKemAlgorithm algorithm) =>
             AssertInvalidDocument(Convert.FromBase64String(document), algorithm);
-        }
 
-        private static void AssertInvalidDocument(byte[] document, MLKemAlgorithm algorithm)
+        private static KemRecipientInfo AssertInvalidDocument(byte[] document, MLKemAlgorithm algorithm)
         {
             EnvelopedCms cms = new EnvelopedCms();
             cms.Decode(document);
@@ -713,6 +714,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             {
                 Assert.Throws<CryptographicException>(() => cms.Decrypt(recipientInfo, privateKey));
             }
+
+            return recipientInfo;
         }
 
         private static EnvelopedCms Decrypt(byte[] encodedMessage, byte[] privateKey)

@@ -217,6 +217,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void EncryptInvalidContentEncryptionKeySize()
         {
+            // DES has a 56-bit key which can't be wrapped with AES-KW because AES-KW can only wrap inputs that are
+            // AES block-size aligned.
             using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
                 MLKemTestData.IetfMlKem768CertificatePem))
             {
