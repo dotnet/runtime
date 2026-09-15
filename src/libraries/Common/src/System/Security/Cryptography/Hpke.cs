@@ -872,9 +872,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while creating the sender.
         /// </exception>
-        /// <exception cref="PlatformNotSupportedException">
-        ///   Creating a sender is not supported on the current platform.
-        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
@@ -921,9 +918,6 @@ namespace System.Security.Cryptography
         ///     An error occurred while creating the sender.
         ///   </para>
         /// </exception>
-        /// <exception cref="PlatformNotSupportedException">
-        ///   Creating a sender is not supported on the current platform.
-        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
@@ -962,9 +956,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while creating the sender.
         /// </exception>
-        /// <exception cref="PlatformNotSupportedException">
-        ///   Creating a sender is not supported on the current platform.
-        /// </exception>
         protected abstract HpkeSender CreateSenderCore(Span<byte> encapsulatedSecret, ReadOnlySpan<byte> info);
 
         /// <summary>
@@ -992,9 +983,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
         ///   or an error occurred while creating the recipient.
-        /// </exception>
-        /// <exception cref="PlatformNotSupportedException">
-        ///   Creating a recipient is not supported on the current platform.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
@@ -1039,9 +1027,6 @@ namespace System.Security.Cryptography
         ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
         ///   or an error occurred while creating the recipient.
         /// </exception>
-        /// <exception cref="PlatformNotSupportedException">
-        ///   Creating a recipient is not supported on the current platform.
-        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The object has already been disposed.
         /// </exception>
@@ -1066,9 +1051,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
         ///   or an error occurred while creating the recipient.
-        /// </exception>
-        /// <exception cref="PlatformNotSupportedException">
-        ///   Creating a recipient is not supported on the current platform.
         /// </exception>
         protected abstract HpkeRecipient CreateRecipientCore(
             ReadOnlySpan<byte> encapsulatedSecret,

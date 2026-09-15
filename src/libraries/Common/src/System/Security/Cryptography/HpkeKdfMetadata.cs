@@ -19,6 +19,8 @@ namespace System.Security.Cryptography
 
         private HpkeKdfMetadata(HpkeKdf kdf, int nh, bool isTwoStage, string name)
         {
+            Debug.Assert(nh <= 64, "Nh value is larger than 64.");
+
             Kdf = kdf;
             Nh = nh;
             IsTwoStage = isTwoStage;
