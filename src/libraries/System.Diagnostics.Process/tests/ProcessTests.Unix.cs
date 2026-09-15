@@ -1164,5 +1164,129 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
             });
         }
+
+        // Repro attempt for https://github.com/dotnet/runtime/issues/131944:
+        // Process.Kill(entireProcessTree: true) can hang indefinitely on macOS.
+        // The two-phase KillTree (SIGSTOP the whole tree, then SIGKILL) opens a window in which a
+        // direct child is SIGSTOP'd. On macOS, waitid(P_ALL, WEXITED|WNOHANG|WNOWAIT) also reports
+        // SIGSTOP'd children, so the SIGCHLD handler's CheckChildren loop spins forever (waitpid
+        // WNOHANG never reaps a stopped child, WNOWAIT keeps it waitable) while holding
+        // s_childProcessWaitStates. Any concurrent Process construction (e.g. the tree enumeration in
+        // another Kill) then blocks on that lock, so the stopped child is never SIGKILL'd -> deadlock.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void Kill_EntireProcessTree_Concurrent_DoesNotHang()
+        {
+            const int TreeCount = 8;
+            const int Iterations = 30;
+
+            for (int iteration = 0; iteration < Iterations; iteration++)
+            {
+                var roots = new Process[TreeCount];
+                var grandChildren = new Process[TreeCount];
+                for (int i = 0; i < TreeCount; i++)
+                {
+                    // Each direct child spawns a grandchild and then blocks forever, producing a
+                    // small process tree rooted at a direct child of this test host.
+                    Process root = CreateProcess(() =>
+                    {
+                        using Process grandChild = Process.Start("/bin/sleep", "1000");
+                        Console.WriteLine(grandChild.Id);
+                        Thread.Sleep(Timeout.Infinite);
+                        return RemoteExecutor.SuccessExitCode;
+                    });
+                    root.StartInfo.RedirectStandardOutput = true;
+                    root.Start();
+                    roots[i] = root;
+                }
+
+                for (int i = 0; i < TreeCount; i++)
+                {
+                    // Obtain a Process instance for the grandchild before killing the tree, to avoid
+                    // PID reuse issues.
+                    int grandChildPid = int.Parse(roots[i].StandardOutput.ReadLine());
+                    grandChildren[i] = Process.GetProcessById(grandChildPid);
+                }
+
+                var tasks = new Task[TreeCount];
+                for (int i = 0; i < TreeCount; i++)
+                {
+                    Process root = roots[i];
+                    tasks[i] = Task.Run(() => root.Kill(entireProcessTree: true));
+                }
+
+                bool completed = Task.WaitAll(tasks, TimeSpan.FromSeconds(60));
+                Assert.True(completed, $"Kill(entireProcessTree: true) hung on iteration {iteration}.");
+
+                for (int i = 0; i < TreeCount; i++)
+                {
+                    Assert.True(roots[i].WaitForExit(WaitInMS));
+                    Assert.True(grandChildren[i].WaitForExit(WaitInMS), $"Grandchild {grandChildren[i].Id} was not killed on iteration {iteration}.");
+                    grandChildren[i].Dispose();
+                }
+            }
+        }
+
+        // Repro for https://github.com/dotnet/runtime/issues/133736:
+        // On Linux, when this process is the ptrace tracer of a Process.Start child (e.g. as ClrMD does to
+        // inspect a child process), a waitid(P_ALL, WEXITED, WNOWAIT) peek also observes the tracee's ptrace
+        // stop (si_code == CLD_TRAPPED), and a plain waitpid(pid, WNOHANG) -- with no WUNTRACED requested --
+        // still reports it as WIFSTOPPED, because those are always visible to a tracer. Neither
+        // SystemNative_WaitIdAnyExitedNoHangNoWait nor SystemNative_WaitPidExitedNoHang used to check for
+        // this, so the stop notification could be treated as if the child had exited (with exit code 0),
+        // causing HasExited/WaitForExit(0) to incorrectly report true while the child is alive in a ptrace
+        // stop. SIGCHLD is registered with SA_NOCLDSTOP, so the stop itself does not trigger a check; the
+        // misclassification is only observed when unrelated child activity causes CheckChildren to run, so
+        // this test spawns short-lived "trigger" children concurrently to force that.
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void ChildProcess_PtraceStopped_IsNotReportedAsExited()
+        {
+            using Process child = CreateProcessLong();
+            child.Start();
+            try
+            {
+                Assert.False(child.HasExited);
+
+                int attachResult = ptrace(PTRACE_ATTACH, child.Id, IntPtr.Zero, IntPtr.Zero);
+                Assert.True(attachResult == 0, $"PTRACE_ATTACH failed, errno={Marshal.GetLastWin32Error()}");
+                try
+                {
+                    // Give the kernel time to deliver and report the tracee's stop.
+                    Thread.Sleep(200);
+
+                    // SIGCHLD is installed with SA_NOCLDSTOP, so the ptrace stop above does not by itself
+                    // wake up CheckChildren. Spawn unrelated short-lived children concurrently: each real
+                    // exit delivers a SIGCHLD that runs CheckChildren, which (via waitid(P_ALL, ...)) will
+                    // also observe -- and, without the fix, misclassify -- the stopped tracee.
+                    for (int i = 0; i < 50 && !child.HasExited; i++)
+                    {
+                        using Process trigger = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+                        trigger.Start();
+                        trigger.WaitForExit();
+                        Thread.Sleep(10);
+                    }
+
+                    Assert.False(child.HasExited);
+                    Assert.False(child.WaitForExit(0));
+                }
+                finally
+                {
+                    ptrace(PTRACE_DETACH, child.Id, IntPtr.Zero, IntPtr.Zero);
+                }
+
+                Assert.False(child.HasExited);
+            }
+            finally
+            {
+                child.Kill();
+                Assert.True(child.WaitForExit(WaitInMS));
+            }
+        }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int ptrace(long request, int pid, IntPtr addr, IntPtr data);
+        private const long PTRACE_ATTACH = 16;
+        private const long PTRACE_DETACH = 17;
     }
 }

@@ -173,20 +173,30 @@ PALEXPORT int32_t SystemNative_GetSid(int32_t pid);
 PALEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
 
 /**
- * Returns the pid of a terminated child without reaping it.
+ * Returns the pid of a waitable child without reaping/consuming its notification.
  *
- * 1) returns the process id of a terminated child process
- * 2) if no children are terminated, 0 is returned
- * 3) on error, -1 is returned
+ * 1) returns the process id of a waitable child process; isExited is set to non-zero if the
+ *    notification represents an actual exit (CLD_EXITED / CLD_KILLED / CLD_DUMPED), or zero if it
+ *    represents a non-exit (stopped/continued) notification that some platforms report even though
+ *    only exit notifications were requested.
+ * 2) if no children are waitable, 0 is returned and isExited is set to 0.
+ * 3) on error, -1 is returned.
+ *
+ * This function never consumes the notification it observes (it always uses WNOWAIT), so it is
+ * always safe to call regardless of which pid it turns out to be: callers that get back a non-exit
+ * notification (or a pid they don't recognize) can fall back to checking their own known children
+ * directly (e.g. via SystemNative_WaitPidExitedNoHang) without touching this notification at all.
  */
-PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void);
+PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited);
 
 /**
  * Reaps a terminated child.
  *
  * 1) when a child is reaped, its process id is returned
  * 2) if pid is not a child or there are no unwaited-for children, -1 is returned (errno=ECHILD)
- * 3) if the child has not yet terminated, 0 is returned
+ * 3) if the child has not yet terminated -- including if it is merely stopped or continued rather
+ *    than exited, which some platforms report to a ptrace tracer even without WUNTRACED/WCONTINUED
+ *    -- 0 is returned
  * 4) on error, -1 is returned.
  *
  * exitCode: set to WEXITSTATUS on normal exit, or 128 + signal number on signal termination.

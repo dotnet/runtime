@@ -614,17 +614,25 @@ namespace System.Diagnostics
             {
                 bool checkAll = false;
 
+                // If checkAll ends up set because we observed a non-exit notification for a pid we know is
+                // not currently exited, we already know for certain that this specific pid should not be
+                // reaped by the fallback full scan below: attempting to do so would call the reaping
+                // waitpid() on it, which -- since it can be a pid this process is also ptrace-tracing (e.g.
+                // via an external tool like ClrMD) -- could consume/steal that non-exit notification from
+                // whoever else needs to observe it. Skip re-checking that specific pid in the scan.
+                int pidToSkip = 0;
+
                 // Check terminated processes.
                 int pid;
                 do
                 {
-                    // Find a process that terminated without reaping it yet.
-                    pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait();
+                    // Find a process that has a pending wait notification, without consuming it.
+                    pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait(out bool isExited);
                     if (pid > 0)
                     {
-                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
+                        if (isExited && s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
                         {
-                            // Known Process.
+                            // Known Process that has actually exited.
                             if (pws.TryReapChild(configureConsole))
                             {
                                 pws.ReleaseRef();
@@ -632,9 +640,16 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            // unlikely: This is not a managed Process, so we are not responsible for reaping.
-                            // Fall back to checking all Processes.
+                            // Either this pid is not one we're responsible for reaping, or (on some
+                            // platforms, e.g. macOS, or for a ptrace-traced child on Linux) the
+                            // notification isn't actually an exit even though only exit notifications
+                            // (WEXITED) were requested. In both cases we must not consume/act on this
+                            // specific notification: it may belong to something else in this process
+                            // (e.g. an external debugger tracing the same pid), and it may not even be
+                            // an exit. Fall back to directly checking our own known children instead,
+                            // which makes progress without spinning on or touching this notification.
                             checkAll = true;
+                            pidToSkip = pid;
                             break;
                         }
                     }
@@ -657,6 +672,11 @@ namespace System.Diagnostics
                     List<ProcessWaitState>? additionalToRemove = null;
                     foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
                     {
+                        if (kv.Key == pidToSkip)
+                        {
+                            continue;
+                        }
+
                         ProcessWaitState pws = kv.Value;
                         if (pws.TryReapChild(configureConsole))
                         {

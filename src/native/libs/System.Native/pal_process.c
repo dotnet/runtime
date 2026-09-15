@@ -1177,8 +1177,12 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     syslog((int)(LOG_USER | priority), message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
 {
+    assert(isExited != NULL);
+
+    *isExited = 0;
+
     siginfo_t siginfo;
     memset(&siginfo, 0, sizeof(siginfo));
     int32_t result;
@@ -1190,13 +1194,30 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
         assert(siginfo.si_pid == 0 ||        // no waitable child
                siginfo.si_signo == SIGCHLD); // waitable child
 
-        result = siginfo.si_pid;
+        if (siginfo.si_pid == 0)
+        {
+            // No waitable child.
+            return 0;
+        }
+
+        // We requested WEXITED only, but some platforms (notably macOS) also report children
+        // that have stopped (SIGSTOP) or continued (SIGCONT), and on Linux a ptrace-traced child's
+        // stop/continue transitions are always visible to its tracer regardless of requested
+        // classes. This function only peeks (WNOWAIT) and classifies the notification -- it never
+        // consumes it, so callers can safely fall back to checking their own known children
+        // directly without risking interference with an unrelated waiter for this pid.
+        *isExited = siginfo.si_code == CLD_EXITED ||
+                    siginfo.si_code == CLD_KILLED ||
+                    siginfo.si_code == CLD_DUMPED;
+        return siginfo.si_pid;
     }
     else if (errno == ECHILD)
     {
         // The calling process has no existing unwaited-for child processes.
-        result = 0;
+        return 0;
     }
+
+    // Unexpected error.
     return result;
 }
 
@@ -1207,16 +1228,23 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t
 
     *exitCode = 0;
     *terminatingSignal = 0;
-    int32_t result;
-    int status;
-    while (CheckInterrupted(result = waitpid(pid, &status, WNOHANG)));
-    if (result > 0)
+
+    while (true)
     {
+        int32_t result;
+        int status;
+        while (CheckInterrupted(result = waitpid(pid, &status, WNOHANG)));
+        if (result <= 0)
+        {
+            return result;
+        }
+
         if (WIFEXITED(status))
         {
             // the child terminated normally.
             *exitCode = WEXITSTATUS(status);
             *terminatingSignal = 0;
+            return result;
         }
         else if (WIFSIGNALED(status))
         {
@@ -1226,13 +1254,25 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t
             PosixSignal posixSignal = PosixSignalInvalid;
             TryConvertSignalCodeToPosixSignal(sig, &posixSignal);
             *terminatingSignal = (int32_t)posixSignal;
+            return result;
+        }
+        else if (WIFSTOPPED(status) || WIFCONTINUED(status))
+        {
+            // The child has not exited -- it was merely stopped or continued. This can happen even
+            // without WUNTRACED/WCONTINUED being requested when this process is the child's ptrace
+            // tracer (e.g. via PTRACE_ATTACH): stop/continue transitions of a tracee are always
+            // visible to its tracer's wait calls. This specific transition has now been reported
+            // (and thus consumed), so retry immediately: for a wildcard pid (-1) there may be
+            // another, already-exited child waiting behind it; for a specific pid, the retry will
+            // simply observe that nothing further is currently pending (0).
+            continue;
         }
         else
         {
             assert(false);
+            return 0;
         }
     }
-    return result;
 }
 
 int64_t SystemNative_PathConf(const char* path, PathConfName name)

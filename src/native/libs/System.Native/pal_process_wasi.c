@@ -73,8 +73,10 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     fprintf(stderr, message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
 {
+    assert(isExited != NULL);
+    *isExited = 0;
     return -1;
 }
 
