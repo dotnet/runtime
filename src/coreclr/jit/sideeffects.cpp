@@ -317,18 +317,37 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
     }
     if (nodeInfo.IsLclVarWrite())
     {
-        m_lclVarWrites.Add(compiler, nodeInfo.LclNum());
+        bool addedLocalDef = false;
+        auto visitDef      = [&](const auto& def) {
+            addedLocalDef   = true;
+            unsigned lclNum = def.GetLclNum();
+            m_lclVarWrites.Add(compiler, lclNum);
 
-        LclVarDsc* dsc = compiler->lvaGetDesc(nodeInfo.LclNum());
-        if (dsc->lvIsStructField)
-        {
-            m_lclVarWrites.Add(compiler, dsc->lvParentLcl);
-        }
-        else if (dsc->lvPromoted)
-        {
-            for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+            LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
+            if (dsc->lvIsStructField)
             {
-                m_lclVarWrites.Add(compiler, dsc->lvFieldLclStart + i);
+                m_lclVarWrites.Add(compiler, dsc->lvParentLcl);
+            }
+
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLocalDefs(compiler, visitDef);
+
+        if (!addedLocalDef)
+        {
+            m_lclVarWrites.Add(compiler, nodeInfo.LclNum());
+
+            LclVarDsc* dsc = compiler->lvaGetDesc(nodeInfo.LclNum());
+            if (dsc->lvIsStructField)
+            {
+                m_lclVarWrites.Add(compiler, dsc->lvParentLcl);
+            }
+            else if (dsc->lvPromoted)
+            {
+                for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                {
+                    m_lclVarWrites.Add(compiler, dsc->lvFieldLclStart + i);
+                }
             }
         }
     }

@@ -51,26 +51,12 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
                 continue;
             }
 
-            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
-                if (lcl->HasCompositeSsaName())
-                {
-                    LclVarDsc* varDsc = lvaGetDesc(lcl);
-                    assert(varDsc->lvPromoted);
-
-                    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
-                    {
-                        popDef(varDsc->lvFieldLclStart + index, lcl->GetSsaNum(this, index));
-                    }
-                }
-                else
-                {
-                    popDef(lcl->GetLclNum(), lcl->GetSsaNum());
-                }
-
+            auto visitDef = [=](const auto& def) {
+                popDef(def.GetLclNum(), def.GetSsaNum(this));
                 return GenTree::VisitResult::Continue;
             };
 
-            tree->VisitLocalDefNodes(this, visitDef);
+            tree->VisitLocalDefs(this, visitDef);
         }
     }
 }
@@ -316,63 +302,44 @@ bool Compiler::optCopyProp(
 }
 
 //------------------------------------------------------------------------------
-// optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
+// optCopyPropPushDef: Push the new live SSA def on the stack.
 //
 // Arguments:
 //    lclNode    - The local tree representing "the def"
+//    lclNum     - The logical local being defined
+//    ssaNum     - The SSA number of the definition
 //    curSsaName - The map of local numbers to stacks of their defs
 //
-void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
+void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
+                                  unsigned             lclNum,
+                                  unsigned             ssaNum,
+                                  LclNumToLiveDefsMap* curSsaName)
 {
-    unsigned lclNum = lclNode->GetLclNum();
-
     // Shadowed parameters are special: they will (at most) have one use, as values in a store
     // to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
-    if ((gsShadowVarInfo != nullptr) && lvaGetDesc(lclNum)->lvIsParam &&
-        (gsShadowVarInfo[lclNum].shadowCopy != BAD_VAR_NUM))
+    unsigned nodeLclNum = lclNode->GetLclNum();
+    if ((gsShadowVarInfo != nullptr) && lvaGetDesc(nodeLclNum)->lvIsParam &&
+        (gsShadowVarInfo[nodeLclNum].shadowCopy != BAD_VAR_NUM))
     {
-        assert(!curSsaName->Lookup(lclNum));
+        assert(!curSsaName->Lookup(nodeLclNum));
         return;
     }
 
-    auto pushDef = [=](unsigned defLclNum, unsigned defSsaNum) {
-        // The default is "not available".
-        LclSsaVarDsc* ssaDef = nullptr;
-
-        if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
-        {
-            ssaDef = lvaGetDesc(defLclNum)->GetPerSsaData(defSsaNum);
-        }
-
-        CopyPropSsaDefStack* defStack;
-        if (!curSsaName->Lookup(defLclNum, &defStack))
-        {
-            defStack = new (curSsaName->GetAllocator()) CopyPropSsaDefStack(curSsaName->GetAllocator());
-            curSsaName->Set(defLclNum, defStack);
-        }
-
-        defStack->Push(CopyPropSsaDef(ssaDef, lclNode));
-    };
-
-    if (lclNode->HasCompositeSsaName())
+    if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
     {
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        assert(varDsc->lvPromoted);
+        return;
+    }
 
-        for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
-        {
-            unsigned ssaNum = lclNode->GetSsaNum(this, index);
-            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-            {
-                pushDef(varDsc->lvFieldLclStart + index, ssaNum);
-            }
-        }
-    }
-    else if (lclNode->HasSsaName())
+    LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
+
+    CopyPropSsaDefStack* defStack;
+    if (!curSsaName->Lookup(lclNum, &defStack))
     {
-        unsigned ssaNum = lclNode->GetSsaNum();
-        pushDef(lclNum, ssaNum);
+        defStack = new (curSsaName->GetAllocator()) CopyPropSsaDefStack(curSsaName->GetAllocator());
+        curSsaName->Set(lclNum, defStack);
     }
+
+    defStack->Push(CopyPropSsaDef(ssaDef, lclNode));
 }
 
 //------------------------------------------------------------------------------
@@ -416,12 +383,12 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
 
             if (tree->OperIsSsaDef())
             {
-                auto visitDef = [=](GenTreeLclVarCommon* lcl) {
-                    optCopyPropPushDef(lcl, curSsaName);
+                auto visitDef = [=](const auto& def) {
+                    optCopyPropPushDef(def.GetDefNode(), def.GetLclNum(), def.GetSsaNum(this), curSsaName);
                     return GenTree::VisitResult::Continue;
                 };
 
-                tree->VisitLocalDefNodes(this, visitDef);
+                tree->VisitLocalDefs(this, visitDef);
             }
             else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {
@@ -431,7 +398,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                 // live definition. Since they are always live, we'll do it only once.
                 if ((lvaGetDesc(lclNum)->lvIsParam || (lclNum == info.compThisArg)) && !curSsaName->Lookup(lclNum))
                 {
-                    optCopyPropPushDef(tree->AsLclVarCommon(), curSsaName);
+                    optCopyPropPushDef(tree->AsLclVarCommon(), lclNum, tree->AsLclVarCommon()->GetSsaNum(), curSsaName);
                 }
 
                 // TODO-Review: EH successor/predecessor iteration seems broken.

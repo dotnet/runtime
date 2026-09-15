@@ -422,64 +422,36 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
     assert(defNode->OperIsStore() || defNode->OperIs(GT_CALL));
 
     bool anyDefs  = false;
-    auto visitDef = [&](const LocalDef& def) {
-        anyDefs = true;
+    auto visitDef = [&](const auto& def) {
+        anyDefs                           = true;
+        GenTreeLclVarCommon* localDefNode = def.GetDefNode();
         // This should have been marked as definition.
-        assert(((def.Def->gtFlags & GTF_VAR_DEF) != 0) &&
-               (((def.Def->gtFlags & GTF_VAR_USEASG) != 0) == !def.IsEntire));
+        assert((localDefNode->gtFlags & GTF_VAR_DEF) != 0);
+        assert(def.IsEntire(m_compiler) || ((localDefNode->gtFlags & GTF_VAR_USEASG) != 0));
 
-        unsigned   lclNum = def.Def->GetLclNum();
+        unsigned   lclNum = def.GetLclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
         if (m_compiler->lvaInSsa(lclNum))
         {
-            def.Def->SetSsaNum(RenamePushDef(defNode, block, lclNum, def.IsEntire));
+            def.SetSsaNum(m_compiler, RenamePushDef(defNode, block, lclNum, def.IsEntire(m_compiler)));
             assert(!varDsc->IsAddressExposed()); // Cannot define SSA memory.
-            return GenTree::VisitResult::Continue;
-        }
-
-        if (varDsc->lvPromoted)
-        {
-            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
-            {
-                unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
-                LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
-                if (m_compiler->lvaInSsa(fieldLclNum))
-                {
-                    ssize_t   fieldStoreOffset;
-                    ValueSize fieldStoreSize;
-                    unsigned  ssaNum = SsaConfig::RESERVED_SSA_NUM;
-
-                    // Fast-path the common case of an "entire" store.
-                    if (def.IsEntire)
-                    {
-                        ssaNum = RenamePushDef(defNode, block, fieldLclNum, /* defIsFull */ true);
-                    }
-                    else if (m_compiler->gtStoreMayDefineField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
-                                                               &fieldStoreSize))
-                    {
-                        ssaNum = RenamePushDef(defNode, block, fieldLclNum,
-                                               ValueNumStore::LoadStoreIsEntire(fieldVarDsc->lvValueSize(),
-                                                                                fieldStoreOffset, fieldStoreSize));
-                    }
-
-                    if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                    {
-                        def.Def->SetSsaNum(m_compiler, index, ssaNum);
-                    }
-                }
-            }
-        }
-
-        if (varDsc->IsAddressExposed())
-        {
-            RenamePushMemoryDef(def.Def, block);
         }
 
         return GenTree::VisitResult::Continue;
     };
 
     defNode->VisitLocalDefs(m_compiler, visitDef);
+
+    auto visitDefNode = [&](GenTreeLclVarCommon* lcl) {
+        if (m_compiler->lvaGetDesc(lcl)->IsAddressExposed())
+        {
+            RenamePushMemoryDef(lcl, block);
+        }
+
+        return GenTree::VisitResult::Continue;
+    };
+    defNode->VisitLocalDefNodes(m_compiler, visitDefNode);
 
     if (!anyDefs)
     {
