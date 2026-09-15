@@ -92,48 +92,65 @@ namespace System.Collections.Concurrent.Tests
             Func<string, int> nonRandomizedOrdinal = GetHashCodeFunc(new ConcurrentDictionary<string, string>(StringComparer.Ordinal));
             Func<string, int> nonRandomizedOrdinalIgnoreCase = GetHashCodeFunc(new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase));
 
-            const int StartOfRange = 0xE020; // use the Unicode Private Use range to avoid accidentally creating strings that really do compare as equal OrdinalIgnoreCase
-            const int Stride = 0x40; // to ensure we don't accidentally reset the 0x20 bit of the seed, which is used to negate OrdinalIgnoreCase effects
-            int currentSeed = StartOfRange;
+            // Every code unit is taken from the Unicode Private Use Area with bit 0x20 set.
+            // Those are uncased, so ToUpperOrdinal leaves them alone, and they already carry
+            // the bit that ignore-case hashing ORs in, so a string built from them hashes the
+            // same under Ordinal and OrdinalIgnoreCase and no two compare equal
+            // OrdinalIgnoreCase.
+            List<ushort> pool = new List<ushort>();
+            for (int c = 0xE000; c <= 0xF8FF; c++)
+            {
+                if ((c & 0x20) != 0)
+                {
+                    pool.Add((ushort)c);
+                }
+            }
+
+            // For an eight char string the hash is a function of two 64-bit halves, the first
+            // offset by a length term. Pinning the value they are combined into pins the hash,
+            // so the second half can be chosen freely and the first solved for; solutions that
+            // fall outside the pool are discarded.
+            const uint HashPrime = 0x9E3779B1u;
+            ulong lengthTerm = unchecked(16u * HashPrime); // computed in 32-bit arithmetic
+
+            static ulong Pack(ushort a, ushort b, ushort c, ushort d) =>
+                a | ((ulong)b << 16) | ((ulong)c << 32) | ((ulong)d << 48);
+            static bool InPool(ushort c) => c >= 0xE000 && c <= 0xF8FF && (c & 0x20) != 0;
+
+            ulong seedSecond = Pack(pool[0], pool[1], pool[2], pool[3]);
+            ulong seedFirst = lengthTerm + Pack(pool[4], pool[5], pool[6], pool[7]);
+            ulong combined = (seedFirst ^ BitOperations.RotateLeft(seedSecond, 27)) + BitOperations.RotateLeft(seedSecond, 41);
 
             List<string> collidingStrings = new List<string>(count);
-            while (collidingStrings.Count < count)
+            for (int i0 = 0; i0 < pool.Count && collidingStrings.Count < count; i0++)
+            for (int i1 = 0; i1 < pool.Count && collidingStrings.Count < count; i1++)
+            for (int i2 = 0; i2 < pool.Count && collidingStrings.Count < count; i2++)
+            for (int i3 = 0; i3 < pool.Count && collidingStrings.Count < count; i3++)
             {
-                Assert.True(currentSeed <= ushort.MaxValue,
-                    $"Couldn't create enough colliding strings? Created {collidingStrings.Count}, needed {count}.");
+                ulong second = Pack(pool[i0], pool[i1], pool[i2], pool[i3]);
+                ulong first = ((combined - BitOperations.RotateLeft(second, 41)) ^ BitOperations.RotateLeft(second, 27)) - lengthTerm;
 
-                // Generates a possible string with a well-known non-randomized hash code:
-                // - string.GetNonRandomizedHashCode returns 0.
-                // - string.GetNonRandomizedHashCodeOrdinalIgnoreCase returns 0x24716ca0.
-                // Provide a different seed to produce a different string.
-                // Must check OrdinalIgnoreCase hash code to ensure correctness.
-                string candidate = string.Create(8, currentSeed, static (span, seed) =>
+                ushort c0 = (ushort)first, c1 = (ushort)(first >> 16), c2 = (ushort)(first >> 32), c3 = (ushort)(first >> 48);
+                if (!InPool(c0) || !InPool(c1) || !InPool(c2) || !InPool(c3))
                 {
-                    Span<byte> asBytes = MemoryMarshal.AsBytes(span);
-
-                    uint hash1 = (5381 << 16) + 5381;
-                    uint hash2 = BitOperations.RotateLeft(hash1, 5) + hash1;
-
-                    MemoryMarshal.Write(asBytes, in seed);
-                    MemoryMarshal.Write(asBytes.Slice(4), in hash2); // set hash2 := 0 (for Ordinal)
-
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (uint)seed;
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1);
-
-                    MemoryMarshal.Write(asBytes.Slice(8), in hash1); // set hash1 := 0 (for Ordinal)
-                });
-
-                int ordinalHashCode = nonRandomizedOrdinal(candidate);
-                Assert.Equal(0, ordinalHashCode); // ensure has a zero hash code Ordinal
-
-                int ordinalIgnoreCaseHashCode = nonRandomizedOrdinalIgnoreCase(candidate);
-                if (ordinalIgnoreCaseHashCode == 0x24716ca0) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
-                {
-                    collidingStrings.Add(candidate); // success!
+                    continue;
                 }
 
-                currentSeed += Stride;
+                string candidate = new string(new char[]
+                {
+                    (char)c0, (char)c1, (char)c2, (char)c3,
+                    (char)pool[i0], (char)pool[i1], (char)pool[i2], (char)pool[i3]
+                });
+
+                // The construction encodes the current implementation, so check it against
+                // the comparers actually in use rather than trusting it.
+                Assert.Equal(nonRandomizedOrdinal(collidingStrings.Count == 0 ? candidate : collidingStrings[0]), nonRandomizedOrdinal(candidate));
+                Assert.Equal(nonRandomizedOrdinalIgnoreCase(collidingStrings.Count == 0 ? candidate : collidingStrings[0]), nonRandomizedOrdinalIgnoreCase(candidate));
+                collidingStrings.Add(candidate);
             }
+
+            Assert.True(collidingStrings.Count == count,
+                $"Couldn't create enough colliding strings? Created {collidingStrings.Count}, needed {count}.");
 
             return collidingStrings;
         }

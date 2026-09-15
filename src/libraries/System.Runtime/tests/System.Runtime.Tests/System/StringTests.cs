@@ -3,14 +3,17 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
@@ -1225,6 +1228,61 @@ namespace System.Tests
                 string s = new string(r.GetItems(Enumerable.Range(0, charValueLimit).Select(i => (char)i).ToArray(), i));
                 Assert.Equal(getStringHC(s), getSpanHC(s.AsSpan()));
             }
+        }
+
+        // Checksums the non-randomized hash over lengths that straddle every size branch the
+        // implementation takes, under both casings. Shared by the in-process run and the
+        // remote one so the two cannot drift apart.
+        private static string NonRandomizedGetHashCodeChecksum()
+        {
+            const BindingFlags Flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
+            Func<string, int> ordinal = typeof(string).GetMethod("GetNonRandomizedHashCode", Flags, Type.EmptyTypes)!.CreateDelegate<Func<string, int>>();
+            Func<string, int> ignoreCase = typeof(string).GetMethod("GetNonRandomizedHashCodeOrdinalIgnoreCase", Flags, Type.EmptyTypes)!.CreateDelegate<Func<string, int>>();
+
+            ulong checksum = 14695981039346656037;
+            void Fold(int value)
+            {
+                checksum = (checksum ^ (uint)value) * 1099511628211;
+            }
+
+            var r = new Random(12345);
+            // 0..80 covers every branch boundary; the larger sizes reach the block loop and
+            // its tail, and a non-multiple of the block size leaves a partial tail behind.
+            foreach (int length in Enumerable.Range(0, 81).Concat([127, 128, 129, 255, 256, 257, 1000, 4096, 4097]))
+            {
+                foreach (int charLimit in new[] { 128, 256, char.MaxValue })
+                {
+                    string s = new string(r.GetItems(Enumerable.Range(0, charLimit).Select(i => (char)i).ToArray(), length));
+                    Fold(ordinal(s));
+                    Fold(ignoreCase(s));
+                }
+            }
+
+            return checksum.ToString("X16");
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void NonRandomizedGetHashCode_SameWithAndWithoutIntrinsics()
+        {
+            // The implementation picks a vector width at runtime and falls back to scalar code
+            // when none is available, and every one of those must produce the same hash. Compute
+            // the checksum here, then again in a child process with hardware intrinsics turned
+            // off so the scalar path is taken, and require the two to agree.
+            string expected = NonRandomizedGetHashCodeChecksum();
+
+            var psi = new ProcessStartInfo();
+            psi.Environment["DOTNET_EnableHWIntrinsic"] = "0";
+
+            RemoteExecutor.Invoke(
+                static expected =>
+                {
+                    // Guards against the switch silently not taking effect, which would let
+                    // this pass while only ever exercising the vectorized path twice.
+                    Assert.False(Vector128.IsHardwareAccelerated);
+                    Assert.Equal(expected, NonRandomizedGetHashCodeChecksum());
+                },
+                expected,
+                new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         public static IEnumerable<object[]> GetHashCode_NoSuchStringComparison_ThrowsArgumentException_Data => new[]
