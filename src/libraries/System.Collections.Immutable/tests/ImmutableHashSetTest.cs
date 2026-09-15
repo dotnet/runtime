@@ -122,6 +122,61 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IsProperSubsetOfMismatchedComparersLargerCountMissingElement()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "A");
+            var other = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a", "b", "c", "d");
+
+            Assert.False(origin.IsProperSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsProperSubsetOfICollectionLargeCountSmallUniqueSet()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b");
+            var other = new List<string> { "a", "b", "b", "b" };
+
+            Assert.False(origin.IsProperSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsProperSubsetOfEmptyAgainstAnything()
+        {
+            var empty = ImmutableHashSet<string>.Empty;
+            var other = ImmutableHashSet.Create("any");
+
+            Assert.True(empty.IsProperSubsetOf(other));
+            Assert.False(empty.IsProperSubsetOf(new List<string>()));
+        }
+
+        [Fact]
+        public void IsProperSubsetOfSensitiveOriginInsensitiveOtherTrueCase()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a");
+            var other = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "A", "b");
+
+            Assert.False(origin.IsProperSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsProperSubsetOfMismatchedLogicallyEqual()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a");
+            var other = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "A");
+
+            Assert.False(origin.IsProperSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsProperSubsetOfInsensitiveOriginSensitiveOther()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a", "b");
+            var other = ImmutableHashSet.Create(StringComparer.Ordinal, "A", "B", "c");
+
+            Assert.True(origin.IsProperSubsetOf(other));
+        }
+
+        [Fact]
         public void ChangeUnorderedEqualityComparer()
         {
             ImmutableHashSet<string> ordinalSet = ImmutableHashSet<string>.Empty
