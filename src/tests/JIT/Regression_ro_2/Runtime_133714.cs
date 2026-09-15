@@ -15,7 +15,7 @@ public class Runtime_133714
         Assert.True(VerifyCatchObservesOriginalValue(null));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
     public static void FilterObservesOriginalValue()
     {
         Assert.True(VerifyFilterObservesOriginalValue(null));
