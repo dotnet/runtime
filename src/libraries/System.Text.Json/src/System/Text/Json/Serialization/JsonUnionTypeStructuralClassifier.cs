@@ -78,16 +78,17 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierPreserveReferencesNotSupported(context.DeclaringType);
             }
 
-            StructuralClassifier classifier = BuildStructuralClassifier(context.DeclaringType, context.UnionCases, options);
+            StructuralClassifier classifier = BuildStructuralClassifier(context.DeclaringTypeInfo, context.UnionCases, options);
             return classifier.Classify;
         }
 
         private static StructuralClassifier BuildStructuralClassifier(
-            Type unionType,
+            JsonTypeInfo unionTypeInfo,
             IReadOnlyList<JsonUnionCaseInfo> unionCases,
             JsonSerializerOptions options)
         {
-            JsonNumberHandling? unionNumberHandling = options.GetTypeInfo(unionType).NumberHandling;
+            Type unionType = unionTypeInfo.Type;
+            JsonNumberHandling? unionNumberHandling = unionTypeInfo.NumberHandling;
 
             // POCO object cases expose JsonPropertyInfo metadata through JsonTypeInfoKind.Object.
             // A non-POCO JSON object case advertises the Object shape without such metadata.
