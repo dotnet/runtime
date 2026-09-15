@@ -4019,6 +4019,17 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 if (simdWidth > 0)
                 {
                     assert((totalSize <= 64) && (totalSize <= MaxStructSize));
+
+#if defined(TARGET_ARM64)
+                    // The VM returns the concrete runtime contents of the field, but a scalable GT_CNS_VEC
+                    // represents a pattern rather than an arbitrary byte sequence. Leave the field as a load
+                    // since the runtime contents cannot, in general, be represented as a scalable constant.
+                    if (simdWidth == SIZE_UNKNOWN)
+                    {
+                        return nullptr;
+                    }
+#endif // TARGET_ARM64
+
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
                     bool hwAccelerated = true;
