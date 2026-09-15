@@ -5601,8 +5601,19 @@ void Compiler::generatePatchpointInfo()
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
-    const int totalFrameSize = codeGen->genTotalFrameSize();
+    int       totalFrameSize = codeGen->genTotalFrameSize();
     const int offsetAdjust   = codeGen->genSPtoFPdelta() - totalFrameSize;
+
+#ifdef TARGET_ARM64
+    // If there is an UnknownSizeFrame for this compilation, force evaluation of it's runtime
+    // value and add this to the total.
+    if (compUsesUnknownSizeFrame)
+    {
+        int unkSizeFrameSize = unkSizeFrame.FrameSizeInVectors() * getRuntimeVectorTByteLength();
+        JITDUMP("--OSR-- UnknownSizeFrame Size %d\n", unkSizeFrameSize);
+        totalFrameSize += unkSizeFrameSize;
+    }
+#endif
 #else
     NYI("patchpoint info generation");
     const int offsetAdjust   = 0;
@@ -5623,12 +5634,6 @@ void Compiler::generatePatchpointInfo()
         //
         unsigned varNum = lclNum;
 
-        // Variable-sized locals reside in a different part of the stack frame.
-        if (lvaIsUnknownSizeLocal(varNum))
-        {
-            continue;
-        }
-
         if (gsShadowVarInfo != nullptr)
         {
             unsigned const shadowNum = gsShadowVarInfo[lclNum].shadowCopy;
@@ -5647,11 +5652,28 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvOnFrame);
         assert(varDsc->lvFramePointerBased);
 
+        int stackOffset = 0;
+
         // Record FramePtr relative offset (no localloc yet)
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // That bit of IL might be skipped by OSR partial importation.
         const bool isExposed = varDsc->lvHasLdAddrOp;
-        patchpointInfo->SetOffsetAndExposure(lclNum, varDsc->GetStackOffset() + offsetAdjust, isExposed);
+
+#ifdef TARGET_ARM64
+        if (lvaLocalIsOnUnknownSizeFrame(varNum))
+        {
+            // The UnknownSizeFrame starts at the end of the original frame.
+            // All addressing is relative to this location locals with unknown size.
+            int unkSizeFrameOffset = -codeGen->genTotalFrameSize();
+
+            stackOffset = unkSizeFrameOffset + unkSizeFrame.GetExactOffset(varDsc, getRuntimeVectorTByteLength());
+        }
+        else
+#endif
+        {
+            stackOffset = varDsc->GetStackOffset() + offsetAdjust;
+        }
+        patchpointInfo->SetOffsetAndExposure(lclNum, stackOffset, isExposed);
 
         JITDUMP("--OSR-- V%02u is at virtual offset %d%s%s\n", lclNum, patchpointInfo->Offset(lclNum),
                 patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "", (varNum != lclNum) ? " (shadowed)" : "");
