@@ -641,11 +641,12 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 // Arguments:
 //   cast     - the cast node for which the range will be computed
 //   compiler - Compiler object
+//   operandRange - if provided, the precomputed range of the cast operand
 //
 // Return Value:
 //   The range this cast produces - see description.
 //
-/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast, Compiler* compiler)
+static IntegralRange ForCastOutputCore(GenTreeCast* cast, Compiler* compiler, const IntegralRange* operandRange)
 {
     var_types fromType     = genActualType(cast->CastOp());
     var_types toType       = cast->CastToType();
@@ -675,14 +676,15 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 
     if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
     {
-        return ForCastInput(cast);
+        return IntegralRange::ForCastInput(cast);
     }
 
     // if we're upcasting and the cast op is a known non-negative - consider
     // this cast unsigned
     if (!fromUnsigned && (genTypeSize(toType) >= genTypeSize(fromType)))
     {
-        fromUnsigned = cast->CastOp()->IsNeverNegative(compiler);
+        fromUnsigned =
+            (operandRange != nullptr) ? operandRange->IsNonNegative() : cast->CastOp()->IsNeverNegative(compiler);
     }
 
     // CAST(uint/int <- ulong/long) - [INT_MIN..INT_MAX]
@@ -690,12 +692,17 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
     // CAST(ulong/long <- int)      - [INT_MIN..INT_MAX]
     if (!cast->gtOverflow())
     {
-        if ((fromType == TYP_INT) && fromUnsigned)
-        {
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
-        }
+        IntegralRange result = ((fromType == TYP_INT) && fromUnsigned)
+                                   ? IntegralRange{SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax}
+                                   : IntegralRange{SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
 
-        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+        // Only preserve the source range when the cast is guaranteed
+        // to preserve every possible value in that range.
+        if ((operandRange != nullptr) && result.Contains(*operandRange))
+        {
+            return *operandRange;
+        }
+        return result;
     }
 
     SymbolicIntegerValue lowerBound;
@@ -735,6 +742,16 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
     }
 
     return {lowerBound, upperBound};
+}
+
+/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast, Compiler* compiler)
+{
+    return ForCastOutputCore(cast, compiler, nullptr);
+}
+
+/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast, const IntegralRange& operandRange)
+{
+    return ForCastOutputCore(cast, nullptr, &operandRange);
 }
 
 /* static */ IntegralRange IntegralRange::Union(IntegralRange range1, IntegralRange range2)
