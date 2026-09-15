@@ -38,8 +38,7 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteByteString(ReadOnlySpan<byte> value)
         {
-            WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length);
-            EnsureWriteCapacity(value.Length);
+            WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length, value.Length);
 
             if (ConvertIndefiniteLengthEncodings && _currentMajorType == CborMajorType.ByteString)
             {
@@ -134,8 +133,7 @@ namespace System.Formats.Cbor
                 throw new ArgumentException(SR.Cbor_Writer_InvalidUtf8String, e);
             }
 
-            WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
-            EnsureWriteCapacity(length);
+            WriteUnsignedInteger(CborMajorType.TextString, (ulong)length, length);
 
             if (ConvertIndefiniteLengthEncodings && _currentMajorType == CborMajorType.TextString)
             {
