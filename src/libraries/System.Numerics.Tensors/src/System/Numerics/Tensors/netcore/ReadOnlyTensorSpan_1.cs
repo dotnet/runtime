@@ -148,8 +148,11 @@ namespace System.Numerics.Tensors
         ///   <para>Returns default when <paramref name="array"/> is null.</para>
         ///   <para>The created tensor span has a single dimension that is the same length as <paramref name="array" />.</para>
         /// </remarks>
+        /// <exception cref="ArrayTypeMismatchException">The element type of <paramref name="array" /> is not exactly <typeparamref name="T" />.</exception>
         public ReadOnlyTensorSpan(Array? array)
         {
+            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+
             _shape = TensorShape.Create(array);
             _reference = ref (array is not null)
                        ? ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array))
@@ -175,8 +178,11 @@ namespace System.Numerics.Tensors
         ///   * <paramref name="strides" /> is not empty and contains an element that is negative.
         ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position.
         /// </exception>
+        /// <exception cref="ArrayTypeMismatchException">The element type of <paramref name="array" /> is not exactly <typeparamref name="T" />.</exception>
         public ReadOnlyTensorSpan(Array? array, scoped ReadOnlySpan<int> start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
+            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+
             _shape = TensorShape.Create(array, start, lengths, strides, out nint linearOffset);
             _reference = ref (array is not null)
                        ? ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), linearOffset)
