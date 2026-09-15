@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
 {
@@ -3013,6 +3014,9 @@ namespace System.Runtime.Intrinsics
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         internal static Vector64<T> MultiplyAddEstimate<T>(Vector64<T> left, Vector64<T> right, Vector64<T> addend)
         {
             Unsafe.SkipInit(out Vector64<T> result);
@@ -3037,6 +3041,9 @@ namespace System.Runtime.Intrinsics
         /// </remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static Vector64<double> MultiplyAddEstimate(Vector64<double> left, Vector64<double> right, Vector64<double> addend)
         {
             Unsafe.SkipInit(out Vector64<double> result);
@@ -3061,6 +3068,9 @@ namespace System.Runtime.Intrinsics
         /// </remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static Vector64<float> MultiplyAddEstimate(Vector64<float> left, Vector64<float> right, Vector64<float> addend)
         {
             Unsafe.SkipInit(out Vector64<float> result);

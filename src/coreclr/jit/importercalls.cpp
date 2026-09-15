@@ -5254,7 +5254,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Math_ReciprocalEstimate:
             case NI_System_Math_ReciprocalSqrtEstimate:
             {
-                retNode = impEstimateIntrinsic(method, sig, callJitType, ni, mustExpand);
+                retNode = impEstimateIntrinsic(method, sig, callJitType, ni);
                 break;
             }
 
@@ -9715,6 +9715,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MaxNative:
         case NI_System_Math_Min:
         case NI_System_Math_MinNative:
+        case NI_System_Math_MultiplyAddEstimate:
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
         case NI_System_Math_Truncate:
@@ -11159,21 +11162,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //   method        - The handle of the method being imported
 //   callType      - The underlying type for the call
 //   intrinsicName - The intrinsic being imported
-//   mustExpand    - true if the intrinsic must return a GenTree*; otherwise, false
 //
 GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                         CORINFO_SIG_INFO*     sig,
                                         CorInfoType           callJitType,
-                                        NamedIntrinsic        intrinsicName,
-                                        bool                  mustExpand)
+                                        NamedIntrinsic        intrinsicName)
 {
     var_types callType = JITtype2varType(callJitType);
     assert(varTypeIsFloating(callType));
-
-    if (BlockNonDeterministicIntrinsics(mustExpand))
-    {
-        return nullptr;
-    }
 
     if (IsIntrinsicImplementedByUserCall(intrinsicName))
     {

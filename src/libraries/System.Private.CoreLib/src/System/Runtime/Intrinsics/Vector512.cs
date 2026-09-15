@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
@@ -2980,6 +2981,9 @@ namespace System.Runtime.Intrinsics
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         internal static Vector512<T> MultiplyAddEstimate<T>(Vector512<T> left, Vector512<T> right, Vector512<T> addend)
         {
             return Create(
@@ -2991,6 +2995,9 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector256.MultiplyAddEstimate(Vector256{double}, Vector256{double}, Vector256{double})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static Vector512<double> MultiplyAddEstimate(Vector512<double> left, Vector512<double> right, Vector512<double> addend)
         {
             return Create(
@@ -3001,6 +3008,9 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="Vector256.MultiplyAddEstimate(Vector256{float}, Vector256{float}, Vector256{float})" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static Vector512<float> MultiplyAddEstimate(Vector512<float> left, Vector512<float> right, Vector512<float> addend)
         {
             return Create(

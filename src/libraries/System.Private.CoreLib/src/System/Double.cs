@@ -849,10 +849,16 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompHasFallback]
         public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompHasFallback]
         public static double ReciprocalSqrtEstimate(double x) => Math.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
@@ -1214,6 +1220,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
         [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static double MultiplyAddEstimate(double left, double right, double addend)
         {
 #if MONO
