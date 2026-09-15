@@ -413,7 +413,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 MB0GCWCGSAFlAwQBKgQQRxfJmVCr9TJ5HqocaVzdSoAQdyh9tjmrLR1M2m/QAzYr7w==
                 """;
 
-            AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            KemRecipientInfo recipientInfo = AssertInvalidDocument(Document, MLKemAlgorithm.MLKem768);
+            Assert.Equal(1, recipientInfo.Version);
         }
 
         [Fact]
