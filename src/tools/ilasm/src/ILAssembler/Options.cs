@@ -66,6 +66,11 @@ namespace ILAssembler
         public Machine? Machine { get; set; }
 
         /// <summary>
+        /// Produce a DLL image instead of an executable.
+        /// </summary>
+        public bool Dll { get; set; }
+
+        /// <summary>
         /// Create an AppContainer exe or dll.
         /// </summary>
         public bool AppContainer { get; set; }
@@ -137,11 +142,6 @@ namespace ILAssembler
         /// Output file name (filename only, no directory). Used as default module name when no .module directive is present.
         /// </summary>
         public string? OutputFileName { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value that indicates whether the output is a DLL.
-        /// </summary>
-        public bool IsDll { get; set; }
 
         /// <summary>
         /// Try to create output file despite errors (results may be invalid).

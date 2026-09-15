@@ -129,6 +129,16 @@ IF NOT "%RunningIlasmRoundTrip%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(ManagedIlasmRoundTripIncompatible)' == 'true' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunningIlasmRoundTrip%"=="" (
+  IF NOT "%IlasmRoundTripUseManagedIlasm%"=="" (
+    ECHO SKIPPING EXECUTION BECAUSE THE TEST IS INCOMPATIBLE WITH MANAGED ILASM ROUND-TRIP
+    popd
+    Exit /b 0
+  )
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
 
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SuperPmiCollectIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)

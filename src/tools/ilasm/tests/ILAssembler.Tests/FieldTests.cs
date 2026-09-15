@@ -21,6 +21,156 @@ namespace ILAssembler.Tests
 {
     public class FieldTests
     {
+        [Fact]
+        public void TrailingCustomAttribute_AttachesToField()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .field public static int32 Value
+                    .custom instance void [mscorlib]System.ThreadStaticAttribute::.ctor() = (01 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Empty(type.GetCustomAttributes());
+            Assert.Single(field.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void TrailingFieldCustomAttribute_DoesNotLeakAcrossClasses()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi A
+                {
+                    .field public static int32 Value
+                }
+                .class public auto ansi B
+                {
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var typeB = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "B");
+
+            Assert.Empty(field.GetCustomAttributes());
+            Assert.Single(typeB.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void TrailingFieldCustomAttribute_DoesNotLeakAcrossNamespaces()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .namespace First
+                {
+                    .class public auto ansi A
+                    {
+                        .field public static int32 Value
+                    }
+                }
+                .class public auto ansi B
+                {
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var typeB = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "B");
+
+            Assert.Empty(field.GetCustomAttributes());
+            Assert.Single(typeB.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void TrailingFieldCustomAttribute_BindsToFieldWithinTheSameNamespacedType()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .namespace First
+                {
+                    .class public auto ansi A
+                    {
+                        .field public static int32 Value
+                        .custom instance void [mscorlib]System.ThreadStaticAttribute::.ctor() = (01 00 00 00)
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var typeA = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "A");
+
+            Assert.Single(field.GetCustomAttributes());
+            Assert.Empty(typeA.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void TrailingFieldCustomAttribute_DoesNotLeakOutOfNestedClass()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Outer
+                {
+                    .class nested public auto ansi Inner
+                    {
+                        .field public static int32 Value
+                    }
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var outer = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "Outer");
+
+            Assert.Empty(field.GetCustomAttributes());
+            Assert.Single(outer.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void GlobalFieldTrailingCustomAttribute_AttachesToField()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .field public static int32 Value
+                .custom instance void [mscorlib]System.ThreadStaticAttribute::.ctor() = (01 00 00 00)
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Empty(reader.GetModuleDefinition().GetCustomAttributes());
+            Assert.Single(field.GetCustomAttributes());
+        }
 
         [Fact]
         public void FieldLayout_ExplicitOffset()
@@ -57,6 +207,48 @@ namespace ILAssembler.Tests
             Assert.Equal(0, fields[0].GetOffset());
             Assert.Equal(0, fields[1].GetOffset());
             Assert.Equal(0, fields[2].GetOffset());
+        }
+
+        [Fact]
+        public void FieldAttributes_EmitExpectedFlagsAndNullConstant()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field family initonly int32 FamilyInitOnly
+                    .field assembly int32 AssemblyField
+                    .field famandassem int32 FamAndAssemField
+                    .field famorassem int32 FamOrAssemField
+                    .field privatescope int32 PrivateScopeField
+                    .field public notserialized int32 NotSerializedField
+                    .field flags(0x36) int32 FlaggedField
+                    .field public volatile int32 VolatileField
+                    .field public static literal string NullString = nullref
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name));
+
+            Assert.Equal(FieldAttributes.Family, fields["FamilyInitOnly"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.True(fields["FamilyInitOnly"].Attributes.HasFlag(FieldAttributes.InitOnly));
+            Assert.Equal(FieldAttributes.Assembly, fields["AssemblyField"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.Equal(FieldAttributes.FamANDAssem, fields["FamAndAssemField"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.Equal(FieldAttributes.FamORAssem, fields["FamOrAssemField"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.Equal(FieldAttributes.PrivateScope, fields["PrivateScopeField"].Attributes & FieldAttributes.FieldAccessMask);
+#pragma warning disable SYSLIB0050
+            Assert.True(fields["NotSerializedField"].Attributes.HasFlag(FieldAttributes.NotSerialized));
+#pragma warning restore SYSLIB0050
+            Assert.Equal((FieldAttributes)0x36, fields["FlaggedField"].Attributes);
+            Assert.Equal(FieldAttributes.Public, fields["VolatileField"].Attributes & FieldAttributes.FieldAccessMask);
+
+            var nullConstant = reader.GetConstant(fields["NullString"].GetDefaultValue());
+            Assert.Equal(ConstantTypeCode.NullReference, nullConstant.TypeCode);
         }
 
 
