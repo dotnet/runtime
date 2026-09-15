@@ -2247,24 +2247,29 @@ static void IoRingFillSqe(struct io_uring_sqe* sqe, IoRingRequest* request)
     memset(sqe, 0, sizeof(*sqe));
     sqe->fd = (int32_t)request->Fd;
     sqe->user_data = request->UserData;
-    // A negative Offset means "non-positional": io_uring treats an off of -1 for
-    // READ/WRITE/READV/WRITEV as "use (and update) the file's current position",
-    // just like plain read(2)/write(2)/readv(2)/writev(2).
-    sqe->off = request->Offset >= 0 ? (uint64_t)request->Offset : (uint64_t)-1;
 
     switch ((IoRingOp)request->OpCode)
     {
         case IoRingOp_Read:
+            // A negative Offset means "non-positional": io_uring treats an off of -1 for
+            // READ/WRITE/READV/WRITEV as "use (and update) the file's current position", just
+            // like plain read(2)/write(2)/readv(2)/writev(2). This field is only meaningful for
+            // these file-offset opcodes: for Recv/Send/Accept/Connect below, sqe->off aliases
+            // other fields (or is unused), and the kernel rejects those opcodes with EINVAL
+            // unless it is left at 0 (its memset'd default), so it must not be set here.
+            sqe->off = request->Offset >= 0 ? (uint64_t)request->Offset : (uint64_t)-1;
             sqe->opcode = IORING_OP_READ;
             sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
             sqe->len = (uint32_t)request->BufferLength;
             break;
         case IoRingOp_Write:
+            sqe->off = request->Offset >= 0 ? (uint64_t)request->Offset : (uint64_t)-1;
             sqe->opcode = IORING_OP_WRITE;
             sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
             sqe->len = (uint32_t)request->BufferLength;
             break;
         case IoRingOp_ReadV:
+            sqe->off = request->Offset >= 0 ? (uint64_t)request->Offset : (uint64_t)-1;
             sqe->opcode = IORING_OP_READV;
             sqe->addr = (uint64_t)(uintptr_t)request->Vectors;
             // Just like plain readv(2)/writev(2) (see GetAllowedVectorCount above), io_uring
@@ -2274,6 +2279,7 @@ static void IoRingFillSqe(struct io_uring_sqe* sqe, IoRingRequest* request)
             sqe->len = (uint32_t)GetAllowedVectorCount(request->Vectors, request->VectorCount);
             break;
         case IoRingOp_WriteV:
+            sqe->off = request->Offset >= 0 ? (uint64_t)request->Offset : (uint64_t)-1;
             sqe->opcode = IORING_OP_WRITEV;
             sqe->addr = (uint64_t)(uintptr_t)request->Vectors;
             sqe->len = (uint32_t)GetAllowedVectorCount(request->Vectors, request->VectorCount);
