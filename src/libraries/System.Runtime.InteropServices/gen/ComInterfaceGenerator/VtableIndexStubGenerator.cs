@@ -63,7 +63,7 @@ namespace Microsoft.Interop
 
                     var (member, _) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(stub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
-                    stub.ContainingSyntaxContext.WriteToWithUnsafeModifier(writer, (member, stub.TypeKeyOwner.FullTypeName), static (writer, data) =>
+                    stub.ContainingSyntaxContext.WriteToWithUnsafeModifier(stub.EnvironmentFlags.HasFlag(EnvironmentFlags.UpdatedMemorySafetyRules), writer, (member, stub.TypeKeyOwner.FullTypeName), static (writer, data) =>
                     {
                         writer.WriteLine("internal partial interface Native");
                         using (writer.WriteBlock())
@@ -102,7 +102,7 @@ namespace Microsoft.Interop
 
                     var (member, _) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(stub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
-                    stub.ContainingSyntaxContext.WriteToWithUnsafeModifier(writer, member, static (writer, member) =>
+                    stub.ContainingSyntaxContext.WriteToWithUnsafeModifier(stub.EnvironmentFlags.HasFlag(EnvironmentFlags.UpdatedMemorySafetyRules), writer, member, static (writer, member) =>
                     {
                         writer.WriteLine("internal partial interface Native");
                         using (writer.WriteBlock())
@@ -138,7 +138,9 @@ namespace Microsoft.Interop
                 {
                     writer.WriteLine();
 
-                    syntaxContext.WriteToWithUnsafeModifier(writer, syntaxContext.ContainingSyntax[0].Identifier, static (writer, baseTypeName) =>
+                    // This part of the partial interface declares no members at all, so it never needs an
+                    // 'unsafe' modifier under either set of rules.
+                    syntaxContext.WriteTo(writer, syntaxContext.ContainingSyntax[0].Identifier, static (writer, baseTypeName) =>
                     {
                         writer.WriteLine("[global::System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute]");
                         writer.WriteLine($"internal partial interface Native : {baseTypeName} {{ }}");
@@ -168,12 +170,17 @@ namespace Microsoft.Interop
 
                     // Generate a method named PopulateUnmanagedVirtualMethodTable on the native interface implementation
                     // that fills in a span with the addresses of the unmanaged-to-managed stub functions at their correct indices.
-                    group.Key.WriteToWithUnsafeModifier(writer, group, static (writer, data) =>
+                    group.Key.WriteToWithUnsafeModifier(group.First().EnvironmentFlags.HasFlag(EnvironmentFlags.UpdatedMemorySafetyRules), writer, group, static (writer, data) =>
                     {
-                        writer.WriteLine("internal unsafe partial interface Native");
+                        writer.WriteLine("internal partial interface Native");
                         writer.WriteLine('{');
                         writer.Indent++;
                         writer.WriteLine("internal static unsafe void PopulateUnmanagedVirtualMethodTable(void** vtable)");
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        // The body takes the address of each stub and writes through the vtable pointer, so it
+                        // opens its own unsafe context rather than relying on one from the containing type.
+                        writer.WriteLine("unsafe");
                         writer.WriteLine('{');
                         writer.Indent++;
 
@@ -183,6 +190,8 @@ namespace Microsoft.Interop
                             writer.WriteLine($"vtable[{method.VtableIndexData.Index}] = (void*)({functionPointerType})&{method.AbiMethodIdentifier};");
                         }
 
+                        writer.Indent--;
+                        writer.WriteLine('}');
                         writer.Indent--;
                         writer.WriteLine('}');
                         writer.Indent--;

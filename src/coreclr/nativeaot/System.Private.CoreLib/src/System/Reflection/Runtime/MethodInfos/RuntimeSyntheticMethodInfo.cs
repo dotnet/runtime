@@ -46,14 +46,6 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return Array.Empty<CustomAttributeData>();
-            }
-        }
-
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
             ArgumentNullException.ThrowIfNull(other);

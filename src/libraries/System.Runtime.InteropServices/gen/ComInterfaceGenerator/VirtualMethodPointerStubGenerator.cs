@@ -39,9 +39,13 @@ namespace Microsoft.Interop
             var writer = new IndentedTextWriter();
             using (writer.WriteBlock())
             {
-                writer.WriteLine($"var ({NativeThisParameterIdentifier}, {VirtualMethodTableIdentifier}) = (({TypeNames.GlobalAlias}{TypeNames.IUnmanagedVirtualMethodTableProvider})this).GetVirtualMethodTableInfoForKey(typeof({methodStub.TypeKeyOwner.FullTypeName}));");
-                writer.WriteLine($"var {VirtualMethodTarget} = (({functionPointerType}){VirtualMethodTableIdentifier}[{methodStub.VtableIndexData.Index}]);");
-                stubGenerator.GenerateStubBody(writer, VirtualMethodTarget);
+                writer.WriteLine("unsafe");
+                using (writer.WriteBlock())
+                {
+                    writer.WriteLine($"var ({NativeThisParameterIdentifier}, {VirtualMethodTableIdentifier}) = (({TypeNames.GlobalAlias}{TypeNames.IUnmanagedVirtualMethodTableProvider})this).GetVirtualMethodTableInfoForKey(typeof({methodStub.TypeKeyOwner.FullTypeName}));");
+                    writer.WriteLine($"var {VirtualMethodTarget} = (({functionPointerType}){VirtualMethodTableIdentifier}[{methodStub.VtableIndexData.Index}]);");
+                    stubGenerator.GenerateStubBody(writer, VirtualMethodTarget);
+                }
             }
 
             return (
@@ -101,14 +105,21 @@ namespace Microsoft.Interop
                     + " })";
             }
 
+            var writer = new IndentedTextWriter();
+            using (writer.WriteBlock())
+            {
+                writer.WriteLine("unsafe");
+                writer.Write(body);
+            }
+
             return (
                 new GeneratedComMember(
                     StubMemberKind.Method,
                     methodStub.AbiMethodIdentifier,
                     stubGenerator.GenerateAbiMethodSignatureData(),
                     ImmutableArray.Create(unmanagedCallersOnlyAttribute).ToSequenceEqual(),
-                    body,
-                    "internal static"),
+                    writer.ToString(),
+                    "internal static unsafe"),
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 

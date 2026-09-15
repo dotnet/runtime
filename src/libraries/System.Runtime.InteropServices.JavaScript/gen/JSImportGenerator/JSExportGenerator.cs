@@ -117,7 +117,7 @@ namespace Microsoft.Interop.JavaScript
             using (writer.WriteBlock())
             {
                 writer.WriteLine($"[{Constants.CompilerGeneratedAttributeGlobal}]");
-                writer.WriteLine($"unsafe class {InitializerClass}");
+                writer.WriteLine($"class {InitializerClass}");
                 using (writer.WriteBlock())
                 {
                     writer.WriteLine($"[{Constants.ThreadStaticGlobal}]");
@@ -191,7 +191,7 @@ namespace Microsoft.Interop.JavaScript
                     new JSGeneratorResolver()));
 
             var writer = new IndentedTextWriter();
-            incrementalContext.ContainingSyntaxContext.WriteToWithUnsafeModifier(
+            incrementalContext.ContainingSyntaxContext.WriteTo(
                 writer,
                 (Context: incrementalContext, Generator: stubGenerator),
                 static (writer, state) => WriteWrapper(writer, state.Context, state.Generator));
@@ -214,11 +214,15 @@ namespace Microsoft.Interop.JavaScript
             writer.WriteLine($"internal static unsafe void {context.SignatureContext.WrapperName}({Constants.JSMarshalerArgumentGlobal}* {Constants.ArgumentsBuffer})");
             using (writer.WriteBlock())
             {
-                WriteWrapperToInnerStubCall(writer, context.SignatureContext.SignatureContext.ElementTypeInformation, InnerWrapperName);
-                GeneratedMethodSignature signature = stubGenerator.GenerateAbiMethodSignatureData();
-                writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
-                writer.WriteLine($"{signature.ReturnType} {InnerWrapperName}{signature.ParameterList}");
-                writer.Write(stubGenerator.GenerateStubBodyForMethod(context.SignatureContext.MethodName));
+                writer.WriteLine("unsafe");
+                using (writer.WriteBlock())
+                {
+                    WriteWrapperToInnerStubCall(writer, context.SignatureContext.SignatureContext.ElementTypeInformation, InnerWrapperName);
+                    GeneratedMethodSignature signature = stubGenerator.GenerateAbiMethodSignatureData();
+                    writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
+                    writer.WriteLine($"{signature.ReturnType} {InnerWrapperName}{signature.ParameterList}");
+                    writer.Write(stubGenerator.GenerateStubBodyForMethod(context.SignatureContext.MethodName));
+                }
             }
         }
 

@@ -279,9 +279,11 @@ public class CodeWritingTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ContainingDeclarationsPreserveNestingAndModifierOrder(bool addUnsafe)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ContainingDeclarationsPreserveNestingAndModifierOrder(bool addUnsafe, bool useUpdatedMemorySafetyRules)
     {
         var context = new ContainingSyntaxContext(
             [
@@ -290,9 +292,9 @@ public class CodeWritingTests
             ],
             ContainingNamespace: null);
         string expected = $$"""
-            public {{(addUnsafe ? "unsafe " : "")}}partial class Outer<T>
+            public {{(addUnsafe && !useUpdatedMemorySafetyRules ? "unsafe " : "")}}partial class Outer<T>
             {
-                readonly {{(addUnsafe ? "unsafe " : "")}}ref partial struct Nested<U>
+                readonly {{(addUnsafe && !useUpdatedMemorySafetyRules ? "unsafe " : "")}}ref partial struct Nested<U>
                 {
                     private static int M() => 42;
                 }
@@ -302,7 +304,7 @@ public class CodeWritingTests
         const string Member = "private static int M() => 42;";
 
         string actual = addUnsafe
-            ? context.WrapMembersInContainingSyntaxWithUnsafeModifier(Member)
+            ? context.WrapMembersInContainingSyntaxWithUnsafeModifier(useUpdatedMemorySafetyRules, Member)
             : context.WrapMemberInContainingSyntax(Member);
 
         Assert.Equal(expected, actual);

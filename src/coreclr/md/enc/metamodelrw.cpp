@@ -766,7 +766,8 @@ CMiniMdRW::CMiniMdRW()
         // If assert fires, change define for AUTO_GROW_CODED_TOKEN_PADDING.
         _ASSERTE(CMiniMdRW::m_cb[iMax] == AUTO_GROW_CODED_TOKEN_PADDING);
     }
-    dbg_m_pLock = NULL;
+    dbg_m_fLockEnabled = false;
+    dbg_m_fIsLockedForWrite.Store(false);
 #endif //_DEBUG
 
 } // CMiniMdRW::CMiniMdRW
@@ -6997,7 +6998,7 @@ void
 CMiniMdRW::Debug_CheckIsLockedForWrite()
 {
     // If this assert fires, then we are trying to modify MetaData that is not locked for write
-    _ASSERTE((dbg_m_pLock == NULL) || dbg_m_pLock->Debug_IsLockedForWrite());
+    _ASSERTE(!dbg_m_fLockEnabled || dbg_m_fIsLockedForWrite.Load());
 }
 
 #endif //_DEBUG

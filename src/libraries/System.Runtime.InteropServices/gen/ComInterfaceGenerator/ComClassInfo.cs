@@ -17,6 +17,9 @@ namespace Microsoft.Interop
         public DeclarationHeader ClassSyntax { get; init; }
         public SequenceEqualImmutableArray<string> ImplementedInterfacesNames { get; init; }
 
+        /// <inheritdoc cref="ComInterfaceInfo.UseUpdatedMemorySafetyRules"/>
+        public bool UseUpdatedMemorySafetyRules { get; init; }
+
         private ComClassInfo(string className, ContainingSyntaxContext containingSyntaxContext, DeclarationHeader classSyntax, SequenceEqualImmutableArray<string> implementedInterfacesNames)
         {
             ClassName = className;
@@ -45,7 +48,10 @@ namespace Microsoft.Interop
                 type.ToDisplayString(),
                 syntax.GetContainingSyntaxContext(),
                 syntax.GetDeclarationTemplate(),
-                new(names.ToImmutable()));
+                new(names.ToImmutable()))
+            {
+                UseUpdatedMemorySafetyRules = syntax.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules")
+            };
         }
 
         public bool Equals(ComClassInfo? other)
@@ -53,6 +59,7 @@ namespace Microsoft.Interop
             return other is not null
                 && ClassName == other.ClassName
                 && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
+                && UseUpdatedMemorySafetyRules == other.UseUpdatedMemorySafetyRules
                 && ImplementedInterfacesNames.SequenceEqual(other.ImplementedInterfacesNames);
         }
 

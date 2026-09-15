@@ -40,10 +40,11 @@ namespace Microsoft.Interop
             return writer.ToString();
         }
 
-        public string WrapMembersInContainingSyntaxWithUnsafeModifier(params string[] members)
+        /// <summary>Wraps members, adding unsafe to containing types only under the legacy memory safety rules.</summary>
+        public string WrapMembersInContainingSyntaxWithUnsafeModifier(bool useUpdatedMemorySafetyRules, params string[] members)
         {
             var writer = new IndentedTextWriter();
-            WriteToWithUnsafeModifier(writer, members, static (writer, members) =>
+            WriteToWithUnsafeModifier(useUpdatedMemorySafetyRules, writer, members, static (writer, members) =>
             {
                 foreach (string member in members)
                 {
@@ -53,9 +54,16 @@ namespace Microsoft.Interop
             return writer.ToString();
         }
 
-        public void WriteToWithUnsafeModifier<TState>(IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
+        /// <summary>Writes containing declarations with their original modifiers.</summary>
+        public void WriteTo<TState>(IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
         {
-            WriteTo(writer, writeMembersState, writeMembers, addUnsafe: true);
+            WriteTo(writer, writeMembersState, writeMembers, addUnsafe: false);
+        }
+
+        /// <summary>Writes containing declarations, adding unsafe only under the legacy memory safety rules.</summary>
+        public void WriteToWithUnsafeModifier<TState>(bool useUpdatedMemorySafetyRules, IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
+        {
+            WriteTo(writer, writeMembersState, writeMembers, addUnsafe: !useUpdatedMemorySafetyRules);
         }
 
         private void WriteTo<TState>(IndentedTextWriter writer, TState state, Action<IndentedTextWriter, TState> writeMembers, bool addUnsafe)

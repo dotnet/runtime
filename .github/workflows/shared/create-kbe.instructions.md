@@ -72,6 +72,27 @@ uses `user.login` to recognize trusted bots before filtering search results.
    human-filed report (`Test failure: ...`) that lacks both the
    `Known Build Error` and area labels, so the label-scoped variations above
    skip over it.
+8. Build-break invariant plus leg root. For a build break with no test or method
+   identifier, derive two bounded, verbatim fragments:
+   - an invariant error phrase from `ErrorMessage` / `ErrorPattern`, removing
+     only volatile paths, line numbers, hashes, GUIDs, timestamps, and exit
+     codes; keep a distinctive 1-8 word literal fragment and reject generic
+     tool-failure text such as `dotnet build failed`;
+   - a leg root from `Build error leg or test failing`, taking the leg portion
+     before the last hyphen (whether rendered as ` - ` or `-`),
+     then removing platform, architecture, configuration, retry, and
+     parenthesized run-specific details; keep at most 4 distinctive words and
+     80 characters.
+
+   Search the pair together in the same issue:
+   `is:issue is:open label:"Known Build Error" in:body "<invariant-error-phrase>" "<leg-root>"`.
+   For an `ErrorMessage` array, try each stable element separately. Treat a
+   result as a candidate only when both fragments match and the full candidate
+   verification below succeeds. If more than one candidate remains plausible,
+   do not guess: record `skipped: ambiguous dup #<a>/#<b>, needs human review`.
+   If either fragment cannot be bounded, skip variation 8 without broadening
+   the search and continue the normal flow. Reserve `skipped: weak signature`
+   for failures whose error signature itself does not meet the specificity bar.
 
 When a failure includes a complete test method identifier, search that
 identifier verbatim before deriving any shorter stem. Do not truncate
@@ -84,6 +105,8 @@ different platform or runtime variant, plus pre-existing area-team trackers
 that lack the `Known Build Error` label. Variation 6 catches siblings at
 different bit widths, instantiations, script runners, or exit/signal
 descriptors. Variation 7 catches an open human report with no label at all.
+Variation 8 catches build-break duplicates whose invariant error text and leg
+root remain stable while title prose drifts.
 
 If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
@@ -125,6 +148,14 @@ candidates:
   across runs and survives cases where the predecessor was integrity-filtered or
   cross-linked rather than directly readable.
 
+For a build break with no test or method identifier, when the open variation 8
+search misses, also search recently closed KBEs with the same pair:
+
+- `is:issue is:closed label:"Known Build Error" in:body "<invariant-error-phrase>" "<leg-root>" closed:>=<30-days-ago>`
+
+Apply the closed-candidate timing and full candidate-verification rules below
+to any pair match.
+
 On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
 it from the build metadata, not the queue time) against the issue's `closed_at`:
 
@@ -144,8 +175,12 @@ lets a recurring signature surface at all. If that widened scan returns **two or
 more** closed `[ci-scan]` predecessors sharing the stem, treat it as a recurring
 signature, not a fresh regression: do **not** file — record `existing-kbe #<n>`
 against the most recently closed predecessor, even if the current build finished
-after that predecessor's `closed_at`. Fewer than two hits is not a recurring
-signature; fall back to the post-close recurrence rule above.
+after that predecessor's `closed_at`. For a build break with no test or method
+identifier, use the invariant-error-phrase + leg-root pair instead of a
+test-name stem and widen the pair search to `closed:>=<90-days-ago>`; two or
+more closed `[ci-scan]` predecessors matching both fragments have the same
+recurring-signature outcome. Fewer than two hits is not a recurring signature;
+fall back to the post-close recurrence rule above.
 
 <a id="search-area-team-tracker"></a>
 
@@ -155,6 +190,14 @@ Search for a plain tracker with:
 
 - `is:issue is:open in:title "<test-name>"`
 - `in:body "<test-file-path>"`
+
+For a build break with no test or method identifier, also search the pair from
+variation 8 without a label filter:
+
+- `is:issue is:open in:body "<invariant-error-phrase>" "<leg-root>"`
+
+Treat a matching unlabeled issue as `linked-tracker #<n>` and apply the same
+two-fragment verification and ambiguity rules before recording it.
 
 On hit, record `linked-tracker #<n>`.
 
@@ -527,6 +570,10 @@ Reject signatures consisting only of:
 - A bare `[FAIL]` line with only the test class name
 - A bare fully-qualified test name
 - A truncated test-name prefix ending in `_`, `.`, or `*`
+- An array whose only failure-identifying anchors are a per-test or
+  per-invocation announcement and a generic suite-harness error from a shared
+  multi-test Helix console log; those lines can coexist when an unrelated
+  sibling test fails, creating a catch-all KBE
 - Common infra strings like `Connection reset`, `Operation timed out`, or
   `No space left on device`
 
@@ -537,6 +584,12 @@ Prefer signatures built from, in order:
    array form)
 3. A unique native stack frame or symbol
 4. A specific JIT method-being-compiled marker plus the stress mode
+
+For a shared multi-test Helix console log, use an exact assertion, exception, or
+error line from the failing test's own output. If no such line can be isolated,
+set `ExcludeConsoleLog` to `true` and use a signature from a per-test or
+leg-level log source; otherwise do not emit the KBE and record
+`skipped: weak signature` for human review.
 
 If you cannot produce a signature meeting this bar, do not create a KBE from
 the shared flow. Return the failure as unhandled or human-review-needed instead.
@@ -554,6 +607,7 @@ the shared flow. Return the failure as unhandled or human-review-needed instead.
 | `"BadImageFormatException"` | bare exception type | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network failures everywhere | array: `["xharness exec android test", "Operation timed out after 3600s"]` with `BuildRetry: false` |
 | `"ComInterfaceGenerator.Tests.ilc.rsp exited with code 134"` | paraphrased; not in the log | copy the actual MSBuild line verbatim: `"Microsoft.NETCore.Native.targets(313,5): error MSB3073: ... exited with code 134."` |
+| array: `["Running test: profiler/gc/nongcheap/nongcheap.cmd", "Profiler tests are expected to contain the text 'PROFILER TEST PASSES'"]` | announcement plus suite-harness error from a shared console log; matches unrelated profiler tests | use the failing test's exact assertion/error line from per-test output, or set `ExcludeConsoleLog: true` and use a signature from a per-test or leg-level (non-console) log source |
 
 <a id="sanitization"></a>
 

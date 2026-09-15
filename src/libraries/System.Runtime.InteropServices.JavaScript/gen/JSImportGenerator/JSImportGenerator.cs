@@ -162,7 +162,7 @@ namespace Microsoft.Interop.JavaScript
                 new CodeEmitOptions(SkipInit: true));
 
             var writer = new IndentedTextWriter();
-            incrementalContext.ContainingSyntaxContext.WriteToWithUnsafeModifier(
+            incrementalContext.ContainingSyntaxContext.WriteTo(
                 writer,
                 (Context: incrementalContext, Generator: stubGenerator, HasReturn: hasReturn),
                 static (writer, state) => WriteImport(writer, state.Context, state.Generator, state.HasReturn));
@@ -182,11 +182,16 @@ namespace Microsoft.Interop.JavaScript
             writer.WriteLine($"{string.Join(" ", context.StubMethodSyntaxTemplate.Modifiers)} {signature.StubReturnType} {context.StubMethodSyntaxTemplate.Identifier}({string.Join(", ", signature.StubParameters.Select(static parameter => parameter.Declaration))})");
             using (writer.WriteBlock())
             {
-                WriteBinding(writer, context.JSImportData, context.SignatureContext);
-                writer.WriteLine();
-                stubGenerator.GenerateStubBody(writer, LocalFunctionName);
-                writer.WriteLine();
-                WriteInvokeFunction(writer, LocalFunctionName, context.SignatureContext, stubGenerator.GenerateTargetMethodSignatureData(), hasReturn);
+                // Under the updated rules a type-level modifier does not establish an unsafe context.
+                writer.WriteLine("unsafe");
+                using (writer.WriteBlock())
+                {
+                    WriteBinding(writer, context.JSImportData, context.SignatureContext);
+                    writer.WriteLine();
+                    stubGenerator.GenerateStubBody(writer, LocalFunctionName);
+                    writer.WriteLine();
+                    WriteInvokeFunction(writer, LocalFunctionName, context.SignatureContext, stubGenerator.GenerateTargetMethodSignatureData(), hasReturn);
+                }
             }
             writer.WriteLine();
             writer.WriteLine($"static {Constants.JSFunctionSignatureGlobal} {context.SignatureContext.BindingName};");
