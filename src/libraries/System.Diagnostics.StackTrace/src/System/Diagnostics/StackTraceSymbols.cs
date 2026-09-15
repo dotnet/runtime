@@ -229,8 +229,22 @@ namespace System.Diagnostics
 
             try
             {
-                // Open the file with read and delete FileShare flags. This matches what dll loading does
-                return new FileStream(path!, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+                // The provider built on this stream reads lazily and is cached for the lifetime of
+                // the assembly, so whatever this handle holds, it holds for the life of the process.
+                //
+                // On Unix that is an advisory flock, and iOS terminates a suspended app that holds a
+                // file lock outside its data container — the PDB lives in the app bundle, so a Debug
+                // app is killed shortly after being backgrounded (see #133697). Ask for no lock there:
+                // the flock only ever coordinated with other .NET readers of a read-only symbol file.
+                //
+                // On Windows the share mode is enforced by the OS and is doing real work: it stops
+                // another process from rewriting the PDB underneath a reader that reads lazily. Keep
+                // denying writes there.
+                FileShare share = OperatingSystem.IsWindows()
+                    ? FileShare.Read | FileShare.Delete
+                    : FileShare.ReadWrite | FileShare.Delete;
+
+                return new FileStream(path!, FileMode.Open, FileAccess.Read, share);
             }
             catch
             {
