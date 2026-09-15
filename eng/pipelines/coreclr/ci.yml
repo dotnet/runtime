@@ -31,6 +31,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -38,10 +40,17 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
 
       #
       # Debug builds
       #
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -143,6 +152,7 @@ extends:
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
@@ -166,6 +176,7 @@ extends:
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: outerloop
             readyToRun: true
             displayNameArgs: R2R_CG2
@@ -192,3 +203,5 @@ extends:
             nameSuffix: PALTests
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/run-paltests-step.yml
+                parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
