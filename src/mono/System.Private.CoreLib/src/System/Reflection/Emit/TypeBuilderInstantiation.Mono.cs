@@ -94,7 +94,7 @@ namespace System.Reflection.Emit
 
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
-            return FieldOnTypeBuilderInstantiation.GetField(fromNoninstanciated, this);
+            return new FieldOnTypeBuilderInstantiation(fromNoninstanciated, this);
         }
     }
 }

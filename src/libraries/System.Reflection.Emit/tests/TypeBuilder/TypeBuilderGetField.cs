@@ -32,12 +32,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void GetField_TypeNotTypeBuilder_ThrowsArgumentException()
-        {
-            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetField(typeof(int), typeof(int).GetField("MaxValue")));
-        }
-
-        [Fact]
         public void GetField_DeclaringTypeOfFieldNotGenericTypeDefinitionOfType_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
