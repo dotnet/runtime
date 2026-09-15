@@ -4,7 +4,7 @@
 #include "externalmemoryhandle.h"
 #include "siginfo.hpp"
 
-CrstExplicitInit ExternalMemoryHandle::s_crst;
+CrstStatic ExternalMemoryHandle::s_crst;
 SListTail<ExternalMemoryHandle> ExternalMemoryHandle::s_handles;
 
 #ifndef DACCESS_COMPILE

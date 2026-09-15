@@ -49,7 +49,7 @@ private:
     PTR_VOID m_pMemory;
     UINT m_gcFlags;
 
-    static CrstExplicitInit s_crst;
+    static CrstStatic s_crst;
     static SListTail<ExternalMemoryHandle> s_handles;
 };
 
