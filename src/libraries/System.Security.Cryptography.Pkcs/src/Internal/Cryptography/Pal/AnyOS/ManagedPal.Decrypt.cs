@@ -112,11 +112,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     {
                         if (cek is not null)
                         {
-#if NET
                             CryptographicOperations.ZeroMemory(cek);
-#else
-                            Array.Clear(cek, 0, cek.Length);
-#endif
                         }
                     }
                 }
