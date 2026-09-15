@@ -100,7 +100,7 @@ internal static partial class PseudoCustomAttributes
                 @event.Attributes |= EventAttributes.SpecialName;
                 return true;
             default:
-                return context.InvalidValue();
+                return context.InvalidTarget();
         }
     }
 
@@ -152,6 +152,7 @@ internal static partial class PseudoCustomAttributes
         var method = (EntityRegistry.MethodDefinitionEntity)context.Owner;
         CustomAttributeNamedArgument<SerializationTypeCode>? codeTypeArgument =
             FindNamedArgument(arguments, MethodImplCodeType);
+        MethodImplAttributes fixedAttributes = 0;
 
         if (kind is not KnownAttributeKind.MethodImpl1)
         {
@@ -165,22 +166,23 @@ internal static partial class PseudoCustomAttributes
                 return context.InvalidValue();
             }
 
-            method.ImplementationAttributes |= (MethodImplAttributes)value;
-
-            if (codeTypeArgument is null)
-            {
-                return true;
-            }
+            fixedAttributes = (MethodImplAttributes)value;
         }
 
+        bool applyCodeType = kind is KnownAttributeKind.MethodImpl1 || codeTypeArgument is not null;
         ushort codeType = codeTypeArgument is { } argument ? GetUInt16(argument.Value) : (ushort)0;
-        if ((codeType & ~(ushort)MethodImplAttributes.CodeTypeMask) != 0)
+        if (applyCodeType && (codeType & ~(ushort)MethodImplAttributes.CodeTypeMask) != 0)
         {
             return context.InvalidValue();
         }
 
-        method.ImplementationAttributes =
-            (method.ImplementationAttributes & ~MethodImplAttributes.CodeTypeMask) | (MethodImplAttributes)codeType;
+        method.ImplementationAttributes |= fixedAttributes;
+        if (applyCodeType)
+        {
+            method.ImplementationAttributes =
+                (method.ImplementationAttributes & ~MethodImplAttributes.CodeTypeMask) | (MethodImplAttributes)codeType;
+        }
+
         return true;
     }
 
@@ -212,6 +214,8 @@ internal static partial class PseudoCustomAttributes
         }
 
         TypeAttributes attributes = (type.Attributes & ~TypeAttributes.LayoutMask) | layout;
+        int? packingSize = null;
+        int? classSize = null;
 
         if (FindNamedArgument(arguments, StructLayoutPack) is { } packArgument)
         {
@@ -221,9 +225,7 @@ internal static partial class PseudoCustomAttributes
                 return context.InvalidValue();
             }
 
-            // An explicit .pack directive wins: the native assembler emits the ClassLayout row for
-            // explicit directives in a later phase than the one that applies this attribute.
-            type.PackingSize ??= (int)pack;
+            packingSize = (int)pack;
         }
 
         if (FindNamedArgument(arguments, StructLayoutSize) is { } sizeArgument)
@@ -234,8 +236,7 @@ internal static partial class PseudoCustomAttributes
                 return context.InvalidValue();
             }
 
-            // An explicit .size directive wins, for the same reason as .pack above.
-            type.ClassSize ??= (int)size;
+            classSize = (int)size;
         }
 
         if (FindNamedArgument(arguments, StructLayoutCharSet) is { } charSetArgument)
@@ -257,6 +258,17 @@ internal static partial class PseudoCustomAttributes
         }
 
         type.Attributes = attributes;
+        // Explicit directives are emitted after pseudo custom attributes by native ilasm, so they
+        // win regardless of source order. Otherwise, later attributes overwrite earlier ones.
+        if (packingSize is not null && !type.HasExplicitPackingSize)
+        {
+            type.PackingSize = packingSize;
+        }
+        if (classSize is not null && !type.HasExplicitClassSize)
+        {
+            type.ClassSize = classSize;
+        }
+
         return true;
     }
 

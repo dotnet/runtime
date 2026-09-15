@@ -117,12 +117,12 @@ namespace ILAssembler.Tests
                         ret
                     }
 
-                    .method public hidebysig specialname instance void add_Changed(class MyDelegate value) cil managed
+                    .method public hidebysig specialname instance void add_Changed(class MyDelegate 'value') cil managed
                     {
                         ret
                     }
 
-                    .method public hidebysig specialname instance void remove_Changed(class MyDelegate value) cil managed
+                    .method public hidebysig specialname instance void remove_Changed(class MyDelegate 'value') cil managed
                     {
                         ret
                     }
