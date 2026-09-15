@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            WasmFuncType signature = WasmLowering.GetSignature(Method).FuncType;
+            WasmFuncType signature = WasmLowering.GetSignature(this).FuncType;
             int parameterCount = signature.Params.Types.Length;
 
             WasmExpr[] expressions = new WasmExpr[parameterCount + 3];
