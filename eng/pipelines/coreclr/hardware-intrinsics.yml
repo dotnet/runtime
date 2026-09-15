@@ -1,17 +1,7 @@
 trigger: none
-pr:
-  branches:
-    include:
-    - '*'
-    exclude:
-    - release/*
-    - internal/release/*
-  paths:
-    include:
-    - eng/pipelines/**
-    - src/coreclr/jit/**
-    - src/tests/Common/GenerateHWIntrinsicTests/**
-    - src/tests/JIT/HardwareIntrinsics/**
+
+# Disabled for the Android API-level validation PR.
+pr: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
