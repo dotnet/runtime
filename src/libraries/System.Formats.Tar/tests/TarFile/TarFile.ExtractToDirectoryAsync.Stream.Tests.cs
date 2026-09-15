@@ -98,6 +98,25 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public async Task ExtractToDirectory_DifferentlyCasedSiblingDirectory_Throws_Async()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destinationPath = Path.Join(root.Path, "Dest");
+            Directory.CreateDirectory(destinationPath);
+
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                await writer.WriteEntryAsync(new PaxTarEntry(TarEntryType.RegularFile, "../dest/pwn.txt"));
+            }
+
+            archive.Position = 0;
+
+            await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationPath, overwriteFiles: false));
+            Assert.False(File.Exists(Path.Join(root.Path, "dest", "pwn.txt")));
+        }
+
+        [Fact]
         public async Task ExtractEntry_DockerImageTarWithFileTypeInDirectoriesInMode_SuccessfullyExtracts_Async()
         {
             using (TempDirectory root = new TempDirectory())
