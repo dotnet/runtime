@@ -173,6 +173,10 @@ jobs:
       fetchDepth: $(checkoutFetchDepth)
       fetchTags: false
 
+    - script: $(_msbuildCommand) eng$(dir)validate-editorconfig-charset.proj /t:ValidateEditorConfigCharsetChangedFiles /p:RepoRoot=$(Build.SourcesDirectory)
+      displayName: Validate .editorconfig charset
+      condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
