@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FlowAnalysis;
@@ -15,23 +17,40 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private readonly CaptureId? CaptureId;
 
-        public LocalKey(ILocalSymbol symbol) => (Local, CaptureId) = (symbol, null);
+        private readonly ImmutableArray<int> TupleElementPath;
 
-        public LocalKey(CaptureId captureId) => (Local, CaptureId) = (null, captureId);
+        public LocalKey(ILocalSymbol symbol) => (Local, CaptureId, TupleElementPath) = (symbol, null, default);
 
-        public bool Equals(LocalKey other) => SymbolEqualityComparer.Default.Equals(Local, other.Local) &&
-            (CaptureId?.Equals(other.CaptureId) ?? other.CaptureId == null);
+        public LocalKey(CaptureId captureId) => (Local, CaptureId, TupleElementPath) = (null, captureId, default);
+
+        internal LocalKey(CaptureId captureId, ImmutableArray<int> tupleElementPath) =>
+            (Local, CaptureId, TupleElementPath) = (null, captureId, tupleElementPath);
+
+        public bool Equals(LocalKey other) =>
+            SymbolEqualityComparer.Default.Equals(Local, other.Local) &&
+            (CaptureId?.Equals(other.CaptureId) ?? other.CaptureId == null) &&
+            TupleElementPath.AsSpan().SequenceEqual(other.TupleElementPath.AsSpan());
 
         public override bool Equals(object obj)
             => obj is LocalKey inst && Equals(inst);
 
         public override int GetHashCode()
-            => CaptureId is null ? SymbolEqualityComparer.Default.GetHashCode(Local) : CaptureId.GetHashCode();
+        {
+            int hashCode = CaptureId is null ? SymbolEqualityComparer.Default.GetHashCode(Local) : CaptureId.GetHashCode();
+            if (!TupleElementPath.IsDefault)
+            {
+                foreach (int index in TupleElementPath)
+                    hashCode = HashUtils.Combine(hashCode, index);
+            }
+
+            return hashCode;
+        }
 
         public override string ToString()
         {
             if (Local != null)
                 return Local.ToString();
+
             return $"capture {CaptureId.GetHashCode()}";
         }
     }

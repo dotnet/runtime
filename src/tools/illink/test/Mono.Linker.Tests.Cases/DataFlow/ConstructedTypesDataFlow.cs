@@ -163,6 +163,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
+            static void DeconstructConditionalTupleLiteral(bool condition)
+            {
+                (var methodName, var type) = condition
+                    ? (nameof(string.IsNullOrEmpty), typeof(string))
+                    : (nameof(object.ReferenceEquals), typeof(object));
+                _ = type.GetMethod(methodName);
+
+                ((var nestedMethodName, var nestedType), _) = condition
+                    ? ((nameof(string.IsNullOrEmpty), typeof(string)), 0)
+                    : ((nameof(object.ReferenceEquals), typeof(object)), 1);
+                _ = nestedType.GetMethod(nestedMethodName);
+            }
+
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            static void DeconstructConditionalTupleLiteralMismatch(bool condition, Type typeWithoutMethods)
+            {
+                (var type, _) = condition
+                    ? (typeof(string), 0)
+                    : (typeWithoutMethods, 1);
+                type.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2077", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            static void DeconstructSwitchTupleLiteral(bool condition)
+            {
+                (var type, _) = condition switch
+                {
+                    true => (typeof(string), 0),
+                    false => (typeof(object), 1)
+                };
+                type.RequiresPublicMethods();
+            }
+
             // The swap correctly propagates the annotation from typeWithMethods to first (via second),
             // so no warning is produced here.
             static void DeconstructTupleSwapSuccess(
@@ -392,6 +425,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructExtensionWithMismatchAnnotation(new());
                 DeconstructNestedTuple(((typeof(string), null), null));
                 DeconstructTupleLiteral(typeof(string));
+                DeconstructConditionalTupleLiteral(true);
+                DeconstructConditionalTupleLiteralMismatch(true, typeof(string));
+                DeconstructSwitchTupleLiteral(true);
                 DeconstructTupleSwapSuccess(typeof(string), typeof(string));
                 DeconstructTupleSwap(typeof(string), typeof(string));
                 DeconstructPropertyTargetSideEffect(typeof(string), typeof(string));
