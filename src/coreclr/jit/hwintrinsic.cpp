@@ -4567,11 +4567,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_ARM64)
             if (varTypeIsFloating(simdBaseType))
             {
@@ -4592,7 +4587,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
             if (isFmaSupported)
             {
-                isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2);
+                isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2, true);
             }
 #elif defined(TARGET_WASM)
             isFmaSupported = false;
