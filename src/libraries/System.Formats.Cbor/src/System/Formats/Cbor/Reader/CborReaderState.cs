@@ -72,5 +72,12 @@ namespace System.Formats.Cbor
         /// the reader will report this value even if the buffer contains trailing bytes.</para>
         /// </summary>
         Finished,
+
+        /// <summary>
+        /// <para>Indicates that the next CBOR data item is incomplete in the current buffer.</para>
+        /// <para>This value is only reported by readers whose current data is not the final block.
+        /// Supply more data using <see cref="CborReader.SlideData" />.</para>
+        /// </summary>
+        NeedsMoreData,
     }
 }

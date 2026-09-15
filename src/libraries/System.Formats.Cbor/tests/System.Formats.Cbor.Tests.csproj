@@ -20,6 +20,7 @@
     <Compile Include="Reader\CborReaderTests.Helpers.cs" />
     <Compile Include="Reader\CborReaderTests.Map.cs" />
     <Compile Include="Reader\CborReaderTests.SkipValue.cs" />
+    <Compile Include="Reader\CborReaderTests.SlideData.cs" />
     <Compile Include="Reader\CborReaderTests.Simple.cs" />
     <Compile Include="Reader\CborReaderTests.Tag.cs" />
     <Compile Include="Reader\CborReaderTests.Array.cs" />
