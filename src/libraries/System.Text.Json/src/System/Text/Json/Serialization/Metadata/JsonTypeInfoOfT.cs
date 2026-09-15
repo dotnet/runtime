@@ -116,15 +116,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal void SetCreateObjectForSourceGen(Func<T> objectCreator)
-        {
-            if (Converter.SupportsCreateObjectDelegate && !Converter.ConstructorIsParameterized)
-            {
-                _typedCreateObject = objectCreator;
-                _createObject = () => new StrongBox<T>(objectCreator());
-            }
-        }
-
         /// <summary>
         /// Gets or sets the strongly-typed delegate that deconstructs a union instance
         /// into its case type and case value.

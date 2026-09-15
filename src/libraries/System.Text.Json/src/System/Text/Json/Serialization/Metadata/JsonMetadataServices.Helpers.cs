@@ -43,15 +43,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                if (typeof(T).IsValueType && objectInfo.ObjectCreator is { } objectCreator)
-                {
-                    typeInfo.SetCreateObjectForSourceGen(objectCreator);
-                }
-                else
-                {
-                    typeInfo.SetCreateObjectIfCompatible(objectInfo.ObjectCreator);
-                }
-
+                typeInfo.SetCreateObjectIfCompatible(objectInfo.ObjectCreator);
                 typeInfo.CreateObjectForExtensionDataProperty = ((JsonTypeInfo)typeInfo).CreateObject;
             }
 

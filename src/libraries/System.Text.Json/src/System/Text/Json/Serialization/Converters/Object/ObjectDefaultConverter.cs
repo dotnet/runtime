@@ -51,12 +51,16 @@ namespace System.Text.Json.Serialization.Converters
                         ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                     }
 
-                    obj = jsonTypeInfo.CreateObject();
+                    obj = jsonTypeInfo.CreateObject()!;
+                    if (IsValueType && jsonTypeInfo.IsSourceGenerated && obj is not StrongBox<T>)
+                    {
+                        obj = new StrongBox<T>((T)obj);
+                    }
                 }
 
                 PopulatePropertiesFastPath(obj, jsonTypeInfo, options, ref reader, ref state);
                 Debug.Assert(obj is not null);
-                value = obj is StrongBox<T> fastBox ? fastBox.Value : (T)obj;
+                value = (obj is StrongBox<T> fastBox ? fastBox.Value : (T)obj)!;
                 return true;
             }
             else
@@ -129,7 +133,11 @@ namespace System.Text.Json.Serialization.Converters
                             ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                         }
 
-                        obj = jsonTypeInfo.CreateObject();
+                        obj = jsonTypeInfo.CreateObject()!;
+                        if (IsValueType && jsonTypeInfo.IsSourceGenerated && obj is not StrongBox<T>)
+                        {
+                            obj = new StrongBox<T>((T)obj);
+                        }
                     }
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
@@ -140,7 +148,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.ReferenceId = null;
                     }
 
-                    jsonTypeInfo.OnDeserializing?.Invoke(obj is StrongBox<T> deserializingBox ? deserializingBox.Value : obj);
+                    InvokeOnDeserializing(jsonTypeInfo, obj);
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
@@ -260,12 +268,12 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            jsonTypeInfo.OnDeserialized?.Invoke(obj is StrongBox<T> deserializedBox ? deserializedBox.Value : obj);
+            InvokeOnDeserialized(jsonTypeInfo, obj);
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Unbox
             Debug.Assert(obj is not null);
-            value = obj is StrongBox<T> slowBox ? slowBox.Value : (T)obj;
+            value = (obj is StrongBox<T> slowBox ? slowBox.Value : (T)obj)!;
 
             // Check if we are trying to update the UTF-8 property cache.
             if (state.Current.PropertyRefCacheBuilder is not null)
@@ -280,7 +288,7 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
-            jsonTypeInfo.OnDeserializing?.Invoke(obj is StrongBox<T> deserializingBox ? deserializingBox.Value : obj);
+            InvokeOnDeserializing(jsonTypeInfo, obj);
             state.Current.InitializePropertiesValidationState(jsonTypeInfo);
 
             // Process all properties.
@@ -313,13 +321,47 @@ namespace System.Text.Json.Serialization.Converters
                 ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
             }
 
-            jsonTypeInfo.OnDeserialized?.Invoke(obj is StrongBox<T> deserializedBox ? deserializedBox.Value : obj);
+            InvokeOnDeserialized(jsonTypeInfo, obj);
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Check if we are trying to update the UTF-8 property cache.
             if (state.Current.PropertyRefCacheBuilder is not null)
             {
                 jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
+            }
+        }
+
+        protected static void InvokeOnDeserializing(JsonTypeInfo jsonTypeInfo, object obj)
+        {
+            if (jsonTypeInfo.OnDeserializing is { } onDeserializing)
+            {
+                if (obj is StrongBox<T> box)
+                {
+                    object boxed = box.Value!;
+                    onDeserializing(boxed);
+                    box.Value = (T)boxed;
+                }
+                else
+                {
+                    onDeserializing(obj);
+                }
+            }
+        }
+
+        protected static void InvokeOnDeserialized(JsonTypeInfo jsonTypeInfo, object obj)
+        {
+            if (jsonTypeInfo.OnDeserialized is { } onDeserialized)
+            {
+                if (obj is StrongBox<T> box)
+                {
+                    object boxed = box.Value!;
+                    onDeserialized(boxed);
+                    box.Value = (T)boxed;
+                }
+                else
+                {
+                    onDeserialized(obj);
+                }
             }
         }
 
