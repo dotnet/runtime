@@ -390,7 +390,7 @@ namespace System.Security.Cryptography
         protected abstract void ExportEncapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
-        ///   Encrypts and authenticates a single message using <c>Base</c> mode.
+        ///   Encrypts a single message using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
@@ -400,8 +400,7 @@ namespace System.Security.Cryptography
         ///   to the recipient.
         /// </param>
         /// <param name="ciphertext">
-        ///   When this method returns, contains a new byte array containing the ciphertext followed by its
-        ///   authentication tag.
+        ///   When this method returns, contains a new byte array containing the ciphertext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional data to authenticate without encrypting.
@@ -442,7 +441,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Encrypts and authenticates a single message using <c>Base</c> mode.
+        ///   Encrypts a single message using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
@@ -452,8 +451,7 @@ namespace System.Security.Cryptography
         ///   to the recipient.
         /// </param>
         /// <param name="ciphertext">
-        ///   When this method returns, contains a new byte array containing the ciphertext followed by its
-        ///   authentication tag.
+        ///   When this method returns, contains a new byte array containing the ciphertext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional data to authenticate without encrypting,
@@ -501,7 +499,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Encrypts and authenticates a single message into the provided buffers using <c>Base</c> mode.
+        ///   Encrypts a single message into the provided buffers using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
@@ -510,7 +508,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the encapsulated secret to send to the recipient.
         /// </param>
         /// <param name="ciphertext">
-        ///   The buffer to receive the ciphertext followed by its authentication tag.
+        ///   The buffer to receive the ciphertext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional data to authenticate without encrypting.
@@ -589,7 +587,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, encrypts and authenticates a single message using <c>Base</c> mode.
+        ///   When overridden in a derived class, encrypts a single message using <c>Base</c> mode.
         /// </summary>
         /// <param name="plaintext">
         ///   The message to encrypt.
@@ -598,7 +596,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the encapsulated secret.
         /// </param>
         /// <param name="ciphertext">
-        ///   The buffer to receive the ciphertext followed by its authentication tag.
+        ///   The buffer to receive the ciphertext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional data to authenticate without encrypting.
@@ -617,13 +615,13 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> info);
 
         /// <summary>
-        ///   Decrypts and authenticates a single HPKE ciphertext using <c>Base</c> mode.
+        ///   Decrypts a single HPKE ciphertext using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
         /// </param>
         /// <param name="ciphertext">
-        ///   The ciphertext, including its trailing authentication tag.
+        ///   The ciphertext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional authenticated data, which must match the value used by the sender.
@@ -632,7 +630,7 @@ namespace System.Security.Cryptography
         ///   The application context, which must match the value used by the sender.
         /// </param>
         /// <returns>
-        ///   A new byte array containing the authenticated plaintext.
+        ///   A new byte array containing the plaintext.
         /// </returns>
         /// <exception cref="ArgumentException">
         ///   <para>
@@ -649,7 +647,7 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <exception cref="AuthenticationTagMismatchException">
-        ///   The authentication tag could not be verified.
+        ///   The ciphertext's contents could not be verified.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
@@ -681,13 +679,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Decrypts and authenticates a single HPKE ciphertext using <c>Base</c> mode.
+        ///   Decrypts a single HPKE ciphertext using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
         /// </param>
         /// <param name="ciphertext">
-        ///   The ciphertext, including its trailing authentication tag.
+        ///   The ciphertext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional authenticated data, which must match the value used by the sender,
@@ -698,7 +696,7 @@ namespace System.Security.Cryptography
         ///   or <see langword="null" /> to use an empty context.
         /// </param>
         /// <returns>
-        ///   A new byte array containing the authenticated plaintext.
+        ///   A new byte array containing the plaintext.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="encapsulatedSecret" /> or <paramref name="ciphertext" /> is <see langword="null" />.
@@ -718,7 +716,7 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <exception cref="AuthenticationTagMismatchException">
-        ///   The authentication tag could not be verified.
+        ///   The ciphertext's contents could not be verified.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
@@ -743,16 +741,16 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Decrypts and authenticates a single HPKE ciphertext into the provided buffer using <c>Base</c> mode.
+        ///   Decrypts a single HPKE ciphertext into the provided buffer using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
         /// </param>
         /// <param name="ciphertext">
-        ///   The ciphertext, including its trailing authentication tag.
+        ///   The ciphertext.
         /// </param>
         /// <param name="plaintext">
-        ///   The buffer to receive the authenticated plaintext.
+        ///   The buffer to receive the plaintext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional authenticated data, which must match the value used by the sender.
@@ -780,7 +778,7 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <exception cref="AuthenticationTagMismatchException">
-        ///   The authentication tag could not be verified.
+        ///   The ciphertext's contents could not be verified.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
@@ -824,17 +822,17 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, decrypts and authenticates a single HPKE ciphertext
+        ///   When overridden in a derived class, decrypts a single HPKE ciphertext
         ///   using <c>Base</c> mode.
         /// </summary>
         /// <param name="encapsulatedSecret">
         ///   The encapsulated secret produced by the sender.
         /// </param>
         /// <param name="ciphertext">
-        ///   The ciphertext, including its trailing authentication tag.
+        ///   The ciphertext.
         /// </param>
         /// <param name="plaintext">
-        ///   The buffer to receive the authenticated plaintext.
+        ///   The buffer to receive the plaintext.
         /// </param>
         /// <param name="associatedData">
         ///   The additional authenticated data.
@@ -843,7 +841,7 @@ namespace System.Security.Cryptography
         ///   The application context.
         /// </param>
         /// <exception cref="AuthenticationTagMismatchException">
-        ///   The authentication tag could not be verified.
+        ///   The ciphertext's contents could not be verified.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   The current instance does not contain a decapsulation key, the encapsulated secret is invalid,
