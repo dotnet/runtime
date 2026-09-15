@@ -8341,7 +8341,7 @@ public:
                                            GenTree*    nullCheckTree,
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
-    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
+    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary);
 
     PhaseStatus optInductionVariables();
 
