@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -207,20 +208,29 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if TARGETS_ANDROID
-        [Fact]
-        public async Task Android_GetCertificateFromKeyStoreViaAlias()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Android_GetCertificateFromKeyStoreViaAlias(bool delayCertificateSelection)
         {
             var options = new LoopbackServer.Options { UseSsl = true };
+            if (delayCertificateSelection)
+            {
+                options.SslProtocols = SslProtocols.Tls12;
+            }
 
             (X509Store store, string alias) = AndroidKeyStoreHelper.AddCertificate(Configuration.Certificates.GetClientCertificate());
             try
             {
-                X509Certificate2 clientCertificate = AndroidKeyStoreHelper.GetCertificateViaAlias(store, alias);
+                using X509Certificate2 clientCertificate = AndroidKeyStoreHelper.GetCertificateViaAlias(store, alias);
                 Assert.True(clientCertificate.HasPrivateKey);
 
+                int callbackCount = 0;
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    using HttpClient client = CreateHttpClientWithCert(clientCertificate);
+                    using HttpClient client = delayCertificateSelection
+                        ? CreateHttpClientWithDelayedCertificate(clientCertificate)
+                        : CreateHttpClientWithCert(clientCertificate);
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         client.GetStringAsync(url),
@@ -228,15 +238,39 @@ namespace System.Net.Http.Functional.Tests
                         {
                             SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
 
+                            using X509Certificate2 receivedCertificate =
+                                X509CertificateLoader.LoadCertificate(sslStream.RemoteCertificate.Export(X509ContentType.Cert));
                             _output.WriteLine(
                                 "Client cert: {0}",
-                                X509CertificateLoader.LoadCertificate(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
+                                receivedCertificate.GetNameInfo(X509NameType.SimpleName, false));
 
                             Assert.Equal(clientCertificate.GetCertHashString(), sslStream.RemoteCertificate.GetCertHashString());
 
                             await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
                         }));
+
+                    if (delayCertificateSelection)
+                    {
+                        Assert.Equal(2, callbackCount);
+                    }
                 }, options);
+
+                HttpClient CreateHttpClientWithDelayedCertificate(X509Certificate2 certificate)
+                {
+                    var handler = new SocketsHttpHandler();
+                    handler.SslOptions = new SslClientAuthenticationOptions
+                    {
+                        EnabledSslProtocols = SslProtocols.Tls12,
+                        RemoteCertificateValidationCallback = delegate { return true; },
+                        LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                        {
+                            callbackCount++;
+                            return remoteCertificate is null ? null : certificate;
+                        },
+                    };
+
+                    return CreateHttpClient(handler);
+                }
             }
             finally
             {
