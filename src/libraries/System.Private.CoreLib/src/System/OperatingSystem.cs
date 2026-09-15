@@ -28,6 +28,8 @@ namespace System
         "TVOS"
 #elif TARGET_ANDROID
         "ANDROID"
+#elif TARGET_OPENHARMONY
+        "OPENHARMONY"
 #elif TARGET_LINUX
         "LINUX"
 #elif TARGET_FREEBSD
