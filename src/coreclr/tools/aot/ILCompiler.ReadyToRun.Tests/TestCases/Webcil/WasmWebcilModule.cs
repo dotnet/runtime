@@ -11,10 +11,57 @@ public static class WasmWebcilModule
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 
+    private sealed class GcMarker
+    {
+        public readonly int Value;
+
+        public GcMarker(int value)
+        {
+            Value = value;
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int AddIntegers(int left, int right)
     {
         return left + right;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int OptimizedTrackedVariables(int left, int right)
+    {
+        int sum = left + right;
+        if (sum < 0)
+        {
+            return AddIntegers(sum, right);
+        }
+
+        int difference = left - right;
+        return AddIntegers(sum, difference);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static unsafe int LeafFrameLocal(int value)
+    {
+        int local = value + 1;
+        int* address = &local;
+        return *address * 2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static unsafe int LocallocFrameLocal(int value)
+    {
+        int length = (value & 3) + 1;
+        int* storage = stackalloc int[length];
+        *storage = value;
+        return *storage;
+    }
+
+    [MethodImpl(MethodImplOptions.NoOptimization)]
+    public static double AddDoubles(double left, double right)
+    {
+        double result = left + right;
+        return result;
     }
 
     // Reads static data, which forces the JIT to materialize the imageBase address via a
@@ -46,6 +93,76 @@ public static class WasmWebcilModule
             s_counter++;
         }
         return total + s_counter;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int GcLocalAcrossFinally(int value)
+    {
+        GcMarker marker = new(value);
+        try
+        {
+            return marker.Value;
+        }
+        finally
+        {
+            // Keep the newly allocated object live in the parent frame across an actual GC
+            // reached through the finally funclet.
+            CollectAtGcSafepoint();
+            GC.KeepAlive(marker);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void CollectAtGcSafepoint()
+    {
+        GC.Collect();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static unsafe int LocallocAcrossFinally(int value)
+    {
+        int length = (value & 3) + 1;
+        int* storage = stackalloc int[length];
+        *storage = value;
+        try
+        {
+            return *storage;
+        }
+        finally
+        {
+            CollectAtGcSafepoint();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int GcSlotIdentity()
+    {
+        GcMarker first = new(17);
+        if (first.Value == 0)
+        {
+            return 0;
+        }
+
+        GcMarker second = new(29);
+        if (second.Value == 0)
+        {
+            return 0;
+        }
+
+        GcMarker? empty = null;
+        TouchMarkerSlot(ref empty);
+
+        CollectAtGcSafepoint();
+        int result = (first.Value * 100) + second.Value;
+        GC.KeepAlive(first);
+        GC.KeepAlive(second);
+        GC.KeepAlive(empty);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TouchMarkerSlot(ref GcMarker? marker)
+    {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
