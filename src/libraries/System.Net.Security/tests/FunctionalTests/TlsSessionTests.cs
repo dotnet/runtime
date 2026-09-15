@@ -1498,10 +1498,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task ClientSession_ExternalCertificateValidation_AcceptWithDefaultValidation_FailsOnUntrustedCert()
         {
-            // The test cert chain isn't installed in the system trust store, so the default
-            // validation policy must report at least RemoteCertificateChainErrors.
-            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
-            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+            const string serverName = "localhost";
+            using TestCertificates.PkiHolder pkiHolder = TestCertificates.GenerateCertificates(serverName);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -1517,7 +1515,7 @@ namespace System.Net.Security.Tests
 
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
-                    ServerCertificate = serverCert,
+                    ServerCertificateContext = pkiHolder.CreateSslStreamCertificateContext(),
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     ClientCertificateRequired = false,
                 });
@@ -1539,7 +1537,7 @@ namespace System.Net.Security.Tests
                 await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
                 await clientHandshake.WaitAsync(TimeSpan.FromSeconds(30));
 
-                Assert.NotEqual(SslPolicyErrors.None, observedErrors);
+                Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, observedErrors);
 
                 // Encrypt must now throw because validation reported errors.
                 byte[] plain = "should-fail"u8.ToArray();
