@@ -89,7 +89,7 @@ namespace ILAssembler
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
         private readonly Dictionary<string, int> _mappedFieldDataNames = new();
-        private readonly Dictionary<string, List<Blob>> _mappedFieldDataReferenceFixups = new();
+        private readonly List<DataLabelReference> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
 
         // Typedef aliases - maps alias name to the resolved entity
@@ -103,8 +103,9 @@ namespace ILAssembler
         private readonly Dictionary<string, DocumentHandle> _documentHandles = new();
         private readonly MetadataBuilder _pdbBuilder = new();
 
-        // VTable fixup tracking - uses types from VTableFixupSupport
-        private readonly List<VTableFixupSupport.VTableFixupEntry> _vtableFixups = new();
+        private readonly List<VTableFixupDeclaration> _vtableFixups = new();
+        private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();
+        private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _vtableEntryDirectiveContexts = new();
 
         public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]> resourceLocator)
         {
@@ -132,6 +133,30 @@ namespace ILAssembler
                 BlobBuilder Value,
                 EntityRegistry.EntityBase? Owner) : TypedefEntry;
         }
+
+        private sealed record VTableFixupDeclaration(
+            VTableFixupSupport.VTableFixupEntry Entry,
+            CILParser.VtfixupDeclContext Context,
+            bool HasValidSlotCount);
+
+        private sealed record DataLabelReference(
+            string TargetLabel,
+            int DataOffset,
+            int PointerSize,
+            CILParser.DdItemContext Context);
+
+        private readonly record struct ValidatedVTableFixup(
+            int OriginalIndex,
+            VTableFixupSupport.VTableFixupEntry Entry,
+            int DataOffset);
+
+        private readonly record struct ValidatedVTableAssociation(
+            EntityRegistry.MethodDefinitionEntity Method,
+            int VTableEntryIndex);
+
+        private readonly record struct ValidatedExport(
+            EntityRegistry.MethodDefinitionEntity Method,
+            int VTableEntryIndex);
 
         private void ReportDiagnostic(DiagnosticSeverity severity, string id, string message, Antlr4.Runtime.ParserRuleContext context)
         {
@@ -193,6 +218,16 @@ namespace ILAssembler
                 ApplyDebuggableAttribute();
             }
 
+            Machine machine = VTableFixupSupport.GetEffectiveMachine(_options.Machine ?? Machine.I386);
+            ImmutableArray<ValidatedVTableFixup> validatedVTableFixups =
+                ValidateVTableFixups(machine);
+            ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations =
+                ValidateVTableAssociations(validatedVTableFixups);
+            ImmutableArray<VTableExportPEBuilder.DataLabelFixup> validatedDataLabelFixups =
+                ValidateDataLabelFixups();
+            ImmutableArray<ValidatedExport> validatedExports =
+                ValidateExports(validatedVTableAssociations, machine);
+
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
             // emit the assembly with the errors reported.
@@ -201,21 +236,6 @@ namespace ILAssembler
             if (structuralErrors.Any() && !_options.ErrorTolerant)
             {
                 return (_diagnostics.ToImmutable(), null);
-            }
-
-            // Check for vtable fixups and exports - collect export info
-            var exports = ImmutableArray.CreateBuilder<VTableExportPEBuilder.ExportInfo>();
-            foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
-            {
-                if (method.ExportOrdinal >= 0)
-                {
-                    exports.Add(new VTableExportPEBuilder.ExportInfo(
-                        method.ExportOrdinal,
-                        method.ExportAlias ?? method.Name,
-                        MetadataTokens.GetToken(method.Handle),
-                        method.VTableEntry,
-                        method.VTableSlot));
-                }
             }
 
             BlobBuilder ilStream = new();
@@ -230,18 +250,12 @@ namespace ILAssembler
                 _options.MetadataVersion,
                 suppressValidation: suppressMetadataValidation);
 
-            // Compute metadata size from the MetadataSizes
-            // We need this for data label fixup RVA calculations
-            var sizes = rootBuilder.Sizes;
-            int metadataSize = ComputeMetadataSize(sizes);
-
             // Apply command-line overrides
             Subsystem subsystem = _options.Subsystem ?? _subsystem;
             int fileAlignment = _options.FileAlignment ?? _alignment;
             long imageBase = _options.ImageBase ?? _imageBase;
             ushort majorSubsystemVersion = _options.SubsystemVersion?.Major ?? 4;
             ushort minorSubsystemVersion = _options.SubsystemVersion?.Minor ?? 0;
-            Machine machine = _options.Machine ?? Machine.I386;
 
             // Build DllCharacteristics from options
             DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible | DllCharacteristics.NoSeh | DllCharacteristics.TerminalServerAware;
@@ -263,7 +277,7 @@ namespace ILAssembler
             {
                 imageCharacteristics |= Characteristics.Dll;
             }
-            if (machine is Machine.I386 or Machine.Arm)
+            if (machine is Machine.I386 or Machine.ArmThumb2)
             {
                 imageCharacteristics |= Characteristics.Bit32Machine;
             }
@@ -293,16 +307,23 @@ namespace ILAssembler
             }
 
             // Build debug directory if we have any debug info
-            DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out int debugDataSize);
+            DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out _);
 
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
                 ? GetDeterministicContentId
                 : null;
 
             // Use custom PE builder if we have vtable fixups, exports, or data label reference fixups
-            if (_vtableFixups.Count > 0 || exports.Count > 0 || _mappedFieldDataReferenceFixups.Count > 0)
+            if (validatedVTableFixups.Length > 0 ||
+                validatedExports.Length > 0 ||
+            validatedDataLabelFixups.Length > 0)
             {
-                var vtableFixupInfos = BuildVTableFixupInfos();
+                ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> vtableFixupInfos =
+                BuildVTableFixupInfos(
+                    validatedVTableFixups,
+                    validatedVTableAssociations);
+                ImmutableArray<VTableExportPEBuilder.ExportInfo> exports =
+                    BuildExportInfos(validatedExports);
 
                 // Apply CorFlags from options or directive
                 CorFlags corFlags = _options.CorFlags ?? _corflags;
@@ -322,11 +343,8 @@ namespace ILAssembler
                     flags: corFlags,
                     deterministicIdProvider: deterministicIdProvider,
                     vtableFixups: vtableFixupInfos,
-                    exports: exports.ToImmutable(),
-                    mappedFieldDataOffsets: _mappedFieldDataNames,
-                    dataLabelFixups: _mappedFieldDataReferenceFixups,
-                    metadataSize: metadataSize,
-                    debugDataSize: debugDataSize);
+                    exports: exports,
+                    dataLabelFixups: validatedDataLabelFixups);
 
                 return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup));
             }
@@ -363,43 +381,335 @@ namespace ILAssembler
             return BlobContentId.FromHash(hash.GetHashAndReset());
         }
 
-        private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos()
+        private ImmutableArray<ValidatedVTableFixup> ValidateVTableFixups(Machine machine)
         {
             if (_vtableFixups.Count == 0)
-                return ImmutableArray<VTableExportPEBuilder.VTableFixupInfo>.Empty;
-
-            var builder = ImmutableArray.CreateBuilder<VTableExportPEBuilder.VTableFixupInfo>(_vtableFixups.Count);
-
-            for (int entryIndex = 0; entryIndex < _vtableFixups.Count; entryIndex++)
             {
-                var vtf = _vtableFixups[entryIndex];
-                var methodTokens = ImmutableArray.CreateBuilder<int>(vtf.SlotCount);
+                return ImmutableArray<ValidatedVTableFixup>.Empty;
+            }
 
-                // Initialize with zeros
-                for (int i = 0; i < vtf.SlotCount; i++)
+            var builder = ImmutableArray.CreateBuilder<ValidatedVTableFixup>(_vtableFixups.Count);
+
+            for (int i = 0; i < _vtableFixups.Count; i++)
+            {
+                VTableFixupDeclaration declaration = _vtableFixups[i];
+                if (!declaration.HasValidSlotCount)
                 {
-                    methodTokens.Add(0);
+                    continue;
                 }
 
-                // Find methods that reference this vtable entry
-                foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
+                VTableFixupSupport.VTableFixupEntry entry = declaration.Entry;
+                const ushort WidthMask =
+                    VTableFixupSupport.COR_VTABLE_32BIT |
+                    VTableFixupSupport.COR_VTABLE_64BIT;
+                ushort width = (ushort)(entry.Flags & WidthMask);
+                ushort expectedWidth = VTableFixupSupport.GetPointerSize(machine) == sizeof(long)
+                    ? VTableFixupSupport.COR_VTABLE_64BIT
+                    : VTableFixupSupport.COR_VTABLE_32BIT;
+                if (width != expectedWidth)
                 {
-                    if (method.VTableEntry == entryIndex + 1 && // 1-based
-                        method.VTableSlot > 0 &&
-                        method.VTableSlot <= vtf.SlotCount)
+                    ReportError(
+                        DiagnosticIds.InvalidVTableWidth,
+                        string.Format(
+                            DiagnosticMessageTemplates.InvalidVTableWidth,
+                            width,
+                            machine,
+                            expectedWidth == VTableFixupSupport.COR_VTABLE_64BIT
+                                ? "int64"
+                                : "int32"),
+                        declaration.Context);
+                    continue;
+                }
+
+                if (!_mappedFieldDataNames.TryGetValue(entry.DataLabel, out int dataOffset))
+                {
+                    ReportError(
+                        DiagnosticIds.LabelNotFound,
+                        string.Format(DiagnosticMessageTemplates.LabelNotFound, entry.DataLabel),
+                        declaration.Context.id());
+                    continue;
+                }
+
+                int availableBytes = GetAvailableMappedFieldDataBytes(dataOffset);
+                int requiredBytes = checked(
+                    entry.SlotCount * VTableFixupSupport.GetSlotSize(entry.Flags));
+                if (requiredBytes > availableBytes)
+                {
+                    ReportError(
+                        DiagnosticIds.InsufficientVTableData,
+                        string.Format(
+                            DiagnosticMessageTemplates.InsufficientVTableData,
+                            entry.DataLabel,
+                            availableBytes,
+                            requiredBytes),
+                        declaration.Context.id());
+                    continue;
+                }
+
+                builder.Add(new ValidatedVTableFixup(i + 1, entry, dataOffset));
+            }
+
+            return builder.ToImmutable();
+        }
+
+        private int GetAvailableMappedFieldDataBytes(int dataOffset)
+        {
+            int endOffset = _mappedFieldData.Count;
+            foreach (int otherOffset in _mappedFieldDataNames.Values)
+            {
+                if (otherOffset > dataOffset && otherOffset < endOffset)
+                {
+                    endOffset = otherOffset;
+                }
+            }
+
+            return endOffset - dataOffset;
+        }
+
+        private ImmutableArray<VTableExportPEBuilder.DataLabelFixup> ValidateDataLabelFixups()
+        {
+            var builder =
+                ImmutableArray.CreateBuilder<VTableExportPEBuilder.DataLabelFixup>(
+                    _mappedFieldDataReferenceFixups.Count);
+
+            foreach (DataLabelReference reference in _mappedFieldDataReferenceFixups)
+            {
+                if (!_mappedFieldDataNames.TryGetValue(reference.TargetLabel, out int targetOffset))
+                {
+                    ReportError(
+                        DiagnosticIds.LabelNotFound,
+                        string.Format(
+                            DiagnosticMessageTemplates.LabelNotFound,
+                            reference.TargetLabel),
+                        reference.Context);
+                    continue;
+                }
+
+                builder.Add(new VTableExportPEBuilder.DataLabelFixup(
+                    reference.DataOffset,
+                    targetOffset,
+                    reference.PointerSize));
+            }
+
+            return builder.ToImmutable();
+        }
+
+        private ImmutableArray<ValidatedVTableAssociation> ValidateVTableAssociations(
+            ImmutableArray<ValidatedVTableFixup> validatedVTableFixups)
+        {
+            var fixupsByOriginalIndex = new Dictionary<int, (int SerializedIndex, ValidatedVTableFixup Fixup)>(
+                validatedVTableFixups.Length);
+            for (int i = 0; i < validatedVTableFixups.Length; i++)
+            {
+                fixupsByOriginalIndex.Add(
+                    validatedVTableFixups[i].OriginalIndex,
+                    (i + 1, validatedVTableFixups[i]));
+            }
+
+            var builder = ImmutableArray.CreateBuilder<ValidatedVTableAssociation>();
+            foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
+            {
+                if (!_vtableEntryDirectiveContexts.TryGetValue(method, out ParserRuleContext? context))
+                {
+                    continue;
+                }
+
+                if (!fixupsByOriginalIndex.TryGetValue(
+                    method.VTableEntry,
+                    out (int SerializedIndex, ValidatedVTableFixup Fixup) fixup))
+                {
+                    ReportError(
+                        DiagnosticIds.InvalidVTableEntry,
+                        string.Format(
+                            DiagnosticMessageTemplates.InvalidVTableEntry,
+                            method.Name,
+                            method.VTableEntry),
+                        context);
+                    continue;
+                }
+
+                if (method.VTableSlot <= 0 || method.VTableSlot > fixup.Fixup.Entry.SlotCount)
+                {
+                    ReportError(
+                        DiagnosticIds.InvalidVTableEntry,
+                        string.Format(
+                            DiagnosticMessageTemplates.InvalidVTableSlot,
+                            method.Name,
+                            method.VTableSlot,
+                            method.VTableEntry,
+                            fixup.Fixup.Entry.SlotCount),
+                        context);
+                    continue;
+                }
+
+                builder.Add(new ValidatedVTableAssociation(method, fixup.SerializedIndex));
+            }
+
+            return builder.ToImmutable();
+        }
+
+        private ImmutableArray<ValidatedExport> ValidateExports(
+            ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations,
+            Machine machine)
+        {
+            if (_vtableFixups.Count == 0)
+            {
+                return ImmutableArray<ValidatedExport>.Empty;
+            }
+
+            var associationsByMethod =
+                new Dictionary<EntityRegistry.MethodDefinitionEntity, ValidatedVTableAssociation>(
+                    validatedVTableAssociations.Length);
+            foreach (ValidatedVTableAssociation association in validatedVTableAssociations)
+            {
+                associationsByMethod.Add(association.Method, association);
+            }
+
+            var candidates = ImmutableArray.CreateBuilder<ValidatedExport>();
+            foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
+            {
+                if (method.ExportOrdinal < 0)
+                {
+                    continue;
+                }
+
+                ParserRuleContext context = _exportDirectiveContexts[method];
+                string exportName = method.ExportAlias ?? method.Name;
+                if (!VTableExportPEBuilder.IsExportMachineSupported(machine))
+                {
+                    ReportError(
+                        DiagnosticIds.UnsupportedNativeExportMachine,
+                        string.Format(
+                            DiagnosticMessageTemplates.UnsupportedNativeExportMachine,
+                            machine),
+                        context);
+                    continue;
+                }
+
+                if (!associationsByMethod.TryGetValue(
+                    method,
+                    out ValidatedVTableAssociation association))
+                {
+                    if (!_vtableEntryDirectiveContexts.ContainsKey(method))
                     {
-                        methodTokens[method.VTableSlot - 1] = MetadataTokens.GetToken(method.Handle);
+                        ReportError(
+                            DiagnosticIds.InvalidVTableExport,
+                            string.Format(
+                                DiagnosticMessageTemplates.InvalidVTableExport,
+                                exportName),
+                            context);
+                    }
+
+                    continue;
+                }
+
+                candidates.Add(new ValidatedExport(method, association.VTableEntryIndex));
+            }
+
+            if (candidates.Count == 0)
+            {
+                return ImmutableArray<ValidatedExport>.Empty;
+            }
+
+            var exportsByOrdinal = new Dictionary<int, ValidatedExport>();
+            var nonConflictingExports = ImmutableArray.CreateBuilder<ValidatedExport>(candidates.Count);
+            foreach (ValidatedExport export in candidates)
+            {
+                if (exportsByOrdinal.TryGetValue(
+                    export.Method.ExportOrdinal,
+                    out ValidatedExport existingExport) &&
+                    (existingExport.VTableEntryIndex != export.VTableEntryIndex ||
+                     existingExport.Method.VTableSlot != export.Method.VTableSlot))
+                {
+                    ReportError(
+                        DiagnosticIds.DuplicateExportOrdinal,
+                        string.Format(
+                            DiagnosticMessageTemplates.DuplicateExportOrdinal,
+                            export.Method.ExportAlias ?? export.Method.Name,
+                            export.Method.ExportOrdinal),
+                        _exportDirectiveContexts[export.Method]);
+                    continue;
+                }
+
+                exportsByOrdinal.TryAdd(export.Method.ExportOrdinal, export);
+                nonConflictingExports.Add(export);
+            }
+
+            int baseOrdinal = nonConflictingExports.Min(export => export.Method.ExportOrdinal);
+            var validatedExports =
+                ImmutableArray.CreateBuilder<ValidatedExport>(nonConflictingExports.Count);
+            foreach (ValidatedExport export in nonConflictingExports)
+            {
+                long ordinalIndex = (long)export.Method.ExportOrdinal - baseOrdinal;
+                if (ordinalIndex > ushort.MaxValue)
+                {
+                    ReportError(
+                        DiagnosticIds.ExportOrdinalRangeTooLarge,
+                        string.Format(
+                            DiagnosticMessageTemplates.ExportOrdinalRangeTooLarge,
+                            export.Method.ExportOrdinal,
+                            baseOrdinal,
+                            ushort.MaxValue),
+                        _exportDirectiveContexts[export.Method]);
+                    continue;
+                }
+
+                validatedExports.Add(export);
+            }
+
+            return validatedExports.ToImmutable();
+        }
+
+        private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos(
+            ImmutableArray<ValidatedVTableFixup> validatedVTableFixups,
+            ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations)
+        {
+            var builder =
+                ImmutableArray.CreateBuilder<VTableExportPEBuilder.VTableFixupInfo>(
+                    validatedVTableFixups.Length);
+
+            for (int i = 0; i < validatedVTableFixups.Length; i++)
+            {
+                ValidatedVTableFixup fixup = validatedVTableFixups[i];
+                var methodTokens = ImmutableArray.CreateBuilder<int>(fixup.Entry.SlotCount);
+                methodTokens.Count = fixup.Entry.SlotCount;
+
+                foreach (ValidatedVTableAssociation association in validatedVTableAssociations)
+                {
+                    if (association.VTableEntryIndex == i + 1)
+                    {
+                        methodTokens[association.Method.VTableSlot - 1] =
+                            MetadataTokens.GetToken(association.Method.Handle);
                     }
                 }
 
                 builder.Add(new VTableExportPEBuilder.VTableFixupInfo(
-                    vtf.DataLabel,
-                    vtf.SlotCount,
-                    vtf.Flags,
-                    methodTokens.ToImmutable()));
+                    fixup.DataOffset,
+                    fixup.Entry.SlotCount,
+                    fixup.Entry.Flags,
+                    methodTokens.MoveToImmutable()));
             }
 
-            return builder.ToImmutable();
+            return builder.MoveToImmutable();
+        }
+
+        private static ImmutableArray<VTableExportPEBuilder.ExportInfo> BuildExportInfos(
+            ImmutableArray<ValidatedExport> validatedExports)
+        {
+            var builder =
+                ImmutableArray.CreateBuilder<VTableExportPEBuilder.ExportInfo>(
+                    validatedExports.Length);
+
+            foreach (ValidatedExport export in validatedExports)
+            {
+                builder.Add(new VTableExportPEBuilder.ExportInfo(
+                    export.Method.ExportOrdinal,
+                    export.Method.ExportAlias ?? export.Method.Name,
+                    export.VTableEntryIndex,
+                    export.Method.VTableSlot));
+            }
+
+            return builder.MoveToImmutable();
         }
 
         private IEnumerable<EntityRegistry.MethodDefinitionEntity> GetParsedMethods()
@@ -2260,16 +2570,15 @@ namespace ILAssembler
             }
             else if (context.id() is CILParser.IdContext id)
             {
-                // Reference to another data label - this will be patched with the target's RVA
-                // during PE serialization by VTableExportPEBuilder.ApplyDataLabelFixups()
                 string name = VisitId(id).Value;
-                if (!_mappedFieldDataReferenceFixups.TryGetValue(name, out var fixups))
-                {
-                    _mappedFieldDataReferenceFixups[name] = fixups = new();
-                }
-
-                // Reserve 4 bytes for the RVA that will be patched later
-                fixups.Add(_mappedFieldData.ReserveBytes(4));
+                int pointerSize = VTableFixupSupport.GetPointerSize(
+                    _options.Machine ?? Machine.I386);
+                _mappedFieldDataReferenceFixups.Add(new DataLabelReference(
+                    name,
+                    _mappedFieldData.Count,
+                    pointerSize,
+                    context));
+                _mappedFieldData.ReserveBytes(pointerSize);
                 return GrammarResult.SentinelValue.Result;
             }
             else if (context.bytes() is CILParser.BytesContext bytes)
@@ -4628,20 +4937,50 @@ namespace ILAssembler
             else if (context.EXPORT() is not null)
             {
                 // .export [ordinal] or .export [ordinal] as alias
+                currentMethod.Definition.ExportOrdinal = -1;
+                currentMethod.Definition.ExportAlias = null;
+                _exportDirectiveContexts.Remove(currentMethod.Definition);
+
+                int diagnosticCount = _diagnostics.Count;
                 int ordinal = VisitInt32(context.int32()[0]).Value;
                 string? alias = context.id() is { } aliasId ? VisitId(aliasId).Value : null;
 
+                if (_diagnostics.Count != diagnosticCount)
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
+                if (ordinal <= 0)
+                {
+                    ReportError(
+                        DiagnosticIds.InvalidExportOrdinal,
+                        string.Format(DiagnosticMessageTemplates.InvalidExportOrdinal, ordinal),
+                        context);
+                    return GrammarResult.SentinelValue.Result;
+                }
+
                 currentMethod.Definition.ExportOrdinal = ordinal;
                 currentMethod.Definition.ExportAlias = alias;
+                _exportDirectiveContexts[currentMethod.Definition] = context;
             }
             else if (context.VTENTRY() is not null)
             {
                 // .vtentry vtableIndex : slotIndex
+                currentMethod.Definition.VTableEntry = 0;
+                currentMethod.Definition.VTableSlot = 0;
+                _vtableEntryDirectiveContexts.Remove(currentMethod.Definition);
+
+                int diagnosticCount = _diagnostics.Count;
                 int vtableEntry = VisitInt32(context.int32()[0]).Value;
                 int vtableSlot = VisitInt32(context.int32()[1]).Value;
+                if (_diagnostics.Count != diagnosticCount)
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
 
                 currentMethod.Definition.VTableEntry = vtableEntry;
                 currentMethod.Definition.VTableSlot = vtableSlot;
+                _vtableEntryDirectiveContexts[currentMethod.Definition] = context;
             }
             else if (context.OVERRIDE() is not null)
             {
@@ -6668,12 +7007,6 @@ namespace ILAssembler
                 };
             }
 
-            // Default to 32-bit if neither 32 nor 64 is specified
-            if ((flags & (VTableFixupSupport.COR_VTABLE_32BIT | VTableFixupSupport.COR_VTABLE_64BIT)) == 0)
-            {
-                flags |= VTableFixupSupport.COR_VTABLE_32BIT;
-            }
-
             return new(flags);
         }
 
@@ -6681,96 +7014,30 @@ namespace ILAssembler
         public GrammarResult VisitVtfixupDecl(CILParser.VtfixupDeclContext context)
         {
             // vtfixupDecl: '.vtfixup' '[' int32 ']' vtfixupAttr 'at' id;
+            int diagnosticCount = _diagnostics.Count;
             int slotCount = VisitInt32(context.int32()).Value;
             ushort flags = VisitVtfixupAttr(context.vtfixupAttr()).Value;
             string dataLabel = VisitId(context.id()).Value;
+            bool hasValidSlotCount = _diagnostics.Count == diagnosticCount;
 
-            _vtableFixups.Add(new VTableFixupSupport.VTableFixupEntry(slotCount, flags, dataLabel));
-
-            return GrammarResult.SentinelValue.Result;
-        }
-
-        /// <summary>
-        /// Computes the total metadata size from MetadataSizes.
-        /// This replicates the internal MetadataSizes.MetadataSize calculation.
-        /// </summary>
-        private static int ComputeMetadataSize(MetadataSizes sizes)
-        {
-            // Metadata header size (fixed structure):
-            // - signature (4)
-            // - major/minor version (4)
-            // - reserved (4)
-            // - version string length (4)
-            // - version string padded to 4 bytes ("v4.0.30319" = 12 bytes padded)
-            // - storage header (4)
-            // - 5 stream headers (#~, #Strings, #US, #GUID, #Blob) = 76 bytes
-            // Total header: ~108 bytes
-            const int metadataHeaderSize = 108;
-
-            // Stream storage: heaps (#Strings, #US, #GUID, #Blob) - we can get aligned sizes
-            int heapStorageSize = 0;
-            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.String);
-            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.UserString);
-            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.Guid);
-            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.Blob);
-
-            // Table stream (#~): header + table data
-            // Header: Reserved(4) + Version(2) + HeapSizes(1) + RowIdBitWidth(1) + ValidMask(8) + SortedMask(8)
-            //         + 4 bytes per present table for row counts
-            int tableStreamSize = 24; // base header
-            var rowCounts = sizes.RowCounts;
-
-            // Count present tables and add 4 bytes each for row count
-            for (int i = 0; i < rowCounts.Length; i++)
+            if (hasValidSlotCount && (uint)slotCount > ushort.MaxValue)
             {
-                if (rowCounts[i] > 0)
-                {
-                    tableStreamSize += 4;
-                }
+                ReportError(
+                    DiagnosticIds.InvalidVTableSlotCount,
+                    string.Format(
+                        DiagnosticMessageTemplates.InvalidVTableSlotCount,
+                        slotCount,
+                        ushort.MaxValue),
+                    context.int32());
+                hasValidSlotCount = false;
             }
 
-            // Add table data size with estimated row sizes
-            // Row sizes depend on index sizes (2 or 4 bytes) which we don't have access to
-            // For small assemblies, all indexes are 2 bytes
-            tableStreamSize += rowCounts[(int)TableIndex.Module] * 10;       // 2+2+2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.TypeRef] * 6;       // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.TypeDef] * 14;      // 4+2+2+2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.Field] * 6;         // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.MethodDef] * 14;    // 4+2+2+2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.Param] * 6;         // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.InterfaceImpl] * 4; // 2+2
-            tableStreamSize += rowCounts[(int)TableIndex.MemberRef] * 6;     // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.Constant] * 6;      // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.CustomAttribute] * 6; // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.FieldMarshal] * 4;  // 2+2
-            tableStreamSize += rowCounts[(int)TableIndex.DeclSecurity] * 6;  // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.ClassLayout] * 8;   // 2+4+2
-            tableStreamSize += rowCounts[(int)TableIndex.FieldLayout] * 6;   // 4+2
-            tableStreamSize += rowCounts[(int)TableIndex.StandAloneSig] * 2; // 2
-            tableStreamSize += rowCounts[(int)TableIndex.EventMap] * 4;      // 2+2
-            tableStreamSize += rowCounts[(int)TableIndex.Event] * 6;         // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.PropertyMap] * 4;   // 2+2
-            tableStreamSize += rowCounts[(int)TableIndex.Property] * 6;      // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.MethodSemantics] * 6; // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.MethodImpl] * 6;    // 2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.ModuleRef] * 2;     // 2
-            tableStreamSize += rowCounts[(int)TableIndex.TypeSpec] * 2;      // 2
-            tableStreamSize += rowCounts[(int)TableIndex.ImplMap] * 8;       // 2+2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.FieldRva] * 6;      // 4+2
-            tableStreamSize += rowCounts[(int)TableIndex.Assembly] * 22;     // 16+2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.AssemblyRef] * 20;  // 12+2+2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.File] * 8;          // 4+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.ExportedType] * 14; // 8+2+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.ManifestResource] * 12; // 8+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.NestedClass] * 4;   // 2+2
-            tableStreamSize += rowCounts[(int)TableIndex.GenericParam] * 8;  // 4+2+2
-            tableStreamSize += rowCounts[(int)TableIndex.MethodSpec] * 4;    // 2+2
-            tableStreamSize += rowCounts[(int)TableIndex.GenericParamConstraint] * 4; // 2+2
+            _vtableFixups.Add(new VTableFixupDeclaration(
+                new VTableFixupSupport.VTableFixupEntry(slotCount, flags, dataLabel),
+                context,
+                hasValidSlotCount));
 
-            // Align table stream to 4 bytes (includes +1 for terminating 0 byte)
-            tableStreamSize = ((tableStreamSize + 1) + 3) & ~3;
-
-            return metadataHeaderSize + heapStorageSize + tableStreamSize;
+            return GrammarResult.SentinelValue.Result;
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitOptionalModifier(CILParser.OptionalModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);

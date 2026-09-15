@@ -322,7 +322,9 @@ namespace ILAssembler.Tests
             Assert.Equal(targetRva + sizeof(int), parenthesizedRva);
             Assert.Equal(0x22, Assert.Single(ReadData(pe, fields["CilValue"], 1)));
             Assert.Equal(0x12345678, BitConverter.ToInt32(ReadData(pe, fields["TargetValue"], sizeof(int))));
-            Assert.Equal(targetRva, BitConverter.ToInt32(ReadData(pe, fields["ParenthesizedValue"], sizeof(int))));
+            Assert.Equal(
+                pe.PEHeaders.PEHeader!.ImageBase + (uint)targetRva,
+                BitConverter.ToUInt32(ReadData(pe, fields["ParenthesizedValue"], sizeof(int))));
         }
 
         [Fact]

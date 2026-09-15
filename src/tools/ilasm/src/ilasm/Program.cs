@@ -136,7 +136,7 @@ internal sealed class Program
             }
             else if (Get(_command.TargetArm))
             {
-                options.Machine = Machine.Arm;
+                options.Machine = Machine.ArmThumb2;
             }
             else if (Get(_command.TargetArm64))
             {
