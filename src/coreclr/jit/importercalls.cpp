@@ -3482,7 +3482,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         else
         {
             assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
-            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint), mustExpand);
+            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint));
         }
     }
 
@@ -6672,7 +6672,6 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
 //    method     - handle for the intrinsic method
 //    sig        - signature of the intrinsic method
 //    entryPoint - The entry point information required for R2R scenarios
-//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Returns:
 //    IR tree to use in place of the call, or nullptr if the jit should treat
@@ -6681,8 +6680,7 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
 GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                               CORINFO_CLASS_HANDLE  clsHnd,
                                               CORINFO_METHOD_HANDLE method,
-                                              CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
-                                              bool                  mustExpand)
+                                              CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint))
 {
     assert(sig->sigInst.classInstCount == 0);
 
@@ -6708,14 +6706,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
     switch (intrinsic)
     {
         case NI_PRIMITIVE_ConvertToIntegerNative:
-        {
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                return nullptr;
-            }
-            FALLTHROUGH;
-        }
-
         case NI_PRIMITIVE_ConvertToInteger:
         {
             assert(sig->sigInst.methInstCount == 1);
@@ -6741,7 +6731,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                         {
                             hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
                         }
@@ -6754,7 +6744,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                         {
                             hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
                         }
@@ -6771,7 +6761,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                         {
                             hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
                         }
@@ -6784,11 +6774,25 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                         {
                             hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
                         }
                     }
+                }
+#else  // TARGET_X86
+                else if (compExactlyDependsOn(InstructionSet_AVX512, true))
+                {
+                    assert(retType == TYP_LONG);
+
+                    // Use the vector instruction so scalar and vector native conversions agree on overflow.
+                    hwIntrinsicId = uns ? NI_AVX512_ConvertToVector128UInt64WithTruncation
+                                        : NI_AVX512_ConvertToVector128Int64WithTruncation;
+
+                    op1 = impPopStack().val;
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, baseType, 16);
+                    res = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, hwIntrinsicId, baseType, 16);
+                    return gtNewSimdToScalarNode(TYP_LONG, res, tgtType, 16);
                 }
 #endif // TARGET_AMD64
 
