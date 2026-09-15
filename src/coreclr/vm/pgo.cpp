@@ -77,6 +77,12 @@ void PgoManager::Shutdown()
     }
 }
 
+void PgoManager::FlushInstrumentationData()
+{
+    WRAPPER_NO_CONTRACT;
+    WritePgoData();
+}
+
 void PgoManager::VerifyAddress(void* address)
 {
     // TODO Insert an assert to check that an address is a valid pgo address

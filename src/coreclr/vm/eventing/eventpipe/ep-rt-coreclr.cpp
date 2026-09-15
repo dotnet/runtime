@@ -6,9 +6,14 @@
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-session.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 #include "threadsuspend.h"
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 CrstStatic _ep_rt_coreclr_config_lock;
@@ -167,6 +172,31 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	ThreadSuspend::RestartEE (true /* SuspendSucceeded */);
 
 	return;
+}
+
+void
+ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
+{
+	STATIC_CONTRACT_NOTHROW;
+#if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
+	// Flush block-count PGO only into the session that enabled the JitInstrumentationData events, so an
+	// unrelated session's stop can't re-emit chunks into an open PGO session (dotnet-pgo drops a method
+	// once data arrives after its final chunk).
+	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
+	EventPipeSession *session = reinterpret_cast<EventPipeSession *>(static_cast<uintptr_t>(session_id));
+	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
+		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, ep_session_get_mask (session)))
+	{
+		EX_TRY
+		{
+			PgoManager::FlushInstrumentationData ();
+		}
+		EX_CATCH { }
+		EX_END_CATCH
+	}
+#else
+	(void)session_id;
+#endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }
 
 #endif /* ENABLE_PERFTRACING */
