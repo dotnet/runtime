@@ -1637,10 +1637,11 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Copies the data from <paramref name="tensor"/>. If the final shape is smaller all data after that point is ignored.
-        /// If the final shape is bigger it is filled with 0s.
+        /// If the final shape is bigger it is filled with 0s (<code>default(T)</code>).
         /// </summary>
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
+        /// <remarks>This method does works for incompatible shapes as both source and destination are reinterpreted as flattened.</remarks>
         public static void ResizeTo<T>(scoped in Tensor<T> tensor, in TensorSpan<T> destination)
         {
             ResizeTo(tensor.AsReadOnlyTensorSpan(), destination);
@@ -1648,10 +1649,11 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Copies the data from <paramref name="tensor"/>. If the final shape is smaller all data after that point is ignored.
-        /// If the final shape is bigger it is filled with 0s.
+        /// If the final shape is bigger it is filled with 0s (<code>default(T)</code>).
         /// </summary>
         /// <param name="tensor">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
+        /// <remarks>This method does works for incompatible shapes as both source and destination are reinterpreted as flattened.</remarks>
         public static void ResizeTo<T>(scoped in TensorSpan<T> tensor, in TensorSpan<T> destination)
         {
             ResizeTo(tensor.AsReadOnlyTensorSpan(), destination);
@@ -1659,10 +1661,11 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Copies the data from <paramref name="tensor"/>. If the final shape is smaller all data after that point is ignored.
-        /// If the final shape is bigger it is filled with 0s.
+        /// If the final shape is bigger it is filled with 0s (<code>default(T)</code>).
         /// </summary>
         /// <param name="tensor">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
+        /// <remarks>This method does works for incompatible shapes as both source and destination are reinterpreted as flattened.</remarks>
         public static void ResizeTo<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination)
         {
             if (tensor.IsDense && destination.IsDense)
@@ -1672,6 +1675,7 @@ namespace System.Numerics.Tensors
                 if (ospan.Length >= span.Length)
                 {
                     span.CopyTo(ospan);
+                    ospan.Slice(span.Length).Clear();
                 }
                 else
                 {
@@ -1690,6 +1694,19 @@ namespace System.Numerics.Tensors
                     bool dstMoved = dstEnumerator.MoveNext();
                     Debug.Assert(srcMoved && dstMoved);
                     dstEnumerator.Current = srcEnumerator.Current;
+                }
+
+                if (destination.IsDense)
+                {
+                    Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                    ospan.Slice((int)copyLength).Clear();
+                }
+                else
+                {
+                    while (dstEnumerator.MoveNext())
+                    {
+                        dstEnumerator.Current = default!;
+                    }
                 }
             }
         }
