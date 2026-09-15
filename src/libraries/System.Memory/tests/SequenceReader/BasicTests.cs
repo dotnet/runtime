@@ -136,7 +136,7 @@ namespace System.Memory.Tests.SequenceReader
             Assert.True(sequence.IsEmpty);
             Assert.False(reader.TryReadToAny(out span, array));
             Assert.True(span.IsEmpty);
-            Assert.False(reader.TryAdvanceTo(default));
+            Assert.False(reader.TryAdvanceTo(default(T)));
             Assert.False(reader.TryAdvanceToAny(array));
             Assert.Equal(0, reader.CurrentSpan.Length);
             Assert.Equal(0, reader.UnreadSpan.Length);
