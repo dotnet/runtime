@@ -911,13 +911,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     //TODO: depending on what we decide for generics method we may want to move this check to better places
     if (method->IsGenericMethodDefinition() || method->HasMethodInstantiation())
@@ -1114,9 +1108,7 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pDelegateMT));
         PRECONDITION(CheckPointer(pTargetMethod));
         PRECONDITION(CheckPointer(pExactMethodType));
@@ -1851,6 +1843,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pMD != NULL);
         PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
     }
