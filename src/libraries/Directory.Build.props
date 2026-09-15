@@ -94,6 +94,11 @@
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
   </PropertyGroup>
 
+  <!-- A global PublishReadyToRun would also try to crossgen the host-side build tasks. -->
+  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(IsTestProject)' == 'true' and '$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
+  </PropertyGroup>
+
   <!-- To enable the interpreter for mono desktop, we need to pass an env switch -->
   <PropertyGroup>
     <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>

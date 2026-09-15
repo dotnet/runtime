@@ -14,7 +14,7 @@
     <PublishTrimmed>false</PublishTrimmed>
     <!-- Merged runtime-test wrappers are not trim-safe (they crash ILLink); keep them untrimmed unless they explicitly opt in below. -->
     <PublishTrimmed Condition="'$(TestFramework)' == 'GeneratedRunner'">false</PublishTrimmed>
-    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(PublishReadyToRun)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(RunAOTCompilation)' == 'true' or '$(PublishReadyToRun)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
     <WasmBuildNativeImplicitInReleaseConfiguration>false</WasmBuildNativeImplicitInReleaseConfiguration>
 
@@ -60,12 +60,51 @@
          so copy framework files to the output directory. See https://github.com/dotnet/runtime/issues/127257. -->
     <_WasmFrameworkCopyToOutputDirectory>PreserveNewest</_WasmFrameworkCopyToOutputDirectory>
   </PropertyGroup>
+
+  <!-- CoreCLR-only, test-infra-only. These two targets exist solely because library tests set
+       _WasmFrameworkCopyToOutputDirectory=PreserveNewest above (a real app leaves the default Never), so they
+       live here rather than in the shipped WebAssembly SDK. The CoreCLR nested publish shares $(OutDir) and runs
+       its build-phase webcil conversion before ILLink/crossgen, so without suppression it would stage the
+       UNTRIMMED framework into the served bin/ directory beside the outer build's trimmed R2R set. -->
+  <Target Name="_WasmCoreClrSuppressNestedPublishAssetCopy"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmBuildingForNestedPublish)' == 'true'"
+          BeforeTargets="_ComputeWasmBuildCandidates">
+    <PropertyGroup>
+      <_WasmFrameworkCopyToOutputDirectory>Never</_WasmFrameworkCopyToOutputDirectory>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)" CopyToOutputDirectory="Never" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The metadata set above is STICKY: a native relink returns the nested publish's assembly set to the outer
+       build, metadata included, and the outer build would then define those assets in the manifest yet never
+       copy them - the boot config requests a fingerprint that is not on disk and startup fails on a 500. -->
+  <Target Name="_WasmCoreClrRestoreCopyToOutputDirectory"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          BeforeTargets="_ComputeWasmBuildCandidates">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
+                               Condition="'%(ReferenceCopyLocalPaths.CopyToOutputDirectory)' == 'Never'"
+                               CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
+      <WasmAssembliesFinal Update="@(WasmAssembliesFinal)"
+                           Condition="'%(WasmAssembliesFinal.CopyToOutputDirectory)' == 'Never'"
+                           CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
+    </ItemGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <WasmTestSupport>true</WasmTestSupport>
     <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
     <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
     <WasmTestLogExitCode>true</WasmTestLogExitCode>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true'">
+    <WasmEnvironmentVariable Include="TEST_READY_TO_RUN_MODE" Value="1" />
+    <!-- Keep the harness's platform probes interpreted: https://github.com/dotnet/runtime/issues/133614 -->
+    <PublishReadyToRunExclude Include="TestUtilities.dll" />
+  </ItemGroup>
 
   <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
