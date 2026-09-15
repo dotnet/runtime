@@ -11204,6 +11204,15 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 
 #endif
 
+    // The HostCodeHeap used by dynamic methods does not support separate cold code allocations.
+    // Runtime async methods do not yet support discontiguous code.
+    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBOPT) &&
+        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ASYNC) &&
+        !ftn->IsDynamicMethod())
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
+    }
+
     return flags;
 }
 
@@ -11579,6 +11588,12 @@ void CEEJitInfo::WriteCodeBytes()
     {
         ExecutableWriterHolder<void> codeWriterHolder((void *)m_CodeHeader, m_codeWriteBufferSize);
         memcpy(codeWriterHolder.GetRW(), m_CodeHeaderRW, m_codeWriteBufferSize);
+
+        if (m_ColdCodeHeaderRW != m_ColdCodeHeader)
+        {
+            ExecutableWriterHolder<void> coldCodeWriterHolder((void *)m_ColdCodeHeader, m_coldCodeWriteBufferSize);
+            memcpy(coldCodeWriterHolder.GetRW(), m_ColdCodeHeaderRW, m_coldCodeWriteBufferSize);
+        }
     }
 }
 
@@ -11619,9 +11634,49 @@ void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
     // Now that the code header was written to the final location, publish the code via the nibble map
     NibbleMapSet<CodeHeader>();
 
+    if (m_ColdCodeHeader != NULL)
+    {
+        ColdCodeHeader* pColdCodeHeader = (ColdCodeHeader*)m_ColdCodeHeader;
+        m_jitManager->NibbleMapSet(m_pCodeHeap, pColdCodeHeader->GetCodeStartAddress(), m_coldCodeWriteBufferSize - sizeof(ColdCodeHeader));
+    }
+
     // Publish the new unwind information in a way that the ETW stack crawler can find
     _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
     UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, ((CodeHeader*)m_CodeHeader)->GetUnwindInfo(0), m_totalUnwindInfos);
+}
+
+/*********************************************************************/
+void CEECodeGenInfo::FlushInstructionCaches(PBYTE nativeEntry, size_t sizeOfCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Dynamic code memory can be reused, so always flush as if the code ran before.
+    ClrFlushInstructionCache(nativeEntry, sizeOfCode, /* hasCodeExecutedBefore */ true);
+}
+
+/*********************************************************************/
+void CEEJitInfo::FlushInstructionCaches(PBYTE nativeEntry, size_t sizeOfCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (m_ColdCodeHeader == nullptr)
+    {
+        CEECodeGenInfo::FlushInstructionCaches(nativeEntry, sizeOfCode);
+        return;
+    }
+
+    _ASSERTE(m_codeWriteBufferSize >= sizeof(CodeHeader));
+    _ASSERTE(m_coldCodeWriteBufferSize >= sizeof(ColdCodeHeader));
+    size_t hotCodeAllocationSize  = m_codeWriteBufferSize - sizeof(CodeHeader);
+    size_t coldCodeAllocationSize = m_coldCodeWriteBufferSize - sizeof(ColdCodeHeader);
+    _ASSERTE(sizeOfCode <= hotCodeAllocationSize + coldCodeAllocationSize);
+
+    ClrFlushInstructionCache(nativeEntry, hotCodeAllocationSize, /* hasCodeExecutedBefore */ true);
+
+    ColdCodeHeader* pColdCodeHeader = static_cast<ColdCodeHeader*>(m_ColdCodeHeader);
+    ClrFlushInstructionCache(reinterpret_cast<LPCVOID>(pColdCodeHeader->GetCodeStartAddress()),
+                             coldCodeAllocationSize,
+                             /* hasCodeExecutedBefore */ true);
 }
 
 /*********************************************************************/
@@ -11904,8 +11959,9 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             codeSize, 0, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, &m_CodeHeader, &m_CodeHeaderRW,
-        &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, 0);
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, 0, codeAlign,
+        &m_CodeHeader, &m_CodeHeaderRW, NULL, NULL,
+        &m_codeWriteBufferSize, NULL, &m_pCodeHeap, &m_pRealCodeHeader, 0);
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
 
@@ -12126,7 +12182,6 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    CONSISTENCY_CHECK_MSG(!isColdCode, "Hot/Cold splitting is not supported in jitted code");
     _ASSERTE_MSG(m_theUnwindBlock == NULL,
         "reserveUnwindInfo() can only be called before allocMem(), but allocMem() has already been called. "
         "This may indicate the JIT has hit a NO_WAY assert after calling allocMem(), and is re-JITting. "
@@ -12134,7 +12189,17 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
 
     uint32_t currentSize  = unwindSize;
 
-    reservePersonalityRoutineSpace(currentSize);
+#ifdef TARGET_AMD64
+    if (isColdCode && !isFunclet)
+    {
+        _ASSERTE(currentSize == 0);
+        currentSize = 4 + sizeof(T_RUNTIME_FUNCTION);
+    }
+    else
+#endif // TARGET_AMD64
+    {
+        reservePersonalityRoutineSpace(currentSize);
+    }
 
     m_totalUnwindSize += currentSize;
 
@@ -12156,9 +12221,9 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
 // Parameters:
 //
 //    pHotCode        main method code buffer, always filled in
-//    pColdCode       always NULL for jitted code
-//    startOffset     start of code block, relative to pHotCode
-//    endOffset       end of code block, relative to pHotCode
+//    pColdCode       buffer for cold suffix to main method
+//    startOffset     start of code block
+//    endOffset       end of code block
 //    unwindSize      size of unwind info pointed to by pUnwindBlock
 //    pUnwindBlock    pointer to unwind info
 //    funcKind        type of funclet (main method code, handler, filter)
@@ -12183,8 +12248,6 @@ void CEEJitInfo::allocUnwindInfo (
         PRECONDITION(endOffset <= m_codeSize);
     } CONTRACTL_END;
 
-    CONSISTENCY_CHECK_MSG(pColdCode == NULL, "Hot/Cold code splitting not supported for jitted code");
-
     JIT_TO_EE_TRANSITION();
 
     //
@@ -12198,13 +12261,28 @@ void CEEJitInfo::allocUnwindInfo (
     // in this function.
     //
 
-    if (funcKind != CORJIT_FUNC_ROOT)
+    CodeHeader *pCodeHeaderRW = (CodeHeader *)m_CodeHeaderRW;
+
+    if (m_usedUnwindInfos == 0)
     {
-        // The main method should be emitted before funclets
-        _ASSERTE(m_usedUnwindInfos > 0);
+        // The JIT emits all root fragments before any funclet records. The first
+        // record is always the hot root host record, but ARM64 can emit additional
+        // hot and cold root fragments before the first funclet.
+        _ASSERTE(funcKind == CORJIT_FUNC_ROOT);
+        _ASSERTE(pColdCode == NULL);
+        _ASSERTE(startOffset == 0);
     }
 
-    CodeHeader *pCodeHeaderRW = (CodeHeader *)m_CodeHeaderRW;
+#ifdef _DEBUG
+    if (funcKind == CORJIT_FUNC_ROOT)
+    {
+        _ASSERTE(!m_allocatedUnwindFunclet);
+    }
+    else
+    {
+        m_allocatedUnwindFunclet = true;
+    }
+#endif
 
     PT_RUNTIME_FUNCTION pRuntimeFunction = pCodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
 
@@ -12213,14 +12291,25 @@ void CEEJitInfo::allocUnwindInfo (
     // Make sure that the RUNTIME_FUNCTION is aligned on a DWORD sized boundary
     _ASSERTE(IS_ALIGNED(pRuntimeFunction, sizeof(DWORD)));
 
-
     size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
     UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *) &(m_theUnwindBlock[m_usedUnwindSize]);
     UNWIND_INFO * pUnwindInfoRW = (UNWIND_INFO *)((BYTE*)pUnwindInfo + writeableOffset);
 
     m_usedUnwindSize += unwindSize;
 
-    reservePersonalityRoutineSpace(m_usedUnwindSize);
+#ifdef TARGET_AMD64
+    bool useChainedUnwindInfo = (pColdCode != NULL) && (funcKind == CORJIT_FUNC_ROOT);
+
+    if (useChainedUnwindInfo)
+    {
+        _ASSERTE(unwindSize == 0);
+        m_usedUnwindSize += (4 + sizeof(T_RUNTIME_FUNCTION));
+    }
+    else
+#endif // TARGET_AMD64
+    {
+        reservePersonalityRoutineSpace(m_usedUnwindSize);
+    }
 
     _ASSERTE(m_usedUnwindSize <= m_totalUnwindSize);
 
@@ -12230,8 +12319,10 @@ void CEEJitInfo::allocUnwindInfo (
     /* Calculate Image Relative offset to add to the jit generated unwind offsets */
 
     TADDR baseAddress = m_moduleBase;
+    _ASSERTE((TADDR)pHotCode > baseAddress);
+    _ASSERTE((pColdCode == NULL) || ((TADDR)pColdCode > baseAddress));
 
-    size_t currentCodeSizeT = (size_t)pHotCode - baseAddress;
+    size_t currentCodeSizeT = (size_t)(((pColdCode == NULL) ? pHotCode : pColdCode) - baseAddress);
 
     /* Check if currentCodeSizeT offset fits in 32-bits */
     if (!FitsInU4(currentCodeSizeT))
@@ -12264,7 +12355,7 @@ void CEEJitInfo::allocUnwindInfo (
     RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunction, currentCodeOffset + startOffset);
 
 #ifdef TARGET_AMD64
-    pRuntimeFunction->EndAddress        = currentCodeOffset + endOffset;
+    pRuntimeFunction->EndAddress = currentCodeOffset + endOffset;
 #endif
 
     RUNTIME_FUNCTION__SetUnwindInfoAddress(pRuntimeFunction, unwindInfoDelta);
@@ -12286,10 +12377,24 @@ void CEEJitInfo::allocUnwindInfo (
     memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
 #if defined(TARGET_AMD64)
-    pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
-
-    ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
-    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
+    if (useChainedUnwindInfo)
+    {
+        UNWIND_INFO * pMainUnwindInfo = (UNWIND_INFO*)m_theUnwindBlock;
+        UNWIND_INFO * pMainUnwindInfoRW = (UNWIND_INFO*)((BYTE*)pMainUnwindInfo + writeableOffset);
+        pUnwindInfoRW->Version = 1;
+        pUnwindInfoRW->Flags = UNW_FLAG_CHAININFO;
+        pUnwindInfoRW->SizeOfProlog = 0;
+        pUnwindInfoRW->CountOfUnwindCodes = 0;
+        pUnwindInfoRW->FrameRegister = pMainUnwindInfoRW->FrameRegister;
+        pUnwindInfoRW->FrameOffset = pMainUnwindInfoRW->FrameOffset;
+        memcpy(&(pUnwindInfoRW->UnwindCode), pCodeHeaderRW->GetUnwindInfo(0), sizeof(T_RUNTIME_FUNCTION));
+    }
+    else
+    {
+        pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
+        ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
+        *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
+    }
 #elif defined(TARGET_64BIT)
     *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
@@ -13182,7 +13287,9 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     JIT_TO_EE_TRANSITION();
 
-    unsigned codeSize = 0;
+    unsigned hotCodeSize = 0;
+    unsigned coldCodeSize = 0;
+    AllocMemChunk* coldChunk = nullptr;
     unsigned roDataSize = 0;
     S_SIZE_T totalSize(0);
     unsigned alignment = CODE_SIZE_ALIGN;
@@ -13190,11 +13297,20 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     for (unsigned i = 0; i < pArgs->chunksCount; i++)
     {
         AllocMemChunk& chunk = pArgs->chunks[i];
-        _ASSERTE((chunk.flags & CORJIT_ALLOCMEM_COLD_CODE) == 0);
+
+        if ((chunk.flags & CORJIT_ALLOCMEM_COLD_CODE) != 0)
+        {
+            // Cold code is allocated separately by AllocCode; track size and skip from totalSize.
+            _ASSERTE(coldChunk == nullptr); // at most one cold chunk supported
+            _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
+            coldChunk = &chunk;
+            coldCodeSize = chunk.size;
+            continue;
+        }
 
         if ((chunk.flags & CORJIT_ALLOCMEM_HOT_CODE) != 0)
         {
-            codeSize += chunk.size;
+            hotCodeSize += chunk.size;
         }
         else
         {
@@ -13235,11 +13351,12 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
         }
 
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
-            codeSize, roDataSize, totalSize.Value(), 0, GetClrInstanceId());
+            hotCodeSize + coldCodeSize, roDataSize, totalSize.Value() + coldCodeSize, 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, &m_CodeHeader,
-        &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), coldCodeSize, GetReserveForJumpStubs(), alignment,
+        &m_CodeHeader, &m_CodeHeaderRW, &m_ColdCodeHeader, &m_ColdCodeHeaderRW,
+        &m_codeWriteBufferSize, &m_coldCodeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
 
     m_moduleBase = m_pCodeHeap->GetModuleBase();
 
@@ -13250,6 +13367,13 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     for (unsigned i = 0; i < pArgs->chunksCount; i++)
     {
         AllocMemChunk& chunk = pArgs->chunks[i];
+
+        if ((chunk.flags & CORJIT_ALLOCMEM_COLD_CODE) != 0)
+        {
+            // Cold chunk is placed in the separate cold allocation, not the hot block.
+            continue;
+        }
+
         offset = AlignUp(offset, chunk.alignment);
         chunk.block = start + offset;
         chunk.blockRW = start + offset + writeableOffset;
@@ -13263,8 +13387,17 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     _ASSERTE(offset <= totalSize.Value());
 
+    if (coldChunk != nullptr)
+    {
+        _ASSERTE(m_ColdCodeHeader != NULL);
+        ColdCodeHeader* pColdHdr   = (ColdCodeHeader*)m_ColdCodeHeader;
+        ColdCodeHeader* pColdHdrRW = (ColdCodeHeader*)m_ColdCodeHeaderRW;
+        coldChunk->block   = (uint8_t*)pColdHdr->GetCodeStartAddress();
+        coldChunk->blockRW = (uint8_t*)pColdHdrRW->GetCodeStartAddress();
+    }
+
 #ifdef _DEBUG
-    m_codeSize = codeSize;
+    m_codeSize = hotCodeSize + coldCodeSize;
 #endif  // _DEBUG
 
     EE_TO_JIT_TRANSITION();
@@ -13808,8 +13941,7 @@ static TADDR UnsafeJitFunctionWorker(
     LPCUTF8 pszDebugMethodSignature = "";
 #endif
 
-    // For dynamic method, the code memory may be reused, thus we are passing in the hasCodeExecutedBefore set to true
-    ClrFlushInstructionCache(nativeEntry, sizeOfCode, /* hasCodeExecutedBefore */ true);
+    pJitInfo->FlushInstructionCaches(nativeEntry, sizeOfCode);
 
     // We are done
     return (TADDR)nativeEntry;

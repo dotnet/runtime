@@ -613,12 +613,14 @@ typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
 
-private:
+public:
     // Allocation pointer in current block
     PTR_BYTE            m_pAllocPtr;
+    PTR_BYTE            m_pTopAllocPtr;
 
     // Points to the end of the committed region in the current block
-    PTR_BYTE            m_pPtrToEndOfCommittedRegion;
+    PTR_BYTE            m_ptrEndLowerCommittedRegion;
+    PTR_BYTE            m_pBeginUpperCommittedRegion;
     PTR_BYTE            m_pEndReservedRegion;
 
     size_t              m_dwTotalAlloc;
@@ -646,7 +648,7 @@ public:
     size_t DebugGetWastedBytes()
     {
         WRAPPER_NO_CONTRACT;
-        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
+        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion(true) + GetBytesAvailCommittedRegion(false);
     }
 #endif
 
@@ -658,8 +660,8 @@ public:
 #endif
 
 private:
-    size_t GetBytesAvailCommittedRegion();
-    size_t GetBytesAvailReservedRegion();
+    size_t GetBytesAvailCommittedRegion(bool useLowerRegion);
+    size_t GetBytesAvailReservedRegion(bool useLowerRegion);
 
 public:
     // number of bytes available in region
@@ -678,7 +680,7 @@ public:
 private:
     // Get some more committed pages - either commit some more in the current reserved region, or, if it
     // has run out, reserve another set of pages
-    BOOL GetMoreCommittedPages(size_t dwMinSize);
+    BOOL GetMoreCommittedPages(size_t dwMinSize, bool useLowerRegion);
 
     // Commit memory pages starting at the specified adress
     BOOL CommitPages(void* pData, size_t dwSizeToCommitPart);
@@ -698,7 +700,7 @@ public:
 
 public:
 
-    void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
+    void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs, bool useLowerRegion = true);
 
     void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
 };

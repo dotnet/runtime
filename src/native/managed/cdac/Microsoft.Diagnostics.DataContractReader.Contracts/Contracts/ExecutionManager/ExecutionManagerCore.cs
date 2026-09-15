@@ -123,6 +123,28 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             out TargetPointer coldStart,
             out uint coldSize);
         public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
+        public virtual TargetPointer GetFuncletStartAddress(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        {
+            // TODO(cdac): Walk function fragments for ReadyToRun and non-ARM64 architectures that support them.
+            TargetPointer runtimeFunctionPtr = GetUnwindInfo(rangeSection, jittedCodeAddress);
+            if (runtimeFunctionPtr == TargetPointer.Null || rangeSection.Data is null)
+                return TargetPointer.Null;
+
+            Data.RuntimeFunction runtimeFunction = Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(runtimeFunctionPtr);
+            return CodePointerUtils.AddressFromCodePointer(
+                new TargetCodePointer(rangeSection.Data.RangeBegin + runtimeFunction.BeginAddress), Target);
+        }
+        public virtual bool IsFunclet(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            TargetPointer methodStartAddress)
+        {
+            TargetPointer funcletStartAddress = GetFuncletStartAddress(rangeSection, jittedCodeAddress);
+            if (funcletStartAddress == TargetPointer.Null)
+                throw new InvalidOperationException("Unable to get runtime function address");
+
+            return methodStartAddress != funcletStartAddress;
+        }
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
         public abstract void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
@@ -259,18 +281,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException("Unable to get runtime function address");
 
         JitManager? jitManager = GetJitManager(range);
-        TargetPointer runtimeFunctionPtr = jitManager?.GetUnwindInfo(range, codeInfoHandle.Address.Value) ?? TargetPointer.Null;
-
-        if (runtimeFunctionPtr == TargetPointer.Null)
+        TargetPointer funcletStartAddress =
+            jitManager?.GetFuncletStartAddress(range, codeInfoHandle.Address.Value) ?? TargetPointer.Null;
+        if (funcletStartAddress == TargetPointer.Null)
             throw new InvalidOperationException("Unable to get runtime function address");
 
-        Data.RuntimeFunction runtimeFunction = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(runtimeFunctionPtr);
-
-        // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
-        // non-fragment RuntimeFunction
-
-        return CodePointerUtils.AddressFromCodePointer(
-            new TargetCodePointer(range.Data.RangeBegin + runtimeFunction.BeginAddress), _target);
+        return funcletStartAddress;
     }
 
     void IExecutionManager.GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
@@ -333,7 +349,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (((IExecutionManager)this).GetCodeKind(new TargetCodePointer(startAddress.Value)) == CodeKind.Interpreter)
             return false;
 
-        return startAddress != ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+        RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
+        JitManager? jitManager = GetJitManager(range);
+        return jitManager?.IsFunclet(range, codeInfoHandle.Address.Value, startAddress) == true;
     }
 
     bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
@@ -347,7 +365,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return false;
 
         TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle);
-        uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
+        TargetPointer codeAddress = CodePointerUtils.AddressFromCodePointer(
+            new TargetCodePointer(codeInfoHandle.Address), _target);
+        uint relativeOffset = checked((uint)info.RelativeOffset.Value);
+        uint relativeOffsetWithinFunclet = checked((uint)(codeAddress - funcletStartAddress));
+        uint funcletStartOffset = checked(relativeOffset - relativeOffsetWithinFunclet);
 
         List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
         foreach (ExceptionClauseInfo clause in clauses)
