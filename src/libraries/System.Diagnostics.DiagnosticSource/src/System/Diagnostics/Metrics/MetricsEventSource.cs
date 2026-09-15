@@ -125,7 +125,8 @@ namespace System.Diagnostics.Metrics
             WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
         }
 
-        [Event(4, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        // Version 3 escapes '\', ',' and '=' in the flattened 'tags' string (see Helpers.FormatTags).
+        [Event(4, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -135,7 +136,8 @@ namespace System.Diagnostics.Metrics
             WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentId);
         }
 
-        [Event(5, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        // Version 3 escapes '\', ',' and '=' in the flattened 'tags' string (see Helpers.FormatTags).
+        [Event(5, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -145,7 +147,8 @@ namespace System.Diagnostics.Metrics
             WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue, instrumentId);
         }
 
-        [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        // Version 3 escapes '\', ',' and '=' in the flattened 'tags' string (see Helpers.FormatTags).
+        [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -158,7 +161,8 @@ namespace System.Diagnostics.Metrics
         // Sent when we begin to monitor the value of a instrument, either because new session filter arguments changed subscriptions
         // or because an instrument matching the pre-existing filter has just been created. This event precedes all *MetricPublished events
         // for the same named instrument.
-        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 3)]
+        // Version 4 escapes '\', ',' and '=' in the flattened instrumentTags/meterTags strings (see Helpers.FormatTags).
+        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 4)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -183,7 +187,8 @@ namespace System.Diagnostics.Metrics
 
         // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
         // or because the Meter has been disposed.
-        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 3)]
+        // Version 4 escapes '\', ',' and '=' in the flattened instrumentTags/meterTags strings (see Helpers.FormatTags).
+        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 4)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -218,7 +223,8 @@ namespace System.Diagnostics.Metrics
             WriteEvent(10, sessionId);
         }
 
-        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 3)]
+        // Version 4 escapes '\', ',' and '=' in the flattened instrumentTags/meterTags strings (see Helpers.FormatTags).
+        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 4)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -265,7 +271,8 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
-        [Event(16, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        // Version 3 escapes '\', ',' and '=' in the flattened 'tags' string (see Helpers.FormatTags).
+        [Event(16, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -297,7 +304,8 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Used to send the value of a base 2 exponential histogram.
         /// </summary>
-        [Event(19, Keywords = Keywords.TimeSeriesValues, Version = 1)]
+        // Version 2 escapes '\', ',' and '=' in the flattened 'tags' string (see Helpers.FormatTags).
+        [Event(19, Keywords = Keywords.TimeSeriesValues, Version = 2)]
 #if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
