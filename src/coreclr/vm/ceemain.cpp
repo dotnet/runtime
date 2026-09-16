@@ -1806,7 +1806,7 @@ static void SetThreadStateDestroyed()
 {
     if (pthread_setspecific(g_threadStateKey, &g_threadStateDestroyedMarker) != 0)
     {
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        _ASSERTE_ALL_BUILDS(!"Failed to preserve the destroyed runtime thread state.");
     }
 }
 
