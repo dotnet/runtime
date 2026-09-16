@@ -80,6 +80,11 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
+            if (targetAbi == TargetAbi.NativeAotRiscV64SoftFloat)
+            {
+                // The soft-float helpers have no ReadyToRun encoding; the target is NativeAOT only.
+                throw new CommandLineException($"Target architecture '{Get(_command.TargetArchitecture)}' is not supported by ReadyToRun");
+            }
 
             // The portable call-helpers generator is currently supported only for Wasm.
             if (_generatePortableCallHelpers is not null
@@ -108,7 +113,8 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
                 allowOptimistic: allowOptimistic,
-                isReadyToRun: true);
+                isReadyToRun: true,
+                targetAbi: targetAbi);
             if (!targetAllowsRuntimeCodeGeneration)
             {
                 instructionSetSupport = Helpers.GetFixedInstructionSetSupport(instructionSetSupport);

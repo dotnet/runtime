@@ -64,6 +64,22 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunHelper.DblRem => "fmod",
                 ReadyToRunHelper.FltRem => "fmodf",
 
+                // Soft-float arithmetic: the compiler-rt/libgcc builtins of the target toolchain
+                ReadyToRunHelper.FltAdd => "__addsf3",
+                ReadyToRunHelper.FltSub => "__subsf3",
+                ReadyToRunHelper.FltMul => "__mulsf3",
+                ReadyToRunHelper.FltDiv => "__divsf3",
+                ReadyToRunHelper.DblAdd => "__adddf3",
+                ReadyToRunHelper.DblSub => "__subdf3",
+                ReadyToRunHelper.DblMul => "__muldf3",
+                ReadyToRunHelper.DblDiv => "__divdf3",
+                ReadyToRunHelper.FltCmpLe => "__lesf2",
+                ReadyToRunHelper.FltCmpGe => "__gesf2",
+                ReadyToRunHelper.DblCmpLe => "__ledf2",
+                ReadyToRunHelper.DblCmpGe => "__gedf2",
+                ReadyToRunHelper.Flt2Dbl => "__extendsfdf2",
+                ReadyToRunHelper.Dbl2Flt => "__truncdfsf2",
+
                 ReadyToRunHelper.Lng2Dbl => "RhpLng2Dbl",
                 ReadyToRunHelper.ULng2Dbl => "RhpULng2Dbl",
                 ReadyToRunHelper.Lng2Flt => "RhpLng2Flt",
@@ -167,6 +183,21 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunHelper.NativeMemSet => MakeUnmanagedSignature(voidPointerType, voidPointerType, int32Type, nativeUIntType),
                 ReadyToRunHelper.DblRem => MakeSignature(doubleType, doubleType, doubleType),
                 ReadyToRunHelper.FltRem => MakeSignature(singleType, singleType, singleType),
+
+                ReadyToRunHelper.FltAdd or
+                ReadyToRunHelper.FltSub or
+                ReadyToRunHelper.FltMul or
+                ReadyToRunHelper.FltDiv => MakeSignature(singleType, singleType, singleType),
+                ReadyToRunHelper.DblAdd or
+                ReadyToRunHelper.DblSub or
+                ReadyToRunHelper.DblMul or
+                ReadyToRunHelper.DblDiv => MakeSignature(doubleType, doubleType, doubleType),
+                ReadyToRunHelper.FltCmpLe or
+                ReadyToRunHelper.FltCmpGe => MakeSignature(int32Type, singleType, singleType),
+                ReadyToRunHelper.DblCmpLe or
+                ReadyToRunHelper.DblCmpGe => MakeSignature(int32Type, doubleType, doubleType),
+                ReadyToRunHelper.Flt2Dbl => MakeSignature(doubleType, singleType),
+                ReadyToRunHelper.Dbl2Flt => MakeSignature(singleType, doubleType),
 
                 ReadyToRunHelper.Lng2Dbl => MakeSignature(doubleType, int64Type),
                 ReadyToRunHelper.ULng2Dbl => MakeSignature(doubleType, uint64Type),

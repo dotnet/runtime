@@ -97,6 +97,24 @@
     JITHELPER(CORINFO_HELP_FLTREM,              JIT_FltRem,         METHOD__NIL)
     JITHELPER(CORINFO_HELP_DBLREM,              JIT_DblRem,         METHOD__NIL)
 
+    // Soft-float helpers. The JIT only requests them under CORJIT_FLAG_SOFTFP_ABI on
+    // targets without an FPU (NativeAOT for RISC-V without F/D, where the AOT
+    // compiler binds them to the compiler-rt builtins); the VM never sets that flag.
+    JITHELPER(CORINFO_HELP_FLTADD,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_FLTSUB,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_FLTMUL,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_FLTDIV,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBLADD,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBLSUB,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBLMUL,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBLDIV,                 NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_FLTCMP_LE,              NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_FLTCMP_GE,              NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBLCMP_LE,              NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBLCMP_GE,              NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_FLT2DBL,                NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBL2FLT,                NULL,               METHOD__NIL)
+
     // Allocating a new object
     JITHELPER(CORINFO_HELP_NEWFAST,                     RhpNew,                   METHOD__NIL)
     JITHELPER(CORINFO_HELP_NEWFAST_MAYBEFROZEN,         RhpNewMaybeFrozen,        METHOD__NIL)

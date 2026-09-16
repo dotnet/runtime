@@ -18,7 +18,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool allowOptimistic, bool isReadyToRun)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool allowOptimistic, bool isReadyToRun, TargetAbi targetAbi)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -98,9 +98,13 @@ namespace System.CommandLine
             {
                 // The rv64gc baseline: D implies F, so "d", "c" and "a" cover
                 // the G+C extensions. Reduced-ISA targets (e.g. zkVM guests)
-                // opt out with --instruction-set=-a,-c,-d,-f.
+                // opt out with --instruction-set=-a,-c,-d,-f. The lp64 (soft-float)
+                // ABI target has no F/D by definition.
                 instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("d");
+                if (targetAbi != TargetAbi.NativeAotRiscV64SoftFloat)
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("d");
+                }
                 instructionSetSupportBuilder.AddSupportedInstructionSet("c");
                 instructionSetSupportBuilder.AddSupportedInstructionSet("a");
             }

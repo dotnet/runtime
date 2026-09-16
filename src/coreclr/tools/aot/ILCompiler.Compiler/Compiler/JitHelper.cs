@@ -49,6 +49,20 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2ULng:
                 case ReadyToRunHelper.DblRem:
                 case ReadyToRunHelper.FltRem:
+                case ReadyToRunHelper.FltAdd:
+                case ReadyToRunHelper.FltSub:
+                case ReadyToRunHelper.FltMul:
+                case ReadyToRunHelper.FltDiv:
+                case ReadyToRunHelper.DblAdd:
+                case ReadyToRunHelper.DblSub:
+                case ReadyToRunHelper.DblMul:
+                case ReadyToRunHelper.DblDiv:
+                case ReadyToRunHelper.FltCmpLe:
+                case ReadyToRunHelper.FltCmpGe:
+                case ReadyToRunHelper.DblCmpLe:
+                case ReadyToRunHelper.DblCmpGe:
+                case ReadyToRunHelper.Flt2Dbl:
+                case ReadyToRunHelper.Dbl2Flt:
                 case ReadyToRunHelper.LMul:
                 case ReadyToRunHelper.LRsz:
                 case ReadyToRunHelper.LRsh:
