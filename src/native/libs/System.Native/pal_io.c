@@ -2349,7 +2349,7 @@ int32_t SystemNative_IoRingIsAvailable(void)
 #endif
 }
 
-int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completionQueueDepth, intptr_t* ringHandle)
+int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completionQueueDepth, int32_t singleIssuer, intptr_t* ringHandle)
 {
     assert(ringHandle != NULL);
     *ringHandle = 0;
@@ -2369,14 +2369,39 @@ int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completi
         params.cq_entries = (uint32_t)completionQueueDepth;
     }
 
-    // Deliberately no IORING_SETUP_SINGLE_ISSUER / IORING_SETUP_DEFER_TASKRUN here: this ring is
-    // shared across (and submitted to / drained from) many different threads - any Thread Pool
-    // worker thread may call SystemNative_IoRingSubmit, and the thread that reaps completions via
-    // SystemNative_IoRingWaitForCompletions rotates over time. SINGLE_ISSUER requires all
-    // submissions to come from one fixed thread/task, and the kernel enforces this by rejecting
-    // io_uring_enter(2) from any other thread with -EEXIST once a first "issuer" is established -
-    // which is incompatible with this design (see the io_uring PAL/ThreadPool design notes).
+    // If the caller asks for it, request IORING_SETUP_SINGLE_ISSUER together with
+    // IORING_SETUP_DEFER_TASKRUN: from this point on, the kernel requires every
+    // SystemNative_IoRingSubmit/SystemNative_IoRingKick/SystemNative_IoRingWaitForCompletions call
+    // for this ring to come from the same single OS thread (whichever one happens to make the
+    // first such call) - any other thread that tries gets -EEXIST. This lets the kernel skip an
+    // internal ring-wide lock it would otherwise need to serialize concurrent submitters/reapers,
+    // which is exactly the contention this pair of flags exists to avoid. DEFER_TASKRUN requires
+    // SINGLE_ISSUER and additionally defers completion task-work until that same owning thread
+    // calls io_uring_enter(2) with IORING_ENTER_GETEVENTS (see SystemNative_IoRingWaitForCompletions);
+    // it is requested together with SINGLE_ISSUER here (never SINGLE_ISSUER alone) because a plain
+    // SINGLE_ISSUER ring still requires every io_uring_enter call - including a GETEVENTS-only
+    // completion wait with nothing to submit - to come from that same fixed thread, so trying to
+    // let completion-reaping rotate across arbitrary threads (as a plain shared, non-SINGLE_ISSUER
+    // ring allows) does not work: whichever thread happens to call in first permanently becomes
+    // the ring's issuer, and every other thread's calls then fail with -EEXIST forever. Given that,
+    // submission and completion-reaping must already be pinned to one fixed thread whenever
+    // SINGLE_ISSUER is requested, so also requesting DEFER_TASKRUN is free extra performance with
+    // no additional constraint over what SINGLE_ISSUER alone already forces on the caller.
+#if defined(IORING_SETUP_SINGLE_ISSUER) && defined(IORING_SETUP_DEFER_TASKRUN)
+    if (singleIssuer != 0)
+    {
+        params.flags |= IORING_SETUP_SINGLE_ISSUER | IORING_SETUP_DEFER_TASKRUN;
+    }
+#else
+    // Older kernel headers used at compile time may not define these flags at all; silently ignore
+    // the request rather than failing the build. The caller-side contract (only ever submit to /
+    // reap from one dedicated thread) still holds; it just won't be kernel-enforced on such a
+    // system, and the ring won't get the associated lock-elision benefit.
+    (void)singleIssuer;
+#endif
+
     long fd = IoUringSetup((uint32_t)submissionQueueDepth, &params);
+
 
     if (fd < 0)
     {
@@ -2552,6 +2577,18 @@ int32_t SystemNative_IoRingWaitForCompletions(intptr_t ringHandle, IoRingComplet
         {
             return -1;
         }
+    }
+    else
+    {
+        // Always issue a plain (non-blocking-for-events, minComplete: 0) IORING_ENTER_GETEVENTS
+        // call, even when the caller isn't waiting for anything in particular. This matters for
+        // rings created with IORING_SETUP_DEFER_TASKRUN (see SystemNative_IoRingCreate): that flag
+        // defers completion task-work until the ring's owning thread explicitly calls
+        // io_uring_enter(2) with IORING_ENTER_GETEVENTS - without this call, completions would
+        // never be posted to the CQ ring at all, no matter how long the caller waits afterwards or
+        // how many times it re-reads the CQ tail. For rings not created with DEFER_TASKRUN this call
+        // is a harmless, cheap no-op when nothing is ready.
+        IoUringEnter(ring->Fd, 0, 0, IORING_ENTER_GETEVENTS);
     }
 
     // Single consumer: the caller is responsible for ensuring only one thread reaps
