@@ -524,19 +524,21 @@ namespace System.Net.Sockets.Tests
                 bool receivedMessage = false;
                 for (int acceptCount = 0; acceptCount < 2 && !receivedMessage; acceptCount++)
                 {
-                    using Socket accepted = useAsync
-                        ? await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5))
-                        : listener.Accept();
-
                     try
                     {
+                        using Socket accepted = useAsync
+                            ? await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5))
+                            : listener.Accept();
+
                         byte[] received = new byte[message.Length];
                         int receivedCount = await accepted.ReceiveAsync(received).WaitAsync(TimeSpan.FromSeconds(5));
                         receivedMessage = receivedCount == message.Length && received.AsSpan().SequenceEqual(message);
                     }
                     catch (SocketException)
                     {
-                        // Some platforms surface the reset connection from accept(), while others discard it.
+                        // Some platforms surface the reset connection from accept() or the following receive,
+                        // while others discard it. Either way the listener must stay healthy, so tolerate the
+                        // reset and try to accept the healthy peer on a subsequent iteration.
                     }
                 }
 

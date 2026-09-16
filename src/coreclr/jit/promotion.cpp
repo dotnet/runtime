@@ -778,7 +778,16 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
+            // Small fields can pack many values into each parameter register, so eagerly
+            // extracting rarely used fields can add substantial work and register pressure.
+            // Wider fields naturally limit the number of extractions per register.
+            // Restrict the credit for small fields with few accesses to target these cases.
+            const weight_t MIN_RELATIVE_ACCESS_WEIGHT = 0.10;
+            bool           allowBitwiseExtraction =
+                !varTypeIsSmall(access.AccessType) ||
+                (access.CountWtd + inducedCountWtd) >= MIN_RELATIVE_ACCESS_WEIGHT * comp->fgFirstBB->getBBWeight(comp);
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType,
+                                                   allowBitwiseExtraction))
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -3063,15 +3072,17 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   expected to map to a register.
 //
 // Parameters:
-//   comp       - Compiler instance
-//   lclNum     - Local being accessed into
-//   offset     - Offset being accessed at
-//   accessType - Type of access
+//   comp                   - Compiler instance
+//   lclNum                 - Local being accessed into
+//   offset                 - Offset being accessed at
+//   accessType             - Type of access
+//   allowBitwiseExtraction - Whether to allow mappings requiring extraction or a register-class change
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
+bool Promotion::MapsToParameterRegister(
+    Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType, bool allowBitwiseExtraction)
 {
     assert(lclNum < comp->info.compArgsCount);
 
@@ -3100,6 +3111,12 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
         }
 
         if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
+        {
+            continue;
+        }
+
+        if (!allowBitwiseExtraction && ((offset != seg.Offset) || (genTypeSize(accessType) != seg.Size) ||
+                                        (varTypeUsesIntReg(accessType) != genIsValidIntReg(seg.GetRegister()))))
         {
             continue;
         }
