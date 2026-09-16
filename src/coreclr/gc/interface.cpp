@@ -436,6 +436,7 @@ HRESULT GCHeap::Initialize()
 #ifdef USE_REGIONS
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
+    const size_t min_gc_region_size = OS_PAGE_SIZE * (mark_word_size / sizeof (uint32_t));
 
     if (gc_region_size >= MAX_REGION_SIZE)
     {
@@ -447,7 +448,7 @@ HRESULT GCHeap::Initialize()
     // Adjust GCRegionSize based on how large each heap would be, for smaller heaps we would
     // like to keep Region sizes small. We choose between 4, 2 and 1mb based on the calculations
     // below (unless its configured explicitly) such that there are at least 2 regions available
-    // except for the smallest case. Now the lowest limit possible is 4mb.
+    // except for the smallest case.
     if (gc_region_size == 0)
     {
         // We have a minimum amount of basic regions we have to fit per heap, and we'd like to have the initial
@@ -465,6 +466,14 @@ HRESULT GCHeap::Initialize()
         {
             gc_region_size = 1 * 1024 * 1024;
         }
+
+        gc_region_size = max (gc_region_size, min_gc_region_size);
+    }
+    else if (gc_region_size < min_gc_region_size)
+    {
+        log_init_error_to_host ("The GC RegionSize config is set to %zd bytes, it needs to be >= %zd bytes for the OS page size",
+            gc_region_size, min_gc_region_size);
+        return CLR_E_GC_BAD_REGION_SIZE;
     }
 
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * min_regions_per_heap) > gc_heap::regions_range))
