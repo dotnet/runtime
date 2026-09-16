@@ -57,6 +57,14 @@ namespace System.Tests
             TestStruct returnedStruct = testDelegate();
             Assert.Same(foo.structField.o1, returnedStruct.o1);
             Assert.Same(foo.structField.o2, returnedStruct.o2);
+            Assert.Same(foo, testDelegate.Target);
+            Assert.Equal(nameof(TestExtensionMethod.TestFunc), testDelegate.Method.Name);
+
+            StructReturningDelegate equivalentDelegate = foo.TestFunc;
+            Assert.Equal(testDelegate, equivalentDelegate);
+
+            TestClass other = new TestClass();
+            Assert.NotEqual(testDelegate, other.TestFunc);
         }
 
         public class A { }

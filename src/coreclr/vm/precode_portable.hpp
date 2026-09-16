@@ -187,6 +187,30 @@ public:
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _targetEntryPoint) == TARGET_POINTER_SIZE);
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _entryPoint) == 2 * TARGET_POINTER_SIZE);
 
+class ClosedStaticRetBufPortableEntryPoint final
+{
+public:
+    PCODE _targetEntryPoint;
+    PortableEntryPoint _entryPoint;
+
+    PortableEntryPoint* GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &_entryPoint;
+    }
+
+    void Init(MethodDesc* targetMethod, PCODE targetEntryPoint, void* thunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _targetEntryPoint = targetEntryPoint;
+        _entryPoint.Init_WithNativeCode(thunk, targetMethod);
+    }
+};
+
+// Generated closed-static return-buffer stubs access the target entrypoint at a fixed
+// negative offset from the embedded entrypoint.
+static_assert(offsetof(ClosedStaticRetBufPortableEntryPoint, _entryPoint) == TARGET_POINTER_SIZE);
+
 template<>
 struct cdac_data<PortableEntryPoint>
 {

@@ -22,6 +22,9 @@
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 #include "typestring.h"
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#include "wasm/helpers.hpp"
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
@@ -847,6 +850,61 @@ static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
     return JitILStub(pStubMD);
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke)
+{
+    STANDARD_VM_CONTRACT;
+
+    LoaderAllocator* pTargetLoaderAllocator = pTargetMD->GetLoaderAllocator();
+    LoaderAllocator* pDelegateLoaderAllocator = pDelegateInvoke->GetLoaderAllocator();
+    LoaderAllocator* pStubLoaderAllocator =
+        pDelegateLoaderAllocator->IsCollectible() ? pDelegateLoaderAllocator : pTargetLoaderAllocator;
+
+    if (pStubLoaderAllocator->IsCollectible() &&
+        pTargetLoaderAllocator != pDelegateLoaderAllocator &&
+        pTargetLoaderAllocator->IsCollectible())
+    {
+        pStubLoaderAllocator->EnsureReference(pTargetLoaderAllocator);
+    }
+
+    FuncPtrStubs* pFuncPtrStubs = pStubLoaderAllocator->GetFuncPtrStubs();
+    PCODE pStub = pFuncPtrStubs->LookupClosedStaticRetBufStub(pTargetMD, pDelegateInvoke);
+    if (pStub != (PCODE)NULL)
+        return pStub;
+
+    void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
+    if (thunk == NULL)
+        COMPlusThrow(kPlatformNotSupportedException);
+
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode();
+    AllocMemTracker amt;
+    ClosedStaticRetBufPortableEntryPoint* pNewStub =
+        reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
+            amt.Track(pStubLoaderAllocator->GetHighFrequencyHeap()->AllocMem(
+                S_SIZE_T(sizeof(ClosedStaticRetBufPortableEntryPoint)))));
+    pNewStub->Init(pTargetMD, targetEntryPoint, thunk);
+
+    ClosedStaticRetBufPortableEntryPoint* pResult =
+        pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, pNewStub);
+    if (pResult == pNewStub)
+        amt.SuppressRelease();
+
+    return (PCODE)pResult->GetEntryPoint();
+}
+
+static bool NeedsClosedStaticRetBufThunk(MethodDesc* pTargetMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (!pTargetMD->IsStatic())
+        return false;
+
+    return g_pConfig->ReadyToRun() &&
+        !pTargetMD->IsAsyncMethod() &&
+        WasmMethodReturnsViaRetBuf(pTargetMD);
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
     CONTRACTL
@@ -1200,6 +1258,12 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
             pTargetCode = pTargetMethod->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        else if (NeedsClosedStaticRetBufThunk(pTargetMethod))
+        {
+            pTargetCode = SetupClosedStaticRetBufThunk(pTargetMethod, COMDelegate::FindDelegateInvokeMethod(pDelegateMT));
+        }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
         else
         {
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
@@ -1689,6 +1753,12 @@ extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTab
             method = pMeth->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMeth, PRECODE_THISPTR_RETBUF);
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        else if (NeedsClosedStaticRetBufThunk(pMeth))
+        {
+            method = SetupClosedStaticRetBufThunk(pMeth, pDelegateInvoke);
+        }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         pBindToMethodDetails->methodPtr = (PCODE)(void *)method;
     }
@@ -2607,6 +2677,12 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
         if (isStatic && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             return NULL;
 #endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // An interpreted creator can run while R2R is enabled. Force it through Delegate_Construct
+        // so the closed static return-buffer adapter is installed.
+        if (NeedsClosedStaticRetBufThunk(pTargetMethod))
+            return NULL;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         // under the conditions below the delegate ctor needs to perform some heavy operation
         // to get the unboxing stub

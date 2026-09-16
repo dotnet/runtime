@@ -3799,6 +3799,17 @@ namespace Internal.JitInterface
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                    MethodDesc method = methodHandle is null ? null : HandleToObject(methodHandle);
+                    if (method is not null &&
+                        method.OwningType.IsDelegate &&
+                        method.Name == "Invoke"u8 &&
+                        wasmSig.SignatureString[0] == 'S' &&
+                        !wasmSig.SignatureString.Contains('a'))
+                    {
+                        AddAdditionalDependency(
+                            _compilation.NodeFactory.WasmClosedStaticRetBufThunk(wasmSig),
+                            "Closed static return-buffer thunk for call site");
+                    }
                 }
             }
         }
@@ -3829,6 +3840,17 @@ namespace Internal.JitInterface
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                    ReadOnlySpan<WasmValueType> parameters = wasmSig.FuncType.Params.Types;
+                    if (wasmSig.SignatureString[0] == 'S' &&
+                        !wasmSig.SignatureString.Contains('a') &&
+                        parameters.Length >= 4 &&
+                        parameters[1] == WasmValueType.I32 &&
+                        parameters[2] == WasmValueType.I32)
+                    {
+                        AddAdditionalDependency(
+                            _compilation.NodeFactory.WasmClosedStaticRetBufThunk(wasmSig),
+                            "Closed static return-buffer thunk for compatible call signature");
+                    }
                 }
             }
         }

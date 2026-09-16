@@ -28,6 +28,45 @@ Precode* FuncPtrStubs::Lookup(MethodDesc * pMD, PrecodeType type)
     return pPrecode;
 }
 
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS) && !defined(DACCESS_COMPILE)
+PCODE FuncPtrStubs::LookupClosedStaticRetBufStub(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_hashTableCrst);
+    const ClosedStaticRetBufStubEntry* entry =
+        m_closedStaticRetBufStubs.LookupPtr({ pTargetMD, pDelegateInvoke });
+    return entry == NULL ? (PCODE)NULL : (PCODE)entry->Stub->GetEntryPoint();
+}
+
+ClosedStaticRetBufPortableEntryPoint* FuncPtrStubs::AddClosedStaticRetBufStub(
+    MethodDesc* pTargetMD,
+    MethodDesc* pDelegateInvoke,
+    ClosedStaticRetBufPortableEntryPoint* pStub)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_hashTableCrst);
+    const ClosedStaticRetBufStubEntry* entry =
+        m_closedStaticRetBufStubs.LookupPtr({ pTargetMD, pDelegateInvoke });
+    if (entry != NULL)
+        return entry->Stub;
+
+    m_closedStaticRetBufStubs.Add({ pTargetMD, pDelegateInvoke, pStub });
+    return pStub;
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS && !DACCESS_COMPILE
+
 
 #ifndef DACCESS_COMPILE
 //

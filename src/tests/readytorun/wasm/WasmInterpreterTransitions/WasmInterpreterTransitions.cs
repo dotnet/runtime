@@ -84,6 +84,10 @@ public class WasmInterpreterTransitions
     }
 
     private delegate S2 ReturnsS2Delegate(int a);
+    private delegate ObjectPair CreationOnlyObjectPairDelegate(double value);
+    private delegate SingleInt ReturnsSingleIntDelegate();
+    private delegate SmallEnum ReturnsSmallEnumDelegate();
+    private delegate ObjectPair ReturnsObjectPairDelegate();
 
     private readonly int _state = C;
 
@@ -116,6 +120,39 @@ public class WasmInterpreterTransitions
         }
 
         unsafe { Assert.Equal(A + C, s_ucoToInterpreted(A)); }
+
+        {
+            object first = new();
+            object second = new();
+            ObjectPairTarget target = new(first, second);
+            ReturnsObjectPairDelegate callback = target.GetPair;
+            Assert.Same(target, callback.Target);
+            ObjectPair pair = callback();
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
+            ReturnsObjectPairDelegate interpretedCallback = CreateObjectPairDelegate(target);
+            pair = interpretedCallback();
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
+            ReturnsObjectPairDelegate interpretedTargetCallback = target.GetPairInterpreted;
+            pair = interpretedTargetCallback();
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
+            ReturnsSingleIntDelegate singleIntCallback = target.GetSingleInt;
+            Assert.Equal(A, singleIntCallback().Value);
+
+            ReturnsSmallEnumDelegate enumCallback = target.GetSmallEnum;
+            Assert.Equal(SmallEnum.Value, enumCallback());
+
+            CreationOnlyObjectPairDelegate creationOnlyCallback = target.GetPairWithUnusedDouble;
+            Assert.Same(target, creationOnlyCallback.Target);
+
+            Func<double, ObjectPair> genericCreationOnlyCallback = target.GetPairWithUnusedDouble;
+            Assert.Same(target, genericCreationOnlyCallback.Target);
+        }
 
         // R2R -> interpreted, struct returns. The return buffer follows 'this' for an instance
         // method and the stack pointer for a static one, which is where the two forms differ.
@@ -221,6 +258,10 @@ public class WasmInterpreterTransitions
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int InterpretedFromUnmanagedCaller(int a) => a + C;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ReturnsObjectPairDelegate CreateObjectPairDelegate(ObjectPairTarget target) => target.GetPair;
 
     // SkiaSharp SKManagedStream callback shape: GCHandle resolve (generic + castclass) then a virtual
     // call whose override is interpreted.
@@ -445,4 +486,45 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceTakesS16AndTwoInt(S16 s, int a, int b) => (int)(s.A + s.B) + a + b + _state; // MiTS16iip
+}
+
+public struct ObjectPair
+{
+    public object First;
+    public object Second;
+}
+
+public struct SingleInt
+{
+    public int Value;
+}
+
+public enum SmallEnum
+{
+    Value = 1,
+}
+
+public sealed class ObjectPairTarget
+{
+    public ObjectPairTarget(object first, object second)
+    {
+        Pair = new ObjectPair { First = first, Second = second };
+    }
+
+    public ObjectPair Pair;
+}
+
+public static class ObjectPairTargetExtensions
+{
+    public static ObjectPair GetPair(this ObjectPairTarget target) => target.Pair;
+
+    public static SingleInt GetSingleInt(this ObjectPairTarget target) => new SingleInt { Value = 0x11223344 };
+
+    public static SmallEnum GetSmallEnum(this ObjectPairTarget target) => SmallEnum.Value;
+
+    public static ObjectPair GetPairWithUnusedDouble(this ObjectPairTarget target, double value) => target.Pair;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ObjectPair GetPairInterpreted(this ObjectPairTarget target) => target.Pair;
 }

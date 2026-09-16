@@ -466,6 +466,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmInterpreterToR2RThunkNode(this, key);
             });
 
+            _wasmClosedStaticRetBufThunks = new NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode>(key =>
+            {
+                return new WasmClosedStaticRetBufThunkNode(this, key.Signature);
+            });
+
             _wasmVirtualDispatchThunks = new NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode>(key =>
             {
                 return new WasmVirtualDispatchThunkNode(this, key.Signature);
@@ -1019,6 +1024,30 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
         }
 
+        private readonly struct WasmClosedStaticRetBufThunkKey : IEquatable<WasmClosedStaticRetBufThunkKey>
+        {
+            public WasmSignature Signature { get; }
+
+            public WasmClosedStaticRetBufThunkKey(WasmSignature signature)
+            {
+                Signature = signature;
+            }
+
+            public bool Equals(WasmClosedStaticRetBufThunkKey other) =>
+                Signature.FuncType.Equals(other.Signature.FuncType);
+
+            public override bool Equals(object obj) =>
+                obj is WasmClosedStaticRetBufThunkKey other && Equals(other);
+
+            public override int GetHashCode() => Signature.FuncType.GetHashCode();
+        }
+
+        private NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode> _wasmClosedStaticRetBufThunks;
+        public WasmClosedStaticRetBufThunkNode WasmClosedStaticRetBufThunk(WasmSignature wasmSignature)
+        {
+            return _wasmClosedStaticRetBufThunks.GetOrAdd(new WasmClosedStaticRetBufThunkKey(wasmSignature));
+        }
+
         private readonly struct WasmVirtualDispatchThunkKey : IEquatable<WasmVirtualDispatchThunkKey>
         {
             public WasmSignature Signature { get; }
@@ -1064,6 +1093,30 @@ namespace ILCompiler.DependencyAnalysis
             {
                 WasmAsyncResumeInfoFixups = new WasmAsyncResumeInfoFixupsNode();
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.WasmAsyncResumeInfo, WasmAsyncResumeInfoFixups);
+
+                // Runtime APIs can construct a non-generic delegate before any compiled call site
+                // exposes its Invoke signature. Root the closed-static return-buffer adapter from
+                // the delegate type itself so construction does not depend on call-site load order.
+                foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
+                {
+                    foreach (MetadataType type in inputModule.GetAllTypes())
+                    {
+                        if (!type.IsDelegate || type.IsGenericDefinition)
+                            continue;
+
+                        MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
+                        if (invokeMethod is null)
+                            continue;
+
+                        WasmSignature signature = WasmLowering.GetSignature(invokeMethod);
+                        if (signature.SignatureString[0] == 'S' && !signature.SignatureString.Contains('a'))
+                        {
+                            graph.AddRoot(
+                                WasmClosedStaticRetBufThunk(signature),
+                                "Non-generic delegate type requires closed static return-buffer thunk");
+                        }
+                    }
+                }
             }
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
