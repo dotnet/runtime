@@ -517,15 +517,10 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
                                refEqualityColon);
         }
 
-        // We're about to append statements, so anything already on the evaluation stack
-        // below our arguments has to be evaluated first. Otherwise the unrolled comparison
-        // (which may dereference varStr) would be ordered ahead of those side effects.
-        //
-        assert(stackState.esStackDepth >= (unsigned)argsCount);
-        for (unsigned level = 0; level < stackState.esStackDepth - argsCount; level++)
-        {
-            impSpillSideEffect(false, level DEBUGARG("unrolled UTF16 string comparison"));
-        }
+        impPopStack(argsCount);
+
+        // Include global reads so nonfaulting volatile loads stay ahead of the comparison.
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("unrolled UTF16 string comparison"));
 
         impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
@@ -538,10 +533,6 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
         JITDUMP("\n... Successfully unrolled to:\n")
         DISPTREE(unrolled)
-        for (int i = 0; i < argsCount; i++)
-        {
-            impPopStack();
-        }
     }
     return unrolled;
 }
@@ -698,14 +689,10 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
 
     if (unrolled != nullptr)
     {
-        // We're about to append statements, so anything already on the evaluation stack
-        // below our arguments has to be evaluated first.
-        //
-        assert(stackState.esStackDepth >= (unsigned)argsCount);
-        for (unsigned level = 0; level < stackState.esStackDepth - argsCount; level++)
-        {
-            impSpillSideEffect(false, level DEBUGARG("unrolled UTF16 span comparison"));
-        }
+        impPopStack(argsCount);
+
+        // Include global reads so nonfaulting volatile loads stay ahead of the comparison.
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("unrolled UTF16 span comparison"));
 
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
@@ -722,11 +709,6 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
 
         JITDUMP("... Successfully unrolled to:\n")
         DISPTREE(unrolled)
-
-        for (int i = 0; i < argsCount; i++)
-        {
-            impPopStack();
-        }
 
         // We have to clean up GT_RET_EXPR for String.op_Implicit or MemoryExtensions.AsSpans
         if ((spanObj != op1) && op1->OperIs(GT_RET_EXPR))
