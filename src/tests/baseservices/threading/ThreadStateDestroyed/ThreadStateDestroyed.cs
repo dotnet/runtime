@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 
 // A native library runs managed code on an OS thread, then runs managed code again from a
 // thread-destruction callback that fires after the runtime has already torn down its per-thread
@@ -59,6 +60,9 @@ public static unsafe class ThreadStateDestroyed
 
     private static int RunScenario()
     {
+        // Ensure that the OS doesn't generate core dump for this intentionally crashing process
+        Utilities.DisableOSCoreDump();
+
         RunCallbackOnThreadAndDuringItsDestruction(&Callback);
 
         Console.WriteLine("[managed] The runtime did not fail fast.");
