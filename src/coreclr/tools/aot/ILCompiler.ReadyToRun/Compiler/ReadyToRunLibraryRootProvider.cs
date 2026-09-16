@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 using Internal.JitInterface;
-using System.Reflection.Metadata;
 
 namespace ILCompiler
 {
@@ -114,7 +114,7 @@ namespace ILCompiler
                     // If a method's signature refers to a type with an indeterminate size,
                     // the compilation will eventually fail when we generate the GCRefMap.
                     //
-                    // Therefore we need to avoid adding these method into the graph
+                    // Therefore we need to avoid adding these methods into the graph
                     //
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }

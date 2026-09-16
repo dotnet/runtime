@@ -1288,7 +1288,8 @@ FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, Continu
 
     TransitionBlock transitionBlock{};
     transitionBlock.m_StackPointer = callersStackPointer;
-    transitionBlock.m_ReturnAddress = (TADDR)&AsyncHelpers_ResumeInterpreterContinuation;
+    // Keep the return address consistent with the managed R2R frame represented by the caller's stack pointer.
+    transitionBlock.m_ReturnAddress = GetWasmVirtualIPFromStackPointer(callersStackPointer);
 
     return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
 }
