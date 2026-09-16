@@ -93,10 +93,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 static void AddInteropAllocatedType(NodeFactory factory, DependencyList dependencies, EcmaType type)
                 {
+                    dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
+
+                    // COM-imported types are instantiated by the runtime through a COM class factory
+                    // and wrapped in an RCW - the managed parameterless constructor is not called.
                     if (type.IsComImport)
                         return;
 
-                    dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
                     if (type.GetParameterlessConstructor() is EcmaMethod ctorMethod && factory.IsModuleTrimmed(ctorMethod.Module))
                         dependencies.Add(factory.MethodDefinition(ctorMethod.Module, ctorMethod.Handle), "Interop-called ctor");
                 }
