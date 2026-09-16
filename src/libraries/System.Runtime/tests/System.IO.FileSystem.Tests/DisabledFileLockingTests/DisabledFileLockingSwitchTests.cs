@@ -11,7 +11,9 @@ namespace System.IO.Tests
         [Fact]
         public static void ConfigSwitchIsHonored()
         {
-            bool expected = (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS();
+            bool expected = OperatingSystem.IsWindows() ||
+                (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) ||
+                OperatingSystem.IsTvOS();
             Assert.Equal(expected, PlatformDetection.IsFileLockingEnabled);
         }
     }
