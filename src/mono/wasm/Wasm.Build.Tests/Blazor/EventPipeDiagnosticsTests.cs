@@ -92,7 +92,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
 
         Assert.True(appMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
-        Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");
+        if (BuildTestBase.IsCoreClrRuntime)
+        {
+            Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");
+        }
     }
 
     [Fact]
