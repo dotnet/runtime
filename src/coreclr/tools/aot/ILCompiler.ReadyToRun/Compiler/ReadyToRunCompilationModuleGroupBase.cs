@@ -89,7 +89,14 @@ namespace ILCompiler
             _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
-            _directPInvokeModules = new HashSet<string>(config.DirectPInvokeModules, StringComparer.Ordinal);
+            _directPInvokeModules = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string module in config.DirectPInvokeModules)
+            {
+                foreach (string variation in TypeExtensions.GetPInvokeModuleNameVariations(config.Context.Target, module))
+                {
+                    _directPInvokeModules.Add(variation);
+                }
+            }
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
 
@@ -115,13 +122,20 @@ namespace ILCompiler
             }
 
             string module = method.GetPInvokeMethodMetadata().Module;
-            if (module is "*" or "QCall" || _directPInvokeModules.Contains(module))
+            if (module is "*" or "QCall")
             {
                 return true;
             }
 
-            const string LibPrefix = "lib";
-            return _directPInvokeModules.Contains(LibPrefix + module);
+            foreach (string variation in TypeExtensions.GetPInvokeModuleNameVariations(method.Context.Target, module))
+            {
+                if (_directPInvokeModules.Contains(variation))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)

@@ -19,7 +19,7 @@
 
   <!-- The framework P/Invoke modules, shared with the runtime tests' corerun relink so the
        checked-in tables and the ones the tests generate cannot drift apart. -->
-  <Import Project="$(MSBuildThisFileDirectory)WasmPInvokeModules.props" />
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
 
   <PropertyGroup>
     <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
@@ -100,7 +100,7 @@
     <Error Condition="!Exists('$(_ScanPath)')"
            Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
-           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(MSBuildThisFileDirectory)WasmPInvokeModules.props." />
+           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props." />
 
     <Message Importance="High" Text="[$(_TargetOS)] Scan path: $(_ScanPath)" />
     <Message Importance="High" Text="[$(_TargetOS)] Output path: $(_OutputDir)" />

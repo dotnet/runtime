@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', '..', 'coreclr', 'vm', 'wasm', 'WasmPInvokeModules.props'))" />
+  <Import Project="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', '..', '..', 'eng', 'wasm', 'WasmPInvokeModules.props'))" />
 
   <Target Name="_WasiConfigureReadyToRunPInvokes"
           Condition="'$(PublishReadyToRun)' == 'true'"
@@ -7,7 +7,7 @@
     <ItemGroup>
       <_WasiReadyToRunPInvokeModule Remove="@(_WasiReadyToRunPInvokeModule)" />
       <_WasiReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))" />
-      <_WasiReadyToRunPInvokeModule Remove="libSystem.Globalization.Native"
+      <_WasiReadyToRunPInvokeModule Remove="System.Globalization.Native"
                                      Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
@@ -170,7 +170,7 @@
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
 
       <_WasiPInvokeModules Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))" />
-      <_WasiPInvokeModules Remove="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
+      <_WasiPInvokeModules Remove="System.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
     <FilterManagedAssemblies Assemblies="@(_WasiBundledFile)">

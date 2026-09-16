@@ -36,7 +36,8 @@ Each run emits three files into the output directory:
 
 Only the framework native libraries the runtime links statically get an entry in the generated
 P/Invoke table. `generate-coreclr-helpers.proj` imports that list from
-[`WasmPInvokeModules.props`](WasmPInvokeModules.props), which `CLRTest.WasmCorerun.targets` imports
+[`eng/wasm/WasmPInvokeModules.props`](../../../../eng/wasm/WasmPInvokeModules.props), which
+`CLRTest.WasmCorerun.targets` imports
 too when it links a test-specific corerun, so the checked-in tables and the tests' own cannot be
 edited apart.
 

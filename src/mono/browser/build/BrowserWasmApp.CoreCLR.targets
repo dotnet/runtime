@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <_WasmPInvokeModulesProps Condition="Exists('$(MSBuildThisFileDirectory)WasmPInvokeModules.props')">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</_WasmPInvokeModulesProps>
-    <_WasmPInvokeModulesProps Condition="'$(_WasmPInvokeModulesProps)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', '..', 'coreclr', 'vm', 'wasm', 'WasmPInvokeModules.props'))</_WasmPInvokeModulesProps>
+    <_WasmPInvokeModulesProps Condition="'$(_WasmPInvokeModulesProps)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', '..', '..', 'eng', 'wasm', 'WasmPInvokeModules.props'))</_WasmPInvokeModulesProps>
   </PropertyGroup>
   <Import Project="$(_WasmPInvokeModulesProps)" />
 
@@ -195,7 +195,7 @@
       <_WasmReadyToRunPInvokeModule Include="%(_WasmReadyToRunNativeLibrary.FileName)"
                                      Condition="'%(_WasmReadyToRunNativeLibrary.ScanForPInvokes)' != 'false'" />
       <_WasmReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))" />
-      <_WasmReadyToRunPInvokeModule Remove="libSystem.Globalization.Native"
+      <_WasmReadyToRunPInvokeModule Remove="System.Globalization.Native"
                                      Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
@@ -692,7 +692,7 @@
       <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
       <_WasmPInvokeModules Include="%(_WasmSourceFileToCompile.FileName)" Condition="'%(_WasmSourceFileToCompile.ScanForPInvokes)' != 'false'" />
       <_WasmPInvokeModules Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))" />
-      <_WasmPInvokeModules Remove="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
+      <_WasmPInvokeModules Remove="System.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
     <!-- Managed assemblies to scan. An app bundle legitimately carries native payloads named .dll -
