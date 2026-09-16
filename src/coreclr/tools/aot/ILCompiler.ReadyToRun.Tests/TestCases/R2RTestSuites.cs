@@ -67,6 +67,29 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void RiscV64SoftFloatTargetIsRejected()
+    {
+        // The riscv64-lp64 (soft-float) ABI is NativeAOT-only: crossgen2 rejects it on the
+        // command line instead of compiling with helpers that have no ReadyToRun encoding.
+        var module = new CompiledAssembly
+        {
+            AssemblyName = nameof(RiscV64SoftFloatTargetIsRejected),
+            SourceResourceNames = ["ThumbBit/HotColdSplitting.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RiscV64SoftFloatTargetIsRejected),
+            [
+                new(nameof(RiscV64SoftFloatTargetIsRejected), [new CrossgenAssembly(module)])
+                {
+                    TargetOS = "linux",
+                    TargetArchitecture = "riscv64-lp64",
+                    ExpectedFailure = "is not supported by ReadyToRun",
+                },
+            ]));
+    }
+
+    [Fact]
     public void GenericTypeConstraintsAllowVariantParameters()
     {
         var genericTypeConstraints = new CompiledAssembly

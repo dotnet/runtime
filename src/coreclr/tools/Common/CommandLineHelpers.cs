@@ -27,6 +27,8 @@ namespace System.CommandLine
 
         public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "openbsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
         public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+        // Targets that only the NativeAOT compiler supports (no ReadyToRun): the RISC-V lp64 soft-float ABI.
+        public static string[] ValidArchitecturesNativeAot { get; } = [.. ValidArchitectures, "riscv64-lp64"];
 
         public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
@@ -119,7 +121,7 @@ namespace System.CommandLine
                     "arm64" => TargetArchitecture.ARM64,
                     "wasm" => TargetArchitecture.Wasm32,
                     "loongarch64" => TargetArchitecture.LoongArch64,
-                    "riscv64" => TargetArchitecture.RiscV64,
+                    "riscv64" or "riscv64-lp64" => TargetArchitecture.RiscV64,
                     _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
                 };
             }
@@ -136,6 +138,7 @@ namespace System.CommandLine
             {
                 (_, "armel") => TargetAbi.NativeAotArmel,
                 ("android", "arm") => TargetAbi.NativeAotArmel,
+                (_, "riscv64-lp64") => TargetAbi.NativeAotRiscV64SoftFloat,
                 _ => TargetAbi.NativeAot,
             };
 
