@@ -443,8 +443,25 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
         foreach (ExceptionClauseInfo clause in clauses)
         {
-            if (clause.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Filter && clause.FilterOffset == funcletStartOffset)
+            if (clause.ClauseType != ExceptionClauseInfo.ExceptionClauseFlags.Filter
+                || clause.FilterOffset is not uint filterOffset)
+            {
+                continue;
+            }
+
+            if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
+            {
+                TargetCodePointer filterAddress = new(info.StartAddress.Value + filterOffset);
+                if (eman.GetCodeBlockHandle(filterAddress) is CodeBlockHandle filterCodeInfoHandle
+                    && eman.GetFuncletStartAddress(filterCodeInfoHandle) == funcletStartAddress)
+                {
+                    return true;
+                }
+            }
+            else if (filterOffset == funcletStartOffset)
+            {
                 return true;
+            }
         }
 
         return false;

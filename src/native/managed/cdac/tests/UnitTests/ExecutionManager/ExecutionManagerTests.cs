@@ -568,7 +568,7 @@ public class ExecutionManagerTests
         Assert.Equal(filter ? 48u : FuncletBeginAddress - RootBeginAddress, clause.HandlerStartPC);
         Assert.Equal(filter ? 64u : 48u, clause.HandlerEndPC);
         Assert.Null(clause.ClassToken);
-        Assert.Equal(filter ? FuncletBeginAddress - RootBeginAddress : null, clause.FilterOffset);
+        Assert.Equal(filter ? FuncletBeginAddress - RootBeginAddress + 2 : null, clause.FilterOffset);
         Assert.Equal(filter, em.IsFilterFunclet(handle.Value));
     }
 
@@ -601,7 +601,7 @@ public class ExecutionManagerTests
             [new("Flags", DataType.uint32), new("TryStartPC", DataType.uint32), new("TryEndPC", DataType.uint32),
              new("HandlerStartPC", DataType.uint32), new("HandlerEndPC", DataType.uint32), new("ClassToken", DataType.uint32)],
             filter
-                ? [1, 2, 16, 48, 64, funcletOffset]
+                ? [1, 2, 16, 48, 64, funcletOffset + 2]
                 : [2, 2, 16, funcletOffset, 48, 0]);
         return types;
 
