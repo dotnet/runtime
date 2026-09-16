@@ -155,9 +155,9 @@ int main()
   return pipe2(pipeDescriptors, O_CLOEXEC);
 }" PAL_HAVE_PIPE2)
 if(PAL_HAVE_PIPE2)
-  set(HAVE_PIPE2 1)
+  set(HAVE_PIPE2 1 CACHE INTERNAL "" FORCE)
 else()
-  set(HAVE_PIPE2 0)
+  set(HAVE_PIPE2 0 CACHE INTERNAL "" FORCE)
 endif()
 set(CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
