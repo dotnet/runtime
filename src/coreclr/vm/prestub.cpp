@@ -2118,7 +2118,7 @@ NOINLINE static void* ExecuteInterpretedMethodFromUnmanaged(
 
     void* retVal;
     {
-        GCX_COOP();
+        GCX_COOP_REGION_BEGIN();
 
 #ifdef DEBUGGING_SUPPORTED
         if (g_TrapReturningThreads && CORDebuggerTraceCall())
@@ -2133,6 +2133,7 @@ NOINLINE static void* ExecuteInterpretedMethodFromUnmanaged(
 #endif // DEBUGGING_SUPPORTED
 
         retVal = ExecuteInterpretedMethodBody(pTransitionBlock, (TADDR)pInterpreterCode, retBuff, threadContext, sp);
+        GCX_COOP_REGION_END();
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -2222,9 +2223,10 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             {
-                GCX_PREEMP();
+                GCX_PREEMP_REGION_BEGIN();
                 (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
                 targetIp = pMethod->GetInterpreterCode();
+                GCX_PREEMP_REGION_END();
             }
 
             finishedPrestubPortion = true;

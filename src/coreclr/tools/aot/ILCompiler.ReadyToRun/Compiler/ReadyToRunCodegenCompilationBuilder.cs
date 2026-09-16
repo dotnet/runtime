@@ -40,6 +40,7 @@ namespace ILCompiler
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
+        private bool _verifyGCModeTransitions;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
@@ -190,6 +191,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseVerifyGCModeTransitions(bool verifyGCModeTransitions)
+        {
+            _verifyGCModeTransitions = verifyGCModeTransitions;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseHotColdSplitting(bool hotColdSplitting)
         {
             _hotColdSplitting = hotColdSplitting;
@@ -268,6 +275,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipAccessValidation;
             }
+            if (_verifyGCModeTransitions)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -298,6 +309,11 @@ namespace ILCompiler
             if (_hotColdSplitting)
             {
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
+            }
+
+            if (_verifyGCModeTransitions)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
             }
 
             switch (_optimizationMode)

@@ -23,7 +23,8 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
         READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
-        READYTORUN_FLAG_SkipAccessValidation = 0x00001000,     // Runtime should trust that every typeref/memberref/methodspec/typespec referenced
+        READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
+        READYTORUN_FLAG_SkipAccessValidation = 0x00002000,     // Runtime should trust that every typeref/memberref/methodspec/typespec referenced
                                                                 // from a method body in this module is accessible to its caller, and skip the
                                                                 // corresponding JIT-time access checks
     }
@@ -273,6 +274,7 @@ namespace Internal.ReadyToRunConstants
         GCPoll                      = 0x44,
         ReversePInvokeEnter         = 0x45,
         ReversePInvokeExit          = 0x46,
+        ResumeAfterCatch            = 0x47,
 
         // Get string handle lazily
         GetString = 0x50,
