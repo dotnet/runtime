@@ -157,9 +157,7 @@ namespace CorUnix
 
     enum PalObjectTypeId
     {
-        otiAutoResetEvent = 0,
-        otiManualResetEvent,
-        otiFile,
+        otiFile = 0,
         otiFileMapping,
         otiSocket,
         otiThread,
@@ -177,55 +175,8 @@ namespace CorUnix
     // The data size members control how much space will be allocated for
     // instances of this object. Any or all of those members may be 0.
     //
-    // dwSupportedAccessRights is the mask of valid access bits for this
-    // object type. Supported generic rights should not be included in
-    // this member.
-    //
-    // The generic access rights mapping (structure TBD) defines how the
-    // supported generic access rights (e.g., GENERIC_READ) map to the
-    // specific access rights for this object type.
-    //
-    // If the object may be waited on eSynchronizationSupport should be
-    // WaitableObject. (Note that this implies that object type supports
-    // the SYNCHRONIZE access right.)
-    //
-    // The remaining members describe the wait-object semantics for the
-    // object type when eSynchronizationSupport is WaitableObject:
-    //
-    // * eSignalingSemantics: SingleTransitionObject for objects that, once
-    //   they transition to the signaled state, can never transition back to
-    //   the unsignaled state (e.g., processes and threads)
-    //
-    // * eThreadReleaseSemantics: if ThreadReleaseAltersSignalCount the object's
-    //   signal count is decremented when a waiting thread is released; otherwise,
-    //   the signal count is not modified (as is desired for a manual reset event).
-    //   Must be ThreadReleaseHasNoSideEffects if eSignalingSemantics is
-    //   SingleTransitionObject
-    //
-
     class CObjectType
     {
-    public:
-        enum SynchronizationSupport
-        {
-            WaitableObject,
-            UnwaitableObject
-        };
-
-        enum SignalingSemantics
-        {
-            ObjectCanBeUnsignaled,
-            SingleTransitionObject,
-            SignalingNotApplicable
-        };
-
-        enum ThreadReleaseSemantics
-        {
-            ThreadReleaseAltersSignalCount,
-            ThreadReleaseHasNoSideEffects,
-            ThreadReleaseNotApplicable
-        };
-
     private:
 
         //
@@ -242,10 +193,6 @@ namespace CorUnix
         OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE m_pImmutableDataCleanupRoutine;
         DWORD m_dwProcessLocalDataSize;
         OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE m_pProcessLocalDataCleanupRoutine;
-        // Generic access rights mapping
-        SynchronizationSupport m_eSynchronizationSupport;
-        SignalingSemantics m_eSignalingSemantics;
-        ThreadReleaseSemantics m_eThreadReleaseSemantics;
 
     public:
 
@@ -256,10 +203,7 @@ namespace CorUnix
             OBJECT_IMMUTABLE_DATA_COPY_ROUTINE pImmutableDataCopyRoutine,
             OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pImmutableDataCleanupRoutine,
             DWORD dwProcessLocalDataSize,
-            OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE pProcessLocalDataCleanupRoutine,
-            SynchronizationSupport eSynchronizationSupport,
-            SignalingSemantics eSignalingSemantics,
-            ThreadReleaseSemantics eThreadReleaseSemantics
+            OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE pProcessLocalDataCleanupRoutine
             )
             :
             m_eTypeId(eTypeId),
@@ -268,10 +212,7 @@ namespace CorUnix
             m_pImmutableDataCopyRoutine(pImmutableDataCopyRoutine),
             m_pImmutableDataCleanupRoutine(pImmutableDataCleanupRoutine),
             m_dwProcessLocalDataSize(dwProcessLocalDataSize),
-            m_pProcessLocalDataCleanupRoutine(pProcessLocalDataCleanupRoutine),
-            m_eSynchronizationSupport(eSynchronizationSupport),
-            m_eSignalingSemantics(eSignalingSemantics),
-            m_eThreadReleaseSemantics(eThreadReleaseSemantics)
+            m_pProcessLocalDataCleanupRoutine(pProcessLocalDataCleanupRoutine)
         {
             s_rgotIdMapping[eTypeId] = this;
         };
@@ -357,31 +298,6 @@ namespace CorUnix
             return m_pProcessLocalDataCleanupRoutine;
         }
 
-        // Generic access rights mapping
-
-        SynchronizationSupport
-        GetSynchronizationSupport(
-            void
-            )
-        {
-            return  m_eSynchronizationSupport;
-        };
-
-        SignalingSemantics
-        GetSignalingSemantics(
-            void
-            )
-        {
-            return  m_eSignalingSemantics;
-        };
-
-        ThreadReleaseSemantics
-        GetThreadReleaseSemantics(
-            void
-            )
-        {
-            return  m_eThreadReleaseSemantics;
-        };
     };
 
     class CAllowedObjectTypes
@@ -465,126 +381,6 @@ namespace CorUnix
         };
     };
 
-    //
-    // ISynchStateController is used to modify any object's synchronization
-    // state. It is intended to be used from within the APIs exposed for
-    // various objects (e.g., SetEvent, ReleaseMutex, etc.).
-    //
-    // Each ISynchStateController instance implicitly holds what should be
-    // viewed as the global dispatcher lock, and as such should be released
-    // as quickly as possible. An ISynchStateController instance is bound to
-    // the thread that requested it; it may not be passed to a different
-    // thread.
-    //
-
-    class ISynchStateController
-    {
-    public:
-
-        virtual
-        PAL_ERROR
-        GetSignalCount(
-            LONG *plSignalCount
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        SetSignalCount(
-            LONG lNewCount
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        IncrementSignalCount(
-            LONG lAmountToIncrement
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        DecrementSignalCount(
-            LONG lAmountToDecrement
-            ) = 0;
-
-        virtual
-        void
-        ReleaseController(
-            void
-            ) = 0;
-    };
-
-    //
-    // ISynchWaitController is used to indicate a thread's desire to wait for
-    // an object (which possibly includes detecting instances where the wait
-    // can be satisfied without blocking). It is intended to be used by object
-    // wait function (WaitForSingleObject, etc.).
-    //
-    // Each ISynchWaitController instance implicitly holds what should be
-    // viewed as the global dispatcher lock, and as such should be released
-    // as quickly as possible. An ISynchWaitController instance is bound to
-    // the thread that requested it; it may not be passed to a different
-    // thread.
-    //
-    // A thread may hold multiple ISynchWaitController instances
-    // simultaneously.
-    //
-
-    enum WaitType
-    {
-        SingleObject,
-        MultipleObjectsWaitOne,
-        MultipleObjectsWaitAll
-    };
-
-    class ISynchWaitController
-    {
-    public:
-
-        //
-        // CanThreadWaitWithoutBlocking informs the caller if a wait
-        // operation may succeed immediately, but does not actually
-        // alter any object state. ReleaseWaitingThreadWithoutBlocking
-        // alters the object state, and will return an error if it is
-        // not possible for the wait to be immediately satisfied.
-        //
-
-        virtual
-        PAL_ERROR
-        CanThreadWaitWithoutBlocking(
-            bool *pfCanWaitWithoutBlocking     // OUT
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        ReleaseWaitingThreadWithoutBlocking(
-            ) = 0;
-
-        //
-        // dwIndex is intended for MultipleObjectsWaitOne situations. The
-        // index for the object that becomes signaled and satisfies the
-        // wait will be returned in the call to BlockThread.
-        //
-
-        virtual
-        PAL_ERROR
-        RegisterWaitingThread(
-            WaitType eWaitType,
-            DWORD dwIndex
-            ) = 0;
-
-        //
-        // Why is there no unregister waiting thread routine? Unregistration
-        // is the responsibility of the synchronization provider, not the
-        // implementation of the wait object routines. (I can be convinced
-        // that this isn't the best approach, though...)
-        //
-
-        virtual
-        void
-        ReleaseController(
-            void
-            ) = 0;
-    };
-
     enum LockType
     {
         ReadLock,
@@ -649,41 +445,6 @@ namespace CorUnix
             void **ppvProcessLocalData          // OUT
             ) = 0;
 
-        //
-        // The following two routines obtain the global dispatcher lock.
-        // If a thread needs to make use of a synchronization interface
-        // and examine object data it must obtain the synchronization
-        // interface first. A thread is allowed to hold synchronization
-        // interfaces for multiple objects at the same time if it obtains
-        // all of the interfaces through a single call (see IPalSynchronizationManager
-        // below).
-        //
-        // The single-call restriction allows the underlying implementation
-        // to possibly segement the global dispatcher lock. If this restriction
-        // were not in place (i.e., if a single thread were allowed to call
-        // GetSynchXXXController for multiple objects) no such segmentation
-        // would be possible as there would be no way know in what order a
-        // thread would choose to obtain the controllers.
-        //
-        // Note: this design precludes simultaneous acquisition of both
-        // the state and wait controller for an object but there are
-        // currently no places where doing so would be necessary.
-        //
-
-        virtual
-        PAL_ERROR
-        GetSynchStateController(
-            CPalThread *pThread,                // IN, OPTIONAL
-            ISynchStateController **ppStateController   // OUT
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        GetSynchWaitController(
-            CPalThread *pThread,                // IN, OPTIONAL
-            ISynchWaitController **ppWaitController   // OUT
-            ) = 0;
-
         virtual
         DWORD
         AddReference(
@@ -694,19 +455,6 @@ namespace CorUnix
         DWORD
         ReleaseReference(
             CPalThread *pThread
-            ) = 0;
-
-        //
-        // This routine is only for use by the synchronization manager
-        // (specifically, for GetSynch*ControllersForObjects). The
-        // caller must have acquired the appropriate lock before
-        // (whatever exactly that must be) before calling this routine.
-        //
-
-        virtual
-        PAL_ERROR
-        GetObjectSynchData(
-            VOID **ppvSynchData             // OUT
             ) = 0;
 
     };
@@ -726,7 +474,7 @@ namespace CorUnix
     public:
 
         //
-        // Object creation (e.g., what is done by CreateEvent) is a two step
+        // Object creation is a two step
         // process. First, the new object is allocated and the initial
         // properties set (e.g., initially signaled). Next, the object is
         // registered, yielding a handle. If an object of the same name
@@ -759,12 +507,9 @@ namespace CorUnix
         // caller, therefore, is responsible for releasing the
         // latter.
         //
-        // For named object pAllowedTypes specifies what type of
-        // existing objects can be returned in ppRegisteredObjects.
-        // This is primarily intended for CreateEvent, so that
-        // a ManualResetEvent can be returned when attempting to
-        // register an AutoResetEvent (and vice-versa). pAllowedTypes
-        // must include the type of pObjectToRegister.
+        // For a named object pAllowedTypes specifies what type of existing
+        // objects can be returned in ppRegisteredObjects. pAllowedTypes must
+        // include the type of pObjectToRegister.
         //
 
         virtual
@@ -837,143 +582,9 @@ namespace CorUnix
             IPalObject **ppObject               // OUT
             ) = 0;
 
-        //
-        // This routine is intended for WaitForMultipleObjects[Ex]
-        //
-
-        virtual
-        PAL_ERROR
-        ReferenceMultipleObjectsByHandleArray(
-            CPalThread *pThread,                // IN, OPTIONAL
-            HANDLE rghHandlesToReference[],
-            DWORD dwHandleCount,
-            CAllowedObjectTypes *pAllowedTypes,
-            IPalObject *rgpObjects[]            // OUT
-            ) = 0;
     };
 
     extern IPalObjectManager *g_pObjectManager;
-
-    enum ThreadWakeupReason
-    {
-        WaitSucceeded,
-        WaitTimeout,
-        WaitFailed
-    };
-
-    class IPalSynchronizationManager
-    {
-    public:
-
-        //
-        // A thread calls BlockThread to put itself to sleep after it has
-        // registered itself with the objects it is to wait on. A thread
-        // need not have registered with any objects, as would occur in
-        // the implementation of Sleep[Ex].
-        //
-        // Needless to say a thread must not be holding any PAL locks
-        // directly or implicitly (e.g., by holding a reference to a
-        // synchronization controller) when it calls this method.
-        //
-
-        virtual
-        PAL_ERROR
-        BlockThread(
-            CPalThread *pCurrentThread,
-            DWORD dwTimeout,
-            bool fIsSleep,
-            ThreadWakeupReason *peWakeupReason, // OUT
-            DWORD *pdwSignaledObject       // OUT
-            ) = 0;
-
-
-        //
-        // This routine is primarily meant for use by WaitForMultipleObjects[Ex].
-        // The caller must individually release each of the returned controller
-        // interfaces.
-        //
-
-        virtual
-        PAL_ERROR
-        GetSynchWaitControllersForObjects(
-            CPalThread *pThread,
-            IPalObject *rgObjects[],
-            DWORD dwObjectCount,
-            ISynchWaitController *rgControllers[]
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        GetSynchStateControllersForObjects(
-            CPalThread *pThread,
-            IPalObject *rgObjects[],
-            DWORD dwObjectCount,
-            ISynchStateController *rgControllers[]
-            ) = 0;
-
-        //
-        // These following routines are meant for use only by IPalObject
-        // implementations. The first two routines are used to
-        // allocate and free an object's synchronization state; the third
-        // is called during object promotion.
-        //
-
-        virtual
-        PAL_ERROR
-        AllocateObjectSynchData(
-            CObjectType *pObjectType,
-            VOID **ppvSynchData                 // OUT
-            ) = 0;
-
-        virtual
-        void
-        FreeObjectSynchData(
-            CObjectType *pObjectType,
-            VOID *pvSynchData
-            ) = 0;
-
-        //
-        // The next two routines provide access to the process-wide
-        // synchronization lock
-        //
-
-        virtual
-        void
-        AcquireProcessLock(
-            CPalThread *pThread
-            ) = 0;
-
-        virtual
-        void
-        ReleaseProcessLock(
-            CPalThread *pThread
-            ) = 0;
-
-        //
-        // The final routines are used by IPalObject::GetSynchStateController
-        // and IPalObject::GetSynchWaitController
-        //
-
-        virtual
-        PAL_ERROR
-        CreateSynchStateController(
-            CPalThread *pThread,                // IN, OPTIONAL
-            CObjectType *pObjectType,
-            VOID *pvSynchData,
-            ISynchStateController **ppStateController       // OUT
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        CreateSynchWaitController(
-            CPalThread *pThread,                // IN, OPTIONAL
-            CObjectType *pObjectType,
-            VOID *pvSynchData,
-            ISynchWaitController **ppWaitController       // OUT
-            ) = 0;
-    };
-
-    extern IPalSynchronizationManager *g_pSynchronizationManager;
 
 }
 

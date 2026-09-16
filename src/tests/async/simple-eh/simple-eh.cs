@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using TestLibrary;
 using Xunit;
 
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2SimpleEH
 {
     [Fact]

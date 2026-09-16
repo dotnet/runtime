@@ -11,44 +11,48 @@ public class RuntimeAsyncDiagnosticIPStackTrace
     [Fact]
     public static void TestEntryPoint()
     {
-        TaskCompletionSource suspension = new();
-        Task task = Level1(suspension.Task);
-
-        Assert.False(task.IsCompleted);
-        suspension.SetResult();
-        Assert.True(task.IsCompleted);
-
-        InvalidOperationException? exception = null;
-        try
+        // Exercise both the cold and warm ResumeInterpreterContinuation FCall paths.
+        for (int i = 0; i < 2; i++)
         {
-            task.GetAwaiter().GetResult();
-        }
-        catch (InvalidOperationException ex)
-        {
-            exception = ex;
-        }
+            TaskCompletionSource suspension = new();
+            Task task = Level1(suspension.Task);
 
-        Assert.NotNull(exception);
-        string stackTrace = exception.StackTrace;
-        Assert.NotNull(stackTrace);
-        Console.WriteLine(stackTrace);
+            Assert.False(task.IsCompleted);
+            suspension.SetResult();
+            Assert.True(task.IsCompleted);
 
-        string[] expectedMethods =
-        [
-            nameof(ThrowAfterResume),
-            nameof(Level4),
-            nameof(Level3),
-            nameof(Level2),
-            nameof(Level1),
-        ];
+            InvalidOperationException? exception = null;
+            try
+            {
+                task.GetAwaiter().GetResult();
+            }
+            catch (InvalidOperationException ex)
+            {
+                exception = ex;
+            }
 
-        int previousFrame = -1;
-        foreach (string method in expectedMethods)
-        {
-            string frame = $"{nameof(RuntimeAsyncDiagnosticIPStackTrace)}.{method}(";
-            int currentFrame = stackTrace.IndexOf(frame, StringComparison.Ordinal);
-            Assert.True(currentFrame > previousFrame, $"Expected '{frame}' after offset {previousFrame} in:{Environment.NewLine}{stackTrace}");
-            previousFrame = currentFrame;
+            Assert.NotNull(exception);
+            string stackTrace = exception.StackTrace;
+            Assert.NotNull(stackTrace);
+            Console.WriteLine(stackTrace);
+
+            string[] expectedMethods =
+            [
+                nameof(ThrowAfterResume),
+                nameof(Level4),
+                nameof(Level3),
+                nameof(Level2),
+                nameof(Level1),
+            ];
+
+            int previousFrame = -1;
+            foreach (string method in expectedMethods)
+            {
+                string frame = $"{nameof(RuntimeAsyncDiagnosticIPStackTrace)}.{method}(";
+                int currentFrame = stackTrace.IndexOf(frame, StringComparison.Ordinal);
+                Assert.True(currentFrame > previousFrame, $"Expected '{frame}' after offset {previousFrame} in:{Environment.NewLine}{stackTrace}");
+                previousFrame = currentFrame;
+            }
         }
     }
 
