@@ -1168,7 +1168,14 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         // Filters are the only funclet that run during the 1st pass, and must have
         // both the leaf and the parent frame reported.  In order to avoid double
         // reporting of the untracked variables, do not report them for the filter.
-        flags |= NoReportUntracked;
+        // Wasm R2R parent frames cannot report from an aborted, non-interruptible
+        // location, so the filter must report the untracked variables instead.
+#ifdef TARGET_WASM
+        if (!ExecutionManager::IsVirtualIP(pCodeInfo->GetCodeAddress()))
+#endif // TARGET_WASM
+        {
+            flags |= NoReportUntracked;
+        }
     }
 
     bool reportScratchSlots;
