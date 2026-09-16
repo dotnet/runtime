@@ -116,6 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "vars.hpp"
 #include "log.h"
@@ -802,7 +803,7 @@ void EEStartupHelper()
         _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
-            ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
+            minipal_sleep(g_pConfig->StartupDelayMS());
         }
 #endif
 
@@ -1191,7 +1192,7 @@ void WaitForEndOfShutdown()
         pThread->SetThreadStateNC(Thread::TSNC_BlockedForShutdown);
     }
 
-    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE);
+    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -1686,6 +1687,9 @@ static void RuntimeThreadShutdown(void* thread)
             GCX_COOP_NO_DTOR_END();
         }
 
+#ifdef TARGET_UNIX
+        pThread->SetThreadExited();
+#endif // TARGET_UNIX
         pThread->DetachThread(TRUE);
     }
     else
