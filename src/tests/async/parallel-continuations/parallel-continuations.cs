@@ -9,7 +9,7 @@ using Xunit;
 public class Async2ParallelContinuations
 {
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestParallelContinuations()
+    public static async Task TestParallelContinuations()
     {
         TaskCompletionSource tcs = new TaskCompletionSource();
 
@@ -22,9 +22,9 @@ public class Async2ParallelContinuations
 
         tl.Value = 42;
         tcs.SetResult();
-        Task.WhenAll(t1, t2).Wait();
+        int[] results = await Task.WhenAll(t1, t2);
 
-        Assert.True((t1.Result == 42 && t2.Result == 0) || (t1.Result == 0 && t2.Result == 42));
+        Assert.True((results[0] == 42 && results[1] == 0) || (results[0] == 0 && results[1] == 42));
     }
 
     private async Task<int> AwaitVirtualTaskThenReturnThreadLocal(TaskCompletionSource tcs, ThreadLocal<int> tl)

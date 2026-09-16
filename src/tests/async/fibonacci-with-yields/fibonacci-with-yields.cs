@@ -12,12 +12,12 @@ public class Async2FibonacciWithYields
     const int iterations = 3;
     const bool doYields = true;
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void Test()
+    [Fact]
+    public static async Task Test()
     {
         long allocated = GC.GetTotalAllocatedBytes(precise: true);
 
-        AsyncEntry().GetAwaiter().GetResult();
+        await AsyncEntry();
 
         allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
         System.Console.WriteLine("allocated: " + allocated);

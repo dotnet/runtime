@@ -36,3 +36,17 @@ flags:
 
 Many subdirectories under `src/tests/` have their own `README.md` with
 area-specific authoring and run guidance — read them before making changes.
+
+## Asynchronous tests
+
+The generated standalone and merged runners await tests returning `Task` or
+`ValueTask`, including facts, theories, and instance tests. Instance disposal and
+result reporting happen after completion. Static facts may also return
+`Task<int>` or `ValueTask<int>` using the legacy exit-code convention (100 means
+success).
+
+Return the task directly, or make the test `async` and use `await`, rather than
+blocking with `.Wait()`, `.Result`, or `.GetAwaiter().GetResult()`. Blocking on
+incomplete tasks is not supported on single-threaded WebAssembly. Tests that
+actually require parallel threads must still use the multithreading capability
+condition; asynchronous suspension alone does not require it.
