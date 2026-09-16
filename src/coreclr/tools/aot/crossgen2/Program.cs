@@ -587,7 +587,7 @@ namespace ILCompiler
                         jsonProfile,
                         typeSystemContext,
                         compilationGroup,
-                        Get(_command.EmbedPgoData) && targetArchitecture != TargetArchitecture.Wasm32,
+                        Get(_command.EmbedPgoData) && typeSystemContext.Target.Architecture != TargetArchitecture.Wasm32,
                         Get(_command.SupportIbc),
                         crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable,
                         Get(_command.SynthesizeRandomMibc));
