@@ -8688,8 +8688,8 @@ public:
                                TargetBuffer                   remoteValue,
                                MemoryRange                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                               ICorDebugValue**               ppValue,
-                               VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr());
+                               VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle,
+                               ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given element type.
     static void CreateValueByType(CordbAppDomain *               appdomain,
@@ -8698,8 +8698,8 @@ public:
                                   TargetBuffer                   remoteValue,
                                   MemoryRange                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                  ICorDebugValue**               ppValue,
-                                  VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle = VMPTR_DebuggerExternalMemoryHandle::NullPtr());
+                                  VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle,
+                                  ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given remote heap object
     static ICorDebugValue* CreateHeapValue(CordbAppDomain* pAppDomain,

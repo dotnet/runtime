@@ -96,6 +96,7 @@ void CordbValue::Neuter()
 //             remoteValue     - remote address and size of the value
 //             localValue      - local address and size of the value
 //             ppRemoteRegAddr - register address of the value
+//             vmExternalMemoryHandle - external memory handle whose ownership is transferred to the value
 //     output: ppValue         - the newly created instance of an ICDValue
 // Notes:
 //     - only one of the three locations will be non-NULL
@@ -145,8 +146,8 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                        TargetBuffer                   remoteValue,
                                        MemoryRange                    localValue,
                                        EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                       ICorDebugValue**               ppValue,
-                                       VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle)
+                                       VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle,
+                                       ICorDebugValue**               ppValue)
 
 {
     HRESULT hr = S_OK;
@@ -198,6 +199,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
 //             remoteValue     - remote address and size of the value
 //             localValue      - local address and size of the value
 //             ppRemoteRegAddr - register address of the value
+//             vmExternalMemoryHandle - external memory handle whose ownership is transferred to the value
 //     output: ppValue         - the newly created instance of an ICDValue
 // Notes:
 //     - Only one of the three locations, remoteValue, localValue or ppRemoteRegAddr, will be non-NULL.
@@ -208,8 +210,8 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                               TargetBuffer                   remoteValue,
                                               MemoryRange                    localValue,
                                               EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                              ICorDebugValue**               ppValue,
-                                              VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle)
+                                              VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle,
+                                              ICorDebugValue**               ppValue)
 {
     INTERNAL_SYNC_API_ENTRY(pAppdomain->GetProcess()); //
 
@@ -257,7 +259,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
     case ELEMENT_TYPE_SZARRAY:
     case ELEMENT_TYPE_FNPTR:
         {
-            CreateVCObjOrRefValue(pAppdomain, pType, boxed, remoteValue, localValue, ppRemoteRegAddr, ppValue, vmExternalMemoryHandle); // throws
+            CreateVCObjOrRefValue(pAppdomain, pType, boxed, remoteValue, localValue, ppRemoteRegAddr, vmExternalMemoryHandle, ppValue); // throws
             break;
         }
 
@@ -1190,6 +1192,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
                     remoteValue,
                     MemoryRange(NULL, 0), // local value
                     NULL,
+                    VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                     ppValue);  // throws
             }
             EX_CATCH_HRESULT(hr);
@@ -1216,6 +1219,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
                     remoteValue,
                     MemoryRange(NULL, 0), // local value
                     NULL,
+                    VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                     ppValue);  // throws
             }
             EX_CATCH_HRESULT(hr);

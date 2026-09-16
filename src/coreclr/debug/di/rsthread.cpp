@@ -6740,6 +6740,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
                                       EMPTY_BUFFER,
                                       MemoryRange(pLocalValue, REG_SIZE),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                       &pValue);  // throws
 
         *ppValue = pValue;
@@ -6773,6 +6774,7 @@ HRESULT CordbNativeFrame::GetLocalDoubleRegisterValue(
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -6822,6 +6824,7 @@ CordbNativeFrame::GetLocalMemoryValue(CORDB_ADDRESS address,
                                       TargetBuffer(address, CordbValue::GetSizeForType(pType, kUnboxed)),
                                       MemoryRange(NULL, 0),
                                       NULL,
+                                      VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                       &pValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -6877,6 +6880,7 @@ CordbNativeFrame::GetLocalRegisterMemoryValue(CorDebugRegister highWordReg,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -6924,6 +6928,7 @@ CordbNativeFrame::GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -7035,6 +7040,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
                                           EMPTY_BUFFER,
                                           MemoryRange(&(pThread->m_floatValues[index]), sizeof(double)),
                                           pRegHolder,
+                                          VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                           &pValue);  // throws
 
             *ppValue = pValue;
@@ -7141,6 +7147,7 @@ HRESULT CordbNativeFrame::GetLocalTwoRegisterValue(DWORD            lowReg,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -10494,8 +10501,8 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
                                           remoteValue,
                                           MemoryRange(NULL, 0),
                                           NULL,
-                                          ppResult,
-                                          boxed ? VMPTR_DebuggerExternalMemoryHandle::NullPtr() : m_vmExternalMemoryHandle);  // throws
+                                          boxed ? VMPTR_DebuggerExternalMemoryHandle::NullPtr() : m_vmExternalMemoryHandle,
+                                          ppResult);  // throws
 
             if (!boxed)
             {
@@ -11248,6 +11255,7 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
                     TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
                     MemoryRange(NULL, 0),
                     NULL,
+                    VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                     ppValue);
                 foundArg = true;
                 break;
@@ -11427,6 +11435,7 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
                     TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
                     MemoryRange(NULL, 0),
                     NULL,
+                    VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                     ppValue);
                 foundLocal = true;
                 break;

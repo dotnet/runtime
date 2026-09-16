@@ -345,6 +345,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
                                       remoteValue,
                                       MemoryRange(NULL, 0),
                                       NULL,
+                                      VMPTR_DebuggerExternalMemoryHandle::NullPtr(),
                                       &pValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
