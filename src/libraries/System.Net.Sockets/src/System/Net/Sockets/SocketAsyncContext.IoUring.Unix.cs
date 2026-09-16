@@ -20,13 +20,6 @@ namespace System.Net.Sockets
     // cases; anything else always returns false.
     internal sealed partial class SocketAsyncContext
     {
-        // Opt-in switch: disabled by default, so all existing behavior (and test results) are
-        // completely unaffected unless explicitly enabled. Set
-        // DOTNET_SYSTEM_NET_SOCKETS_USE_IO_URING=1 to try the new path.
-        private static readonly bool s_ioUringSocketsEnabled =
-            System.Threading.IoUring.IsSupported &&
-            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_USE_IO_URING") == "1";
-
         /// <summary>
         /// Attempts to complete a plain, single-buffer, no-destination-address Receive via io_uring
         /// instead of registering the socket for epoll-based readiness notification. Returns
@@ -38,7 +31,7 @@ namespace System.Net.Sockets
         /// </summary>
         private unsafe bool TryReceiveViaIoUring(Memory<byte> buffer, SocketFlags flags, Action<int, Memory<byte>, SocketFlags, SocketError> callback)
         {
-            if (!s_ioUringSocketsEnabled || flags != SocketFlags.None || buffer.Length == 0)
+            if (!System.Threading.IoUring.IsSupported || flags != SocketFlags.None || buffer.Length == 0)
             {
                 return false;
             }
@@ -66,7 +59,7 @@ namespace System.Net.Sockets
         /// </summary>
         private unsafe bool TrySendViaIoUring(Memory<byte> buffer, int offset, int count, SocketFlags flags, Action<int, Memory<byte>, SocketFlags, SocketError> callback)
         {
-            if (!s_ioUringSocketsEnabled || flags != SocketFlags.None)
+            if (!System.Threading.IoUring.IsSupported || flags != SocketFlags.None)
             {
                 return false;
             }
@@ -109,7 +102,7 @@ namespace System.Net.Sockets
         /// </summary>
         private unsafe bool TryAcceptViaIoUring(Memory<byte> socketAddress, Action<IntPtr, Memory<byte>, SocketError> callback)
         {
-            if (!s_ioUringSocketsEnabled)
+            if (!System.Threading.IoUring.IsSupported)
             {
                 return false;
             }
@@ -165,7 +158,7 @@ namespace System.Net.Sockets
         /// </summary>
         private unsafe bool TryConnectViaIoUring(Memory<byte> socketAddress, Action<int, Memory<byte>, SocketFlags, SocketError> callback)
         {
-            if (!s_ioUringSocketsEnabled)
+            if (!System.Threading.IoUring.IsSupported)
             {
                 return false;
             }

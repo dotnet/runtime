@@ -2389,18 +2389,22 @@ int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completi
     // for this ring to come from the same single OS thread (whichever one happens to make the
     // first such call) - any other thread that tries gets -EEXIST. This lets the kernel skip an
     // internal ring-wide lock it would otherwise need to serialize concurrent submitters/reapers,
-    // which is exactly the contention this pair of flags exists to avoid. DEFER_TASKRUN requires
-    // SINGLE_ISSUER and additionally defers completion task-work until that same owning thread
-    // calls io_uring_enter(2) with IORING_ENTER_GETEVENTS (see SystemNative_IoRingWaitForCompletions);
-    // it is requested together with SINGLE_ISSUER here (never SINGLE_ISSUER alone) because a plain
-    // SINGLE_ISSUER ring still requires every io_uring_enter call - including a GETEVENTS-only
-    // completion wait with nothing to submit - to come from that same fixed thread, so trying to
-    // let completion-reaping rotate across arbitrary threads (as a plain shared, non-SINGLE_ISSUER
-    // ring allows) does not work: whichever thread happens to call in first permanently becomes
-    // the ring's issuer, and every other thread's calls then fail with -EEXIST forever. Given that,
-    // submission and completion-reaping must already be pinned to one fixed thread whenever
-    // SINGLE_ISSUER is requested, so also requesting DEFER_TASKRUN is free extra performance with
-    // no additional constraint over what SINGLE_ISSUER alone already forces on the caller.
+    // which is exactly the contention this pair of flags exists to avoid.
+    //
+    // IMPORTANT / non-obvious kernel requirement discovered empirically (Linux 7.0.0-31-generic):
+    // with DEFER_TASKRUN, an io_uring_enter(2) call that passes IORING_ENTER_GETEVENTS together
+    // with a non-zero to_submit - even when nothing new actually needs submitting, and even when
+    // that same call is the one that happens to perform a real submission - reliably prevents any
+    // deferred task-work (including IORING_OP_ACCEPT completions) from ever being run/posted. This
+    // was confirmed with a minimal, single-threaded, dependency-free repro (a few dozen lines of
+    // raw io_uring_setup/io_uring_enter syscalls, no managed code involved): submitting one ACCEPT
+    // SQE and then repeatedly calling io_uring_enter(ring, N>0, min_complete, GETEVENTS) never
+    // yields a completion, no matter how many times it is called or what N/min_complete are; but
+    // splitting into two separate calls - a plain submit-only call (to_submit=N, flags=0) followed
+    // by a get-events-only call (to_submit=0, flags=GETEVENTS) - reliably works. See
+    // SystemNative_IoRingWaitForCompletions, which must never combine a non-zero to_submit with
+    // IORING_ENTER_GETEVENTS for this reason, at the cost of needing two syscalls (instead of one)
+    // whenever it also needs to flush pending, not-yet-submitted SQEs.
 #if defined(IORING_SETUP_SINGLE_ISSUER) && defined(IORING_SETUP_DEFER_TASKRUN)
     if (singleIssuer != 0)
     {
@@ -2692,34 +2696,32 @@ int32_t SystemNative_IoRingWaitForCompletions(intptr_t ringHandle, IoRingComplet
         return -1;
     }
 
-    if (minComplete > 0)
+    // Two separate io_uring_enter calls, deliberately not combined into one: see
+    // SystemNative_IoRingCreate's doc comment for why - with DEFER_TASKRUN, combining a non-zero
+    // to_submit with IORING_ENTER_GETEVENTS in the same call reliably prevents completions (e.g.
+    // IORING_OP_ACCEPT) from ever being posted, even when to_submit is a harmless no-op upper
+    // bound and even when that same call also performs a real submission. So first flush anything
+    // pending (submit-only, no GETEVENTS) - this is what actually asks the kernel to process SQEs
+    // SystemNative_IoRingSubmit has published to the SQ tail but that neither it nor
+    // SystemNative_IoRingKick has flushed yet (e.g. the single-batch common case, where the
+    // issuer thread deliberately skips calling IoRingKick and relies on this call to do it - see
+    // PortableThreadPool.IoUring.Unix.cs's DrainAndSubmit doc comment). Skipping this flush step
+    // here (e.g. by only doing the GETEVENTS-only call below) would leave newly-submitted SQEs
+    // sitting unflushed in the SQ ring forever whenever nothing else happens to call
+    // SystemNative_IoRingKick first.
+    long submitResult = IoUringEnter(ring->Fd, ring->SqEntries, 0, 0);
+    if (submitResult < 0)
     {
-        // to_submit: ring->SqEntries (an upper bound, not an exact count) rather than 0 - this
-        // single io_uring_enter call also flushes any SQEs the caller has already published to the
-        // SQ tail (e.g. via SystemNative_IoRingSubmit) but not yet asked the kernel to process,
-        // combining submission and completion-reaping into one syscall instead of two. Passing the
-        // full ring depth here is exactly as safe as it is in SystemNative_IoRingKick (see that
-        // function's doc comment): io_uring_enter never over-consumes or double-processes entries,
-        // it only ever consumes what is actually available between its own internal submission
-        // cursor and the current SQ tail. If nothing is pending, this is a harmless no-op for the
-        // submit side.
-        long result = IoUringEnter(ring->Fd, ring->SqEntries, (uint32_t)minComplete, IORING_ENTER_GETEVENTS);
-        if (result < 0)
-        {
-            return -1;
-        }
+        return -1;
     }
-    else
+
+    // ...then, in a separate call, wait for completions (to_submit=0, GETEVENTS only). to_submit
+    // is 0 here (not the ring depth) for the same reason explained above: combining a non-zero
+    // to_submit with GETEVENTS breaks completion delivery under DEFER_TASKRUN.
+    long result = IoUringEnter(ring->Fd, 0, (uint32_t)minComplete, IORING_ENTER_GETEVENTS);
+    if (result < 0)
     {
-        // Always issue a IORING_ENTER_GETEVENTS call, even when the caller isn't waiting for
-        // anything in particular. This matters for rings created with IORING_SETUP_DEFER_TASKRUN
-        // (see SystemNative_IoRingCreate): that flag defers completion task-work until the ring's
-        // owning thread explicitly calls io_uring_enter(2) with IORING_ENTER_GETEVENTS - without
-        // this call, completions would never be posted to the CQ ring at all, no matter how long
-        // the caller waits afterwards or how many times it re-reads the CQ tail. For rings not
-        // created with DEFER_TASKRUN this call is a harmless, cheap no-op when nothing is ready.
-        // See the minComplete > 0 branch above for why to_submit is ring->SqEntries rather than 0.
-        IoUringEnter(ring->Fd, ring->SqEntries, 0, IORING_ENTER_GETEVENTS);
+        return -1;
     }
 
     // Single consumer: the caller is responsible for ensuring only one thread reaps
