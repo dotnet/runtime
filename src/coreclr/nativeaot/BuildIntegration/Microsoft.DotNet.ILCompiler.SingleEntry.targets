@@ -44,6 +44,12 @@
     <!-- linux-bionic on ARM uses armel (softfp) ABI -->
     <_targetArchitectureWithAbi>$(_targetArchitecture)</_targetArchitectureWithAbi>
     <_targetArchitectureWithAbi Condition="'$(_linuxLibcFlavor)' == 'bionic' and '$(_targetArchitecture)' == 'arm'">armel</_targetArchitectureWithAbi>
+
+    <!-- RISC-V without the F/D extensions uses the lp64 (soft-float) ABI. Unlike
+         linux-bionic on ARM this is not implied by the RID: the same
+         linux-musl-riscv64 RID covers both lp64d and lp64 userspaces, so the
+         build has to say which one it is targeting. -->
+    <_targetArchitectureWithAbi Condition="'$(IlcRiscV64SoftFloat)' == 'true' and '$(_targetArchitecture)' == 'riscv64'">riscv64-lp64</_targetArchitectureWithAbi>
   </PropertyGroup>
 
   <PropertyGroup>
