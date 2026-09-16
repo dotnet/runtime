@@ -187,13 +187,15 @@
       <_WasmReadyToRunNativeLibrary Remove="@(_WasmReadyToRunNativeLibrary)" />
       <_WasmReadyToRunNativeLibrary Include="@(NativeLibrary->Exists())" />
       <_WasmReadyToRunPInvokeModule Include="%(NativeFileReference.FileName)"
-                                     Condition="'%(NativeFileReference.ScanForPInvokes)' != 'false' and
+                                     Condition="'$(WasmBuildNative)' != 'false' and
+                                                '%(NativeFileReference.ScanForPInvokes)' != 'false' and
                                                 ('%(NativeFileReference.Extension)' == '.a' or
                                                  '%(NativeFileReference.Extension)' == '.o' or
                                                  '%(NativeFileReference.Extension)' == '.c' or
                                                  '%(NativeFileReference.Extension)' == '.cpp')" />
       <_WasmReadyToRunPInvokeModule Include="%(_WasmReadyToRunNativeLibrary.FileName)"
-                                     Condition="'%(_WasmReadyToRunNativeLibrary.ScanForPInvokes)' != 'false'" />
+                                     Condition="'$(WasmBuildNative)' != 'false' and
+                                                '%(_WasmReadyToRunNativeLibrary.ScanForPInvokes)' != 'false'" />
       <_WasmReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))" />
       <_WasmReadyToRunPInvokeModule Remove="System.Globalization.Native"
                                      Condition="'$(InvariantGlobalization)' == 'true'" />
