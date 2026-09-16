@@ -63,6 +63,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Reflection\RuntimeParameterInfo.cs" />
     <!-- TODO: (async) once we know which helpers can actually be shared, move those to libraries partition -->
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
@@ -164,6 +165,7 @@
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
     <Compile Include="System\Reflection\RuntimeCustomAttributeData.NativeAot.cs" />
     <Compile Include="System\Reflection\RuntimeMethodInfo.cs" />
+    <Compile Include="System\Reflection\RuntimeParameterInfo.NativeAot.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
     <Compile Include="System\CrashInfo.cs" />
@@ -434,16 +436,8 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeNamedMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
-    <Compile Include="System\Reflection\Runtime\MethodInfos\VirtualRuntimeParameterInfoArray.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\NativeFormat\NativeFormatRuntimeModule.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\NativeFormat\NativeFormatMethodParameterInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeFatMethodParameterInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimePropertyIndexParameterInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeThinMethodParameterInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeSyntheticParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\NativeFormat\NativeFormatRuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\RuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeNamedTypeInfo.cs" />
