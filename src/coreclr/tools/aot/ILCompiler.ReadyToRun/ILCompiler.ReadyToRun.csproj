@@ -287,8 +287,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\FieldFixupSignature.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\JitHelperRoots.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\JitHelperRootsDebugTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />

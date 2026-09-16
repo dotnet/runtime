@@ -34,6 +34,8 @@
 #endif
 
 // pfnHelper is set to NULL if it is an unused helper.
+// Changes to the set of JIT helpers should update RootJitHelperMethods in
+// ReadyToRunCodegenNodeFactory.cs.
 
     JITHELPER(CORINFO_HELP_UNDEF,               NULL,               METHOD__NIL)
 

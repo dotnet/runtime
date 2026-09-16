@@ -1275,11 +1275,6 @@ namespace ILCompiler.DependencyAnalysis
             ImportSectionsTable.AddEmbeddedObject(HelperImports);
             RootJitHelperMethods(graph);
 
-#if DEBUG
-            JitHelperRootsDebugTableNode jitHelperRoots = new JitHelperRootsDebugTableNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.JitHelperRoots, jitHelperRoots);
-#endif
-
             PrecodeImports = new ImportSectionNode(
                 "PrecodeImports",
                 ReadyToRunImportSectionType.Unknown,

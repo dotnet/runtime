@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -71,7 +71,6 @@
 // R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
 // R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
 //     R2R 29 is not backward compatible with 28.x or earlier.
-// R2R Version 29.1 adds the debug-only JitHelperRoots section.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -144,7 +143,6 @@ enum class ReadyToRunSectionType : uint32_t
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
-    JitHelperRoots              = 128, // Added in V29.1
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

@@ -59,49 +59,6 @@ PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
 
 using namespace NativeFormat;
 
-#ifdef _DEBUG
-static void ValidateJitHelperRoots(ReadyToRunCoreInfo* pReadyToRunCoreInfo)
-{
-    IMAGE_DATA_DIRECTORY* pJitHelperRootsSection = pReadyToRunCoreInfo->FindSection(ReadyToRunSectionType::JitHelperRoots);
-    if (pJitHelperRootsSection == NULL)
-    {
-        return;
-    }
-
-    const DWORD cbSection = pJitHelperRootsSection->Size;
-    _ASSERTE((cbSection >= sizeof(DWORD)) && ((cbSection % sizeof(DWORD)) == 0));
-    if ((cbSection < sizeof(DWORD)) || ((cbSection % sizeof(DWORD)) != 0))
-    {
-        return;
-    }
-
-    const DWORD* pJitHelperRoots = (const DWORD*)pReadyToRunCoreInfo->GetLayout()->GetDirectoryData(pJitHelperRootsSection);
-    const DWORD jitHelperRootCount = pJitHelperRoots[0];
-    _ASSERTE(cbSection == ((jitHelperRootCount + 1) * sizeof(DWORD)));
-    if (cbSection != ((jitHelperRootCount + 1) * sizeof(DWORD)))
-    {
-        return;
-    }
-
-    static const ReadyToRunHelper expectedJitHelperRoots[] =
-    {
-#define HELPER(r2rHelper, jitHelper, flags) r2rHelper,
-#include "readytorunhelpers.h"
-    };
-
-    _ASSERTE(jitHelperRootCount == ARRAY_SIZE(expectedJitHelperRoots));
-    if (jitHelperRootCount != ARRAY_SIZE(expectedJitHelperRoots))
-    {
-        return;
-    }
-
-    for (DWORD i = 0; i < jitHelperRootCount; i++)
-    {
-        _ASSERTE(pJitHelperRoots[i + 1] == (DWORD)expectedJitHelperRoots[i]);
-    }
-}
-#endif // _DEBUG
-
 ReadyToRunCoreInfo::ReadyToRunCoreInfo()
     : m_fForbidLoadILBodyFixups(false)
 {
@@ -1054,10 +1011,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         // all methods within the composite image.
         LockOwner lock = {&m_Crst, IsOwnerOfCrst};
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
-
-#ifdef _DEBUG
-        ValidateJitHelperRoots(m_pComposite);
-#endif
     }
 
     if (IsImageVersionAtLeast(6, 3))
