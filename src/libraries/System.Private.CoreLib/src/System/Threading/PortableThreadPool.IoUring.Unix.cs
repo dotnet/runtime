@@ -34,16 +34,16 @@ namespace System.Threading
         /// which it already needs to do to reap completions - to pump the kernel's deferred task-work (see
         /// <c>SystemNative_IoRingWaitForCompletions</c>'s native-side doc comment for why this call cannot
         /// be skipped even when nothing is known to be ready). Any other thread that wants to submit a
-        /// request enqueues it into a lock-free MPSC queue and signals this thread; it drains the queue in
-        /// batches, submits them, then polls for completions (bounded by a short poll interval when
-        /// operations are in flight, so it also stays
-        /// responsive to newly enqueued submissions - see <see cref="IssuerLoop"/> for why a short poll is
-        /// used here instead of an unbounded blocking wait), and dispatches completed continuations as
-        /// ordinary Thread Pool work items (never inline). The submission queue is unbounded, so
-        /// <see cref="TrySubmit"/> always succeeds (once enabled) - there is no "ring is full, fall back"
-        /// signal in this design. Worker threads no longer participate in reaping completions at all;
-        /// <see cref="TryBecomeDriverAndDrive"/> is kept only so <c>PortableThreadPool.WorkerThread</c>
-        /// does not need a separate code path, but it is now a permanent no-op.
+        /// request enqueues it into a lock-free MPSC queue and wakes this thread by writing to a shared
+        /// eventfd registered on the ring (<c>IORING_REGISTER_EVENTFD</c>, see
+        /// <see cref="s_wakeEventFd"/>'s doc comment); the issuer thread drains the queue in batches,
+        /// submits them, then polls for completions and waits on that same eventfd for either a new
+        /// submission or a completion becoming ready (see <see cref="IssuerLoop"/>), rather than spinning
+        /// or busy-polling. The submission queue is unbounded, so <see cref="TrySubmit"/> always succeeds
+        /// (once enabled) - there is no "ring is full, fall back" signal in this design. Worker threads no
+        /// longer participate in reaping completions at all; <see cref="TryBecomeDriverAndDrive"/> is kept
+        /// only so <c>PortableThreadPool.WorkerThread</c> does not need a separate code path, but it is
+        /// now a permanent no-op.
         ///
         /// A second, related gotcha (also confirmed empirically via a standalone native repro, not
         /// documented in the man page): a IORING_SETUP_SINGLE_ISSUER ring's fixed "owning" thread is
@@ -61,8 +61,8 @@ namespace System.Threading
         /// static constructor below therefore performs the ring-creation handshake using only captured
         /// locals - never touching this type's own static fields from the new thread - and only once
         /// that handshake completes does *this* (the constructor's own) thread publish
-        /// <see cref="s_isEnabled"/>/<see cref="s_ringHandle"/> itself, before returning. Only after that
-        /// does the new thread go on to call <see cref="IssuerLoop"/>.
+        /// <see cref="s_isEnabled"/>/<see cref="s_ringHandle"/>/<see cref="s_wakeEventFd"/> itself, before
+        /// returning. Only after that does the new thread go on to call <see cref="IssuerLoop"/>.
         /// </summary>
         internal static class IoUringThreadPool
         {
@@ -76,16 +76,17 @@ namespace System.Threading
             // completion.
             private const int MaxCompletionsPerWait = 64;
 
-            // How long (in milliseconds) the issuer thread waits at a time when operations are in flight
-            // but nothing is immediately ready - see IssuerLoop for why this is a bounded poll rather
-            // than an unbounded blocking io_uring_enter(..., GETEVENTS) call: this same thread also owns
-            // submission (a IORING_SETUP_SINGLE_ISSUER requirement), so it must periodically come up for
-            // air to notice and submit newly enqueued requests, which an unbounded blocking wait would
-            // otherwise delay indefinitely. This directly trades a small amount of completion-latency (up
-            // to this many milliseconds) for staying responsive to new submissions without needing native
-            // support for a bounded-timeout io_uring_enter call. A future iteration could remove this
-            // trade-off by adding that native support (IORING_ENTER_EXT_ARG with a timespec) instead.
-            private const int PollIntervalMs = 1;
+            // Defensive safety-net timeout (milliseconds) for the issuer thread's wait when operations
+            // are in flight but nothing is immediately ready. In the common/expected case this timeout
+            // never actually elapses: the registered eventfd (see s_wakeEventFd) is expected to wake the
+            // issuer thread directly whenever deferred completion task-work becomes ready to run - this
+            // is the documented intent of pairing IORING_SETUP_DEFER_TASKRUN with a registered eventfd
+            // (see SystemNative_IoRingRegisterEventFd's doc comment). This bound exists only to
+            // self-heal (within at most this many milliseconds) if that assumption ever turns out to be
+            // wrong for some request type/kernel version - trading a small amount of worst-case
+            // completion-latency for defense in depth, without reintroducing the tight busy-poll loop
+            // this design replaced.
+            private const int InFlightWaitTimeoutMs = 1000;
 
             // Opt-out switch: io_uring integration is used by default on Linux when the kernel supports
             // it. Set DOTNET_USE_IO_URING=0 to fall back to the pre-existing (blocking-call-on-a-
@@ -123,13 +124,22 @@ namespace System.Threading
             // blocks or fails due to this queue being "full".
             private static readonly ConcurrentQueue<Interop.Sys.IoRingRequest> s_pendingSubmissions = new();
 
-            // Signaled by TrySubmit after enqueueing a request, to wake the issuer thread if it is
-            // currently fully parked waiting for work (see IssuerLoop). The issuer thread resets this
-            // *before* re-checking the queue, which avoids the classic missed-wakeup race: if a request
-            // is enqueued (and this is Set) anywhere between the issuer's last drain and its next Reset,
-            // the queue will still be non-empty when the issuer checks it right after that Reset, so it
-            // loops back to drain again instead of waiting.
-            private static readonly ManualResetEventSlim s_submitWakeSignal = new(initialState: false);
+            // An eventfd registered with the ring via IORING_REGISTER_EVENTFD (see
+            // Interop.Sys.IoRingRegisterEventFd), or -1 if unavailable. The kernel bumps its counter
+            // (making it readable) whenever a CQE is posted - including, per the documented intent of
+            // pairing IORING_SETUP_DEFER_TASKRUN with a registered eventfd, when *deferred* completion
+            // task-work becomes ready to run, even though it has not been posted to the CQ yet. TrySubmit
+            // also writes to this same fd directly (see Interop.Sys.EventFdWrite) to wake the issuer
+            // thread when it enqueues a new request. This replaces a previous
+            // ManualResetEventSlim-based design: profiling showed that design's CLR-level
+            // spin-before-blocking behavior in Wait() was responsible for a large, measurable CPU cost
+            // (ThreadNative_SpinWait) under load, since IssuerLoop calls Wait in a tight cycle whenever
+            // anything is in flight. Interop.Sys.EventFdWait is a real (poll(2)-based) kernel wait with
+            // no userland spin, and unifies both wake reasons (new submission, and completion becoming
+            // ready) onto the one fd/one wait call instead of needing a separate bounded poll interval
+            // for each. Assigned at most once, by the static constructor's own thread, right before it
+            // returns - see s_ringHandle's doc comment for why.
+            private static int s_wakeEventFd = -1;
 
 #pragma warning disable CA1810 // remove the explicit static constructor
             static IoUringThreadPool()
@@ -168,6 +178,7 @@ namespace System.Threading
                 using ManualResetEventSlim readyToRun = new(initialState: false);
                 bool created = false;
                 IntPtr createdRingHandle = IntPtr.Zero;
+                int createdEventFd = -1;
 
                 var issuerThread = new Thread(() =>
                 {
@@ -178,6 +189,13 @@ namespace System.Threading
                     int result = Interop.Sys.IoRingCreate(QueueDepth, QueueDepth, singleIssuer: 1, out IntPtr ringHandle);
                     created = result == 0;
                     createdRingHandle = ringHandle;
+
+                    if (created)
+                    {
+                        createdEventFd = Interop.Sys.IoRingRegisterEventFd(createdRingHandle);
+                        created = createdEventFd >= 0;
+                    }
+
                     readyToRun.Set();
 
                     if (created)
@@ -208,6 +226,7 @@ namespace System.Threading
                 if (created)
                 {
                     s_ringHandle = createdRingHandle;
+                    s_wakeEventFd = createdEventFd;
                 }
             }
 #pragma warning restore CA1810
@@ -253,7 +272,7 @@ namespace System.Threading
 
                 Interlocked.Increment(ref s_inFlightCount);
                 s_pendingSubmissions.Enqueue(localRequest);
-                s_submitWakeSignal.Set();
+                Interop.Sys.EventFdWrite(s_wakeEventFd);
 
                 return true;
             }
@@ -269,17 +288,15 @@ namespace System.Threading
             /// <summary>
             /// Body of the single dedicated issuer thread, once the ring has already been created (by
             /// this same thread - see the static constructor) and <see cref="s_ringHandle"/>/
-            /// <see cref="s_isEnabled"/> have been published by it. Every iteration submits whatever is
-            /// currently queued in <see cref="s_pendingSubmissions"/>, then drains and dispatches whatever
-            /// completions are already available. If nothing at all is in flight and the queue is empty,
-            /// parks indefinitely until <see cref="TrySubmit"/> signals new work. If something is in
-            /// flight but nothing was immediately ready, waits on that same signal with a short bounded
-            /// timeout (<see cref="PollIntervalMs"/>) instead - an unbounded blocking
-            /// <c>io_uring_enter(..., GETEVENTS)</c> call is not used here because this same thread also
-            /// owns submission (a IORING_SETUP_SINGLE_ISSUER requirement): blocking indefinitely for a
-            /// completion would delay noticing and submitting any newly enqueued request for as long as
-            /// no unrelated completion happens to arrive. This is the direct cost of merging both roles
-            /// onto one thread, called out in the io_uring design doc.
+            /// <see cref="s_wakeEventFd"/>/<see cref="s_isEnabled"/> have been published by it. Every
+            /// iteration submits whatever is currently queued in <see cref="s_pendingSubmissions"/>, then
+            /// drains and dispatches whatever completions are already available. If nothing at all is in
+            /// flight and the queue is empty, parks indefinitely on <see cref="s_wakeEventFd"/> until
+            /// <see cref="TrySubmit"/> writes to it. If something is in flight but nothing was
+            /// immediately ready, waits on that same fd with a defensive bounded timeout
+            /// (<see cref="InFlightWaitTimeoutMs"/>) instead of an indefinite one, purely as a safety net
+            /// - see <see cref="InFlightWaitTimeoutMs"/>'s doc comment for why the expected/common case
+            /// does not actually rely on this bound elapsing.
             /// </summary>
             private static void IssuerLoop()
             {
@@ -294,28 +311,15 @@ namespace System.Threading
                     DrainAndSubmit(submitBatch);
                     DrainCompletions(completionsBatch, workItemBatch);
 
-                    // Reset before re-checking the queue - see s_submitWakeSignal's doc comment for why
-                    // this ordering avoids a missed wakeup.
-                    s_submitWakeSignal.Reset();
-
                     if (!s_pendingSubmissions.IsEmpty)
                     {
-                        // Something was enqueued while we were draining or resetting; go around again
-                        // immediately instead of waiting.
+                        // Something was enqueued while we were draining; go around again immediately
+                        // instead of waiting.
                         continue;
                     }
 
-                    if (Volatile.Read(ref s_inFlightCount) > 0)
-                    {
-                        // Nothing ready right now, but there is at least one submitted operation whose
-                        // completion we still need to reap eventually - only wait briefly so we come
-                        // back and check for it (and for newly enqueued submissions) soon.
-                        s_submitWakeSignal.Wait(PollIntervalMs);
-                        continue;
-                    }
-
-                    // Nothing queued and nothing in flight: safe to park indefinitely.
-                    s_submitWakeSignal.Wait();
+                    int timeoutMs = Volatile.Read(ref s_inFlightCount) > 0 ? InFlightWaitTimeoutMs : -1;
+                    Interop.Sys.EventFdWait(s_wakeEventFd, timeoutMs);
                 }
             }
 

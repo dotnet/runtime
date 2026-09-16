@@ -67,6 +67,22 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoRingKick", SetLastError = true)]
         internal static partial int IoRingKick(IntPtr ringHandle);
 
+        // Creates an eventfd and registers it with the ring (IORING_REGISTER_EVENTFD): the kernel then
+        // bumps its counter whenever a CQE is posted. The returned fd is also safe for any other thread
+        // to write to directly via EventFdWrite, piggybacking its own wake-up onto the same fd a single
+        // waiter is blocked on in EventFdWait - see PortableThreadPool.IoUring.Unix.cs.
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoRingRegisterEventFd", SetLastError = true)]
+        internal static partial int IoRingRegisterEventFd(IntPtr ringHandle);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_EventFdWrite", SetLastError = true)]
+        internal static partial int EventFdWrite(int eventFd);
+
+        // Real kernel-blocking wait (poll(2)-based - no userland spin-before-blocking), unlike
+        // ManualResetEventSlim.Wait. Returns 1 if the fd became readable (and drains it), 0 on timeout.
+        // Pass -1 to block indefinitely.
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_EventFdWait", SetLastError = true)]
+        internal static partial int EventFdWait(int eventFd, int timeoutMilliseconds);
+
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoRingWaitForCompletions", SetLastError = true)]
         internal static unsafe partial int IoRingWaitForCompletions(IntPtr ringHandle, IoRingCompletion* completions, int maxCompletions, int minComplete, out int completedCount);
 

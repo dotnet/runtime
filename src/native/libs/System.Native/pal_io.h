@@ -1018,6 +1018,39 @@ PALEXPORT int32_t SystemNative_IoRingSubmit(intptr_t ringHandle, IoRingRequest* 
 PALEXPORT int32_t SystemNative_IoRingKick(intptr_t ringHandle);
 
 /**
+ * Creates an eventfd and registers it with the given ring via IORING_REGISTER_EVENTFD: from then
+ * on, the kernel bumps that eventfd's counter (making it readable) every time a CQE is posted to
+ * this ring's completion queue. The returned fd is also safe for any *other* thread to write to
+ * directly (see SystemNative_EventFdWrite) to piggyback its own wake-up onto the same fd a single
+ * waiter is blocked on in SystemNative_EventFdWait - this lets one blocking wait call respond to
+ * either "a completion is ready" or "a new request was enqueued" without polling.
+ *
+ * Returns the eventfd on success (also owned by, and closed together with, ringHandle); returns
+ * -1 and sets errno on failure.
+ */
+PALEXPORT int32_t SystemNative_IoRingRegisterEventFd(intptr_t ringHandle);
+
+/**
+ * Bumps the given eventfd's counter by 1, making it readable. Safe to call from any thread,
+ * concurrently with other writers and/or with a reader blocked in SystemNative_EventFdWait.
+ *
+ * Returns 0 on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_EventFdWrite(int32_t eventFd);
+
+/**
+ * Blocks the calling thread (a real, non-spinning kernel wait - see poll(2)) until the given
+ * eventfd becomes readable or timeoutMilliseconds elapses (pass -1 to block indefinitely). If it
+ * becomes readable, drains its counter back to 0 before returning, so a subsequent call only
+ * returns once a *new* event has occurred - the same "wait, then reset" pattern a
+ * ManualResetEventSlim-based design would use, but implemented with a real kernel-level wait
+ * instead of any userland spin-before-blocking behavior.
+ *
+ * Returns 1 if the fd became readable, 0 if the call timed out, or -1 (with errno set) on error.
+ */
+PALEXPORT int32_t SystemNative_EventFdWait(int32_t eventFd, int32_t timeoutMilliseconds);
+
+/**
  * Reaps completions from the given ring's completion queue, waiting in-kernel for at least
  * minComplete of them to be available (pass 0 to only drain what is already available - this
  * still issues a plain, non-blocking IORING_ENTER_GETEVENTS call, rather than skipping the

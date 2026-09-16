@@ -106,6 +106,8 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 // are defined by <sys/syscall.h>, so no fallback definitions are needed here.
 #include <linux/io_uring.h>
 #include <stdatomic.h>
+#include <sys/eventfd.h>
+#include <poll.h>
 #endif // HAVE_LINUX_IO_URING_H
 
 #endif
@@ -2210,6 +2212,13 @@ typedef struct
 {
     int Fd;
 
+    // eventfd registered with this ring via IORING_REGISTER_EVENTFD (SystemNative_IoRingRegisterEventFd),
+    // or -1 if none has been registered. The kernel writes to it whenever a CQE is posted; unlike every
+    // other field/fd touched by this struct, callers other than the ring's owning thread are also allowed
+    // to write to it directly (see SystemNative_EventFdWrite) to piggyback their own wake-ups onto the
+    // same fd a waiter (see SystemNative_EventFdWait) is already blocked on.
+    int EventFd;
+
     void* SqRingPtr;
     size_t SqRingSize;
     void* CqRingPtr;
@@ -2233,6 +2242,11 @@ typedef struct
 static long IoUringSetup(uint32_t entries, struct io_uring_params* params)
 {
     return syscall(__NR_io_uring_setup, entries, params);
+}
+
+static long IoUringRegister(int fd, unsigned int opcode, void* arg, unsigned int nrArgs)
+{
+    return syscall(__NR_io_uring_register, fd, opcode, arg, nrArgs);
 }
 
 static long IoUringEnter(int fd, uint32_t toSubmit, uint32_t minComplete, uint32_t flags)
@@ -2417,6 +2431,7 @@ int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completi
     }
 
     ring->Fd = (int)fd;
+    ring->EventFd = -1;
 
     size_t sqRingSize = (size_t)params.sq_off.array + (size_t)params.sq_entries * sizeof(uint32_t);
     size_t cqRingSize = (size_t)params.cq_off.cqes + (size_t)params.cq_entries * sizeof(struct io_uring_cqe);
@@ -2554,6 +2569,113 @@ int32_t SystemNative_IoRingKick(intptr_t ringHandle)
 #endif
 }
 
+int32_t SystemNative_IoRingRegisterEventFd(intptr_t ringHandle)
+{
+#if HAVE_LINUX_IO_URING_H
+    IoRing* ring = (IoRing*)ringHandle;
+    if (ring == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // EFD_NONBLOCK: SystemNative_EventFdWait always follows a successful poll() with a read(), so a
+    // blocking read is never actually needed, but non-blocking avoids any possibility of that read
+    // stalling if a spurious/racing drain already consumed the counter first (e.g. two threads' calls
+    // to SystemNative_EventFdWait overlapping - not expected given the single-issuer-thread contract,
+    // but harmless to guard against). EFD_CLOEXEC: standard hygiene, matches other fds created here.
+    int eventFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (eventFd < 0)
+    {
+        return -1;
+    }
+
+    // Ask the kernel to bump this eventfd's counter (i.e. make it readable) every time a CQE is
+    // posted to this ring - see SystemNative_EventFdWait's doc comment for how the issuer thread
+    // uses this to actually block (rather than busy-poll) waiting for completions to reap.
+    if (IoUringRegister(ring->Fd, IORING_REGISTER_EVENTFD, &eventFd, 1) < 0)
+    {
+        int savedErrno = errno;
+        close(eventFd);
+        errno = savedErrno;
+        return -1;
+    }
+
+    ring->EventFd = eventFd;
+    return eventFd;
+#else
+    (void)ringHandle;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_EventFdWrite(int32_t eventFd)
+{
+#if HAVE_LINUX_IO_URING_H
+    // Bumps the eventfd's 64-bit counter by 1, making it readable. Safe to call from any thread,
+    // concurrently with other writers and/or with a reader blocked in SystemNative_EventFdWait -
+    // this is the mechanism TrySubmit uses to wake the issuer thread when it enqueues a new
+    // request, sharing the same fd the kernel itself writes to on completion (see
+    // SystemNative_IoRingRegisterEventFd) so a single wait call responds to either kind of event.
+    static const uint64_t value = 1;
+    ssize_t result;
+    while ((result = write(eventFd, &value, sizeof(value))) < 0 && errno == EINTR);
+    return result == (ssize_t)sizeof(value) ? 0 : -1;
+#else
+    (void)eventFd;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_EventFdWait(int32_t eventFd, int32_t timeoutMilliseconds)
+{
+#if HAVE_LINUX_IO_URING_H
+    assert(timeoutMilliseconds >= -1);
+
+    // A real (kernel-blocking) wait, unlike a spin-then-block managed synchronization primitive:
+    // poll(2) parks this thread with no CPU cost until the eventfd becomes readable (from either a
+    // completion the kernel posted, or a TrySubmit-side SystemNative_EventFdWrite call) or the
+    // timeout elapses. -1 blocks indefinitely.
+    struct pollfd pfd;
+    pfd.fd = eventFd;
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+
+    int result;
+    while ((result = poll(&pfd, 1, timeoutMilliseconds)) < 0 && errno == EINTR);
+
+    if (result < 0)
+    {
+        return -1;
+    }
+    if (result == 0)
+    {
+        return 0; // timed out, nothing to report
+    }
+
+    // Readable: drain the counter back to 0 (EFD_NONBLOCK means this never actually blocks) so the
+    // next wait call only returns once the fd becomes readable again from a *new* event, mirroring
+    // the "Reset before re-checking the queue" pattern the previous ManualResetEventSlim-based
+    // design relied on to avoid a missed-wakeup race with TrySubmit's enqueue-then-signal ordering.
+    uint64_t drained;
+    ssize_t readResult;
+    while ((readResult = read(eventFd, &drained, sizeof(drained))) < 0 && errno == EINTR);
+    // EAGAIN here would mean another thread's SystemNative_EventFdWait call already drained it
+    // between our poll() and our read() - not expected given the single-issuer-thread contract for
+    // this fd, but not an error condition worth surfacing either way: the caller still legitimately
+    // observed "signaled" from poll() and should proceed to check for work.
+    (void)readResult;
+
+    return 1;
+#else
+    (void)eventFd, (void)timeoutMilliseconds;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 int32_t SystemNative_IoRingWaitForCompletions(intptr_t ringHandle, IoRingCompletion* completions, int32_t maxCompletions, int32_t minComplete, int32_t* completedCount)
 {
     assert(completions != NULL);
@@ -2646,6 +2768,10 @@ int32_t SystemNative_IoRingClose(intptr_t ringHandle)
         result = -1;
     }
     if (close(ring->Fd) != 0)
+    {
+        result = -1;
+    }
+    if (ring->EventFd >= 0 && close(ring->EventFd) != 0)
     {
         result = -1;
     }
