@@ -96,10 +96,11 @@ namespace System.CommandLine
             }
             else if (targetArchitecture == TargetArchitecture.RiscV64)
             {
-                // The rv64gc baseline: D implies F, so "d", "c" and "a" cover
-                // the G+C extensions. Reduced-ISA targets (e.g. zkVM guests)
-                // opt out with --instruction-set=-a,-c,-d,-f. The lp64 (soft-float)
-                // ABI target has no F/D by definition.
+                // The rv64gc baseline: D implies F, so "d", "c" and "a" cover the G+C
+                // extensions. The lp64 (soft-float) ABI target has no F/D by definition;
+                // it still defaults to C and A, and a reduced-ISA target drops those with
+                // --instruction-set=-a,-c. Dropping A also requires ilc's
+                // --assume-no-concurrency, because Interlocked is not atomic without it.
                 instructionSetSupportBuilder.AddSupportedInstructionSet("base");
                 if (targetAbi != TargetAbi.NativeAotRiscV64SoftFloat)
                 {
