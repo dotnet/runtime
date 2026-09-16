@@ -41,9 +41,8 @@ namespace System.Threading
         /// submission or a completion becoming ready (see <see cref="IssuerLoop"/>), rather than spinning
         /// or busy-polling. The submission queue is unbounded, so <see cref="TrySubmit"/> always succeeds
         /// (once enabled) - there is no "ring is full, fall back" signal in this design. Worker threads no
-        /// longer participate in reaping completions at all; <see cref="TryBecomeDriverAndDrive"/> is kept
-        /// only so <c>PortableThreadPool.WorkerThread</c> does not need a separate code path, but it is
-        /// now a permanent no-op.
+        /// longer participate in reaping completions at all; the dedicated issuer thread owns that
+        /// exclusively, since IORING_SETUP_SINGLE_ISSUER requires it.
         ///
         /// A second, related gotcha (also confirmed empirically via a standalone native repro, not
         /// documented in the man page): a IORING_SETUP_SINGLE_ISSUER ring's fixed "owning" thread is
@@ -276,14 +275,6 @@ namespace System.Threading
 
                 return true;
             }
-
-            /// <summary>
-            /// Kept only so <c>PortableThreadPool.WorkerThread</c> does not need a separate code path for
-            /// this architecture versus the others in this codebase. Worker threads never participate in
-            /// completion-reaping here - the dedicated issuer thread (see <see cref="IssuerLoop"/>) owns
-            /// that exclusively, since IORING_SETUP_SINGLE_ISSUER requires it. Always returns false.
-            /// </summary>
-            public static bool TryBecomeDriverAndDrive() => false;
 
             /// <summary>
             /// Body of the single dedicated issuer thread, once the ring has already been created (by
