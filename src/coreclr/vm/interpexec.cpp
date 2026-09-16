@@ -37,6 +37,16 @@ static inline void CompilerBarrier()
     std::atomic_signal_fence(std::memory_order_acq_rel);
 }
 
+template <typename T>
+static void MinMaxNative(T* destination, const T* left, const T* right, unsigned count, bool isMax)
+{
+    for (unsigned index = 0; index < count; index++)
+    {
+        destination[index] = (isMax ? left[index] > right[index] : left[index] < right[index])
+            ? left[index] : right[index];
+    }
+}
+
 struct InterpDispatchCacheEntry
 {
     // MethodTable of the calling object
@@ -4479,6 +4489,22 @@ do                                                                      \
                     double value = LOCAL_VAR(ip[2], double);
                     LOCAL_VAR(ip[1], double) = sqrt(value);
                     ip += 3;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MINMAX_NATIVE_R4)
+                {
+                    MinMaxNative(LOCAL_VAR_ADDR(ip[1], float), LOCAL_VAR_ADDR(ip[2], float),
+                                 LOCAL_VAR_ADDR(ip[3], float), ip[4], ip[5] != 0);
+                    ip += 6;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MINMAX_NATIVE_R8)
+                {
+                    MinMaxNative(LOCAL_VAR_ADDR(ip[1], double), LOCAL_VAR_ADDR(ip[2], double),
+                                 LOCAL_VAR_ADDR(ip[3], double), ip[4], ip[5] != 0);
+                    ip += 6;
                     INTOP_NEXT;
                 }
 

@@ -5495,8 +5495,7 @@ protected:
                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                var_types             simdBaseType,
                                var_types             retType,
-                               unsigned              simdSize,
-                               bool                  mustExpand);
+                               unsigned              simdSize);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType);
@@ -9717,22 +9716,6 @@ public:
     bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
     {
         return eeGetEEInfo()->targetAbi == abi;
-    }
-
-    bool BlockNonDeterministicIntrinsics(bool mustExpand)
-    {
-        // We explicitly block these APIs from being expanded in R2R
-        // since we know they are non-deterministic across hardware
-
-        if (IsReadyToRun())
-        {
-            if (mustExpand)
-            {
-                implReadyToRunUnsupported();
-            }
-            return true;
-        }
-        return false;
     }
 
     bool generateCFIUnwindCodes()
