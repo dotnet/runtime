@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace SourceGenerators
@@ -26,6 +27,10 @@ namespace SourceGenerators
         private const string UnsafeAccessorAttributeTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorAttribute";
         private const string UnsafeAccessorKindTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorKind";
         private const string EmptyTypeArray = "global::System.Array.Empty<global::System.Type>()";
+
+        // RefKind.RefReadOnlyParameter (value 4) is unavailable in the Roslyn version the netstandard build compiles
+        // against; reference it by its underlying value so both Roslyn targets build.
+        private const RefKind RefKindRefReadOnlyParameter = (RefKind)4;
 
         /// <summary>
         /// The declaration of the <c>InstanceMemberBindingFlags</c> constant that the reflection fallback (emitted by
@@ -66,6 +71,12 @@ namespace SourceGenerators
             public required string DeclaringTypeFQN { get; init; }
             public required string MemberTypeFQN { get; init; }
 
+            /// <summary>
+            /// The zero-based position of the declaring type in the containing type's inheritance hierarchy, used to
+            /// disambiguate the generic wrapper class between members inherited from different generic base types.
+            /// </summary>
+            public int DeclaringTypeIndex { get; init; }
+
             /// <summary>Type-parameter names of the declaring type when it is generic (.NET 9+ wrapper class), otherwise <see langword="null"/>.</summary>
             public ImmutableEquatableArray<string>? DeclaringTypeParameterNames { get; init; }
             public string? OpenDeclaringTypeFQN { get; init; }
@@ -82,6 +93,11 @@ namespace SourceGenerators
             public required string TypeFQN { get; init; }
             public required bool CanUseUnsafeAccessor { get; init; }
             public required ImmutableEquatableArray<UnsafeAccessorParameterSpec> Parameters { get; init; }
+
+            /// <summary>Type-parameter names of the type when it is generic (.NET 9+ wrapper class), otherwise <see langword="null"/>.</summary>
+            public ImmutableEquatableArray<string>? DeclaringTypeParameterNames { get; init; }
+            public string? OpenDeclaringTypeFQN { get; init; }
+            public string? DeclaringTypeParameterConstraintClauses { get; init; }
         }
 
         /// <summary>A single constructor parameter of a <see cref="UnsafeAccessorConstructorSpec"/>.</summary>
@@ -89,6 +105,10 @@ namespace SourceGenerators
         {
             public required string TypeFQN { get; init; }
             public required int Index { get; init; }
+            public RefKind RefKind { get; init; }
+
+            /// <summary>The open (type-parameter-referencing) form of the parameter type, used inside the generic wrapper class; <see langword="null"/> when the declaring type is non-generic or the parameter type contains no type parameters.</summary>
+            public string? OpenTypeFQN { get; init; }
         }
 
         /// <summary>
@@ -105,11 +125,12 @@ namespace SourceGenerators
         /// <summary>
         /// For properties on generic types using wrapper-class UnsafeAccessors (.NET 9+), returns the
         /// fully qualified accessor reference including the generic wrapper class prefix, e.g.
-        /// <c>__GenericAccessors_MyType&lt;int&gt;.__get_MyType_Name</c>.
+        /// <c>__GenericAccessors_MyType_0&lt;int&gt;.__get_MyType_Name</c>.
         /// For non-generic types, returns the plain accessor name.
         /// </summary>
         public static string GetQualifiedAccessorName(
             ImmutableEquatableArray<string>? declaringTypeParameterNames,
+            int declaringTypeIndex,
             string declaringTypeFQN,
             string typeFriendlyName,
             string accessorKind,
@@ -125,7 +146,7 @@ namespace SourceGenerators
 
             int openAngle = declaringTypeFQN.IndexOf('<');
             string typeArgsList = declaringTypeFQN.Substring(openAngle);
-            return $"__GenericAccessors_{typeFriendlyName}{typeArgsList}.{accessorName}";
+            return $"__GenericAccessors_{typeFriendlyName}_{declaringTypeIndex}{typeArgsList}.{accessorName}";
         }
 
         public static string GetReflectionCacheName(string typeFriendlyName, string accessorKind, string memberName, int propertyIndex, bool needsDisambiguation)
@@ -140,6 +161,28 @@ namespace SourceGenerators
         /// </summary>
         public static string GetConstructorAccessorName(string typeFriendlyName)
             => $"__ctor_{typeFriendlyName}";
+
+        /// <summary>
+        /// For an inaccessible constructor on a generic type using a wrapper-class UnsafeAccessor (.NET 9+), returns the
+        /// fully qualified accessor reference including the generic wrapper class prefix, e.g.
+        /// <c>__GenericAccessors_MyType_0&lt;int&gt;.__ctor_MyType</c>. Otherwise returns the plain accessor name. The
+        /// wrapper is only used for the UnsafeAccessor path; the reflection fallback for a generic type is a flat method.
+        /// </summary>
+        public static string GetQualifiedConstructorAccessorName(
+            bool canUseUnsafeAccessor,
+            ImmutableEquatableArray<string>? declaringTypeParameterNames,
+            string typeFQN,
+            string typeFriendlyName)
+        {
+            string accessorName = GetConstructorAccessorName(typeFriendlyName);
+            if (canUseUnsafeAccessor && declaringTypeParameterNames is not null)
+            {
+                string typeArgsList = typeFQN.Substring(typeFQN.IndexOf('<'));
+                return $"__GenericAccessors_{typeFriendlyName}_0{typeArgsList}.{accessorName}";
+            }
+
+            return accessorName;
+        }
 
         public static string GetConstructorReflectionCacheName(string typeFriendlyName)
             => $"s_ctor_{typeFriendlyName}";
@@ -172,8 +215,10 @@ namespace SourceGenerators
             SourceWriter writer,
             string typeFriendlyName,
             bool declaringTypeIsValueType,
+            bool useUpdatedMemorySafetyRules,
             IReadOnlyList<UnsafeAccessorMemberSpec> members)
         {
+            string safetyModifier = useUpdatedMemorySafetyRules ? "safe " : "";
             HashSet<string> duplicateMemberNames = GetDuplicateMemberNames(members.Select(static m => m.MemberName));
             bool needsAccessors = false;
             bool needsValueTypeSetterDelegate = false;
@@ -226,14 +271,14 @@ namespace SourceGenerators
                             {
                                 string accessorName = GetAccessorName(typeFriendlyName, "get", member.MemberName, i, disambiguate);
                                 writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "get_{member.MemberName}")]""");
-                                writer.WriteLine($"private static extern {propertyTypeFQN} {accessorName}({refPrefix}{declaringTypeFQN} obj);");
+                                writer.WriteLine($"private static {safetyModifier}extern {propertyTypeFQN} {accessorName}({refPrefix}{declaringTypeFQN} obj);");
                             }
 
                             if (needsSetterAccessor)
                             {
                                 string accessorName = GetAccessorName(typeFriendlyName, "set", member.MemberName, i, disambiguate);
                                 writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{member.MemberName}")]""");
-                                writer.WriteLine($"private static extern void {accessorName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
+                                writer.WriteLine($"private static {safetyModifier}extern void {accessorName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
                             }
                         }
                         else
@@ -241,7 +286,7 @@ namespace SourceGenerators
                             // Field: single UnsafeAccessor that returns ref T, used for both get and set.
                             string fieldAccessorName = GetAccessorName(typeFriendlyName, "field", member.MemberName, i, disambiguate);
                             writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Field, Name = "{member.MemberName}")]""");
-                            writer.WriteLine($"private static extern ref {propertyTypeFQN} {fieldAccessorName}({refPrefix}{declaringTypeFQN} obj);");
+                            writer.WriteLine($"private static {safetyModifier}extern ref {propertyTypeFQN} {fieldAccessorName}({refPrefix}{declaringTypeFQN} obj);");
                         }
                     }
                 }
@@ -330,7 +375,7 @@ namespace SourceGenerators
                     string constraintClauses = firstMember.DeclaringTypeParameterConstraintClauses is { } c ? $" {c}" : "";
 
                     writer.WriteLine();
-                    writer.WriteLine($"private static class __GenericAccessors_{typeFriendlyName}<{typeParamList}>{constraintClauses}");
+                    writer.WriteLine($"private static partial class __GenericAccessors_{typeFriendlyName}_{firstMember.DeclaringTypeIndex}<{typeParamList}>{constraintClauses}");
                     writer.WriteLine('{');
                     writer.Indentation++;
 
@@ -338,7 +383,7 @@ namespace SourceGenerators
                     {
                         bool needsGetter = member.NeedsGetter;
                         bool needsSetter = member.NeedsSetter;
-                        string openPropertyTypeFQN = member.OpenMemberTypeFQN!;
+                        string openPropertyTypeFQN = member.OpenMemberTypeFQN ?? member.MemberTypeFQN;
 
                         if (member.IsProperty)
                         {
@@ -346,21 +391,21 @@ namespace SourceGenerators
                             {
                                 string accessorName = GetAccessorName(typeFriendlyName, "get", member.MemberName, index, disambiguate);
                                 writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "get_{member.MemberName}")]""");
-                                writer.WriteLine($"public static extern {openPropertyTypeFQN} {accessorName}({refPrefix}{openDeclaringTypeFQN} obj);");
+                                writer.WriteLine($"public static {safetyModifier}extern {openPropertyTypeFQN} {accessorName}({refPrefix}{openDeclaringTypeFQN} obj);");
                             }
 
                             if (needsSetter)
                             {
                                 string accessorName = GetAccessorName(typeFriendlyName, "set", member.MemberName, index, disambiguate);
                                 writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{member.MemberName}")]""");
-                                writer.WriteLine($"public static extern void {accessorName}({refPrefix}{openDeclaringTypeFQN} obj, {openPropertyTypeFQN} value);");
+                                writer.WriteLine($"public static {safetyModifier}extern void {accessorName}({refPrefix}{openDeclaringTypeFQN} obj, {openPropertyTypeFQN} value);");
                             }
                         }
                         else
                         {
                             string fieldAccessorName = GetAccessorName(typeFriendlyName, "field", member.MemberName, index, disambiguate);
                             writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Field, Name = "{member.MemberName}")]""");
-                            writer.WriteLine($"public static extern ref {openPropertyTypeFQN} {fieldAccessorName}({refPrefix}{openDeclaringTypeFQN} obj);");
+                            writer.WriteLine($"public static {safetyModifier}extern ref {openPropertyTypeFQN} {fieldAccessorName}({refPrefix}{openDeclaringTypeFQN} obj);");
                         }
                     }
 
@@ -374,32 +419,57 @@ namespace SourceGenerators
 
         /// <summary>
         /// Emits a constructor accessor: a <c>[UnsafeAccessor(Constructor)]</c> extern where supported, otherwise a
-        /// cached <see cref="System.Reflection.ConstructorInfo"/> wrapper. The wrapper has the same signature in both
-        /// cases: <c>static TypeName __ctor_TypeName(params)</c>.
+        /// cached <see cref="System.Reflection.ConstructorInfo"/> wrapper. On a generic type the UnsafeAccessor extern is
+        /// emitted inside a <c>partial __GenericAccessors_{TypeFriendlyName}_0</c> wrapper class (.NET 9+), shared with the
+        /// member accessors; the reflection fallback for a generic type is a flat method.
         /// </summary>
-        public static void EmitConstructorAccessor(SourceWriter writer, UnsafeAccessorConstructorSpec spec)
+        public static void EmitConstructorAccessor(SourceWriter writer, bool useUpdatedMemorySafetyRules, UnsafeAccessorConstructorSpec spec)
         {
-            string typeFQN = spec.TypeFQN;
+            bool useGenericWrapper = spec.CanUseUnsafeAccessor && spec.OpenDeclaringTypeFQN is not null;
+            string typeFQN = useGenericWrapper ? spec.OpenDeclaringTypeFQN! : spec.TypeFQN;
             string wrapperName = GetConstructorAccessorName(spec.TypeFriendlyName);
             ImmutableEquatableArray<UnsafeAccessorParameterSpec> parameters = spec.Parameters;
 
+            if (useGenericWrapper)
+            {
+                // The constructor and member accessors share the declaring type's helper.
+                string typeParamList = string.Join(", ", spec.DeclaringTypeParameterNames!);
+                string constraintClauses = spec.DeclaringTypeParameterConstraintClauses is { } c ? $" {c}" : "";
+                writer.WriteLine($"private static partial class __GenericAccessors_{spec.TypeFriendlyName}_0<{typeParamList}>{constraintClauses}");
+                writer.WriteLine('{');
+                writer.Indentation++;
+            }
+
             // Build the parameter list for the wrapper method.
             var wrapperParams = new StringBuilder();
+            var callArgs = new StringBuilder();
 
             foreach (UnsafeAccessorParameterSpec param in parameters)
             {
                 if (wrapperParams.Length > 0)
                 {
                     wrapperParams.Append(", ");
+                    callArgs.Append(", ");
                 }
 
-                wrapperParams.Append($"{param.TypeFQN} p{param.Index}");
+                string parameterTypeFQN = (useGenericWrapper ? param.OpenTypeFQN : null) ?? param.TypeFQN;
+                string refModifier = param.RefKind switch
+                {
+                    RefKind.Ref => "ref ",
+                    RefKind.Out => "out ",
+                    // 'in' preserves the readonly by-ref signature without requiring C# 12.
+                    RefKind.In or RefKindRefReadOnlyParameter => "in ",
+                    _ => "",
+                };
+                wrapperParams.Append($"{refModifier}{parameterTypeFQN} p{param.Index}");
+                callArgs.Append(param.RefKind is RefKind.Out ? "null" : $"p{param.Index}");
             }
 
             if (spec.CanUseUnsafeAccessor)
             {
+                string safetyModifier = useUpdatedMemorySafetyRules ? "safe " : "";
                 writer.WriteLine($"[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Constructor)]");
-                writer.WriteLine($"private static extern {typeFQN} {wrapperName}({wrapperParams});");
+                writer.WriteLine($"{(useGenericWrapper ? "public" : "private")} static {safetyModifier}extern {typeFQN} {wrapperName}({wrapperParams});");
             }
             else
             {
@@ -409,15 +479,47 @@ namespace SourceGenerators
 
                 string argTypes = parameters.Count == 0
                     ? EmptyTypeArray
-                    : $"new global::System.Type[] {{{string.Join(", ", parameters.Select(p => $"typeof({p.TypeFQN})"))}}}";
+                    : $"new global::System.Type[] {{{string.Join(", ", parameters.Select(p => $"typeof({p.TypeFQN}){(p.RefKind is RefKind.None ? "" : ".MakeByRefType()")}"))}}}";
 
                 writer.WriteLine($"private static global::System.Reflection.ConstructorInfo? {cacheName};");
 
                 string invokeArgs = parameters.Count == 0
                     ? "null"
-                    : $"new object?[] {{{string.Join(", ", parameters.Select(p => $"p{p.Index}"))}}}";
+                    : $"new object?[] {{{callArgs}}}";
+                string constructorInfo = $"{cacheName} ??= typeof({typeFQN}).GetConstructor(InstanceMemberBindingFlags, binder: null, {argTypes}, modifiers: null)!";
 
-                writer.WriteLine($"private static {typeFQN} {wrapperName}({wrapperParams}) => ({typeFQN})({cacheName} ??= typeof({typeFQN}).GetConstructor(InstanceMemberBindingFlags, binder: null, {argTypes}, modifiers: null)!).Invoke({invokeArgs});");
+                if (parameters.Any(p => p.RefKind is RefKind.Ref or RefKind.Out))
+                {
+                    writer.WriteLine($$"""
+                        private static {{typeFQN}} {{wrapperName}}({{wrapperParams}})
+                        {
+                            object?[] args = {{invokeArgs}};
+                            {{typeFQN}} result = ({{typeFQN}})({{constructorInfo}}).Invoke(args);
+                        """);
+                    writer.Indentation++;
+
+                    foreach (UnsafeAccessorParameterSpec param in parameters)
+                    {
+                        if (param.RefKind is RefKind.Ref or RefKind.Out)
+                        {
+                            writer.WriteLine($"p{param.Index} = ({param.TypeFQN})args[{param.Index}]!;");
+                        }
+                    }
+
+                    writer.WriteLine("return result;");
+                    writer.Indentation--;
+                    writer.WriteLine('}');
+                }
+                else
+                {
+                    writer.WriteLine($"private static {typeFQN} {wrapperName}({wrapperParams}) => ({typeFQN})({constructorInfo}).Invoke({invokeArgs});");
+                }
+            }
+
+            if (useGenericWrapper)
+            {
+                writer.Indentation--;
+                writer.WriteLine('}');
             }
         }
 

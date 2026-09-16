@@ -640,7 +640,7 @@ namespace System.Text.Json.SourceGeneration
                 if (propInitMethodName != null)
                 {
                     writer.WriteLine();
-                    GeneratePropMetadataInitFunc(writer, propInitMethodName, typeMetadata);
+                    GeneratePropMetadataInitFunc(writer, contextSpec, propInitMethodName, typeMetadata);
                 }
 
                 if (serializeMethodName != null)
@@ -656,10 +656,10 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Generate UnsafeAccessor methods or reflection cache fields for property accessors.
-                _emitValueTypeSetterDelegate |= GenerateMemberAccessors(writer, typeMetadata);
+                _emitValueTypeSetterDelegate |= GenerateMemberAccessors(writer, contextSpec, typeMetadata);
 
                 // Generate constructor accessor for inaccessible [JsonConstructor] constructors.
-                GenerateConstructorAccessor(writer, typeMetadata);
+                GenerateConstructorAccessor(writer, contextSpec, typeMetadata);
 
                 writer.Indentation--;
                 writer.WriteLine('}');
@@ -823,7 +823,7 @@ namespace System.Text.Json.SourceGeneration
                     : $"({fqn}?)";
             }
 
-            private void GeneratePropMetadataInitFunc(SourceWriter writer, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
+            private void GeneratePropMetadataInitFunc(SourceWriter writer, ContextGenerationSpec contextSpec, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 HashSet<string> duplicateMemberNames = UnsafeAccessorEmitter.GetDuplicateMemberNames(properties.Select(static p => p.MemberName));
@@ -852,8 +852,8 @@ namespace System.Text.Json.SourceGeneration
 
                     string propertyTypeFQN = isIgnoredPropertyOfUnusedType ? "object" : property.PropertyType.FullyQualifiedName;
 
-                    string getterValue = GetPropertyGetterValue(property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
-                    string setterValue = GetPropertySetterValue(property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
+                    string getterValue = GetPropertyGetterValue(contextSpec, property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
+                    string setterValue = GetPropertySetterValue(contextSpec, property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
 
                     string ignoreConditionNamedArg = property.DefaultIgnoreCondition.HasValue
                         ? $"{JsonIgnoreConditionTypeRef}.{property.DefaultIgnoreCondition.Value}"
@@ -946,7 +946,7 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private static bool NeedsAccessorForSetter(PropertyGenerationSpec property)
             {
-                if (property.DefaultIgnoreCondition is JsonIgnoreCondition.Always)
+                if (property.IsReadOnly || property.DefaultIgnoreCondition is JsonIgnoreCondition.Always)
                 {
                     return false;
                 }
@@ -966,7 +966,14 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
+            private static string GetUnboxExpression(ContextGenerationSpec contextSpec, string declaringTypeFQN)
+            {
+                string expression = $"{UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)";
+                return contextSpec.UseUpdatedMemorySafetyRules ? $"unsafe({expression})" : expression;
+            }
+
             private static string GetPropertyGetterValue(
+                ContextGenerationSpec contextSpec,
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyName,
@@ -992,19 +999,23 @@ namespace System.Text.Json.SourceGeneration
                     {
                         // UnsafeAccessor externs for value types take 'ref T'.
                         string castExpr = typeGenerationSpec.TypeRef.IsValueType
-                            ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
+                            ? $"ref {GetUnboxExpression(contextSpec, declaringTypeFQN)}"
                             : $"({declaringTypeFQN})obj";
 
                         string accessorName = property.IsProperty
-                            ? UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, declaringTypeFQN, typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation)
-                            : UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, declaringTypeFQN, typeFriendlyName, "field", property.MemberName, propertyIndex, needsDisambiguation);
+                            ? UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringTypeIndex, declaringTypeFQN, typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation)
+                            : UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringTypeIndex, declaringTypeFQN, typeFriendlyName, "field", property.MemberName, propertyIndex, needsDisambiguation);
 
                         return $"static obj => {accessorName}({castExpr})";
                     }
 
-                    // Reflection fallback wrappers are strongly typed; cast in the delegate.
                     string getterName = UnsafeAccessorEmitter.GetAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation);
+                    if (!property.IsProperty)
+                    {
+                        return $"static obj => {getterName}(obj)";
+                    }
 
+                    // Reflection fallback property wrappers are strongly typed; cast in the delegate.
                     return $"static obj => {getterName}(({declaringTypeFQN})obj)";
                 }
 
@@ -1012,6 +1023,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             private static string GetPropertySetterValue(
+                ContextGenerationSpec contextSpec,
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyName,
@@ -1026,19 +1038,19 @@ namespace System.Text.Json.SourceGeneration
 
                 if (property is { CanUseSetter: true, IsInitOnlySetter: true })
                 {
-                    return GetAccessorBasedSetterDelegate(property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
+                    return GetAccessorBasedSetterDelegate(contextSpec, property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
                 }
 
                 if (property.CanUseSetter)
                 {
                     return typeGenerationSpec.TypeRef.IsValueType
-                        ? $"""static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj).{propertyName} = value!"""
+                        ? $"""static (obj, value) => {GetUnboxExpression(contextSpec, declaringTypeFQN)}.{propertyName} = value!"""
                         : $"""static (obj, value) => (({declaringTypeFQN})obj).{propertyName} = value!""";
                 }
 
                 if (NeedsAccessorForSetter(property))
                 {
-                    return GetAccessorBasedSetterDelegate(property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
+                    return GetAccessorBasedSetterDelegate(contextSpec, property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
                 }
 
                 return "null";
@@ -1049,6 +1061,7 @@ namespace System.Text.Json.SourceGeneration
             /// or the strongly typed reflection wrapper.
             /// </summary>
             private static string GetAccessorBasedSetterDelegate(
+                ContextGenerationSpec contextSpec,
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string declaringTypeFQN,
@@ -1060,29 +1073,34 @@ namespace System.Text.Json.SourceGeneration
                 if (property.CanUseUnsafeAccessors)
                 {
                     string castExpr = typeGenerationSpec.TypeRef.IsValueType
-                        ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
+                        ? $"ref {GetUnboxExpression(contextSpec, declaringTypeFQN)}"
                         : $"({declaringTypeFQN})obj";
 
                     if (property.IsProperty)
                     {
-                        string accessorName = UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, declaringTypeFQN, typeFriendlyName, "set", property.MemberName, propertyIndex, needsDisambiguation);
+                        string accessorName = UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringTypeIndex, declaringTypeFQN, typeFriendlyName, "set", property.MemberName, propertyIndex, needsDisambiguation);
                         return $"static (obj, value) => {accessorName}({castExpr}, value!)";
                     }
 
-                    string fieldName = UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, declaringTypeFQN, typeFriendlyName, "field", property.MemberName, propertyIndex, needsDisambiguation);
+                    string fieldName = UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringTypeIndex, declaringTypeFQN, typeFriendlyName, "field", property.MemberName, propertyIndex, needsDisambiguation);
                     return $"static (obj, value) => {fieldName}({castExpr}) = value!";
                 }
 
-                // Reflection fallback wrapper is strongly typed; cast in the delegate like UnsafeAccessor.
                 string setterName = UnsafeAccessorEmitter.GetAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex, needsDisambiguation);
+                if (!property.IsProperty)
+                {
+                    return $"static (obj, value) => {setterName}(obj, value!)";
+                }
+
+                // Reflection fallback property wrappers are strongly typed; cast in the delegate like UnsafeAccessor.
                 string setterCastExpr = typeGenerationSpec.TypeRef.IsValueType
-                    ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
+                    ? $"ref {GetUnboxExpression(contextSpec, declaringTypeFQN)}"
                     : $"({declaringTypeFQN})obj";
 
                 return $"static (obj, value) => {setterName}({setterCastExpr}, value!)";
             }
 
-            private static bool GenerateMemberAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
+            private static bool GenerateMemberAccessors(SourceWriter writer, ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 var members = new List<UnsafeAccessorEmitter.UnsafeAccessorMemberSpec>(properties.Count);
@@ -1098,6 +1116,7 @@ namespace System.Text.Json.SourceGeneration
                         CanUseUnsafeAccessors = property.CanUseUnsafeAccessors,
                         DeclaringTypeFQN = property.DeclaringType.FullyQualifiedName,
                         MemberTypeFQN = property.PropertyType.FullyQualifiedName,
+                        DeclaringTypeIndex = property.DeclaringTypeIndex,
                         DeclaringTypeParameterNames = property.DeclaringTypeParameterNames,
                         OpenDeclaringTypeFQN = property.OpenDeclaringTypeFQN,
                         OpenMemberTypeFQN = property.OpenPropertyTypeFQN,
@@ -1105,7 +1124,7 @@ namespace System.Text.Json.SourceGeneration
                     });
                 }
 
-                return UnsafeAccessorEmitter.EmitMemberAccessors(writer, typeGenerationSpec.TypeInfoPropertyName, typeGenerationSpec.TypeRef.IsValueType, members);
+                return UnsafeAccessorEmitter.EmitMemberAccessors(writer, typeGenerationSpec.TypeInfoPropertyName, typeGenerationSpec.TypeRef.IsValueType, contextSpec.UseUpdatedMemorySafetyRules, members);
             }
 
             /// <summary>
@@ -1113,7 +1132,7 @@ namespace System.Text.Json.SourceGeneration
             /// For UnsafeAccessor: emits a [UnsafeAccessor(Constructor)] extern method.
             /// For reflection fallback: emits a cached ConstructorInfo and a wrapper method.
             /// </summary>
-            private static void GenerateConstructorAccessor(SourceWriter writer, TypeGenerationSpec typeSpec)
+            private static void GenerateConstructorAccessor(SourceWriter writer, ContextGenerationSpec contextSpec, TypeGenerationSpec typeSpec)
             {
                 if (!typeSpec.ConstructorIsInaccessible)
                 {
@@ -1129,15 +1148,20 @@ namespace System.Text.Json.SourceGeneration
                     {
                         TypeFQN = param.ParameterType.FullyQualifiedName,
                         Index = param.ParameterIndex,
+                        RefKind = param.RefKind,
+                        OpenTypeFQN = param.OpenParameterTypeFQN,
                     });
                 }
 
-                UnsafeAccessorEmitter.EmitConstructorAccessor(writer, new UnsafeAccessorEmitter.UnsafeAccessorConstructorSpec
+                UnsafeAccessorEmitter.EmitConstructorAccessor(writer, contextSpec.UseUpdatedMemorySafetyRules, new UnsafeAccessorEmitter.UnsafeAccessorConstructorSpec
                 {
                     TypeFriendlyName = typeSpec.TypeInfoPropertyName,
                     TypeFQN = typeSpec.TypeRef.FullyQualifiedName,
                     CanUseUnsafeAccessor = typeSpec.CanUseUnsafeAccessorForConstructor,
                     Parameters = parameters.ToImmutableEquatableArray(),
+                    DeclaringTypeParameterNames = typeSpec.DeclaringTypeParameterNames,
+                    OpenDeclaringTypeFQN = typeSpec.OpenDeclaringTypeFQN,
+                    DeclaringTypeParameterConstraintClauses = typeSpec.DeclaringTypeParameterConstraintClauses,
                 });
             }
 
@@ -1164,8 +1188,8 @@ namespace System.Text.Json.SourceGeneration
                 if (property.CanUseUnsafeAccessors)
                 {
                     string accessorName = property.IsProperty
-                        ? UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringType.FullyQualifiedName, typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation)
-                        : UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringType.FullyQualifiedName, typeFriendlyName, "field", property.MemberName, propertyIndex, needsDisambiguation);
+                        ? UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringTypeIndex, property.DeclaringType.FullyQualifiedName, typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation)
+                        : UnsafeAccessorEmitter.GetQualifiedAccessorName(property.DeclaringTypeParameterNames, property.DeclaringTypeIndex, property.DeclaringType.FullyQualifiedName, typeFriendlyName, "field", property.MemberName, propertyIndex, needsDisambiguation);
 
                     return typeGenSpec.TypeRef.IsValueType
                         ? $"{accessorName}(ref value)"
@@ -1424,7 +1448,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (typeGenerationSpec.ConstructorIsInaccessible)
                     {
-                        string accessorName = UnsafeAccessorEmitter.GetConstructorAccessorName(typeGenerationSpec.TypeInfoPropertyName);
+                        string accessorName = UnsafeAccessorEmitter.GetQualifiedConstructorAccessorName(typeGenerationSpec.CanUseUnsafeAccessorForConstructor, typeGenerationSpec.DeclaringTypeParameterNames, typeGenerationSpec.TypeRef.FullyQualifiedName, typeGenerationSpec.TypeInfoPropertyName);
                         sb.Append($"return {accessorName}(");
                     }
                     else
@@ -1435,7 +1459,7 @@ namespace System.Text.Json.SourceGeneration
                 else if (typeGenerationSpec.ConstructorIsInaccessible)
                 {
                     // Inaccessible constructor: use the unified constructor accessor wrapper.
-                    string accessorName = UnsafeAccessorEmitter.GetConstructorAccessorName(typeGenerationSpec.TypeInfoPropertyName);
+                    string accessorName = UnsafeAccessorEmitter.GetQualifiedConstructorAccessorName(typeGenerationSpec.CanUseUnsafeAccessorForConstructor, typeGenerationSpec.DeclaringTypeParameterNames, typeGenerationSpec.TypeRef.FullyQualifiedName, typeGenerationSpec.TypeInfoPropertyName);
                     sb = new($"static args => {accessorName}(");
                 }
                 else
@@ -1692,13 +1716,18 @@ namespace System.Text.Json.SourceGeneration
 
                 GetLogicForDefaultSerializerOptionsInit(contextSpec.GeneratedOptionsSpec, writer);
 
-                writer.WriteLine("");
-                writer.WriteLine(UnsafeAccessorEmitter.InstanceMemberBindingFlagsDeclaration);
-                writer.WriteLine("");
+                writer.WriteLine($"""
+
+                    private const global::System.Reflection.BindingFlags InstanceMemberBindingFlags =
+                        global::System.Reflection.BindingFlags.Instance |
+                        global::System.Reflection.BindingFlags.Public |
+                        global::System.Reflection.BindingFlags.NonPublic;
+
+                    """);
 
                 if (emitValueTypeSetterDelegate)
                 {
-                    writer.WriteLine(UnsafeAccessorEmitter.ValueTypeSetterDelegateDeclaration);
+                    writer.WriteLine("private delegate void ValueTypeSetter<TDeclaringType, TValue>(ref TDeclaringType obj, TValue value);");
                     writer.WriteLine();
                 }
 
@@ -2133,7 +2162,7 @@ namespace System.Text.Json.SourceGeneration
                     { IsValueTuple: true } => $"() => default({typeSpec.TypeRef.FullyQualifiedName})",
                     { ConstructionStrategy: ObjectConstructionStrategy.ParameterlessConstructor, ConstructorIsInaccessible: false } => $"() => new {typeSpec.TypeRef.FullyQualifiedName}()",
                     { ConstructionStrategy: ObjectConstructionStrategy.ParameterlessConstructor, ConstructorIsInaccessible: true } =>
-                        $"static () => {UnsafeAccessorEmitter.GetConstructorAccessorName(typeSpec.TypeInfoPropertyName)}()",
+                        $"static () => {UnsafeAccessorEmitter.GetQualifiedConstructorAccessorName(typeSpec.CanUseUnsafeAccessorForConstructor, typeSpec.DeclaringTypeParameterNames, typeSpec.TypeRef.FullyQualifiedName, typeSpec.TypeInfoPropertyName)}()",
                     _ => "null",
                 };
             }
