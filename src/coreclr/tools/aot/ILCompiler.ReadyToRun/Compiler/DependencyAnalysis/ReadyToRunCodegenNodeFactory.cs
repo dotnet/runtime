@@ -1274,6 +1274,16 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(HelperImports);
 
+            foreach (ReadyToRunHelper helper in JitHelperRoots.GetReadyToRunHelpers(Target))
+            {
+                graph.AddRoot(GetReadyToRunHelperCell(helper), "JIT helper root");
+            }
+
+#if DEBUG
+            JitHelperRootsDebugTableNode jitHelperRoots = new JitHelperRootsDebugTableNode(Target);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.JitHelperRoots, jitHelperRoots);
+#endif
+
             PrecodeImports = new ImportSectionNode(
                 "PrecodeImports",
                 ReadyToRunImportSectionType.Unknown,
