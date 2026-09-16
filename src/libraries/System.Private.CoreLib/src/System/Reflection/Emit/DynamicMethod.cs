@@ -351,7 +351,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             bool includeMethodImplAttribute = attributeType.IsAssignableFrom(typeof(MethodImplAttribute));
-            object[] result = CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, includeMethodImplAttribute ? 1 : 0);
+            object[] result = RuntimeCustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, includeMethodImplAttribute ? 1 : 0);
             if (includeMethodImplAttribute)
             {
                 result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());

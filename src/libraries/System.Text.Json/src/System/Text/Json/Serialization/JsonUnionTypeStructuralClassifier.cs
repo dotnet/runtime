@@ -78,15 +78,18 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierPreserveReferencesNotSupported(context.DeclaringType);
             }
 
-            StructuralClassifier classifier = BuildStructuralClassifier(context.DeclaringType, context.UnionCases, options);
+            StructuralClassifier classifier = BuildStructuralClassifier(context.DeclaringTypeInfo, context.UnionCases, options);
             return classifier.Classify;
         }
 
         private static StructuralClassifier BuildStructuralClassifier(
-            Type unionType,
+            JsonTypeInfo unionTypeInfo,
             IReadOnlyList<JsonUnionCaseInfo> unionCases,
             JsonSerializerOptions options)
         {
+            Type unionType = unionTypeInfo.Type;
+            JsonNumberHandling? unionNumberHandling = unionTypeInfo.NumberHandling;
+
             // POCO object cases expose JsonPropertyInfo metadata through JsonTypeInfoKind.Object.
             // A non-POCO JSON object case advertises the Object shape without such metadata.
             Dictionary<JsonValueType, Type> shapeBasedCases = new();
@@ -98,6 +101,7 @@ namespace System.Text.Json.Serialization
                 AddCase(
                     unionType,
                     unionCase.CaseType,
+                    unionNumberHandling,
                     options,
                     shapeBasedCases,
                     pocoObjectCaseList,
@@ -163,12 +167,14 @@ namespace System.Text.Json.Serialization
         private static void AddCase(
             Type unionType,
             Type caseType,
+            JsonNumberHandling? unionNumberHandling,
             JsonSerializerOptions options,
             Dictionary<JsonValueType, Type> shapeBasedCases,
             List<PocoObjectCase> pocoObjectCases,
             ref int requiredPropertyCount)
         {
             JsonTypeInfo typeInfo = options.GetTypeInfo(caseType);
+            JsonNumberHandling? numberHandlingOverride = unionNumberHandling ?? typeInfo.NumberHandling;
             if (typeInfo is { IsNullable: true, ElementTypeInfo: JsonTypeInfo elementTypeInfo })
             {
                 typeInfo = elementTypeInfo;
@@ -188,7 +194,7 @@ namespace System.Text.Json.Serialization
                     caseType);
             }
 
-            JsonNumberHandling numberHandling = typeInfo.NumberHandling ?? options.NumberHandling;
+            JsonNumberHandling numberHandling = numberHandlingOverride ?? typeInfo.NumberHandling ?? options.NumberHandling;
             JsonValueType valueTypes = typeInfo.Converter.GetSupportedJsonValueTypes(numberHandling);
 
             bool isPocoObjectCase = typeInfo is

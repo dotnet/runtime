@@ -986,7 +986,7 @@ namespace
             case ConvertType::ToF64:  c = 'd'; break;
             case ConvertType::ToV128: c = 'V'; break;
             default:
-                PORTABILITY_ASSERT("Unknown Wasm value type");
+                _ASSERTE(!"Unknown Wasm value type");
                 c = '?';
                 break;
         }
@@ -1274,7 +1274,7 @@ namespace
         return thunk;
     }
 
-    static void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    static void* ComputePortableEntryPointThunk(MetaSig& sig, const char* prefix, bool wasmCallingConventionOnly = false)
     {
         CONTRACTL
         {
@@ -1299,7 +1299,7 @@ namespace
         char fixedBuffer[64];
         char* keyBuffer = fixedBuffer;
         uint32_t keyBufferLen = sizeof(fixedBuffer);
-        uint32_t needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+        uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
@@ -1307,7 +1307,7 @@ namespace
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
-            needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+            needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
             if (needed == UINT32_MAX || needed >= keyBufferLen)
                 return NULL;
         }
@@ -1584,21 +1584,24 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
     else
     {
-        thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+        thunk = ComputePortableEntryPointThunk(sig, "I");
     }
 
     return thunk;
 }
 
+void* GetVirtualDispatchThunk(MethodDesc *pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!pMD->ContainsGenericVariables());
+
+    MetaSig sig(pMD);
+    return ComputePortableEntryPointThunk(sig, "V", true /* wasmCallingConventionOnly */);
+}
+
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMD->IsUnboxingStub());
     _ASSERTE(ppTargetMethodDesc != nullptr);
@@ -1638,15 +1641,29 @@ void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* p
             return nullptr;
     }
 
-    PCODE unboxingStub = LookupPregeneratedThunkByString(keyBuffer);
-    if (unboxingStub == (PCODE)NULL)
+    void* unboxingStub = LookupPortableEntryPointThunk(keyBuffer);
+    if (unboxingStub == nullptr)
+    {
+        return nullptr;
+    }
+
+    // Structural sharing can find a stub even when this particular managed signature
+    // was never compiled. Do not publish native code that the interpreter cannot call.
+    MetaSig unboxingSig(pMD);
+    if (ComputeCalliSigThunk(unboxingSig) == nullptr)
+    {
+        return nullptr;
+    }
+
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+    if (!PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
     {
         return nullptr;
     }
 
     *ppTargetMethodDesc = pTargetMethodDesc;
-    *pTargetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-    return (void*)unboxingStub;
+    *pTargetEntryPoint = targetEntryPoint;
+    return unboxingStub;
 }
 
 void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
@@ -1797,7 +1814,9 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
     // frame pointer is found by unwinding to either its containing function, or to a CallFunclet location.
 
     TADDR internalFunctionFramePointer = GetWasmFramePointerFromStackPointer_Internal(sp);
-    _ASSERTE(internalFunctionFramePointer != 0);
+    if (internalFunctionFramePointer == 0)
+        return 0;
+
     uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(internalFunctionFramePointer + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
     _ASSERTE(GetWasmVirtualIPFromStackPointer(sp) == controlPC);
 

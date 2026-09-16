@@ -169,7 +169,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             GenTree* node = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                node = comp->gtNewOperNode(GT_ADD, genActualType(node), node, comp->gtNewIconNode(offset));
             }
             return node;
         }
@@ -2323,7 +2323,9 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     unsigned const enclosingRegion = ehGetMostNestedRegionIndex(preheader, &inTry);
     if (!BasicBlock::sameEHRegion(beforeSlowPreheader, preheader))
     {
-        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, bottom, /* endBlk */ nullptr,
+        // The lexical bottom may be in a nested region, so start searching from the fast preheader,
+        // which is guaranteed to be in the target region.
+        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, fastPreheader, /* endBlk */ nullptr,
                                                 /* nearBlk */ bottom, /* jumpBlk */ nullptr, /* runRarely */ false);
     }
 
